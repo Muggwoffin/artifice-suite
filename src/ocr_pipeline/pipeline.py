@@ -24,6 +24,117 @@ def _load_existing_text(stage: str, stem: str, output_dir: str) -> str:
     return p.read_text(encoding="utf-8")
 
 
+def run_ocr_step(
+    file_path: str | Path,
+    output_dir: str,
+    *,
+    skip_ocr: bool = False,
+    resume: bool = True,
+    force: bool = False,
+) -> dict:
+    """Run the OCR stage for one file, or resolve it from existing output.
+
+    Returns the raw_ocr data dict, annotated with `_elapsed` and (when the
+    stage did not actually run) `_skipped`.
+    """
+    f = Path(file_path)
+    t0 = time.monotonic()
+
+    if skip_ocr:
+        log.info("OCR %s [skipped by user]", f.name)
+        data = {
+            "source_file": str(f),
+            "stage": "raw_ocr",
+            "extracted_text": "(OCR skipped)",
+            "_skipped": True,
+        }
+    elif resume and not force and _output_exists("raw_ocr", f.stem, output_dir):
+        log.info("OCR %s [skip — already done]", f.stem)
+        data = {
+            "source_file": str(f),
+            "stage": "raw_ocr",
+            "extracted_text": _load_existing_text("raw_ocr", f.stem, output_dir),
+            "_skipped": True,
+        }
+    else:
+        data = ocr.perform(str(f), output_dir=output_dir)
+
+    data["_elapsed"] = time.monotonic() - t0
+    return data
+
+
+def run_cleanup_step(
+    raw_data: dict,
+    stem: str,
+    output_dir: str,
+    *,
+    skip_cleanup: bool = False,
+    resume: bool = True,
+    force: bool = False,
+) -> dict:
+    """Run the cleanup stage for one file, or resolve it from existing output."""
+    t0 = time.monotonic()
+
+    if skip_cleanup:
+        log.info("Cleanup %s [skipped by user]", stem)
+        data = {
+            "source_file": raw_data["source_file"],
+            "stage": "cleaned",
+            "cleaned_text": raw_data["extracted_text"],
+            "raw_text": raw_data["extracted_text"],
+            "_skipped": True,
+        }
+    elif resume and not force and _output_exists("cleaned", stem, output_dir):
+        log.info("Cleanup %s [skip — already done]", stem)
+        data = {
+            "source_file": raw_data["source_file"],
+            "stage": "cleaned",
+            "cleaned_text": _load_existing_text("cleaned", stem, output_dir),
+            "raw_text": raw_data["extracted_text"],
+            "_skipped": True,
+        }
+    else:
+        data = cleanup.perform(
+            raw_data["extracted_text"],
+            source_file=raw_data["source_file"],
+            output_dir=output_dir,
+        )
+
+    data["_elapsed"] = time.monotonic() - t0
+    return data
+
+
+def run_translate_step(
+    cleaned_data: dict,
+    stem: str,
+    output_dir: str,
+    *,
+    resume: bool = True,
+    force: bool = False,
+) -> dict:
+    """Run the translate stage for one file, or resolve it from existing output."""
+    t0 = time.monotonic()
+
+    if resume and not force and _output_exists("translated", stem, output_dir):
+        log.info("Translate %s [skip — already done]", stem)
+        data = {
+            "source_file": cleaned_data["source_file"],
+            "stage": "translated",
+            "translated_text": _load_existing_text("translated", stem, output_dir),
+            "cleaned_text": cleaned_data["cleaned_text"],
+            "_skipped": True,
+        }
+    else:
+        data = translate.perform(
+            cleaned_data["cleaned_text"],
+            source_file=cleaned_data["source_file"],
+            output_dir=output_dir,
+        )
+
+    data["_elapsed"] = time.monotonic() - t0
+    return data
+
+
 def _collect_files(input_path: str) -> list[Path]:
     """If input_path is a directory, return all supported files inside it.
     If it's a file, return a single-element list."""
@@ -91,74 +202,25 @@ def _run_single(
     t_start = time.monotonic()
     log.info("Starting pipeline for %s", file_path.name)
 
-    # OCR
-    raw_data = None
-    if skip_ocr:
-        log.info("OCR skipped by user")
-        raw_data = {
-            "source_file": str(file_path),
-            "stage": "raw_ocr",
-            "extracted_text": "(OCR skipped)",
-        }
-    elif resume and not force and _output_exists("raw_ocr", stem, output_dir):
-        log.info("OCR already done for %s [skip]", stem)
-        text = _load_existing_text("raw_ocr", stem, output_dir)
-        raw_data = {
-            "source_file": str(file_path),
-            "stage": "raw_ocr",
-            "extracted_text": text,
-        }
-    else:
-        raw_data = ocr.perform(str(file_path), output_dir=output_dir)
-
-    # Cleanup
-    cleaned_data = None
-    if skip_cleanup:
-        log.info("Cleanup skipped by user")
-        cleaned_data = {
-            "source_file": raw_data["source_file"],
-            "stage": "cleaned",
-            "cleaned_text": raw_data["extracted_text"],
-            "raw_text": raw_data["extracted_text"],
-        }
-    elif resume and not force and _output_exists("cleaned", stem, output_dir):
-        log.info("Cleanup already done for %s [skip]", stem)
-        text = _load_existing_text("cleaned", stem, output_dir)
-        cleaned_data = {
-            "source_file": raw_data["source_file"],
-            "stage": "cleaned",
-            "cleaned_text": text,
-            "raw_text": raw_data["extracted_text"],
-        }
-    else:
-        cleaned_data = cleanup.perform(
-            raw_data["extracted_text"],
-            source_file=raw_data["source_file"],
-            output_dir=output_dir,
-        )
+    raw_data = run_ocr_step(
+        file_path, output_dir,
+        skip_ocr=skip_ocr, resume=resume, force=force,
+    )
+    cleaned_data = run_cleanup_step(
+        raw_data, stem, output_dir,
+        skip_cleanup=skip_cleanup, resume=resume, force=force,
+    )
 
     result = {
         "raw": raw_data,
         "cleaned": cleaned_data,
     }
 
-    # Translate
     if not skip_translate:
-        if resume and not force and _output_exists("translated", stem, output_dir):
-            log.info("Translation already done for %s [skip]", stem)
-            text = _load_existing_text("translated", stem, output_dir)
-            result["translated"] = {
-                "source_file": raw_data["source_file"],
-                "stage": "translated",
-                "translated_text": text,
-                "cleaned_text": cleaned_data["cleaned_text"],
-            }
-        else:
-            result["translated"] = translate.perform(
-                cleaned_data["cleaned_text"],
-                source_file=cleaned_data["source_file"],
-                output_dir=output_dir,
-            )
+        result["translated"] = run_translate_step(
+            cleaned_data, stem, output_dir,
+            resume=resume, force=force,
+        )
 
     elapsed = time.monotonic() - t_start
     log.info("Pipeline complete for %s in %.1fs", file_path.name, elapsed)
@@ -192,30 +254,10 @@ def run_pipeline_batch(
     ocr_timings: dict[str, float] = {}
 
     def _run_ocr(f: Path) -> tuple[str, dict]:
-        t0 = time.monotonic()
-        if skip_ocr:
-            elapsed = time.monotonic() - t0
-            return (str(f), {
-                "source_file": str(f),
-                "stage": "raw_ocr",
-                "extracted_text": "(OCR skipped)",
-                "_skipped": True,
-                "_elapsed": elapsed,
-            })
-        if resume and not force and _output_exists("raw_ocr", f.stem, output_dir):
-            text = _load_existing_text("raw_ocr", f.stem, output_dir)
-            elapsed = time.monotonic() - t0
-            return (str(f), {
-                "source_file": str(f),
-                "stage": "raw_ocr",
-                "extracted_text": text,
-                "_skipped": True,
-                "_elapsed": elapsed,
-            })
-        result = ocr.perform(str(f), output_dir=output_dir)
-        elapsed = time.monotonic() - t0
-        result["_elapsed"] = elapsed
-        return (str(f), result)
+        return (str(f), run_ocr_step(
+            f, output_dir,
+            skip_ocr=skip_ocr, resume=resume, force=force,
+        ))
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {pool.submit(_run_ocr, f): f for f in files}
@@ -243,54 +285,23 @@ def run_pipeline_batch(
         stem = f.stem
         file_timings: dict[str, float] = {"ocr": ocr_timings.get(fpath, 0)}
 
-        # Cleanup
-        if skip_cleanup:
-            log.info("  Cleanup %s [skipped by user]", stem)
-            cleaned_data = {
-                "source_file": raw_data["source_file"],
-                "stage": "cleaned",
-                "cleaned_text": raw_data["extracted_text"],
-                "raw_text": raw_data["extracted_text"],
-            }
-        elif resume and not force and _output_exists("cleaned", stem, output_dir):
-            log.info("  Cleanup %s [skip — already done]", stem)
-            text = _load_existing_text("cleaned", stem, output_dir)
-            cleaned_data = {
-                "source_file": raw_data["source_file"],
-                "stage": "cleaned",
-                "cleaned_text": text,
-                "raw_text": raw_data["extracted_text"],
-            }
-        else:
-            t0 = time.monotonic()
-            cleaned_data = cleanup.perform(
-                raw_data["extracted_text"],
-                source_file=raw_data["source_file"],
-                output_dir=output_dir,
-            )
-            file_timings["cleanup"] = time.monotonic() - t0
+        cleaned_data = run_cleanup_step(
+            raw_data, stem, output_dir,
+            skip_cleanup=skip_cleanup, resume=resume, force=force,
+        )
+        if not cleaned_data.get("_skipped"):
+            file_timings["cleanup"] = cleaned_data["_elapsed"]
 
         result: dict[str, Any] = {"raw": raw_data, "cleaned": cleaned_data}
 
-        # Translate
         if not skip_translate:
-            if resume and not force and _output_exists("translated", stem, output_dir):
-                log.info("  Translate %s [skip — already done]", stem)
-                text = _load_existing_text("translated", stem, output_dir)
-                result["translated"] = {
-                    "source_file": raw_data["source_file"],
-                    "stage": "translated",
-                    "translated_text": text,
-                    "cleaned_text": cleaned_data["cleaned_text"],
-                }
-            else:
-                t0 = time.monotonic()
-                result["translated"] = translate.perform(
-                    cleaned_data["cleaned_text"],
-                    source_file=cleaned_data["source_file"],
-                    output_dir=output_dir,
-                )
-                file_timings["translate"] = time.monotonic() - t0
+            translated_data = run_translate_step(
+                cleaned_data, stem, output_dir,
+                resume=resume, force=force,
+            )
+            if not translated_data.get("_skipped"):
+                file_timings["translate"] = translated_data["_elapsed"]
+            result["translated"] = translated_data
 
         all_results[fpath] = result
         timings[fpath] = file_timings

@@ -1,0 +1,237 @@
+"""Local SQLite history of completed pipeline runs.
+
+Kept deliberately small: two tables, no ORM, no migrations framework. The
+Analytics view queries this directly, which is why it is SQLite rather than a
+JSON log — aggregate queries over a few thousand rows stay instant.
+"""
+
+import json
+import sqlite3
+import threading
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from ._logging import get_logger
+from .config import get as cfg
+
+log = get_logger("history")
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS runs (
+    run_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    started     TEXT NOT NULL,
+    finished    TEXT,
+    stages      TEXT NOT NULL,
+    output_dir  TEXT NOT NULL,
+    doc_type    TEXT,
+    ocr_model   TEXT,
+    cleanup_model   TEXT,
+    translate_model TEXT,
+    total       INTEGER NOT NULL DEFAULT 0,
+    succeeded   INTEGER NOT NULL DEFAULT 0,
+    failed      INTEGER NOT NULL DEFAULT 0,
+    elapsed     REAL NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS run_items (
+    item_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id      INTEGER NOT NULL REFERENCES runs ON DELETE CASCADE,
+    source_file TEXT NOT NULL,
+    name        TEXT NOT NULL,
+    state       TEXT NOT NULL,
+    language    TEXT,
+    confidence  INTEGER,
+    error       TEXT,
+    stage_json  TEXT NOT NULL,
+    raw_text        TEXT,
+    cleaned_text    TEXT,
+    translated_text TEXT,
+    created     TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_run_items_run ON run_items (run_id);
+"""
+
+
+def default_db_path() -> Path:
+    """Where history lives. Override with the `history_db` config key."""
+    configured = cfg("history_db")
+    if configured:
+        return Path(configured).expanduser()
+    return Path.home() / ".ocr_pipeline" / "history.db"
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+class HistoryStore:
+    """Thread-safe-enough wrapper around the history database.
+
+    All writes happen on the tk main thread (the GUI records from drained
+    events), but the lock keeps it honest if that ever changes.
+    """
+
+    def __init__(self, db_path: str | Path | None = None):
+        self.path = Path(db_path) if db_path else default_db_path()
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(str(self.path), check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        with self._lock:
+            self._conn.executescript(_SCHEMA)
+            self._conn.commit()
+
+    def close(self) -> None:
+        with self._lock:
+            self._conn.close()
+
+    # ----------------------------------------------------------------- write
+    def start_run(self, *, stages: list[str], output_dir: str, total: int) -> int:
+        with self._lock:
+            cur = self._conn.execute(
+                """INSERT INTO runs
+                   (started, stages, output_dir, doc_type,
+                    ocr_model, cleanup_model, translate_model, total)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    _now(), ",".join(stages), output_dir, cfg("document_type"),
+                    cfg("ocr_model"), cfg("cleanup_model"), cfg("translate_model"),
+                    total,
+                ),
+            )
+            self._conn.commit()
+            return int(cur.lastrowid)
+
+    def record_item(self, run_id: int, item) -> None:
+        """Persist one finished :class:`jobs.JobItem`."""
+        stage_json = json.dumps({
+            name: {
+                "state": s.state.value,
+                "elapsed": round(s.elapsed, 3),
+                "chars": s.chars,
+                "error": s.error,
+            }
+            for name, s in item.stages.items()
+        })
+        results = item.results
+        with self._lock:
+            self._conn.execute(
+                """INSERT INTO run_items
+                   (run_id, source_file, name, state, language, confidence,
+                    error, stage_json, raw_text, cleaned_text, translated_text, created)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    run_id, item.path, item.name, item.state.value, item.language,
+                    item.confidence, item.error, stage_json,
+                    (results.get("raw") or {}).get("extracted_text"),
+                    (results.get("cleaned") or {}).get("cleaned_text"),
+                    (results.get("translated") or {}).get("translated_text"),
+                    _now(),
+                ),
+            )
+            self._conn.commit()
+
+    def finish_run(self, run_id: int, *, succeeded: int, failed: int, elapsed: float) -> None:
+        with self._lock:
+            self._conn.execute(
+                "UPDATE runs SET finished = ?, succeeded = ?, failed = ?, elapsed = ? "
+                "WHERE run_id = ?",
+                (_now(), succeeded, failed, elapsed, run_id),
+            )
+            self._conn.commit()
+
+    def delete_run(self, run_id: int) -> None:
+        with self._lock:
+            self._conn.execute("DELETE FROM run_items WHERE run_id = ?", (run_id,))
+            self._conn.execute("DELETE FROM runs WHERE run_id = ?", (run_id,))
+            self._conn.commit()
+
+    # ------------------------------------------------------------------ read
+    def list_runs(self, limit: int = 200) -> list[sqlite3.Row]:
+        with self._lock:
+            return self._conn.execute(
+                "SELECT * FROM runs ORDER BY run_id DESC LIMIT ?", (limit,)
+            ).fetchall()
+
+    def list_items(self, run_id: int) -> list[sqlite3.Row]:
+        with self._lock:
+            return self._conn.execute(
+                "SELECT * FROM run_items WHERE run_id = ? ORDER BY item_id", (run_id,)
+            ).fetchall()
+
+    def get_item(self, item_id: int) -> sqlite3.Row | None:
+        with self._lock:
+            return self._conn.execute(
+                "SELECT * FROM run_items WHERE item_id = ?", (item_id,)
+            ).fetchone()
+
+    def search_items(self, term: str, limit: int = 200) -> list[sqlite3.Row]:
+        like = f"%{term}%"
+        with self._lock:
+            return self._conn.execute(
+                "SELECT * FROM run_items WHERE name LIKE ? OR source_file LIKE ? "
+                "ORDER BY item_id DESC LIMIT ?",
+                (like, like, limit),
+            ).fetchall()
+
+    # ------------------------------------------------------------- analytics
+    def stats(self) -> dict[str, Any]:
+        """Aggregates for the Analytics view."""
+        with self._lock:
+            totals = self._conn.execute(
+                """SELECT COUNT(*) AS runs,
+                          COALESCE(SUM(total), 0) AS files,
+                          COALESCE(SUM(failed), 0) AS failed,
+                          COALESCE(SUM(elapsed), 0) AS elapsed
+                   FROM runs"""
+            ).fetchone()
+            confidences = [
+                r[0] for r in self._conn.execute(
+                    "SELECT confidence FROM run_items WHERE confidence IS NOT NULL"
+                )
+            ]
+            stage_rows = self._conn.execute(
+                "SELECT stage_json FROM run_items"
+            ).fetchall()
+            recent = self._conn.execute(
+                """SELECT run_id, started, total, failed, elapsed
+                   FROM runs WHERE finished IS NOT NULL
+                   ORDER BY run_id DESC LIMIT 20"""
+            ).fetchall()
+            by_model = self._conn.execute(
+                """SELECT r.translate_model AS model,
+                          AVG(i.confidence) AS avg_conf,
+                          COUNT(i.item_id)  AS n
+                   FROM run_items i JOIN runs r ON r.run_id = i.run_id
+                   WHERE i.confidence IS NOT NULL
+                   GROUP BY r.translate_model
+                   ORDER BY n DESC"""
+            ).fetchall()
+
+        # Per-stage throughput, aggregated in Python so the JSON blob stays opaque to SQL.
+        stage_totals: dict[str, dict[str, float]] = {}
+        for row in stage_rows:
+            try:
+                stages = json.loads(row["stage_json"])
+            except (json.JSONDecodeError, TypeError):
+                continue
+            for name, s in stages.items():
+                if s.get("state") != "done":
+                    continue
+                acc = stage_totals.setdefault(name, {"chars": 0.0, "elapsed": 0.0, "n": 0})
+                acc["chars"] += s.get("chars", 0)
+                acc["elapsed"] += s.get("elapsed", 0.0)
+                acc["n"] += 1
+
+        return {
+            "runs": totals["runs"],
+            "files": totals["files"],
+            "failed": totals["failed"],
+            "elapsed": totals["elapsed"],
+            "confidences": confidences,
+            "stage_totals": stage_totals,
+            "recent": [dict(r) for r in recent],
+            "by_model": [dict(r) for r in by_model],
+        }

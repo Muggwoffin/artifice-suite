@@ -23,7 +23,26 @@ _DEFAULTS: dict[str, Any] = {
     "chunk_overlap_tokens": 200,
     "confidence_enabled": True,
     "document_type": "default",
+    # P6: GUI persistence
+    "history_db": None,  # defaults to ~/.ocr_pipeline/history.db
 }
+
+_USER_DIR = Path.home() / ".ocr_pipeline"
+_SETTINGS_PATH = _USER_DIR / "settings.json"
+
+# Keys the GUI is allowed to persist between sessions.
+PERSISTED_KEYS = (
+    "lm_studio_url",
+    "ocr_model",
+    "cleanup_model",
+    "translate_model",
+    "output_dir",
+    "max_ocr_workers",
+    "resume",
+    "document_type",
+    "confidence_enabled",
+    "chunk_max_tokens",
+)
 
 _config_cache: dict[str, Any] | None = None
 
@@ -89,6 +108,28 @@ def apply_overrides(overrides: dict[str, Any]) -> dict[str, Any]:
         load_config()
     _config_cache.update(overrides)
     return _config_cache
+
+
+def load_user_settings() -> dict[str, Any]:
+    """Read GUI-persisted settings from ~/.ocr_pipeline/settings.json."""
+    if not _SETTINGS_PATH.exists():
+        return {}
+    try:
+        import json
+        with open(_SETTINGS_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        return {k: v for k, v in data.items() if k in PERSISTED_KEYS}
+    except Exception:
+        return {}
+
+
+def save_user_settings(settings: dict[str, Any]) -> None:
+    """Persist GUI settings. Only whitelisted keys are written."""
+    import json
+    _USER_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {k: v for k, v in settings.items() if k in PERSISTED_KEYS}
+    with open(_SETTINGS_PATH, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
 
 
 def reset():
