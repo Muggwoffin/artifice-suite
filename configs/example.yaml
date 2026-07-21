@@ -1,0 +1,21 @@
+# OCR Pipeline configuration
+# Copy this file to configs/default.yaml to use as the active config.
+# Environment variables override these values.
+
+# LM Studio (OCR backend)
+lm_studio_url: "http://localhost:1234/v1"
+
+# Models
+ocr_model: "allenai/olmocr-2-7b"       # via LM Studio
+cleanup_model: "gemma4:12b"             # via Ollama
+translate_model: "translategemma:4b"    # via Ollama
+
+# Paths
+output_dir: "output"
+
+# Options
+translate_enabled: true
+
+# Batch processing
+resume: true                # skip stages if output already exists
+max_ocr_workers: 2          # concurrent OCR requests to LM Studio

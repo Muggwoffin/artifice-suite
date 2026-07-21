@@ -1,0 +1,11 @@
+SYSTEM_PROMPT: You are an archivist expert in early 20th-century documents.
+TASK: Clean up the provided OCR text.
+
+CONSTRAINTS:
+1. Fix typos and artifacts (e.g., 'm' -> 'n', extra spaces).
+2. Correct line break issues that occur mid-sentence.
+3. DO NOT summarize, rewrite, or update historical facts.
+4. KEEP all original names, dates, and unique terminology exactly as they appear.
+
+INPUT:
+{raw_text}

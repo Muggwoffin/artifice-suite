@@ -1,0 +1,7 @@
+typer
+ollama
+openai
+python-dotenv
+pyyaml
+PyMuPDF
+tkinterdnd2

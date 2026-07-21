@@ -1,0 +1,10 @@
+{
+  "source_file": "E:\\Claude Sandbox\\OCR Pipeline Tool\\tests\\sample_document.png",
+  "stage": "translated",
+  "cleaned_text": "Bureau of Archives and Records\nDepartment of Historical Documents\n\nMemorandum \u2014 December 14, 1938\nSubject: Budget Allocation for Fiscal Year 1939\n\nTo: The Honorable J. Smith, Director\nFrom: R. Henderson, Chief Clerk\n\nThe committee has reviewed the proposed expenditures for the preservation of archival materials. An increase of $500 is recommended for the acquisition of microfilming equipment and acid-free storage supplies.\n\nRespectfully submitted,\nR. Henderson",
+  "translated_text": "Memorandum \u2014 December 14, 1938\nSubject: Budget Allocation for Fiscal Year 1939\n\nTo: The Honorable J. Smith, Director\nFrom: R. Henderson, Chief Clerk\n\nThe committee has reviewed the proposed expenditures for the preservation of archival materials. An increase of $500 is recommended for the acquisition of microfilming equipment and acid-free storage supplies.\n\nRespectfully submitted,\nR. Henderson",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "timestamp": "2026-07-21T12:25:59.400046+00:00"
+}

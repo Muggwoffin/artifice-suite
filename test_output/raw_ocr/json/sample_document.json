@@ -1,0 +1,10 @@
+{
+  "source_file": "E:\\Claude Sandbox\\OCR Pipeline Tool\\tests\\sample_document.png",
+  "stage": "raw_ocr",
+  "extracted_text": "Bureau of Archives and Records\nDepartment of Historical Documents\n\nMemorandum \u2014 December 14, 1938\nSubject: Budget Allocation for Fiscal Year 1939\n\nTo: The Honorable J. Smith, Director\nFrom: R. Henderson, Chief Clerk\n\nThe committee has reviewed the proposed expenditures for the preservation of archival materials. An increase of $500 is recommended for the acquisition of microfilming equipment and acid-free storage supplies.\n\nRespectfully submitted,\nR. Henderson",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T12:25:27.395176+00:00",
+  "page": 1
+}

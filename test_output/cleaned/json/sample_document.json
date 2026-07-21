@@ -1,0 +1,10 @@
+{
+  "source_file": "E:\\Claude Sandbox\\OCR Pipeline Tool\\tests\\sample_document.png",
+  "stage": "cleaned",
+  "raw_text": "Bureau of Archives and Records\nDepartment of Historical Documents\n\nMemorandum \u2014 December 14, 1938\nSubject: Budget Allocation for Fiscal Year 1939\n\nTo: The Honorable J. Smith, Director\nFrom: R. Henderson, Chief Clerk\n\nThe committee has reviewed the proposed expenditures for the preservation of archival materials. An increase of $500 is recommended for the acquisition of microfilming equipment and acid-free storage supplies.\n\nRespectfully submitted,\nR. Henderson",
+  "cleaned_text": "Bureau of Archives and Records\nDepartment of Historical Documents\n\nMemorandum \u2014 December 14, 1938\nSubject: Budget Allocation for Fiscal Year 1939\n\nTo: The Honorable J. Smith, Director\nFrom: R. Henderson, Chief Clerk\n\nThe committee has reviewed the proposed expenditures for the preservation of archival materials. An increase of $500 is recommended for the acquisition of microfilming equipment and acid-free storage supplies.\n\nRespectfully submitted,\nR. Henderson",
+  "engine": "ollama",
+  "model": "gemma4:12b",
+  "system_prompt": "You are an archivist expert in early 20th-century documents. You perform conservative syntactic cleanup of OCR text.",
+  "timestamp": "2026-07-21T12:25:53.644791+00:00"
+}

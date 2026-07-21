@@ -1,0 +1,3 @@
+[console_scripts]
+ocr_pipeline = ocr_pipeline.cli:app
+ocr_pipeline_gui = ocr_pipeline.gui:main
