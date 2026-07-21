@@ -283,12 +283,45 @@ class App(TkinterDnD.Tk):
             entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 0))
 
         resume_row = tk.Frame(self.settings_frame, bg=FRAME_BG)
-        resume_row.pack(fill=tk.X, padx=8, pady=(2, 6))
+        resume_row.pack(fill=tk.X, padx=8, pady=(2, 4))
         self.settings_resume = tk.BooleanVar(value=cfg_default("resume"))
         tk.Checkbutton(
             resume_row,
             text="Resume (skip existing outputs)",
             variable=self.settings_resume,
+            font=FONT,
+            bg=FRAME_BG,
+            fg=FG,
+            selectcolor=ACCENT_DIM,
+            activebackground=FRAME_BG,
+            activeforeground=FG,
+        ).pack(side=tk.LEFT)
+
+        # Document type dropdown
+        doc_type_row = tk.Frame(self.settings_frame, bg=FRAME_BG)
+        doc_type_row.pack(fill=tk.X, padx=8, pady=2)
+        tk.Label(doc_type_row, text="Document Type:", font=FONT, bg=FRAME_BG, fg=FG, width=16, anchor=tk.W).pack(side=tk.LEFT)
+
+        from src.ocr_pipeline._prompts import DOCUMENT_TYPES
+        self.settings_doc_type = tk.StringVar(value=cfg_default("document_type"))
+        doc_type_menu = ttk.Combobox(
+            doc_type_row,
+            textvariable=self.settings_doc_type,
+            values=list(DOCUMENT_TYPES.keys()),
+            state="readonly",
+            font=FONT,
+            width=18,
+        )
+        doc_type_menu.pack(side=tk.LEFT, padx=(4, 0))
+
+        # Confidence toggle
+        conf_row = tk.Frame(self.settings_frame, bg=FRAME_BG)
+        conf_row.pack(fill=tk.X, padx=8, pady=(2, 6))
+        self.settings_confidence = tk.BooleanVar(value=cfg_default("confidence_enabled"))
+        tk.Checkbutton(
+            conf_row,
+            text="Enable confidence scoring",
+            variable=self.settings_confidence,
             font=FONT,
             bg=FRAME_BG,
             fg=FG,
@@ -324,6 +357,8 @@ class App(TkinterDnD.Tk):
         except ValueError:
             pass
         overrides["resume"] = self.settings_resume.get()
+        overrides["document_type"] = self.settings_doc_type.get()
+        overrides["confidence_enabled"] = self.settings_confidence.get()
         config.apply_overrides(overrides)
 
     # ---- log area --------------------------------------------------------

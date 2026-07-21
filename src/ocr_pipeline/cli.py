@@ -60,6 +60,9 @@ def preflight():
     typer.echo(f"  Translate model:  {cfg('translate_model')}")
     typer.echo(f"  Resume:           {cfg('resume')}")
     typer.echo(f"  Max OCR workers:  {cfg('max_ocr_workers')}")
+    typer.echo(f"  Document type:    {cfg('document_type')}")
+    typer.echo(f"  Confidence:       {'enabled' if cfg('confidence_enabled') else 'disabled'}")
+    typer.echo(f"  Chunk max tokens: {cfg('chunk_max_tokens')}")
 
     has_failure = bool(lm_err) or bool(ollama_errors) or bool(model_errors)
     if has_failure:
@@ -149,13 +152,22 @@ def pipeline(
     skip_cleanup: bool = typer.Option(False, "--skip-cleanup", help="Skip the cleanup stage"),
     skip_translate: bool = typer.Option(False, "--skip-translate", help="Skip the translation stage"),
     force: bool = typer.Option(False, "--force", help="Re-process even if outputs exist"),
+    document_type: str = typer.Option("default", "--doc-type", help="Document type (default, handwritten, typed_clean, technical, formal, casual, multi_lang)"),
+    no_confidence: bool = typer.Option(False, "--no-confidence", help="Disable confidence scoring"),
 ):
     """Run the full pipeline: OCR -> Cleanup -> Translate.
 
     Accepts a single image file or a directory. When given a directory,
     all supported images inside it are processed as a batch.
     """
+    from src.ocr_pipeline import config
     from src.ocr_pipeline.pipeline import run_pipeline
+
+    # Apply CLI overrides to config
+    config.apply_overrides({
+        "document_type": document_type,
+        "confidence_enabled": not no_confidence,
+    })
 
     # Only check services for stages that will actually run
     if not skip_ocr:
@@ -248,6 +260,9 @@ def _print_batch_summary(result: dict, output_dir: str):
             trans_chars = len(data["translated"]["translated_text"])
             lang = data["translated"].get("source_language_name", "?")
             line += f"  Trans:{trans_chars} ({lang})"
+            conf = data["translated"].get("confidence", {}).get("overall_score")
+            if conf is not None:
+                line += f"  conf:{conf}/100"
 
         file_t = timings.get(fpath, {})
         parts = []

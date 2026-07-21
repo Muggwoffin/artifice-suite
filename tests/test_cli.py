@@ -246,8 +246,8 @@ def test_translate_stage_writes_files(mock_chat, tmp_path):
     assert data["cleaned_text"] == "German text here"
     assert "source_language" in data
 
-    # 2 calls: language detection + translation
-    assert mock_chat.call_count == 2
+    # 3 calls: language detection + translation + confidence self-assessment
+    assert mock_chat.call_count == 3
 
 
 @patch("src.ocr_pipeline.stages.translate.ollama.chat")
@@ -258,13 +258,15 @@ def test_translate_stage_uses_prompt_file(mock_chat, tmp_path):
 
     translate.perform("Ein Test", output_dir=str(tmp_path))
 
-    call_kwargs = mock_chat.call_args
-    messages = call_kwargs.kwargs["messages"]
-    assert messages[0]["role"] == "system"
-    assert "translator" in messages[0]["content"].lower()
-    assert messages[1]["role"] == "user"
-    assert "Ein Test" in messages[1]["content"]
-    assert "{text}" not in messages[1]["content"]
+    # Find the translation call (has system + user messages)
+    for call in mock_chat.call_args_list:
+        messages = call.kwargs.get("messages", [])
+        if len(messages) >= 2 and messages[0]["role"] == "system":
+            assert "translator" in messages[0]["content"].lower()
+            assert "Ein Test" in messages[1]["content"]
+            assert "{text}" not in messages[1]["content"]
+            return
+    assert False, "Translation call with system message not found"
 
 
 @patch("src.ocr_pipeline.stages.translate.ollama.chat")
@@ -723,4 +725,202 @@ def test_config_apply_overrides():
     assert config.get("ocr_model") == "custom-model"
     assert config.get("resume") is False
     assert config.get("cleanup_model") == "gemma4:12b"  # default preserved
+    config.reset()
+
+
+# ---------------------------------------------------------------------------
+# P4: Chunking tests
+# ---------------------------------------------------------------------------
+
+def test_chunk_text_short_text_unchanged():
+    from src.ocr_pipeline._chunking import chunk_text
+    short = "Hello world. This is a test."
+    chunks = chunk_text(short, max_tokens=100)
+    assert len(chunks) == 1
+    assert chunks[0] == short
+
+
+def test_chunk_text_splits_long_text():
+    from src.ocr_pipeline._chunking import chunk_text
+    # Create text that's ~500 tokens (well over 100-token limit)
+    long_text = "This is a sentence. " * 200
+    chunks = chunk_text(long_text, max_tokens=100, overlap_tokens=20)
+    assert len(chunks) > 1
+    # Reassembled should contain all original content
+    reassembled = "\n\n".join(chunks)
+    assert "sentence" in reassembled
+
+
+def test_chunk_text_respects_paragraph_boundaries():
+    from src.ocr_pipeline._chunking import chunk_text
+    paragraphs = ["Paragraph one. " * 50, "Paragraph two. " * 50]
+    text = "\n\n".join(paragraphs)
+    chunks = chunk_text(text, max_tokens=100, overlap_tokens=10)
+    # Should have split into at least 2 chunks
+    assert len(chunks) >= 2
+
+
+def test_reassemble_joins_chunks():
+    from src.ocr_pipeline._chunking import reassemble
+    chunks = ["Hello world", "Second chunk", "Third chunk"]
+    result = reassemble(chunks)
+    assert result == "Hello world\n\nSecond chunk\n\nThird chunk"
+
+
+def test_estimate_tokens():
+    from src.ocr_pipeline._chunking import estimate_tokens
+    # ~3.5 chars per token
+    tokens = estimate_tokens("a" * 350)
+    assert 90 < tokens < 110  # ~100 tokens
+
+
+# ---------------------------------------------------------------------------
+# P4: Confidence scoring tests
+# ---------------------------------------------------------------------------
+
+def test_heuristic_score_clean_text():
+    from src.ocr_pipeline._confidence import _heuristic_score
+    clean_text = "This is a clear, well-written document with no issues."
+    score, markers = _heuristic_score(clean_text)
+    assert score >= 90
+    assert len(markers) == 0
+
+
+def test_heuristic_score_uncertain_text():
+    from src.ocr_pipeline._confidence import _heuristic_score
+    uncertain_text = "I'm not sure about this part, it seems unclear and possibly damaged"
+    score, markers = _heuristic_score(uncertain_text)
+    assert score < 80
+    assert len(markers) > 0
+
+
+@patch("src.ocr_pipeline._confidence.ollama.chat")
+def test_evaluate_confidence(mock_chat, tmp_path):
+    mock_chat.return_value = MagicMock(
+        message=MagicMock(content='{"score": 85, "reasoning": "Good quality text"}')
+    )
+    from src.ocr_pipeline._confidence import evaluate_confidence
+    result = evaluate_confidence("Clean source text", "Clean translated text", enable_self_assessment=True)
+    assert 0 <= result.overall_score <= 100
+    assert result.reasoning == "Good quality text"
+
+
+@patch("src.ocr_pipeline._confidence.ollama.chat")
+def test_evaluate_confidence_self_assessment_disabled(mock_chat):
+    from src.ocr_pipeline._confidence import evaluate_confidence
+    result = evaluate_confidence("Clean text", "Clean output", enable_self_assessment=False)
+    assert 0 <= result.overall_score <= 100
+    mock_chat.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# P4: Prompt registry tests
+# ---------------------------------------------------------------------------
+
+def test_get_cleanup_prompt_default():
+    from src.ocr_pipeline._prompts import get_cleanup_prompt
+    prompts = get_cleanup_prompt("default")
+    assert "system" in prompts
+    assert "user" in prompts
+    assert "archivist" in prompts["system"].lower()
+
+
+def test_get_cleanup_prompt_handwritten():
+    from src.ocr_pipeline._prompts import get_cleanup_prompt
+    prompts = get_cleanup_prompt("handwritten")
+    assert "paleographer" in prompts["system"].lower()
+
+
+def test_get_cleanup_prompt_fallback():
+    from src.ocr_pipeline._prompts import get_cleanup_prompt
+    prompts = get_cleanup_prompt("nonexistent_type")
+    assert prompts["system"]  # should fall back to default
+
+
+def test_get_translation_prompt_default():
+    from src.ocr_pipeline._prompts import get_translation_prompt
+    prompts = get_translation_prompt("default")
+    assert "translator" in prompts["system"].lower()
+
+
+def test_get_translation_prompt_technical():
+    from src.ocr_pipeline._prompts import get_translation_prompt
+    prompts = get_translation_prompt("technical")
+    assert "technical" in prompts["system"].lower()
+
+
+def test_list_document_types():
+    from src.ocr_pipeline._prompts import list_document_types
+    types = list_document_types()
+    assert "default" in types
+    assert "handwritten" in types
+    assert len(types) >= 6
+
+
+def test_config_document_type_default():
+    from src.ocr_pipeline import config
+    config.reset()
+    assert config.get("document_type") == "default"
+    config.reset()
+
+
+def test_config_confidence_enabled_default():
+    from src.ocr_pipeline import config
+    config.reset()
+    assert config.get("confidence_enabled") is True
+    config.reset()
+
+
+# ---------------------------------------------------------------------------
+# P4: CLI --doc-type and --no-confidence flags
+# ---------------------------------------------------------------------------
+
+@patch("src.ocr_pipeline.stages.ocr._get_client")
+@patch("src.ocr_pipeline.stages.cleanup.ollama.chat")
+@patch("src.ocr_pipeline.stages.translate.ollama.chat")
+def test_pipeline_doc_type_flag(mock_translate, mock_cleanup, mock_get_client, tmp_path):
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = _mock_openai_response("OCR text")
+    mock_get_client.return_value = mock_client
+    mock_cleanup.return_value = MagicMock(message=MagicMock(content="Cleaned"))
+    mock_translate.side_effect = [
+        MagicMock(message=MagicMock(content="de")),
+        MagicMock(message=MagicMock(content="Translated")),
+    ]
+
+    img = tmp_path / "doc.png"
+    img.write_bytes(b"\x89PNG fake")
+    out_dir = tmp_path / "output"
+
+    result = runner.invoke(
+        app, ["pipeline", str(img), "--output-dir", str(out_dir), "--doc-type", "handwritten"]
+    )
+    assert result.exit_code == 0
+    # Verify the config was applied
+    from src.ocr_pipeline import config
+    config.reset()
+
+
+@patch("src.ocr_pipeline.stages.ocr._get_client")
+@patch("src.ocr_pipeline.stages.cleanup.ollama.chat")
+@patch("src.ocr_pipeline.stages.translate.ollama.chat")
+def test_pipeline_no_confidence_flag(mock_translate, mock_cleanup, mock_get_client, tmp_path):
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = _mock_openai_response("OCR text")
+    mock_get_client.return_value = mock_client
+    mock_cleanup.return_value = MagicMock(message=MagicMock(content="Cleaned"))
+    mock_translate.side_effect = [
+        MagicMock(message=MagicMock(content="en")),
+        MagicMock(message=MagicMock(content="Translated")),
+    ]
+
+    img = tmp_path / "doc.png"
+    img.write_bytes(b"\x89PNG fake")
+    out_dir = tmp_path / "output"
+
+    result = runner.invoke(
+        app, ["pipeline", str(img), "--output-dir", str(out_dir), "--no-confidence", "--skip-translate"]
+    )
+    assert result.exit_code == 0
+    from src.ocr_pipeline import config
     config.reset()

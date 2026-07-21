@@ -5,42 +5,29 @@ from typing import Any, Dict
 
 import ollama
 
+from src.ocr_pipeline._chunking import chunk_text, reassemble, estimate_tokens
 from src.ocr_pipeline._logging import get_logger
+from src.ocr_pipeline._prompts import get_cleanup_prompt
 from src.ocr_pipeline._retry import retry
 from src.ocr_pipeline.config import get as cfg
 
 log = get_logger("cleanup")
 
-PROMPT_DIR = Path(__file__).resolve().parent.parent.parent.parent / "prompts"
-
-SYSTEM_PROMPT = (
-    "You are an archivist expert in early 20th-century documents. "
-    "You perform conservative syntactic cleanup of OCR text."
-)
-
-
-def _load_user_prompt(raw_text: str) -> str:
-    prompt_file = PROMPT_DIR / "cleanup_prompt.txt"
-    template = prompt_file.read_text(encoding="utf-8")
-
-    lines = template.splitlines()
-    user_lines = [
-        line for line in lines if not line.startswith("SYSTEM_PROMPT:")
-    ]
-    user_template = "\n".join(user_lines).strip()
-
-    return user_template.replace("{raw_text}", raw_text)
-
 
 @retry(max_attempts=4, base_delay=1.0, label="Ollama cleanup")
-def _call_cleanup(raw_text: str) -> str:
+def _call_cleanup_chunk(
+    raw_text: str,
+    system_prompt: str,
+    user_template: str,
+) -> str:
+    """Clean up a single chunk of text."""
+    user_prompt = user_template.replace("{raw_text}", raw_text)
     model = cfg("cleanup_model")
-    user_prompt = _load_user_prompt(raw_text)
 
     response = ollama.chat(
         model=model,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
         options={"temperature": 0},
@@ -49,16 +36,50 @@ def _call_cleanup(raw_text: str) -> str:
     return response.message.content
 
 
+def _cleanup_with_chunking(
+    raw_text: str,
+    system_prompt: str,
+    user_template: str,
+) -> str:
+    """Clean text, chunking if it exceeds the model's context window."""
+    max_tokens = cfg("chunk_max_tokens")
+    overlap_tokens = cfg("chunk_overlap_tokens")
+
+    est_tokens = estimate_tokens(raw_text)
+    if est_tokens <= max_tokens:
+        return _call_cleanup_chunk(raw_text, system_prompt, user_template)
+
+    log.info(
+        "Text too long (%d est. tokens), chunking for cleanup...",
+        est_tokens,
+    )
+    chunks = chunk_text(raw_text, max_tokens=max_tokens, overlap_tokens=overlap_tokens)
+    log.info("Cleaning %d chunk(s)...", len(chunks))
+
+    cleaned_chunks = []
+    for i, chunk in enumerate(chunks):
+        log.info("  Chunk %d/%d (%d chars)", i + 1, len(chunks), len(chunk))
+        cleaned = _call_cleanup_chunk(chunk, system_prompt, user_template)
+        cleaned_chunks.append(cleaned)
+
+    return reassemble(cleaned_chunks)
+
+
 def perform(
     raw_text: str,
     *,
     source_file: str = "",
     output_dir: str = "output",
 ) -> Dict[str, Any]:
-    model = cfg("cleanup_model")
-    log.info("Cleaning OCR data with %s", model)
+    doc_type = cfg("document_type")
+    prompts = get_cleanup_prompt(doc_type)
+    system_prompt = prompts["system"]
+    user_template = prompts["user"]
 
-    cleaned_text = _call_cleanup(raw_text)
+    model = cfg("cleanup_model")
+    log.info("Cleaning with %s (doc_type=%s)", model, doc_type)
+
+    cleaned_text = _cleanup_with_chunking(raw_text, system_prompt, user_template)
 
     base_output_dir = Path(output_dir)
     text_dir = base_output_dir / "cleaned" / "text"
@@ -81,7 +102,8 @@ def perform(
         "cleaned_text": cleaned_text,
         "engine": "ollama",
         "model": model,
-        "system_prompt": SYSTEM_PROMPT,
+        "system_prompt": system_prompt,
+        "document_type": doc_type,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 

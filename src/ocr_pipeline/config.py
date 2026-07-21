@@ -18,6 +18,11 @@ _DEFAULTS: dict[str, Any] = {
     "translate_enabled": True,
     "resume": True,
     "max_ocr_workers": 2,
+    # P4: Pipeline optimization & robustness
+    "chunk_max_tokens": 3500,
+    "chunk_overlap_tokens": 200,
+    "confidence_enabled": True,
+    "document_type": "default",
 }
 
 _config_cache: dict[str, Any] | None = None
