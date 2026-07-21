@@ -58,7 +58,7 @@ class HistoryView(ttk.Frame):
             ("files", "Files", 55), ("failed", "Failed", 55),
             ("elapsed", "Elapsed", 75),
         ]:
-            self.run_tree.heading(col, text=head)
+            self.run_tree.heading(col, text=head.upper(), anchor=(tk.W if col in ("started", "stages") else tk.CENTER))
             self.run_tree.column(col, width=width,
                                  anchor=tk.W if col in ("started", "stages") else tk.CENTER)
         run_scroll = ttk.Scrollbar(run_frame, orient=tk.VERTICAL,
@@ -82,7 +82,7 @@ class HistoryView(ttk.Frame):
             ("name", "File", 240), ("state", "State", 80),
             ("lang", "Language", 90), ("conf", "Conf", 55),
         ]:
-            self.item_tree.heading(col, text=head)
+            self.item_tree.heading(col, text=head.upper(), anchor=(tk.W if col == "name" else tk.CENTER))
             self.item_tree.column(col, width=width,
                                   anchor=tk.W if col == "name" else tk.CENTER)
         item_scroll = ttk.Scrollbar(item_frame, orient=tk.VERTICAL,

@@ -1,102 +1,139 @@
-Tropy Integration — Design Notes (not yet implemented)
-======================================================
+Tropy Integration
+=================
 
-Status: **planned, deferred.** Decision taken 2026-07-21: folder output only.
-The tool will never write into a Tropy project database.
-
-This document records what was verified about the real archives on this
-machine so the work can start cold.
+Status: **implemented (read-only ingest → folder output).**
+Decision of 2026-07-21 stands: this tool never writes to a Tropy project.
 
 
-WHAT WAS INSPECTED
-------------------
+WHAT IT DOES
+------------
 
-Tropy stores recent projects in `%APPDATA%/Tropy/state.json`:
+Pull documents out of a Tropy archive, OCR them, and write the results to a
+folder. Selection is by list, by tag, by item, or the whole project.
 
-    E:\Tropy\ISK Project Primary Sources.tropy
-    E:\iCloudDrive\Archives\Tropy Databases\Alpenpost.tropy
-    E:\iCloudDrive\Archives\Tropy Databases\ISK Project Primary Sources.tropy
+    # browse a project (or list recent ones with no argument)
+    ocr_pipeline tropy-browse "E:/Tropy/ISK Project Primary Sources.tropy"
 
-A `.tropy` "managed" project is a directory, not a file:
+    # see what a run would do, without doing it
+    ocr_pipeline tropy "E:/Tropy/ISK Project Primary Sources.tropy" \
+        --list-id 8 --dry-run
+
+    # OCR one list into ./output
+    ocr_pipeline tropy "E:/Tropy/ISK Project Primary Sources.tropy" \
+        --list-id 8 --output-dir output --limit 50
+
+In the GUI: **Main → Add from Tropy…** opens a picker (recent projects, the
+list/tag tree, item selection with page counts) and drops the chosen pages
+into the normal queue, where pause / skip / retry / history all work as usual.
+
+Translation is off by default for Tropy runs (`--translate` to enable) —
+these archives are large and translating 1,960 pages by accident is expensive.
+
+
+READ-ONLY GUARANTEE
+-------------------
+
+The connection is opened `file:...?mode=ro`. This is enforced by SQLite, not
+by convention: an attempted `INSERT` raises
+`sqlite3.OperationalError: attempt to write a readonly database`.
+
+**Do not use `immutable=1`.** An earlier draft of this document recommended
+it; that was wrong. `immutable=1` makes SQLite ignore the write-ahead log, so
+any edit made in a running Tropy would be invisible, and the file changing
+underneath can produce corrupt reads. `mode=ro` respects the WAL and works
+while Tropy is open.
+
+
+THE ARCHIVE, AS VERIFIED
+------------------------
+
+Tropy records recent projects in `%APPDATA%/Tropy/state.json`. A `.tropy`
+"managed" project is a directory:
 
     ISK Project Primary Sources.tropy/
-      project.tpy        SQLite database (~16 MB here)
-      project.tpy-wal    present while Tropy is running
-      assets/            content-addressed originals, <sha256>.pdf / .jpg
+      project.tpy      SQLite database
+      assets/          content-addressed originals, <checksum>.pdf / .jpg
 
-Contents of the ISK project as of inspection:
+    ISK Project        72 items    6,070 photos    1,101 notes
+    Alpenpost          93 items      552 photos
 
-    items            72
-    photos        6,070
-    notes         1,101
-    selections        0
-    transcriptions    0      (table exists, unused)
+Both use `base='project'` (paths relative to the bundle) and `store='assets'`.
 
-Schema version: migration `2412161647`.
+Four facts drove the design:
 
+1. **Photos are pages, not files.** A 275-page item is 275 rows sharing one
+   `assets/<checksum>.pdf`, differing only by the `page` column.
 
-THE FACTS THAT SHAPE THE DESIGN
--------------------------------
+2. **Both path separators occur.** 868 rows in the ISK project use
+   backslashes, the rest forward slashes. `resolve_path()` normalises before
+   resolving; there is a test for it.
 
-1. **Photos are pages, not files.** `photos` has both `path`
-   (`assets/<sha>.pdf`, relative to the bundle) and `page` (0-based index).
-   6,070 photos across 72 items means most items are multi-page PDFs — the
-   KV-2 series from the National Archives.
+3. **Lists nest.** "KV Files" sits under "National Archives UK". Selecting a
+   parent list means everything beneath it, via a recursive CTE.
 
-2. **`ocr.perform()` is file-granular, Tropy is page-granular.**
-   `stages/ocr.py` renders every page of a PDF and joins them with
-   `--- Page Break ---`. Tropy needs one result per page, so a page-level
-   entry point is required. PyMuPDF is already a dependency, so rendering a
-   single page is cheap — the work is API shape, not capability.
-
-3. **Stem collisions are a real hazard.** `pipeline._output_exists()` keys on
-   `Path(x).stem`. Every page of a Tropy PDF shares the same checksum stem, so
-   naive use would make page 2 "resume" from page 1's output across a
-   200-page file. Any Tropy ingest must supply an explicit output key —
-   `<item>/<original filename>_p0007` — rather than relying on the stem.
-
-4. **`filename` preserves the human name.** `photos.filename` holds the
-   original (`KV-2-2339_01.pdf`) even though `path` is a checksum. Use it for
-   output naming; use `items` + `list_items` for foldering.
-
-5. **Lists are the natural batch unit.** 35 lists over 72 items — a list is
-   how the archive is already organised, so "process this list" is the
-   selection UI that matches how the material is actually used.
+4. **Mixed media.** 2,333 PDF pages and 3,737 JPEGs. Images are not
+   paginated; PDFs are.
 
 
-PLANNED SCOPE (Tier 1 only)
----------------------------
+THE COLLISION HAZARD
+--------------------
 
-`src/ocr_pipeline/tropy.py` — read-only.
+This is the thing that would have silently destroyed a run.
 
-  * Open with `sqlite3.connect("file:...?mode=ro&immutable=1", uri=True)`.
-    Read-only is not merely polite: it means the tool cannot corrupt a
-    project even if Tropy is running with an open WAL.
-  * Enumerate items by list / tag / item id; expand to page-level work units.
-  * Resolve `assets/` paths relative to the bundle directory.
-  * Feed page images to the existing pipeline stages.
-  * Write a mirrored output tree:
+`pipeline._output_exists()` keys on `Path(x).stem`. Every page of a Tropy PDF
+shares the checksum stem, so all 275 pages of an item would have written to
+`output/raw_ocr/text/89bf563c….txt`, each overwriting the last, and `resume`
+would have reported pages 2–275 as "already done" after page 1.
 
-        out/<Item Title>/<original filename>_p0003/
-            raw_ocr.txt  cleaned.txt  translated.txt
+The fix is an explicit output key threaded through the stages:
 
-  * Emit a `manifest.json` per run mapping each output back to its Tropy
-    `photo.id`, `item.id` and page — so a future import path stays possible
-    without re-deriving anything.
+    Max Hodann KV File Part 1/KV-2-2339_01_p0002
 
-The GUI side is a source picker in the Main tab: pick a `.tropy` bundle, then
-a list or item, and the resulting page units populate the existing queue.
-Pause/skip/retry and history then work unchanged — which is why this was
-sequenced after the job runner rather than before it.
+`ocr.perform()`, `cleanup.perform()` and `translate.perform()` all accept an
+optional `stem` that overrides the filename-derived one and may contain a
+subdirectory. `run_ocr_step()` additionally takes `page` to render a single
+PDF page rather than all 144. Both are covered by tests
+(`test_each_pdf_page_writes_its_own_output`,
+`test_page_outputs_resume_independently`).
 
 
-EXPLICITLY OUT OF SCOPE
------------------------
+OUTPUT LAYOUT
+-------------
 
-* Writing `notes` rows.
-* Writing `transcriptions` rows (the empty native table).
-* JSON-LD export for re-import.
-* A JavaScript Tropy plugin.
+This deviates from the original plan, deliberately. The first sketch proposed
+a per-page directory (`out/<Item>/<file>_p0003/raw_ocr.txt`), which would have
+forked the output contract that the CLI, resume logic and History tab already
+understand. Instead the standard stage-first tree is kept and the *key* is
+made unique:
 
-If write-back is ever revisited, the non-negotiables are: Tropy closed, a
-timestamped copy of `project.tpy` taken first, and dry-run as the default.
+    output/
+      raw_ocr/text/Max Hodann KV File Part 1/KV-2-2339_01_p0001.txt
+      raw_ocr/json/Max Hodann KV File Part 1/KV-2-2339_01_p0001.json
+      cleaned/text/Max Hodann KV File Part 1/KV-2-2339_01_p0001.txt
+      translated/...
+      tropy_manifest.json
+
+`tropy_manifest.json` maps every output key back to its origin, so the link
+from a text file to photo 4 of item 1 survives outside anyone's memory:
+
+    "Max Hodann KV File Part 1/KV-2-2339_01_p0003": {
+      "photo_id": 4, "item_id": 1, "page": 2, "page_number": 3,
+      "filename": "KV-2-2339_01.pdf",
+      "item_title": "Max Hodann KV File Part 1",
+      "source_path": "…/assets/89bf563c….pdf"
+    }
+
+The manifest merges across runs rather than being overwritten.
+
+
+KNOWN LIMITS
+------------
+
+* **Missing assets.** iCloud-backed projects may hold placeholders rather than
+  files. `missing_assets()` reports these up front; the CLI warns and the GUI
+  offers to skip them.
+* **Selections and notes are ignored.** Tropy selections (crops) and existing
+  notes are not read. The 1,101 notes in the ISK project are untouched.
+* **No write-back.** By design. If it is ever revisited the non-negotiables
+  are: Tropy closed, a timestamped copy of `project.tpy` taken first, and
+  dry-run as the default.

@@ -31,13 +31,19 @@ def run_ocr_step(
     skip_ocr: bool = False,
     resume: bool = True,
     force: bool = False,
+    page: int | None = None,
+    stem: str | None = None,
 ) -> dict:
     """Run the OCR stage for one file, or resolve it from existing output.
+
+    `page` selects a single 0-based PDF page; `stem` overrides the output key,
+    which is what keeps per-page outputs from colliding on the filename stem.
 
     Returns the raw_ocr data dict, annotated with `_elapsed` and (when the
     stage did not actually run) `_skipped`.
     """
     f = Path(file_path)
+    key = stem or f.stem
     t0 = time.monotonic()
 
     if skip_ocr:
@@ -48,16 +54,16 @@ def run_ocr_step(
             "extracted_text": "(OCR skipped)",
             "_skipped": True,
         }
-    elif resume and not force and _output_exists("raw_ocr", f.stem, output_dir):
-        log.info("OCR %s [skip — already done]", f.stem)
+    elif resume and not force and _output_exists("raw_ocr", key, output_dir):
+        log.info("OCR %s [skip — already done]", key)
         data = {
             "source_file": str(f),
             "stage": "raw_ocr",
-            "extracted_text": _load_existing_text("raw_ocr", f.stem, output_dir),
+            "extracted_text": _load_existing_text("raw_ocr", key, output_dir),
             "_skipped": True,
         }
     else:
-        data = ocr.perform(str(f), output_dir=output_dir)
+        data = ocr.perform(str(f), output_dir=output_dir, page=page, stem=stem)
 
     data["_elapsed"] = time.monotonic() - t0
     return data
@@ -98,6 +104,7 @@ def run_cleanup_step(
             raw_data["extracted_text"],
             source_file=raw_data["source_file"],
             output_dir=output_dir,
+            stem=stem,
         )
 
     data["_elapsed"] = time.monotonic() - t0
@@ -129,6 +136,7 @@ def run_translate_step(
             cleaned_data["cleaned_text"],
             source_file=cleaned_data["source_file"],
             output_dir=output_dir,
+            stem=stem,
         )
 
     data["_elapsed"] = time.monotonic() - t0

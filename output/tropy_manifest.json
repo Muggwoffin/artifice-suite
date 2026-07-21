@@ -1,0 +1,1930 @@
+{
+  "project": {
+    "name": "ISK Project",
+    "database": "E:\\Tropy\\ISK Project Primary Sources.tropy\\project.tpy",
+    "bundle": "E:\\Tropy\\ISK Project Primary Sources.tropy"
+  },
+  "output_layout": "<stage>/text/<item title>/<file>_p<page>.txt",
+  "pages": {
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0001": {
+      "photo_id": 3630,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0002": {
+      "photo_id": 3631,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 1,
+      "page_number": 2,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0003": {
+      "photo_id": 3632,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 2,
+      "page_number": 3,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0004": {
+      "photo_id": 3633,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 3,
+      "page_number": 4,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0005": {
+      "photo_id": 3634,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 4,
+      "page_number": 5,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0006": {
+      "photo_id": 3635,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 5,
+      "page_number": 6,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0007": {
+      "photo_id": 3636,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 6,
+      "page_number": 7,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0008": {
+      "photo_id": 3637,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 7,
+      "page_number": 8,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0009": {
+      "photo_id": 3638,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 8,
+      "page_number": 9,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0010": {
+      "photo_id": 3639,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 9,
+      "page_number": 10,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0011": {
+      "photo_id": 3640,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 10,
+      "page_number": 11,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0012": {
+      "photo_id": 3641,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 11,
+      "page_number": 12,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0013": {
+      "photo_id": 3642,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 12,
+      "page_number": 13,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0014": {
+      "photo_id": 3643,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 13,
+      "page_number": 14,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0015": {
+      "photo_id": 3644,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 14,
+      "page_number": 15,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0016": {
+      "photo_id": 3645,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 15,
+      "page_number": 16,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0017": {
+      "photo_id": 3646,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 16,
+      "page_number": 17,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0018": {
+      "photo_id": 3647,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 17,
+      "page_number": 18,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0019": {
+      "photo_id": 3648,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 18,
+      "page_number": 19,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0020": {
+      "photo_id": 3649,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 19,
+      "page_number": 20,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0021": {
+      "photo_id": 3650,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 20,
+      "page_number": 21,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0022": {
+      "photo_id": 3651,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 21,
+      "page_number": 22,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0023": {
+      "photo_id": 3652,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 22,
+      "page_number": 23,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0024": {
+      "photo_id": 3653,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 23,
+      "page_number": 24,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0025": {
+      "photo_id": 3654,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 24,
+      "page_number": 25,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0026": {
+      "photo_id": 3655,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 25,
+      "page_number": 26,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0027": {
+      "photo_id": 3656,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 26,
+      "page_number": 27,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0028": {
+      "photo_id": 3657,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 27,
+      "page_number": 28,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0029": {
+      "photo_id": 3658,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 28,
+      "page_number": 29,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0030": {
+      "photo_id": 3659,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 29,
+      "page_number": 30,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0031": {
+      "photo_id": 3660,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 30,
+      "page_number": 31,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0032": {
+      "photo_id": 3661,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 31,
+      "page_number": 32,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0033": {
+      "photo_id": 3662,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 32,
+      "page_number": 33,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0034": {
+      "photo_id": 3663,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 33,
+      "page_number": 34,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0035": {
+      "photo_id": 3664,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 34,
+      "page_number": 35,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0036": {
+      "photo_id": 3665,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 35,
+      "page_number": 36,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0037": {
+      "photo_id": 3666,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 36,
+      "page_number": 37,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0038": {
+      "photo_id": 3667,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 37,
+      "page_number": 38,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0039": {
+      "photo_id": 3668,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 38,
+      "page_number": 39,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0040": {
+      "photo_id": 3669,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 39,
+      "page_number": 40,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0041": {
+      "photo_id": 3670,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 40,
+      "page_number": 41,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0042": {
+      "photo_id": 3671,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 41,
+      "page_number": 42,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0043": {
+      "photo_id": 3672,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 42,
+      "page_number": 43,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0044": {
+      "photo_id": 3673,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 43,
+      "page_number": 44,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0045": {
+      "photo_id": 3674,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 44,
+      "page_number": 45,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0046": {
+      "photo_id": 3675,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 45,
+      "page_number": 46,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0047": {
+      "photo_id": 3676,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 46,
+      "page_number": 47,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0048": {
+      "photo_id": 3677,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 47,
+      "page_number": 48,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0049": {
+      "photo_id": 3678,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 48,
+      "page_number": 49,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0050": {
+      "photo_id": 3679,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 49,
+      "page_number": 50,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0051": {
+      "photo_id": 3680,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 50,
+      "page_number": 51,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0052": {
+      "photo_id": 3681,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 51,
+      "page_number": 52,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0053": {
+      "photo_id": 3682,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 52,
+      "page_number": 53,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0054": {
+      "photo_id": 3683,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 53,
+      "page_number": 54,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0055": {
+      "photo_id": 3684,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 54,
+      "page_number": 55,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0056": {
+      "photo_id": 3685,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 55,
+      "page_number": 56,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0057": {
+      "photo_id": 3686,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 56,
+      "page_number": 57,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0058": {
+      "photo_id": 3687,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 57,
+      "page_number": 58,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0059": {
+      "photo_id": 3688,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 58,
+      "page_number": 59,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0060": {
+      "photo_id": 3689,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 59,
+      "page_number": 60,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0061": {
+      "photo_id": 3690,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 60,
+      "page_number": 61,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0062": {
+      "photo_id": 3691,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 61,
+      "page_number": 62,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0063": {
+      "photo_id": 3692,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 62,
+      "page_number": 63,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (1)_p0064": {
+      "photo_id": 3693,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (1).pdf",
+      "page": 63,
+      "page_number": 64,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0001": {
+      "photo_id": 3569,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0002": {
+      "photo_id": 3570,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 1,
+      "page_number": 2,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0003": {
+      "photo_id": 3571,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 2,
+      "page_number": 3,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0004": {
+      "photo_id": 3572,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 3,
+      "page_number": 4,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0005": {
+      "photo_id": 3573,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 4,
+      "page_number": 5,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0006": {
+      "photo_id": 3574,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 5,
+      "page_number": 6,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0007": {
+      "photo_id": 3575,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 6,
+      "page_number": 7,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0008": {
+      "photo_id": 3576,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 7,
+      "page_number": 8,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0009": {
+      "photo_id": 3577,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 8,
+      "page_number": 9,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0010": {
+      "photo_id": 3578,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 9,
+      "page_number": 10,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0011": {
+      "photo_id": 3579,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 10,
+      "page_number": 11,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0012": {
+      "photo_id": 3580,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 11,
+      "page_number": 12,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0013": {
+      "photo_id": 3581,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 12,
+      "page_number": 13,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0014": {
+      "photo_id": 3582,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 13,
+      "page_number": 14,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0015": {
+      "photo_id": 3583,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 14,
+      "page_number": 15,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0016": {
+      "photo_id": 3584,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 15,
+      "page_number": 16,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0017": {
+      "photo_id": 3585,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 16,
+      "page_number": 17,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0018": {
+      "photo_id": 3586,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 17,
+      "page_number": 18,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0019": {
+      "photo_id": 3587,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 18,
+      "page_number": 19,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0020": {
+      "photo_id": 3588,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 19,
+      "page_number": 20,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0021": {
+      "photo_id": 3589,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 20,
+      "page_number": 21,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0022": {
+      "photo_id": 3590,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 21,
+      "page_number": 22,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0023": {
+      "photo_id": 3591,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 22,
+      "page_number": 23,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0024": {
+      "photo_id": 3592,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 23,
+      "page_number": 24,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0025": {
+      "photo_id": 3593,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 24,
+      "page_number": 25,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0026": {
+      "photo_id": 3594,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 25,
+      "page_number": 26,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0027": {
+      "photo_id": 3595,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 26,
+      "page_number": 27,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0028": {
+      "photo_id": 3596,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 27,
+      "page_number": 28,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0029": {
+      "photo_id": 3597,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 28,
+      "page_number": 29,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0030": {
+      "photo_id": 3598,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 29,
+      "page_number": 30,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0031": {
+      "photo_id": 3599,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 30,
+      "page_number": 31,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0032": {
+      "photo_id": 3600,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 31,
+      "page_number": 32,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0033": {
+      "photo_id": 3601,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 32,
+      "page_number": 33,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0034": {
+      "photo_id": 3602,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 33,
+      "page_number": 34,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0035": {
+      "photo_id": 3603,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 34,
+      "page_number": 35,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0036": {
+      "photo_id": 3604,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 35,
+      "page_number": 36,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0037": {
+      "photo_id": 3605,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 36,
+      "page_number": 37,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0038": {
+      "photo_id": 3606,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 37,
+      "page_number": 38,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0039": {
+      "photo_id": 3607,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 38,
+      "page_number": 39,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0040": {
+      "photo_id": 3608,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 39,
+      "page_number": 40,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0041": {
+      "photo_id": 3609,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 40,
+      "page_number": 41,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0042": {
+      "photo_id": 3610,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 41,
+      "page_number": 42,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0043": {
+      "photo_id": 3611,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 42,
+      "page_number": 43,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0044": {
+      "photo_id": 3612,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 43,
+      "page_number": 44,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0045": {
+      "photo_id": 3613,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 44,
+      "page_number": 45,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0046": {
+      "photo_id": 3614,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 45,
+      "page_number": 46,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0047": {
+      "photo_id": 3615,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 46,
+      "page_number": 47,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0048": {
+      "photo_id": 3616,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 47,
+      "page_number": 48,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0049": {
+      "photo_id": 3617,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 48,
+      "page_number": 49,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0050": {
+      "photo_id": 3618,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 49,
+      "page_number": 50,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0051": {
+      "photo_id": 3619,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 50,
+      "page_number": 51,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0052": {
+      "photo_id": 3620,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 51,
+      "page_number": 52,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0053": {
+      "photo_id": 3621,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 52,
+      "page_number": 53,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0054": {
+      "photo_id": 3622,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 53,
+      "page_number": 54,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0055": {
+      "photo_id": 3623,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 54,
+      "page_number": 55,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0056": {
+      "photo_id": 3624,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 55,
+      "page_number": 56,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0057": {
+      "photo_id": 3625,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 56,
+      "page_number": 57,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0058": {
+      "photo_id": 3626,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 57,
+      "page_number": 58,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0059": {
+      "photo_id": 3627,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 58,
+      "page_number": 59,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481 (2)_p0060": {
+      "photo_id": 3628,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481 (2).pdf",
+      "page": 59,
+      "page_number": 60,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0001": {
+      "photo_id": 3500,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0002": {
+      "photo_id": 3501,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 1,
+      "page_number": 2,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0003": {
+      "photo_id": 3502,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 2,
+      "page_number": 3,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0004": {
+      "photo_id": 3503,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 3,
+      "page_number": 4,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0005": {
+      "photo_id": 3504,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 4,
+      "page_number": 5,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0006": {
+      "photo_id": 3505,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 5,
+      "page_number": 6,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0007": {
+      "photo_id": 3506,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 6,
+      "page_number": 7,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0008": {
+      "photo_id": 3507,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 7,
+      "page_number": 8,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0009": {
+      "photo_id": 3508,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 8,
+      "page_number": 9,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0010": {
+      "photo_id": 3509,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 9,
+      "page_number": 10,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0011": {
+      "photo_id": 3510,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 10,
+      "page_number": 11,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0012": {
+      "photo_id": 3511,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 11,
+      "page_number": 12,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0013": {
+      "photo_id": 3512,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 12,
+      "page_number": 13,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0014": {
+      "photo_id": 3513,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 13,
+      "page_number": 14,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0015": {
+      "photo_id": 3514,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 14,
+      "page_number": 15,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0016": {
+      "photo_id": 3515,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 15,
+      "page_number": 16,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0017": {
+      "photo_id": 3516,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 16,
+      "page_number": 17,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0018": {
+      "photo_id": 3517,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 17,
+      "page_number": 18,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0019": {
+      "photo_id": 3518,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 18,
+      "page_number": 19,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0020": {
+      "photo_id": 3519,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 19,
+      "page_number": 20,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0021": {
+      "photo_id": 3520,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 20,
+      "page_number": 21,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0022": {
+      "photo_id": 3521,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 21,
+      "page_number": 22,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0023": {
+      "photo_id": 3522,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 22,
+      "page_number": 23,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0024": {
+      "photo_id": 3523,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 23,
+      "page_number": 24,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0025": {
+      "photo_id": 3524,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 24,
+      "page_number": 25,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0026": {
+      "photo_id": 3525,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 25,
+      "page_number": 26,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0027": {
+      "photo_id": 3526,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 26,
+      "page_number": 27,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0028": {
+      "photo_id": 3527,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 27,
+      "page_number": 28,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0029": {
+      "photo_id": 3528,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 28,
+      "page_number": 29,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0030": {
+      "photo_id": 3529,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 29,
+      "page_number": 30,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0031": {
+      "photo_id": 3530,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 30,
+      "page_number": 31,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0032": {
+      "photo_id": 3531,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 31,
+      "page_number": 32,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0033": {
+      "photo_id": 3532,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 32,
+      "page_number": 33,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0034": {
+      "photo_id": 3533,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 33,
+      "page_number": 34,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0035": {
+      "photo_id": 3534,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 34,
+      "page_number": 35,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0036": {
+      "photo_id": 3535,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 35,
+      "page_number": 36,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0037": {
+      "photo_id": 3536,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 36,
+      "page_number": 37,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0038": {
+      "photo_id": 3537,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 37,
+      "page_number": 38,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0039": {
+      "photo_id": 3538,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 38,
+      "page_number": 39,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0040": {
+      "photo_id": 3539,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 39,
+      "page_number": 40,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0041": {
+      "photo_id": 3540,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 40,
+      "page_number": 41,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0042": {
+      "photo_id": 3541,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 41,
+      "page_number": 42,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0043": {
+      "photo_id": 3542,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 42,
+      "page_number": 43,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0044": {
+      "photo_id": 3543,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 43,
+      "page_number": 44,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0045": {
+      "photo_id": 3544,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 44,
+      "page_number": 45,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0046": {
+      "photo_id": 3545,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 45,
+      "page_number": 46,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0047": {
+      "photo_id": 3546,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 46,
+      "page_number": 47,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0048": {
+      "photo_id": 3547,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 47,
+      "page_number": 48,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0049": {
+      "photo_id": 3548,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 48,
+      "page_number": 49,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0050": {
+      "photo_id": 3549,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 49,
+      "page_number": 50,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0051": {
+      "photo_id": 3550,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 50,
+      "page_number": 51,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0052": {
+      "photo_id": 3551,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 51,
+      "page_number": 52,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0053": {
+      "photo_id": 3552,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 52,
+      "page_number": 53,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0054": {
+      "photo_id": 3553,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 53,
+      "page_number": 54,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0055": {
+      "photo_id": 3554,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 54,
+      "page_number": 55,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0056": {
+      "photo_id": 3555,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 55,
+      "page_number": 56,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0057": {
+      "photo_id": 3556,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 56,
+      "page_number": 57,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0058": {
+      "photo_id": 3557,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 57,
+      "page_number": 58,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0059": {
+      "photo_id": 3558,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 58,
+      "page_number": 59,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0060": {
+      "photo_id": 3559,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 59,
+      "page_number": 60,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0061": {
+      "photo_id": 3560,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 60,
+      "page_number": 61,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0062": {
+      "photo_id": 3561,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 61,
+      "page_number": 62,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0063": {
+      "photo_id": 3562,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 62,
+      "page_number": 63,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0064": {
+      "photo_id": 3563,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 63,
+      "page_number": 64,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0065": {
+      "photo_id": 3564,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 64,
+      "page_number": 65,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0066": {
+      "photo_id": 3565,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 65,
+      "page_number": 66,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0067": {
+      "photo_id": 3566,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 66,
+      "page_number": 67,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    },
+    "Ernest and Walter Lowenheim KV File/Order Confirmation KV-2-481_p0068": {
+      "photo_id": 3567,
+      "item_id": 3499,
+      "item_title": "Ernest and Walter Lowenheim KV File",
+      "filename": "Order Confirmation KV-2-481.pdf",
+      "page": 67,
+      "page_number": 68,
+      "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+      "mimetype": "application/pdf"
+    }
+  }
+}

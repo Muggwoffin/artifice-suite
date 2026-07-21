@@ -92,6 +92,21 @@ class SettingsView(ttk.Frame):
         self._check_row(card, "Resume (skip existing outputs)", "resume")
         self._check_row(card, "Enable confidence scoring", "confidence_enabled")
 
+        theme_row = ttk.Frame(card, style="Card.TFrame")
+        theme_row.pack(fill=tk.X, pady=(8, 0))
+        ttk.Label(theme_row, text="Appearance:", style="Card.TLabel", width=17,
+                  anchor=tk.W).pack(side=tk.LEFT)
+        self.vars["gui_theme"] = tk.StringVar()
+        theme_combo = ttk.Combobox(theme_row, textvariable=self.vars["gui_theme"],
+                                   values=["paper", "night"], state="readonly",
+                                   width=20)
+        theme_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        theme_combo.bind("<<ComboboxSelected>>", self._on_theme)
+
+        self.theme_hint = ttk.Label(card, text="", style="Card.TLabel",
+                                    foreground=theme.FG_DIM, font=theme.FONT_SMALL)
+        self.theme_hint.pack(anchor=tk.W, pady=(2, 0))
+
     def _build_health(self, parent):
         card = self._card(parent, "Service Health", col=0, row=1)
         self.health_text = tk.Text(
@@ -120,6 +135,12 @@ class SettingsView(ttk.Frame):
     def _on_doc_type(self, _event=None):
         key = self.vars["document_type"].get()
         self.doc_hint.configure(text=DOCUMENT_TYPES.get(key, ""))
+
+    def _on_theme(self, _event=None):
+        self.theme_hint.configure(
+            text="Save, then restart to apply the new appearance.",
+            foreground=theme.WARNING,
+        )
 
     def load(self):
         """Populate widgets from the live config."""

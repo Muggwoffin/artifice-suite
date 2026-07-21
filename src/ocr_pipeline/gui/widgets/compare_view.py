@@ -22,30 +22,36 @@ class ComparePane(ttk.Frame):
         super().__init__(master, style="Card.TFrame")
 
         header = ttk.Frame(self, style="Card.TFrame")
-        header.pack(fill=tk.X, padx=8, pady=(6, 4))
-        ttk.Label(header, text=title, style="Card.TLabel",
-                  font=theme.FONT_BOLD, foreground=theme.ACCENT).pack(side=tk.LEFT)
+        header.pack(fill=tk.X, padx=10, pady=(8, 2))
+        ttk.Label(header, text=title.upper(), style="Card.TLabel",
+                  font=theme.FONT_LABEL, foreground=theme.FG_DIM).pack(side=tk.LEFT)
         self.meta = ttk.Label(header, text="", style="Card.TLabel",
-                              font=theme.FONT_SMALL, foreground=theme.FG_DIM)
+                              font=theme.FONT_LABEL, foreground=theme.FG_DIM)
         self.meta.pack(side=tk.RIGHT)
 
+        ttk.Separator(self, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=10, pady=(4, 0))
+
+        # Serif for the document text: this is a reading surface, and it
+        # matches the body face used on the site.
         self.text = tk.Text(
-            self, bg=theme.LIST_BG, fg=theme.FG, font=theme.FONT,
-            relief=tk.FLAT, bd=0, wrap=tk.WORD, padx=8, pady=6,
+            self, bg=theme.FRAME_BG, fg=theme.FG, font=theme.FONT_BODY,
+            relief=tk.FLAT, bd=0, wrap=tk.WORD, padx=12, pady=10,
             insertbackground=theme.FG, state=tk.DISABLED,
-            selectbackground=theme.SEL_BG,
+            spacing1=1, spacing3=3,
+            selectbackground=theme.SEL_BG, selectforeground=theme.FG,
         )
         self.scroll = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.text.yview)
         self.text.configure(yscrollcommand=self.scroll.set)
-        self.text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(8, 0), pady=(0, 8))
-        self.scroll.pack(side=tk.RIGHT, fill=tk.Y, pady=(0, 8), padx=(0, 8))
+        self.text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(6, 0), pady=(0, 8))
+        self.scroll.pack(side=tk.RIGHT, fill=tk.Y, pady=(0, 8), padx=(0, 6))
 
         self.text.tag_configure("insert_", background=theme.DIFF_INSERT)
         self.text.tag_configure("delete_", background=theme.DIFF_DELETE)
         self.text.tag_configure("replace_", background=theme.DIFF_REPLACE)
-        self.text.tag_configure("marker", background=theme.DIFF_REPLACE,
-                                foreground=theme.WARNING)
-        self.text.tag_configure("empty", foreground=theme.FG_DIM)
+        self.text.tag_configure("marker", background=theme.MARKER_BG,
+                                foreground=theme.FG)
+        self.text.tag_configure("empty", foreground=theme.FG_DIM,
+                                font=theme.FONT_SMALL)
 
     def set_text(self, content: str, placeholder: str = "(not run)") -> None:
         self.text.configure(state=tk.NORMAL)

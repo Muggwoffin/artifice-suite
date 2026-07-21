@@ -49,14 +49,14 @@ class AnalyticsView(ttk.Frame):
 
         tiles = [
             ("Runs", f"{s.get('runs', 0):,}", theme.ACCENT),
-            ("Documents", f"{files:,}", theme.MAUVE),
+            ("Documents", f"{files:,}", theme.GOLD),
             ("Failures", f"{s.get('failed', 0):,}",
              theme.ERROR if s.get("failed") else theme.SUCCESS),
             ("Avg confidence",
              "—" if avg_conf is None else f"{avg_conf:.0f}/100",
              _conf_color(avg_conf)),
             ("Avg per doc",
-             "—" if not files else f"{elapsed / files:.1f}s", theme.TEAL),
+             "—" if not files else f"{elapsed / files:.1f}s", theme.INDIGO),
         ]
 
         for i, (label, value, color) in enumerate(tiles):
@@ -64,11 +64,11 @@ class AnalyticsView(ttk.Frame):
             card = ttk.Frame(self.tiles, style="Card.TFrame")
             card.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else 8, 0))
             ttk.Label(card, text=value, style="Card.TLabel",
-                      font=("Segoe UI", 20, "bold"), foreground=color).pack(
-                anchor=tk.W, padx=14, pady=(10, 0))
-            ttk.Label(card, text=label, style="Card.TLabel",
-                      font=theme.FONT_SMALL, foreground=theme.FG_DIM).pack(
-                anchor=tk.W, padx=14, pady=(0, 10))
+                      font=theme.FONT_STAT, foreground=color).pack(
+                anchor=tk.W, padx=16, pady=(14, 0))
+            ttk.Label(card, text=label.upper(), style="Card.TLabel",
+                      font=theme.FONT_LABEL, foreground=theme.FG_DIM).pack(
+                anchor=tk.W, padx=16, pady=(2, 14))
 
     # --------------------------------------------------------------- drawing
     def _draw(self):
@@ -92,10 +92,13 @@ class AnalyticsView(ttk.Frame):
         self._draw_recent_runs(8, height // 2 + 8, width - 16, height // 2 - 16)
 
     def _panel(self, x, y, w, h, title):
+        """A panel is a sheet of raised paper with a hairline rule."""
         self.canvas.create_rectangle(x, y, x + w, y + h, fill=theme.FRAME_BG,
-                                     outline="")
-        self.canvas.create_text(x + 12, y + 14, text=title, anchor=tk.W,
-                                fill=theme.ACCENT, font=theme.FONT_BOLD)
+                                     outline=theme.RULE)
+        self.canvas.create_text(x + 16, y + 16, text=title.upper(), anchor=tk.W,
+                                fill=theme.FG_DIM, font=theme.FONT_LABEL)
+        self.canvas.create_line(x + 16, y + 30, x + w - 16, y + 30,
+                                fill=theme.RULE)
 
     def _draw_stage_throughput(self, x, y, w, h):
         self._panel(x, y, w, h, "Throughput  (chars / second)")
@@ -110,7 +113,7 @@ class AnalyticsView(ttk.Frame):
             return
 
         peak = max(r[1] for r in rows) or 1
-        colors = {"ocr": theme.ACCENT, "cleanup": theme.MAUVE, "translate": theme.TEAL}
+        colors = {"ocr": theme.ACCENT, "cleanup": theme.GOLD, "translate": theme.INDIGO}
         bar_h = 22
         top = y + 40
         for i, (name, rate, n) in enumerate(rows):

@@ -236,6 +236,165 @@ def pipeline(
         typer.echo(f"Output: {output_dir}/")
 
 
+@app.command("tropy-browse")
+def tropy_browse(
+    project: str = typer.Argument(
+        None, help="Path to a .tropy project (omit to list recent projects)"
+    ),
+):
+    """Browse a Tropy project: its lists, tags and items.
+
+    Read-only — this never writes to the Tropy database.
+    """
+    from src.ocr_pipeline.tropy import TropyProject, recent_projects
+
+    if project is None:
+        found = recent_projects()
+        if not found:
+            typer.echo("No recent Tropy projects found.")
+            raise typer.Exit(code=1)
+        typer.echo("Recent Tropy projects:")
+        for p in found:
+            typer.echo(f"  {p}")
+        return
+
+    with TropyProject(project) as proj:
+        typer.echo(f"Project: {proj.name}   ({proj.db_path})")
+
+        typer.echo("\nLists:")
+        for lst in proj.lists():
+            typer.echo(f"  [{lst.list_id:3}] {lst.label}")
+
+        tags = [t for t in proj.tags() if t[1]]
+        if tags:
+            typer.echo("\nTags:")
+            for name, count in tags:
+                typer.echo(f"  {count:5}  {name}")
+
+        items = proj.items()
+        total_pages = sum(i.photo_count for i in items)
+        typer.echo(f"\nItems: {len(items)}  ({total_pages} pages total)")
+        for item in items[:40]:
+            typer.echo(f"  [{item.item_id:5}] {item.title}  ({item.photo_count}p)")
+        if len(items) > 40:
+            typer.echo(f"  ... and {len(items) - 40} more")
+
+
+@app.command("tropy")
+def tropy(
+    project: str = typer.Argument(help="Path to a .tropy project"),
+    output_dir: str = typer.Option("output", help="Output directory"),
+    list_id: int = typer.Option(None, "--list-id", help="Process one list (and its sub-lists)"),
+    tag: str = typer.Option(None, "--tag", help="Process items carrying this tag"),
+    item_id: list[int] = typer.Option(None, "--item-id", help="Process specific item(s)"),
+    limit: int = typer.Option(None, "--limit", help="Stop after N pages (useful for a trial run)"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="List the work without running it"),
+    skip_cleanup: bool = typer.Option(False, "--skip-cleanup", help="Skip the cleanup stage"),
+    skip_translate: bool = typer.Option(True, "--skip-translate/--translate",
+                                        help="Skip translation (default: skipped)"),
+    force: bool = typer.Option(False, "--force", help="Re-process even if outputs exist"),
+    document_type: str = typer.Option("default", "--doc-type", help="Document type"),
+):
+    """OCR a Tropy project into a folder.
+
+    Outputs land in the normal `<output_dir>/<stage>/text/` tree, keyed by
+    item title and page (`Max Hodann KV File Part 1/KV-2-2339_01_p0002`),
+    plus a `tropy_manifest.json` mapping every output back to its photo.
+
+    The Tropy project is opened read-only and is never modified.
+    """
+    import queue as _queue
+
+    from src.ocr_pipeline import config
+    from src.ocr_pipeline.jobs import JobRunner
+    from src.ocr_pipeline.tropy import TropyProject, pages_to_job_items, write_manifest
+
+    config.apply_overrides({"document_type": document_type})
+
+    with TropyProject(project) as proj:
+        if list_id is not None:
+            ids = proj.item_ids_in_list(list_id)
+            scope = f"list {list_id}"
+        elif tag:
+            ids = proj.item_ids_with_tag(tag)
+            scope = f"tag '{tag}'"
+        elif item_id:
+            ids = list(item_id)
+            scope = f"{len(ids)} item(s)"
+        else:
+            ids = None
+            scope = "whole project"
+
+        if ids is not None and not ids:
+            typer.echo(f"No items matched {scope}.", err=True)
+            raise typer.Exit(code=1)
+
+        pages = proj.pages(ids)
+        if not pages:
+            typer.echo(f"No pages found for {scope}.", err=True)
+            raise typer.Exit(code=1)
+
+        missing = proj.missing_assets(pages)
+        if missing:
+            typer.echo(f"WARNING: {len(missing)} page(s) have no file on disk "
+                       f"(e.g. {missing[0].path.name}) — they will fail.")
+
+        if limit:
+            pages = pages[:limit]
+
+        typer.echo(f"{proj.name}: {scope} -> {len(pages)} page(s)")
+
+        if dry_run:
+            for page in pages[:60]:
+                typer.echo(f"  {page.label:34} -> {page.output_stem}")
+            if len(pages) > 60:
+                typer.echo(f"  ... and {len(pages) - 60} more")
+            typer.echo("\nDry run — nothing was processed.")
+            return
+
+        if not skip_cleanup:
+            errors = check_ollama([cfg("cleanup_model")])
+            if any("Cannot reach" in e for e in errors):
+                typer.echo(f"ERROR: {errors[0]}", err=True)
+                raise typer.Exit(code=1)
+        lm_err = check_lm_studio()
+        if lm_err:
+            typer.echo(f"ERROR: {lm_err}", err=True)
+            raise typer.Exit(code=1)
+
+        manifest = write_manifest(output_dir, proj, pages)
+        typer.echo(f"Manifest: {manifest}")
+
+        stages = {"ocr"}
+        if not skip_cleanup:
+            stages.add("cleanup")
+        if not skip_translate:
+            stages.add("translate")
+
+        items = pages_to_job_items(pages)
+        events: _queue.Queue = _queue.Queue()
+        runner = JobRunner(items, output_dir, stages=stages, force=force,
+                           events=events)
+        runner.start()
+
+        done = 0
+        while True:
+            event = events.get()
+            if event.message:
+                typer.echo(f"  {event.message}")
+            if event.kind == "item_finished":
+                done += 1
+                typer.echo(f"  --- {done}/{len(items)} ---")
+            if event.kind == "run_finished":
+                break
+
+        failed = [i for i in items if i.state.value == "failed"]
+        typer.echo(f"\nComplete: {len(items) - len(failed)} ok, {len(failed)} failed")
+        typer.echo(f"Output: {output_dir}/")
+        if failed:
+            raise typer.Exit(code=1)
+
+
 def _print_batch_summary(result: dict, output_dir: str):
     """Print a detailed summary table for batch processing."""
     files = result.get("files", {})

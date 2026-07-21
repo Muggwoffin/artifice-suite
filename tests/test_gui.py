@@ -327,9 +327,14 @@ def test_marker_ranges_finds_uncertainty_markers():
 # end-to-end: runner -> event pump -> queue table -> history
 # --------------------------------------------------------------------------- #
 
-@pytest.fixture
-def app(tmp_path):
-    """A real App instance pointed at a throwaway history database."""
+@pytest.fixture(scope="module")
+def _gui_root(tmp_path_factory):
+    """One Tk root for the whole module.
+
+    Creating and destroying a root per test intermittently fails on Windows
+    with "tk wasn't installed properly" — repeated root creation in a single
+    process is fragile, so the root is made once and reset between tests.
+    """
     tk = pytest.importorskip("tkinter")
     try:
         from src.ocr_pipeline import config
@@ -338,19 +343,51 @@ def app(tmp_path):
         pytest.skip(f"GUI unavailable: {exc}")
 
     config.load_config()
-    config.apply_overrides({"history_db": str(tmp_path / "history.db")})
+    config.apply_overrides(
+        {"history_db": str(tmp_path_factory.mktemp("gui") / "history.db")}
+    )
     try:
         instance = App()
     except tk.TclError as exc:  # pragma: no cover - headless CI
         pytest.skip(f"no display: {exc}")
 
-    instance.output_var.set(str(tmp_path / "out"))
     yield instance
+
     try:
         instance.history.close()
         instance.destroy()
     except Exception:
         pass
+
+
+@pytest.fixture
+def app(_gui_root, tmp_path):
+    """The shared App, reset to a clean state with a throwaway history db."""
+    import tkinter as tk
+
+    from src.ocr_pipeline.history import HistoryStore
+
+    instance = _gui_root
+    instance.main_view.queue.clear()
+    instance.main_view.log.configure(state=tk.NORMAL)
+    instance.main_view.log.delete("1.0", tk.END)
+    instance.main_view.log.configure(state=tk.DISABLED)
+    instance.runner = None
+    instance.run_id = None
+    instance._run_items = []
+
+    instance.history.close()
+    instance.history = HistoryStore(tmp_path / "history.db")
+    instance.history_view.history = instance.history
+    instance.analytics_view.history = instance.history
+
+    instance.output_var.set(str(tmp_path / "out"))
+    instance.var_ocr.set(True)
+    instance.var_cleanup.set(True)
+    instance.var_translate.set(False)
+    instance.var_force.set(False)
+
+    return instance
 
 
 def _pump_until_idle(app, timeout=10.0):
@@ -393,6 +430,26 @@ def test_end_to_end_run_updates_queue_and_history(mock_o, mock_c, mock_t, app):
     # preview is populated from the in-memory results
     app.preview_item(items[0])
     assert "translated text" in app.preview_view.panes["translated"].text.get("1.0", "end")
+
+
+def test_queue_keeps_pages_sharing_one_pdf_but_drops_true_duplicates(app):
+    """Tropy pages share a path — identity has to be the output stem."""
+    pdf = "C:/archive/assets/abc123.pdf"
+    pages = [
+        JobItem(path=pdf, page=n, output_stem=f"Item/KV-2-1234_p{n + 1:04d}",
+                label=f"KV-2-1234.pdf  p.{n + 1}")
+        for n in range(3)
+    ]
+
+    assert app.main_view.queue.add_items(pages) == 3
+    assert len(app.main_view.queue.tree.get_children()) == 3
+
+    # re-adding the same pages is a no-op
+    assert app.main_view.queue.add_items(list(pages)) == 0
+
+    # the row shows the page label, not the checksum filename
+    first = app.main_view.queue.tree.item(str(id(pages[0])))
+    assert first["values"][0] == "KV-2-1234.pdf  p.1"
 
 
 @patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())

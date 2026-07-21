@@ -85,7 +85,44 @@ def _pdf_to_page_images(pdf_path: Path) -> list[Path]:
     return page_images
 
 
-def perform(input_path: str, *, output_dir: str = "output") -> Dict[str, Any]:
+def _pdf_single_page_image(pdf_path: Path, page_index: int) -> tuple[Path, int]:
+    """Render one page of a PDF. Returns (temp PNG path, total page count).
+
+    Used when a caller addresses pages individually — Tropy stores one row per
+    page, so rendering all 275 pages to OCR one of them would be absurd.
+    """
+    import fitz  # PyMuPDF
+
+    doc = fitz.open(str(pdf_path))
+    total = len(doc)
+    try:
+        if not 0 <= page_index < total:
+            raise ValueError(
+                f"Page {page_index + 1} out of range for {pdf_path.name} "
+                f"({total} page(s))"
+            )
+        pix = doc[page_index].get_pixmap(dpi=200)
+        tmp_dir = Path(tempfile.mkdtemp(prefix="ocr_pdf_"))
+        img_path = tmp_dir / f"page_{page_index + 1:04d}.png"
+        pix.save(str(img_path))
+    finally:
+        doc.close()
+    return img_path, total
+
+
+def perform(
+    input_path: str,
+    *,
+    output_dir: str = "output",
+    page: int | None = None,
+    stem: str | None = None,
+) -> Dict[str, Any]:
+    """OCR a document.
+
+    `page` selects a single 0-based page of a PDF instead of the whole file.
+    `stem` overrides the output filename, and may contain a relative
+    subdirectory (``"Item Title/file_p0002"``) to group results.
+    """
     path = Path(input_path).resolve()
     if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
         raise ValueError(
@@ -96,8 +133,17 @@ def perform(input_path: str, *, output_dir: str = "output") -> Dict[str, Any]:
 
     is_pdf = path.suffix.lower() == ".pdf"
     model = cfg("ocr_model")
+    page_number = 1
 
-    if is_pdf:
+    if is_pdf and page is not None:
+        img_path, num_pages = _pdf_single_page_image(path, page)
+        log.info("OCR page %d/%d of %s", page + 1, num_pages, path.name)
+        try:
+            extracted_text = _ocr_single_image(img_path)
+        finally:
+            img_path.unlink(missing_ok=True)
+        page_number = page + 1
+    elif is_pdf:
         page_images = _pdf_to_page_images(path)
         page_texts = []
         for i, img_path in enumerate(page_images):
@@ -118,9 +164,11 @@ def perform(input_path: str, *, output_dir: str = "output") -> Dict[str, Any]:
     text_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)
 
-    base_name = path.stem
+    base_name = stem or path.stem
     text_path = text_dir / f"{base_name}.txt"
     json_path = json_dir / f"{base_name}.json"
+    text_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(text_path, "w", encoding="utf-8") as f:
         f.write(extracted_text)
@@ -133,7 +181,7 @@ def perform(input_path: str, *, output_dir: str = "output") -> Dict[str, Any]:
         "model": model,
         "ocr_prompt": OCR_PROMPT,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "page": 1,
+        "page": page_number,
         "total_pages": num_pages,
     }
 

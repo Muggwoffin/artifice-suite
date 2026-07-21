@@ -51,7 +51,13 @@ class StageStatus:
 
 @dataclass
 class JobItem:
-    """One file moving through the pipeline."""
+    """One unit of work moving through the pipeline.
+
+    Usually a file, but a Tropy page is one page *inside* a shared PDF — hence
+    `page` (0-based, PDFs only) and `output_stem`, which decouples the output
+    key from the filename. Without that, every page of a checksum-named PDF
+    would write to the same place.
+    """
 
     path: str
     stages: dict[str, StageStatus] = field(default_factory=dict)
@@ -61,6 +67,10 @@ class JobItem:
     attempts: int = 0
     results: dict[str, Any] = field(default_factory=dict)
     error: str = ""
+    page: int | None = None
+    output_stem: str = ""
+    label: str = ""
+    source: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.stages:
@@ -68,11 +78,11 @@ class JobItem:
 
     @property
     def name(self) -> str:
-        return Path(self.path).name
+        return self.label or Path(self.path).name
 
     @property
     def stem(self) -> str:
-        return Path(self.path).stem
+        return self.output_stem or Path(self.path).stem
 
     @property
     def elapsed(self) -> float:
@@ -233,6 +243,8 @@ class JobRunner:
                 skip_ocr="ocr" not in self.stages,
                 resume=self._resume_enabled,
                 force=self.force,
+                page=item.page,
+                stem=item.output_stem or None,
             ),
             chars_key="extracted_text",
         )

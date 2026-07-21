@@ -25,6 +25,7 @@ _DEFAULTS: dict[str, Any] = {
     "document_type": "default",
     # P6: GUI persistence
     "history_db": None,  # defaults to ~/.ocr_pipeline/history.db
+    "gui_theme": "paper",  # "paper" (light) or "night" (dark)
 }
 
 _USER_DIR = Path.home() / ".ocr_pipeline"
@@ -42,6 +43,7 @@ PERSISTED_KEYS = (
     "document_type",
     "confidence_enabled",
     "chunk_max_tokens",
+    "gui_theme",
 )
 
 _config_cache: dict[str, Any] | None = None

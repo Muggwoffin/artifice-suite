@@ -35,17 +35,19 @@ class MainView(ttk.Frame):
 
     # ------------------------------------------------------------- drop zone
     def _build_drop_zone(self):
-        self.drop_frame = tk.Frame(self, bg=theme.ACCENT_DIM, bd=2, relief=tk.RIDGE,
+        self.drop_frame = tk.Frame(self, bg=theme.FRAME_BG, bd=1,
+                                   relief=tk.SOLID, highlightthickness=0,
                                    cursor="hand2")
+        self.drop_frame.configure(highlightbackground=theme.RULE)
         self.drop_frame.pack(fill=tk.X, padx=16, pady=(10, 0))
 
         self.drop_label = tk.Label(
             self.drop_frame,
-            text="⬇  Drop files or folders here — or click to browse  ⬇",
-            font=theme.FONT_BOLD, bg=theme.ACCENT_DIM, fg=theme.ACCENT, pady=12,
+            text="Drop files or folders here, or click to browse",
+            font=theme.FONT, bg=theme.FRAME_BG, fg=theme.FG_DIM, pady=14,
             cursor="hand2",
         )
-        self.drop_label.pack(fill=tk.X, padx=4, pady=4)
+        self.drop_label.pack(fill=tk.X, padx=4, pady=2)
 
         self.drop_frame.drop_target_register(DND_FILES)
         self.drop_frame.dnd_bind("<<Drop>>", self._on_drop)
@@ -55,11 +57,11 @@ class MainView(ttk.Frame):
 
     def _on_drop_enter(self, _event):
         self.drop_frame.configure(bg=theme.SEL_BG)
-        self.drop_label.configure(bg=theme.SEL_BG, fg=theme.SUCCESS)
+        self.drop_label.configure(bg=theme.SEL_BG, fg=theme.ACCENT_DEEP)
 
     def _on_drop_leave(self, _event):
-        self.drop_frame.configure(bg=theme.ACCENT_DIM)
-        self.drop_label.configure(bg=theme.ACCENT_DIM, fg=theme.ACCENT)
+        self.drop_frame.configure(bg=theme.FRAME_BG)
+        self.drop_label.configure(bg=theme.FRAME_BG, fg=theme.FG_DIM)
 
     # ----------------------------------------------------------------- queue
     def _build_queue(self):
@@ -76,6 +78,8 @@ class MainView(ttk.Frame):
 
         ttk.Button(row, text="Browse Files", command=self.browse_files).pack(side=tk.LEFT)
         ttk.Button(row, text="Add Folder", command=self.browse_folder).pack(
+            side=tk.LEFT, padx=(6, 0))
+        ttk.Button(row, text="Add from Tropy…", command=self.add_from_tropy).pack(
             side=tk.LEFT, padx=(6, 0))
         ttk.Button(row, text="Remove Selected", style="Danger.TButton",
                    command=self._remove_selected).pack(side=tk.LEFT, padx=(6, 0))
@@ -133,9 +137,9 @@ class MainView(ttk.Frame):
     # ------------------------------------------------------------------- log
     def _build_log(self):
         self.log = scrolledtext.ScrolledText(
-            self, bg=theme.LIST_BG, fg=theme.FG, font=theme.FONT_SMALL,
+            self, bg=theme.ENTRY_BG, fg=theme.FG_SOFT, font=theme.FONT_MONO,
             height=8, relief=tk.FLAT, bd=0, state=tk.DISABLED,
-            insertbackground=theme.FG, padx=8, pady=4,
+            insertbackground=theme.FG, padx=10, pady=6,
         )
         self.log.pack(fill=tk.BOTH, expand=False, padx=16, pady=(10, 12))
         self.log.tag_configure("success", foreground=theme.SUCCESS)
@@ -186,6 +190,22 @@ class MainView(ttk.Frame):
             if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
         ]
         self._add(files, f"folder {Path(folder).name}")
+
+    def add_from_tropy(self):
+        """Open the Tropy picker and queue whatever it returns."""
+        from .tropy_picker import TropyPicker
+
+        picker = TropyPicker(self.winfo_toplevel(),
+                             output_dir=self.app.output_var.get() or "output")
+        self.wait_window(picker)
+        if not picker.result:
+            return
+
+        added = self.queue.add_items(picker.result)
+        self.update_counts()
+        self.log_message(
+            f"Added {added} page(s) from Tropy "
+            f"(manifest written to the output folder)", "accent")
 
     def _add(self, paths: list[str], source: str):
         added = self.queue.add_paths(paths)

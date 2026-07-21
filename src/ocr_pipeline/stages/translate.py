@@ -112,7 +112,13 @@ def perform(
     *,
     source_file: str = "",
     output_dir: str = "output",
+    stem: str | None = None,
 ) -> Dict[str, Any]:
+    """Translate cleaned text into English.
+
+    `stem` overrides the output filename (derived from `source_file` by
+    default) and may contain a relative subdirectory.
+    """
     doc_type = cfg("document_type")
     log.info("Detecting source language (doc_type=%s)...", doc_type)
     detected_lang = detect_language(cleaned_text, doc_type)
@@ -144,9 +150,11 @@ def perform(
     text_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)
 
-    stem = Path(source_file).stem if source_file else "unknown"
-    text_path = text_dir / f"{stem}.txt"
-    json_path = json_dir / f"{stem}.json"
+    base_name = stem or (Path(source_file).stem if source_file else "unknown")
+    text_path = text_dir / f"{base_name}.txt"
+    json_path = json_dir / f"{base_name}.json"
+    text_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(text_path, "w", encoding="utf-8") as f:
         f.write(translated_text)

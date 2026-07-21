@@ -37,7 +37,10 @@ class App(TkinterDnD.Tk):
         config.load_config()
         config.apply_overrides(config.load_user_settings())
 
-        theme.apply(self)
+        # The palette is bound before any widget is built: tk widgets take
+        # their colours at construction, so switching needs a restart.
+        theme.apply(self, config.get("gui_theme") or "paper")
+        self.configure(bg=theme.BG)
 
         self.history = HistoryStore()
         self.events: queue.Queue = queue.Queue()
@@ -58,13 +61,15 @@ class App(TkinterDnD.Tk):
     # ------------------------------------------------------------------- UI
     def _build_ui(self):
         header = ttk.Frame(self)
-        header.pack(fill=tk.X, padx=16, pady=(12, 0))
+        header.pack(fill=tk.X, padx=22, pady=(16, 0))
         ttk.Label(header, text="OCR Pipeline", style="Title.TLabel").pack(side=tk.LEFT)
-        ttk.Label(header, text="local-first  ·  LM Studio + Ollama",
-                  style="Dim.TLabel").pack(side=tk.LEFT, padx=(12, 0))
+        ttk.Label(header, text="LOCAL-FIRST  ·  LM STUDIO + OLLAMA",
+                  style="Label.TLabel").pack(side=tk.LEFT, padx=(14, 0), pady=(8, 0))
+
+        ttk.Separator(self, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=22, pady=(10, 0))
 
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=8, pady=(8, 0))
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=14, pady=(4, 0))
 
         self.main_view = MainView(self.notebook, self)
         self.preview_view = CompareView(self.notebook)
@@ -81,18 +86,21 @@ class App(TkinterDnD.Tk):
         self._build_status_bar()
 
     def _build_status_bar(self):
-        bar = tk.Frame(self, bg=theme.ACCENT_DIM)
+        rule = tk.Frame(self, bg=theme.RULE, height=1)
+        rule.pack(fill=tk.X, side=tk.BOTTOM)
+
+        bar = tk.Frame(self, bg=theme.BG)
         bar.pack(fill=tk.X, side=tk.BOTTOM)
 
         self.status_var = tk.StringVar(value="Ready")
-        tk.Label(bar, textvariable=self.status_var, font=theme.FONT,
-                 bg=theme.ACCENT_DIM, fg=theme.FG, anchor=tk.W,
-                 padx=12, pady=4).pack(side=tk.LEFT)
+        tk.Label(bar, textvariable=self.status_var, font=theme.FONT_SMALL,
+                 bg=theme.BG, fg=theme.FG_SOFT, anchor=tk.W,
+                 padx=22, pady=7).pack(side=tk.LEFT)
 
         self.stage_var = tk.StringVar(value="")
         tk.Label(bar, textvariable=self.stage_var, font=theme.FONT_SMALL,
-                 bg=theme.ACCENT_DIM, fg=theme.FG_DIM, anchor=tk.E,
-                 padx=12, pady=4).pack(side=tk.RIGHT)
+                 bg=theme.BG, fg=theme.FG_DIM, anchor=tk.E,
+                 padx=22, pady=7).pack(side=tk.RIGHT)
 
     # --------------------------------------------------------------- running
     def start_run(self, items: list[JobItem] | None = None):

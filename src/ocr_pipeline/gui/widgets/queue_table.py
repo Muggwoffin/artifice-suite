@@ -43,8 +43,9 @@ class QueueTable(ttk.Frame):
             self, columns=COLUMNS, show="headings", selectmode="extended",
         )
         for col in COLUMNS:
-            self.tree.heading(col, text=HEADINGS[col])
             anchor = tk.W if col in ("name", "status") else tk.CENTER
+            # Heading and cell share an anchor, so columns read as columns.
+            self.tree.heading(col, text=HEADINGS[col].upper(), anchor=anchor)
             self.tree.column(col, width=WIDTHS[col], anchor=anchor,
                              stretch=(col == "name"))
 
@@ -93,14 +94,22 @@ class QueueTable(ttk.Frame):
 
     def add_paths(self, paths: list[str]) -> int:
         """Append new files, ignoring duplicates. Returns the number added."""
-        known = {i.path for i in self.items}
+        return self.add_items([JobItem(path=p) for p in paths])
+
+    def add_items(self, items: list[JobItem]) -> int:
+        """Append pre-built items, ignoring duplicates.
+
+        Identity is the output stem, not the path: every page of a Tropy PDF
+        shares one path but is a distinct unit of work.
+        """
+        known = {(i.path, i.stem) for i in self.items}
         added = 0
-        for path in paths:
-            if path in known:
+        for item in items:
+            key = (item.path, item.stem)
+            if key in known:
                 continue
-            item = JobItem(path=path)
             self.items.append(item)
-            known.add(path)
+            known.add(key)
             row = str(id(item))
             self._rows[row] = item
             self.tree.insert("", tk.END, iid=row, values=self._values(item))
@@ -157,7 +166,7 @@ class QueueTable(ttk.Frame):
 
     # -------------------------------------------------------------- helpers
     def _values(self, item: JobItem) -> tuple:
-        cells = [Path(item.path).name]
+        cells = [item.name]
         for stage in STAGES:
             cells.append(self._stage_cell(item, stage))
         cells.append("—" if item.confidence is None else f"{item.confidence}")
