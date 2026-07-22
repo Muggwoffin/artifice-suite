@@ -1,8 +1,0 @@
-When marking up documents for copying please tick the appropriate box.
-
-[ ] Right hand page only
-[ ] Left hand page only
-[ ] Right hand page start
-[ ] Left hand page start
-[ ] Right hand page stop
-[ ] Left hand page stop
