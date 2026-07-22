@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\e23729916b8433ef070e5eadb5cbf6a0.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942. 15B.\n\nExtracts:-\n\nLOCAL 212\nCYIPHER TELEGRAM RECD. FROM BERNE DESP. 1206 23.1.43\n\nCOPY FOR X.\n\nTO: AD/X (copies to D/R & X).\n\nFROM: J.\n\n28th January, 1943.\nJ/IT/4205.\n\nYou will have seen from Berne telegram 0970 that J.Q. feels that it is incumbent upon him to transmit such messages as he can handle from Robert for Bolair and Co.\n\n2. I trust that your contacts here will be ready to realise the value of this service and will give you a worth while return.\n\nUnglueck dagewesen.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:45:25.118009+00:00",
+  "page": 1,
+  "total_pages": 1
+}

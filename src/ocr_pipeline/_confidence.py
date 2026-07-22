@@ -96,10 +96,14 @@ def _call_self_assessment(source_text: str, output_text: str) -> dict[str, Any]:
         output_text=output_text[:1000],
     )
 
-    response = ollama.chat(
+    from src.ocr_pipeline import _llm
+
+    response = _llm.chat(
+        ollama.chat,
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        options={"temperature": 0},
+        temperature=0,
+        think=cfg("ollama_think"),
     )
 
     raw = response.message.content.strip()

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\1ccb7980eb7fdc5a27dc9ff0b7119333.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "XFG/237 (Copy XF/45)\n\nX Discussed this (See No.1584 from Berne) with J and D/R. on 8.6.43. and it was agreed by all that:-\n\nLOCAL 119\nCIPHER TELEGRAM DESPATCHED TO BERNE 4.6.43\n3378\n1. A FURTHER BATCH OF CUTTINGS FROM ROBERT ARRIVED VIA STOCKHOLM.\n2. STOCKHOLM ASKS THAT MATERIAL SHOULD BE COLLECTED AND SENT IN BATCHES AT INTERVALS OF A FORTNIGHT.\n3. A STEADY DAILY FLOW WILL EMBARRASS POSTBOX.\n\nTP AT 2229 4.6.43. JC+++\nORIGIN J.\n\nIt is also, if possible, intended to send on to Robert\n\n/over",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:35:52.725546+00:00",
+  "page": 1,
+  "total_pages": 1
+}

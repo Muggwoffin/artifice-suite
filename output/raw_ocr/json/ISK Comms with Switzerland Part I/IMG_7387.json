@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a9eab8d2d41aa9b634ce51404a03aa0c.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Pour simplifier l'aide que vous pouvez m'apporter dans la question du transfert de fonds de Londres en Suisse il suffit que l'un de vos repr\u00e9sentants \u00e0 Londres visite Monsieur [censur\u00e9], Welwyn Garden City, Herts. et lui demande de lui remettre 300 Livres que vous me donnerez ici en Francs Suisses. Dans la lettre que je vous remets aujourd'hui pour j'explique les raisons de cette demande de fonds.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:18:50.279442+00:00",
+  "page": 1,
+  "total_pages": 1
+}

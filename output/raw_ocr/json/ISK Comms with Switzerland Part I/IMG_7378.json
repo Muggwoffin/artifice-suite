@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\810b54b265086b4b74bf56af7799afce.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "NR 11.\nGENEVA. S.O.E. 18.12.41. 2134 BST. ORIGIN: C.O.S. A.C.S.S.\n19.12.41. 1355 BST. S.O.E.(42)\nCXG 812.\n\nFOLLOWING FOR S.O.E. FROM J.Q.\nA. YOUR TELEGRAM NO.386 OF DECEMBER 13TH PARA.1. THIS IS BEING DONE.\nB. HAVE ASKED Y.P. TO INCLUDE 25000 REPEAT 25000 FRANCS FOR MY ACCOUNT IN THIS MONTH'S TRANSFER TO CREDIT SUISSE. PLEASE SEE COMPETENT AUTHORITIES.\nC. Z.M. IS PAYING 300 FRANCS MONTHLY TO PERSON MENTIONED PARA. C. MY TELEGRAM 794 OF DECEMBER 14TH. REQUEST YOUR APPROVAL PRO/SURTHER/ FOR FURTHER 700 FRANCS MONTHLY FROM US. PLEASE REPLY URGENTLY.\n\nTP AT 1850 21/206/ 21.12.41. KMB",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:17:00.842299+00:00",
+  "page": 1,
+  "total_pages": 1
+}

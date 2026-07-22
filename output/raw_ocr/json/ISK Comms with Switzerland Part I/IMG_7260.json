@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\5e33341e072a32325af89f2c825746b9.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942.\n\nExtracts:-\n\nWuerdest Du bitte Hans noch einmal nach dem Zugfuehrer\nund die frueheren Angaben verloren\n\nCopy.\nLetter No. \"from Switzerland.\"\nFROM: ROBERT\nTO: WILLI.\n21.10.1942.\n\nLieber Freund!\n\nGestern sah ich unseren Gewaehrsmann fuer die Flugblatt-Uebermittlung nach Dld. Er sagte mir folgendes:\n\n27th November 1942.\nFROM: AD/X.\n\nTO: X. / To see.\nCopy to D/R.\n\nYou will have seen from recent correspondence that ROBERT asked YVON to see WILLI. I thought it would be better for me to bring them together than to leave them to themselves. They met today and had a general talk about conditions in France. YVON had nothing to say which we did not know already, but it was obvious that ROBERT had been most anxious for him to see WILLI. It is evident that ROBERT relies very much on WILLI's judgment and support.\n\nJ.P.\np.p.\n\nGefangenen und dem Baufuehrer, der ihnen taeglich etwas zu essen mitbrachte.\n\nDies fuer heute. In den naechsten Tagen hoffen wir unsere alte lungenkranke Bekannte zu sehen, die wieder in die Schweiz zurueckgekehrt ist, auf die wir schon seit einem Jahre gewartet haben.\n\nHerzliche Gruesse.\n\nmit dem sie ein Wort sprechen kann. Und dann waere evtl. das Unglueck dagewesen.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.\n\nverschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:49:29.105514+00:00",
+  "page": 1,
+  "total_pages": 1
+}

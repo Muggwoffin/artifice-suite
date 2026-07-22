@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\52f08ec42b982021ec619afafed89e9e.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "TO: AD/X\nFROM: X/G\n4th May, 1943.\n\nLOCAL 99\nCIPHER TELEGRAM FROM BERNE DESPATCHED 1430 4.5.43.\nRECEIVED 1930 4.5.43.\n\nNO 1411\nFROM ROBERT TO ECLAIR\n1. GRIMMINGER OF STUTTGART - BOTNANG, BOLLINGER AND BA?DER OF FREIBURG WHO HAVE BEEN SENTENCED TO LONG TERMS ARE ALL OLD SOCIALISTS WHO FOUGHT NAZIS. (THEY MAY POSSIBLY HAVE BEEN DISTRIBUTING OUR PAMPHLETS WHICH GO REGULARLY TO SOUTH GERMANY)\n2. DONOT USE ON RADIO.\n\nTP AT 04 04 5.9.43 DEW J. F. DR.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:38:50.861042+00:00",
+  "page": 1,
+  "total_pages": 1
+}

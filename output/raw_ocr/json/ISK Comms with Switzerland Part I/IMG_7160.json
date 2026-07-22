@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\4df5ba36b2298ba0f0906e10314851cd.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Notes on discussion with J. and D/R, in which we agree on the lines we should like Robert to follow in respect of telegram 1584, propaganda among French workers in Germany, etc.\n\nTelegram 1612 from Charles to Eclair saying one envelope for transmission through Swedish Legation in Berne, thence to Stockholm, handed in June 5th.\n\nTelegram 3378 to Berne saying material being sent via Stockholm should be collected and sent in batches at intervals of a fortnight.\n\n(File CLOSED TO VOLUME II).\n\nXFG/237 (Copy XF/45)\nX Discussed this (See No D/R. on 8.6.43. and it wa\n\nLOCAL 119\nCIPHER TELEGRAM DESPATCHED\n3378\n1. A FURTHER BATCH OF C\n2. STOCKHOLM ASKS THAT M BATCHES AT INTERVALS\n3. A STEADY DAILY FLOW V\nTP AT 2229 4.6.43.\nORIGIN J.\n\nIt is also, if possible,",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:35:38.827235+00:00",
+  "page": 1,
+  "total_pages": 1
+}

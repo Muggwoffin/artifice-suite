@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\22d256eb088b15068152d1449a767dd1.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "LOCAL 219\nCIPHER TELEGRAM FROM BERNE\nDESP 1253 18.5.43\nRECD 1755 18.5.43\n\nNO 1499\nROBERT TO E? CLAIR\n\nFOLLOWING FOR MIER FROM HIS BROTHER ANTON. BEGINS ALL ARRANGEMENTS HAVE BEEN MADE FOR HUBERT WHO WILL DOUBTLESS ARRIVE SOON NO INFORMATION RECEIVED FROM BRATSCHI SEND INFORMATION AND MISSION ORDERS FOR HUBERT AND MYSELF BY WILLI EICHLER CHANNEL\nMESSAGE ENDS\n\nTP 1923 18.5.43 MLC",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:37:49.032999+00:00",
+  "page": 1,
+  "total_pages": 1
+}

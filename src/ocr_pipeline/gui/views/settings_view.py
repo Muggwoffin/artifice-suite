@@ -91,6 +91,10 @@ class SettingsView(ttk.Frame):
         self._entry_row(card, "Chunk max tokens:", "chunk_max_tokens", width=8)
         self._check_row(card, "Resume (skip existing outputs)", "resume")
         self._check_row(card, "Enable confidence scoring", "confidence_enabled")
+        self._check_row(card, "Model reasoning (slow — see README)", "ollama_think")
+        ttk.Label(card, text="Reasoning costs ~13x on cleanup for no gain.",
+                  style="Card.TLabel", foreground=theme.FG_DIM,
+                  font=theme.FONT_SMALL).pack(anchor=tk.W, pady=(0, 2))
 
         theme_row = ttk.Frame(card, style="Card.TFrame")
         theme_row.pack(fill=tk.X, pady=(8, 0))

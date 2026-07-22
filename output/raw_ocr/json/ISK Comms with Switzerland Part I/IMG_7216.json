@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\642fd18b6f79707718678f64c01e3cca.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "COUNTRY: UNITED STATES\nSOURCE: G.400\n\nLONDON REPORT NO: 80/893\n10th February, 1943.\n\nMrs. Levinsky-Pfister has handed to us the enclosed letter addressed\n\n1st March, 1943.\nJ/SW/4338.\nFROM: J.\n\nTO:\n\nEnclosed herewith material received presumably from Robert for passing to Willi ther\n2. You will notice that it has apparently been checked and censored.\n3. Leave you to take necessary steps regarding British censorship.\n\nonly Newspaper, Periodicals.\nSend to AD/X.1. for transmiss in 1.1.43.\n\nas we could see from casual remarks of R. in different notes, his preoccupations and general opinions.\n\nAs you will have seen from my letter to R., our arrangements",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:43:05.617696+00:00",
+  "page": 1,
+  "total_pages": 1
+}

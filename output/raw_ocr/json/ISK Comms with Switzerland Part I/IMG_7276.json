@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\cfbc65e004a91456fae0e4a9b09d442b.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Aber zum Gl\u00fcck h\u00f6rt man immer wieder von Leuten, die die ausl\u00e4ndischen Sender h\u00f6ren. So erz\u00e4hlte ein Beamter, er h\u00f6re mit seinen beiden Kollegen nachts im Keller.\n\nWie knapp \u00fcbrigens die Lebensmittelversorgung dr\u00fcben sein muss, geht aus der Tatsache hervor, dass jetzt in der besten Gem\u00fcse- und Obstzeit eine Bekannte einen ruchenden Dankbrief erhielt von ihrer Mutter, der sie von jenseits der Grenze aus einen Kopf Rotkohl, einige Kartoffeln und Tomaten hatte senden lassen. Immer wieder kam die Mutter darauf zur\u00fcck, wie herrlich das P\u00e4ckchen gewesen sei. Und gleich dazu: die Leute, die das Paket absandten, jammern nun, sie h\u00e4tten immer noch nicht das Packmaterial zur\u00fcck erhalten, darauf k\u00f6nnen sie aber keinesfalls verzichten, obgleich die alte Mutter nur schwer gehen und nicht selber auf die Post gehen kann. Der Karton und die Schnur sind unersetzbare Kostbarkeiten, auf deren R\u00fcckgabe man besteht!\n\nNach wie vor h\u00f6rt man, dass in Italien die Deutschen am meisten verhasst sind.\n\nVielleicht interessiert noch, was die Rheinschiffe und Schlepper bef\u00f6rdern: Aus Elsass und Belgien kommen Eisen und Stahl nach Strassburg und werden von dort per Schiff nach Basel transportiert (t\u00e4glich 20-25 Rheinschiffe und Schlepper mit einer Ladung von je 800 bis 1500 t). In Basel werden die Eisen- und Stahlbarren auf italienische G\u00fcterz\u00fcge verladen und nach Italien gebracht zur Herstellung von Panzerlatten.\n\nHerzliche Gr\u00fc\u00dfe.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:52:31.275064+00:00",
+  "page": 1,
+  "total_pages": 1
+}

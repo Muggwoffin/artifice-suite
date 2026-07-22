@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\96eeb9d710681c9dabcc574fa4326373.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Notes on discussion with J. and D/R, in which we agree on the lines we should like Robert to follow in respect of telegram 1584, propaganda among French workers in Germany, etc.\n\na summary of the three lectures at Group B in the form of lecture notes which, in turn can be passed on to the French organisers inside Germany.\n\nLOCAL 81\nCIPHER TELEGRAM DESPATCHED TO 3375\n1. YOUR 1580 NOTED ROBERT NO\n2. YOUR 1581 WE SHOULD BE IN OF SUCH REPORTS\n3. YOUR 1582 NO KNOWLEDGE GA KNOWS A NUMBER OF NAMES OF M AS THIS GROUP HAS BEEN SEVER BE TRAITOR STOP SUGGEST YOU AND WIRE US ANSWER ALSO SEN\n4. YOUR 1584 EXCELLENT PLE\n5. YOUR 1585 NOTED\n6. YOUR 1586 VERY SORRY A TO RECOVER STRENGTH OR WOU KNOW IMMEDIATELY STOP HAVE ALSO WIRED PRESCRIPTION ST\n7. YOUR 1589 VERY GLAD TO NIGHTS CAN ONLY DELIVER IN APPROXIMATELY MONTLUCON B GLADLY STUDY DROPPING OPE YOUR PARA 3 NICE WORK\nTP AT 1942 4.6.\nORIGIN F AND J\nSUNDAY ACKNOWLEDGEMENTS",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:36:17.457562+00:00",
+  "page": 1,
+  "total_pages": 1
+}

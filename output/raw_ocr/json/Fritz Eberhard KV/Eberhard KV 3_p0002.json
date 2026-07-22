@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3a50cf10b688315cccd916f71e58b224.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nSUBJECT:-\n\nRUSSELL Mr. H. @ Hellmut von RAUSCHENPLATT.\n\nExtract from list of aliens employed by P.I.D. List sent to D.D.S.(3) by D.1.\n\nMr. H. RUSSELL...... German introduced by Mr. Murray.\n\nOutstations. MARYLAND.\n\nNo action without reference to Mr. Hollis.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T14:44:47.082201+00:00",
+  "page": 2,
+  "total_pages": 24
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\c1eff65232b816da7774e1b8590ec987.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "LETTER NO. 5. FROM SWITZERLAND.\n\nCOPY.\n\nL. Willi;\nDieser Bericht stammt nicht aus meinen Informationen sondern von einem Menschen\n\nWith reference to our telephone conversation to-day:-\n\n1. As you know, S.O.2. receive considerable help from the International Transport Workers Federation and they are most anxious to help them in return in any way they can.\n\n2. The I.T.F. have reported that Erhardt KONOPKA, August HAAS and the latter's son were on board the French steamer, \"WINNIPEG\", which was intercepted by a Dutch naval vessel on her way to Martinique.\n\nThey state that these three individuals are regarded by them as being absolutely trustworthy and anti-Hitler and all they ask is that the appropriate Authorities should be informed that they are alright and should be treated kindly. It is understood that these people are now in Trinidad.\n\n3. I would be very grateful if you could send a message to your representative in Trinidad to the above effect.\n\nD/T\n26.6.41.\n\nDie deutsche Regierung \u00fcbergibt durch de Brinon, den General-Delegierten der franz\u00f6sischen Regierung in Paris, die Akten der verlangten Personen. Diese Akten gehen sofort nach Empfang von Vichy an einen Zentralstelle in Clermont-Gerrand, in der Deutschland durch einen Gestapobeamten vertreten sein soll, der ein Einblicksrecht in die gesamte Korrespondenz und den ganzen Gesch\u00e4ftsgang hat. Der franz\u00f6sischen Polizei wird eine Frist von sieben Tagen gegeben, die Leute ausfindig zu machen. Nach Verhaf-",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:27:22.694364+00:00",
+  "page": 1,
+  "total_pages": 1
+}

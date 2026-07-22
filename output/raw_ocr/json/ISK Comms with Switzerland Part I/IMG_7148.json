@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d97f16355c4b7eea949efbf641abee76.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "ARCHIVES\n\nFILE NUMBER\nS.O.E.\nGERMANY No. 113.\n\nSUBJECT\nGERMANY\n\nVOLUME\n(formerly XF/G/237 vol. 1)\n\nFROM 23.5.41.\n9.6.43.\n\nTO\n\nI.S.K. Communications with Switzerland.\n\nHS 6/653\n13820093\nReturn by (24/04/2024 13:11:20)\n9672790 (Dr Maurice Casey)\n\nClosure status: Open\n\nS 13/03/2024 13:11:20",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:04:12.094591+00:00",
+  "page": 1,
+  "total_pages": 1
+}

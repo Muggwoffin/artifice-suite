@@ -14,6 +14,16 @@ dependencies = [
     "tkinterdnd2",
 ]
 
+[project.optional-dependencies]
+# The tkinter GUI (ocr_pipeline_gui) needs none of these. Only the web
+# frontend spike (ocr_pipeline_web) does.
+web = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pywebview",
+]
+
 [project.scripts]
 ocr_pipeline = "ocr_pipeline.cli:app"
 ocr_pipeline_gui = "ocr_pipeline.gui:main"
+ocr_pipeline_web = "ocr_pipeline.web.server:main"

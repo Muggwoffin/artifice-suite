@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f27ea7ee68a48ffad8e4b986b6bb89cd.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Verordnung ueber die Rueckkehr von Fluechtlingen nach dem Elsass vom 20. April 1942.\n\nIm Rahmen der Neuerordnung des Elsass und im Interesse seines geordneten Aufbaus wird zum endgueltigen Abschluss der Rueckfuehrung der aus Anlass der Kriegsereignisse aus dem Elsass gefluechteten Bevoelkerung verordnet:\n\nLetter No. 55 from Switzerland, welche wollen,\n\nMein lieber Willi, 3.8.42.\n\nDieses Rundschreiben einer Eisenbahndirektion ist interessant, weil es zeigt wie die Nazis sich auf eine englische Landungsoperation des Englaender vorbereiten.\n\n3.8.42.\n\nEisenbahnbetriebsdirektion, Bordeaux E, den 2. Mai 1942.\n\nTO: L/IX\nFROM: X\n\nThe attached have been received from a good contact of ours in Switzerland.\n\nWe thought they might be of interest and suggest you pass them on as you think fit.\n\nder letzteren folgt weitere Verfuegung.\n\ngez.\nD.\n\nVerordnung ueber die Rueckkehr von Fluechtlingen.....\n\nPara 1. 1) Die Rueckkehrgenehmigung ist schriftlich beim Chef der Zivilverwaltung im Elsass (Abteilung fuer Bauwesen, Fluechtlingsangelegenheiten) oder beim Militaerbefehlshaber in Frankreich (Abt. VI in Fluechtlingsangelegenheiten) in Paris oder bei den deutschen Generalkonsulaten oder den deutschen Rueckfuehrungsbeauftragten im unbesetzten Frankreich zu beantragen. Der Antrag kann sich auch auf einen nicht deutschstaemmigen Ehegatten erstrecken, soweit er nicht Jude ist.\n\n/bitte wenden",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:01:29.278430+00:00",
+  "page": 1,
+  "total_pages": 1
+}

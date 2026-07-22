@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8c7048f1c8b18e3fd29e8d11f70c032a.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "LOCAL 101\nCIPHER TELEGRAM DESPATCHED TO BERNE 29.5.43\n3352\nYOUR 1537\n\n1. ALBERT SUGGESTS BRIEF URGENT INSTRUCTIONS CONTINUE TO COME BY ROBERT'S INTERMEDIARY BUT REPLIES TO HIS AND CHENE'S REPORTS AND DOCUMENTS PUBLISHED IN FRANCE BEING SENT BY USUAL CHANNELS SHOULD BE ADDRESSED TO C.G.T. BY NAME. STRONGLY ADVISES EDITION JOURNAL OR BULLETIN WITH TITLE C.G.T.\n\n2. REASSURE ROBERT THAT NO NEEDLESS DELAY HOLDS UP\n\nTP AT 2335 29.5.43 EMC",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:36:50.318082+00:00",
+  "page": 1,
+  "total_pages": 1
+}

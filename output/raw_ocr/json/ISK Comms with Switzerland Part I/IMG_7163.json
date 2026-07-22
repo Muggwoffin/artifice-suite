@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e88c729af6a642b605287c858dcfb00.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "XFG/237 (Copy XF/45)\n\nX Discussed this (See No.1584 from Berne) with J and D/R. on 8.6.43. and it was agreed by all that:-\n\nLOCAL 782\nCIPHER TELEGRAM RECEIVED FROM BERNE DESP 1427 8.6.43\n1612\nRECD 2340 9.6.43\n\nFROM CHARLES TO ECLAIR\n\n1. REFERENCE YOUR TELEGRAM NO.3345 PARA.2. ONE ENVELOPE HANDLED IN JUNE 5TH. I WILL NUMBER THESE CONSIGNMENTS. PLEASE ACKNOWLEDGE.\n\n2. PLEASE GET BORIS LOURIE OF ANGLO ASIATIC COMPANY LTD. 23/26 ST. DUNSTAN'S HILL, E.C.3. TO GIVE YOU \u00a360 ON BEHALF OF BASIL VISSOTSKY REPEAT VISSOTSKY. MENTION GAWRONSKI'S REPEAT GAWRONSKI'S LETTER OF MARCH 8TH 1943 AND HIS TELEGRAM OF MAY 12TH. ADVISE ME ON RECEIPT SO THAT I CAN PAY EQUIVALENT TO REFUGEE HERE. KEEP MONEY FOR OUR WORK.\n\nTP AT 0251 9.6.43. JC+++\n\ntrained men to organise the Frenchmen in subversive work.\n\nIt is also, if possible, intended to send on to Robert\n\n/over",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:36:01.194343+00:00",
+  "page": 1,
+  "total_pages": 1
+}

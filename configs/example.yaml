@@ -19,3 +19,16 @@ translate_enabled: true
 # Batch processing
 resume: true                # skip stages if output already exists
 max_ocr_workers: 2          # concurrent OCR requests to LM Studio
+
+# Throughput
+# Reasoning models (gemma4:12b included) emit a chain-of-thought block before
+# answering. On mechanical OCR cleanup that is pure overhead: measured on a real
+# archival page, 7,664 tokens generated for 442 tokens of output — about 13x the
+# wall-clock time, for output that was no better. Leave this false unless you
+# swap in a model whose reasoning you actually want.
+ollama_think: false
+
+# Hard ceiling on tokens generated per call (null = no cap). A runaway guard.
+# Leave unset unless you have actually seen one: a cap that bites truncates the
+# document silently.
+max_output_tokens: null

@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 import ollama
 
+from src.ocr_pipeline import _guard, _llm
 from src.ocr_pipeline._chunking import chunk_text, reassemble, estimate_tokens
 from src.ocr_pipeline._logging import get_logger
 from src.ocr_pipeline._prompts import get_cleanup_prompt
@@ -24,13 +25,16 @@ def _call_cleanup_chunk(
     user_prompt = user_template.replace("{raw_text}", raw_text)
     model = cfg("cleanup_model")
 
-    response = ollama.chat(
+    response = _llm.chat(
+        ollama.chat,
         model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        options={"temperature": 0},
+        temperature=0,
+        think=cfg("ollama_think"),
+        num_predict=cfg("max_output_tokens"),
     )
 
     return response.message.content
@@ -85,7 +89,12 @@ def perform(
     model = cfg("cleanup_model")
     log.info("Cleaning with %s (doc_type=%s)", model, doc_type)
 
-    cleaned_text = _cleanup_with_chunking(raw_text, system_prompt, user_template)
+    model_text = _cleanup_with_chunking(raw_text, system_prompt, user_template)
+
+    # The guard may reject the model's output and keep the raw text. The
+    # rejected version is preserved in the JSON rather than discarded, so a
+    # borderline page can be reviewed in the GUI instead of silently lost.
+    cleaned_text, guard_result = _guard.apply(raw_text, model_text)
 
     base_output_dir = Path(output_dir)
     text_dir = base_output_dir / "cleaned" / "text"
@@ -113,10 +122,17 @@ def perform(
         "system_prompt": system_prompt,
         "document_type": doc_type,
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "guard": guard_result.to_dict(),
     }
+    if not guard_result.ok:
+        data["rejected_cleaned_text"] = model_text
 
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
-    log.info("Cleanup complete (%d -> %d chars)", len(raw_text), len(cleaned_text))
+    if guard_result.ok:
+        log.info("Cleanup complete (%d -> %d chars)", len(raw_text), len(cleaned_text))
+    else:
+        log.info("Cleanup rejected for %s, raw text kept (%d chars)",
+                 base_name, len(cleaned_text))
     return data

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\384535c2ab04ae785f8b6be352316e9e.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "LOCAL NO. 96.\nCIPHER TELEGRAM RECEIVED FROM BERNE NO. 1490\nDESP 1900 17.5.43\nRECD 2354 17.5.43\nCLASS C\nJ F\nX DR\n\nFOLLOWING FROM ROBERT FOR ECLAIR\n\n1. COMBAT DISTRIBUTING \"SECRET NOTES FOR THE DEPORTED\" WIDELY.\n\n2. CONSISTS OF ADVICE FOR\n(A) SABOTAGING \"RECENEMENT\" AND DEPARTURES IN FRANCE.\n(B) ACTIVITY (Once) IN GERMANY.\n\n3. WHEREAS (B) IS EXCELLENT, (A) SHOWS DANGEROUS RADICALISM.\n\n4. DO YOU WANT SUMMARY?\n\nTP AT 0255 18.5.43 MEH.\n\nSummary for her\nreferred to by J\n\nTO DEFEND LIBERTY OF CONSCIENCE AND PREPARE PEACE.\nTHIS IS A LAVAL SET UP.\n\n8. ARE STUDYING QUESTION OF YOUR WIFE'S STAY IN SWITZERLAND.\n\n9. LACOSTE ASKS FOR YOUR OPINION WHETHER HE SHOULD POSSIBLY GO TO LONDON. AM IN REGULAR WEEKLY CONTACT WITH HIM AND JULIEN.\n\n10. PLEASE CONFIRM RECEPTION OF TELEGRAMS VIA J.Q.\n\nCLASS C\nJ. X. F. DR. AMR.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:37:42.246751+00:00",
+  "page": 1,
+  "total_pages": 1
+}

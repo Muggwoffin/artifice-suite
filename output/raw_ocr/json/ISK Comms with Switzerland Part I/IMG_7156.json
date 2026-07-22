@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b86f7b51268c062cac72e786ab7bb67d.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "MINUTE SHEET\n\n100. Telegram 1022 from Robert for Eclair. J. says he has no objection to it being passed on. To AD/X passing on the information for Eclair. Enc:100A-C. 7.2.43.\n\n101. Telegram 1023 from ROBERT to ECLAIR. Memo from AD/X.1. giving information re \"SIMONE\" mentioned in the telegram. Enc:101A-B. 12.2.43.\n\n102. To AD/X attaching letter from Eva LEVINSKY for ECLAIR re ROBERT's relations with the Americans, etc. Enc:102A-C. 22.2.43.\n\n103. From J. attaching material for ECLAIR from ROBERT. Enc:103A. 1.3.43.\n\n104. Telegram 1123 from ROBERT to ECLAIR. Message passed to AD/X for transmission, who acknowledges. Enc:104A-C. 3.3.43.\n\n105. Telegram 1138 from ROBERT for ECLAIR. Passed to AD/X for transmission. Enc:105A-B. 8.3.43.\n\n106. From AD/X.1. giving ECLAIR's explanation of para. 2. of telegram 1138. Enc:106A. 10.3.43.\n\n107. From AD/X.1. giving text of telegram which WILLI wants sent to ROBERT, in connection Encl.104B. To J. passing on message. Telegram 3024 to ROBERT. Enc:107A-C. 13.3.43.\n\n108. Telegram 1190 from Robert for ECLAIR. Enc:108A. 18.3.43.\n\n109. Telegram 1166 from Robert for Eclair. Enc:109A. 12.3.43.\n\n110. Telegram 1207 for Eclair. Enc:110A. 23.3.43.\n\n111. From AD/X.1. asking whether it is possible to get Robert to send fill text of recent reports from Germany by same route as he used for the private letter to Willi in Feb. To AD/X.1. replying in the negative. Enc:111A-B. 24.3.43.\n\n112. Telegram 3066 to Berne asking whether ROBERT can give any further information on his friends in Bulgaria. Enc:112A. 25.3.43.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:32:49.969834+00:00",
+  "page": 1,
+  "total_pages": 1
+}

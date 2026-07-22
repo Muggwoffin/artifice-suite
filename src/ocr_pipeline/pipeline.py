@@ -1,6 +1,5 @@
 import json
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -245,72 +244,92 @@ def run_pipeline_batch(
     force: bool = False,
 ) -> dict:
     """
-    Run pipeline on multiple files. OCR runs concurrently,
-    cleanup and translate serialize per-file.
+    Run pipeline on multiple files in three strictly sequential passes:
+      1. OCR all files
+      2. Cleanup all files
+      3. Translate all files
+
+    Only one inference engine is active at a time.
     Returns dict with per-file results and batch summary.
     """
     resume = cfg("resume")
-    max_workers = cfg("max_ocr_workers")
-
     files = [Path(f).resolve() for f in file_paths]
     t_batch_start = time.monotonic()
-    log.info("Batch: %d file(s), OCR workers=%d", len(files), max_workers)
+    log.info("Batch: %d file(s), sequential passes", len(files))
 
-    # Phase 1: Concurrent OCR
+    # Phase 1: Sequential OCR
     ocr_results: dict[str, dict] = {}
-    ocr_texts: dict[str, str] = {}
     ocr_timings: dict[str, float] = {}
 
-    def _run_ocr(f: Path) -> tuple[str, dict]:
-        return (str(f), run_ocr_step(
+    for f in files:
+        fpath = str(f)
+        stem = f.stem
+        t0 = time.monotonic()
+        result = run_ocr_step(
             f, output_dir,
             skip_ocr=skip_ocr, resume=resume, force=force,
-        ))
+        )
+        elapsed = time.monotonic() - t0
+        ocr_results[fpath] = result
+        ocr_timings[fpath] = elapsed
+        skipped = " [skipped]" if result.get("_skipped") else ""
+        log.info(
+            "  OCR %s%s -> %d chars (%.1fs)",
+            f.name, skipped, len(result["extracted_text"]), elapsed,
+        )
 
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {pool.submit(_run_ocr, f): f for f in files}
-        for future in as_completed(futures):
-            fpath, result = future.result()
-            stem = Path(fpath).stem
-            ocr_results[fpath] = result
-            ocr_texts[fpath] = result["extracted_text"]
-            ocr_timings[fpath] = result.get("_elapsed", 0)
-            skipped = " [skipped]" if result.get("_skipped") else ""
-            log.info(
-                "  OCR %s%s -> %d chars (%.1fs)",
-                Path(fpath).name, skipped,
-                len(result["extracted_text"]),
-                ocr_timings[fpath],
+    # Phase 2: Sequential cleanup
+    cleanup_results: dict[str, dict] = {}
+    cleanup_timings: dict[str, float] = {}
+
+    for f in files:
+        fpath = str(f)
+        stem = f.stem
+        raw_data = ocr_results[fpath]
+        t0 = time.monotonic()
+        cleaned_data = run_cleanup_step(
+            raw_data, stem, output_dir,
+            skip_cleanup=skip_cleanup, resume=resume, force=force,
+        )
+        elapsed = time.monotonic() - t0
+        cleanup_results[fpath] = cleaned_data
+        cleanup_timings[fpath] = elapsed if not cleaned_data.get("_skipped") else 0
+
+    # Phase 3: Sequential translate
+    translate_results: dict[str, dict] = {}
+    translate_timings: dict[str, float] = {}
+
+    if not skip_translate:
+        for f in files:
+            fpath = str(f)
+            stem = f.stem
+            cleaned_data = cleanup_results[fpath]
+            t0 = time.monotonic()
+            translated_data = run_translate_step(
+                cleaned_data, stem, output_dir,
+                resume=resume, force=force,
             )
+            elapsed = time.monotonic() - t0
+            translate_results[fpath] = translated_data
+            translate_timings[fpath] = elapsed if not translated_data.get("_skipped") else 0
 
-    # Phase 2: Serial cleanup + translate (per file, in order)
+    # Assemble results
     all_results: dict[str, dict] = {}
     timings: dict[str, dict[str, float]] = {}
 
     for f in files:
         fpath = str(f)
-        raw_data = ocr_results[fpath]
-        stem = f.stem
         file_timings: dict[str, float] = {"ocr": ocr_timings.get(fpath, 0)}
-
-        cleaned_data = run_cleanup_step(
-            raw_data, stem, output_dir,
-            skip_cleanup=skip_cleanup, resume=resume, force=force,
-        )
-        if not cleaned_data.get("_skipped"):
-            file_timings["cleanup"] = cleaned_data["_elapsed"]
-
-        result: dict[str, Any] = {"raw": raw_data, "cleaned": cleaned_data}
-
+        result: dict[str, Any] = {
+            "raw": ocr_results[fpath],
+            "cleaned": cleanup_results[fpath],
+        }
+        if cleanup_timings.get(fpath, 0):
+            file_timings["cleanup"] = cleanup_timings[fpath]
         if not skip_translate:
-            translated_data = run_translate_step(
-                cleaned_data, stem, output_dir,
-                resume=resume, force=force,
-            )
-            if not translated_data.get("_skipped"):
-                file_timings["translate"] = translated_data["_elapsed"]
-            result["translated"] = translated_data
-
+            result["translated"] = translate_results[fpath]
+            if translate_timings.get(fpath, 0):
+                file_timings["translate"] = translate_timings[fpath]
         all_results[fpath] = result
         timings[fpath] = file_timings
 

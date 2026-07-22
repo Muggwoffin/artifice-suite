@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d3371fae4728a011eec5cf28ad94e07a.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "132A\n24th May 1943.\nFROM: AD/X.1.\nTO: X/G.\nRe your XF/G/237 of 21st May, the message has been passed on.\n\n132B\nXF/G/237.\n21st May, 1943.\n\nTranslated message from ROBERT for NGE\ned as follows:-\n\nFRANKFURT and KASSEL report that\nmaintained among Trade Unionists\nts. They say that anti-War and\nogans are appearing on the walls,\ntions approving aerial bombardments.\nreat change since last Autumn and\nno belief in victory is left. There\ner salutes given. On the other hand\nedoubled and recently many arrests\nong old comrades. The bombardments\neland are extremely effective. The\nthe whole are dulled by a sense of\ns, fatigue, hard trials and impotence.\"\n\nthat he has supplied them with ideas\ne regrets that his liaison with\nomrades is too irregular and indirect\nted.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:37:10.553258+00:00",
+  "page": 1,
+  "total_pages": 1
+}

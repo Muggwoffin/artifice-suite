@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\e8c3f2cae13f5476aa7b8fcd7f5a98c0.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942. 15B.\n\nExtracts:-\n\nNo. 65 from Switzerland.\n\nLOCAL 493\n\nJ/IT/4240\n\nTo: Action please.\n\nThe message have been received 5th February, 1943.\n\nFrom: J.\n\nReference tel. 1022 from BERNE.\n\nI have spoken to F. ref. para. 2 and he has no objection to passing it on.\n\nWill you, therefore, please paraphrase the telegram and pass it to ADX.\n\nFor J.\n\nTP AT 0920 5.2.43 JL",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:44:38.539904+00:00",
+  "page": 1,
+  "total_pages": 1
+}

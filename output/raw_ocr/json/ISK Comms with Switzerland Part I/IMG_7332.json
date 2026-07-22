@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b572356a0b864236edebcf19685a6c70.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "ELSAESSER!\n\nDEUTSCHE VOLKSGENOSSEN!\n\nVon mehr als zehn Monaten musstet ihr auf franz\u00f6sischen Befehl von einer Stunde auf die andere eure schoene Heimat am Oberhein verlassen, um als Fl\u00fcchtlinge in die weisse Fremde verstossen zu werden.\n\nNach schweren Monaten kehrt ihr nun in die langentbehrte, teure Heimat zurueck.\n\nDurch ein gueltiges Geschick, durch die geniale Feldherrnkunft Adolf Hitlers ist das Elsass fast voellig vor der erwarteten Zerstoerung bewahrt geblieben. Was dennoch zerstoert wurde, das haben die Franzosen noch auf der Flucht zerstoert, wie sie auch leichtfertig den Krieg erklaert und das Elsass dem Untergang geweiht hatten. Die sinnlose Sprengung von Verkehrswegen und von lebenswichtigen Betrieben, die Vernichtung grosser Lebens-\n\nLieber Willi,\n\nDiese Photos von Plakatten, die die Deutschen in Elsass und Lothringen anschlugen, sind zwar alt. Vielleicht habe sie trotzdem noch einen Wert. Vielleicht in Verbindung mit einem Vergleich mit heute und der heutigen Stimmung in Elsass.\n\n6.6.42.\n\nGauleiter und Reichsstatthalter.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:07:27.051384+00:00",
+  "page": 1,
+  "total_pages": 1
+}

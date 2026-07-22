@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\45bc0cd6db7bf7c5d3ed98178c28959a.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942. 15B.\n\nExtracts:-\n\nNo. 65. from Switzerland.\n\nMSK has been seen 1942 & told to gamble & be brave before little X.\n\nLOCAL 212\nCYIPHER TELEGRAM RECD. FROM BERNE\nDESP. 1206 23.1.43\n\n29th January 1943.\n\nTO: X.\nFROM: AD/X.1.\n\nHerewith a copy of the paraphrase which it is proposed to hand to WILLI tomorrow.\n\nYou will notice that I have acted on the assumption that S.P ERS refers to ROBERT's associates of the Socialist Party.\n\nreconstruction, but only in a free Socialist Germany in a Socialist Europe, not under compulsion from abroad.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:45:03.418609+00:00",
+  "page": 1,
+  "total_pages": 1
+}

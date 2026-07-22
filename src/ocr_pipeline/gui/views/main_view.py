@@ -2,7 +2,7 @@
 
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, scrolledtext, ttk
+from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 from tkinterdnd2 import DND_FILES
 
@@ -95,6 +95,8 @@ class MainView(ttk.Frame):
             side=tk.LEFT, padx=(6, 0))
         ttk.Button(row, text="View →", command=self._view_selected).pack(
             side=tk.LEFT, padx=(6, 0))
+        ttk.Button(row, text="Send to Tropy…", command=self.send_to_tropy).pack(
+            side=tk.RIGHT)
 
     # ---------------------------------------------------------- run controls
     def _build_run_controls(self):
@@ -190,6 +192,27 @@ class MainView(ttk.Frame):
             if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
         ]
         self._add(files, f"folder {Path(folder).name}")
+
+    def send_to_tropy(self):
+        """Write finished results back into a Tropy project."""
+        from .tropy_send import TropySendDialog
+
+        selected = self.queue.selected_items()
+        items = selected or self.queue.items
+        tropy_items = [i for i in items if (i.source or {}).get("photo_id")]
+        if not tropy_items:
+            messagebox.showinfo(
+                "Nothing to send",
+                "None of these documents came from Tropy.\n\n"
+                "Use 'Add from Tropy…' to queue pages from a project, run them, "
+                "then send the results back.")
+            return
+
+        dialog = TropySendDialog(self.winfo_toplevel(), tropy_items)
+        self.wait_window(dialog)
+        if dialog.written:
+            self.log_message(
+                f"Wrote {dialog.written} row(s) back to Tropy", "success")
 
     def add_from_tropy(self):
         """Open the Tropy picker and queue whatever it returns."""

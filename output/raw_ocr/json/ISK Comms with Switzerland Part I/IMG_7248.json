@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\ba8f68cd4da187eecac6be2bb10b068c.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942.\n\nExtracts:-\n\nLOCAL NO 820\nCIPHER TELEGRAM RECEIVED FROM BERNE DESP 2003 20.1.43. Class C\n0953.\nRECD 0630 21.1.43.\nFOLLOWING FROM ROBERT TO ECLAIR.\n1. \"TEMOIGNAGES CHRETIENS\" NUMBER X AND XII APPEARED BEGINNING OF DECEMBER AS SINGLE EDITION ENTITLED \"COLLABORATION AND FIDELITY\". LEADER: \"FRANCE BEWARE OF LOSING\n\nLOCAL 22\nCIPHER TELEGRAM DESP. TO BERNE 23.1.43.\n3856\nFOLLOWING FOR ROBERT FROM ECLAIR.\n1. CAN YOU CONTACT Mlle. C. COENEN REPEAT COENEN, 21 AVENUE COLDERS, BRUSSELS ON BEHALF BONDAS REPEAT BONDAS WHO IS WITHOUT NEWS SINCE LEAVING BELGIUM. SUSPECTED THAT LAPAILLE REPEAT LAPAILLE AND ASSISTANT ARE CLOSELY WATCHED BY GERMANS. CAN YOU CONTACT AMSTERDAM.\n2. GRAND CO-EDITOR FRANCE SPEAKS WAS HERE BUT DO NOT KNOW IF RUSSIAN.\n\nTP AT 1219 23.1.43. MCM\nORIGIN J.T. AND AD/X.\n\nPOLICE SEARCHING FARMS FOR THEM.\n\n5. THROUGH EVA'S INTERMEDIARY HAVE RECEIVED 12,900 SWISS FRANCS FOR M.O.F. FROM AMERICAN F. OF L. WHO OFFER FURTHER FUNDS.\n\n6. DID JULES MOCH ARRIVE IN LONDON? IF SO TELL HIM WIFE IS BETTER AND THAT I AWAIT FUNDS FOR HER.\n\nTP AT 1205 22.1.43. JC+++\n\nUnglueck dagewesen.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:47:31.532623+00:00",
+  "page": 1,
+  "total_pages": 1
+}

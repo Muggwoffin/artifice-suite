@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\65e8688588da41a5727ad3f1c9eadd4a.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "106A\n\n10th March 1943.\nFROM: AD/X.1.\n\nIn reply to your XF/G/237 of March 8th, I have seen WILLI and got the following from him:-\n\nAnnette is a former German woman lawyer of Jewish extraction who settled in France in 1933 or 1934. The internment referred to is probably by the Swiss authorities for illegally crossing the frontier.\n\nGermain is her husband; the couple were until recently running a market garden near Toulouse and working for the U.S. relief committee at the same time.\n\n\"Drueben\", probably in the sense of \"over the frontier\", might refer to Germain having been ordered to work in Germany. (He is non-Jewish and a skilled worker). Alternatively he might have been sent back across the Swiss frontier, but the former is the more probable explanation.\n\nJupp is at present in England.\n\nFeuer is the pseudonym of a man who escaped once from Nazi Germany and returned there under cover as a Swiss student about two years ago for special work. He has not been heard of by his friends here since. He may be alive, but if he is dead it shows that the Gestapo have not succeeded in cracking his identity or he would not be on the list of those searched for.\n\nIt may or may not be permissible to draw conclusions about the efficiency of the Gestapo from the fact that both WILLI and ROBERT are on the list of Fahndungs.\n\nWith reference to Para. 1, WILLI suggests that it is very important to get the full reports referred to by ROBERT and wonders whether ROBERT could be encouraged to send them in a safe manner.\n\nIf you would like any more particulars about the people referred to in the wire, I will try to get them.\n\nF.D.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:42:23.381328+00:00",
+  "page": 1,
+  "total_pages": 1
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\76902b993c6ad9aca5457bc323a2d921.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942.\nExtracts:-\nNo. 65. from Switzerland.\n\nTO: X.\nFROM: X/G.\n6th. January, 1943.\n\nXF/G/237.\n\nTO: J.\nFROM: X/G.\n12th January, 1943.\n\nWould you kindly have the following message sent out to Switzerland:-\n\nA. ADELE SCHREIBER owes ELSE HUBER-WIESENTHAL 73 Entlisbergstrasse Zurich 2. Swiss Francs 144 for 12 months from 1st September 1942 stop.\n\nB. SCHNAKENBURGS old address Bremen Borgfelderstrasse 8 see directory for present address stop enginedriver FUCHS Karlsruhe was official Railwaymens' Union can be contacted through locksmith OTTO FALLER Karlsruhe. If EMIL reliable use him contact ZEKKO.\n\nThere is no immediate urgency and the message can be sent out when an opportunity occurs.\n\nThe monetary question raised in the first paragraph does not in any way involve the funds of this Organisation.\n\nmit dem sie ein Wort sprechen kann. Und dann waere evtl. das Ungl\u00fcck dagewesen.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:48:23.182494+00:00",
+  "page": 1,
+  "total_pages": 1
+}

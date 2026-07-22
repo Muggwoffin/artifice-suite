@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\0978b4409fcacc72a17d5a062c89856c.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942.\nExtracts:-\nNo. 65. from Switzerland.\n\nWuerdest Du bitte Hans noch einmal nach dem Zugfuehrer\nund die frueheren Angaben verloren\n\nCopy.\nLetter No. \"from Switzerland.\"\nFROM: ROBERT\nTO: WILLI.\n21.10.1942.\n\nLieber Freund!\n\nGestern sah ich unseren Gewaehrsmann fuer die Flugblatt-Uebermittlung nach Dld. Er sagte mir folgendes:\n\nLOCAL/438\nCIPHER TELEGRAM RECEIVED FROM BERNE\n0674\nDESP.2029 19/11/42\nRECD.0535 20/11/42\n1. CAN YOU SUPPLY ROBERT WITH A BOX AT PORT BOU TO WHICH HE COULD SMUGGLE MATERIAL FROM 30 FOR REGULAR SAFE TRANSMISSION TO ECLAAR?\n2. REFERENCE YOUR TELEGRAM 3631 REGRET DELAY. ROBERT HAD NOT CONTACTED REALE SINCE ORIGINAL ARRANGEMENTS WERE MADE BUT WILL NOW SEE THAT MESSAGES ARE COLLECTED WITHOUT DELAY.\nTP 1650 20/11/42 WN.\n\nGerangenen und dem Bauuener, der ihnen taeglich etwas zu essen mitbrachte.\n\nDies fuer heute. In den naechsten Tagen hoffen wir unsere alte lungenkranke Bekannte zu sehen, die wieder in die Schweiz zurueckgekehrt ist, auf die wir schon seit einem Jahre gewartet haben.\n\nHerzliche Gruesse.\n\nmit dem sie ein Wort sprechen kann. Und dann waere evtl. das Unglueck dagewesen.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:49:38.682354+00:00",
+  "page": 1,
+  "total_pages": 1
+}

@@ -1,8 +1,13 @@
 Tropy Integration
 =================
 
-Status: **implemented (read-only ingest → folder output).**
-Decision of 2026-07-21 stands: this tool never writes to a Tropy project.
+Status: **implemented — read-only ingest, folder output, and opt-in write-back.**
+
+The original decision of 2026-07-21 was folder-output-only. That was revisited
+later the same day and write-back was added, with the safeguards this document
+had already set as the price of doing it: Tropy closed, automatic backup,
+preview before any change. Reading is still provably separate from writing —
+`tropy.py` opens `mode=ro` and never imports the writer.
 
 
 WHAT IT DOES
@@ -126,6 +131,44 @@ from a text file to photo 4 of item 1 survives outside anyone's memory:
 The manifest merges across runs rather than being overwritten.
 
 
+WRITING BACK INTO TROPY
+-----------------------
+
+**Main tab -> "Send to Tropy…"**, after a run. Only pages that came from Tropy
+can be sent; the button says so if none of the queue did.
+
+The dialog previews before it writes. It lists every row it would create, and
+the write button stays disabled until that preview is clean:
+
+    PAGE                     TARGET  ACTION         DETAIL
+    KV-2-2339_01.pdf  p.1    notes   insert
+    KV-2-2339_01.pdf  p.2    notes   duplicate      identical text already attached
+    KV-2-2339_01.pdf  p.3    notes   missing-photo  photo 4021 is not in this project
+
+Two targets, selectable per run:
+
+* **Notes** — one note per photo, stored exactly as Tropy's own editor stores
+  them: plain `text` plus a ProseMirror document in `state`. Appears in the
+  normal note pane.
+* **Transcriptions** — rows in Tropy's native `transcriptions` table, tagged
+  `config.generator = "ocr_pipeline"` so they are always identifiable as ours.
+
+Both tables carry `AFTER INSERT` triggers maintaining the FTS index, so
+inserting is enough to keep Tropy's search working.
+
+Safeguards, all enforced in `tropy_write.py`:
+
+1. **Tropy must be closed.** Checked by process name, plus a `BEGIN IMMEDIATE`
+   probe for a held write lock. Writing under a running Tropy means its
+   in-memory state diverges and can overwrite what was just written.
+2. **Backup first.** A timestamped `project.<stamp>.backup.tpy` beside the
+   original, including WAL sidecars. Skippable, but on by default.
+3. **One transaction.** Any failure rolls the whole batch back — there is no
+   half-written state.
+4. **Re-running is safe.** An entry whose text is already attached to that
+   photo is reported as a duplicate and skipped.
+
+
 KNOWN LIMITS
 ------------
 
@@ -134,6 +177,8 @@ KNOWN LIMITS
   offers to skip them.
 * **Selections and notes are ignored.** Tropy selections (crops) and existing
   notes are not read. The 1,101 notes in the ISK project are untouched.
-* **No write-back.** By design. If it is ever revisited the non-negotiables
-  are: Tropy closed, a timestamped copy of `project.tpy` taken first, and
-  dry-run as the default.
+* **Write-back creates, never updates.** Sending the same page twice with
+  *different* text adds a second note rather than replacing the first. Editing
+  or removing what was written is done in Tropy.
+* **Transcriptions are an internal schema.** The table shape can change
+  between Tropy releases. Notes are the safer of the two targets.

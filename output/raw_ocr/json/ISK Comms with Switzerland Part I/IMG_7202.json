@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\461a3bc3552347540574c277633975f2.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "LOCAL NO 845\nCIPHER TELEGRAM RECEIVED FROM BERNE DESP 0016 18.3.43.\nRECD 0845 18.3.43.\nCLASS C\nJ X MX\nF DR\n\n24th March 1943.\nFROM: AD/X.1.\nTO: X/G.\n\nWith reference to your memorandum XF/G/237 of 8th March and my reply of 10th March, WILLI has asked me whether it is possible to get ROBERT to send the full text of the recent reports from Germany he speaks of, by the same route as he used for the private letter to WILLI in February.\n\nBERNE DESP. 1700 23.3/43\nRECD 2120\nMX X F DR\n\n\"OWARDS EUROPEAN UNITY\" NOT RECEIVED.\nULLENTINS BUT CANNOT SEND ?FROM HERE.\nPAPERS AND BULLETINS DIRECT FROM\nT ONE PACKET. PLEASE ACKNOWLEDGE.\nT DAILY AND ARE IMMENSELY USEFUL\n\nR CONTACT WITH LACOSTE AND AM\nONG KNOWN ADDRESS OF ERNSTFRIEDRHCH\nY ARBEITER HILFSVERK BUT REGARDS\nER\".\n\n1 AND 2 (JANUARY) SEEMS TO POINT\nI HAVE NO DEFINITE INFORMATION\n\nHAS RECEIVED FROM COMMUNISTS\nEE OF INDEPENDENT SYNDICALISM\nCOMMITTEES CORRESPONDING TO TRADE\nCAL UNIONS AND SYNDICATES AND\nCATES AND ACHIEVE SYNDICATES UNITY.\n\nWN.\n\n10. SITUATION SUPPOSED TO HAVE BEEN SAME MIDDAY MARCH 16TH.\nTP AT 1409 18.3.43. JC+++",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:41:10.175067+00:00",
+  "page": 1,
+  "total_pages": 1
+}

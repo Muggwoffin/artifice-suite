@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\749aced4a82071a9c9801266197c83ff.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "The same could be done with the communications from the I.S.K. and I.T.F. to ROBERT.\n\nIf need be, we could also agree later to pay a subsidy to WILLI, telling him that we would advance money to ROBERT and set it off against the subsidy. We hardly think this will be necessary.\n\nCONFIDENTIAL.\n\nFROM: H.\nZurich.\nSwitzerland.\n\nDr. Walter Auerbach,\nc/o. International Transport Workers Federation,\nCrossland Fosse\nBox End, Beds.\n\nLieber Auerbach!\n\nIch sende Dir anbei eine 2 Gewerkschafter, die teile sind. Du kannst das Heft b aus der Schweiz Nachricht Peter. Es handelt sich um sozialistischen Buchladens und in eigenen Gesch\u00e4ften Dort traf ihn Rene zuf\u00e4lli geklart, Wenn sie auch uns auf die sozialistische Zus wirklich zum Kothen. Kotze\n\nHast Du inzwischen etwas ub Besuches der Beiden herausfi noch eine andere Stelle ang gefragt wurde, ob ich Rene\n\nIch bekam gestern einen Bri sehr freuen, wenn er uns So fen und konnte dann Montag und alles erledigen, was er entweder den Birch Bus von Hitchin bis Welwyn Garden C einfach bis London St. Panca gehen, um dann einen Zug nach\n\nIch habe im Augenblick Schwe der Papierzuteilung. Hoffent / fur die Renai wenn Du jemand weisst, der dankbar, ihn mir zu nennen,\n\nDas ist alles fur heute ich",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:20:08.727511+00:00",
+  "page": 1,
+  "total_pages": 1
+}

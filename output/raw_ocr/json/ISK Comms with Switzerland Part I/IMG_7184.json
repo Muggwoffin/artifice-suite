@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\c47f8b1c132d2a9a9bd0efea9c484196.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "TO: AD/X\nFROM: X/G\n4th May, 1943.\n\nReference telegram No. 1411.\n\nWe should feel obliged if, when transmitting ROBERT's message to ECLAIR, you omit altogether the sentence \"they may possibly have been distributing our pamphlets which go regularly to South Germany\", as this information might cause complications of an undesirable nature for all concerned.\n\nAs to para. 2 of the telegram, we would like you to tell ECLAIR not only not to use this on the radio, as mentioned by ROBERT, but to mention it to no-one at all.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:38:43.925378+00:00",
+  "page": 1,
+  "total_pages": 1
+}

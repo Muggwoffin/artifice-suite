@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\fa7d9ad1cb1e90b562deb348b1412880.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Aus der Gegend von Halle/Saale:\n\nSeit Wochen keine Kartoffeln; Fleisch und Gem\u00fcse schwer zu haben. Magen- und Sauermilch nicht zu haben.\n\n23rd October, 1942.\n\nTO: AD/X\nFROM: X/G\n\nWith reference to telegram 0546 from Berne dated 20.10.42., you may now proceed to inform WILLI on the following lines:-\n\n1. That a message has come from ROBERT to the following effect:-\n\na) Between October 15th and 17th there has been unrest among the railway workers at Lyons, owing to Laval's policy of slave labour for Germany. For instance, at La Mouche siding, at a repair shop at Oulins and at Vaise station, the workers refused to marshal trains destined for Germany or do any other work favouring Germany.\n\nb) As a result of the above mentioned actions, armed French sentries were posted at vital points on the railways and these have sometimes assumed a threatening attitude towards the workers.\n\nc) At the Berliet works at Lyons, some workmen and their foreman refused to proceed to Germany; there were incidents with the Police and 8 men were arrested.\n\nd) This type of movement is spreading in the non-occupied part of France and the men are generally tearing up orders to proceed to Germany. Generally speaking, the situation is one of serious unrest.\n\n2. You will at the same time inform WILLI that the foregoing has been communicated to the Departments concerned and that no further action need be taken.\n\n3. For your own personal information, it is emphasised that it is not desirable to pass on any suggestions contained in the above mentioned telegram to the B.B.C.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:50:57.362081+00:00",
+  "page": 1,
+  "total_pages": 1
+}

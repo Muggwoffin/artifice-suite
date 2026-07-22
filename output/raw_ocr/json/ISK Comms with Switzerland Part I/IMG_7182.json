@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\cb35e75b492020dd9bd3c5eefb008b8d.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "TO: AD/X\nFROM: X/G\n4th May, 1943.\n\nYour messages have been received from ROBERT:\n\nTO: X/G.\nFROM: AD/X.1.\n7th May 1943.\n\nYour XF/G/237 of 6th May has been received, and the message is being dealt with accordingly.\n\nF.D.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:38:30.961200+00:00",
+  "page": 1,
+  "total_pages": 1
+}

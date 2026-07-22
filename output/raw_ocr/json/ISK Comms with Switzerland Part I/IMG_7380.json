@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8fae402bfde05b4db2ba2828665394c7.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "S.O.E./16\nGENEVA\n11.12.41\n\nFOLLOWING FROM S.O.E. FOR J.Q.\n1. PLEASE PAY ROBERT 5190 REPEAT 5190 SWISS FRANCS REPRESENTING 300 REPEAT 300 POUNDS COLLECTED BY [REDACTED] ACCORDING ROBERT'S LETTER OF OCTOBER 24; OBTAIN RECEIPT SIGNED \"ROBERT\".\n2. YOUR FUND IS BEING CREDITED WITH THIS AMOUNT.\n3. CAN YOU OBTAIN ADDITIONAL FUNDS WHEN NEEDED FROM YP OR SHALL WE SEND SWISS FRANCS BY BAG?\n\nC.O.S.\nA.C.S.S.\nS.O.E.(42)\n\nCXG. 386\n\nTP AT 1732 11.12.41 JL\nORIGIN, J.\n\nTHIS IS A COPY\nORIGINAL DOCUMENT RETAINED IN DEPARTMENT UNDER SECTION 3 (4) OF THE PUBLIC RECORDS ACT 1958",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:17:20.942631+00:00",
+  "page": 1,
+  "total_pages": 1
+}

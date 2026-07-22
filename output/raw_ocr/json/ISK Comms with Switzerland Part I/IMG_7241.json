@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8197856e9687bdc69ba4298fc420cba8.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942. 15B.\nExtracts:-\nNo. 65. from Switzerland.\n\nDRAFT.\n\nTelegram 0958 of 21.1.43 can be passed on as it stands except, of course, that the wording should be changed in order to get away from the exact text of the telegram.\n\nTelegram 0957 of 21.1.43:-\n\nPara.1. Omit (in view of Willi's connections with the Czechs, etc.) the part about the frontier demands of BENES and SIKORSKI.\n\nPara.2. Omit the first three lines as the meaning is not clear, and we have asked for a repeat.\n\nI think it is safer to say \"some sabotage\" rather than the obviously exaggerated \"much.\"\n\nMost important to omit the sentence \"ours from outside very welcome\" because, as you will remember, this was done by us as a favour to Willi and Robert, and did not go through the normal P.W.E. channels.\n\nPara.3. This should be omitted as it is pure intelligence and we are trespassing on C's domain, and are not in a position to check the statements which may or may not be correct.\n\nThe gist of Paras.4 & 5 can be paraphrased and passed on.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:46:28.180923+00:00",
+  "page": 1,
+  "total_pages": 1
+}

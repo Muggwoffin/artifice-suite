@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\719d99dfb4302aebee87c43c2b104cb9.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Lieber Freund!\n\nGestern hatten wir Gelegenheit, eine vor einer Woche aus Dld. zurueckgekehrte Frau zu sprechen, die dort einige Monate verbracht hat. Sie ist geborene Deutsche, jetzt Schweizerin durch Wiederverheiratung. Frueher war sie in D. verheiratet, liess sich aber aetig-\n\nNo: 626. from Switzerland.\n\nFROM: ROBERT\nTO: WILLI\n\nDie Koelner Flakbatterien\n\nsich immer noch nicht von\nEin Flakartillerist\nder wie die Fliegen um die\nund die meisten von ihnen\nschweigen brachten. Fluchten\ndie Flakunterstaende und\nNach neuerlicher Verordnung\nmen mit der Gestapo die\nFlakbatterien des Rheinlandes\nungerichtete Schaden ist,\nsln immer noch nicht den Zug\nPersonen- noch Guterzuge\ner, die verreisen wollen,\nen Ausweis haben und\nagen auf eine sieben K\u00e4lol-\nstation gefuehrt. Die\nund Gebrauchsartikel nur\nschaffen, das heisst, jene\neinigermassen aufrecht\n\nan des Krieges wurden saemtliche\nfabriken eingezogen, nachdem\nelegt hatte. Nunmehr, nach\ner Heinkelwerke wird der\nliebe um Rostock verteilt\nnun dort untergebracht. Es\nKleinhandwerker mit Heim-\ntrie zu versehen.\n\neuge und U-Boote.\n\nst. Gegenwaertig werden im\nten nichtskriegswichtigen\nliche Arbeiter und Arbeiter-\ndie Praezisionsapparate und\note herstellen, verteilt.\nsapparaten, die nur Arbeiter-\ninnen anvertraut wird, geht im ehemaligen Betrieb der Firma\n\nP.T.O\n\nsie koenne dadurch in Schwierigkeiten kommen. Das hat auch zur\nFolge, dass sie gerade das, was uns besonders interessiert, nicht\nweiss, oder nur sehr wenig davon.\n\nVon organisierter Arbeit gegen das Regime hat sie nichts ge-\nsehen ausser einem gedruckten Flugblatt aus einer Flugzeugfabrik\nin Koethen. Darin wurde ueber die schlechte Lebensmittel Lage ge-\nschimpft. Sie selber zog daraus den Schluss: nun, wenn es dann",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:54:48.568179+00:00",
+  "page": 1,
+  "total_pages": 1
+}

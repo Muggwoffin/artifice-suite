@@ -200,10 +200,8 @@ class AnalyticsView(ttk.Frame):
 
 
 def _conf_color(value) -> str:
-    if value is None:
-        return theme.FG_DIM
-    if value >= 80:
-        return theme.SUCCESS
-    if value >= 55:
-        return theme.WARNING
-    return theme.ERROR
+    from ..._diff import confidence_tier
+    return {
+        "none": theme.FG_DIM, "low": theme.ERROR,
+        "medium": theme.WARNING, "high": theme.SUCCESS,
+    }[confidence_tier(value)]

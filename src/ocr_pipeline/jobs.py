@@ -1,8 +1,10 @@
 """Job runner: per-file pipeline execution with live status, pause and skip.
 
-The runner owns the threading; it knows nothing about tkinter. Progress is
-published as :class:`JobEvent` objects on a ``queue.Queue`` which the caller
-drains at its own pace (the GUI polls it from the tk main loop).
+The pipeline runs three strictly sequential passes — OCR, then Cleanup,
+then Translate — so that only one inference engine is active at a time.
+Progress is published as :class:`JobEvent` objects on a ``queue.Queue``
+which the caller drains at its own pace (the GUI polls it from the tk
+main loop).
 
 Retry is deliberately *not* handled here — a retry is simply a fresh runner
 over the selected items. Because completed stages leave outputs on disk,
@@ -71,6 +73,7 @@ class JobItem:
     output_stem: str = ""
     label: str = ""
     source: dict[str, Any] = field(default_factory=dict)
+    guard_rejected: bool = False
 
     def __post_init__(self):
         if not self.stages:
@@ -95,6 +98,7 @@ class JobItem:
         self.results = {}
         self.confidence = None
         self.language = ""
+        self.guard_rejected = False
         for name, status in self.stages.items():
             status.state = State.PENDING if name in enabled_stages else State.SKIPPED
             status.elapsed = 0.0
@@ -118,9 +122,8 @@ class JobEvent:
 class JobRunner:
     """Runs a batch of :class:`JobItem` through the pipeline.
 
-    OCR runs concurrently across ``max_workers``; cleanup and translate run
-    serially behind it, mirroring :func:`pipeline.run_pipeline_batch` so both
-    entry points behave identically.
+    The pipeline executes three strictly sequential passes — OCR, Cleanup,
+    then Translate — so only one inference engine is active at a time.
     """
 
     def __init__(
@@ -145,7 +148,6 @@ class JobRunner:
         self._cancelled = False
         self._skip_ids: set[int] = set()
         self._thread: threading.Thread | None = None
-        self._downstream: queue.Queue = queue.Queue()
 
     # ------------------------------------------------------------- lifecycle
     def start(self) -> None:
@@ -195,8 +197,6 @@ class JobRunner:
 
     # ------------------------------------------------------------------- run
     def _run(self) -> None:
-        from concurrent.futures import ThreadPoolExecutor
-
         t0 = time.monotonic()
         self._emit(
             "run_started",
@@ -205,90 +205,98 @@ class JobRunner:
             tag="accent",
         )
 
-        consumer = threading.Thread(target=self._downstream_loop, daemon=True)
-        consumer.start()
-
         try:
-            with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
-                for item in self.items:
-                    pool.submit(self._ocr_worker, item)
+            self._phase_ocr()
+            self._phase_cleanup()
+            self._phase_translate()
+
+            for item in self.items:
+                if item.state not in (
+                    State.DONE, State.FAILED, State.SKIPPED, State.CANCELLED,
+                ):
+                    self._finish_item(item, State.DONE)
         finally:
-            self._downstream.put(None)
-            consumer.join()
+            elapsed = time.monotonic() - t0
+            done = sum(1 for i in self.items if i.state is State.DONE)
+            failed = sum(1 for i in self.items if i.state is State.FAILED)
+            self._emit(
+                "run_finished",
+                message=f"Run finished in {elapsed:.1f}s — {done} ok, {failed} failed",
+                tag="success" if not failed else "warning",
+                payload={"elapsed": elapsed, "done": done, "failed": failed},
+            )
 
-        elapsed = time.monotonic() - t0
-        done = sum(1 for i in self.items if i.state is State.DONE)
-        failed = sum(1 for i in self.items if i.state is State.FAILED)
-        self._emit(
-            "run_finished",
-            message=f"Run finished in {elapsed:.1f}s — {done} ok, {failed} failed",
-            tag="success" if not failed else "warning",
-            payload={"elapsed": elapsed, "done": done, "failed": failed},
-        )
-
-    # ------------------------------------------------------------ OCR phase
-    def _ocr_worker(self, item: JobItem) -> None:
+    # ---------------------------------------------------------- phase helpers
+    def _begin_item(self, item: JobItem) -> bool:
+        """Prepare an item for processing. Returns False if it should be skipped."""
         if self._should_skip(item) or not self._gate():
             self._finish_item(item, State.CANCELLED if self._cancelled else State.SKIPPED)
+            return False
+        if item.state in (State.DONE, State.FAILED, State.SKIPPED, State.CANCELLED):
+            return False
+        if item.state is State.PENDING:
+            item.state = State.RUNNING
+            item.attempts += 1
+            self._emit("item_started", item=item)
+        return True
+
+    def _phase_ocr(self) -> None:
+        """Pass 1: OCR every file strictly sequentially."""
+        for item in self.items:
+            if not self._begin_item(item):
+                continue
+            raw = self._run_stage(
+                item, "ocr",
+                lambda: run_ocr_step(
+                    item.path, self.output_dir,
+                    skip_ocr="ocr" not in self.stages,
+                    resume=self._resume_enabled,
+                    force=self.force,
+                    page=item.page,
+                    stem=item.output_stem or None,
+                ),
+                chars_key="extracted_text",
+            )
+            if raw is None:
+                self._finish_item(item, State.FAILED)
+            else:
+                item.results["raw"] = raw
+
+    def _phase_cleanup(self) -> None:
+        """Pass 2: Cleanup every file strictly sequentially."""
+        for item in self.items:
+            if not self._begin_item(item):
+                continue
+            raw = item.results.get("raw")
+            if raw is None:
+                self._finish_item(item, State.FAILED)
+                continue
+            cleaned = self._run_stage(
+                item, "cleanup",
+                lambda: run_cleanup_step(
+                    raw, item.stem, self.output_dir,
+                    skip_cleanup="cleanup" not in self.stages,
+                    resume=self._resume_enabled,
+                    force=self.force,
+                ),
+                chars_key="cleaned_text",
+            )
+            if cleaned is None:
+                self._finish_item(item, State.FAILED)
+            else:
+                item.results["cleaned"] = cleaned
+
+    def _phase_translate(self) -> None:
+        """Pass 3: Translate every file strictly sequentially."""
+        if "translate" not in self.stages:
             return
-
-        item.state = State.RUNNING
-        item.attempts += 1
-        self._emit("item_started", item=item)
-
-        raw = self._run_stage(
-            item, "ocr",
-            lambda: run_ocr_step(
-                item.path, self.output_dir,
-                skip_ocr="ocr" not in self.stages,
-                resume=self._resume_enabled,
-                force=self.force,
-                page=item.page,
-                stem=item.output_stem or None,
-            ),
-            chars_key="extracted_text",
-        )
-        if raw is None:
-            self._finish_item(item, State.FAILED)
-            return
-
-        item.results["raw"] = raw
-        self._downstream.put(item)
-
-    # ----------------------------------------------- cleanup/translate phase
-    def _downstream_loop(self) -> None:
-        while True:
-            item = self._downstream.get()
-            if item is None:
-                return
-            self._process_downstream(item)
-
-    def _process_downstream(self, item: JobItem) -> None:
-        if self._should_skip(item) or not self._gate():
-            self._finish_item(item, State.CANCELLED if self._cancelled else State.SKIPPED)
-            return
-
-        raw = item.results["raw"]
-        cleaned = self._run_stage(
-            item, "cleanup",
-            lambda: run_cleanup_step(
-                raw, item.stem, self.output_dir,
-                skip_cleanup="cleanup" not in self.stages,
-                resume=self._resume_enabled,
-                force=self.force,
-            ),
-            chars_key="cleaned_text",
-        )
-        if cleaned is None:
-            self._finish_item(item, State.FAILED)
-            return
-        item.results["cleaned"] = cleaned
-
-        if "translate" in self.stages:
-            if self._should_skip(item) or not self._gate():
-                self._finish_item(item, State.CANCELLED if self._cancelled else State.SKIPPED)
-                return
-
+        for item in self.items:
+            if not self._begin_item(item):
+                continue
+            cleaned = item.results.get("cleaned")
+            if cleaned is None:
+                self._finish_item(item, State.FAILED)
+                continue
             translated = self._run_stage(
                 item, "translate",
                 lambda: run_translate_step(
@@ -300,13 +308,11 @@ class JobRunner:
             )
             if translated is None:
                 self._finish_item(item, State.FAILED)
-                return
-            item.results["translated"] = translated
-            item.language = translated.get("source_language_name", "")
-            conf = translated.get("confidence") or {}
-            item.confidence = conf.get("overall_score")
-
-        self._finish_item(item, State.DONE)
+            else:
+                item.results["translated"] = translated
+                item.language = translated.get("source_language_name", "")
+                conf = translated.get("confidence") or {}
+                item.confidence = conf.get("overall_score")
 
     # --------------------------------------------------------------- helpers
     @property
@@ -344,6 +350,17 @@ class JobRunner:
             message=f"[{STAGE_LABELS[stage]}] {item.name}{suffix}",
             tag="warning" if skipped else "success",
         )
+
+        # A guarded cleanup that kept the raw text is a silent no-op unless we
+        # say so — the user needs to know the page was left unrepaired.
+        guard = data.get("guard") or {}
+        if guard.get("ok") is False:
+            item.guard_rejected = True
+            self._emit(
+                "log", item=item, stage=stage,
+                message=f"    guard kept raw text — {'; '.join(guard.get('reasons', []))}",
+                tag="warning",
+            )
         return data
 
     def _finish_item(self, item: JobItem, state: State) -> None:

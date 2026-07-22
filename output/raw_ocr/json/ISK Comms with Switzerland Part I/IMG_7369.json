@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d019b6565f69e7068be88af28f66146e.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "S.O.E. 5.\nGENEVA.\n29/1/42\n\nFOLLOWING FROM S.O.E. FOR J.Q. FOR ROBERT.\nA. QUOTE FOLLOWING FROM ECLAIR REPEAT ECLAIR.\nB. YOUR LETTER OF 29 DECEMBER 1941.\nC. CONSIDER EVEN SHORTEST VISIT HERE WOULD BE IRREPARABLY COMPROMISING. QUITE IMPOSSIBLE CONCEAL YOUR IDENTITY.\nD. OUR BRITISH FRIENDS HAVE EVIDENCE THAT PERSONS RETURNING TO SWITZERLAND FROM HERE ARE DEFINITELY MARKED MEN. UNQUOTE.\n\nC.O.S.\nA.C.S.S.\nS.O.E. (425)\nTP 1320 29/1/42 NEW\nORIGIN J. AND X.\n\nCXG 626\n\nTHIS IS A COPY\nORIGINAL DOCUMENT RETAINED IN DEPARTMENT UNDER SECTION 3 (4) OF THE PUBLIC RECORD ACT 1958",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:15:22.579386+00:00",
+  "page": 1,
+  "total_pages": 1
+}

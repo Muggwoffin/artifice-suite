@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b65e98543b1a8a477887d8f779e812ee.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942.\nExtracts:-\nNo. 65. from Switzerland.\n\nLOCAL 212\nCYIPHER TELEGRAM RECD. FROM BERNE\nDESP. 1206 23.1.43\nRECD. 1500 23.1.43\n0965\n?FOLLOWING FROM ROBERT FOR ECLA I ?R I.T.F.\nPARA 1.\n\n26th Jan. 43\nFrom ADX.1\n\nIn reply to your memorandum of 24th January, 0965, has been paraphrased and passed on verbally to the people concerned.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:45:48.205145+00:00",
+  "page": 1,
+  "total_pages": 1
+}

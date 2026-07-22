@@ -77,8 +77,33 @@ item and page — `output/raw_ocr/text/<Item Title>/<file>_p0002.txt` — and a
 `tropy_manifest.json` maps every output back to its Tropy photo. Translation
 is off by default here; pass `--translate` to enable it.
 
-In the GUI, use **Add from Tropy…** on the Main tab. See
+In the GUI, use **Add from Tropy…** on the Main tab. After a run, **Send to
+Tropy…** writes the results back as Tropy notes and/or native transcriptions.
+That write previews everything first, requires Tropy to be closed, and takes a
+timestamped backup before it touches anything. See
 [docs/TROPY_INTEGRATION.md](docs/TROPY_INTEGRATION.md) for details.
+
+### Cleanup guard
+
+Cleanup asks a model to rewrite archival text, and over 130 real pages it both
+repaired genuine OCR errors *and* damaged some pages — corrupting words that
+were already correct, and on fragmentary pages deleting clauses it could not
+parse. The guard makes that failure mode safe: if the output looks lossy or has
+altered a capitalised word, the raw text is kept instead, so a page is either
+cleaned or untouched — never quietly truncated. The rejected version is stored
+in the stage JSON as `rejected_cleaned_text` so it can still be reviewed.
+
+| key | default | meaning |
+|---|---|---|
+| `cleanup_guard` | `true` | Enable the guard |
+| `cleanup_guard_max_deleted_words` | `2` | Words that may vanish before rejecting |
+| `cleanup_guard_min_length_ratio` | `0.97` | Minimum share of source **letters** kept |
+| `cleanup_guard_protect_nouns` | `true` | Reject any change to a capitalised word |
+
+Note that German capitalises every noun, so `cleanup_guard_protect_nouns`
+effectively forbids the model from editing German nouns at all. That blocks
+`Elsass` → `Elass`, but also blocks the wanted `Narnen` → `Namen`. Turn it off
+if you would rather have the noun repairs and review them yourself.
 
 Supported input formats: `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`
 
@@ -87,6 +112,25 @@ Supported input formats: `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`
 ```bash
 ocr_pipeline_gui
 ```
+
+**Desktop shortcut (Windows).** `OCR Pipeline.lnk` in the project root launches
+the GUI with no console window — drag it onto your Desktop. To recreate it
+(after moving the project or reinstalling Python):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\make_shortcut.ps1
+powershell -ExecutionPolicy Bypass -File scripts\make_shortcut.ps1 -Desktop   # also place a copy on the Desktop
+```
+
+The shortcut runs [launch_ocr_pipeline.pyw](launch_ocr_pipeline.pyw), which
+sets the working directory, verifies the dependencies, and — if the
+interpreter it was started with cannot import them — finds one that can and
+re-launches itself. Startup failures are reported in a dialog and logged to
+`~/.ocr_pipeline/launcher.log` rather than disappearing silently, which is the
+usual failure mode for a windowed Python app.
+
+The icon is generated from the same design tokens as the interface:
+`py -3.12 scripts/make_icon.py`.
 
 A tabbed desktop application over the same pipeline the CLI uses.
 
@@ -155,3 +199,34 @@ output/
 | OCR        | allenai/olmocr-2-7b      | LM Studio  |
 | Cleanup    | gemma4:12b               | Ollama     |
 | Translate  | translategemma:4b        | Ollama     |
+
+### Why cleanup is fast (`ollama_think`)
+
+`gemma4:12b` is a reasoning model: left alone it emits a chain-of-thought block
+before answering. On mechanical OCR repair that is almost pure waste. Measured
+on a real archival page (1,769 characters):
+
+| | wall clock | tokens generated |
+|---|---|---|
+| reasoning on | 104.5 s | 7,664 |
+| reasoning off | 8.0 s | 569 |
+
+Same model, same GPU, output identical in length — about **13x**, or 8.3 hours
+versus 26 minutes over a 286-page batch. `ollama_think` therefore defaults to
+`false`.
+
+The saving is not free, though, and the two halves go together. Part of what
+the reasoning was doing was deliberating over whether to modernise the text.
+With it off and the old loose prompt, the model silently "improved" the source:
+`ueber` → `über`, `Marz` → `März`, and — worse — `Pans` → `Paris`,
+`Landon` → `London`. Inferring place names is exactly the corruption an
+archival transcription must not make.
+
+`prompts/cleanup_prompt.txt` is therefore written as a mechanical repair brief
+rather than an editing brief: it enumerates the artifacts to fix, forbids
+touching umlaut transliterations and proper nouns, and says to leave anything
+uncertain alone. **If you rewrite that prompt, keep the prohibitions** — they
+are what makes running without reasoning safe.
+
+Turn reasoning back on in **Settings → Model reasoning**, or with
+`ollama_think: true`.

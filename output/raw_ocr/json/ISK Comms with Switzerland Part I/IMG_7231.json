@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\ac61b59c5da232575d34de8aa86a6a72.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942. 15B.\n\nExtracts:-\n\nNo. 65. from Switzerland.\n\nFollowing is a digest of impressions on German morale originating from Socialist Party members in the Frankfort Kassel and S. German districts.\n\nThe common people are sick of the war and even towards the casualties of the Eastern front they seem indifferent. The N. Party members are not so vociferous as before but desire Victory at any price. Members of the former Socialist Parties and the Trade Unions want to see the Nazis defeated but are apprehensive of another Diktat.\n\nThe United Nations undertaking to visit retribution on the Schutzstaffel has led the authorities to transfer to its ranks the sons of former S.D. and T.U. members from various regiments.\n\nThere is some sabotage in factories used for war purposes, in rail transport and public utility works. Transmissions for workers are heard and talked about regularly in little gatherings. Those of the extreme left are kept out, as they have not profited by past lessons.\n\nOutput is going down gradually but surely, and the Premium on Production is a farce.\n\nThe punishing of war criminals for actions in occupied countries is approved. People are ready for useful work on reconstruction, but only in a free Socialist Germany in a Socialist Europe, not under compulsion from abroad.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:45:11.226271+00:00",
+  "page": 1,
+  "total_pages": 1
+}

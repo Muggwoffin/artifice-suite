@@ -176,21 +176,30 @@ def test_cleanup_stage_uses_prompt_file(mock_chat, tmp_path):
 def test_cleanup_cli_wires_through(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="Cleaned via CLI"))
 
-    raw_file = tmp_path / "raw_ocr.txt"
-    raw_file.write_text("Some raw OCR output", encoding="utf-8")
-    out_dir = tmp_path / "cli_output"
+    # This test covers CLI plumbing, not guard behaviour. The stub reply is far
+    # shorter than its input, which the content-preservation guard would (quite
+    # correctly) reject, so the guard is switched off for the duration.
+    from src.ocr_pipeline import config
+    config.apply_overrides({"cleanup_guard": False})
 
-    result = runner.invoke(
-        app, ["cleanup", str(raw_file), "--output-dir", str(out_dir)]
-    )
-    assert result.exit_code == 0
-    assert "Cleaned" in result.output
+    try:
+        raw_file = tmp_path / "raw_ocr.txt"
+        raw_file.write_text("Some raw OCR output", encoding="utf-8")
+        out_dir = tmp_path / "cli_output"
 
-    json_file = out_dir / "cleaned" / "json" / "raw_ocr.json"
-    assert json_file.exists()
-    data = json.loads(json_file.read_text(encoding="utf-8"))
-    assert data["cleaned_text"] == "Cleaned via CLI"
-    assert data["raw_text"] == "Some raw OCR output"
+        result = runner.invoke(
+            app, ["cleanup", str(raw_file), "--output-dir", str(out_dir)]
+        )
+        assert result.exit_code == 0
+        assert "Cleaned" in result.output
+
+        json_file = out_dir / "cleaned" / "json" / "raw_ocr.json"
+        assert json_file.exists()
+        data = json.loads(json_file.read_text(encoding="utf-8"))
+        assert data["cleaned_text"] == "Cleaned via CLI"
+        assert data["raw_text"] == "Some raw OCR output"
+    finally:
+        config.apply_overrides({"cleanup_guard": True})
 
 
 @patch("src.ocr_pipeline.stages.cleanup.ollama.chat")
@@ -726,6 +735,36 @@ def test_config_apply_overrides():
     assert config.get("resume") is False
     assert config.get("cleanup_model") == "gemma4:12b"  # default preserved
     config.reset()
+
+
+def test_save_user_settings_merges_rather_than_replaces(tmp_path, monkeypatch):
+    """A caller saving one field must not wipe out other saved fields.
+
+    Found via a real, if minor, incident: the web build's run-start handler
+    persists just `output_dir` after every run. Before this test existed,
+    `save_user_settings` overwrote the whole file, so that single-field save
+    silently discarded a previously-saved `cleanup_model` (or anything else).
+    """
+    from src.ocr_pipeline import config
+    monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
+
+    config.save_user_settings({"cleanup_model": "custom-model", "resume": False})
+    config.save_user_settings({"output_dir": "somewhere-else"})
+
+    saved = config.load_user_settings()
+    assert saved["cleanup_model"] == "custom-model"
+    assert saved["resume"] is False
+    assert saved["output_dir"] == "somewhere-else"
+
+
+def test_save_user_settings_still_drops_unknown_keys(tmp_path, monkeypatch):
+    from src.ocr_pipeline import config
+    monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
+
+    config.save_user_settings({"output_dir": "x", "not_a_real_setting": "y"})
+
+    saved = config.load_user_settings()
+    assert "not_a_real_setting" not in saved
 
 
 # ---------------------------------------------------------------------------

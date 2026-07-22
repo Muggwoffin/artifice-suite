@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3a9e5bb67e281f1eda4534a005eb8647.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "NR 15\nGENEVA\n5.12.41 2004\n6.12.41 0445 B.S.T.\nCXG 745\nORIGIN COS ACSS SOE (851) COS ACSS SOE (872)\n\nFOLLOWING FOR S.O.E. FROM J.Q.\nA. YOUR TELEGRAM NO 295 NOVEMBER 19TH. F.E. GROUP TRYING.\nB. YOUR TELEGRAM NO 307 NOVEMBER 25TH. THIS HAS BEEN PRESSED URGENTLY.\nC. ASK I.S.K. TO SUPPLY THROUGH ?COLLEAGUE (GROUP MUTILATED)\n10 COPIES PUBLICATION 'RENAISSANCE' FOR ROBERT.\n\nTELEPRINTED AT 1635 7.12.41 H.P.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:16:20.825673+00:00",
+  "page": 1,
+  "total_pages": 1
+}

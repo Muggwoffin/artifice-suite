@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d2dd7eef70dd9a5f7c05ab537af06a55.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942.\nExtracts:-\nNO. 65. from Switzerland.\n\nLOCAL 212\nCYPER TELEGRAM RECD. FROM BERNE\nDESP. 1206 23.1.43\nRECD. 1500 23.1.43\n0965\n?FOLLOWING FROM ROBERT FOR ECLAIR I.T.F.\n\nCLASS C\nJ\nX\nMX\n\nLOCAL NR. 727\nCIPHER TELEGRAM DESPATCHED TO BERNE.\nNO. 385\n21.1.43\nCLASS C\nJ\nX\nMX\n\n1. ROBERTS TELEGRAMS FOR ECLAIR CAUSING YOU TOO MUCH WORK.\n2. YOU SHOULD GIVE THESE MESSAGES LOW PRIORITY AND OMIT PRESS EXTRACTS AND SUMMARIES.\n3. WE APPRECIATE YOU MUST PLAY UP TO HIS TRADE UNION MOTIVES AND THEREFORE YOU CAN ACCEPT FROM HIM WITHOUT DISCLOSING NON TRANSMISSION.\n4. AS A GENERAL GUIDE TELEGRAPH ONLY ITEMS WHICH YOU THINK WOULD ALSO BENEFIT US REPEAT US.\n\nTP AT 2303 21.1.43 JL\nORIGIN J.\n\nUnglueck dagewesen.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:45:41.169693+00:00",
+  "page": 1,
+  "total_pages": 1
+}

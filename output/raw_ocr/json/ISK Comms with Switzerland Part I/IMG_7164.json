@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3fc9eb6e18ba3a32ad17a037723518f5.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "XFG/237 (Copy XF/45)\n\nX Discussed this (See No. 1584 from Berne) with J and D/R. on 8.6.43. and it was agreed by all that:-\n\n(1) Robert should go ahead with his own printed material and suggestions via all the channels mentioned in para 3.\n\n(2) He should be asked if he is willing to pass on to Frenchmen in Germany pamphlets based on the suggestions of Guigui and Buisson\n\nSamples of these pamphlets to be prepared by A/CD section in conjunction with P.W.E. and send to Robert through existing channels.\n\n(3) Robert should arrange separate post-boxes in Switzerland in order to handle the traffic between the various resistance groups in France and Frenchmen inside Germany.\n\n(4) For the material produced by Guigui and Buisson only the channel mentioned in 3A would be suitable: the channels 3B and 3C being solely for Robert's own use.\n\nD/R said that at a meeting yesterday between Guigui and Buisson they assured him that there was every possibility of establishing contact with a reliable Trades Union Frenchman in each of the main areas of Germany where Frenchmen were employed. It would be the task of these trained men to organise the Frenchmen in that area for subversive work.\n\nIt is also, if possible, intended to send on to Robert\n\n/over",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:36:09.329334+00:00",
+  "page": 1,
+  "total_pages": 1
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2691647c59426faf46b8a97fb840bf82.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Letter No. 45 from Switzerland.\n\n31.3.1942. (Nr. 25)\n\nI.\n\nHallo, Hallo, Hallo!\n\nArbeiter, Beamte, Bauern!\n\nMacht Schluss mit Euren Tyrannen!\n\nNieder mit Hitler und seinen Naziverbrechern!\n\nEs lebe das neue sozialistische Deutschland!\n\nIII.\n\nDeutsches Volk, wach auf!\n\nDie sch\u00f6nsten Verb\u00fcndeten hat doch wie immer Deutschland!\n\nSein neuester ist Japan. Japan, die gelbe Gefahr, wie man seit Jahrzehnten in Deutschland immer propagierte.\n\nROBERT to WILLI.\n\nLieber Willi!\n\nHiermit Flugbl\u00e4tter, die nach Deutschland von einem unserer Bekannten (von hier) versandt wurden.\n\nAlles Gute.\n\n28.3.42.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:10:21.605864+00:00",
+  "page": 1,
+  "total_pages": 1
+}

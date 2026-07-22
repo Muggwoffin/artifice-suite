@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8d0263d87429d44a52142c4665731853.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942.\n\nExtracts:-\n\nTO: X/G.\nFROM: X.\n2nd. January, 1942.\n\nJ. rang me up and asked whether the gist of the attached telegram ought to be given to AD/X for passing on to [redacted].\n\nNote: J has been advised of the procedure we have adopted with regard to 0841 from Berne.\n\nTO: AD/X.\nFROM: X/G.\n5th. January, 1943.\n\nWe have heard from Robert that he recently met, presumably in Switzerland, two of his German friends who told him that there are rumours going about inside, especially in Catholic circles, concerning the eventual split up of Germany into independent states and a separation between East and West Prussia, Silesia, Southern and Western Germany. The rumour is also prevalent that the United Nations do not intend to remove the real cause of war - viz: heavy industry and big landowners. It is, therefore, highly undesirable that these items should be passed to TO NAMES ON. ETC.\n\nThere is generally much fogginess re the post-war set up and some clarifying statements would be welcome for the edification of those \"inside\". A statement by [redacted] Germany is being reborn\" could be passed on to [redacted] in an untelographic, garbled form saying that a message has been received from his friends by a devious route and that he must not talk to anyone else about it as it might imperil the channel through which it has come.\n\nmit dem sie ein Wort sprechen kann. Und dann w\u00e4re evtl. das Ungl\u00fcck dagewesen.\n\nNeulich sah ich eine Karte aus Deutschland, die mit drei verschiedenfarbigen dicken Strichen von der Zensur verschmiert worden, anscheinend fahndete man nach drei verschiedenen Chemikalien.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:48:47.056033+00:00",
+  "page": 1,
+  "total_pages": 1
+}

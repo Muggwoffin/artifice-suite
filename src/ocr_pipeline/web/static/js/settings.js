@@ -1,0 +1,113 @@
+/*
+ * Settings tab: models/endpoints/processing options bound to /api/config,
+ * plus a pre-flight service-health check. Mirrors gui/views/settings_view.py
+ * field-for-field; the persistence rules are identical too — Save writes to
+ * ~/.ocr_pipeline/settings.json via the same config.save_user_settings() the
+ * desktop build calls, Reset only clears the in-memory/session override until
+ * Save is pressed again.
+ */
+
+const SettingsTab = (function () {
+  const FIELDS = {
+    lm_studio_url: "text", ocr_model: "text", cleanup_model: "text",
+    translate_model: "text", document_type: "select",
+    max_ocr_workers: "int", chunk_max_tokens: "int",
+    resume: "bool", confidence_enabled: "bool", ollama_think: "bool",
+  };
+
+  const docTypeSelect = document.getElementById("set-document_type");
+  const docTypeHint = document.getElementById("doc-type-hint");
+  const savedLabel = document.getElementById("settings-saved");
+  const healthPanel = document.getElementById("health-panel");
+
+  let docTypes = {};
+
+  function el(key) {
+    return document.getElementById(`set-${key}`);
+  }
+
+  async function ensureDocTypes() {
+    if (Object.keys(docTypes).length) return;
+    const data = await api("GET", "/api/document-types");
+    docTypes = data.types;
+    docTypeSelect.innerHTML = Object.keys(docTypes)
+      .map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join("");
+  }
+
+  function updateDocTypeHint() {
+    docTypeHint.textContent = docTypes[docTypeSelect.value] || "";
+  }
+
+  function apply(values) {
+    for (const [key, kind] of Object.entries(FIELDS)) {
+      const value = values[key];
+      if (kind === "bool") el(key).checked = !!value;
+      else el(key).value = value ?? "";
+    }
+    updateDocTypeHint();
+  }
+
+  function collect() {
+    const out = {};
+    for (const [key, kind] of Object.entries(FIELDS)) {
+      const field = el(key);
+      if (kind === "bool") out[key] = field.checked;
+      else if (kind === "int") out[key] = parseInt(field.value, 10) || 0;
+      else out[key] = field.value;
+    }
+    return out;
+  }
+
+  async function load() {
+    await ensureDocTypes();
+    const cfg = await api("GET", "/api/config");
+    apply(cfg);
+  }
+
+  async function save() {
+    await api("POST", "/api/config", collect());
+    savedLabel.textContent = "Saved.";
+    savedLabel.style.color = "var(--accent)";
+    setTimeout(() => { savedLabel.textContent = ""; }, 2500);
+  }
+
+  async function resetDefaults() {
+    const cfg = await api("POST", "/api/config/reset");
+    apply(cfg);
+    savedLabel.textContent = "Reset to defaults (not yet saved).";
+    savedLabel.style.color = "var(--gold)";
+    setTimeout(() => { savedLabel.textContent = ""; }, 3000);
+  }
+
+  function healthLine(label, ok, detail) {
+    const cls = ok ? "health-ok" : "health-fail";
+    const status = ok ? "OK" : "FAIL";
+    return `<div class="${cls}">${label}   ${status}${detail ? `   ${escapeHtml(detail)}` : ""}</div>`;
+  }
+
+  async function runPreflight() {
+    healthPanel.innerHTML = `<p class="dim">Checking services&hellip;</p>`;
+    try {
+      const health = await api("GET", "/api/health");
+      const lines = [
+        healthLine("LM Studio", health.lm_studio.ok,
+                   health.lm_studio.ok ? health.lm_studio.url : health.lm_studio.detail),
+        healthLine("Ollama", health.ollama.ok, health.ollama.ok ? "" : health.ollama.detail),
+        ...health.models.map(m => healthLine(`Model  ${m.name}`, m.ok)),
+      ];
+      healthPanel.innerHTML = lines.join("");
+    } catch (err) {
+      healthPanel.innerHTML = `<p class="health-fail">Could not run health check: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  docTypeSelect.addEventListener("change", updateDocTypeHint);
+  document.getElementById("btn-settings-save").onclick = save;
+  document.getElementById("btn-settings-reset").onclick = resetDefaults;
+  document.getElementById("btn-preflight").onclick = runPreflight;
+
+  let loaded = false;
+  TAB_ACTIVATE.settings = () => { if (!loaded) { loaded = true; load(); } };
+
+  return { load };
+})();

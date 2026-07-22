@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 import ollama
 
+from src.ocr_pipeline import _llm
 from src.ocr_pipeline._chunking import chunk_text, reassemble, estimate_tokens
 from src.ocr_pipeline._confidence import evaluate_confidence
 from src.ocr_pipeline._logging import get_logger
@@ -35,12 +36,14 @@ COMMON_LANGUAGES = {
 def _call_lang_detect(text: str, doc_type: str = "default") -> str:
     model = cfg("translate_model")
     prompt = get_lang_detect_prompt(doc_type)
-    response = ollama.chat(
+    response = _llm.chat(
+        ollama.chat,
         model=model,
         messages=[
             {"role": "user", "content": prompt.format(text=text[:2000])},
         ],
-        options={"temperature": 0},
+        temperature=0,
+        think=cfg("ollama_think"),
     )
     return response.message.content.strip().lower()
 
@@ -66,13 +69,16 @@ def _call_translate_chunk(
     user_prompt = user_template.replace("{text}", cleaned_text)
     model = cfg("translate_model")
 
-    response = ollama.chat(
+    response = _llm.chat(
+        ollama.chat,
         model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        options={"temperature": 0},
+        temperature=0,
+        think=cfg("ollama_think"),
+        num_predict=cfg("max_output_tokens"),
     )
 
     return response.message.content

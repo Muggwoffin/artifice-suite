@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\dcdff8d6bdb8534e03eca0b7f224c3fe.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "CONFIDENTIAL.\n\nFROM: H.\nZurich.\nSwitzerland.\n\nTO: W. Eichler,\n24 Mandeville Rise,\nWelwyn Garden City.\n\nTo: X/G/116/A\n\nI talked with London Colleagues of your Friends at Berne about your journey. They told me facts which convinced me that you should not leave the Continent as long as you have the intention of returning there. Jeanne can apply to go to England. They promised to help her to go later to USA.\n\nTO: J\n\nHere is the promised telegram, to be sent immediately to J.Q. It should solve all J.Q.'s problems about [REDACTED] trip, X/6/116/A and should help to get us the full co-operation of [REDACTED] and his friends in Switzerland.\n\nFollowing for J.Q. for [REDACTED]: - X/6/116/A\n\nA. QUOTE SPECIAL MESSAGE FROM ECLAIR: HAVE SPOKEN WITH LONDON COLLEAGUES OF YOUR BRITISH FRIENDS OF BERNE.\n\nB. AM [REDACTED] CONVINCED YOU SHOULD REMAIN SWITZERLAND.\n\nC. JEANNE MAY APPLY TO GO TO ENGLAND STOP. FRIENDS HERE PROMISED TO HELP JOURNEY STOP. SUBJECT TO YOUR FINDING SUBSTITUTE FOR HER WORK CONSIDER SHE SHOULD TAKE OPPORTUNITY TO IMPROVE OUR ACTIVITIES NORTH AND SOUTH AMERICA.\n\nD. IMPORTANT SEND ALL CONFIDENTIAL MATTER THROUGH BRITISH FRIENDS, ONLY PRINTED MATTER BY AIR MAIL. UNQUOTE.\n\nE. ECLAIR CODE NAME KNOWN TO [REDACTED]. X/6/116/A.\n\nWe could then have the telegram sent to Switzerland and everybody would be satisfied.\n\nPlease discuss the question with X.U. before the meeting.\n\npolitique interieure.\n\nc) revenir sur le debut..... de la guerre: montrez pourquoi elle etait bien necessaire: ceux qui disent le contraire acceptaient necessairement d'avance, la situation ou nous",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T16:19:20.874855+00:00",
+  "page": 1,
+  "total_pages": 1
+}

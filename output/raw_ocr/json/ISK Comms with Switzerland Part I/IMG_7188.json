@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\1920b5f44d548b5e93564e38cf76b566.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "This needs a little careful thought as to how we should price it on. At least it proves that those odd cuttings that come from Sweden periodically are from Robert & are meant for Willis. Note the cover address for our files. Please speak before we pass this on to MSA. X\n\n1622  30.4.43\n2120  30.4.43\n\nCLASS C\nJ. DR. SADLE\n\nOCCUPIED ZONE\nHE SEES NO USEFUL ACTIVITY HERE\nIF HE CAN WORK, AM IN\nG FUNDS. IF YOU WANT HIM\nSARY INSTRUCTIONS\n\nEDEN IS IT USEFUL CAN YOU\nSOCIAL DEVELOPMENT IN\nWOULD LIKE TO RECEIVE\nO NATION INTERESTING T.U.\nS. COULD USE FOR WORK WITH\nMILY BAUMER ROSENWEG 8\n\nSCHALMEI",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:39:13.080516+00:00",
+  "page": 1,
+  "total_pages": 1
+}

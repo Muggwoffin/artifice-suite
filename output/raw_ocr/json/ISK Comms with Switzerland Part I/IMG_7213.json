@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\02913f526a52d9afb68409c5d08b7f3c.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "5th March 1943.\n\nFROM: AD/X.1.\n\nTO: X.10\n\nWith reference to your memorandum of 4th March, the message has been passed on to WILLI in a suitable form.\n\n4th March, 1943.\n\nThe gist of a message from ECLAIR:-\n\nOne weeks arrest in no resulting trouble up in my work for you of communications.\n\nBeginning of February showing open contempt\n\nA group including publisher who are interested to put popular books on economics, post-defeat Germany. Swiss preliminary work. We hesitate, wing to ideological difficulties consider E.N.I. should prepare may obtain release of Gustav lend's help. Reply to be sent through\n\nIf you will have this suitable form.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:42:43.335414+00:00",
+  "page": 1,
+  "total_pages": 1
+}

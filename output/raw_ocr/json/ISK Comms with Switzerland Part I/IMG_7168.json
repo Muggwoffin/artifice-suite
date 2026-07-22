@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\1571dab50250e62a24a3944cb680dd5b.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "LOCAL 2\nCIPHER TELEGRAM FROM BERNE DESPATCHED 2011 3.6.43.\nRECEIVED 0440 4.6.43.\n\nNO 1586\nFROM ROBERT TO ECLAIR.\n1. HAVE GIVEN GRODOC EQUIVALENT OF \u00a340 TO ENABLE THEM TO GET INTO 53 AND HAVE ARRANGED FOR THEM TO BE GRANTED 53 VISE.\nASK LUCY FOR REFUND AND KEEP FOR OUR WORK. DID YOU GIVE BEA PERRY \u00a310 FOR HAIDA?\n2. TELL JIRD THAT RICHTER LEIPSIG WRITES MARION IS VERY X BUT FRIEDEL CANNOT WRITE. APPARENTLY STILL IN PRISON. WE ARE MAINTAINING CONTACT BY LETTER.\n3. PETZ SAYS DO NOT FORGET FRIES (1 LETTER MUT) CENTENARY IN AUGUST.\n\nX NOTE FROM CODES. SUGGEST WORD OMITTED.\n\nTP AT 0830 4.6.43. DREW",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:36:43.726145+00:00",
+  "page": 1,
+  "total_pages": 1
+}

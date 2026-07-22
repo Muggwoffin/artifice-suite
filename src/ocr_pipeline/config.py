@@ -23,6 +23,21 @@ _DEFAULTS: dict[str, Any] = {
     "chunk_overlap_tokens": 200,
     "confidence_enabled": True,
     "document_type": "default",
+    # P7: throughput. Reasoning models burn ~17x the tokens they need on
+    # mechanical cleanup; leaving this False keeps the cleanup stage fast.
+    # Set True only if you swap in a model whose reasoning you actually want.
+    "ollama_think": False,
+    # Hard ceiling on generated tokens (None = no cap). A runaway-generation
+    # guard; leave unset unless you have seen one, since a cap that bites
+    # truncates the document silently.
+    "max_output_tokens": None,
+    # Content-preservation guard for cleanup. When the model's output looks
+    # lossy or has altered a proper noun, the raw text is kept instead, so a
+    # page is either cleaned or untouched — never quietly truncated.
+    "cleanup_guard": True,
+    "cleanup_guard_max_deleted_words": 2,
+    "cleanup_guard_min_length_ratio": 0.97,  # letters, not characters
+    "cleanup_guard_protect_nouns": True,
     # P6: GUI persistence
     "history_db": None,  # defaults to ~/.ocr_pipeline/history.db
     "gui_theme": "paper",  # "paper" (light) or "night" (dark)
@@ -44,6 +59,7 @@ PERSISTED_KEYS = (
     "confidence_enabled",
     "chunk_max_tokens",
     "gui_theme",
+    "ollama_think",
 )
 
 _config_cache: dict[str, Any] | None = None
@@ -126,12 +142,20 @@ def load_user_settings() -> dict[str, Any]:
 
 
 def save_user_settings(settings: dict[str, Any]) -> None:
-    """Persist GUI settings. Only whitelisted keys are written."""
+    """Persist GUI settings. Only whitelisted keys are written.
+
+    Merges onto whatever is already saved rather than replacing the file
+    outright. The desktop Settings tab always saves its full field set, so it
+    never noticed, but the web build persists single fields in isolation
+    (`output_dir` alone, right after starting a run) — a plain overwrite would
+    silently discard every other saved setting each time that happened.
+    """
     import json
     _USER_DIR.mkdir(parents=True, exist_ok=True)
-    payload = {k: v for k, v in settings.items() if k in PERSISTED_KEYS}
+    merged = load_user_settings()
+    merged.update({k: v for k, v in settings.items() if k in PERSISTED_KEYS})
     with open(_SETTINGS_PATH, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2)
+        json.dump(merged, f, indent=2)
 
 
 def reset():

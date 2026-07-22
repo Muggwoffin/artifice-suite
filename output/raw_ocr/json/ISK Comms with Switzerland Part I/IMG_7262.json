@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\e3c734e281003f7208932ac2b6091089.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942.\n\nExtracts:-\n\nWuerdest Du bitte Hans noch einmal nach dem Zugfuehrer\n\nLetter No. \"from Switzerland.\"\n\nCopy.\nFROM: ROBERT\nTO: WILLI. 21.10.1942.\n\nLieber Freund!\n\nGestern sah ich unseren Gewaehrsmann fuer die Flugblatt-Uebermittlung nach Dld. Er sagte mir folgendes:\n\nLOCAL NO 529\nCIPHER TELEGRAM DESPATCHED TO BERNE 16.11.42.\n3642\n1. PAY ROBERT ON BEHALF OF ECLAIR FOR BENEFIT OF ITALIAN FRIENDS EQUIVALENT OF TWENTY REPEAT TWENTY POUNDS.\n2. THIS IS OSTENSIBLY PAYMENT FOR PRESS MATERIAL SENT TO ECLAIR.\nTP AT 1524 16.11.42. JC\nORIGIN J.\n\nEin ausgesprochen gutes Verhaeltnis zwischen franzoesischen Gefangenen und dem Baufuehrer, der ihnen taeglich etwas zu essen mitbrachte.\n\nDies fuer heute. In den naechsten Tagen hoffen wir unsere alte lungenkranke Bekannte zu sehen, die wieder in die Schweiz zurueckgekehrt ist, auf die wir schon seit einem Jahre gewartet haben.\n\nHerzliche Gruesse.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:49:46.920724+00:00",
+  "page": 1,
+  "total_pages": 1
+}

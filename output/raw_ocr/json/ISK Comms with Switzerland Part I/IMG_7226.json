@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b143495b08ee0a6b5caba62d3ebb57c8.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Letter from ROBERT to WILLI dated 8.10.1942. 15B.\n\nExtracts:-\n\nNo. 65. from Switzerland.\n\nTO: AD/X.\nFROM: X/G. 7th. February, 1943.\n\nWe have received from Robert for communication to Eclair the following information:\n\nre Germany. The news about the Eastern Front has caused a slump in morale which should be seized upon by oppositional elements especially in playing on Hitler's infallibility. In this connection, the broadcasting of Hitler's and Goering's statements is strongly recommended.\n\nWhilst Gestapo pressure is constantly increasing, production, on the other hand, is sinking. Foreign labour cannot replace the specialists who have been called up and there is also a dearth of certain materials such as fine steel. On the railways, trouble is on the increase owing to wear and tear and, to some extent, to sabotage. Railway personnel is working under severe pressure.\n\nre France. Nos. 37 and 38 of \"Combat\" continues the outlines of \"France combattante\".\n\nThe French police are using third degree methods on the lines of the Gestapo. In this connection, the name of Commissaire Pitiot of Lyons should be noted.\n\nThe Acieries d'Ufine in Savoie are working all out for Germany and are serving as a channel for the recruitment of workers for Germany. There have been demonstrations on the 19th. Jan. in Ste Etienne by workers who were leaving for Germany by the 18.20 hrs train.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:44:32.197646+00:00",
+  "page": 1,
+  "total_pages": 1
+}

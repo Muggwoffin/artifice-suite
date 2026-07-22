@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8edde82c282e20d3e448f8a694ea39e5.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "LOCAL 75\nCYpher Telegram Recd. from Berne\n1345\n\nDesp. 2359 19.4.43\nRecd. 0810 20.4.43\n\nClass C\nJ DR\nX AMR\nF\n\nROBERT TO ECLAIR\n\n1. Liberation Franc-Tireur and combat for March all call themselves \"Organ of United Resistance Movements\" thus expressing realization of resistance unity.\n\n2. Resumes of (A) Franc Tireur number 16 of March 20th (B) Liberation number 25th of March 1st (C) Combat number 42 (D) Populaire number 10 (Issue 30,000 repeat 30,000) if requested by you.\n\n3. Great number combat leaflets entitled \"Debout Against Slavory\" give paroles for resistance against deportation.\n\nTP 2145 20.4.43 MFB\n\nTP AT 1103 14.4.43 PQ",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:39:52.315680+00:00",
+  "page": 1,
+  "total_pages": 1
+}

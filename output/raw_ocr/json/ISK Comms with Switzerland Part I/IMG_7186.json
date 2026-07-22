@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9ace166f26422139fcbcb6fc681c3ec9.jpeg",
+  "stage": "raw_ocr",
+  "extracted_text": "TO: AD/X\nFROM: X/G\n\n4th May, 1943.\n\nIn reply to your note of 4th May, action has been taken.\n\nENBROEK.\n\nly safe in Italian occupied zone. Unwilling tzerland as he sees no useful activity here. to join you but only if he can work. Am tact with him and providing funds. If you ave you can always give him necessary\n\ndesirable that the above mentioned transmitted via ECLAIR, but direct from\n\ning stuff sent via Sweden? Is it useful? s via Sweden documentation on social devel- and and U.S.A? Would like to receive entary, New Statesman and Nation, interesting Also some American publications. Could ith French Syndicalists. Cover address Rosenweg 8, THUN.\n\nnd you have passed to ECLAIR the few cuttings from Switzerland via Sweden on two or three envelope has just been received and we enclose ission.) As to the return traffic suggested, end them by his own means.\n\nof GERARD and SCHALMEI?",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-21T15:38:58.067230+00:00",
+  "page": 1,
+  "total_pages": 1
+}
