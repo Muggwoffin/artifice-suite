@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Iterable
 
 from ._logging import get_logger
-from .tropy import _resolve_project_paths
+from .tropy_read import TropyPage, TropyProject, _resolve_project_paths
 
 log = get_logger("tropy_write")
 
@@ -412,3 +412,51 @@ def _language_code(item) -> str:
     if code and isinstance(code, str) and code.isalpha() and len(code) <= 3:
         return code.lower()
     return "de"
+
+
+# --------------------------------------------------------------------------- #
+# manifest
+# --------------------------------------------------------------------------- #
+
+def write_manifest(
+    output_dir: str | Path,
+    project: TropyProject,
+    pages: list[TropyPage],
+    *,
+    filename: str = "tropy_manifest.json",
+) -> Path:
+    """Record which output belongs to which Tropy photo.
+
+    Without this the mapping from ``output/.../KV-2-2339_01_p0002.txt`` back to
+    photo 1473 of item 1 exists only in someone's head.
+    """
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = out_dir / filename
+
+    existing: dict = {}
+    if target.exists():
+        try:
+            with open(target, encoding="utf-8") as f:
+                existing = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            existing = {}
+
+    entries = existing.get("pages") or {}
+    for page in pages:
+        entries[page.output_stem] = page.provenance()
+
+    payload = {
+        "project": {
+            "name": project.name,
+            "database": str(project.db_path),
+            "bundle": str(project.bundle_dir),
+        },
+        "output_layout": "<stage>/text/<item title>/<file>_p<page>.txt",
+        "pages": entries,
+    }
+    with open(target, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+
+    log.info("Wrote manifest for %d page(s) to %s", len(pages), target)
+    return target

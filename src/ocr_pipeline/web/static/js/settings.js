@@ -101,13 +101,82 @@ const SettingsTab = (function () {
     }
   }
 
+  // ---- templates ----
+
+  const templateSelect = document.getElementById("template-select");
+  const templateName = document.getElementById("template-name");
+  const templateStatus = document.getElementById("template-status");
+
+  function setTemplateStatus(msg, isError) {
+    templateStatus.textContent = msg;
+    templateStatus.style.color = isError ? "var(--gold)" : "";
+  }
+
+  async function refreshTemplates() {
+    const data = await api("GET", "/api/templates");
+    const names = Object.keys(data.templates);
+    templateSelect.innerHTML = '<option value="">-- Select a template --</option>' +
+      names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+    return data.templates;
+  }
+
+  async function saveTemplate() {
+    const name = templateName.value.trim();
+    if (!name) { setTemplateStatus("Please enter a template name.", true); return; }
+    const config = collect();
+    config.stages = {
+      ocr: document.getElementById("stage-ocr").checked,
+      cleanup: document.getElementById("stage-cleanup").checked,
+      translate: document.getElementById("stage-translate").checked,
+    };
+    config.force = document.getElementById("stage-force").checked;
+    config.output_dir = document.getElementById("output-dir").value;
+    await api("POST", "/api/templates/save", { name, config });
+    templateName.value = "";
+    await refreshTemplates();
+    setTemplateStatus(`Template "${name}" saved.`);
+  }
+
+  async function applyTemplate() {
+    const name = templateSelect.value;
+    if (!name) { setTemplateStatus("Select a template first.", true); return; }
+    await api("POST", "/api/templates/apply", { name });
+    await load();
+    // Also update non-settings fields (stages, output, force) if in template
+    const data = await api("GET", "/api/templates");
+    const templ = data.templates[name] || {};
+    if (templ.stages) {
+      if (templ.stages.ocr !== undefined) document.getElementById("stage-ocr").checked = templ.stages.ocr;
+      if (templ.stages.cleanup !== undefined) document.getElementById("stage-cleanup").checked = templ.stages.cleanup;
+      if (templ.stages.translate !== undefined) document.getElementById("stage-translate").checked = templ.stages.translate;
+    }
+    if (templ.force !== undefined) document.getElementById("stage-force").checked = templ.force;
+    if (templ.output_dir) document.getElementById("output-dir").value = templ.output_dir;
+    setTemplateStatus(`Template "${name}" applied.`);
+  }
+
+  async function deleteTemplate() {
+    const name = templateSelect.value;
+    if (!name) { setTemplateStatus("Select a template first.", true); return; }
+    if (!confirm(`Delete template "${name}"?`)) return;
+    await api("POST", "/api/templates/delete", { name });
+    await refreshTemplates();
+    setTemplateStatus(`Template "${name}" deleted.`);
+  }
+
   docTypeSelect.addEventListener("change", updateDocTypeHint);
   document.getElementById("btn-settings-save").onclick = save;
   document.getElementById("btn-settings-reset").onclick = resetDefaults;
   document.getElementById("btn-preflight").onclick = runPreflight;
+  document.getElementById("btn-template-save").onclick = saveTemplate;
+  document.getElementById("btn-template-apply").onclick = applyTemplate;
+  document.getElementById("btn-template-delete").onclick = deleteTemplate;
 
   let loaded = false;
-  TAB_ACTIVATE.settings = () => { if (!loaded) { loaded = true; load(); } };
+  TAB_ACTIVATE.settings = () => {
+    if (!loaded) { loaded = true; load(); }
+    refreshTemplates();
+  };
 
   return { load };
 })();

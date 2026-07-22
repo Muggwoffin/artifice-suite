@@ -24,6 +24,7 @@ from .. import config
 from .._diff import confidence_tier, diff_ranges, marker_ranges
 from ..history import HistoryStore
 from ..jobs import STAGES, JobItem, JobRunner, State
+from .serializers import serialize_item, serialize_item_preview
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
 
@@ -32,120 +33,57 @@ SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
 IMAGE_DPI = 300
 IMAGE_MAX_LONG_EDGE = 3000
 
+_IMAGE_PASSTHROUGH_TYPES = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+}
+
 
 def _item_key(item: JobItem) -> str:
     return str(id(item))
 
 
-def serialize_item(item: JobItem) -> dict[str, Any]:
-    return {
-        "id": _item_key(item),
-        "name": item.name,
-        "path": item.path,
-        "state": item.state.value,
-        "confidence": item.confidence,
-        "language": item.language,
-        "error": item.error,
-        "elapsed": round(item.elapsed, 1),
-        "guard_rejected": item.guard_rejected,
-        "stages": {
-            name: {
-                "state": status.state.value,
-                "chars": status.chars,
-                "elapsed": round(status.elapsed, 1),
-                "error": status.error,
-            }
-            for name, status in item.stages.items()
-        },
-    }
+def render_page_image_from(path: str, page: int | None) -> bytes:
+    """PNG bytes for a TIFF or single PDF page, given a path and page index.
 
-
-def serialize_event(event) -> dict[str, Any]:
-    return {
-        "kind": event.kind,
-        "stage": event.stage,
-        "message": event.message,
-        "tag": event.tag,
-        "payload": event.payload,
-        "item": serialize_item(event.item) if event.item is not None else None,
-    }
-
-
-def _diff_payload(raw: str, cleaned: str, translated: str) -> dict[str, Any]:
-    """Same highlight ranges `compare_view.py` computes, as JSON.
-
-    Kept server-side rather than reimplemented in JS so the two frontends
-    can never quietly disagree about what counts as a changed word.
-    """
-    raw_ranges, clean_ranges = ([], [])
-    if raw and cleaned:
-        raw_ranges, clean_ranges = diff_ranges(raw, cleaned)
-    return {
-        "raw_ranges": raw_ranges,
-        "cleaned_ranges": clean_ranges + (marker_ranges(cleaned) if cleaned else []),
-        "translated_ranges": marker_ranges(translated) if translated else [],
-    }
-
-
-def serialize_item_preview(item: JobItem) -> dict[str, Any]:
-    """Full text + diff/marker ranges for the Preview tab, in-memory only.
-
-    Nothing here touches disk — it reads whatever `item.results` the runner
-    already holds, exactly like `App.preview_item` does for the tk build.
-    """
-    results = item.results or {}
-    raw = (results.get("raw") or {}).get("extracted_text", "") or ""
-    cleaned = (results.get("cleaned") or {}).get("cleaned_text", "") or ""
-    translated = (results.get("translated") or {}).get("translated_text", "") or ""
-
-    return {
-        "id": _item_key(item),
-        "title": item.name,
-        "path": item.path,
-        "raw": raw,
-        "cleaned": cleaned,
-        "translated": translated,
-        "confidence": item.confidence,
-        "confidence_tier": confidence_tier(item.confidence),
-        "language": item.language,
-        "diff": _diff_payload(raw, cleaned, translated),
-    }
-
-
-def render_page_image(item: JobItem) -> bytes:
-    """PNG bytes for a TIFF source, or the single PDF page `item.page` points
-    at — never the whole document (a 275-page Tropy item would make that a
-    real waste, exactly what `_pdf_single_page_image`'s docstring warns
-    against). JPEG/PNG need no conversion — browsers render them natively —
-    and are served directly by the route instead of coming through here.
+    JPEG/PNG are not handled here — browsers render those natively, and
+    callers should serve them as FileResponse using ``_IMAGE_PASSTHROUGH_TYPES``.
 
     PDF render DPI is capped by long edge rather than left uncapped, so an
     oversized scan doesn't produce an unreasonably large PNG; TIFF is
-    converted at its native resolution, same as the jpg/png passthrough
-    case leaves those files at whatever resolution they already are.
+    converted at its native resolution.
     """
     import fitz  # PyMuPDF
 
-    path = Path(item.path)
-    suffix = path.suffix.lower()
+    p = Path(path)
+    suffix = p.suffix.lower()
 
     if suffix in (".tif", ".tiff"):
-        return fitz.Pixmap(str(path)).tobytes("png")
+        return fitz.Pixmap(str(p)).tobytes("png")
 
     if suffix == ".pdf":
-        doc = fitz.open(str(path))
+        doc = fitz.open(str(p))
         try:
-            page = doc[item.page or 0]
+            pdf_page = doc[page or 0]
             dpi = IMAGE_DPI
-            long_edge_pt = max(page.rect.width, page.rect.height)
+            long_edge_pt = max(pdf_page.rect.width, pdf_page.rect.height)
             long_edge_px = long_edge_pt / 72 * dpi
             if long_edge_px > IMAGE_MAX_LONG_EDGE:
                 dpi = dpi * IMAGE_MAX_LONG_EDGE / long_edge_px
-            return page.get_pixmap(dpi=max(int(dpi), 1)).tobytes("png")
+            return pdf_page.get_pixmap(dpi=max(int(dpi), 1)).tobytes("png")
         finally:
             doc.close()
 
     raise ValueError(f"No image renderer for {suffix} files")
+
+
+def render_page_image(item: JobItem) -> bytes:
+    """PNG bytes for a TIFF source, or the single PDF page ``item.page`` points
+    at — delegates to ``render_page_image_from``.
+
+    JPEG/PNG need no conversion — browsers render them natively —
+    and are served directly by the route instead of coming through here.
+    """
+    return render_page_image_from(item.path, item.page)
 
 
 def save_raw_text(item: JobItem, text: str) -> dict[str, Any]:
@@ -183,50 +121,6 @@ def save_raw_text(item: JobItem, text: str) -> dict[str, Any]:
     return serialize_item_preview(item)
 
 
-def serialize_history_run(row: sqlite3.Row) -> dict[str, Any]:
-    return {
-        "run_id": row["run_id"],
-        "started": row["started"],
-        "finished": row["finished"],
-        "stages": row["stages"],
-        "output_dir": row["output_dir"],
-        "total": row["total"],
-        "succeeded": row["succeeded"],
-        "failed": row["failed"],
-        "elapsed": row["elapsed"],
-    }
-
-
-def serialize_history_item(row: sqlite3.Row) -> dict[str, Any]:
-    return {
-        "item_id": row["item_id"],
-        "name": row["name"],
-        "state": row["state"],
-        "language": row["language"],
-        "confidence": row["confidence"],
-    }
-
-
-def serialize_history_item_detail(row: sqlite3.Row) -> dict[str, Any]:
-    raw = row["raw_text"] or ""
-    cleaned = row["cleaned_text"] or ""
-    translated = row["translated_text"] or ""
-    return {
-        "item_id": row["item_id"],
-        "name": row["name"],
-        "source_file": row["source_file"],
-        "state": row["state"],
-        "language": row["language"],
-        "confidence": row["confidence"],
-        "confidence_tier": confidence_tier(row["confidence"]),
-        "error": row["error"],
-        "raw": raw,
-        "cleaned": cleaned,
-        "translated": translated,
-        "diff": _diff_payload(raw, cleaned, translated),
-    }
-
-
 class RunState:
     """Everything about the batch currently queued or in flight.
 
@@ -255,12 +149,7 @@ class RunState:
 
     # ----------------------------------------------------------------- queue
     def add_paths(self, paths: list[str]) -> list[JobItem]:
-        """Resolve files and folders into queue items, skipping duplicates.
-
-        Mirrors `QueueTable.add_paths`: identity is (path, stem) rather than
-        just path, because a Tropy page shares its path with every other page
-        of the same PDF.
-        """
+        """Resolve files and folders into queue items, skipping duplicates."""
         resolved: list[str] = []
         for raw in paths:
             p = Path(raw)
@@ -319,11 +208,7 @@ class RunState:
         return [serialize_item(i) for i in self.items]
 
     def tropy_eligible_items(self, item_ids: list[str] | None) -> list[JobItem]:
-        """Queue items that came from Tropy (carry a photo_id), for send-back.
-
-        `item_ids=None` means "everything eligible currently in the queue" —
-        the same default the desktop dialog uses when nothing is selected.
-        """
+        """Queue items that came from Tropy (carry a photo_id), for send-back."""
         pool = (
             [self.get(i) for i in item_ids] if item_ids is not None
             else list(self.items)
@@ -332,7 +217,7 @@ class RunState:
 
     # --------------------------------------------------------------- running
     def start_run(self, *, stages: set[str], output_dir: str,
-                 force: bool) -> queue.Queue:
+                  force: bool) -> queue.Queue:
         if self.runner is not None and self.runner.is_running:
             raise RuntimeError("A run is already in progress")
         if not self.items:
@@ -394,6 +279,25 @@ class RunState:
         self.runner.skip(item)
         return True
 
+    def retry(self, ids: list[str]) -> bool:
+        """Reset finished/failed items so the next start-run retries them."""
+        if self.runner is not None and self.runner.is_running:
+            return False
+        for item_id in ids:
+            item = self.get(item_id)
+            if item is not None and item.state in (State.DONE, State.FAILED, State.CANCELLED):
+                item.state = State.PENDING
+                item.error = ""
+                item.results = {}
+                item.confidence = None
+                item.language = ""
+                for status in item.stages.values():
+                    status.state = State.PENDING
+                    status.elapsed = 0.0
+                    status.chars = 0
+                    status.error = ""
+        return True
+
     def status(self) -> dict:
         return {
             "running": bool(self.runner and self.runner.is_running),
@@ -402,9 +306,7 @@ class RunState:
         }
 
 
-# One instance for the process. A web app with multiple simultaneous users
-# would need this scoped per-session; this tool is run by one person on their
-# own machine, so a module-level singleton is the honest amount of state.
+# One instance for the process.
 state = RunState()
 
 
@@ -431,7 +333,7 @@ class PdfExportState:
 pdf_export_state = PdfExportState()
 
 
-def start_pdf_export(folder, *, stage, structure, output, manifest_path) -> bool:
+def start_pdf_export(folder, *, stage, structure, output, manifest_path, format="pdf", style="readable") -> bool:
     """Returns False (caller should 409) if one is already running."""
     with pdf_export_state.lock:
         if pdf_export_state.status == "running":
@@ -442,14 +344,14 @@ def start_pdf_export(folder, *, stage, structure, output, manifest_path) -> bool
         pdf_export_state.events = queue.Queue()
         pdf_export_state.thread = threading.Thread(
             target=_run_pdf_export,
-            args=(folder, stage, structure, output, manifest_path),
+            args=(folder, stage, structure, output, manifest_path, format, style),
             daemon=True,
         )
         pdf_export_state.thread.start()
     return True
 
 
-def _run_pdf_export(folder, stage, structure, output, manifest_path):
+def _run_pdf_export(folder, stage, structure, output, manifest_path, format, style):
     from .. import pdf_export
 
     def on_progress(message):
@@ -458,7 +360,8 @@ def _run_pdf_export(folder, stage, structure, output, manifest_path):
     try:
         result_path = pdf_export.compile(
             folder, stage=stage, structure=structure, output=output,
-            manifest_path=manifest_path, on_progress=on_progress,
+            manifest_path=manifest_path, format=format, style=style,
+            on_progress=on_progress,
         )
         pdf_export_state.output_path = str(result_path)
         pdf_export_state.status = "done"

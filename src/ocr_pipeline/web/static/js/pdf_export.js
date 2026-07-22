@@ -13,6 +13,7 @@ const pdfEls = {};
  "pdf-structure", "pdf-output", "pdf-status", "pdf-log",
  "btn-pdf-start", "btn-pdf-download", "btn-pdf-close",
  "btn-pdf-browse-folder", "btn-pdf-browse-output",
+ "pdf-format", "pdf-style",
 ].forEach(id => {
   pdfEls[id] = document.getElementById(id);
 });
@@ -94,6 +95,8 @@ async function startPdfExport() {
       stage: pdfEls["pdf-stage"].value,
       structure: pdfEls["pdf-structure"].checked,
       output: pdfEls["pdf-output"].value.trim() || null,
+      format: pdfEls["pdf-format"].value,
+      style: pdfEls["pdf-style"].value,
     });
   } catch (err) {
     setPdfStatus("Failed to start: " + err.message, "error");

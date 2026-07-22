@@ -220,6 +220,19 @@ class HistoryStore:
                 (like, like, limit),
             ).fetchall()
 
+    def fulltext_search(self, query: str, limit: int = 200) -> list[sqlite3.Row]:
+        like = f"%{query}%"
+        with self._lock:
+            return self._conn.execute(
+                """SELECT item_id, name, source_file,
+                          raw_text, cleaned_text, translated_text
+                   FROM run_items
+                   WHERE raw_text LIKE ? OR cleaned_text LIKE ? OR translated_text LIKE ?
+                   ORDER BY item_id
+                   LIMIT ?""",
+                (like, like, like, limit),
+            ).fetchall()
+
     # ------------------------------------------------------------- analytics
     def stats(self) -> dict[str, Any]:
         """Aggregates for the Analytics view."""

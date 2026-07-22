@@ -70,6 +70,7 @@
           <button class="btn danger" id="btn-clear">Clear All</button>
           <div class="rule-v"></div>
           <button class="btn" id="btn-skip">Skip</button>
+          <button class="btn" id="btn-retry">Retry</button>
           <div class="spacer"></div>
           <button class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
           <button class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
@@ -108,7 +109,7 @@
             <span class="dim" id="image-zoom-readout"></span>
           </div>
           <div class="image-viewport" id="image-viewport">
-            <img id="preview-image" alt="Source scan" draggable="false">
+            <img id="preview-image" class="source-image" alt="Source scan" draggable="false">
             <p class="image-empty dim" id="image-empty">(no document selected)</p>
           </div>
         </div>
@@ -173,14 +174,30 @@
         </div>
       </div>
 
-      <div class="card compare-card">
+      <div class="card compare-card compare-card--with-image">
+        <div class="image-pane" id="history-image-pane">
+          <div class="image-toolbar">
+            <button class="btn" id="btn-history-image-reset" type="button" title="Reset zoom (or double-click the image)">Reset</button>
+            <span class="dim" id="history-image-zoom-readout"></span>
+          </div>
+          <div class="image-viewport" id="history-image-viewport">
+            <img id="history-image" class="source-image" alt="Source scan" draggable="false">
+            <p class="image-empty dim" id="history-image-empty">(no document selected)</p>
+          </div>
+        </div>
         <div class="compare-bar">
           <h2 class="compare-title">No document selected</h2>
           <span class="compare-conf dim"></span>
         </div>
         <div class="compare-panes">
           <div class="compare-pane" data-pane="raw">
-            <div class="compare-pane-head"><span>RAW OCR</span><span class="compare-meta dim"></span></div>
+            <div class="compare-pane-head">
+              <span>RAW OCR</span>
+              <span class="compare-pane-actions">
+                <button class="btn" id="btn-history-save-raw" type="button" disabled>Save correction</button>
+                <span class="compare-meta dim"></span>
+              </span>
+            </div>
             <div class="compare-text"><span class="empty">(not run)</span></div>
           </div>
           <div class="compare-pane" data-pane="cleaned">
@@ -240,6 +257,22 @@
           <label class="check"><input type="checkbox" id="set-confidence_enabled"> Enable confidence scoring</label>
           <label class="check"><input type="checkbox" id="set-ollama_think"> Model reasoning (slow &mdash; see README)</label>
           <p class="dim" style="margin:0.2rem 0 0;">Reasoning costs ~13x on cleanup for no gain.</p>
+        </div>
+        <div class="card settings-card" style="grid-column: 1 / -1;">
+          <h3>Run Templates</h3>
+          <p class="dim" style="margin:0 0 0.6rem;">Save and load stage/option configurations.</p>
+          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <select id="template-select" class="select" style="flex:1;">
+              <option value="">-- Select a template --</option>
+            </select>
+            <button class="btn" id="btn-template-apply">Apply</button>
+            <button class="btn" id="btn-template-delete">Delete</button>
+          </div>
+          <div style="display:flex; gap:0.5rem; margin-top:0.6rem;">
+            <input type="text" id="template-name" class="input" style="flex:1;" placeholder="Template name">
+            <button class="btn accent" id="btn-template-save">Save Current as Template</button>
+          </div>
+          <span id="template-status" class="dim" style="margin-top:0.4rem; display:inline-block;"></span>
         </div>
         <div class="card settings-card" style="grid-column: 1 / -1;">
           <h3>Service Health</h3>
@@ -312,10 +345,23 @@
         </select>
       </label>
       <label class="check"><input type="checkbox" id="pdf-structure" checked> Structure text</label>
+      <label>Format:
+        <select id="pdf-format">
+          <option value="pdf">PDF</option>
+          <option value="md">Markdown</option>
+        </select>
+      </label>
+      <label>Style:
+        <select id="pdf-style">
+          <option value="readable">Readable</option>
+          <option value="academic">Academic</option>
+          <option value="compact">Compact</option>
+        </select>
+      </label>
     </div>
 
     <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
-      <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Output PDF path (optional)">
+      <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Output path (optional)">
       <button class="btn" id="btn-pdf-browse-output">Browse&hellip;</button>
     </div>
 

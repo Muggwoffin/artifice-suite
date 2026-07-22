@@ -31,6 +31,7 @@ async function openTropyAdd() {
   tropyEls["tropy-items"].innerHTML =
     `<div class="empty-state">Select a list, tag, or "All items" on the left</div>`;
   tropyProjectData = null;
+  selectedSources.clear();
   updateTropySummary(0, 0, []);
   tropyEls["btn-tropy-add-queue"].disabled = true;
   await ensureTropyProjectList(tropyEls["tropy-project"]);
@@ -76,6 +77,10 @@ async function loadTropySources() {
     const data = await api("POST", "/api/tropy/browse", { project });
     tropyProjectData = data;
     renderSourceTree(data);
+    // Reset to default selection: All items
+    selectedSources.clear();
+    selectedSources.set(sourceKey(ALL_ITEMS, null), { type: ALL_ITEMS, id: null });
+    updateSourceHighlight();
   } catch (err) {
     tropyEls["tropy-sources"].innerHTML =
       `<p class="dim" style="padding:0.7rem;">${escapeHtml(err.message)}</p>`;
@@ -165,30 +170,94 @@ function renderSourceTree(data) {
 }
 
 let currentSource = ALL_ITEMS;
+const selectedSources = new Map(); // key -> {type, id}
 
-async function selectSource(node, type, id) {
-  // Highlight
-  tropyEls["tropy-sources"].querySelectorAll(".tropy-source-node.active")
-    .forEach(n => n.classList.remove("active"));
-  node.classList.add("active");
-  currentSource = { type, id };
+function sourceKey(type, id) {
+  return `${type}::${id ?? ""}`;
+}
 
+function getSourceNode(type, id) {
+  const key = sourceKey(type, id);
+  return tropyEls["tropy-sources"].querySelector(
+    `.tropy-source-node[data-type="${type}"]` +
+    (id != null ? `[data-id="${id}"]` : ""));
+}
+
+function updateSourceHighlight() {
+  tropyEls["tropy-sources"].querySelectorAll(".tropy-source-node")
+    .forEach(n => {
+      const key = sourceKey(n.dataset.type, n.dataset.id);
+      n.classList.toggle("active", selectedSources.has(key));
+    });
+}
+
+async function fetchCombinedItems() {
   const project = tropyEls["tropy-project"].value;
-  if (!project) return;
+  if (!project || !selectedSources.size) return;
 
   tropyEls["tropy-items"].innerHTML =
     `<div class="empty-state">Loading…</div>`;
 
   try {
-    const body = { project };
-    if (type === "list") body.list_id = id;
-    else if (type === "tag") body.tag = id;
+    const seen = new Set();
+    const merged = [];
 
-    const data = await api("POST", "/api/tropy/browse", body);
-    renderItems(data.items || []);
+    for (const [, src] of selectedSources) {
+      const body = { project };
+      if (src.type === "list") body.list_id = src.id;
+      else if (src.type === "tag") body.tag = src.id;
+
+      const data = await api("POST", "/api/tropy/browse", body);
+      for (const item of (data.items || [])) {
+        if (!seen.has(item.item_id)) {
+          seen.add(item.item_id);
+          merged.push(item);
+        }
+      }
+    }
+
+    renderItems(merged);
   } catch (err) {
     tropyEls["tropy-items"].innerHTML =
       `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function selectSource(node, type, id) {
+  const ctrl = window.event ? window.event.ctrlKey || window.event.metaKey : false;
+
+  if (ctrl) {
+    const key = sourceKey(type, id);
+    if (selectedSources.has(key)) {
+      selectedSources.delete(key);
+    } else {
+      selectedSources.set(key, { type, id });
+    }
+    updateSourceHighlight();
+    await fetchCombinedItems();
+  } else {
+    selectedSources.clear();
+    const key = sourceKey(type, id);
+    selectedSources.set(key, { type, id });
+    updateSourceHighlight();
+
+    const project = tropyEls["tropy-project"].value;
+    if (!project) return;
+
+    tropyEls["tropy-items"].innerHTML =
+      `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const body = { project };
+      if (type === "list") body.list_id = id;
+      else if (type === "tag") body.tag = id;
+
+      const data = await api("POST", "/api/tropy/browse", body);
+      renderItems(data.items || []);
+    } catch (err) {
+      tropyEls["tropy-items"].innerHTML =
+        `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+    }
   }
 }
 

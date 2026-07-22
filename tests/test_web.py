@@ -10,7 +10,7 @@ coverage in `test_gui.py`.
 `server.py` binds `state` at import time via `from .runtime import state`, so
 patching `runtime.state` after that import would not reach the endpoints —
 they resolve `state` from `server`'s own module globals. The fixture below
-patches `server.state` directly for that reason.
+patches `runtime.state` directly for that reason.
 """
 
 import socket
@@ -19,9 +19,21 @@ import sys
 import pytest
 from fastapi.testclient import TestClient
 
+from conftest import TROPY_SCHEMA
+
 from src.ocr_pipeline import config
 from src.ocr_pipeline.web import server
+from src.ocr_pipeline.web import runtime
 from src.ocr_pipeline.web.runtime import RunState
+from src.ocr_pipeline.web.routers import (
+    analytics as _analytics_router,
+    events as _events_router,
+    history as _history_router,
+    pdf_export as _pdf_export_router,
+    queue as _queue_router,
+    run as _run_router,
+    tropy as _tropy_router,
+)
 
 
 @pytest.fixture
@@ -37,7 +49,13 @@ def client(tmp_path, monkeypatch):
     config.apply_overrides({"history_db": str(tmp_path / "history.db")})
 
     fresh = RunState()
-    monkeypatch.setattr(server, "state", fresh)
+    monkeypatch.setattr(_queue_router, "state", fresh)
+    monkeypatch.setattr(_run_router, "state", fresh)
+    monkeypatch.setattr(_events_router, "state", fresh)
+    monkeypatch.setattr(_history_router, "state", fresh)
+    monkeypatch.setattr(_analytics_router, "state", fresh)
+    monkeypatch.setattr(_tropy_router, "state", fresh)
+    # pdf_export router does NOT import state, only pdf_export_state
     monkeypatch.setattr("src.ocr_pipeline.web.runtime.state", fresh)
 
     with TestClient(server.app) as c:
@@ -150,6 +168,21 @@ def test_skip_unknown_item_reports_not_ok(client):
     assert res.json() == {"ok": False}
 
 
+def test_retry_resets_finished_items(client, tmp_path):
+    from src.ocr_pipeline.jobs import State
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    runtime.state.get(item_id).state = State.DONE
+
+    res = client.post("/api/run/retry", json=[item_id])
+    assert res.json() == {"ok": True}
+    assert runtime.state.get(item_id).state == State.PENDING
+
+
 def test_pause_resume_cancel_are_no_ops_without_a_run(client):
     # None of these should raise just because nothing is running yet.
     for path in ("/api/run/pause", "/api/run/resume", "/api/run/cancel"):
@@ -232,7 +265,7 @@ def test_preview_returns_text_confidence_and_diff(client, tmp_path):
     added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
     item_id = added["items"][0]["id"]
 
-    item = server.state.get(item_id)
+    item = runtime.state.get(item_id)
     item.results = {
         "raw": {"extracted_text": "Der Be-\nricht war unvollstandig."},
         "cleaned": {"cleaned_text": "Der Bericht war unvollstandig."},
@@ -315,8 +348,8 @@ def test_image_route_renders_only_the_pdf_page_item_points_at(client, tmp_path):
     doc.close()
 
     item = JobItem(path=str(pdf_path), page=1)
-    server.state.add_items([item])
-    item_id = server.state.queue_snapshot()[-1]["id"]
+    runtime.state.add_items([item])
+    item_id = runtime.state.queue_snapshot()[-1]["id"]
 
     res = client.get(f"/api/queue/{item_id}/image")
     assert res.status_code == 200
@@ -342,8 +375,8 @@ def test_image_route_caps_an_oversized_pdf_page(client, tmp_path):
     doc.close()
 
     item = JobItem(path=str(pdf_path), page=0)
-    server.state.add_items([item])
-    item_id = server.state.queue_snapshot()[-1]["id"]
+    runtime.state.add_items([item])
+    item_id = runtime.state.queue_snapshot()[-1]["id"]
 
     res = client.get(f"/api/queue/{item_id}/image")
     rendered = fitz.Pixmap(res.content)
@@ -361,7 +394,7 @@ def test_raw_text_save_updates_in_memory_only_when_no_output_exists(client, tmp_
     added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
     item_id = added["items"][0]["id"]
 
-    item = server.state.get(item_id)
+    item = runtime.state.get(item_id)
     item.results = {"raw": {"extracted_text": "origianl typo"}}
 
     res = client.post(f"/api/queue/{item_id}/raw-text", json={"text": "original corrected"})
@@ -386,7 +419,7 @@ def test_raw_text_save_overwrites_disk_output_preserving_other_provenance(client
     f.write_bytes(b"x")
     added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
     item_id = added["items"][0]["id"]
-    item = server.state.get(item_id)
+    item = runtime.state.get(item_id)
     item.results = {"raw": {"extracted_text": "garbld txt"}}
 
     (text_dir / f"{item.stem}.txt").write_text("garbld txt", encoding="utf-8")
@@ -425,7 +458,7 @@ def test_raw_text_save_never_touches_cleaned_or_translated_dirs(client, tmp_path
     f.write_bytes(b"x")
     added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
     item_id = added["items"][0]["id"]
-    item = server.state.get(item_id)
+    item = runtime.state.get(item_id)
 
     (output_dir / "raw_ocr" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
     (output_dir / "raw_ocr" / "json" / f"{item.stem}.json").write_text(
@@ -495,7 +528,7 @@ def _seed_history_run(state, *, failed=0):
 
 
 def test_history_runs_lists_finished_runs(client):
-    _seed_history_run(server.state)
+    _seed_history_run(runtime.state)
 
     res = client.get("/api/history/runs")
     runs = res.json()["runs"]
@@ -505,7 +538,7 @@ def test_history_runs_lists_finished_runs(client):
 
 
 def test_history_run_items_lists_documents(client):
-    run_id = _seed_history_run(server.state)
+    run_id = _seed_history_run(runtime.state)
 
     res = client.get(f"/api/history/runs/{run_id}/items")
     items = res.json()["items"]
@@ -514,7 +547,7 @@ def test_history_run_items_lists_documents(client):
 
 
 def test_history_item_detail_includes_text_and_diff(client):
-    run_id = _seed_history_run(server.state)
+    run_id = _seed_history_run(runtime.state)
     item_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
 
     res = client.get(f"/api/history/items/{item_id}")
@@ -530,8 +563,123 @@ def test_history_item_detail_404_for_unknown_id(client):
     assert res.status_code == 404
 
 
+def test_history_item_detail_includes_page(client):
+    run_id = _seed_history_run(runtime.state)
+    item_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+    body = client.get(f"/api/history/items/{item_id}").json()
+    assert "page" in body
+
+
+def test_history_image_route_404_for_unknown_item(client):
+    res = client.get("/api/history/items/999999/image")
+    assert res.status_code == 404
+
+
+def test_history_image_route_404_when_source_file_gone(client, tmp_path):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path=str(tmp_path / "nope.png"))
+    item.state = JobState.DONE
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+    hist_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+    res = client.get(f"/api/history/items/{hist_id}/image")
+    assert res.status_code == 404
+
+
+def test_history_image_route_passes_jpg_through_unchanged(client, tmp_path):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    f = tmp_path / "scan.jpg"
+    f.write_bytes(b"\xff\xd8\xff-fake-jpeg")
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path=str(f))
+    item.state = JobState.DONE
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+    hist_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+    res = client.get(f"/api/history/items/{hist_id}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/jpeg"
+    assert res.content == b"\xff\xd8\xff-fake-jpeg"
+
+
+def test_history_image_route_renders_page_parsed_from_name_when_page_col_null(client, tmp_path):
+    import fitz
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    pdf_path = tmp_path / "doc.pdf"
+    doc = fitz.open()
+    doc.new_page(width=50, height=200)   # page 0 — tall
+    doc.new_page(width=200, height=50)   # page 1 — wide
+    doc.save(str(pdf_path))
+    doc.close()
+
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=2)
+    for idx in (0, 1):
+        item = JobItem(path=str(pdf_path))
+        item.state = JobState.DONE
+        item.label = f"Eberhard KV 3.pdf  p.{idx + 1}"
+        runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=2, failed=0, elapsed=1.0)
+
+    items = client.get(f"/api/history/runs/{run_id}/items").json()["items"]
+    img0 = client.get(f"/api/history/items/{items[0]['item_id']}/image").content
+    img1 = client.get(f"/api/history/items/{items[1]['item_id']}/image").content
+    pix0 = fitz.Pixmap(img0)
+    pix1 = fitz.Pixmap(img1)
+    assert pix0.height > pix0.width  # tall (page 0)
+    assert pix1.width > pix1.height  # wide (page 1)
+    assert img0 != img1  # different pages rendered
+
+
+def test_history_image_route_honours_page_column_when_set(client, tmp_path):
+    import fitz
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    pdf_path = tmp_path / "doc.pdf"
+    doc = fitz.open()
+    doc.new_page(width=200, height=50)   # page 0
+    doc.new_page(width=50, height=200)   # page 1
+    doc.save(str(pdf_path))
+    doc.close()
+
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path=str(pdf_path), page=1)  # explicitly page 1
+    item.state = JobState.DONE
+    item.label = "Eberhard KV 3.pdf  p.1"  # name says page 1, but column should win
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+
+    hist_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+    img_bytes = client.get(f"/api/history/items/{hist_id}/image").content
+    pix = fitz.Pixmap(img_bytes)
+    assert pix.height > pix.width  # page 1 is tall — column beats name parse
+
+
+def test_history_raw_text_save_updates_text(client):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path="C:/docs/report.png")
+    item.state = JobState.DONE
+    item.results = {"raw": {"extracted_text": "original text"}}
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+    hist_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+
+    res = client.post(f"/api/history/items/{hist_id}/raw-text", json={"text": "corrected text"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["raw"] == "corrected text"
+
+    re_read = client.get(f"/api/history/items/{hist_id}").json()
+    assert re_read["raw"] == "corrected text"
+
+
+def test_history_raw_text_save_404_for_unknown_item(client):
+    res = client.post("/api/history/items/999999/raw-text", json={"text": "x"})
+    assert res.status_code == 404
+
+
 def test_history_search_finds_by_filename(client):
-    _seed_history_run(server.state)
+    _seed_history_run(runtime.state)
 
     hit = client.get("/api/history/search", params={"q": "letter"})
     miss = client.get("/api/history/search", params={"q": "nonexistent"})
@@ -540,14 +688,33 @@ def test_history_search_finds_by_filename(client):
     assert miss.json()["items"] == []
 
 
+def test_history_fulltext_search_finds_text(client):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path="C:/docs/report.png")
+    item.state = JobState.DONE
+    item.results = {
+        "raw": {"extracted_text": "This is a confidential report about quantum computing."},
+        "cleaned": {"cleaned_text": "This is a cleaned confidential report."},
+    }
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+
+    res = client.get("/api/history/fulltext", params={"q": "quantum"})
+    results = res.json()["results"]
+    assert len(results) == 1
+    assert results[0]["name"] == "report.png"
+
+
 def test_history_search_with_no_query_returns_nothing(client):
-    _seed_history_run(server.state)
+    _seed_history_run(runtime.state)
     res = client.get("/api/history/search")
     assert res.json()["items"] == []
 
 
 def test_delete_run_removes_it_but_not_output_files(client):
-    run_id = _seed_history_run(server.state)
+    run_id = _seed_history_run(runtime.state)
 
     res = client.delete(f"/api/history/runs/{run_id}")
     assert res.json() == {"ok": True}
@@ -566,7 +733,7 @@ def test_analytics_stats_before_any_run(client):
 
 
 def test_analytics_stats_reflects_seeded_run(client):
-    _seed_history_run(server.state)
+    _seed_history_run(runtime.state)
 
     res = client.get("/api/analytics/stats")
     body = res.json()
@@ -579,85 +746,12 @@ def test_analytics_stats_reflects_seeded_run(client):
 # tropy send (write-back), against a synthetic project — never a real archive
 # --------------------------------------------------------------------------- #
 
-TROPY_SCHEMA = """
-CREATE TABLE project (project_id TEXT, name TEXT, created TEXT, base TEXT, store TEXT);
-CREATE TABLE items (id INTEGER PRIMARY KEY);
-CREATE TABLE subjects (id INTEGER PRIMARY KEY, template TEXT);
-CREATE TABLE images (id INTEGER PRIMARY KEY);
-CREATE TABLE photos (
-    id INTEGER PRIMARY KEY, item_id INTEGER, path TEXT, mimetype TEXT,
-    page INTEGER DEFAULT 0, filename TEXT,
-    orientation INTEGER DEFAULT 1
-);
-CREATE TABLE notes (
-    note_id INTEGER PRIMARY KEY, id INTEGER NOT NULL, text TEXT NOT NULL,
-    state TEXT NOT NULL, language TEXT NOT NULL DEFAULT 'en',
-    created NUMERIC DEFAULT CURRENT_TIMESTAMP,
-    modified NUMERIC DEFAULT CURRENT_TIMESTAMP, deleted NUMERIC,
-    CHECK (language != '' AND language = trim(lower(language))),
-    CHECK (text != '')
-);
-CREATE TABLE transcriptions (
-    transcription_id INTEGER PRIMARY KEY, id INTEGER NOT NULL, text TEXT,
-    config TEXT, data TEXT, status NUMERIC NOT NULL DEFAULT 0,
-    deleted NUMERIC, created NUMERIC DEFAULT CURRENT_TIMESTAMP,
-    modified NUMERIC DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE metadata (
-    id INTEGER, property TEXT, value_id INTEGER,
-    PRIMARY KEY (id, property)
-);
-CREATE TABLE metadata_values (
-    value_id INTEGER PRIMARY KEY, text TEXT
-);
-CREATE TABLE trash (id INTEGER PRIMARY KEY);
-CREATE VIRTUAL TABLE fts_notes USING fts5(id UNINDEXED, text, language UNINDEXED);
-CREATE VIRTUAL TABLE fts_transcriptions USING fts5(id UNINDEXED, text);
-CREATE TRIGGER notes_ai_fts AFTER INSERT ON notes BEGIN
-  INSERT INTO fts_notes (rowid, id, text, language)
-    VALUES (NEW.note_id, NEW.id, NEW.text, NEW.language);
-END;
-CREATE TRIGGER transcriptions_ai_fts AFTER INSERT ON transcriptions BEGIN
-  INSERT INTO fts_transcriptions (rowid, id, text)
-    VALUES (NEW.transcription_id, NEW.id, NEW.text);
-END;
-"""
-
-
-@pytest.fixture
-def tropy_project(tmp_path):
-    import sqlite3
-
-    root = tmp_path / "Archive.tropy"
-    (root / "assets").mkdir(parents=True)
-    con = sqlite3.connect(root / "project.tpy")
-    con.executescript(TROPY_SCHEMA)
-    con.execute("INSERT INTO project VALUES ('u','Archive','2026','project','assets')")
-    con.execute("INSERT INTO items (id) VALUES (1)")
-    con.execute("INSERT INTO subjects (id, template) VALUES (10, 'photo')")
-    con.execute("INSERT INTO images (id) VALUES (10)")
-    con.execute(
-        "INSERT INTO photos (id,item_id,path,mimetype,page,filename) "
-        "VALUES (10,1,'assets/a.pdf','application/pdf',0,'doc.pdf')"
-    )
-    con.execute(
-        "INSERT INTO metadata_values (value_id, text) VALUES (100, 'Doc1')"
-    )
-    con.execute(
-        "INSERT INTO metadata (id, property, value_id) "
-        "VALUES (1, 'http://purl.org/dc/elements/1.1/title', 100)"
-    )
-    con.commit()
-    con.close()
-    return root
-
-
 def _add_tropy_queue_item(client, photo_id: int = 10, text: str = "Sauberer Text"):
     from src.ocr_pipeline.jobs import JobItem
 
     item = JobItem(path="assets/a.pdf", source={"photo_id": photo_id}, label="doc.pdf p.1")
     item.results = {"cleaned": {"cleaned_text": text}}
-    server.state.add_items([item])
+    runtime.state.add_items([item])
     return item
 
 

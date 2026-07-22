@@ -1,0 +1,55 @@
+"""Run control routes: start, pause, resume, cancel, skip, retry, status."""
+
+from fastapi import APIRouter, HTTPException
+
+from ...jobs import STAGES
+from ..models import SkipRequest, StartRunRequest
+from ..runtime import state
+
+router = APIRouter(tags=["run"])
+
+
+@router.post("/api/run/start")
+def start_run(req: StartRunRequest) -> dict:
+    stages = {s for s in req.stages if s in STAGES}
+    try:
+        state.start_run(stages=stages, output_dir=req.output_dir, force=req.force)
+    except (RuntimeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"ok": True}
+
+
+@router.post("/api/run/pause")
+def pause_run() -> dict:
+    state.pause()
+    return {"ok": True}
+
+
+@router.post("/api/run/resume")
+def resume_run() -> dict:
+    state.resume()
+    return {"ok": True}
+
+
+@router.post("/api/run/cancel")
+def cancel_run() -> dict:
+    state.cancel()
+    return {"ok": True}
+
+
+@router.post("/api/run/skip")
+def skip_item(req: SkipRequest) -> dict:
+    ok = state.skip(req.id)
+    return {"ok": ok}
+
+
+@router.post("/api/run/retry")
+def retry_selected(ids: list[str]) -> dict:
+    """Re-run one or more finished/failed items."""
+    ok = state.retry(ids)
+    return {"ok": ok}
+
+
+@router.get("/api/run/status")
+def run_status() -> dict:
+    return state.status()

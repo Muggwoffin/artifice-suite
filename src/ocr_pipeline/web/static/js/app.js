@@ -21,7 +21,7 @@ const STAGE_KEYS = ["ocr", "cleanup", "translate"];
 const els = {};
 ["queue-body", "queue-count", "dropzone", "log", "output-dir",
  "btn-browse-files", "btn-add-folder", "btn-remove",
- "btn-clear", "btn-skip", "btn-browse-output",
+ "btn-clear", "btn-skip", "btn-retry", "btn-browse-output",
  "btn-run", "btn-pause", "btn-stop", "progress-bar", "status-text",
  "stage-text", "stage-ocr", "stage-cleanup", "stage-translate", "stage-force",
 ].forEach(id => {
@@ -204,6 +204,11 @@ els["btn-skip"].onclick = async () => {
   for (const id of selected) await api("POST", "/api/run/skip", { id });
   log(`Skip requested for ${selected.size} item(s)`, "warning");
 };
+els["btn-retry"].onclick = async () => {
+  if (!selected.size) { log("Select items to retry", "warning"); return; }
+  await api("POST", "/api/run/retry", [...selected]);
+  await refreshQueue();
+};
 
 // ------------------------------------------------------------------- running
 
@@ -262,12 +267,27 @@ function log(message, tag) {
 
 // ---------------------------------------------------------------------- SSE
 
+let startTime = null;
+let finishedCount = 0;
+
 function updateProgress() {
   const total = items.size;
   const finished = [...items.values()]
     .filter(i => ["done", "failed", "skipped", "cancelled"].includes(i.state)).length;
   els["progress-bar"].style.width = total ? `${(finished / total) * 100}%` : "0%";
-  if (running) els["status-text"].textContent = `Running — ${finished}/${total}`;
+  if (running) {
+    let text = `Running — ${finished}/${total}`;
+    if (startTime && finishedCount > 0) {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const eta = elapsed / finishedCount * (total - finishedCount);
+      if (eta > 60) {
+        text += `  ~${Math.round(eta / 60)}m remaining`;
+      } else {
+        text += `  ~${Math.round(eta)}s remaining`;
+      }
+    }
+    els["status-text"].textContent = text;
+  }
 }
 
 function connectEvents() {
@@ -279,6 +299,8 @@ function connectEvents() {
 
     switch (evt.kind) {
       case "run_started":
+        startTime = Date.now();
+        finishedCount = 0;
         setRunning(true);
         els["stage-text"].textContent = "";
         break;
@@ -287,6 +309,7 @@ function connectEvents() {
         updateProgress();
         break;
       case "item_finished":
+        finishedCount++;
         updateProgress();
         // Mirrors the desktop build: if Preview is the open tab, follow
         // whichever item just finished rather than making the user click it.

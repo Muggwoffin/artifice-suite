@@ -9,11 +9,14 @@ const HistoryTab = (function () {
   const itemsBody = document.getElementById("history-items-body");
   const searchBox = document.getElementById("history-search");
   const compareContainer = document.querySelector("#panel-history .compare-card");
+  const btnSaveRaw = document.getElementById("btn-history-save-raw");
 
   let runsById = new Map();
   let itemsById = new Map();
   let selectedRunRow = null;
   let selectedItemRow = null;
+  let currentItemId = null;
+  let originalRawText = "";
 
   async function refresh() {
     searchBox.value = "";
@@ -35,6 +38,7 @@ const HistoryTab = (function () {
     itemsBody.innerHTML = "";
     itemsById.clear();
     clearCompare(compareContainer);
+    if (window.HistoryImage) window.HistoryImage.clear();
   }
 
   async function selectRun(tr) {
@@ -61,19 +65,63 @@ const HistoryTab = (function () {
       tr.addEventListener("click", () => selectItem(tr));
     });
     clearCompare(compareContainer);
+    if (window.HistoryImage) window.HistoryImage.clear();
+  }
+
+  function getRawTextarea() {
+    return compareContainer.querySelector('.compare-pane[data-pane="raw"] textarea.raw-edit');
+  }
+
+  function wireRawEditing() {
+    const textarea = getRawTextarea();
+    if (!textarea || !btnSaveRaw) return;
+    originalRawText = textarea.value;
+    btnSaveRaw.disabled = true;
+    textarea.addEventListener("input", () => {
+      btnSaveRaw.disabled = textarea.value === originalRawText;
+    });
+    textarea.addEventListener("keydown", (e) => {
+      if ((e.key === "s" || e.key === "S") && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (!btnSaveRaw.disabled) saveRawText();
+      }
+    });
+  }
+
+  async function saveRawText() {
+    const textarea = getRawTextarea();
+    if (!textarea || !currentItemId || !btnSaveRaw) return;
+    btnSaveRaw.disabled = true;
+    const label = btnSaveRaw.textContent;
+    btnSaveRaw.textContent = "Saving…";
+    try {
+      const data = await api("POST", `/api/history/items/${currentItemId}/raw-text`, { text: textarea.value });
+      renderCompare(compareContainer, data, { editableRaw: true });
+      wireRawEditing();
+      log("Raw OCR text corrected and saved.", "accent");
+    } catch (err) {
+      log(`Could not save correction: ${err.message}`, "error");
+      btnSaveRaw.disabled = false;
+    } finally {
+      btnSaveRaw.textContent = label;
+    }
   }
 
   async function selectItem(tr) {
     selectedItemRow?.classList.remove("selected");
     tr.classList.add("selected");
     selectedItemRow = tr;
+    currentItemId = tr.dataset.id;
 
-    const data = await api("GET", `/api/history/items/${tr.dataset.id}`);
+    const data = await api("GET", `/api/history/items/${currentItemId}`);
     renderCompare(compareContainer, {
       title: data.name, raw: data.raw, cleaned: data.cleaned,
       translated: data.translated, confidence: data.confidence,
       confidence_tier: data.confidence_tier, language: data.language,
-    });
+    }, { editableRaw: true });
+    wireRawEditing();
+
+    if (window.HistoryImage) window.HistoryImage.load(`/api/history/items/${currentItemId}/image`);
   }
 
   async function search() {
@@ -96,6 +144,7 @@ const HistoryTab = (function () {
 
   document.getElementById("btn-history-refresh").onclick = refresh;
   document.getElementById("btn-history-delete").onclick = deleteSelectedRun;
+  if (btnSaveRaw) btnSaveRaw.addEventListener("click", saveRawText);
   searchBox.addEventListener("keydown", (e) => { if (e.key === "Enter") search(); });
 
   TAB_ACTIVATE.history = refresh;

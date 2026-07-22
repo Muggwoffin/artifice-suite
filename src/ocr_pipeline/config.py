@@ -81,6 +81,7 @@ PERSISTED_KEYS = (
     "chunk_max_tokens",
     "gui_theme",
     "ollama_think",
+    "run_templates",
 )
 
 _config_cache: dict[str, Any] | None = None

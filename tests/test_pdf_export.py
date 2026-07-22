@@ -418,6 +418,72 @@ def test_compile_function_no_structure(mock_chat, tmp_path):
     mock_chat.assert_not_called()
 
 
+# --------------------------------------------------------------------------- #
+# Markdown export
+# --------------------------------------------------------------------------- #
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_render_markdown_creates_file(mock_chat, tmp_path):
+    """compile() with format='md' should produce a Markdown file."""
+    from src.ocr_pipeline import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "page1.txt").write_text("Erster Absatz.\nZweiter Satz.")
+    (text_dir / "page2.txt").write_text("Zweiter Absatz.\nDritter Satz.")
+
+    mock_chat.side_effect = lambda **kw: MagicMock(
+        message=MagicMock(content=kw["messages"][-1]["content"].replace("\n", "\n\n"))
+    )
+
+    output_path = pdf_export.compile(
+        str(tmp_path), stage="cleaned", structure=False,
+        output=str(tmp_path / "out.md"), format="md",
+    )
+
+    assert output_path.exists()
+    assert output_path.suffix == ".md"
+    content = output_path.read_text(encoding="utf-8")
+    assert "## Page 1" in content
+    assert "## Page 2" in content
+    assert "[page1]" in content
+    assert "[page2]" in content
+    assert "Erster Absatz." in content
+
+
+# --------------------------------------------------------------------------- #
+# PDF style presets
+# --------------------------------------------------------------------------- #
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_compile_with_style_preset(mock_chat, tmp_path):
+    """compile() with style='compact' should produce a valid PDF."""
+    import fitz
+    from src.ocr_pipeline import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "page1.txt").write_text("Erster Absatz.\nZweiter Satz.")
+
+    mock_chat.side_effect = lambda **kw: MagicMock(
+        message=MagicMock(content=kw["messages"][-1]["content"].replace("\n", "\n\n"))
+    )
+
+    output_path = pdf_export.compile(
+        str(tmp_path), stage="cleaned", structure=False,
+        output=str(tmp_path / "out.pdf"), format="pdf", style="compact",
+    )
+
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0
+    doc = fitz.open(str(output_path))
+    full_text = ""
+    for page in doc:
+        full_text += page.get_text()
+    doc.close()
+    assert "Erster Absatz." in full_text
+
+
 def test_compile_function_raises_on_empty_folder(tmp_path):
     """compile() should raise ValueError when no pages are found."""
     from src.ocr_pipeline import pdf_export

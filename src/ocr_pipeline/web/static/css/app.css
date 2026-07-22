@@ -540,9 +540,8 @@ select.select, .output-row select, .run-row select, label select {
 
 .compare-text .empty { color: var(--ink-faint); font-style: italic; }
 
-/* Preview-only: source-image pane beside the Raw/Cleaned/Translated panes.
-   `.compare-panes` itself is untouched — History uses that same class with
-   no image pane and must keep rendering its unmodified 3-column grid. */
+/* Source-image pane beside the Raw/Cleaned/Translated panes — shared by
+   the Preview and History tabs. */
 .compare-card--with-image {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) 2fr;
@@ -578,7 +577,7 @@ select.select, .output-row select, .run-row select, label select {
 }
 .image-viewport:active { cursor: grabbing; }
 
-#preview-image {
+.source-image {
   position: absolute;
   top: 0;
   left: 0;

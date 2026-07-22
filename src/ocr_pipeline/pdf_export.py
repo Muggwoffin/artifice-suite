@@ -10,7 +10,7 @@ alters any word, the original text is kept instead.
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
@@ -30,6 +30,31 @@ from src.ocr_pipeline._logging import get_logger
 from src.ocr_pipeline.config import get as cfg
 
 log = get_logger("pdf_export")
+
+# ---------------------------------------------------------------------------
+# Style presets
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class PDFStyle:
+    font_body: str = "librebaskerville"
+    font_heading: str = "playfairdisplay"
+    font_size_body: float = 10.5
+    font_size_heading: float = 14.0
+    line_height: float = 1.5
+    show_provenance: bool = True
+    margin_top: float = 50
+    margin_bottom: float = 50
+    margin_left: float = 60
+    margin_right: float = 60
+
+
+PDF_STYLES = {
+    "readable": PDFStyle(font_size_body=12.0, font_size_heading=16.0, line_height=1.7),
+    "academic": PDFStyle(font_body="times", font_heading="times", font_size_body=10.0, show_provenance=False),
+    "compact": PDFStyle(font_size_body=9.0, font_size_heading=12.0, line_height=1.3, margin_top=30, margin_bottom=30),
+}
+
 
 # ---------------------------------------------------------------------------
 # Fonts
@@ -67,14 +92,20 @@ def _register_fonts() -> None:
         log.warning("Could not register custom fonts, falling back to built-in: %s", exc)
 
 
-def _get_styles():
+def _get_styles(style: PDFStyle | None = None):
     """Build paragraph styles using bundled fonts (or built-in fallback)."""
+    if style is None:
+        style = PDFStyle()
     _register_fonts()
     use_custom = _FONTS_REGISTERED
 
-    body_font = "LibreBaskerville" if use_custom else "Times-Roman"
-    body_italic = "LibreBaskerville-Italic" if use_custom else "Times-Italic"
-    heading_font = "PlayfairDisplay" if use_custom else "Times-Bold"
+    _body_map = {"librebaskerville": ("LibreBaskerville", "Times-Roman"), "times": ("Times-Roman", "Times-Roman")}
+    _heading_map = {"playfairdisplay": ("PlayfairDisplay", "Times-Bold"), "times": ("Times-Bold", "Times-Bold")}
+    _italic_map = {"librebaskerville": ("LibreBaskerville-Italic", "Times-Italic"), "times": ("Times-Italic", "Times-Italic")}
+
+    body_font = _body_map.get(style.font_body, ("Times-Roman", "Times-Roman"))[0 if use_custom else 1]
+    body_italic = _italic_map.get(style.font_body, ("Times-Italic", "Times-Italic"))[0 if use_custom else 1]
+    heading_font = _heading_map.get(style.font_heading, ("Times-Bold", "Times-Bold"))[0 if use_custom else 1]
 
     styles = getSampleStyleSheet()
 
@@ -82,8 +113,8 @@ def _get_styles():
         "PDFBody",
         parent=styles["Normal"],
         fontName=body_font,
-        fontSize=11,
-        leading=15,
+        fontSize=style.font_size_body,
+        leading=round(style.font_size_body * style.line_height, 1),
         spaceAfter=6,
         firstLineIndent=0,
         textColor="#1b1813",
@@ -93,8 +124,8 @@ def _get_styles():
         "PDFHeading",
         parent=styles["Heading1"],
         fontName=heading_font,
-        fontSize=16,
-        leading=20,
+        fontSize=style.font_size_heading,
+        leading=round(style.font_size_heading * style.line_height, 1),
         spaceBefore=18,
         spaceAfter=10,
         textColor="#1b1813",
@@ -114,7 +145,7 @@ def _get_styles():
     provenance_style = ParagraphStyle(
         "PDFProvenance",
         parent=styles["Normal"],
-        fontName=body_italic if use_custom else "Times-Italic",
+        fontName=body_italic,
         fontSize=8,
         leading=10,
         spaceBefore=4,
@@ -365,8 +396,10 @@ def compile(
     output: str | Path | None = None,
     manifest_path: str | None = None,
     on_progress: Callable[[str], None] | None = None,
+    format: str = "pdf",
+    style: str = "readable",
 ) -> Path:
-    """Collect, optionally structure, and render one folder into a PDF.
+    """Collect, optionally structure, and render one folder into a PDF or Markdown.
 
     `on_progress(message)` is called once per major step and, during
     structuring, once per page — a background-thread-friendly
@@ -389,12 +422,17 @@ def compile(
     if output is None:
         output_dir = Path("output")
         output_dir.mkdir(exist_ok=True)
-        output_path = output_dir / f"{folder_path.name}.pdf"
+        ext = ".md" if format == "md" else ".pdf"
+        output_path = output_dir / f"{folder_path.name}{ext}"
     else:
         output_path = Path(output)
 
-    on_progress("Rendering PDF...")
-    result_path = render_pdf(pages, output_path, title=title)
+    if format == "md":
+        on_progress("Rendering Markdown...")
+        result_path = render_markdown(pages, output_path, title=title)
+    else:
+        on_progress("Rendering PDF...")
+        result_path = render_pdf(pages, output_path, title=title, style=style)
 
     if rejected:
         on_progress(f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept")
@@ -411,21 +449,23 @@ def render_pdf(
     output_path: Path,
     *,
     title: str | None = None,
+    style: str = "readable",
 ) -> Path:
     """Render a continuous-flow PDF from the collected pages.
 
     Each page carries a small provenance marker (label + page number) so
     a reader can trace a passage back to its source scan.
     """
-    body_style, heading_style, title_style, provenance_style = _get_styles()
+    style_obj = PDF_STYLES.get(style, PDF_STYLES["readable"])
+    body_style, heading_style, title_style, provenance_style = _get_styles(style_obj)
 
     doc = SimpleDocTemplate(
         str(output_path),
         pagesize=A4,
-        leftMargin=25 * mm,
-        rightMargin=25 * mm,
-        topMargin=25 * mm,
-        bottomMargin=25 * mm,
+        leftMargin=style_obj.margin_left,
+        rightMargin=style_obj.margin_right,
+        topMargin=style_obj.margin_top,
+        bottomMargin=style_obj.margin_bottom,
     )
 
     story: list = []
@@ -440,8 +480,9 @@ def render_pdf(
     # Pages
     for i, page in enumerate(pages):
         # Provenance marker at the top of each page section
-        provenance = f"[{page.label}]"
-        story.append(Paragraph(_escape_html(provenance), provenance_style))
+        if style_obj.show_provenance:
+            provenance = f"[{page.label}]"
+            story.append(Paragraph(_escape_html(provenance), provenance_style))
 
         # Split text into paragraphs on double-newlines
         paragraphs = page.text.split("\n\n")
@@ -476,6 +517,35 @@ def render_pdf(
     # Build PDF
     doc.build(story)
     log.info("PDF written to %s (%d page(s))", output_path, len(pages))
+    return output_path
+
+
+# ---------------------------------------------------------------------------
+# Render Markdown
+# ---------------------------------------------------------------------------
+
+def render_markdown(
+    pages: list[PageText],
+    output_path: Path,
+    *,
+    title: str | None = None,
+) -> Path:
+    """Render the collected pages into a Markdown file."""
+    lines: list[str] = []
+    if title:
+        lines.append(f"# {title}")
+        lines.append("")
+
+    for i, page in enumerate(pages):
+        lines.append(f"## Page {i + 1}")
+        lines.append("")
+        lines.append(f"[{page.label}]")
+        lines.append("")
+        lines.append(page.text)
+        lines.append("")
+
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    log.info("Markdown written to %s (%d page(s))", output_path, len(pages))
     return output_path
 
 

@@ -491,11 +491,13 @@ def tropy(
 def compile_pdf(
     folder: str = typer.Argument(help="Folder of processed .txt output"),
     stage: str = typer.Option("cleaned", "--stage", help="cleaned|raw_ocr|translated"),
-    output: str = typer.Option(None, "--output", help="Output PDF path"),
+    output: str = typer.Option(None, "--output", help="Output PDF/MD path"),
     no_structure: bool = typer.Option(False, "--no-structure", help="Skip structuring, concat as-is"),
     manifest: str = typer.Option(None, "--manifest", help="Explicit tropy_manifest.json path"),
+    format: str = typer.Option("pdf", "--format", help="Output format: pdf or md"),
+    style: str = typer.Option("readable", "--style", help="PDF style preset: readable, academic, compact"),
 ):
-    """Compile processed text files into a single readable PDF.
+    """Compile processed text files into a single readable PDF or Markdown file.
 
     Takes a folder of already-processed .txt output (cleaned, raw_ocr, or
     translated) and produces one continuous-flow reading document.
@@ -523,12 +525,14 @@ def compile_pdf(
             output=output,
             manifest_path=manifest,
             on_progress=lambda msg: typer.echo(msg),
+            format=format,
+            style=style,
         )
     except ValueError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from exc
 
-    typer.echo(f"PDF: {result_path}")
+    typer.echo(f"Output: {result_path}")
 
 
 def _print_batch_summary(result: dict, output_dir: str):

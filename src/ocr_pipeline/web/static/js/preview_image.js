@@ -1,20 +1,19 @@
 /*
- * Preview tab: pan/zoom viewport for the source-scan image pane. Loaded
- * after tropy.js and before preview.js, which calls `PreviewImage.load(src)`
- * each time it opens a different item — this module owns the <img> element,
- * its CSS transform, and all pointer/wheel handling, the same
- * self-contained-module shape tropy.js uses for its own dialogs.
+ * Pan/zoom viewport for the source-scan image pane — used by both the Preview
+ * tab and the History tab. A factory function accepts a map of element IDs so
+ * two independent viewports (PreviewImage and HistoryImage) share the same
+ * pan/zoom/math without duplicating the pointer-event logic.
  *
  * Pointer Events (not mouse-only handlers) so drag-to-pan also works with
  * touch on a tablet with no extra code.
  */
 
-const PreviewImage = (function () {
-  const viewport = document.getElementById("image-viewport");
-  const img = document.getElementById("preview-image");
-  const empty = document.getElementById("image-empty");
-  const resetBtn = document.getElementById("btn-image-reset");
-  const zoomReadout = document.getElementById("image-zoom-readout");
+function createImageViewport(ids) {
+  const viewport = document.getElementById(ids.viewport);
+  const img = document.getElementById(ids.img);
+  const empty = document.getElementById(ids.empty);
+  const resetBtn = document.getElementById(ids.resetBtn);
+  const zoomReadout = document.getElementById(ids.zoomReadout);
 
   let scale = 1, tx = 0, ty = 0;
   let fitScale = 1;
@@ -59,9 +58,6 @@ const PreviewImage = (function () {
     empty.style.display = "";
   }
 
-  // Zoom toward the cursor: keep the image point under the pointer
-  // stationary by adjusting the translate offset by the same factor the
-  // scale changes by, rather than always zooming toward the top-left.
   viewport.addEventListener("wheel", (e) => {
     if (!img.naturalWidth) return;
     e.preventDefault();
@@ -96,6 +92,22 @@ const PreviewImage = (function () {
   window.addEventListener("resize", () => { if (img.naturalWidth) fitToPane(); });
 
   return { load, clear, fitToPane };
-})();
+}
 
+const PreviewImage = createImageViewport({
+  viewport: "image-viewport",
+  img: "preview-image",
+  empty: "image-empty",
+  resetBtn: "btn-image-reset",
+  zoomReadout: "image-zoom-readout",
+});
 window.PreviewImage = PreviewImage;
+
+const HistoryImage = createImageViewport({
+  viewport: "history-image-viewport",
+  img: "history-image",
+  empty: "history-image-empty",
+  resetBtn: "btn-history-image-reset",
+  zoomReadout: "history-image-zoom-readout",
+});
+window.HistoryImage = HistoryImage;

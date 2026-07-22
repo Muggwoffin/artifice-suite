@@ -17,6 +17,17 @@ STAGE_CHOICES = [
     ("translated", "Translation"),
 ]
 
+FORMAT_CHOICES = [
+    ("pdf", "PDF"),
+    ("md", "Markdown"),
+]
+
+STYLE_CHOICES = [
+    ("readable", "Readable"),
+    ("academic", "Academic"),
+    ("compact", "Compact"),
+]
+
 
 def _derive_output_folder(item) -> str | None:
     """Try to guess the output text folder for a queue item.
@@ -103,6 +114,26 @@ class PdfExportDialog(tk.Toplevel):
             opts, text="Structure text", variable=self.var_structure,
         ).pack(side=tk.LEFT, padx=(20, 0))
 
+        # Format + Style row
+        fmt_row = ttk.Frame(self)
+        fmt_row.pack(fill=tk.X, padx=pad, pady=(10, 0))
+
+        ttk.Label(fmt_row, text="Format:", font=theme.FONT_BOLD).pack(side=tk.LEFT)
+        self.format_var = tk.StringVar(value=FORMAT_CHOICES[0][1])
+        fmt_combo = ttk.Combobox(
+            fmt_row, textvariable=self.format_var, state="readonly",
+            values=[label for _, label in FORMAT_CHOICES], width=12,
+        )
+        fmt_combo.pack(side=tk.LEFT, padx=(8, 0))
+
+        ttk.Label(fmt_row, text="Style:", font=theme.FONT_BOLD).pack(side=tk.LEFT, padx=(20, 0))
+        self.style_var = tk.StringVar(value=STYLE_CHOICES[0][1])
+        style_combo = ttk.Combobox(
+            fmt_row, textvariable=self.style_var, state="readonly",
+            values=[label for _, label in STYLE_CHOICES], width=12,
+        )
+        style_combo.pack(side=tk.LEFT, padx=(8, 0))
+
         # Output path
         out_row = ttk.Frame(self)
         out_row.pack(fill=tk.X, padx=pad, pady=(10, 0))
@@ -140,7 +171,7 @@ class PdfExportDialog(tk.Toplevel):
         footer.pack(fill=tk.X, padx=pad, pady=(10, 14))
 
         self.open_btn = ttk.Button(
-            footer, text="Open PDF", command=self._open_pdf, state=tk.DISABLED,
+            footer, text="Open File", command=self._open_pdf, state=tk.DISABLED,
         )
         self.open_btn.pack(side=tk.LEFT)
 
@@ -160,11 +191,19 @@ class PdfExportDialog(tk.Toplevel):
             self.folder_var.set(chosen)
 
     def _browse_output(self):
-        chosen = filedialog.asksaveasfilename(
-            title="Save PDF as",
-            defaultextension=".pdf",
-            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
-        )
+        fmt = self._format()
+        if fmt == "md":
+            chosen = filedialog.asksaveasfilename(
+                title="Save Markdown as",
+                defaultextension=".md",
+                filetypes=[("Markdown files", "*.md"), ("All files", "*.*")],
+            )
+        else:
+            chosen = filedialog.asksaveasfilename(
+                title="Save PDF as",
+                defaultextension=".pdf",
+                filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
+            )
         if chosen:
             self.output_var.set(chosen)
 
@@ -172,6 +211,14 @@ class PdfExportDialog(tk.Toplevel):
     def _stage(self) -> str:
         label = self.stage_var.get()
         return next((k for k, v in STAGE_CHOICES if v == label), "cleaned")
+
+    def _format(self) -> str:
+        label = self.format_var.get()
+        return next((k for k, v in FORMAT_CHOICES if v == label), "pdf")
+
+    def _style(self) -> str:
+        label = self.style_var.get()
+        return next((k for k, v in STYLE_CHOICES if v == label), "readable")
 
     def _start_compile(self):
         folder = self.folder_var.get().strip()
@@ -204,6 +251,8 @@ class PdfExportDialog(tk.Toplevel):
                 stage=self._stage(),
                 structure=self.var_structure.get(),
                 output=output,
+                format=self._format(),
+                style=self._style(),
                 on_progress=lambda msg: self.queue.put(("log", msg)),
             )
             self.queue.put(("done", str(result)))
