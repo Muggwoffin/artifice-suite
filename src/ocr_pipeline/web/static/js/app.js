@@ -31,6 +31,7 @@ const els = {};
 let items = new Map();   // id -> item dict, insertion order preserved
 let selected = new Set();
 let running = false;
+let lastClickedId = null;  // for Shift+click range selection
 
 const isNative = () => !!window.pywebview;
 
@@ -118,6 +119,79 @@ function rowFor(item) {
   tr.querySelector(".row-select").addEventListener("change", (e) => {
     if (e.target.checked) selected.add(item.id); else selected.delete(item.id);
     tr.classList.toggle("selected", e.target.checked);
+    lastClickedId = item.id;
+  });
+
+  // Shift+click range selection
+  tr.addEventListener("click", (e) => {
+    if (e.target.closest("button") || e.target.tagName === "INPUT") return;
+    if (e.shiftKey && lastClickedId) {
+      const allIds = [...items.keys()];
+      const start = allIds.indexOf(lastClickedId);
+      const end = allIds.indexOf(item.id);
+      if (start !== -1 && end !== -1) {
+        const [lo, hi] = start < end ? [start, end] : [end, start];
+        for (let i = lo; i <= hi; i++) {
+          selected.add(allIds[i]);
+          const row = els["queue-body"].querySelector(`tr[data-id="${allIds[i]}"]`);
+          if (row) {
+            row.classList.add("selected");
+            const cb = row.querySelector(".row-select");
+            if (cb) cb.checked = true;
+          }
+        }
+      }
+    } else if (e.ctrlKey || e.metaKey) {
+      // Ctrl/Cmd+click: toggle individual
+      if (selected.has(item.id)) {
+        selected.delete(item.id);
+        tr.classList.remove("selected");
+        const cb = tr.querySelector(".row-select");
+        if (cb) cb.checked = false;
+      } else {
+        selected.add(item.id);
+        tr.classList.add("selected");
+        const cb = tr.querySelector(".row-select");
+        if (cb) cb.checked = true;
+      }
+    }
+    lastClickedId = item.id;
+  });
+
+  // Drag-drop reorder
+  tr.draggable = true;
+  tr.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("text/plain", item.id);
+    tr.classList.add("dragging");
+  });
+  tr.addEventListener("dragend", () => tr.classList.remove("dragging"));
+  tr.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const rect = tr.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    tr.classList.toggle("drag-over-top", e.clientY < mid);
+    tr.classList.toggle("drag-over-bottom", e.clientY >= mid);
+  });
+  tr.addEventListener("dragleave", () => {
+    tr.classList.remove("drag-over-top", "drag-over-bottom");
+  });
+  tr.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    tr.classList.remove("drag-over-top", "drag-over-bottom");
+    const dragId = e.dataTransfer.getData("text/plain");
+    const dropId = item.id;
+    if (dragId === dropId) return;
+    const allIds = [...items.keys()];
+    const dragIdx = allIds.indexOf(dragId);
+    const dropIdx = allIds.indexOf(dropId);
+    if (dragIdx === -1 || dropIdx === -1) return;
+    // Reorder via API: remove and re-add at position
+    const rect = tr.getBoundingClientRect();
+    const insertBefore = e.clientY < rect.top + rect.height / 2;
+    await api("POST", "/api/queue/reorder", {
+      drag_id: dragId, drop_id: dropId, before: insertBefore,
+    }).catch(() => {});
+    await refreshQueue();
   });
   const viewBtn = tr.querySelector(".row-view");
   if (viewBtn) {
@@ -263,6 +337,10 @@ function log(message, tag) {
   line.textContent = message;
   els["log"].appendChild(line);
   els["log"].scrollTop = els["log"].scrollHeight;
+  // Also show toasts for non-trivial messages
+  if (window.Toast && tag && message.length > 3) {
+    window.Toast.show(message, tag, tag === "error" ? 6000 : 3000);
+  }
 }
 
 // ---------------------------------------------------------------------- SSE
@@ -454,3 +532,138 @@ els["btn-browse-output"].onclick = async () => {
   await refreshQueue();
   connectEvents();
 })();
+
+// ----------------------------------------------------------------- theme toggle
+
+const ThemeToggle = (function () {
+  const STORAGE_KEY = "ocr_theme";
+  const btn = document.getElementById("btn-theme-toggle");
+
+  function apply(theme) {
+    document.documentElement.dataset.theme = theme;
+    if (btn) btn.textContent = theme === "dark" ? "☀️" : "🌙";
+  }
+
+  function init() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      apply(saved);
+    } else if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+      apply("dark");
+    }
+  }
+
+  function toggle() {
+    const current = document.documentElement.dataset.theme;
+    const next = current === "dark" ? "light" : "dark";
+    apply(next);
+    localStorage.setItem(STORAGE_KEY, next);
+  }
+
+  if (btn) btn.addEventListener("click", toggle);
+  init();
+  return { toggle };
+})();
+
+window.ThemeToggle = ThemeToggle;
+
+// --------------------------------------------------------- palette hint button
+
+document.getElementById("btn-palette-hint")?.addEventListener("click", () => {
+  window.Palette?.open();
+});
+
+// -------------------------------------------------------- column visibility
+
+const ColVis = (function () {
+  const STORAGE_KEY = "ocr_col_vis";
+  let menuEl = null;
+  const COLS = [
+    { key: "ocr", label: "OCR", default: true },
+    { key: "cleanup", label: "Cleanup", default: true },
+    { key: "translate", label: "Translate", default: true },
+    { key: "confidence", label: "Conf", default: true },
+    { key: "elapsed", label: "Time", default: true },
+  ];
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+  }
+
+  function saveState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function isVisible(key) {
+    const state = loadState();
+    if (key in state) return state[key];
+    return COLS.find(c => c.key === key)?.default ?? true;
+  }
+
+  function toggle(key) {
+    const state = loadState();
+    state[key] = !isVisible(key);
+    saveState(state);
+    apply();
+  }
+
+  function apply() {
+    const header = els["queue-body"]?.closest("table")?.querySelector("thead tr");
+    const rows = els["queue-body"]?.querySelectorAll("tr");
+    if (!header) return;
+    const ths = header.querySelectorAll("th");
+    // th indices: 0=checkbox, 1=File, 2=OCR, 3=Cleanup, 4=Translate, 5=Conf, 6=Time, 7=Status, 8=view
+    const colMap = { ocr: 2, cleanup: 3, translate: 4, confidence: 5, elapsed: 6 };
+    for (const [key, idx] of Object.entries(colMap)) {
+      const vis = isVisible(key);
+      if (ths[idx]) ths[idx].style.display = vis ? "" : "none";
+      rows?.forEach(tr => {
+        const td = tr.children[idx];
+        if (td) td.style.display = vis ? "" : "none";
+      });
+    }
+  }
+
+  function showMenu(e) {
+    if (!menuEl) {
+      menuEl = document.createElement("div");
+      menuEl.className = "col-vis-menu hidden";
+      menuEl.innerHTML = COLS.map(c => `
+        <div class="col-vis-item" data-col="${c.key}">
+          <input type="checkbox" ${isVisible(c.key) ? "checked" : ""}>
+          <span>${c.label}</span>
+        </div>`).join("");
+      document.body.appendChild(menuEl);
+      menuEl.querySelectorAll(".col-vis-item").forEach(el => {
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          const cb = el.querySelector("input");
+          cb.checked = !cb.checked;
+          toggle(el.dataset.col);
+        });
+      });
+    }
+    menuEl.classList.toggle("hidden");
+    if (!menuEl.classList.contains("hidden")) {
+      const rect = e.target.getBoundingClientRect();
+      menuEl.style.top = `${rect.bottom + 4}px`;
+      menuEl.style.left = `${rect.left}px`;
+      // Sync checkboxes
+      menuEl.querySelectorAll(".col-vis-item").forEach(el => {
+        el.querySelector("input").checked = isVisible(el.dataset.col);
+      });
+      const close = (ev) => {
+        if (!menuEl.contains(ev.target)) {
+          menuEl.classList.add("hidden");
+          document.removeEventListener("click", close);
+        }
+      };
+      setTimeout(() => document.addEventListener("click", close), 0);
+    }
+  }
+
+  apply();
+  return { showMenu, apply };
+})();
+
+window.ColVis = ColVis;

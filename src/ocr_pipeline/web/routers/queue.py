@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, Response
 
-from ..models import AddPathsRequest, RawTextRequest, RemoveRequest
+from ..models import AddPathsRequest, RawTextRequest, RemoveRequest, ReorderRequest
 from ..runtime import _IMAGE_PASSTHROUGH_TYPES, render_page_image, save_raw_text, state
 from ..serializers import serialize_item_preview
 
@@ -68,3 +68,9 @@ def save_raw_text_route(item_id: str, req: RawTextRequest) -> dict:
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found in the queue")
     return save_raw_text(item, req.text)
+
+
+@router.post("/api/queue/reorder")
+def reorder_queue(req: ReorderRequest) -> dict:
+    state.reorder(req.drag_id, req.drop_id, req.before)
+    return {"items": state.queue_snapshot()}

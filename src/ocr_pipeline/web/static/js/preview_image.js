@@ -14,15 +14,26 @@ function createImageViewport(ids) {
   const empty = document.getElementById(ids.empty);
   const resetBtn = document.getElementById(ids.resetBtn);
   const zoomReadout = document.getElementById(ids.zoomReadout);
+  const metaOverlay = ids.metaOverlay ? document.getElementById(ids.metaOverlay) : null;
 
   let scale = 1, tx = 0, ty = 0;
   let fitScale = 1;
   let dragging = false;
   let dragStart = null;
+  let currentSrc = "";
 
   function apply() {
     img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
     if (zoomReadout) zoomReadout.textContent = fitScale ? `${Math.round((scale / fitScale) * 100)}%` : "";
+    updateMeta();
+  }
+
+  function updateMeta() {
+    if (!metaOverlay) return;
+    if (!img.naturalWidth) { metaOverlay.textContent = ""; return; }
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const pct = Math.round((scale / fitScale) * 100);
+    metaOverlay.textContent = `${w}×${h}  ·  ${pct}%`;
   }
 
   function fitToPane() {
@@ -35,7 +46,35 @@ function createImageViewport(ids) {
     apply();
   }
 
+  function fitWidth() {
+    if (!img.naturalWidth) return;
+    const vw = viewport.clientWidth;
+    scale = vw / img.naturalWidth;
+    tx = 0;
+    ty = (viewport.clientHeight - img.naturalHeight * scale) / 2;
+    apply();
+  }
+
+  function fitHeight() {
+    if (!img.naturalWidth) return;
+    const vh = viewport.clientHeight;
+    scale = vh / img.naturalHeight;
+    tx = (viewport.clientWidth - img.naturalWidth * scale) / 2;
+    ty = 0;
+    apply();
+  }
+
+  function actualSize() {
+    if (!img.naturalWidth) return;
+    const vw = viewport.clientWidth, vh = viewport.clientHeight;
+    scale = 1;
+    tx = (vw - img.naturalWidth) / 2;
+    ty = (vh - img.naturalHeight) / 2;
+    apply();
+  }
+
   function load(src) {
+    currentSrc = src;
     img.onload = () => {
       img.style.display = "block";
       empty.style.display = "none";
@@ -52,11 +91,17 @@ function createImageViewport(ids) {
   }
 
   function clear() {
+    currentSrc = "";
     img.removeAttribute("src");
     img.style.display = "none";
     empty.textContent = "(no document selected)";
     empty.style.display = "";
+    if (metaOverlay) metaOverlay.textContent = "";
   }
+
+  function getCurrentSrc() { return currentSrc; }
+  function getScale() { return scale; }
+  function getFitScale() { return fitScale; }
 
   viewport.addEventListener("wheel", (e) => {
     if (!img.naturalWidth) return;
@@ -91,7 +136,16 @@ function createImageViewport(ids) {
   if (resetBtn) resetBtn.addEventListener("click", fitToPane);
   window.addEventListener("resize", () => { if (img.naturalWidth) fitToPane(); });
 
-  return { load, clear, fitToPane };
+  // Wire fit buttons if they exist in the toolbar
+  const toolbar = viewport.closest(".image-pane")?.querySelector(".image-toolbar");
+  if (toolbar) {
+    toolbar.querySelector("[data-fit='width']")?.addEventListener("click", fitWidth);
+    toolbar.querySelector("[data-fit='height']")?.addEventListener("click", fitHeight);
+    toolbar.querySelector("[data-fit='actual']")?.addEventListener("click", actualSize);
+    toolbar.querySelector("[data-fit='reset']")?.addEventListener("click", fitToPane);
+  }
+
+  return { load, clear, fitToPane, fitWidth, fitHeight, actualSize, getCurrentSrc, getScale, getFitScale };
 }
 
 const PreviewImage = createImageViewport({
@@ -100,6 +154,7 @@ const PreviewImage = createImageViewport({
   empty: "image-empty",
   resetBtn: "btn-image-reset",
   zoomReadout: "image-zoom-readout",
+  metaOverlay: "preview-meta-overlay",
 });
 window.PreviewImage = PreviewImage;
 
@@ -109,5 +164,6 @@ const HistoryImage = createImageViewport({
   empty: "history-image-empty",
   resetBtn: "btn-history-image-reset",
   zoomReadout: "history-image-zoom-readout",
+  metaOverlay: "history-meta-overlay",
 });
 window.HistoryImage = HistoryImage;

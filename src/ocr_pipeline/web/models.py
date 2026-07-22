@@ -61,3 +61,9 @@ class PdfExportRequest(BaseModel):
     manifest: str | None = None
     format: str = "pdf"
     style: str = "readable"
+
+
+class ReorderRequest(BaseModel):
+    drag_id: str
+    drop_id: str
+    before: bool = True

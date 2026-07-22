@@ -298,6 +298,21 @@ class RunState:
                     status.error = ""
         return True
 
+    def reorder(self, drag_id: str, drop_id: str, before: bool = True) -> None:
+        """Move a queue item from one position to another."""
+        with self._lock:
+            drag_item = self._by_id.get(drag_id)
+            drop_item = self._by_id.get(drop_id)
+            if drag_item is None or drop_item is None:
+                return
+            if drag_item is drop_item:
+                return
+            self.items.remove(drag_item)
+            idx = self.items.index(drop_item)
+            if not before:
+                idx += 1
+            self.items.insert(idx, drag_item)
+
     def status(self) -> dict:
         return {
             "running": bool(self.runner and self.runner.is_running),
