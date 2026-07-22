@@ -47,11 +47,32 @@ CREATE TABLE IF NOT EXISTS run_items (
     raw_text        TEXT,
     cleaned_text    TEXT,
     translated_text TEXT,
+    page        INTEGER,
+    edited      INTEGER NOT NULL DEFAULT 0,
+    edited_at   TEXT,
     created     TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_run_items_run ON run_items (run_id);
 """
+
+# Columns added after the original schema shipped. `CREATE TABLE IF NOT
+# EXISTS` only covers brand-new databases, so an existing on-disk
+# history.db (the user's real run history) needs these added explicitly —
+# additive-only ALTER TABLEs, never a drop/recreate, so past runs survive.
+_MIGRATED_COLUMNS = {
+    "page": "INTEGER",
+    "edited": "INTEGER NOT NULL DEFAULT 0",
+    "edited_at": "TEXT",
+}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(run_items)")}
+    for column, decl in _MIGRATED_COLUMNS.items():
+        if column not in existing:
+            conn.execute(f"ALTER TABLE run_items ADD COLUMN {column} {decl}")
+    conn.commit()
 
 
 def default_db_path() -> Path:
@@ -82,6 +103,7 @@ class HistoryStore:
         with self._lock:
             self._conn.executescript(_SCHEMA)
             self._conn.commit()
+            _migrate(self._conn)
 
     def close(self) -> None:
         with self._lock:
@@ -120,16 +142,38 @@ class HistoryStore:
             self._conn.execute(
                 """INSERT INTO run_items
                    (run_id, source_file, name, state, language, confidence,
-                    error, stage_json, raw_text, cleaned_text, translated_text, created)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    error, stage_json, raw_text, cleaned_text, translated_text,
+                    page, created)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     run_id, item.path, item.name, item.state.value, item.language,
                     item.confidence, item.error, stage_json,
                     (results.get("raw") or {}).get("extracted_text"),
                     (results.get("cleaned") or {}).get("cleaned_text"),
                     (results.get("translated") or {}).get("translated_text"),
+                    item.page,
                     _now(),
                 ),
+            )
+            self._conn.commit()
+
+    def update_raw_text(self, item_id: int, text: str) -> None:
+        """Persist a manual correction made from the History pane.
+
+        This rewrites the historical record's `raw_text` rather than the
+        on-disk `raw_ocr/` files a live run produced it from — the DB row
+        doesn't carry enough to safely reconstruct the original output
+        filename for a Tropy page sharing a PDF (no `output_stem` is stored),
+        so touching disk here risks writing the correction to the wrong
+        file. `edited`/`edited_at` record that this row no longer reflects
+        the original OCR pass untouched, same honesty principle as the
+        live-queue correction path.
+        """
+        with self._lock:
+            self._conn.execute(
+                "UPDATE run_items SET raw_text = ?, edited = 1, edited_at = ? "
+                "WHERE item_id = ?",
+                (text, _now(), item_id),
             )
             self._conn.commit()
 

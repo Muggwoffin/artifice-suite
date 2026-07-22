@@ -15,6 +15,7 @@ class HistoryView(ttk.Frame):
         self.history = app.history
         self._runs: dict[str, int] = {}
         self._items: dict[str, int] = {}
+        self._current_item_id: int | None = None
 
         self._build_header()
         self._build_body()
@@ -95,7 +96,10 @@ class HistoryView(ttk.Frame):
             self.item_tree.tag_configure(state, foreground=color)
 
         # Comparison -----------------------------------------------------
-        self.compare = CompareView(paned)
+        self.compare = CompareView(
+            paned, with_image=True, editable_raw=True,
+            on_save_raw=self._save_raw_correction,
+        )
         paned.add(self.compare, weight=2)
 
     # --------------------------------------------------------------- loading
@@ -113,6 +117,7 @@ class HistoryView(ttk.Frame):
                 tags=("failed",) if run["failed"] else (),
             )
         self.item_tree.delete(*self.item_tree.get_children())
+        self._current_item_id = None
         self.compare.clear()
 
     def _on_run_selected(self, _event=None):
@@ -142,15 +147,18 @@ class HistoryView(ttk.Frame):
                 ),
                 tags=(row["state"],),
             )
+        self._current_item_id = None
         self.compare.clear()
 
     def _on_item_selected(self, _event=None):
         selection = self.item_tree.selection()
         if not selection:
             return
-        row = self.history.get_item(self._items[selection[0]])
+        item_id = self._items[selection[0]]
+        row = self.history.get_item(item_id)
         if row is None:
             return
+        self._current_item_id = item_id
         self.compare.show(
             title=f"{row['name']}   —   {Path(row['source_file']).parent}",
             raw=row["raw_text"] or "",
@@ -158,7 +166,14 @@ class HistoryView(ttk.Frame):
             translated=row["translated_text"] or "",
             confidence=row["confidence"],
             language=row["language"] or "",
+            image_path=row["source_file"],
+            image_page=row["page"],
         )
+
+    def _save_raw_correction(self, text: str) -> None:
+        if self._current_item_id is None:
+            return
+        self.history.update_raw_text(self._current_item_id, text)
 
     def _delete_run(self):
         selection = self.run_tree.selection()

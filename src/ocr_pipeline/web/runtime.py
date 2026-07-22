@@ -406,3 +406,65 @@ class RunState:
 # would need this scoped per-session; this tool is run by one person on their
 # own machine, so a module-level singleton is the honest amount of state.
 state = RunState()
+
+
+# --------------------------------------------------------------------------- #
+# PDF export (one-off, not wired into JobRunner — see HANDOFF_PDF_EXPORT_UI.md)
+# --------------------------------------------------------------------------- #
+
+class PdfExportState:
+    """State for a single one-off PDF export operation.
+
+    Deliberately not wired into JobRunner/STAGES — this runs outside the
+    pipeline, reading finished text from disk.
+    """
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.status = "idle"  # idle | running | done | error
+        self.error: str | None = None
+        self.output_path: str | None = None
+        self.events: queue.Queue = queue.Queue()
+        self.thread: threading.Thread | None = None
+
+
+pdf_export_state = PdfExportState()
+
+
+def start_pdf_export(folder, *, stage, structure, output, manifest_path) -> bool:
+    """Returns False (caller should 409) if one is already running."""
+    with pdf_export_state.lock:
+        if pdf_export_state.status == "running":
+            return False
+        pdf_export_state.status = "running"
+        pdf_export_state.error = None
+        pdf_export_state.output_path = None
+        pdf_export_state.events = queue.Queue()
+        pdf_export_state.thread = threading.Thread(
+            target=_run_pdf_export,
+            args=(folder, stage, structure, output, manifest_path),
+            daemon=True,
+        )
+        pdf_export_state.thread.start()
+    return True
+
+
+def _run_pdf_export(folder, stage, structure, output, manifest_path):
+    from .. import pdf_export
+
+    def on_progress(message):
+        pdf_export_state.events.put({"type": "log", "message": message})
+
+    try:
+        result_path = pdf_export.compile(
+            folder, stage=stage, structure=structure, output=output,
+            manifest_path=manifest_path, on_progress=on_progress,
+        )
+        pdf_export_state.output_path = str(result_path)
+        pdf_export_state.status = "done"
+        pdf_export_state.events.put(
+            {"type": "done", "output_path": str(result_path)})
+    except Exception as exc:
+        pdf_export_state.status = "error"
+        pdf_export_state.error = str(exc)
+        pdf_export_state.events.put({"type": "error", "message": str(exc)})

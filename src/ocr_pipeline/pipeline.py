@@ -32,11 +32,17 @@ def run_ocr_step(
     force: bool = False,
     page: int | None = None,
     stem: str | None = None,
+    orientation: int = 1,
 ) -> dict:
     """Run the OCR stage for one file, or resolve it from existing output.
 
     `page` selects a single 0-based PDF page; `stem` overrides the output key,
     which is what keeps per-page outputs from colliding on the filename stem.
+    `orientation` is Tropy's `photos.orientation` value (EXIF 1-8 convention,
+    1 = normal) — a Tropy-sourced item can be scanned rotated or upside-down
+    with nothing in the filename or the image's own EXIF data to say so; this
+    is the one place that information travels from the Tropy database to the
+    image the model actually sees.
 
     Returns the raw_ocr data dict, annotated with `_elapsed` and (when the
     stage did not actually run) `_skipped`.
@@ -62,7 +68,8 @@ def run_ocr_step(
             "_skipped": True,
         }
     else:
-        data = ocr.perform(str(f), output_dir=output_dir, page=page, stem=stem)
+        data = ocr.perform(str(f), output_dir=output_dir, page=page, stem=stem,
+                           orientation=orientation)
 
     data["_elapsed"] = time.monotonic() - t0
     return data

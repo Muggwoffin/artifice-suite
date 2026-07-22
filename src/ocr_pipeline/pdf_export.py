@@ -12,7 +12,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -312,23 +312,36 @@ def collect_folder(
 # Structure pages
 # ---------------------------------------------------------------------------
 
-def structure_pages(pages: list[PageText]) -> list[PageText]:
+def structure_pages(
+    pages: list[PageText],
+    on_progress: Callable[[str], None] | None = None,
+    on_rejected: Callable[[str], None] | None = None,
+) -> list[PageText]:
     """Run the structure stage on each page.
 
     Pages whose structuring is rejected keep their original text.
+    `on_progress(message)` is called once per page with a status message.
+    `on_rejected(label)` is called once per page whose guard rejected.
     Returns a new list with structured text.
     """
+    on_progress = on_progress or (lambda msg: None)
+    on_rejected = on_rejected or (lambda label: None)
     from src.ocr_pipeline.stages import structure
 
     structured: list[PageText] = []
     n = len(pages)
 
     for i, page in enumerate(pages):
-        log.info("Structuring %d/%d: %s", i + 1, n, page.label)
+        message = f"Structuring {i + 1}/{n}: {page.label}"
+        log.info(message)
+        on_progress(message)
         result = structure.perform(
             page.text,
             source_file=str(page.source_path),
         )
+        guard_ok = result.get("guard", {}).get("ok", True)
+        if not guard_ok:
+            on_rejected(page.label)
         structured.append(PageText(
             label=page.label,
             text=result.get("structured_text", page.text),
@@ -338,6 +351,55 @@ def structure_pages(pages: list[PageText]) -> list[PageText]:
         ))
 
     return structured
+
+
+# ---------------------------------------------------------------------------
+# Compile (collect → structure → render)
+# ---------------------------------------------------------------------------
+
+def compile(
+    folder: str,
+    *,
+    stage: str = "cleaned",
+    structure: bool = True,
+    output: str | Path | None = None,
+    manifest_path: str | None = None,
+    on_progress: Callable[[str], None] | None = None,
+) -> Path:
+    """Collect, optionally structure, and render one folder into a PDF.
+
+    `on_progress(message)` is called once per major step and, during
+    structuring, once per page — a background-thread-friendly
+    progress callback.
+    """
+    on_progress = on_progress or (lambda msg: None)
+    folder_path = Path(folder)
+
+    on_progress(f"Collecting pages from {folder_path}...")
+    pages = collect_folder(str(folder_path), stage=stage, manifest_path=manifest_path)
+    if not pages:
+        raise ValueError(f"No pages found in {folder}")
+    on_progress(f"Found {len(pages)} page(s)")
+
+    rejected: list[str] = []
+    if structure:
+        pages = structure_pages(pages, on_progress=on_progress, on_rejected=lambda l: rejected.append(l))
+
+    title = next((p.item_title for p in pages if p.item_title), None)
+    if output is None:
+        output_dir = Path("output")
+        output_dir.mkdir(exist_ok=True)
+        output_path = output_dir / f"{folder_path.name}.pdf"
+    else:
+        output_path = Path(output)
+
+    on_progress("Rendering PDF...")
+    result_path = render_pdf(pages, output_path, title=title)
+
+    if rejected:
+        on_progress(f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept")
+    on_progress(f"Done: {len(pages)} page(s) -> {result_path}")
+    return result_path
 
 
 # ---------------------------------------------------------------------------

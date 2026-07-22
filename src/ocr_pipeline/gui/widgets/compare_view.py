@@ -2,11 +2,13 @@
 
 import tkinter as tk
 from tkinter import ttk
+from typing import Callable
 
 from ..._diff import confidence_tier
 from ..._diff import diff_ranges as _diff_ranges
 from ..._diff import marker_ranges as _marker_ranges
 from .. import theme
+from .image_pane import ImagePane
 
 PANES = [
     ("raw", "Raw OCR"),
@@ -16,15 +18,38 @@ PANES = [
 
 
 class ComparePane(ttk.Frame):
-    """One titled text pane."""
+    """One titled text pane.
 
-    def __init__(self, master, title: str):
+    `editable=True` turns this into a manual-correction surface (History's
+    raw pane only): the Text widget stays enabled, a "Save correction"
+    button tracks a dirty flag against the last-loaded content, and Ctrl+S
+    saves. Diff-highlight ranges are never applied to an editable pane —
+    once a user starts correcting text, ranges computed against the
+    pre-edit version would be stale.
+    """
+
+    def __init__(
+        self, master, title: str, *,
+        editable: bool = False,
+        on_save: "Callable[[str], None] | None" = None,
+    ):
         super().__init__(master, style="Card.TFrame")
+        self.editable = editable
+        self._on_save = on_save
+        self._loaded_text = ""
 
         header = ttk.Frame(self, style="Card.TFrame")
         header.pack(fill=tk.X, padx=10, pady=(8, 2))
         ttk.Label(header, text=title.upper(), style="Card.TLabel",
                   font=theme.FONT_LABEL, foreground=theme.FG_DIM).pack(side=tk.LEFT)
+
+        self.save_btn = None
+        if editable:
+            self.save_btn = ttk.Button(header, text="Save correction",
+                                       style="Accent.TButton", state=tk.DISABLED,
+                                       command=self._save)
+            self.save_btn.pack(side=tk.RIGHT, padx=(8, 0))
+
         self.meta = ttk.Label(header, text="", style="Card.TLabel",
                               font=theme.FONT_LABEL, foreground=theme.FG_DIM)
         self.meta.pack(side=tk.RIGHT)
@@ -36,7 +61,7 @@ class ComparePane(ttk.Frame):
         self.text = tk.Text(
             self, bg=theme.FRAME_BG, fg=theme.FG, font=theme.FONT_BODY,
             relief=tk.FLAT, bd=0, wrap=tk.WORD, padx=12, pady=10,
-            insertbackground=theme.FG, state=tk.DISABLED,
+            insertbackground=theme.FG, state=(tk.NORMAL if editable else tk.DISABLED),
             spacing1=1, spacing3=3,
             selectbackground=theme.SEL_BG, selectforeground=theme.FG,
         )
@@ -53,30 +78,84 @@ class ComparePane(ttk.Frame):
         self.text.tag_configure("empty", foreground=theme.FG_DIM,
                                 font=theme.FONT_SMALL)
 
+        if editable:
+            self.text.bind("<<Modified>>", self._on_modified)
+            self.text.bind("<Control-s>", self._save_shortcut)
+            self.text.bind("<Control-S>", self._save_shortcut)
+
     def set_text(self, content: str, placeholder: str = "(not run)") -> None:
         self.text.configure(state=tk.NORMAL)
         self.text.delete("1.0", tk.END)
         if content:
             self.text.insert("1.0", content)
             self.meta.configure(text=f"{len(content):,} chars")
+        elif self.editable:
+            self.meta.configure(text="")
         else:
             self.text.insert("1.0", placeholder, "empty")
             self.meta.configure(text="")
-        self.text.configure(state=tk.DISABLED)
+
+        if self.editable:
+            self._loaded_text = content or ""
+            self.text.edit_modified(False)
+            if self.save_btn is not None:
+                self.save_btn.configure(state=tk.DISABLED)
+        else:
+            self.text.configure(state=tk.DISABLED)
 
     def apply_ranges(self, ranges: list[tuple[int, int, str]]) -> None:
         """Tag character ranges (start, end, tag) on the current content."""
-        self.text.configure(state=tk.NORMAL)
+        was_disabled = str(self.text["state"]) == tk.DISABLED
+        if was_disabled:
+            self.text.configure(state=tk.NORMAL)
         for start, end, tag in ranges:
             self.text.tag_add(tag, f"1.0+{start}c", f"1.0+{end}c")
-        self.text.configure(state=tk.DISABLED)
+        if was_disabled:
+            self.text.configure(state=tk.DISABLED)
+
+    # ------------------------------------------------------------- editing
+    def _on_modified(self, _event=None) -> None:
+        if not self.text.edit_modified():
+            return
+        current = self.text.get("1.0", "end-1c")
+        dirty = current != self._loaded_text
+        if self.save_btn is not None:
+            self.save_btn.configure(state=(tk.NORMAL if dirty else tk.DISABLED))
+        self.text.edit_modified(False)
+
+    def _save(self) -> None:
+        text = self.text.get("1.0", "end-1c")
+        if self._on_save is not None:
+            self._on_save(text)
+        self._loaded_text = text
+        if self.save_btn is not None:
+            self.save_btn.configure(state=tk.DISABLED)
+
+    def _save_shortcut(self, _event=None) -> str:
+        if self.save_btn is not None and str(self.save_btn["state"]) != tk.DISABLED:
+            self._save()
+        return "break"
 
 
 class CompareView(ttk.Frame):
-    """Three synced panes plus a confidence readout."""
+    """Three synced panes plus a confidence readout.
 
-    def __init__(self, master):
+    `with_image=True` mounts a source-scan `ImagePane` to the left of the
+    text panes. `editable_raw=True` makes the Raw OCR pane a manual
+    correction surface, calling `on_save_raw(text)` when the user saves —
+    both default off, so the plain Preview tab's `CompareView` (used for the
+    live queue) is unaffected; only History opts in.
+    """
+
+    def __init__(
+        self, master, *,
+        with_image: bool = False,
+        editable_raw: bool = False,
+        on_save_raw: "Callable[[str], None] | None" = None,
+    ):
         super().__init__(master)
+        self.editable_raw = editable_raw
+        self.on_save_raw = on_save_raw
 
         bar = ttk.Frame(self)
         bar.pack(fill=tk.X, padx=12, pady=(10, 0))
@@ -100,14 +179,50 @@ class CompareView(ttk.Frame):
         paned = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
         paned.pack(fill=tk.BOTH, expand=True, padx=12, pady=10)
 
+        self._pane_weights: list[int] = []
+
+        self.image: ImagePane | None = None
+        if with_image:
+            self.image = ImagePane(paned)
+            paned.add(self.image, weight=2)
+            self._pane_weights.append(2)
+
         self.panes: dict[str, ComparePane] = {}
         for key, title in PANES:
-            pane = ComparePane(paned, title)
+            editable = editable_raw and key == "raw"
+            pane = ComparePane(
+                paned, title, editable=editable,
+                on_save=self._handle_save_raw if editable else None,
+            )
             paned.add(pane, weight=1)
             self.panes[key] = pane
+            self._pane_weights.append(1)
+
+        if self.image is not None:
+            # ttk.PanedWindow ignores `weight` for the *initial* layout — every
+            # sash starts at 0 regardless, collapsing every pane but the last
+            # until the window is manually resized. Set real starting
+            # positions ourselves, once, the first time the paned window
+            # actually has a size to measure.
+            self._sash_positions_set = False
+            paned.bind("<Configure>", self._set_initial_sash_positions, add="+")
 
         self._wire_sync_scroll()
         self._current: dict[str, str] = {}
+
+    def _set_initial_sash_positions(self, event=None) -> None:
+        if self._sash_positions_set or self.image is None:
+            return
+        paned = self.image.master
+        width = paned.winfo_width()
+        if width <= 1:
+            return
+        total_weight = sum(self._pane_weights)
+        cumulative = 0
+        for i, weight in enumerate(self._pane_weights[:-1]):
+            cumulative += weight
+            paned.sashpos(i, int(width * cumulative / total_weight))
+        self._sash_positions_set = True
 
     # ---------------------------------------------------------- sync scroll
     def _wire_sync_scroll(self):
@@ -143,6 +258,8 @@ class CompareView(ttk.Frame):
         translated: str = "",
         confidence: int | None = None,
         language: str = "",
+        image_path: str | None = None,
+        image_page: int | None = None,
     ) -> None:
         self._current = {"raw": raw or "", "cleaned": cleaned or "",
                          "translated": translated or "", "title": title,
@@ -160,12 +277,27 @@ class CompareView(ttk.Frame):
         )
         self._rerender()
 
+        if self.image is not None:
+            if image_path:
+                self.image.load(image_path, image_page)
+            else:
+                self.image.clear()
+
     def clear(self) -> None:
         self._current = {}
         self.title_label.configure(text="No document selected")
         self.conf_label.configure(text="")
         for pane in self.panes.values():
             pane.set_text("")
+        if self.image is not None:
+            self.image.clear()
+
+    def _handle_save_raw(self, text: str) -> None:
+        """Wired to the raw pane's Save button/Ctrl+S when `editable_raw`."""
+        self._current["raw"] = text
+        if self.on_save_raw is not None:
+            self.on_save_raw(text)
+        self._rerender()
 
     def _rerender(self):
         if not self._current:
@@ -174,13 +306,19 @@ class CompareView(ttk.Frame):
         cleaned = self._current.get("cleaned", "")
         translated = self._current.get("translated", "")
 
-        self.panes["raw"].set_text(raw)
+        raw_pane = self.panes["raw"]
+        # Skip re-touching an editable raw pane whose content already
+        # matches — e.g. right after a save — so the cursor/scroll position
+        # a user was just working at isn't reset out from under them.
+        if not (raw_pane.editable and raw_pane.text.get("1.0", "end-1c") == raw):
+            raw_pane.set_text(raw)
         self.panes["cleaned"].set_text(cleaned)
         self.panes["translated"].set_text(translated)
 
         if self.diff_enabled.get() and raw and cleaned:
             raw_ranges, clean_ranges = _diff_ranges(raw, cleaned)
-            self.panes["raw"].apply_ranges(raw_ranges)
+            if not raw_pane.editable:
+                raw_pane.apply_ranges(raw_ranges)
             self.panes["cleaned"].apply_ranges(clean_ranges)
 
         for key in ("cleaned", "translated"):

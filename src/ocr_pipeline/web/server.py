@@ -30,8 +30,9 @@ from pydantic import BaseModel
 from .. import config
 from .._prompts import DOCUMENT_TYPES
 from ..jobs import STAGES
-from ..tropy import TropyProject, pages_to_job_items, recent_projects
+from ..tropy import TropyProject, pages_to_job_items, recent_projects, write_manifest
 from .runtime import (
+    pdf_export_state,
     render_page_image,
     save_raw_text,
     serialize_event,
@@ -39,6 +40,7 @@ from .runtime import (
     serialize_history_item_detail,
     serialize_history_run,
     serialize_item_preview,
+    start_pdf_export,
     state,
 )
 
@@ -91,6 +93,14 @@ class TropySendRequest(BaseModel):
 
 class TropySendWriteRequest(TropySendRequest):
     make_backup: bool = True
+
+
+class PdfExportRequest(BaseModel):
+    folder: str
+    stage: str = "cleaned"
+    structure: bool = True
+    output: str | None = None
+    manifest: str | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -414,6 +424,7 @@ def tropy_browse(req: TropyBrowseRequest) -> dict:
 class TropyAddRequest(BaseModel):
     project: str
     item_ids: list[int] | None = None
+    output_dir: str = "output"
 
 
 @app.post("/api/tropy/add")
@@ -421,12 +432,21 @@ def tropy_add(req: TropyAddRequest) -> dict:
     try:
         with TropyProject(req.project) as proj:
             pages = proj.pages(req.item_ids)
+            missing = [p.label for p in proj.missing_assets(pages)]
             items = pages_to_job_items(pages)
+            try:
+                write_manifest(req.output_dir, proj, pages)
+            except Exception:
+                pass
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     added = state.add_items(items)
-    return {"added": len(added), "items": state.queue_snapshot()}
+    return {
+        "added": len(added),
+        "missing": missing,
+        "items": state.queue_snapshot(),
+    }
 
 
 def _build_tropy_preview(req: TropySendRequest):
@@ -488,6 +508,60 @@ def tropy_send_write(req: TropySendWriteRequest) -> dict:
         "skipped": report.skipped,
         "backup": str(report.backup) if report.backup else None,
     }
+
+
+# --------------------------------------------------------------------------- #
+# pdf export (one-off — not wired into the queue/runner)
+# --------------------------------------------------------------------------- #
+
+@app.post("/api/pdf-export/start")
+def pdf_export_start(req: PdfExportRequest) -> dict:
+    started = start_pdf_export(
+        req.folder, stage=req.stage,
+        structure=req.structure, output=req.output,
+        manifest_path=req.manifest,
+    )
+    if not started:
+        raise HTTPException(
+            status_code=409, detail="A PDF export is already running")
+    return {"ok": True}
+
+
+@app.get("/api/pdf-export/status")
+def pdf_export_status_route() -> dict:
+    return {
+        "status": pdf_export_state.status,
+        "error": pdf_export_state.error,
+        "output_path": pdf_export_state.output_path,
+    }
+
+
+@app.get("/api/pdf-export/events")
+async def pdf_export_events():
+    async def gen():
+        while True:
+            try:
+                event = await asyncio.to_thread(
+                    pdf_export_state.events.get, True, 1.0)
+            except queue.Empty:
+                yield ": heartbeat\n\n"
+                continue
+            yield f"data: {json.dumps(event)}\n\n"
+            if event.get("type") in ("done", "error"):
+                break
+    return StreamingResponse(
+        gen(), media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache",
+                 "X-Accel-Buffering": "no"},
+    )
+
+
+@app.get("/api/pdf-export/download")
+def pdf_export_download():
+    if not pdf_export_state.output_path:
+        raise HTTPException(status_code=404, detail="No PDF has been compiled yet")
+    path = Path(pdf_export_state.output_path)
+    return FileResponse(path, media_type="application/pdf", filename=path.name)
 
 
 # --------------------------------------------------------------------------- #

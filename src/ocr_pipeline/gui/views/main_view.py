@@ -95,6 +95,8 @@ class MainView(ttk.Frame):
             side=tk.LEFT, padx=(6, 0))
         ttk.Button(row, text="View →", command=self._view_selected).pack(
             side=tk.LEFT, padx=(6, 0))
+        ttk.Button(row, text="Compile PDF…", command=self.compile_pdf).pack(
+            side=tk.RIGHT, padx=(0, 6))
         ttk.Button(row, text="Send to Tropy…", command=self.send_to_tropy).pack(
             side=tk.RIGHT)
 
@@ -192,6 +194,21 @@ class MainView(ttk.Frame):
             if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
         ]
         self._add(files, f"folder {Path(folder).name}")
+
+    def compile_pdf(self):
+        """Compile processed text files from a folder into a PDF."""
+        from .pdf_export_dialog import PdfExportDialog, _derive_output_folder
+
+        selected = self.queue.selected_items()
+        default_folder = None
+        if selected:
+            default_folder = _derive_output_folder(selected[0])
+        if not default_folder:
+            folder = self.app.output_var.get().strip() or "output"
+            default_folder = str(Path(folder) / "cleaned" / "text")
+
+        dialog = PdfExportDialog(self.winfo_toplevel(), default_folder=default_folder)
+        self.wait_window(dialog)
 
     def send_to_tropy(self):
         """Write finished results back into a Tropy project."""

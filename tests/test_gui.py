@@ -287,6 +287,86 @@ def test_history_survives_item_with_no_results(store):
     assert rows[0]["confidence"] is None
 
 
+def test_history_records_the_pdf_page_a_tropy_item_came_from(store):
+    run_id = store.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = _finished_item()
+    item.page = 4
+    store.record_item(run_id, item)
+
+    row = store.list_items(run_id)[0]
+    assert row["page"] == 4
+    assert row["edited"] == 0
+    assert row["edited_at"] is None
+
+
+def test_history_update_raw_text_marks_the_row_edited(store):
+    run_id = store.start_run(stages=["ocr"], output_dir="out", total=1)
+    store.record_item(run_id, _finished_item())
+    item_id = store.list_items(run_id)[0]["item_id"]
+
+    store.update_raw_text(item_id, "corrected transcription")
+
+    row = store.get_item(item_id)
+    assert row["raw_text"] == "corrected transcription"
+    assert row["edited"] == 1
+    assert row["edited_at"] is not None
+    # only raw_text changed — cleaned/translated are left alone
+    assert row["cleaned_text"] == "clean"
+    assert row["translated_text"] == "trans"
+
+
+def test_history_migrates_a_database_missing_the_new_columns(tmp_path):
+    """A real on-disk history.db from before this feature shipped has no
+    page/edited/edited_at columns — HistoryStore must add them in place
+    (never drop/recreate) so past runs survive."""
+    import sqlite3
+
+    db_path = tmp_path / "history.db"
+    conn = sqlite3.connect(str(db_path))
+    conn.executescript(
+        """
+        CREATE TABLE runs (
+            run_id INTEGER PRIMARY KEY AUTOINCREMENT, started TEXT NOT NULL,
+            finished TEXT, stages TEXT NOT NULL, output_dir TEXT NOT NULL,
+            doc_type TEXT, ocr_model TEXT, cleanup_model TEXT, translate_model TEXT,
+            total INTEGER NOT NULL DEFAULT 0, succeeded INTEGER NOT NULL DEFAULT 0,
+            failed INTEGER NOT NULL DEFAULT 0, elapsed REAL NOT NULL DEFAULT 0
+        );
+        CREATE TABLE run_items (
+            item_id INTEGER PRIMARY KEY AUTOINCREMENT, run_id INTEGER NOT NULL,
+            source_file TEXT NOT NULL, name TEXT NOT NULL, state TEXT NOT NULL,
+            language TEXT, confidence INTEGER, error TEXT, stage_json TEXT NOT NULL,
+            raw_text TEXT, cleaned_text TEXT, translated_text TEXT, created TEXT NOT NULL
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO runs (started, stages, output_dir, total) VALUES (?, ?, ?, ?)",
+        ("2020-01-01T00:00:00", "ocr", "out", 1),
+    )
+    conn.execute(
+        "INSERT INTO run_items "
+        "(run_id, source_file, name, state, stage_json, raw_text, created) "
+        "VALUES (1, 'a.png', 'a.png', 'done', '{}', 'old raw text', '2020-01-01T00:00:00')"
+    )
+    conn.commit()
+    conn.close()
+
+    store = HistoryStore(db_path)
+    try:
+        rows = store.list_items(1)
+        assert len(rows) == 1
+        assert rows[0]["raw_text"] == "old raw text"
+        assert rows[0]["page"] is None
+        assert rows[0]["edited"] == 0
+        assert rows[0]["edited_at"] is None
+
+        store.update_raw_text(rows[0]["item_id"], "fixed")
+        assert store.get_item(rows[0]["item_id"])["raw_text"] == "fixed"
+    finally:
+        store.close()
+
+
 # --------------------------------------------------------------------------- #
 # comparison-view helpers
 # --------------------------------------------------------------------------- #
@@ -321,6 +401,158 @@ def test_marker_ranges_finds_uncertainty_markers():
     assert "[illegible]" in found
     assert "unclear" in found
     assert all(tag == "marker" for _, _, tag in ranges)
+
+
+# --------------------------------------------------------------------------- #
+# image pane — pure DPI math (no Tk/display needed)
+# --------------------------------------------------------------------------- #
+
+def test_dpi_for_zoom_matches_base_dpi_at_zoom_one():
+    from src.ocr_pipeline.gui.widgets.image_pane import BASE_DPI, _dpi_for_zoom
+
+    assert _dpi_for_zoom(600, 800, 1.0) == BASE_DPI
+
+
+def test_dpi_for_zoom_scales_linearly_below_the_cap():
+    from src.ocr_pipeline.gui.widgets.image_pane import _dpi_for_zoom
+
+    assert _dpi_for_zoom(600, 800, 2.0) == pytest.approx(300.0)
+
+
+def test_dpi_for_zoom_caps_the_rendered_long_edge():
+    from src.ocr_pipeline.gui.widgets.image_pane import _dpi_for_zoom
+
+    dpi = _dpi_for_zoom(3000, 4000, 4.0, base_dpi=150, max_long_edge=4000)
+    long_edge_px = 4000 / 72 * dpi
+    assert long_edge_px == pytest.approx(4000, rel=1e-6)
+
+
+# --------------------------------------------------------------------------- #
+# History's editable raw pane + source-image pane (widget-level)
+# --------------------------------------------------------------------------- #
+
+@pytest.fixture(scope="module")
+def _widget_root():
+    """A bare Tk root for widget-construction tests — separate from the
+    module-scoped `_gui_root` used by the full App smoke tests below.
+
+    Module-scoped rather than per-test: repeated Tk() creation/destruction
+    in one process is exactly the fragility `_gui_root`'s own docstring
+    warns about ("tk wasn't installed properly"), observed here too before
+    this was made module-scoped.
+    """
+    tk_mod = pytest.importorskip("tkinter")
+    try:
+        root = tk_mod.Tk()
+        root.withdraw()
+    except tk_mod.TclError as exc:  # pragma: no cover - headless CI
+        pytest.skip(f"no display: {exc}")
+
+    from src.ocr_pipeline.gui import theme
+    theme.apply(root)
+
+    yield root
+    root.destroy()
+
+
+def test_preview_style_compareview_has_no_image_or_editable_raw(_widget_root):
+    """The plain tab (`with_image`/`editable_raw` both default off) must stay
+    exactly as it was — this is what the live-queue Preview tab uses."""
+    from src.ocr_pipeline.gui.widgets.compare_view import CompareView
+
+    view = CompareView(_widget_root)
+
+    assert view.image is None
+    assert view.panes["raw"].editable is False
+    assert view.panes["raw"].save_btn is None
+    assert str(view.panes["raw"].text["state"]) == "disabled"
+
+
+def test_history_style_compareview_mounts_image_pane_and_editable_raw(_widget_root):
+    from src.ocr_pipeline.gui.widgets.compare_view import CompareView
+
+    view = CompareView(_widget_root, with_image=True, editable_raw=True)
+
+    assert view.image is not None
+    assert view.panes["raw"].editable is True
+    assert str(view.panes["raw"].text["state"]) == "normal"
+    # only the raw pane is editable — cleaned/translated stay read-only
+    assert view.panes["cleaned"].editable is False
+    assert view.panes["translated"].editable is False
+
+
+def test_editable_raw_pane_tracks_dirty_state_and_saves(_widget_root):
+    from src.ocr_pipeline.gui.widgets.compare_view import CompareView
+
+    saved = []
+    view = CompareView(_widget_root, editable_raw=True, on_save_raw=saved.append)
+    view.show(title="doc", raw="original raw text", cleaned="cleaned text")
+
+    raw_pane = view.panes["raw"]
+    assert str(raw_pane.save_btn["state"]) == "disabled"
+
+    raw_pane.text.delete("1.0", "end")
+    raw_pane.text.insert("1.0", "corrected raw text")
+    raw_pane._on_modified()
+    assert str(raw_pane.save_btn["state"]) == "normal"
+
+    raw_pane._save()
+    assert saved == ["corrected raw text"]
+    assert str(raw_pane.save_btn["state"]) == "disabled"
+    # the correction is reflected back into the view's own state
+    assert view._current["raw"] == "corrected raw text"
+
+
+def test_editable_raw_pane_save_does_not_reset_scroll_or_cursor(_widget_root):
+    """Re-rendering after a save must not blow away the widget the user was
+    just typing in — only panes whose content actually changed get touched."""
+    from src.ocr_pipeline.gui.widgets.compare_view import CompareView
+
+    view = CompareView(_widget_root, editable_raw=True, on_save_raw=lambda t: None)
+    view.show(title="doc", raw="original", cleaned="cleaned")
+
+    raw_pane = view.panes["raw"]
+    raw_pane.text.mark_set("insert", "1.0+3c")
+    raw_pane.text.delete("1.0", "end")
+    raw_pane.text.insert("1.0", "original")  # content ends up unchanged
+    raw_pane._save()
+
+    assert raw_pane.text.get("1.0", "end-1c") == "original"
+
+
+def test_image_pane_falls_back_to_placeholder_for_a_missing_file(_widget_root, tmp_path):
+    from src.ocr_pipeline.gui.widgets.image_pane import ImagePane
+
+    pane = ImagePane(_widget_root)
+    pane.load(str(tmp_path / "does-not-exist.png"))
+
+    assert pane._page is None
+    assert pane.canvas.find_withtag("image") == ()
+
+
+def test_image_pane_renders_a_real_pdf_page(_widget_root, tmp_path):
+    fitz = pytest.importorskip("fitz")
+
+    pdf_path = tmp_path / "page.pdf"
+    doc = fitz.open()
+    doc.new_page(width=200, height=300)
+    doc.new_page(width=200, height=300)
+    doc.save(str(pdf_path))
+    doc.close()
+
+    from src.ocr_pipeline.gui.widgets.image_pane import ImagePane
+
+    pane = ImagePane(_widget_root)
+    pane.load(str(pdf_path), page=1)
+    _widget_root.update_idletasks()
+
+    assert pane._page is not None
+    assert pane.canvas.find_withtag("image") != ()
+    assert pane._photo is not None
+
+    pane.clear()
+    assert pane._page is None
+    assert pane.canvas.find_withtag("image") == ()
 
 
 # --------------------------------------------------------------------------- #

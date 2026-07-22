@@ -286,3 +286,144 @@ def test_compile_pdf_smoke_no_structure():
 
     # Clean up
     result.unlink(missing_ok=True)
+
+
+# --------------------------------------------------------------------------- #
+# compile() function (refactored entry point)
+# --------------------------------------------------------------------------- #
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_structure_pages_calls_on_progress_in_order(mock_chat, tmp_path):
+    """on_progress should be called once per page, in order, with messages."""
+    from src.ocr_pipeline import pdf_export
+    from src.ocr_pipeline.pdf_export import PageText
+
+    def side_effect(*args, **kwargs):
+        messages = kwargs.get("messages", [])
+        for msg in messages:
+            if msg["role"] == "user":
+                text = msg["content"]
+                return MagicMock(
+                    message=MagicMock(content=text.replace("\n", "\n\n"))
+                )
+        return MagicMock(message=MagicMock(content="structured"))
+
+    mock_chat.side_effect = side_effect
+
+    pages = [
+        PageText(label="page_a", text="Page A text.\nSecond line.",
+                 source_path=tmp_path / "a.txt"),
+        PageText(label="page_b", text="Page B text.\nSecond line.",
+                 source_path=tmp_path / "b.txt"),
+    ]
+
+    calls = []
+    result = pdf_export.structure_pages(
+        pages, on_progress=lambda msg: calls.append(msg))
+
+    assert len(calls) == 2
+    assert "Structuring 1/2: page_a" in calls[0]
+    assert "Structuring 2/2: page_b" in calls[1]
+    assert len(result) == 2
+
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_structure_pages_calls_on_rejected(mock_chat, tmp_path, monkeypatch):
+    """on_rejected should be called when the guard rejects a page."""
+    # Disable resume so structure.perform always runs the model call
+    from src.ocr_pipeline import config as _cfg
+    _cfg.apply_overrides({"resume": False})
+    from src.ocr_pipeline import pdf_export
+    from src.ocr_pipeline.pdf_export import PageText
+
+    # Model returns a word-change that the guard will reject
+    mock_chat.return_value = MagicMock(
+        message=MagicMock(content="Changed text."))
+
+    pages = [
+        PageText(label="page_one",
+                 text="Original text that must be kept.",
+                 source_path=tmp_path / "unique_test_page.txt"),
+    ]
+
+    rejected = []
+    result = pdf_export.structure_pages(
+        pages, on_rejected=lambda l: rejected.append(l))
+
+    assert len(rejected) == 1
+    assert rejected[0] == "page_one"
+    # Original text should be kept
+    assert result[0].text == "Original text that must be kept."
+
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_compile_function_end_to_end(mock_chat, tmp_path):
+    """pdf_export.compile() should collect, structure and render."""
+    from src.ocr_pipeline import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "page1.txt").write_text("Erster Absatz.\nZweiter Satz.")
+    (text_dir / "page2.txt").write_text("Zweiter Absatz.\nDritter Satz.")
+
+    def side_effect(*args, **kwargs):
+        messages = kwargs.get("messages", [])
+        for msg in messages:
+            if msg["role"] == "user":
+                text = msg["content"]
+                return MagicMock(
+                    message=MagicMock(content=text.replace("\n", "\n\n"))
+                )
+        return MagicMock(message=MagicMock(content="structured text"))
+
+    mock_chat.side_effect = side_effect
+
+    output_path = tmp_path / "result.pdf"
+    progress = []
+    result = pdf_export.compile(
+        str(tmp_path),
+        stage="cleaned",
+        structure=True,
+        output=str(output_path),
+        on_progress=lambda msg: progress.append(msg),
+    )
+
+    assert result == output_path
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0
+    assert any("Collecting" in m for m in progress)
+    assert any("Found" in m for m in progress)
+    assert any("Rendering" in m for m in progress)
+    assert any("Done" in m for m in progress)
+
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_compile_function_no_structure(mock_chat, tmp_path):
+    """compile() with structure=False should skip the model call."""
+    from src.ocr_pipeline import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "page1.txt").write_text("Page 1 text.")
+
+    output_path = tmp_path / "result.pdf"
+    result = pdf_export.compile(
+        str(tmp_path),
+        stage="cleaned",
+        structure=False,
+        output=str(output_path),
+    )
+
+    assert result.exists()
+    mock_chat.assert_not_called()
+
+
+def test_compile_function_raises_on_empty_folder(tmp_path):
+    """compile() should raise ValueError when no pages are found."""
+    from src.ocr_pipeline import pdf_export
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+
+    with pytest.raises(ValueError, match="No pages found"):
+        pdf_export.compile(str(empty), stage="cleaned", structure=False)

@@ -1,11 +1,13 @@
-"""Content-preservation guard for the cleanup stage.
+"""Content-preservation guards: never trust a model's output just because
+the prompt asked nicely.
 
-Cleanup asks a language model to rewrite a page of archival text. Measured over
-130 real pages, it left 64% untouched, made genuine repairs on some of the
-rest (`CAHTOLIC` -> `CATHOLIC`, `ERNSTFRIEDRHCH` -> `ERNSTFRIEDRICH`), and on a
-minority did real damage: it corrupted words that were already correct
-(`Gewerkschaftern` -> `Gewerkshaftern`), altered a place name (`Elsass` ->
-`Elass`), and on fragmentary pages deleted whole clauses it could not parse.
+`check()` guards the cleanup stage. Cleanup asks a language model to rewrite
+a page of archival text. Measured over 130 real pages, it left 64% untouched,
+made genuine repairs on some of the rest (`CAHTOLIC` -> `CATHOLIC`,
+`ERNSTFRIEDRHCH` -> `ERNSTFRIEDRICH`), and on a minority did real damage: it
+corrupted words that were already correct (`Gewerkschaftern` ->
+`Gewerkshaftern`), altered a place name (`Elsass` -> `Elass`), and on
+fragmentary pages deleted whole clauses it could not parse.
 
 The guard makes that failure mode safe. It compares the model's output against
 the source and, if the output looks lossy or has altered a proper noun,
@@ -15,6 +17,15 @@ untouched — never quietly truncated.
 The check is deliberately whole-page rather than per-edit: reverting individual
 edits would produce a text that never existed in either version, which is worse
 than a clean no-op and much harder to audit.
+
+`check_structure_only()` guards the structure stage with a stricter,
+whitespace-only version of the same idea. `check_no_repetition_loop()`
+guards the OCR stage itself against a different failure mode entirely — not
+a model rewriting real content, but a model hallucinating filler and
+looping on it when the source image gives it nothing real to transcribe
+(confirmed on a page scanned upside-down with no orientation metadata
+anywhere to say so). There is no source text to fall back to for that one;
+see its own docstring.
 """
 
 import difflib
@@ -178,6 +189,56 @@ def check_structure_only(original: str, structured: str) -> GuardResult:
             )
             break
 
+    return result
+
+
+def check_no_repetition_loop(
+    text: str, *, min_lines: int = 20, max_unique_ratio: float = 0.3,
+) -> GuardResult:
+    """Detect a degenerate decoding loop in raw OCR output: the model
+    repeating the same line, or cycling through a short handful of lines,
+    over and over instead of transcribing real content.
+
+    Confirmed live on a real archive page fed to the OCR stage upside-down
+    (Tropy `orientation` was 1/normal — nobody had flagged the scan, so
+    nothing told the model or the pipeline it was inverted). With no
+    genuine signal to transcribe, greedy decoding (`temperature=0`, no
+    frequency/presence penalty) hallucinated a plausible-sounding German
+    sentence and then had no mechanism to stop repeating it — 900+ lines of
+    the same sentence on one page, a 3-line cycle repeated ~30 times on
+    another. A same-line-N-times-in-a-row check catches the first pattern
+    but not the second, so this counts overall line diversity instead:
+    across 9 real pages from that one archive folder, genuinely garbled
+    pages sat between 0.3% and 4% unique lines; genuinely good ones sat at
+    60%+. The 30% cutoff below sits with a wide margin on both sides of
+    that real data.
+
+    Unlike `check()`/`check_structure_only()`, there is no source text to
+    fall back to here — a rejected OCR page has nothing safe to substitute,
+    so the caller should treat `not result.ok` as a hard failure, not a
+    silent revert.
+    """
+    result = GuardResult(ok=True)
+
+    if not text.strip():
+        result.ok = False
+        result.reasons.append("output empty")
+        return result
+
+    lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
+    if len(lines) < min_lines:
+        return result  # too short for a repetition loop to be meaningful
+
+    counts = Counter(lines)
+    unique_ratio = len(counts) / len(lines)
+    if unique_ratio < max_unique_ratio:
+        worst_line, worst_count = counts.most_common(1)[0]
+        result.ok = False
+        result.reasons.append(
+            f"only {unique_ratio:.0%} of {len(lines)} line(s) are unique "
+            f"('{worst_line[:60]}' repeats {worst_count} times) — looks like "
+            f"a decoding loop, not real transcription"
+        )
     return result
 
 

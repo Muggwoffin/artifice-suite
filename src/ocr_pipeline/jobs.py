@@ -254,6 +254,7 @@ class JobRunner:
                     force=self.force,
                     page=item.page,
                     stem=item.output_stem or None,
+                    orientation=(item.source or {}).get("orientation", 1),
                 ),
                 chars_key="extracted_text",
             )

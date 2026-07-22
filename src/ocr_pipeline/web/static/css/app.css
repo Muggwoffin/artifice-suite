@@ -718,6 +718,138 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 
 /* ------------------------------------------------------------------- tropy */
 
+.tropy-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 0.6rem;
+  min-height: 36vh;
+  max-height: 50vh;
+  overflow: hidden;
+}
+
+.tropy-source-pane {
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-recessed);
+  padding: 0.2rem 0;
+}
+
+.tropy-source-node {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  border-left: 3px solid transparent;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+
+.tropy-source-node:hover {
+  background: var(--accent-wash);
+}
+
+.tropy-source-node.active {
+  background: var(--accent-wash);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+.tropy-source-node .count {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  margin-left: auto;
+}
+
+.tropy-source-node .icon {
+  font-size: 1rem;
+  line-height: 1;
+  width: 1.2rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.tropy-source-section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 0.5rem 0.7rem 0.25rem;
+}
+
+.tropy-item-pane {
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-recessed);
+}
+
+.tropy-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.tropy-item-row:hover {
+  background: var(--accent-wash);
+}
+
+.tropy-item-row input[type=checkbox] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.tropy-item-row .item-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tropy-item-row .item-meta {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.tropy-item-pane .empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--ink-faint);
+  font-style: italic;
+  font-size: var(--text-sm);
+  padding: 2rem;
+  text-align: center;
+}
+
+.tropy-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0 0.2rem;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.tropy-summary .spacer { flex: 1; }
+
+.tropy-summary .warning {
+  color: var(--gold);
+  font-weight: 600;
+}
+
 .tropy-list-row {
   display: flex;
   align-items: center;

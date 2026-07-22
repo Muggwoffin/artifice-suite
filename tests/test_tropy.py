@@ -28,7 +28,7 @@ CREATE TABLE items (id INTEGER PRIMARY KEY, cover_image_id INTEGER);
 CREATE TABLE photos (
     id INTEGER PRIMARY KEY, item_id INTEGER, position INTEGER, path TEXT,
     protocol TEXT DEFAULT 'file', mimetype TEXT, checksum TEXT,
-    page INTEGER DEFAULT 0, filename TEXT
+    page INTEGER DEFAULT 0, filename TEXT, orientation INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE metadata (id INTEGER, property TEXT, value_id INTEGER);
 CREATE TABLE metadata_values (value_id INTEGER PRIMARY KEY, datatype TEXT, text TEXT);
@@ -260,6 +260,41 @@ def test_image_job_item_has_no_page(bundle):
         items = pages_to_job_items(proj.pages([2]))
 
     assert items[0].page is None
+
+
+def test_photo_orientation_defaults_to_normal(bundle):
+    """None of the fixture rows set an orientation — the schema's own
+    DEFAULT 1 should apply, same as a Tropy project where nobody has ever
+    flagged a photo as rotated."""
+    with TropyProject(bundle) as proj:
+        pages = proj.pages([2])
+
+    assert pages[0].orientation == 1
+    assert pages[0].provenance()["orientation"] == 1
+
+
+def test_photo_orientation_is_read_from_the_database(bundle):
+    """Confirmed necessary on a real archive page: Tropy's orientation
+    column is the one place a scan can be marked upside-down (EXIF 3) —
+    if this isn't read, rotating the photo in Tropy does nothing."""
+    con = sqlite3.connect(bundle / "project.tpy")
+    con.execute(
+        "INSERT INTO photos (id,item_id,path,mimetype,page,filename,orientation) "
+        "VALUES (50,2,'assets/cccc3333.jpg','image/jpeg',0,'photo_002.jpg',3)"
+    )
+    con.commit()
+    con.close()
+
+    with TropyProject(bundle) as proj:
+        pages = proj.pages([2])
+        items = pages_to_job_items(pages)
+
+    rotated = next(p for p in pages if p.photo_id == 50)
+    assert rotated.orientation == 3
+    assert rotated.provenance()["orientation"] == 3
+
+    rotated_item = next(i for i in items if i.source.get("photo_id") == 50)
+    assert rotated_item.source["orientation"] == 3
 
 
 def test_manifest_maps_outputs_back_to_photos(bundle, tmp_path):

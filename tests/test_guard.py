@@ -213,3 +213,67 @@ def test_guard_can_be_switched_off_entirely(mock_chat, tmp_path):
     result = cleanup.perform(raw, source_file="page.tif", output_dir=str(tmp_path))
 
     assert result["cleaned_text"] == "short"
+
+
+# --------------------------------------------------------------------------- #
+# OCR degeneracy guard: greedy decoding looping on hallucinated filler
+# --------------------------------------------------------------------------- #
+#
+# Real failure mode, not a hypothetical: a Tropy page scanned upside-down
+# (R_58_373_0060), with nothing anywhere — not Tropy's own orientation
+# metadata, not the file's EXIF — saying so. Fed to the OCR model as-is, it
+# hallucinated a plausible-sounding German sentence and then had no way to
+# stop repeating it: 900+ lines of one sentence on that page, a 3-line cycle
+# repeated ~30 times on another in the same folder. Unlike the cleanup/
+# structure guards above, there is no source text to fall back to here.
+
+def test_repetition_guard_rejects_a_single_line_looped():
+    looped = "\n\n".join(["Verwaltung Werte von Welleben eine Grundlage setzen."] * 50)
+
+    result = _guard.check_no_repetition_loop(looped)
+
+    assert result.ok is False
+    assert "unique" in result.reasons[0]
+
+
+def test_repetition_guard_rejects_a_short_cycle():
+    """A same-line-N-times-in-a-row check would miss this: no single line
+    ever repeats twice in a row, only the 3-line cycle as a whole does."""
+    cycle = [
+        "First line of the hallucinated cycle.",
+        "Second line of the hallucinated cycle.",
+        "Third line of the hallucinated cycle.",
+    ]
+    looped = "\n\n".join(cycle * 15)
+
+    result = _guard.check_no_repetition_loop(looped)
+
+    assert result.ok is False
+
+
+def test_repetition_guard_accepts_real_varied_text():
+    real = "\n\n".join(
+        f"This is genuinely distinct archival sentence number {i} of the page."
+        for i in range(40)
+    )
+
+    result = _guard.check_no_repetition_loop(real)
+
+    assert result.ok is True, result.reasons
+
+
+def test_repetition_guard_ignores_short_output():
+    """Too little text for 'repetition' to mean anything — a short page
+    legitimately repeating a couple of header lines must not trip this."""
+    short = "Abschrift\n\naus\n\nden Akten 303/4 - Württemberg\n\nAbschrift der Anlage"
+
+    result = _guard.check_no_repetition_loop(short)
+
+    assert result.ok is True
+
+
+def test_repetition_guard_rejects_empty_output():
+    result = _guard.check_no_repetition_loop("   ")
+
+    assert result.ok is False
+    assert "output empty" in result.reasons

@@ -31,6 +31,15 @@ _DEFAULTS: dict[str, Any] = {
     # guard; leave unset unless you have seen one, since a cap that bites
     # truncates the document silently.
     "max_output_tokens": None,
+    # Degeneracy guard for the OCR stage. When a vision model is given an
+    # image it fundamentally can't parse (confirmed cause: a scan with no
+    # orientation metadata anywhere saying it was upside-down), greedy
+    # decoding can hallucinate filler and then loop on it — one real page
+    # produced 900+ lines of the same repeated sentence. Unlike the other
+    # guards below, a rejected page has no source text to fall back to, so
+    # this fails the item outright instead of silently writing the loop to
+    # raw_ocr/ as if it were a real transcription.
+    "ocr_repetition_guard": True,
     # Content-preservation guard for cleanup. When the model's output looks
     # lossy or has altered a proper noun, the raw text is kept instead, so a
     # page is either cleaned or untouched — never quietly truncated.

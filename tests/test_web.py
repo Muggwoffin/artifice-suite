@@ -200,6 +200,23 @@ def test_tropy_add_reports_a_clean_error_for_a_missing_project(client, tmp_path)
     assert res.status_code == 400
 
 
+def test_tropy_add_writes_manifest_and_reports_missing(client, tropy_project, tmp_path):
+    out = tmp_path / "out"
+    res = client.post("/api/tropy/add", json={
+        "project": str(tropy_project), "item_ids": [1], "output_dir": str(out),
+    })
+    assert res.status_code == 200
+    body = res.json()
+    assert body["added"] >= 1
+    assert body["missing"] == ["doc.pdf  p.1"]
+    manifest = out / "tropy_manifest.json"
+    assert manifest.exists()
+    import json
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    assert "pages" in data
+    assert "project" in data
+
+
 # --------------------------------------------------------------------------- #
 # preview (in-memory queue item text)
 # --------------------------------------------------------------------------- #
@@ -569,7 +586,8 @@ CREATE TABLE subjects (id INTEGER PRIMARY KEY, template TEXT);
 CREATE TABLE images (id INTEGER PRIMARY KEY);
 CREATE TABLE photos (
     id INTEGER PRIMARY KEY, item_id INTEGER, path TEXT, mimetype TEXT,
-    page INTEGER DEFAULT 0, filename TEXT
+    page INTEGER DEFAULT 0, filename TEXT,
+    orientation INTEGER DEFAULT 1
 );
 CREATE TABLE notes (
     note_id INTEGER PRIMARY KEY, id INTEGER NOT NULL, text TEXT NOT NULL,
@@ -585,6 +603,14 @@ CREATE TABLE transcriptions (
     deleted NUMERIC, created NUMERIC DEFAULT CURRENT_TIMESTAMP,
     modified NUMERIC DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE metadata (
+    id INTEGER, property TEXT, value_id INTEGER,
+    PRIMARY KEY (id, property)
+);
+CREATE TABLE metadata_values (
+    value_id INTEGER PRIMARY KEY, text TEXT
+);
+CREATE TABLE trash (id INTEGER PRIMARY KEY);
 CREATE VIRTUAL TABLE fts_notes USING fts5(id UNINDEXED, text, language UNINDEXED);
 CREATE VIRTUAL TABLE fts_transcriptions USING fts5(id UNINDEXED, text);
 CREATE TRIGGER notes_ai_fts AFTER INSERT ON notes BEGIN
@@ -613,6 +639,13 @@ def tropy_project(tmp_path):
     con.execute(
         "INSERT INTO photos (id,item_id,path,mimetype,page,filename) "
         "VALUES (10,1,'assets/a.pdf','application/pdf',0,'doc.pdf')"
+    )
+    con.execute(
+        "INSERT INTO metadata_values (value_id, text) VALUES (100, 'Doc1')"
+    )
+    con.execute(
+        "INSERT INTO metadata (id, property, value_id) "
+        "VALUES (1, 'http://purl.org/dc/elements/1.1/title', 100)"
     )
     con.commit()
     con.close()
@@ -825,3 +858,121 @@ def test_ensure_std_streams_leaves_real_streams_alone(monkeypatch, capsys):
     _ensure_std_streams()
     print("still visible to capsys")
     assert "still visible to capsys" in capsys.readouterr().out
+
+
+# --------------------------------------------------------------------------- #
+# pdf export
+# --------------------------------------------------------------------------- #
+
+def _make_pdf_text_folder(tmp_path, n=2):
+    """Create a cleaned/text folder with n .txt files."""
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    for i in range(n):
+        (text_dir / f"page{i+1}.txt").write_text(
+            f"Page {i+1} text.\nSome content here.",
+            encoding="utf-8",
+        )
+    return text_dir
+
+
+@pytest.fixture
+def pdf_text_folder(tmp_path):
+    return _make_pdf_text_folder(tmp_path, n=2)
+
+
+def test_pdf_export_start_returns_ok(client, pdf_text_folder):
+    folder = str(pdf_text_folder.parent.parent)
+    res = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+
+    # Wait for the thread to finish
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert status["status"] == "done"
+    assert status["output_path"] is not None
+
+
+def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder):
+    folder = str(pdf_text_folder.parent.parent)
+    first = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert first.status_code == 200
+
+    second = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert second.status_code == 409
+    assert "already running" in second.json()["detail"].lower()
+
+    # Wait for the first to finish so we don't leave state dirty
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+
+
+def test_pdf_export_400_on_missing_folder(client):
+    res = client.post("/api/pdf-export/start", json={
+        "folder": "C:/does/not/exist", "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 200  # start returns ok; error surfaces on thread
+    assert res.json()["ok"] is True
+
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert status["status"] == "error"
+
+
+def test_pdf_export_download_404_before_compilation(client):
+    res = client.get("/api/pdf-export/download")
+    assert res.status_code == 404
+
+
+def test_pdf_export_download_returns_pdf_after_done(client, pdf_text_folder):
+    folder = str(pdf_text_folder.parent.parent)
+    client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] == "done":
+            break
+        time.sleep(0.05)
+
+    res = client.get("/api/pdf-export/download")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/pdf"
+    assert len(res.content) > 0
+
+
+def test_pdf_export_events_sse_streams_log_then_done(client, pdf_text_folder):
+    """SSE stream should emit log events then a done event."""
+    folder = str(pdf_text_folder.parent.parent)
+    res = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 200
+
+    sse_res = client.get("/api/pdf-export/events")
+    assert sse_res.status_code == 200
+    assert sse_res.headers.get("content-type", "").startswith("text/event-stream")
+
+    events_text = sse_res.text
+    assert "log" in events_text or "done" in events_text

@@ -343,6 +343,35 @@ def tropy_browse(
             typer.echo(f"  ... and {len(items) - 40} more")
 
 
+@app.command("repair-tropy-notes")
+def repair_tropy_notes(
+    project: str = typer.Argument(help="Path to a .tropy project"),
+    no_backup: bool = typer.Option(False, "--no-backup", help="Skip the safety backup (not recommended)"),
+):
+    """Fix notes written before a `_prosemirror_state()` bug was caught.
+
+    Every note this tool wrote before the fix was missing a `selection` key,
+    which crashes Tropy's own note editor on open (a minified React error,
+    #520) instead of displaying the note — the write itself always
+    succeeded, so nothing caught it at the time. This only touches the
+    `state` column of affected rows; text, doc content, and language are
+    left exactly as they were. Tropy must be closed first.
+    """
+    from src.ocr_pipeline.tropy_write import TropyWriter
+
+    with TropyWriter(project) as writer:
+        try:
+            repaired = writer.repair_missing_selections(make_backup=not no_backup)
+        except RuntimeError as exc:
+            typer.echo(f"Cannot repair: {exc}", err=True)
+            raise typer.Exit(code=1)
+
+    if repaired == 0:
+        typer.echo("No notes needed repair — every note already had a selection.")
+    else:
+        typer.echo(f"Repaired {repaired} note(s) missing a selection.")
+
+
 @app.command("tropy")
 def tropy(
     project: str = typer.Argument(help="Path to a .tropy project"),
@@ -486,42 +515,19 @@ def compile_pdf(
     if not folder_path.exists():
         raise typer.BadParameter(f"Folder not found: {folder}")
 
-    # Determine default output path
-    if output is None:
-        output_dir = Path("output")
-        output_dir.mkdir(exist_ok=True)
-        pdf_path = output_dir / f"{folder_path.name}.pdf"
-    else:
-        pdf_path = Path(output)
+    try:
+        result_path = pdf_export.compile(
+            folder,
+            stage=stage,
+            structure=not no_structure,
+            output=output,
+            manifest_path=manifest,
+            on_progress=lambda msg: typer.echo(msg),
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
 
-    typer.echo(f"Collecting pages from {folder_path}...")
-    pages = pdf_export.collect_folder(
-        str(folder_path),
-        stage=stage,
-        manifest_path=manifest,
-    )
-
-    if not pages:
-        typer.echo("No pages found to process.", err=True)
-        raise typer.Exit(code=1)
-
-    typer.echo(f"Found {len(pages)} page(s)")
-
-    if not no_structure:
-        typer.echo("Structuring pages (this may take a moment)...")
-        pages = pdf_export.structure_pages(pages)
-
-    title = None
-    for p in pages:
-        if p.item_title:
-            title = p.item_title
-            break
-
-    typer.echo(f"Rendering PDF...")
-    result_path = pdf_export.render_pdf(pages, pdf_path, title=title)
-
-    total_chars = sum(len(p.text) for p in pages)
-    typer.echo(f"Done: {len(pages)} page(s), {total_chars} chars")
     typer.echo(f"PDF: {result_path}")
 
 

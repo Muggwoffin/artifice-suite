@@ -71,6 +71,7 @@
           <div class="rule-v"></div>
           <button class="btn" id="btn-skip">Skip</button>
           <div class="spacer"></div>
+          <button class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
           <button class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
         </div>
 
@@ -266,16 +267,65 @@
 
 <!-- Tropy: add pages -->
 <div class="modal-backdrop hidden" id="modal-tropy-add">
-  <div class="modal">
+  <div class="modal" style="width:min(820px, 94vw);">
     <h3>Add from Tropy</h3>
     <p class="dim">The project is opened read-only &mdash; nothing here can modify it.</p>
-    <div style="display:flex; gap:0.5rem; margin-bottom:0.8rem;">
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
       <select id="tropy-project" class="select" style="flex:1;"></select>
       <button class="btn" id="btn-tropy-browse-project">Browse&hellip;</button>
     </div>
-    <div id="tropy-lists" style="max-height:40vh; overflow:auto;"></div>
-    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+    <div class="tropy-picker-grid">
+      <div class="tropy-source-pane" id="tropy-sources"></div>
+      <div class="tropy-item-pane" id="tropy-items">
+        <div class="empty-state">Select a list, tag, or "All items" on the left</div>
+      </div>
+    </div>
+    <div class="tropy-summary" id="tropy-summary">
+      <span id="tropy-summary-text" class="dim">No items selected</span>
+      <span class="spacer"></span>
+      <span id="tropy-summary-warning" class="warning"></span>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.6rem;">
       <button class="btn" id="btn-tropy-cancel">Cancel</button>
+      <button class="btn accent" id="btn-tropy-add-queue" disabled>Add to Queue</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF export modal -->
+<div class="modal-backdrop hidden" id="modal-compile-pdf">
+  <div class="modal" style="width:min(640px, 94vw);">
+    <h3>Compile PDF</h3>
+    <p class="dim">Compile processed text files from a folder into one continuous reading PDF.</p>
+
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+      <input type="text" id="pdf-folder" class="input" style="flex:1;" placeholder="Folder of .txt files">
+      <button class="btn" id="btn-pdf-browse-folder">Browse&hellip;</button>
+    </div>
+
+    <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+      <label>Stage:
+        <select id="pdf-stage">
+          <option value="cleaned">Cleaned text</option>
+          <option value="raw_ocr">Raw OCR text</option>
+          <option value="translated">Translation</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="pdf-structure" checked> Structure text</label>
+    </div>
+
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+      <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Output PDF path (optional)">
+      <button class="btn" id="btn-pdf-browse-output">Browse&hellip;</button>
+    </div>
+
+    <p class="dim" id="pdf-status"></p>
+    <div id="pdf-log" style="max-height:26vh; overflow:auto; background:var(--paper-recessed); border-radius:var(--radius); padding:0.6rem; font-family:var(--font-mono); font-size:0.82rem; white-space:pre-wrap;"></div>
+
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <button class="btn" id="btn-pdf-close">Close</button>
+      <button class="btn accent" id="btn-pdf-start">Start</button>
+      <button class="btn" id="btn-pdf-download" disabled>Download</button>
     </div>
   </div>
 </div>
@@ -316,6 +366,7 @@
 
 <script src="/static/js/app.js"></script>
 <script src="/static/js/tropy.js"></script>
+<script src="/static/js/pdf_export.js"></script>
 <script src="/static/js/preview_image.js"></script>
 <script src="/static/js/preview.js"></script>
 <script src="/static/js/history.js"></script>

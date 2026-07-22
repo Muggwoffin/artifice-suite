@@ -7,7 +7,9 @@
  */
 
 const tropyEls = {};
-["btn-add-tropy", "modal-tropy-add", "tropy-project", "tropy-lists",
+["btn-add-tropy", "modal-tropy-add", "tropy-project",
+ "tropy-sources", "tropy-items", "tropy-summary-text",
+ "tropy-summary-warning", "btn-tropy-add-queue",
  "btn-tropy-cancel", "btn-tropy-browse-project",
  "btn-send-tropy", "modal-tropy-send", "send-tropy-project",
  "send-tropy-targets-notes", "send-tropy-targets-transcriptions",
@@ -18,13 +20,21 @@ const tropyEls = {};
 });
 
 let tropyProjects = [];
+let tropyProjectData = null;
+const ALL_ITEMS = "__all__";
 
 // ------------------------------------------------------------- add from tropy
 
 async function openTropyAdd() {
   tropyEls["modal-tropy-add"].classList.remove("hidden");
+  tropyEls["tropy-sources"].innerHTML = "";
+  tropyEls["tropy-items"].innerHTML =
+    `<div class="empty-state">Select a list, tag, or "All items" on the left</div>`;
+  tropyProjectData = null;
+  updateTropySummary(0, 0, []);
+  tropyEls["btn-tropy-add-queue"].disabled = true;
   await ensureTropyProjectList(tropyEls["tropy-project"]);
-  if (tropyEls["tropy-project"].value) loadTropyLists();
+  if (tropyEls["tropy-project"].value) loadTropySources();
 }
 
 async function ensureTropyProjectList(selectEl) {
@@ -37,8 +47,10 @@ async function ensureTropyProjectList(selectEl) {
 }
 
 tropyEls["btn-add-tropy"].onclick = openTropyAdd;
-tropyEls["btn-tropy-cancel"].onclick = () => tropyEls["modal-tropy-add"].classList.add("hidden");
-tropyEls["tropy-project"].addEventListener("change", loadTropyLists);
+tropyEls["btn-tropy-cancel"].onclick = () => {
+  tropyEls["modal-tropy-add"].classList.add("hidden");
+};
+tropyEls["tropy-project"].addEventListener("change", loadTropySources);
 tropyEls["btn-tropy-browse-project"].onclick = async () => {
   const dir = await pickFolder("tropy");
   if (!dir) return;
@@ -49,37 +61,231 @@ tropyEls["btn-tropy-browse-project"].onclick = async () => {
     tropyEls["tropy-project"].prepend(opt);
   }
   tropyEls["tropy-project"].value = dir;
-  loadTropyLists();
+  loadTropySources();
 };
 
-async function loadTropyLists() {
+async function loadTropySources() {
   const project = tropyEls["tropy-project"].value;
   if (!project) return;
-  tropyEls["tropy-lists"].innerHTML = `<p class="dim">Loading…</p>`;
+  tropyEls["tropy-sources"].innerHTML = `<p class="dim" style="padding:0.7rem;">Loading…</p>`;
+  tropyEls["tropy-items"].innerHTML =
+    `<div class="empty-state">Select a list, tag, or "All items" on the left</div>`;
+  updateTropySummary(0, 0, []);
+  tropyEls["btn-tropy-add-queue"].disabled = true;
   try {
     const data = await api("POST", "/api/tropy/browse", { project });
-    tropyEls["tropy-lists"].innerHTML = data.lists.map(l => `
-      <div class="tropy-list-row" style="padding-left:${l.depth * 1.2}rem;">
-        <span>${escapeHtml(l.name)} <span class="dim">(${l.item_count})</span></span>
-        <button class="btn" data-list-id="${l.list_id}">Add list</button>
-      </div>`).join("") || `<p class="dim">No lists in this project.</p>`;
-
-    tropyEls["tropy-lists"].querySelectorAll("button[data-list-id]").forEach(btn => {
-      btn.addEventListener("click", () => addTropyList(project, Number(btn.dataset.listId)));
-    });
+    tropyProjectData = data;
+    renderSourceTree(data);
   } catch (err) {
-    tropyEls["tropy-lists"].innerHTML = `<p class="dim">${escapeHtml(err.message)}</p>`;
+    tropyEls["tropy-sources"].innerHTML =
+      `<p class="dim" style="padding:0.7rem;">${escapeHtml(err.message)}</p>`;
   }
 }
 
-async function addTropyList(project, listId) {
-  const browse = await api("POST", "/api/tropy/browse", { project, list_id: listId });
-  const itemIds = browse.items.map(i => i.item_id);
-  const data = await api("POST", "/api/tropy/add", { project, item_ids: itemIds });
-  setQueue(data.items);
-  log(`Added ${data.added} page(s) from Tropy`, "accent");
-  tropyEls["modal-tropy-add"].classList.add("hidden");
+function renderSourceTree(data) {
+  const el = tropyEls["tropy-sources"];
+  const frag = document.createDocumentFragment();
+
+  // "All items" section label
+  const allLabel = document.createElement("div");
+  allLabel.className = "tropy-source-section-label";
+  allLabel.textContent = "Overview";
+  frag.appendChild(allLabel);
+
+  // All items node
+  const allItems = document.createElement("div");
+  allItems.className = "tropy-source-node active";
+  allItems.dataset.type = ALL_ITEMS;
+  allItems.dataset.id = "";
+  allItems.innerHTML = `<span class="icon">&#128196;</span>All items<span class="count">${data.lists.reduce((s, l) => s + l.item_count, 0)}</span>`;
+  allItems.addEventListener("click", () => selectSource(allItems, ALL_ITEMS, null));
+  frag.appendChild(allItems);
+
+  let totalItems = data.lists.reduce((s, l) => s + l.item_count, 0);
+
+  // Lists section label
+  if (data.lists.length) {
+    const listLabel = document.createElement("div");
+    listLabel.className = "tropy-source-section-label";
+    listLabel.textContent = "Lists";
+    frag.appendChild(listLabel);
+
+    // Build hierarchy: parent_id -> children
+    const childrenOf = {};
+    for (const l of data.lists) {
+      const parentKey = l.parent_id ?? 0;
+      if (!childrenOf[parentKey]) childrenOf[parentKey] = [];
+      childrenOf[parentKey].push(l);
+    }
+
+    function renderListBranch(list, depth) {
+      const node = document.createElement("div");
+      node.className = "tropy-source-node";
+      node.style.paddingLeft = `${0.7 + depth * 1.2}rem`;
+      node.dataset.type = "list";
+      node.dataset.id = list.list_id;
+      node.innerHTML =
+        `<span class="icon">${depth === 0 ? "&#128193;" : "&#128193;"}</span>${escapeHtml(list.name)}<span class="count">${list.item_count}</span>`;
+      node.addEventListener("click", () => selectSource(node, "list", list.list_id));
+      frag.appendChild(node);
+
+      const sub = childrenOf[list.list_id];
+      if (sub) {
+        sub.sort((a, b) => a.name.localeCompare(b.name));
+        for (const child of sub) renderListBranch(child, depth + 1);
+      }
+    }
+
+    const roots = (childrenOf[0] || []).concat(childrenOf[null] || []);
+    roots.sort((a, b) => a.name.localeCompare(b.name));
+    for (const root of roots) renderListBranch(root, 0);
+  }
+
+  // Tags section label
+  if (data.tags && data.tags.length) {
+    const tagLabel = document.createElement("div");
+    tagLabel.className = "tropy-source-section-label";
+    tagLabel.textContent = "Tags";
+    frag.appendChild(tagLabel);
+
+    for (const t of data.tags) {
+      const node = document.createElement("div");
+      node.className = "tropy-source-node";
+      node.dataset.type = "tag";
+      node.dataset.id = t.name;
+      node.innerHTML =
+        `<span class="icon">&#127991;</span>${escapeHtml(t.name)}<span class="count">${t.count}</span>`;
+      node.addEventListener("click", () => selectSource(node, "tag", t.name));
+      frag.appendChild(node);
+    }
+  }
+
+  el.innerHTML = "";
+  el.appendChild(frag);
 }
+
+let currentSource = ALL_ITEMS;
+
+async function selectSource(node, type, id) {
+  // Highlight
+  tropyEls["tropy-sources"].querySelectorAll(".tropy-source-node.active")
+    .forEach(n => n.classList.remove("active"));
+  node.classList.add("active");
+  currentSource = { type, id };
+
+  const project = tropyEls["tropy-project"].value;
+  if (!project) return;
+
+  tropyEls["tropy-items"].innerHTML =
+    `<div class="empty-state">Loading…</div>`;
+
+  try {
+    const body = { project };
+    if (type === "list") body.list_id = id;
+    else if (type === "tag") body.tag = id;
+
+    const data = await api("POST", "/api/tropy/browse", body);
+    renderItems(data.items || []);
+  } catch (err) {
+    tropyEls["tropy-items"].innerHTML =
+      `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderItems(items) {
+  const el = tropyEls["tropy-items"];
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state">No items in this ${currentSource.type}.</div>`;
+    updateTropySummary(0, 0, []);
+    tropyEls["btn-tropy-add-queue"].disabled = true;
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  for (const i of items) {
+    const row = document.createElement("div");
+    row.className = "tropy-item-row";
+    row.innerHTML = `
+      <input type="checkbox" class="tropy-item-check" data-item-id="${i.item_id}" checked>
+      <span class="item-title">${escapeHtml(i.title || "(untitled)")}</span>
+      <span class="item-meta">${i.photo_count} page(s)</span>`;
+    row.querySelector("input[type=checkbox]").addEventListener("change", () => {
+      updateTropySummaryFromCheckboxes();
+    });
+    // clicking the row toggles the checkbox
+    row.addEventListener("click", (e) => {
+      if (e.target.tagName !== "INPUT") {
+        const cb = row.querySelector("input[type=checkbox]");
+        cb.checked = !cb.checked;
+        updateTropySummaryFromCheckboxes();
+      }
+    });
+    frag.appendChild(row);
+  }
+
+  el.innerHTML = "";
+  el.appendChild(frag);
+  updateTropySummaryFromCheckboxes();
+}
+
+function updateTropySummaryFromCheckboxes() {
+  const checkboxes = tropyEls["tropy-items"].querySelectorAll(".tropy-item-check");
+  const selected = [];
+  let totalPages = 0;
+  for (const cb of checkboxes) {
+    if (cb.checked) {
+      selected.push(Number(cb.dataset.itemId));
+      // Find the page count from the row label
+      const meta = cb.closest(".tropy-item-row").querySelector(".item-meta");
+      const match = meta.textContent.match(/(\d+)/);
+      totalPages += match ? parseInt(match[1], 10) : 0;
+    }
+  }
+  updateTropySummary(selected.length, totalPages, []);
+  tropyEls["btn-tropy-add-queue"].disabled = selected.length === 0;
+}
+
+function updateTropySummary(items, pages, missing) {
+  const parts = [];
+  if (items > 0) parts.push(`${items} item(s)`);
+  if (pages > 0) parts.push(`${pages} page(s)`);
+  tropyEls["tropy-summary-text"].textContent =
+    parts.length ? `${parts.join(", ")} to queue` : "No items selected";
+  tropyEls["tropy-summary-warning"].textContent =
+    missing.length ? `${missing.length} page(s) missing from disk — will be skipped` : "";
+}
+
+tropyEls["btn-tropy-add-queue"].onclick = async () => {
+  const project = tropyEls["tropy-project"].value;
+  if (!project) return;
+
+  const checkboxes = tropyEls["tropy-items"].querySelectorAll(".tropy-item-check:checked");
+  const itemIds = Array.from(checkboxes).map(cb => Number(cb.dataset.itemId));
+  if (!itemIds.length) return;
+
+  tropyEls["btn-tropy-add-queue"].disabled = true;
+  tropyEls["btn-tropy-add-queue"].textContent = "Adding…";
+
+  try {
+    const data = await api("POST", "/api/tropy/add", {
+      project, item_ids: itemIds, output_dir: document.getElementById("output-dir").value || "output",
+    });
+
+    let note = `Added ${data.added} page(s) from Tropy`;
+    if (data.missing && data.missing.length) {
+      note += `; ${data.missing.length} page(s) missing from disk and skipped`;
+      const names = data.missing.slice(0, 5).map(escapeHtml).join(", ");
+      note += data.missing.length > 5 ? ` (e.g. ${names}…)` : ` (${names})`;
+    }
+    log(note, data.missing && data.missing.length ? "warning" : "accent");
+    setQueue(data.items);
+    tropyEls["modal-tropy-add"].classList.add("hidden");
+  } catch (err) {
+    log(`Error adding from Tropy: ${err.message}`, "error");
+    tropyEls["btn-tropy-add-queue"].disabled = false;
+    tropyEls["btn-tropy-add-queue"].textContent = "Add to Queue";
+  }
+};
 
 // ------------------------------------------------------------- send to tropy
 
@@ -196,4 +402,9 @@ tropyEls["btn-send-tropy-preview"].onclick = previewTropySend;
 tropyEls["btn-send-tropy-write"].onclick = writeTropySend;
 tropyEls["modal-tropy-send"].addEventListener("click", (e) => {
   if (e.target === tropyEls["modal-tropy-send"]) tropyEls["modal-tropy-send"].classList.add("hidden");
+});
+
+// Click-outside-to-close for add modal
+tropyEls["modal-tropy-add"].addEventListener("click", (e) => {
+  if (e.target === tropyEls["modal-tropy-add"]) tropyEls["modal-tropy-add"].classList.add("hidden");
 });

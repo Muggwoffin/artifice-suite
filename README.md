@@ -284,6 +284,89 @@ are what makes running without reasoning safe.
 Turn reasoning back on in **Settings → Model reasoning**, or with
 `ollama_think: true`.
 
+## Hardware requirements
+
+The pipeline runs four models across two engines sequentially (OCR → Cleanup → Translate → Structure). Only one model is active per engine at a time, but LM Studio and Ollama each keep their own model in VRAM concurrently.
+
+### Recommended
+
+| Component | Requirement |
+|---|---|
+| GPU VRAM | 16 GB (e.g. RTX 4060 Ti 16 GB, RTX 4070+) |
+| System RAM | 32 GB |
+| Disk | 40 GB free on SSD |
+| CPU | 8+ cores (Intel i7 / AMD Ryzen 7) |
+| Mac | Apple Silicon M3/M4 Pro with 24 GB unified memory |
+
+This comfortably fits both engines' largest models simultaneously with room for context windows. At default quantization (Q4_K_M), the models use ~5.5 GB (olmocr) + ~6.6 GB (gemma4) + ~2.9 GB (translategemma) during operation — about 12–15 GB combined — leaving headroom on a 16 GB card.
+
+### Minimum (GPU)
+
+| Component | Requirement |
+|---|---|
+| GPU VRAM | 12 GB (e.g. RTX 3060 / 4070) |
+| System RAM | 16 GB |
+| Disk | 20 GB free on SSD |
+| CPU | 6+ cores |
+
+Works, but tight. You may need to unload models between stages to fit within VRAM. Expect occasional out-of-memory errors on long context windows.
+
+### Minimum (CPU-only)
+
+Both LM Studio and Ollama can run without a GPU. Expect 5–10× slower inference.
+
+| Component | Requirement |
+|---|---|
+| System RAM | 32 GB (all model weights live in RAM) |
+| Disk | 20 GB free on SSD |
+| CPU | 8+ cores (Intel i7 / AMD Ryzen 7) |
+
+A 275-page archive would take several hours instead of ~30 minutes.
+
+### Mac (Apple Silicon)
+
+Unified memory is shared between CPU and GPU — the numbers below are system RAM, not VRAM.
+
+| Tier | Chip | Memory | Notes |
+|---|---|---|---|
+| Minimum | M1 Pro | 16 GB | Workable; models compete for the same pool |
+| Recommended | M3/M4 Pro | 24 GB | Comfortable headroom for context windows |
+| Ideal | M4 Pro | 48 GB | Best consumer option |
+| Avoid | Intel Mac | — | No Metal acceleration; CPU-only fallback is slow |
+
+### Lower-powered configurations
+
+You can substitute lighter models to run on less capable hardware:
+
+| Stage | Lightweight alternative | VRAM saved | Trade-off |
+|---|---|---|---|
+| OCR | `allenai/olmocr-2b` (~2 GB) | ~3.5 GB | Lower accuracy on dense/historical layouts |
+| OCR | `Qwen2.5-VL-3B-Instruct` GGUF (~2.5 GB) | ~3 GB | Good general OCR, less tested on archival fonts |
+| Cleanup | `gemma4:9b` (~5 GB at Q4_K_M) | ~1.6 GB | Slightly less capable at complex repairs |
+| Cleanup | `llama3.1:8b` (~4.9 GB at Q4_K_M) | ~1.7 GB | Adequate for English-only cleanup |
+| Translate | `llama3.2:3b` (~2.2 GB at Q4_K_M) | ~0.7 GB | Adequate for short passages; worse on long-form |
+| Translate | `qwen2.5:7b` (~4.4 GB at Q4_K_M) | — (larger) | Better translation quality than translategemma if you have the VRAM |
+
+You can also trade quality for size by adjusting quantization across *any* model:
+
+| Quantization | Relative size | Typical VRAM multiplier | Quality impact |
+|---|---|---|---|
+| Q4_K_M (default) | 1.0× | baseline | None visible |
+| Q3_K_S / Q3_K_M | ~0.75× | −25% | Slight perplexity increase; fine for OCR/cleanup |
+| Q2_K | ~0.55× | −45% | Noticeable degradation on reasoning tasks; avoid for structure |
+| Q5_K_M | ~1.15× | +15% | Negligible gain over Q4 for these tasks |
+| Q8_0 | ~1.5× | +50% | Near-lossless; useful if you have the VRAM |
+| FP16 | ~2.0× | +100% | Full precision; no practical benefit over Q8 for inference |
+
+The models are configured in `configs/default.yaml` (or set them per-session via the Settings tab in either frontend).
+
+### How to reduce VRAM usage
+
+1. **Run models one at a time.** Use the CLI to run each stage separately instead of `pipeline`, so models unload between stages.
+2. **Lower context window.** Set `max_output_tokens` in config or reduce Ollama's `num_ctx` (default 2048) in the model's Modelfile.
+3. **Use CPU offloading.** Both LM Studio and Ollama let you offload some layers to CPU. Set `--num-gpu-layers` to a lower value in Ollama's Modelfile (`ollama show` to see the default; typical default is full offload for 12B models).
+4. **Pick a less quantized GGUF.** In LM Studio, choose a Q3_K_M GGUF of olmocr instead of Q4_K_M.
+
 ### PDF export
 
 Compile a folder of processed text files into a single readable PDF. The output
@@ -306,6 +389,15 @@ The structuring pass (enabled by default) asks a model to add paragraph breaks
 and blank lines for readability. It does **not** change any words — a strict
 guard verifies word-for-word equality of the original text, and if the model
 alters anything the page appears unstructured in the final PDF.
+
+In the GUI, click **Compile PDF…** on the Main tab to open a dialog: pick a
+folder of processed text files, choose a stage and output path, and watch live
+progress while the PDF compiles. A "Guard rejected" line reports pages whose
+structuring was skipped; the **Open PDF** button opens the result once done.
+
+In the web UI, the same **Compile PDF…** button opens a modal with folder
+browsing, stage selection, and a progress log streamed via Server-Sent Events.
+Click **Download** when the status shows it is complete to retrieve the PDF.
 
 | key | default | meaning |
 |---|---|---|

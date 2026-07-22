@@ -83,6 +83,7 @@ class TropyPage:
     page: int              # 0-based index within the file
     mimetype: str
     output_stem: str = ""  # "<Item Title>/<file>_p0002", set by TropyProject
+    orientation: int = 1   # Tropy's photos.orientation column, EXIF 1-8 (1 = normal)
 
     @property
     def is_pdf(self) -> bool:
@@ -110,6 +111,7 @@ class TropyPage:
             "page_number": self.page_number,
             "source_path": str(self.path),
             "mimetype": self.mimetype,
+            "orientation": self.orientation,
         }
 
 
@@ -260,7 +262,7 @@ class TropyProject:
 
         ids = list(titles)
         rows = self._con.execute(
-            f"""SELECT p.id, p.item_id, p.path, p.page, p.filename, p.mimetype
+            f"""SELECT p.id, p.item_id, p.path, p.page, p.filename, p.mimetype, p.orientation
                 FROM photos p
                 WHERE p.item_id IN ({','.join('?' * len(ids))})
                   AND p.id NOT IN (SELECT id FROM trash)
@@ -290,6 +292,7 @@ class TropyProject:
                 page=row["page"] or 0,
                 mimetype=row["mimetype"] or "",
                 output_stem=stem,
+                orientation=row["orientation"] or 1,
             ))
         return pages
 

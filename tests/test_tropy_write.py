@@ -164,6 +164,7 @@ def test_write_notes_creates_valid_rows_and_updates_search(project):
     state = json.loads(row["state"])
     assert state["doc"]["type"] == "doc"
     assert state["doc"]["content"][0]["content"][0]["text"] == "Der Bericht"
+    assert "selection" in state  # missing this crashes Tropy's note editor on open
 
     # the FTS trigger fired, so Tropy's search will find it
     hits = con.execute("SELECT COUNT(*) FROM fts_notes WHERE text MATCH 'Bericht'")
@@ -259,6 +260,90 @@ def test_backup_can_be_skipped(project):
 
 
 # --------------------------------------------------------------------------- #
+# repairing notes written before the selection-key fix
+# --------------------------------------------------------------------------- #
+#
+# Confirmed against a real, currently-affected project ("Rose Cohen Letters"):
+# all 184 notes this tool had written were missing `selection` and crashed
+# Tropy's note editor on open. These pin the repair path that fixes them in
+# place without touching anything else.
+
+def test_repair_fixes_a_note_missing_selection(project):
+    con = sqlite3.connect(project / "project.tpy")
+    broken_state = json.dumps({"doc": {"type": "doc", "content": [
+        {"type": "paragraph", "attrs": {"align": "left"},
+         "content": [{"type": "text", "text": "Dear Hig,"}]},
+    ]}})
+    con.execute("INSERT INTO notes (id, text, state, language) VALUES (10, 'Dear Hig,', ?, 'en')",
+               (broken_state,))
+    con.commit()
+    con.close()
+
+    with TropyWriter(project) as w:
+        repaired = w.repair_missing_selections()
+
+    con = sqlite3.connect(project / "project.tpy")
+    con.row_factory = sqlite3.Row
+    row = con.execute("SELECT state, text FROM notes WHERE id = 10").fetchone()
+    con.close()
+
+    assert repaired == 1
+    state = json.loads(row["state"])
+    assert "selection" in state
+    assert state["selection"] == {"type": "text", "anchor": 0, "head": 0}
+    # nothing else about the note changed
+    assert row["text"] == "Dear Hig,"
+    assert state["doc"]["content"][0]["content"][0]["text"] == "Dear Hig,"
+
+
+def test_repair_leaves_healthy_notes_untouched(project):
+    con = sqlite3.connect(project / "project.tpy")
+    healthy_state = json.dumps({
+        "doc": {"type": "doc", "content": [{"type": "paragraph", "attrs": {"align": "left"}}]},
+        "selection": {"type": "text", "anchor": 5, "head": 5},
+    })
+    con.execute("INSERT INTO notes (id, text, state, language) VALUES (10, 'x', ?, 'en')",
+               (healthy_state,))
+    con.commit()
+    con.close()
+
+    with TropyWriter(project) as w:
+        repaired = w.repair_missing_selections()
+
+    assert repaired == 0
+    con = sqlite3.connect(project / "project.tpy")
+    row = con.execute("SELECT state FROM notes WHERE id = 10").fetchone()
+    con.close()
+    assert json.loads(row[0])["selection"] == {"type": "text", "anchor": 5, "head": 5}
+
+
+def test_repair_reports_nothing_to_do_when_there_are_no_notes(project):
+    with TropyWriter(project) as w:
+        assert w.repair_missing_selections() == 0
+
+
+def test_repair_refuses_while_tropy_is_running(project):
+    with patch("src.ocr_pipeline.tropy_write._tropy_is_running", return_value=True):
+        with TropyWriter(project) as w:
+            with pytest.raises(RuntimeError, match="running"):
+                w.repair_missing_selections()
+
+
+def test_repair_backs_up_by_default(project):
+    con = sqlite3.connect(project / "project.tpy")
+    con.execute("INSERT INTO notes (id, text, state, language) VALUES (10, 'x', ?, 'en')",
+               (json.dumps({"doc": {"type": "doc", "content": []}}),))
+    con.commit()
+    con.close()
+
+    with TropyWriter(project) as w:
+        w.repair_missing_selections()
+
+    backups = list(project.glob("*.backup.tpy"))
+    assert len(backups) == 1
+
+
+# --------------------------------------------------------------------------- #
 # helpers
 # --------------------------------------------------------------------------- #
 
@@ -269,6 +354,20 @@ def test_prosemirror_state_handles_blank_lines():
     assert len(paragraphs) == 3
     assert "content" not in paragraphs[1]  # blank line carries no text node
     assert paragraphs[2]["content"][0]["text"] == "zwei"
+
+
+def test_prosemirror_state_includes_a_selection():
+    """Regression test: this key was missing entirely, which crashed Tropy's
+    note editor on open (a minified React error, #520) instead of raising
+    anything on our side — the write itself succeeded, so nothing here ever
+    caught it. Confirmed against a real project: every one of 1101 existing
+    notes has a `selection` key; a note written by this function had none."""
+    state = json.loads(_prosemirror_state("some text"))
+
+    assert "selection" in state
+    assert state["selection"]["type"] == "text"
+    assert isinstance(state["selection"]["anchor"], int)
+    assert isinstance(state["selection"]["head"], int)
 
 
 def test_entries_from_items_only_takes_tropy_pages():

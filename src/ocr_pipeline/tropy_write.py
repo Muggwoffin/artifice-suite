@@ -132,7 +132,18 @@ def _prosemirror_state(text: str) -> str:
 
     Matches the shape of existing notes in the project: a doc of left-aligned
     paragraphs, one per line, with empty lines dropped (ProseMirror rejects a
-    text node with an empty string).
+    text node with an empty string) — plus a top-level `selection` key, which
+    every real Tropy note carries and which this function used to omit
+    entirely. Confirmed by comparing against 1101 real notes in a live
+    project: 100% have `selection`, 0% lack it. ProseMirror's own
+    `EditorState.fromJSON()` reconstructs the cursor from that key when a
+    note is opened; without it, Tropy's note editor crashes on open (a
+    minified React error, #520) instead of rendering — a stored note that
+    can never be read back is exactly the kind of silent corruption this
+    project's other guards exist to prevent, just in a different tool.
+    Position 0 (the very start of the document) is valid for any non-empty
+    doc, so it's used unconditionally rather than trying to reproduce
+    Tropy's own end-of-text-after-typing cursor convention.
     """
     paragraphs = []
     for line in text.splitlines():
@@ -143,8 +154,10 @@ def _prosemirror_state(text: str) -> str:
     if not paragraphs:
         paragraphs = [{"type": "paragraph", "attrs": {"align": "left"},
                        "content": [{"type": "text", "text": text}]}]
-    return json.dumps({"doc": {"type": "doc", "content": paragraphs}},
-                      ensure_ascii=False)
+    return json.dumps({
+        "doc": {"type": "doc", "content": paragraphs},
+        "selection": {"type": "text", "anchor": 0, "head": 0},
+    }, ensure_ascii=False)
 
 
 class TropyWriter:
@@ -310,6 +323,52 @@ class TropyWriter:
             log.error("Tropy write rolled back: %s", exc)
 
         return report
+
+    # ---------------------------------------------------------------- repair
+    def repair_missing_selections(self, *, make_backup: bool = True) -> int:
+        """Fix notes written before `_prosemirror_state()` carried a
+        `selection` key. That bug crashed Tropy's note editor on open (a
+        minified React error, #520) for every note it wrote — the write
+        itself always succeeded, so nothing caught it at the time. Only the
+        `state` column is touched, and only for rows actually missing the
+        key; text, doc content, and language are left exactly as they were.
+
+        Returns the number of rows repaired. Raises if there are blockers
+        (Tropy running, database locked, etc.) — same preflight as write().
+        """
+        blockers = self.blockers()
+        if blockers:
+            raise RuntimeError("; ".join(blockers))
+
+        con = self._connect(write=False)
+        to_fix: list[tuple[str, int]] = []
+        for row in con.execute("SELECT note_id, state FROM notes"):
+            try:
+                data = json.loads(row["state"])
+            except (TypeError, ValueError):
+                continue
+            if "selection" not in data:
+                data["selection"] = {"type": "text", "anchor": 0, "head": 0}
+                to_fix.append((json.dumps(data, ensure_ascii=False), row["note_id"]))
+
+        if not to_fix:
+            return 0
+
+        if make_backup:
+            self.backup()
+
+        self.close()  # reopen read-write
+        con = self._connect(write=True)
+        try:
+            con.execute("BEGIN IMMEDIATE")
+            con.executemany("UPDATE notes SET state = ? WHERE note_id = ?", to_fix)
+            con.execute("COMMIT")
+            log.info("Repaired %d note(s) missing a selection in %s", len(to_fix), self.db_path)
+        except Exception:
+            con.execute("ROLLBACK")
+            raise
+
+        return len(to_fix)
 
 
 def entries_from_items(items, *, stage: str = "cleaned") -> list[WriteEntry]:
