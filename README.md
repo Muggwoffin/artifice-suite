@@ -20,7 +20,11 @@ A local-first pipeline for processing, cleaning, and translating historical docu
     as events. Knows nothing about tkinter.
   - `history.py` — SQLite store of completed runs.
   - `tropy.py` — Read-only reader for Tropy projects (never writes).
-  - `gui/` — Tabbed application (`theme.py`, `views/`, `widgets/`).
+  - `tropy_write.py` — Writes OCR results back into Tropy as notes/transcriptions.
+  - `_guard.py` — Content-preservation guard for the cleanup stage.
+  - `_diff.py` — Diff/marker highlighting, shared by both frontends.
+  - `gui/` — Tkinter application (`theme.py`, `views/`, `widgets/`).
+  - `web/` — FastAPI + vanilla-JS application (`server.py`, `runtime.py`, `static/`).
 - `configs/` — Configuration files.
 - `prompts/` — Prompt templates for LLM operations.
 
@@ -167,6 +171,55 @@ their colours when they are built). The font chains are the site's own —
 Playfair Display / Libre Baskerville / Archivo, falling back to Georgia and
 Franklin Gothic Medium. Install those three Google Fonts locally and the
 interface picks them up with no code change.
+
+### Web frontend
+
+```bash
+pip install -e ".[web]"
+ocr_pipeline_web              # opens a native window
+ocr_pipeline_web --browser    # opens in the default browser instead
+```
+
+A full second frontend over the same pipeline, all five tabs at parity with
+the desktop build (Main, Preview, History, Analytics, Settings — plus both
+Tropy dialogs, "Add from…" and "Send to…"). It started as a spike to test
+whether the interface could look like an actual piece of editorial design
+rather than a tkinter window — the desktop GUI's palette above is a
+hand-translated approximation of the
+[public_history](https://github.com/Muggwoffin/public_history) site tokens,
+because Playfair Display, Libre Baskerville and Archivo aren't installed as
+system fonts. On the web, [`static/index.html`](src/ocr_pipeline/web/static/index.html)
+just links the real Google Fonts URL the site itself uses, and dark mode comes
+free from `prefers-color-scheme` — no second palette to maintain by hand.
+Analytics draws its charts as inline SVG rather than a hand-drawn `tk.Canvas`.
+
+Nothing about the pipeline changed to make this possible. Every module the
+web build touches — `jobs`, `pipeline`, `history`, `tropy`, `tropy_write`,
+`config` — is exactly what the tkinter build already used; the shared
+diff/marker-highlighting logic was lifted out of `gui/widgets/compare_view.py`
+into [`_diff.py`](src/ocr_pipeline/_diff.py) so both frontends compute
+identical highlights from one implementation, not two that could drift.
+[`web/runtime.py`](src/ocr_pipeline/web/runtime.py) is a thin adapter over the
+same `JobRunner` the tkinter build uses; progress reaches the browser as
+Server-Sent Events over the same `queue.Queue` the runner already published to.
+The desktop GUI is untouched and still a complete, independent build.
+
+Native file/folder dialogs need [pywebview](https://pywebview.flowrl.com/)
+(installed by the `web` extra). Without it — or with `--browser` — file and
+folder pickers fall back to typing a path, because a browser tab is not
+allowed to learn the real filesystem path of a dropped or selected file; that
+boundary is enforced by the browser itself, not something this app can work
+around.
+
+`launch_ocr_pipeline_web.pyw` follows the same self-healing pattern as the
+desktop launcher: it finds a Python with the web dependencies if the one that
+started it lacks them, and prefers an interpreter that also has pywebview.
+There is no desktop-shortcut script for it yet.
+
+**Known limitation:** the SSE stream serves one browser tab per run. Two tabs
+open at once would each receive only some of the events, since reading a
+`queue.Queue` removes what it reads. Fine for one person in one tab; a
+multi-tab build would need to fan events out to a queue per connection.
 
 ### Programmatic
 
