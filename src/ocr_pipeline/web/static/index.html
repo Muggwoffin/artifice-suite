@@ -365,6 +365,7 @@
         </select>
       </label>
       <label class="check"><input type="checkbox" id="pdf-structure" checked> Structure text</label>
+      <label class="check"><input type="checkbox" id="pdf-bilingual"> Bilingual (original + translation)</label>
       <label>Format:
         <select id="pdf-format">
           <option value="pdf">PDF</option>
@@ -379,6 +380,9 @@
         </select>
       </label>
     </div>
+    <p class="dim" id="pdf-bilingual-hint" style="display:none; margin:-0.3rem 0 0.6rem;">
+      Requires both cleaned/ and translated/ outputs in the folder.  Structure pass is skipped unless you check it below.
+    </p>
 
     <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
       <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Output path (optional)">

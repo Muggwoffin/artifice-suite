@@ -13,7 +13,7 @@ const pdfEls = {};
  "pdf-structure", "pdf-output", "pdf-status", "pdf-log",
  "btn-pdf-start", "btn-pdf-download", "btn-pdf-close",
  "btn-pdf-browse-folder", "btn-pdf-browse-output",
- "pdf-format", "pdf-style",
+ "pdf-format", "pdf-style", "pdf-bilingual", "pdf-bilingual-hint",
 ].forEach(id => {
   pdfEls[id] = document.getElementById(id);
 });
@@ -97,6 +97,7 @@ async function startPdfExport() {
       output: pdfEls["pdf-output"].value.trim() || null,
       format: pdfEls["pdf-format"].value,
       style: pdfEls["pdf-style"].value,
+      bilingual: pdfEls["pdf-bilingual"].checked,
     });
   } catch (err) {
     setPdfStatus("Failed to start: " + err.message, "error");
@@ -146,4 +147,14 @@ pdfEls["btn-pdf-browse-folder"].onclick = browsePdfFolder;
 pdfEls["btn-pdf-browse-output"].onclick = browsePdfOutput;
 pdfEls["modal-compile-pdf"].addEventListener("click", (e) => {
   if (e.target === pdfEls["modal-compile-pdf"]) closePdfExport();
+});
+
+// Bilingual mode: disable stage selector, show hint, default no-structure
+pdfEls["pdf-bilingual"].addEventListener("change", (e) => {
+  const on = e.target.checked;
+  pdfEls["pdf-bilingual-hint"].style.display = on ? "block" : "none";
+  pdfEls["pdf-stage"].disabled = on;
+  if (on) {
+    pdfEls["pdf-structure"].checked = false;
+  }
 });

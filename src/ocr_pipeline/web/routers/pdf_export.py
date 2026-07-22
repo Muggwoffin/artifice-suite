@@ -21,6 +21,7 @@ def pdf_export_start(req: PdfExportRequest) -> dict:
         structure=req.structure, output=req.output,
         manifest_path=req.manifest,
         format=req.format, style=req.style,
+        bilingual=req.bilingual,
     )
     if not started:
         raise HTTPException(

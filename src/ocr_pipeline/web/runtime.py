@@ -348,7 +348,7 @@ class PdfExportState:
 pdf_export_state = PdfExportState()
 
 
-def start_pdf_export(folder, *, stage, structure, output, manifest_path, format="pdf", style="readable") -> bool:
+def start_pdf_export(folder, *, stage, structure, output, manifest_path, format="pdf", style="readable", bilingual=False) -> bool:
     """Returns False (caller should 409) if one is already running."""
     with pdf_export_state.lock:
         if pdf_export_state.status == "running":
@@ -359,14 +359,14 @@ def start_pdf_export(folder, *, stage, structure, output, manifest_path, format=
         pdf_export_state.events = queue.Queue()
         pdf_export_state.thread = threading.Thread(
             target=_run_pdf_export,
-            args=(folder, stage, structure, output, manifest_path, format, style),
+            args=(folder, stage, structure, output, manifest_path, format, style, bilingual),
             daemon=True,
         )
         pdf_export_state.thread.start()
     return True
 
 
-def _run_pdf_export(folder, stage, structure, output, manifest_path, format, style):
+def _run_pdf_export(folder, stage, structure, output, manifest_path, format, style, bilingual):
     from .. import pdf_export
 
     def on_progress(message):
@@ -376,6 +376,7 @@ def _run_pdf_export(folder, stage, structure, output, manifest_path, format, sty
         result_path = pdf_export.compile(
             folder, stage=stage, structure=structure, output=output,
             manifest_path=manifest_path, format=format, style=style,
+            bilingual=bilingual,
             on_progress=on_progress,
         )
         pdf_export_state.output_path = str(result_path)

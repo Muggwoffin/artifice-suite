@@ -493,3 +493,267 @@ def test_compile_function_raises_on_empty_folder(tmp_path):
 
     with pytest.raises(ValueError, match="No pages found"):
         pdf_export.compile(str(empty), stage="cleaned", structure=False)
+
+
+# --------------------------------------------------------------------------- #
+# Bilingual export
+# --------------------------------------------------------------------------- #
+
+def test_collect_bilingual_folder_pairs_by_stem(tmp_path):
+    """collect_bilingual_folder() should pair cleaned + translated by stem."""
+    from src.ocr_pipeline import pdf_export
+
+    cleaned_dir = tmp_path / "cleaned" / "text"
+    cleaned_dir.mkdir(parents=True)
+    (cleaned_dir / "page1.txt").write_text("Original text A")
+    (cleaned_dir / "page2.txt").write_text("Original text B")
+
+    translated_dir = tmp_path / "translated" / "text"
+    translated_dir.mkdir(parents=True)
+    (translated_dir / "page1.txt").write_text("Translated A")
+    (translated_dir / "page2.txt").write_text("Translated B")
+
+    pages = pdf_export.collect_bilingual_folder(str(tmp_path))
+
+    assert len(pages) == 2
+    assert pages[0].original_text == "Original text A"
+    assert pages[0].translated_text == "Translated A"
+    assert pages[1].original_text == "Original text B"
+    assert pages[1].translated_text == "Translated B"
+
+
+def test_collect_bilingual_folder_missing_translation(tmp_path):
+    """Missing translated files should produce blank right column."""
+    from src.ocr_pipeline import pdf_export
+
+    cleaned_dir = tmp_path / "cleaned" / "text"
+    cleaned_dir.mkdir(parents=True)
+    (cleaned_dir / "page1.txt").write_text("Original text")
+    (cleaned_dir / "page2.txt").write_text("Original text 2")
+
+    translated_dir = tmp_path / "translated" / "text"
+    translated_dir.mkdir(parents=True)
+    (translated_dir / "page1.txt").write_text("Translated text")
+
+    pages = pdf_export.collect_bilingual_folder(str(tmp_path))
+
+    assert len(pages) == 2
+    assert pages[0].translated_text == "Translated text"
+    assert pages[1].translated_text == ""
+
+
+def test_collect_bilingual_folder_no_translated_dir(tmp_path):
+    """When no translated dir exists, all translated_text should be blank."""
+    from src.ocr_pipeline import pdf_export
+
+    cleaned_dir = tmp_path / "cleaned" / "text"
+    cleaned_dir.mkdir(parents=True)
+    (cleaned_dir / "page1.txt").write_text("Original text")
+
+    pages = pdf_export.collect_bilingual_folder(str(tmp_path))
+
+    assert len(pages) == 1
+    assert pages[0].original_text == "Original text"
+    assert pages[0].translated_text == ""
+
+
+def test_collect_bilingual_folder_with_manifest(tmp_path):
+    """Manifest ordering should be respected for bilingual collection."""
+    from src.ocr_pipeline import pdf_export
+
+    cleaned_dir = tmp_path / "cleaned" / "text"
+    cleaned_dir.mkdir(parents=True)
+    (cleaned_dir / "item_p0002.txt").write_text("Page 2")
+    (cleaned_dir / "item_p0001.txt").write_text("Page 1")
+
+    translated_dir = tmp_path / "translated" / "text"
+    translated_dir.mkdir(parents=True)
+    (translated_dir / "item_p0002.txt").write_text("Trans Page 2")
+    (translated_dir / "item_p0001.txt").write_text("Trans Page 1")
+
+    manifest = {
+        "item/item_p0001": {"item_title": "Test", "page_number": 1},
+        "item/item_p0002": {"item_title": "Test", "page_number": 2},
+    }
+    (tmp_path / "tropy_manifest.json").write_text(json.dumps(manifest))
+
+    pages = pdf_export.collect_bilingual_folder(str(tmp_path))
+
+    assert len(pages) == 2
+    assert pages[0].page_number == 1
+    assert pages[0].original_text == "Page 1"
+    assert pages[0].translated_text == "Trans Page 1"
+    assert pages[1].page_number == 2
+
+
+def test_render_bilingual_pdf_produces_valid_pdf(tmp_path):
+    """render_bilingual_pdf() should produce a valid PDF with two-column table."""
+    import fitz
+    from src.ocr_pipeline import pdf_export
+
+    pages = [
+        pdf_export.BilingualPageText(
+            label="page1",
+            text="Original text",
+            source_path=tmp_path / "p1.txt",
+            original_text="Der erste Absatz.\n\nDer zweite Absatz.",
+            translated_text="The first paragraph.\n\nThe second paragraph.",
+        ),
+    ]
+
+    pdf_path = tmp_path / "bilingual.pdf"
+    result = pdf_export.render_bilingual_pdf(pages, pdf_path, title="Test")
+
+    assert result.exists()
+    assert result.stat().st_size > 0
+
+    doc = fitz.open(str(pdf_path))
+    full_text = ""
+    for p in doc:
+        full_text += p.get_text()
+    doc.close()
+
+    assert "Der erste Absatz." in full_text
+    assert "The first paragraph." in full_text
+    assert "Der zweite Absatz." in full_text
+    assert "The second paragraph." in full_text
+
+
+def test_render_bilingual_pdf_missing_translation(tmp_path):
+    """Bilingual PDF with missing translations should still produce valid PDF."""
+    from src.ocr_pipeline import pdf_export
+
+    pages = [
+        pdf_export.BilingualPageText(
+            label="page1",
+            text="Original text",
+            source_path=tmp_path / "p1.txt",
+            original_text="Original paragraph.",
+            translated_text="",
+        ),
+    ]
+
+    pdf_path = tmp_path / "bilingual_partial.pdf"
+    result = pdf_export.render_bilingual_pdf(pages, pdf_path)
+
+    assert result.exists()
+    assert result.stat().st_size > 0
+
+
+def test_render_bilingual_markdown_creates_file(tmp_path):
+    """render_bilingual_markdown() should produce a pipe-table Markdown file."""
+    from src.ocr_pipeline import pdf_export
+
+    pages = [
+        pdf_export.BilingualPageText(
+            label="page1",
+            text="Original text",
+            source_path=tmp_path / "p1.txt",
+            original_text="Der erste Absatz.\n\nDer zweite Absatz.",
+            translated_text="The first paragraph.\n\nThe second paragraph.",
+        ),
+    ]
+
+    md_path = tmp_path / "bilingual.md"
+    result = pdf_export.render_bilingual_markdown(pages, md_path, title="Test")
+
+    assert result.exists()
+    content = result.read_text(encoding="utf-8")
+
+    assert "# Test" in content
+    assert "| Original | Translation |" in content
+    assert "Der erste Absatz." in content
+    assert "The first paragraph." in content
+    assert "Der zweite Absatz." in content
+    assert "The second paragraph." in content
+
+
+def test_compile_bilingual_pdf_end_to_end(tmp_path):
+    """compile() with bilingual=True should produce a two-column PDF."""
+    import fitz
+    from src.ocr_pipeline import pdf_export
+
+    cleaned_dir = tmp_path / "cleaned" / "text"
+    cleaned_dir.mkdir(parents=True)
+    (cleaned_dir / "page1.txt").write_text("Erster Absatz.\n\nZweiter Absatz.")
+    (cleaned_dir / "page2.txt").write_text("Dritter Absatz.")
+
+    translated_dir = tmp_path / "translated" / "text"
+    translated_dir.mkdir(parents=True)
+    (translated_dir / "page1.txt").write_text("First paragraph.\n\nSecond paragraph.")
+    (translated_dir / "page2.txt").write_text("Third paragraph.")
+
+    output_path = tmp_path / "bilingual_output.pdf"
+    result = pdf_export.compile(
+        str(tmp_path),
+        bilingual=True,
+        structure=False,
+        output=str(output_path),
+    )
+
+    assert result == output_path
+    assert output_path.exists()
+
+    doc = fitz.open(str(output_path))
+    full_text = ""
+    for p in doc:
+        full_text += p.get_text()
+    doc.close()
+
+    assert "Erster Absatz." in full_text
+    assert "First paragraph." in full_text
+    assert "Dritter Absatz." in full_text
+    assert "Third paragraph." in full_text
+
+
+def test_compile_bilingual_markdown(tmp_path):
+    """compile() with bilingual=True and format='md' should produce bilingual Markdown."""
+    from src.ocr_pipeline import pdf_export
+
+    cleaned_dir = tmp_path / "cleaned" / "text"
+    cleaned_dir.mkdir(parents=True)
+    (cleaned_dir / "page1.txt").write_text("Original text.")
+
+    translated_dir = tmp_path / "translated" / "text"
+    translated_dir.mkdir(parents=True)
+    (translated_dir / "page1.txt").write_text("Translated text.")
+
+    output_path = tmp_path / "bilingual_output.md"
+    result = pdf_export.compile(
+        str(tmp_path),
+        bilingual=True,
+        structure=False,
+        output=str(output_path),
+        format="md",
+    )
+
+    assert result.exists()
+    assert result.suffix == ".md"
+    content = result.read_text(encoding="utf-8")
+    assert "| Original | Translation |" in content
+    assert "Original text." in content
+    assert "Translated text." in content
+
+
+def test_compile_bilingual_skips_structure_by_default(tmp_path):
+    """compile(bilingual=True, structure=False) should not call the model."""
+    from src.ocr_pipeline import pdf_export
+
+    cleaned_dir = tmp_path / "cleaned" / "text"
+    cleaned_dir.mkdir(parents=True)
+    (cleaned_dir / "page1.txt").write_text("Original text.")
+
+    translated_dir = tmp_path / "translated" / "text"
+    translated_dir.mkdir(parents=True)
+    (translated_dir / "page1.txt").write_text("Translated text.")
+
+    output_path = tmp_path / "bilingual_no_struct.pdf"
+    with patch("src.ocr_pipeline.stages.structure.ollama.chat") as mock_chat:
+        result = pdf_export.compile(
+            str(tmp_path),
+            bilingual=True,
+            structure=False,
+            output=str(output_path),
+        )
+        mock_chat.assert_not_called()
+    assert result.exists()

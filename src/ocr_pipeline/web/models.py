@@ -61,6 +61,7 @@ class PdfExportRequest(BaseModel):
     manifest: str | None = None
     format: str = "pdf"
     style: str = "readable"
+    bilingual: bool = False
 
 
 class ReorderRequest(BaseModel):

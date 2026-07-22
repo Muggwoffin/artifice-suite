@@ -8,6 +8,7 @@ The structuring pass is optional (--no-structure) and guarded: if the model
 alters any word, the original text is kept instead.
 """
 
+import itertools
 import json
 import re
 from dataclasses import dataclass, field
@@ -24,6 +25,8 @@ from reportlab.platypus import (
     Paragraph,
     Spacer,
     PageBreak,
+    Table,
+    TableStyle,
 )
 
 from src.ocr_pipeline._logging import get_logger
@@ -168,6 +171,13 @@ class PageText:
     source_path: Path
     page_number: int | None = None
     item_title: str | None = None
+
+
+@dataclass
+class BilingualPageText(PageText):
+    """One page of bilingual text: original (cleaned) + translated."""
+    original_text: str = ""
+    translated_text: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -340,6 +350,103 @@ def collect_folder(
 
 
 # ---------------------------------------------------------------------------
+# Collect bilingual pages
+# ---------------------------------------------------------------------------
+
+def collect_bilingual_folder(
+    folder: str,
+    *,
+    manifest_path: str | None = None,
+) -> list[BilingualPageText]:
+    """Pair cleaned + translated text files by matching filenames/stems.
+
+    Reads from ``folder/cleaned/text/`` and ``folder/translated/text/``
+    (or a parent chain containing those).  Uses manifest for page ordering
+    if available.  Missing translated files → blank right column.
+    """
+    folder_path = Path(folder)
+    manifest = _find_manifest(folder_path, manifest_path)
+
+    # Resolve cleaned and translated text directories
+    cleaned_dir = _find_text_dir(folder_path, "cleaned")
+    translated_dir = _find_text_dir(folder_path, "translated")
+
+    if cleaned_dir is None:
+        log.warning("No cleaned text files found in %s", folder)
+        return []
+
+    cleaned_files = {f.stem: f for f in cleaned_dir.glob("*.txt")}
+    translated_files: dict[str, Path] = {}
+    if translated_dir is not None:
+        translated_files = {f.stem: f for f in translated_dir.glob("*.txt")}
+
+    pages: list[BilingualPageText] = []
+
+    if manifest:
+        stem_to_entry: dict[str, dict] = {}
+        for key, entry in manifest.items():
+            file_stem = Path(key).stem
+            stem_to_entry[file_stem] = entry
+            stem_to_entry[key] = entry
+
+        for stem, txt_path in cleaned_files.items():
+            entry = stem_to_entry.get(stem)
+            if entry is None:
+                for key, e in manifest.items():
+                    if key.endswith(f"/{stem}") or Path(key).stem == stem:
+                        entry = e
+                        break
+
+            trans_path = translated_files.get(stem)
+            pages.append(BilingualPageText(
+                label=entry.get("item_title", stem) if entry else stem,
+                text=txt_path.read_text(encoding="utf-8"),
+                source_path=txt_path,
+                page_number=entry.get("page_number") if entry else None,
+                item_title=entry.get("item_title") if entry else None,
+                original_text=txt_path.read_text(encoding="utf-8"),
+                translated_text=trans_path.read_text(encoding="utf-8") if trans_path else "",
+            ))
+
+        pages.sort(key=lambda p: (p.page_number is None, p.page_number or 0))
+
+        title = None
+        for p in pages:
+            if p.item_title:
+                title = p.item_title
+                break
+        if title:
+            for p in pages:
+                if not p.item_title:
+                    p.item_title = title
+    else:
+        sorted_stems = sorted(cleaned_files.keys(), key=_natural_sort_key)
+        for stem in sorted_stems:
+            txt_path = cleaned_files[stem]
+            trans_path = translated_files.get(stem)
+            pages.append(BilingualPageText(
+                label=stem,
+                text=txt_path.read_text(encoding="utf-8"),
+                source_path=txt_path,
+                original_text=txt_path.read_text(encoding="utf-8"),
+                translated_text=trans_path.read_text(encoding="utf-8") if trans_path else "",
+            ))
+
+    log.info("Collected %d bilingual page(s) from %s", len(pages), folder)
+    return pages
+
+
+def _find_text_dir(folder_path: Path, stage: str) -> Path | None:
+    """Locate the text directory for a given stage within folder."""
+    if any(folder_path.glob("*.txt")) and stage == "cleaned":
+        return folder_path
+    candidate = folder_path / stage / "text"
+    if candidate.exists() and any(candidate.glob("*.txt")):
+        return candidate
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Structure pages
 # ---------------------------------------------------------------------------
 
@@ -384,6 +491,47 @@ def structure_pages(
     return structured
 
 
+def _structure_bilingual_pages(
+    pages: list[BilingualPageText],
+    on_progress: Callable[[str], None] | None = None,
+    on_rejected: Callable[[str], None] | None = None,
+) -> list[BilingualPageText]:
+    """Structure bilingual pages: add paragraph breaks to original_text only.
+
+    Translated text is left as-is — the translator already handled paragraph
+    structure.  Rejected structuring keeps the original text unchanged.
+    """
+    on_progress = on_progress or (lambda msg: None)
+    on_rejected = on_rejected or (lambda label: None)
+    from src.ocr_pipeline.stages import structure
+
+    structured: list[BilingualPageText] = []
+    n = len(pages)
+
+    for i, page in enumerate(pages):
+        message = f"Structuring {i + 1}/{n}: {page.label}"
+        log.info(message)
+        on_progress(message)
+        result = structure.perform(
+            page.original_text,
+            source_file=str(page.source_path),
+        )
+        guard_ok = result.get("guard", {}).get("ok", True)
+        if not guard_ok:
+            on_rejected(page.label)
+        structured.append(BilingualPageText(
+            label=page.label,
+            text=result.get("structured_text", page.original_text),
+            source_path=page.source_path,
+            page_number=page.page_number,
+            item_title=page.item_title,
+            original_text=result.get("structured_text", page.original_text),
+            translated_text=page.translated_text,
+        ))
+
+    return structured
+
+
 # ---------------------------------------------------------------------------
 # Compile (collect → structure → render)
 # ---------------------------------------------------------------------------
@@ -398,15 +546,46 @@ def compile(
     on_progress: Callable[[str], None] | None = None,
     format: str = "pdf",
     style: str = "readable",
+    bilingual: bool = False,
 ) -> Path:
     """Collect, optionally structure, and render one folder into a PDF or Markdown.
 
-    `on_progress(message)` is called once per major step and, during
-    structuring, once per page — a background-thread-friendly
-    progress callback.
+    ``bilingual=True`` pairs cleaned + translated text into two-column output.
+    Missing translations produce blank right columns.  Structure pass is
+    skipped by default for bilingual mode (pass ``structure=True`` to opt in).
     """
     on_progress = on_progress or (lambda msg: None)
     folder_path = Path(folder)
+
+    if bilingual:
+        on_progress(f"Collecting bilingual pages from {folder_path}...")
+        bilingual_pages = collect_bilingual_folder(str(folder_path), manifest_path=manifest_path)
+        if not bilingual_pages:
+            raise ValueError(f"No pages found in {folder}")
+        on_progress(f"Found {len(bilingual_pages)} page(s)")
+
+        if structure:
+            bilingual_pages = _structure_bilingual_pages(
+                bilingual_pages, on_progress=on_progress)
+
+        title = next((p.item_title for p in bilingual_pages if p.item_title), None)
+        if output is None:
+            output_dir = Path("output")
+            output_dir.mkdir(exist_ok=True)
+            ext = ".md" if format == "md" else ".pdf"
+            output_path = output_dir / f"{folder_path.name}_bilingual{ext}"
+        else:
+            output_path = Path(output)
+
+        if format == "md":
+            on_progress("Rendering bilingual Markdown...")
+            result_path = render_bilingual_markdown(bilingual_pages, output_path, title=title)
+        else:
+            on_progress("Rendering bilingual PDF...")
+            result_path = render_bilingual_pdf(bilingual_pages, output_path, title=title, style=style)
+
+        on_progress(f"Done: {len(bilingual_pages)} page(s) -> {result_path}")
+        return result_path
 
     on_progress(f"Collecting pages from {folder_path}...")
     pages = collect_folder(str(folder_path), stage=stage, manifest_path=manifest_path)
@@ -547,6 +726,140 @@ def render_markdown(
     output_path.write_text("\n".join(lines), encoding="utf-8")
     log.info("Markdown written to %s (%d page(s))", output_path, len(pages))
     return output_path
+
+
+# ---------------------------------------------------------------------------
+# Render bilingual PDF (two-column: original | translation)
+# ---------------------------------------------------------------------------
+
+def render_bilingual_pdf(
+    pages: list[BilingualPageText],
+    output_path: Path,
+    *,
+    title: str | None = None,
+    style: str = "readable",
+) -> Path:
+    """Render a two-column bilingual PDF from cleaned + translated pages.
+
+    Each page section has:
+      1. A provenance header row spanning both columns.
+      2. A Table with two columns: Original | Translation.
+      3. Paragraphs split on ``\\n\\n``, paired via ``zip_longest``
+         (missing translations → blank right cell).
+    """
+    style_obj = PDF_STYLES.get(style, PDF_STYLES["readable"])
+    body_style, heading_style, title_style, provenance_style = _get_styles(style_obj)
+
+    doc = SimpleDocTemplate(
+        str(output_path),
+        pagesize=A4,
+        leftMargin=style_obj.margin_left,
+        rightMargin=style_obj.margin_right,
+        topMargin=style_obj.margin_top,
+        bottomMargin=style_obj.margin_bottom,
+    )
+
+    story: list = []
+
+    # Title page
+    if title:
+        story.append(Spacer(1, 80 * mm))
+        story.append(Paragraph(_escape_html(title), title_style))
+        story.append(Spacer(1, 20 * mm))
+        story.append(PageBreak())
+
+    usable_width = A4[0] - style_obj.margin_left - style_obj.margin_right
+    col_width = usable_width / 2
+
+    for i, page in enumerate(pages):
+        # Provenance header spanning both columns
+        if style_obj.show_provenance:
+            provenance = f"[{page.label}]"
+            prov_table = Table(
+                [[Paragraph(_escape_html(provenance), provenance_style)]],
+                colWidths=[usable_width],
+            )
+            prov_table.setStyle(TableStyle([
+                ("SPAN", (0, 0), (-1, -1)),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]))
+            story.append(prov_table)
+
+        orig_paras = [p.strip() for p in page.original_text.split("\n\n") if p.strip()]
+        trans_paras = [p.strip() for p in page.translated_text.split("\n\n") if p.strip()]
+
+        paired = list(itertools.zip_longest(orig_paras, trans_paras, fillvalue=""))
+
+        if paired:
+            table_data = [[
+                Paragraph(_escape_html(_clean_para(p)), body_style)
+                for p in row
+            ] for row in paired]
+
+            table = Table(table_data, colWidths=[col_width, col_width])
+            table.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("GRID", (0, 0), (-1, -1), 0.5, "#cccccc"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            story.append(table)
+
+        if i < len(pages) - 1:
+            story.append(Spacer(1, 8 * mm))
+
+    doc.build(story)
+    log.info("Bilingual PDF written to %s (%d page(s))", output_path, len(pages))
+    return output_path
+
+
+# ---------------------------------------------------------------------------
+# Render bilingual Markdown (pipe-table: original | translation)
+# ---------------------------------------------------------------------------
+
+def render_bilingual_markdown(
+    pages: list[BilingualPageText],
+    output_path: Path,
+    *,
+    title: str | None = None,
+) -> Path:
+    """Render bilingual pages into a Markdown file with pipe tables."""
+    lines: list[str] = []
+    if title:
+        lines.append(f"# {title}")
+        lines.append("")
+
+    for i, page in enumerate(pages):
+        lines.append(f"## Page {i + 1}")
+        lines.append("")
+        lines.append(f"[{page.label}]")
+        lines.append("")
+
+        orig_paras = [p.strip() for p in page.original_text.split("\n\n") if p.strip()]
+        trans_paras = [p.strip() for p in page.translated_text.split("\n\n") if p.strip()]
+
+        paired = list(itertools.zip_longest(orig_paras, trans_paras, fillvalue=""))
+
+        if paired:
+            lines.append("| Original | Translation |")
+            lines.append("|---|---|")
+            for orig, trans in paired:
+                orig_cell = orig.replace("|", "\\|").replace("\n", " ")
+                trans_cell = trans.replace("|", "\\|").replace("\n", " ")
+                lines.append(f"| {orig_cell} | {trans_cell} |")
+        lines.append("")
+
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    log.info("Bilingual Markdown written to %s (%d page(s))", output_path, len(pages))
+    return output_path
+
+
+def _clean_para(text: str) -> str:
+    """Collapse newlines and multiple spaces within a paragraph for table cells."""
+    text = re.sub(r"\n", " ", text)
+    return re.sub(r"  +", " ", text)
 
 
 def _escape_html(text: str) -> str:

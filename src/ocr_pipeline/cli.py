@@ -492,24 +492,28 @@ def compile_pdf(
     folder: str = typer.Argument(help="Folder of processed .txt output"),
     stage: str = typer.Option("cleaned", "--stage", help="cleaned|raw_ocr|translated"),
     output: str = typer.Option(None, "--output", help="Output PDF/MD path"),
-    no_structure: bool = typer.Option(False, "--no-structure", help="Skip structuring, concat as-is"),
+    structure: bool = typer.Option(None, "--structure/--no-structure", help="Apply structuring pass (bilingual defaults to off)"),
     manifest: str = typer.Option(None, "--manifest", help="Explicit tropy_manifest.json path"),
     format: str = typer.Option("pdf", "--format", help="Output format: pdf or md"),
     style: str = typer.Option("readable", "--style", help="PDF style preset: readable, academic, compact"),
+    bilingual: bool = typer.Option(False, "--bilingual", help="Two-column original + translation (uses cleaned + translated stages)"),
 ):
     """Compile processed text files into a single readable PDF or Markdown file.
 
     Takes a folder of already-processed .txt output (cleaned, raw_ocr, or
     translated) and produces one continuous-flow reading document.
 
-    By default, a structuring pass adds paragraph breaks for readability.
-    Use --no-structure to skip the model call and concatenate as-is.
+    --bilingual pairs cleaned/ and translated/ text into two-column output.
+    Missing translations produce blank right columns.  Structure pass is
+    skipped by default for bilingual mode (pass --structure to opt in).
 
     Examples:
 
         ocr_pipeline compile-pdf "output/cleaned/text/Fritz Eberhard KV" --no-structure
 
         ocr_pipeline compile-pdf "output/cleaned/text/ISK Comms" --output isk.pdf
+
+        ocr_pipeline compile-pdf output/ --bilingual --format pdf
     """
     from src.ocr_pipeline import pdf_export
 
@@ -517,16 +521,22 @@ def compile_pdf(
     if not folder_path.exists():
         raise typer.BadParameter(f"Folder not found: {folder}")
 
+    if structure is None:
+        structure_flag = not bilingual
+    else:
+        structure_flag = structure
+
     try:
         result_path = pdf_export.compile(
             folder,
             stage=stage,
-            structure=not no_structure,
+            structure=structure_flag,
             output=output,
             manifest_path=manifest,
             on_progress=lambda msg: typer.echo(msg),
             format=format,
             style=style,
+            bilingual=bilingual,
         )
     except ValueError as exc:
         typer.echo(str(exc), err=True)
