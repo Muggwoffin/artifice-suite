@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "63, Haverstock Hill, NW 3.\n\nLondon, April 20, 1935.\n\nThe Under-Secretary of State, Home Office.\n\nSir,\n\nAs my permit to stay in this country is going to expire on April 29th, I beg to ask for an extension of further 6 months. I am engaged in a study of the life of the late Mr. Nansen. This work is carried on in the Royal Institute of International Affairs, in the School of Economics, in The League of Nations Union and in several other places, and I find it to require more time than anticipated. Moreover, Professor Philip Noel BAKER, whose valuable help is necessary for the success of my work, is at present abroad and will not be back before the middle of June.\n\nThe newspapers, for which I am a correspondent, have asked me to write further series of articles on English politics, so that this purpose also I want to remain a longer time in this country.\n\nI beg to entend, for the same period, the permit of stay granted to Dr. Max HODANN, to assist me as my amanuensis. Since Dr. HODANN has been asked to go to Bruxelles to lecture during the week from the 29th April till the 5th May, he wants, before leaving England, to be sure to find no difficulties in re-entering this country.\n\nThe Academy of Letters and Science of Oslo, which has sent me to England, will grant me the amount of money necessary for the fulfilment of my work.\n\nI have the honour to be,\n\nS. r,\n\nYour most obedient servant\n\nLise LINDBAEK.\n(Lise Lindb\u00e6k-Neander-Nilsson.)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:07:02.075933+00:00",
+  "page": 20,
+  "total_pages": 144
+}

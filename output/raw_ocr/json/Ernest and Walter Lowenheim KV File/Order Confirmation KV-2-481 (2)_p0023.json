@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Spiekman\nStampfer\nSpyri\nStein, Gerda\nStern\nSchwarzbach\nScheer\nTrotzki\nTransfer\nTurm\nTschechslow\nVera\nVogel\nVB\nWagner\nWalcher\nWaschow\nWels\nWeber\nWeigel\nWickel\nWilke\nWitt\nWeisse Willi\nWolff\nZeitung\nZech\nTelemann\nThiel (Chief Editor of Vorw\u00e4rts)\nFussali\nTann\nWinter\nBecher (Cousin of Lowenheims - now dead)\nGaede\nUntermann\nVerkauf\nSpringer\nPolen\nBloom\nWachtel\nLa Plata (?)\nZeitung\nNau/Platen (served in French Army)\nXaver\nZischmann\nZander (Chairman of German Socialist Party)\nSchuster\nSchneider\nZuckermann\nHuth\nSchiffer (Bruno Karthauser, now in Enchan)\nAtlantis\nBurger\nProspekt, Bilanz\nBeier (Robert Mueller)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:03:36.733164+00:00",
+  "page": 23,
+  "total_pages": 60
+}

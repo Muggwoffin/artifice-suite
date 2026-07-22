@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET\n\nRecently M.I. 6. have informed us that a German SPARABUND case to notice in August last year in Germany and that one of its leading lights was one Willy FRITZENKOFER of Wuppertal-Barmen. FRITZENKOFER announced that his organisation was rapidly developing in countries abroad, and that, following on the successful establishment of a group in the United Kingdom, it was hoped to start up further groups throughout the British Colonies and in the U.S.A. A new newspaper is apparently to be launched shortly in this country and comrades are asked to contribute articles, sending them to OLDAY.\n\nJohn OLDAY has been known to us for some considerable time as a contributor to the Anarchist journal, Freedom Press. He came to particular notice during the war when he deserted from the Pioneer Corps and was sentenced, in all, to three years imprisonment. After his release in 1946, he is reported to have resumed his relationship with the London Anarchist Group.\n\nThe SPARTAKUS organisation, as you probably know, was the revolutionary organisation which came into being during the first World War, but which did not achieve any great measure of success. The",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:17:21.378081+00:00",
+  "page": 59,
+  "total_pages": 71
+}

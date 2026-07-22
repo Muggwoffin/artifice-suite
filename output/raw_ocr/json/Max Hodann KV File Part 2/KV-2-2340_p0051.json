@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Miss Sissmore.\n\nTranslation of Int. W 631 B.\n\nDear Alexis,\n\nYour charming letter helped considerably to ease my weariness of the world and I can begin to turn myself to England??? To-day Rupert a cable arrived from Ruzerl (?) (Kugel(?)), asking the permission of my mother for my half-year's stay in C. She is willing to let me go and I am hoping to be able to tie my ? at the beginning of August. But this time I should like to know everything in detail before I settle the date. May I ask you to write me at your convenience whether there will be a chance in Cambridge of learning English well and of taking a course of shorthand and typing. My photography is actually a tragic and useless art and I would like to change round to secretarial work. Again very many thanks for accepting me thus and please give my regards to your wife and your little daughter. Looking forward to making your acquaintance,\n\nYours,\n\nThe story of Herr BAZOLD(?) in \"Futien\" had attracted me years before I met R.\n\nAW: 15/7.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:46:34.599572+00:00",
+  "page": 51,
+  "total_pages": 143
+}

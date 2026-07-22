@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY\nPeveril Internment Camp,\nPeel, Isle of Man.\nSECRET\n9th September, 1941.\n\nTo: Captain Thompson\nHeadquarters,\nAlien Internment Camps,\nDOUGLAS\n\nReferring to your memorandum of the 28th ultimo, I confirm that I suggested to Captain Wilkes that the case of Krebs, the L\u00f6wenheims Sames, Widmann, Cornelius, Engel and Weil might merit reconsideration. Short notes on them are given below. It goes without saying that all profess to be loyal to Britain.\n\n1. Krebs. Jew. \"Arandora Star\" survivor. Special notification that he is not to be enlisted in the Pioneer Corps.\n2. L\u00f6wenheims. Jews. Please see numerous reports by Mr. Sykes and myself.\n3. Sames. Please see my Appeal Case report of the 25th June.\n4. Widmann. Long resident. Nothing detrimental known.\n5. Cornelius. Reinterned. Anti-Jewish bias, owing to unhappy marriage with Jewess.\n6. Engel. Jew. Reinterned. Please see my Appeal Case report of the 18th June. Nothing detrimental known.\n7. Weil. Reinterned. Spent all his time in Falcon Cliff Hospital. Nothing detrimental.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:54:02.552114+00:00",
+  "page": 24,
+  "total_pages": 64
+}

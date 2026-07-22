@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "15.3.41.        P.P. 52095.\n\nThis intercept was not received by B.4.c. until 18.3.41 when it was too late to arrange for the proposed meeting on Monday (17.3.41) to be covered.\n\nBelow is a translation of the letter:-\n\nMy dear,\n\nTo-day I am in bed as I have poisoned myself.\n\nOn Monday I have an appointment at 1 o'clock and cannot therefore come.\n\nCan you please come to me on Monday at 6 o'clock in the evening? I have ordered the typist for 6 o'clock.\n\nWhat exactly did you say to URIEWITSCH?? He will now give you as reference! You have told him that you are with France Libre. He has already passed this on and another acquaintance has already told me of it.\n\nBe more cautious!\n\nBest wishes Karl.\n\nGreetings to Madame.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:51:22.547076+00:00",
+  "page": 52,
+  "total_pages": 96
+}

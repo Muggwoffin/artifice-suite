@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET.\n\nPB.43817/D.S.9.a.  11th April, 1935.\n\nTo THE POSTMASTER-GENERAL, and all others whom it may concern,\n\nI hereby authorize and require you to detain, open and produce for my inspection all postal packets and telegrams addressed to:\u2014\n\nAlexis S. FINKELSTEIN,\n13, Shelford Park,\nGreat Shelford,\nCambridgeshire.\n\nor to any name at that or any other address if there is reasonable ground to believe that they are intended for the said Alexis S. FINKELSTEIN.\n\nand for so doing this shall be your sufficient Warrant.\n\nOne of His Majesty's\nPrincipal Secretaries of State\n\nThe H.O.W. imposed on Max HODANN and Mrs. LINDBAEK-NILSSON - suspected of associating with Soviet military espionage activities - has produced suspicious correspondence emanating from FINKELSTEIN. It is desired to ascertain further information with regard to his activities.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:16:51.336568+00:00",
+  "page": 115,
+  "total_pages": 144
+}

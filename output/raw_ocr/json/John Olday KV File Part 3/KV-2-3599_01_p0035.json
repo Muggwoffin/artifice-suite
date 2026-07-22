@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "THE MARCH TO DEATH\n\nDrawings by John Olday\n\n\"It is probable\u2014nay, certain that among the means which will next time be at their disposal will be agencies and processes of destruction wholesale, unlimited and perhaps, once launched, uncontrollable... Death stands at attention, obedient, ready to shear away the peoples en masse; ready if called on, to pulverize, without hope of repair, what is left of civilization. He awaits only the word of command.\"\nWinston Churchill, \"The Aftermath\".\n\nFREEDOM PRESS 27 Belsize Road London N.W.6\n1943",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:08:49.765455+00:00",
+  "page": 35,
+  "total_pages": 57
+}

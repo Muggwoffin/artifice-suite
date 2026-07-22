@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "MINUTE SHEET.\n\nvol 1 closed at min.70 date 5.7.44\n\n8.7.44. 7D. OLDAG's birth certificate forwarded by B.6. 7Dz.\n10.7.44. To R.S.L.Os Bristol, Cardiff, and Manchester re OLDAG. 7Da.\n\n10.7.44. 72. To Special Branch enclosing note on OLDAG etc. 71b.\n\nM.S.\nI have only recently seen 68a, and in view of it have taken action at 70a and 71a. As the H.O.W. on the Freedom Press never reveals anything from OLDAG, it seems likely that he or someone on his behalf takes his cartoons to them by hand. If you have anyone in touch with the organisation, may I suggest that he or she should be shown OLDAG's photograph and specimen of handwriting?\n\nF.3.m. 10.7.44.\n\nExtract from War Commentary by FREIMANN.\n\nF.3.m. Mr. Micklethwait\n\nWe have noted your remarks in Minute 72, and have taken account of OLDAG's photograph and specimen of handwriting. Should we have any information which may be of help in this case, we will let you know immediately.\n\nM.S. (London)\n17.7.44. S\n\nJuly 1944. Extract from \"Now\" advertising the \"March to Death\". 74a.\n\n25.7.44 75. From R.O. Manchester enclosing S.B. Report on OLDAy 75a\n\n28.7.44 76. From R.O. Cardiff enclosing report re OLDAG 76a\n\nM.S.\nMiss Sercombe and I are in favour of the suggestion made by Himsworth when he last visited here that an approach might be made to OLDAG on the pretext of publishing some of his work. Can you arrange?\n\nF.3.m. 31.7.44.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:36:18.853586+00:00",
+  "page": 2,
+  "total_pages": 92
+}

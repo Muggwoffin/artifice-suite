@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Miss Sissmore.\n\nFrom ? to Alexis FINKELSTEIN.\n\nThanks him for his kind invitation to stay with him, which she cannot accept beforehand as she has just received a cable from Rupert saying that her visit is impossible. She cannot think what has happened but hopes to hear soon from Rupert. Hopes that she will one day have the opportunity of making the addressee's acquaintance.\n\nAW. 16/7.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:47:51.349132+00:00",
+  "page": 64,
+  "total_pages": 143
+}

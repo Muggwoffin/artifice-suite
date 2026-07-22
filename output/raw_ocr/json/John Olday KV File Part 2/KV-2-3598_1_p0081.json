@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "The H.O.W. on Marie Louise RICHARDS intercepted a letter from OLDAG dated 23.5.45, post-marked 18.6.45, red-stamped 20.6.45. This letter was largely personal, requesting her not to organise an exhibition of his pictures which presumably she had suggested to him. Original destroyed.\n\nF3m. 26.6.45.\n\nF.P.T. Tallent.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:47:58.722048+00:00",
+  "page": 81,
+  "total_pages": 92
+}

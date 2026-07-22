@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "ENCL: N.R.13(A.M.I.5)\n5 AUG 1949\nNATIONALITY DIVISION,\nHOME OFFICE,\nWHITEHALL,\nLONDON, S.W.1.\nTO: C.A.\nREF: PF 49542\nHome Office No. L.5027\nM.I.5 No. PF 49542\nCertificate of Naturalisation No. BNA 5360\nJuly, 1949.\nM.I.5.\nA certificate of naturalisation has been granted to Mr. Walter Loewenheim known as Walter Lowenheim of 136, Hatherley Court, Hatherley Grove, Bayswater, London, W.2. and the Oath of Allegiance has been duly taken.\nThe wife Mrs. Chaszka Lowenheim has been registered as a citizen of the United Kingdom and Colonies.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:14:07.238480+00:00",
+  "page": 17,
+  "total_pages": 68
+}

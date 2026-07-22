@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Dear Herr B.\n\nI beg to inform you that we are now in the position to show the whole \"Rheinlne\", with the enclosed maps. First we began with the \"Wesel\", and then we felt capable to record the \"Weserlinie\", the so-called German Maginot line. This line is one which is to be held at all costs by the Army.\n\nAt the Anschluss, strange movements of troops took place near the Dutch frontier, I do not know for how long. Directly I heard, I went to Krickenbeck, (near Hinebeck, the next station is Looberich) and found, in fact, the I.R. (Infantry Regiment) 165.\n\nOn enquiring, I was told that the troops were resting after strenuous manoeuvres. Unfortunately I could not get any more information. But I should say from my observations that a second regiment was there as well. I was informed it was merely a \"Grenzschutz\". But what were two Infantry Regiments doing at the Dutch frontier? My friend went to Schleiden (Rifel) to get information for you and found there a subterranean building which extends towards Gemuend, Schleiden, Simonskall, Zwefall and the frontier. Military forces are working there on the plane. The preliminary work was done by workmen. My companion also travelled to Berlin. He observed there the Borsig Works, the enormous \"Saureverbrauch\". But he lacked the means for further investigation, and so could not pursue the matter further. He also heard something which might interest you, that Borsig is building a big branch factory in Greece. In the castle Vogelsang is a new \"Strahlensender\", of this I am certain. Because of this the way to the castle is forbidden to the public. It would certainly be worth while to follow these things up. But for the moment we lack the means. I tell you all these things to show how a real investigation could be made and financed.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:07:01.397164+00:00",
+  "page": 75,
+  "total_pages": 102
+}

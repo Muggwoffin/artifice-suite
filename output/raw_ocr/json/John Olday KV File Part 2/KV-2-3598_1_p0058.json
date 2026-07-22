@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "The best Revolutionaries & cats have one thing in common: they never fall to death but always land on their feet.\n\nDo write. Even if you still are depressed. Give my love to Pete & old Phil, to the two old darlings to Mavis & write to all the comrades. My message is still the same: don't count. The efforts should be devoted to the thousands of nameless.\n\nLove as tight. The soldiers have many a house been searching for us & a copy of our own 'Comrades' can be found in Bruno & D.B.\n\nMany thanks for all you did - Nizhkin, for the many grand little things.\n\nI am yours always",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:45:04.897177+00:00",
+  "page": 58,
+  "total_pages": 92
+}

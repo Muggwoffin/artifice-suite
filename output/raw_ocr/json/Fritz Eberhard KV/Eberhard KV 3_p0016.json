@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3a50cf10b688315cccd916f71e58b224.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "WHITBY,\nYORKSHIRE.\n\nDr Hellimet von Ranichenplet.\nLondon. W.C.1.\n\nThe Personnel Dept.\n(I.A.)\n\nThe Lt. Postmaster has drawn my attention to the above points as stated to have been fairly bulky and may have contained photographs. He states that it was posted by what are believed to be refugees living at \"Bueno Vista\", a house in Sleights village, one of whom, (a lame man) it is alleged, has been observed taking photographs of a main road bridge at Sleights.\n\n27 May 1940.\n\nJ. Hockis\nHead Postmaster.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:24:26.833924+00:00",
+  "page": 16,
+  "total_pages": 24
+}

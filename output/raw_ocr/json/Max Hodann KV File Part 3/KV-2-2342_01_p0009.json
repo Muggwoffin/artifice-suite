@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "250.\n1.8.36: Extract from SB list of applicants for certificates of naturalisation mentioning Renate HODANN @ SARAN\n\n231.\nS.9.\nWith reference to Enc. 230A, Renate HODANN @ SARAN would appear to be identical with the traces at 10A and 11A in Vol. 1 of this file (attached). Would you please advise what reply should be sent to Special Branch in this case.\n\nS.1.\n7.8.36:\n\n232.\nS.1.\nSecn, thank you. Perhaps we could tell Special Branch that whereas we have nothing recorded to the detriment of Renate HODANN, she is the daughter of Max HODANN, who has formed the subject of reports under their 320/FCN/530. Max HODANN is a German political refugee who is believed to have been associated with Soviet espionage and to have been connected with Mrs Marie Louise MARTIN, who received the maximum sentence for Soviet military espionage in Poland.\n\nS.9.\n7.8.36.\n\n233.\n30.10.36. From S.I.S. with reference to 162a, re 547 Benson.\n\n234.\n8.12.36. S.3a asked to obtain H.O. papers for Renate HODANN, @ SARAN.\n\n235.\n1.12.36. From H.O. forwarding papers re Renate HODANN.\n\n236.\n24.12.36. H.O. papers for Renate HODANN returned to S.3a.\n\n237.\n12.38. Copy of letter to S.I.S.\n\n238.\n12.38. Int. letter from HODANN to Page ARNCT.\n\n239.\n12.38. To S.I.S. re 238a.\n\n240\n[Minute to H.O. re ELKANN] L.312 (1740) ELKANN",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:57:31.007626+00:00",
+  "page": 9,
+  "total_pages": 104
+}

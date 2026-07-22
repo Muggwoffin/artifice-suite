@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "REGISTRY ACTION SLIP.\n\nFor Officer's Use.\n\nCARD.\n(a) All names\n(b) Names and addresses as marked\n(c) No additional carding\n(d) Card subject as under\n\nEXTRACT or CROSS REFER.\nM NEUBEGIINNEN OF.93/7\n(KLATT, SCHOETTLE)\nM. BRAUN, & H\u00d6LTER-MANN\n\nMAX FILE FOR\n\nOther Instructions.\n\nSection BL4G\nOfficer's Signature T S Bazley\nDate 14/6/41",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:08:17.536517+00:00",
+  "page": 54,
+  "total_pages": 60
+}

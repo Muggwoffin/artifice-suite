@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "was possible to manufacture the plant in this country. Matter placed before directors of Quicktho (1928), Ltd., with which HITCHINS, JERVIS and PARTNERS were associated and they formed a subsidiary named Thames Flu-Tite Engineering Co., Ltd., to take over the rights and patent from KARTHAUSER and LOEWENHEIM for a sum of \u00a31,250 and 25% of profits up to June, 1942. The enterprise has been a success and during the period February to December, 1942 the aliens' share of the profits amounted to over \u00a3900. When negotiations were in progress between HITCHINS, JERVIS and PARTNERS and Quicktho (1928), Ltd. the two aliens were interned. Col. LOCKHART-JERVIS states that he found it difficult to correspond with them at the internment camp so he approached the Home Office for special facilities in the matter of correspondence with them to enable him to effect the transfer of the patent and rights of manufacture from KARTHAUSER to the new company being formed. He says he received very little assistance but was able, after much delay, to complete the business.\n\nCol. LOCKHART-JEVIS expressed surprise that these two men should have been released from internment. In his opinion they know too much about the large electricity and gas undertakings in all parts of the country. In support of this he says that before he became interested in their patents they visited major plants all over Great Britain when trying to market their inventions.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:17:07.337039+00:00",
+  "page": 39,
+  "total_pages": 68
+}

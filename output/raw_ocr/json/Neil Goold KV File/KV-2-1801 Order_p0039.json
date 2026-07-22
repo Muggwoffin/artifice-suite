@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Inspector General's Office,\nRoyal Ulster Constabulary,\nBelfast.\n13th October, 1942.\n\nDear Stephenson,\n\nYour reference P.F.41426/B.I.H. of 5th instant concerning GOOLD-VERSCHOYLE, I think you might be interested in the attached copy of an intercepted letter from The Cardinal to De Valera.\n\nThe gentlemen concerned may \"be nearly in the purple\" but any GOOLDS that I ever knew had extremely \"Parrot-like Noses\" and held their Sundays on a different day to the majority of the population.\n\nYours sincerely,\n\nMorgan Lewis\n\nJohn Stephenson, Esq.,\nBox No. 500,\nParliament Street B.O.,\nLondon, S.W.1.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:41:43.264735+00:00",
+  "page": 39,
+  "total_pages": 103
+}

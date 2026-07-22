@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "\"I am anxious to prevent this [the Labour] movement fighting for the preservation of the Paris Bourse, the London Stock Exchange, and Wall Street.\"\nErnest Bevin at the 1939 Conference of the Labour Party.\n\n\"This war is, in one of its minor objectives, a war to make the world safe for the gold standard.\"\nOscar Hobson, Financial Editor of the \"News Chronicle.\"\n\nWE WILL LOOK AFTER LIBERTY",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:11:50.432299+00:00",
+  "page": 5,
+  "total_pages": 71
+}

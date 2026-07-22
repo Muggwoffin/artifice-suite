@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "MB/R4. 21.1.48. COPY\n\nFor: P.F.44165. P.F.46464. P.F.47311.\n\nOriginal filed in: P.F.48834. WEBER Dr August. Receipt date. 13.1.48.\n\n1st January, 1948.\n\nDr. Heinrich (Heinz) BRAUN, the former Social Democratic member of the Prussian Diet and of the Magdeburg Town Council, was in the U.K. during the war, acting as Secretary of the Free German Committee. He has now become Minister of Justice in the Saar Government.\n\nDr. August WEBER, former member of the German Reichstag for the Democratic Party and its President, who was chairman of the German Freedom Party in the U.K., intends to travel to Germany again in about a fortnight, where he will have discussions with prominent members of the Liberal-Democratic Party in all the four zones.\n\nThere is a proposal to expel S. RETZLAW @ Karl GROEHL from the Social Democratic Party for the Saar, of which he is a member of the Executive Committee. RETZLAW intends to return to London - his wife is already here.\n\nDr. E. LUTKENS, a right-wing member of the Association of German Social Democrats in G.B., who returned from London to Hanover a few weeks ago, has been appointed S.P.D. adviser in foreign affairs.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:13:33.170409+00:00",
+  "page": 14,
+  "total_pages": 90
+}

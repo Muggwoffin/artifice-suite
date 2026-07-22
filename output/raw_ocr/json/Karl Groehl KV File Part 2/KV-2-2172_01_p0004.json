@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "MINUTE SHEET.\n\nReference P.F. 46464 V.2. V Box 808.\n\n109.\n\n16.10.41. From H.O. Aliens Department with reference to 108a enclosing int. letter - copy taken. 109a.\n\n110.\n\nA note of an interview which F.2.c. had with GROEHL in London on this date respecting the case of Walter and Ernst LOEWEINHEIM (P.F. 49542) is filed at 100a in that file.\n\nF.2.c. 13.10.41. (Signed) R. Pilkington.\n\n111.\n\n24.10.41. To S.O.2. with reference to 107a enclosing original letter addressed to GROEHL. 111a.\n\n112.\n\n1.12.41. Translation of photostat of int. letter from S. RETZLAW with enclosure. 112a.\n\n113\nExtract from int. letter from RETZLAW to \"Daily Telegraph\". 113x.\nE.3.S. report re Karl GROEHL @ Stanislas RETZLAW 113a\nFurther note from E.3.s. re GROEHL 113b\n114\nFurther report from E.3.S. re RETZLAW 114a\nPhotostat of int. letter from RETZLAW to KUCZYNSKI? 114b.\n115\nM.D. Report fe RETZLAW @ GROEHL 115a\n116\n22.1.42. Report from re RETZLAW @ GROEHL 116a\n117\nResult of C.A.R. look up on RETZLAW 117a\nIntercept letter from Neame LOPEZ to Hans Roger MADOL 117c\n118.\nFrom Free French enquiring re RETZLAW. 118a.\n119.\nA.D.E.7 report re GROEHL: enclosing summary and GROEHL's political programme 119a.\n\n120.\nTo Free French in reply to 118a RETZLAW to STEARN. 120a.\nTranslation of int. letter from RETZLAW to STEARN. 120b.\nFrom Deputy Director P & T.C. to Mr. Grogan re censorship. 120c.\nF.7. Report re RETZLAW. 120d.\nTranslation of int. letter from RETZLAW to FRUEH. 120d.\nMinute from Dy. Director, P & T.C. to Mr. Grogan. 120D\nMinute from Dy. Director P & T.C. to Mr. Gibbs 120E\nMinute from Mr. Grogan to Dy Director, P & T.C. 120F\nMinute to Mr. Grogan and draft letter to Major Neame 120G\nMinute from Mr. Gibbs to Special Examiners. [OVER] 120H\nReport on RETZLAW in S0808. 120J",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:12:17.704832+00:00",
+  "page": 4,
+  "total_pages": 90
+}

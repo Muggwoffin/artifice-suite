@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nSUBJECT:-\n\n23.3.40. Text of a letter from Karl GROEHL, Paris, to Karl OTTEN:\n\n\"Dear K,\n\nThe Thyssen letter continues to arouse much interest. Here on the Matteofti Committee, the letter has been taken away from Julius and has been shown written down. The people allege that the Commune spread the news of the letter in O. It would have been better if Julius had sent it on.\n\nJulius is quite convinced the letter is genuine. The Matteofti Committee's opinion is divided: some say it is genuine, others it isn't. You are sure to know for certain. In any case it is the masterpiece up to now.\n\nYours,\n\nK.\n\nP.S. Try and arrange for me to come over again, but first of all get some good invitations for frontier purposes.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:54:24.523546+00:00",
+  "page": 75,
+  "total_pages": 96
+}

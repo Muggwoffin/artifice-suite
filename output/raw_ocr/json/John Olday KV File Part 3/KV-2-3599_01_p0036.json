@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "First Published in May 1943\nby\nFREEDOM PRESS\n27 Belize Road, London, N.W.6.\nAll rights reserved\n\nCONTENTS\n1. Propaganda\n2. The Systems\n3. The Struggle for Freedom\n4. Whose War?\n5. What are we Fighting for?\n6. People at War\n7. Post War World\n8. The Procession of the Victims\n\nPrinted in Great Britain by\nExpress Printers, London.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:08:55.993076+00:00",
+  "page": 36,
+  "total_pages": 57
+}

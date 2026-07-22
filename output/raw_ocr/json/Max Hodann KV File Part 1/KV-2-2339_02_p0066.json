@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "St. James' Square, from 4.10. to 5.30. after which both returned to 6, Cornwall Gardens.\n\nNote. It is thought that HODANN may have visited Harlington Court on the 27th inst. when he was missed whilst travelling in Vauxhall Bridge Road.\n\nSaturday, 30th March.\n\n1.30 p.m. HODANN, NILSSON and child left 6, Cornwall Gardens and after lunching at Lyons Caf\u00e9, walked to Kings Road, Chelsea, where the woman (NILSSON) entered for 10 minutes the Fascist H.Q. whilst HODANN waited outside. On leaving she spoke to HODANN who with the child then visited the Natural History Museum and then returned to Kynance Court where the woman came back at 6.35.\n\nMonday, 1st April.\n\nHODANN, NILSSON and child lunched at Lyons Caf\u00e9, after which NILSSON carrying despatch case entered Gloucester Road Station and HODANN and child returned to 6, Cornwall Gardens. Leaving the latter address at 1.30. carrying despatch case HODANN went to Harlington Court, Lansdowne Road, from 2.30. to 3.45. and afterwards to Institute of International Affairs, Chatham House, St. James' Square, where NILSSON arrived 50 minutes later. They both left at 6.45. when woman entered bus and HODANN train to Marble Arch thence to 20, Adam Street, W., where he stayed from 7.15. to 7.40. and shortly afterwards he met NILSSON in Queens Road, Bayswater. Both entered Monte Carlo (Bertorelli) Restaurant, 182, Queen's Road.\n\nObservation continuing.\n\n(sd) J.O.\nS.11.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:28:59.557916+00:00",
+  "page": 66,
+  "total_pages": 131
+}

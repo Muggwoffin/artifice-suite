@@ -1,0 +1,30 @@
+COPY.
+
+PATENTS FORM No. 2.
+
+PATENTS & DESIGNS ACTS, 1907 to 1932.
+Provisional Specification.
+
+(a) MOULDABLE MATERIAL
+
+(b) I Alexis Samuel FINKELSTEIN,
+    of 13 Shelford Park, Great Shelford,
+    Cambridge,
+    a German subject
+
+do hereby declare the nature of this invention to be as follows:-
+
+(c) My invention relates to mouldable material prepared by the condensation of a phenol with an aldehyde, a reaction which can be symbolized by the general equation
+
+    R. CH O    Ar. OH = Ar. OCR    H2O
+
+where R designs an organic radical or hydrogen and Ar an aromatic radical. The proportions of the re-agents may differ equimolarity. The product of re-actions undergoes, in the course of the technical process, a series of changes, usually discerned as A-, B-, and C-stage. The A-product holds water in solution and is not mouldable. It is converted, by drying, into the mouldable, thermostatic B-product, which in its turn, under the influence of a higher degree of heat and of pressure, passes into the final C-state.
+
+I have found that instead of drying the A-product one can convert it into a thermostatic plastic even by the opposite process of gydration. I expose it, in a finely divided state and at a gentle heat, to air or carbon dioxide saturated with water. Not only the one molecule of water split off by the condensing reaction is re-fixed, but several more molecules are absorbed. A comparatively stable hydrate is formed which can be moulded, in a closed mould and at a temperature of 150°C or more, in much the same way as the anhydrous B-product. The final product, though retaining a substantial percentage of water, closely resembles the C-product. Weight for weight it is, of course, cheaper and still more so volume for volume since the specific weight is lower.
+
+For instance, a phenol or a mixture of phenols is made to react, in the usual way, with an aqueous solution of formaldehyde. The product of reaction, including the water, is mixed with wood flour. The moist powder is compressed into pallets and these are exposed, at a temperature of 40°C, to a current of air saturated with moisture. After a few hours the reaction is completed and the material has assumed a dry appearance. The water is rather firmly bound: at a temperature of 110°C it evaporates only slowly and partially and during the moulding process, even at a temperature as high as 175°C, the loss of weight is slight. The mouldings are free from blisters.
+
+The invention can be applied to condensation products of other aldehydes than formaldehyde and may be carried out by other means than those set forth in the above example. Its principle consists of preparing a hydrate of a phenol-aldehyde condensation product and using it as a thermostatic plastic.
+
+(In ink) Dated the 27th day of June, 1935
+(signed) Alexis S. Finkelstein

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Mrs. M. L. Richards\n11 Eton Place\nHaverstock Hill\nN.W. 3",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:50:11.435000+00:00",
+  "page": 5,
+  "total_pages": 91
+}

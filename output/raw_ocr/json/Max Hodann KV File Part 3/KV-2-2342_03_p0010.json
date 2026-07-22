@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "a one at Brian & me a specialist at Geneva. I am glad to say that all this has not been in vain. I trust that your wife & little girl are keeping well.\n\nYours\nB. Fl.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:26:29.996560+00:00",
+  "page": 10,
+  "total_pages": 99
+}

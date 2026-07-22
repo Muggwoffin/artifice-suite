@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "B.4b\n\nI was informed by telephone by M/S at 4.30 p.m. to-day that Karl GROEHL would be \"leaving for France\" at about 6 p.m. M/S was not clear whether this meant leaving London or sailing from a Channel port. As with whom GROEHL has been staying, will be with him until 6 p.m., GROEHL probably leaves London at that time.\n\nGROEHL was to have come from France to stay with OTTEN for a week, but is understood to have been taken ill whilst with OTTEN, so may have been here longer.\n\nM/S thought that GROEHL should be thoroughly searched at the port, as he is regarded with some suspicion.\n\nB.7a\n14.12.39.\n\nNote. Informed B.7a that SIS are interested in this man. B.7a told me that Mr. Knight has been informed.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:54:53.211684+00:00",
+  "page": 79,
+  "total_pages": 96
+}

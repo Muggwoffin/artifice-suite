@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Dr. M. Hladun\nKynance Court\nGloucester Rd\nLondon SW7\n\n124 13 Stifford Park Great Stifford\nLiches & H. Hladun,\nHerr Frau - I am friend now of\nFrau Lindbergh - and Herr Reich,\nI got her ticket via Verhandlungs\nvia die Zeitung auch. Die billige\nBahnreise - from ging fr\u00fcher - ich hoffe\nSie sind bieber erneuerte - 10th ab Liverpool\nSt., in Cambridge 11th. Wel erwartet Sie\n- Deluselig. Den fehren wir - 20th.\n\nR64C\n\nR64C\n\nR64C",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:16:44.045912+00:00",
+  "page": 114,
+  "total_pages": 144
+}

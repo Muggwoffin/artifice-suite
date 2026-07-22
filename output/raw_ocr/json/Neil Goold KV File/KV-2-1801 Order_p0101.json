@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Andrew Rothstein,\nSoc. of Friends of The Soviet Union\n33 Ormond Yard\nGreat Ormond Street,\nLONDON W.C.1.\n\n\"Bryn\"\nPensby Road\nHESWALL\nCheshire\n\nAndrew Rothstein,\nSoc. of Friends of The Soviet Union\n33 Ormond Yard\nGreat Ormond Street,\nLONDON W.C.1.\n\n1st March 1933\n\nDear Comrade,\n\nThanks for your letter of the 27th. I am afraid I am not likely to be in London in the near future.\n\nThe above will be my address for some time, my permanent address being The Manor House, Dunkin-eely, Co Donegal, Ireland.\n\nThe name and address of the student in question who is a friend of mine in Moscow is as follows:-\n\nR. Novitzki,\nMOSCOW\nMoskvoretskaya Ulitza, House 32/5 Room 1.\n\nHe writes for Moscow Economical Periodicals especially on problems connected with the British Isles, and would therefore like to get into touch with a worker who could let him know something about conditions first hand. He is also anxious, I think, to improve his English, which I hope is sufficient to start a correspondence. As I suggested in my first letter someone who is anxious to learn Russian might write to him, mentioning my name, and fix up some kind of exchange.\n\nYours sincerely,\n\nNeil Gould Verschafle",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:50:23.905857+00:00",
+  "page": 101,
+  "total_pages": 103
+}

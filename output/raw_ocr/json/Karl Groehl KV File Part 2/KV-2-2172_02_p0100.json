@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM.\n\nFrom B.13 (Major Langdon)............. To B.4.c (Mr. Pilkington)\n\nPlease see attached letter from Major Whetmore, ECW/KV/1106 of 11th June, referring to your minute of 4th June, P.F.46464 and previous correspondence, regarding S. RETZLAW.\n\nDate 14.6.41............. Signature............. for Lieut. Colonel Hinchley Cooke.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:43:08.166909+00:00",
+  "page": 100,
+  "total_pages": 107
+}

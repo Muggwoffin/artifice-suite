@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "78.\n4.8.44 From R.O. Manchester enclosing report re OLDAG 78a\n22.8.44 Extract from int. letter from LOCKIE to Freedom Press 78b\n24.8.44 Note of telephone conversation between F.3.m. and M.S. 78c\n\n79.\n25.8.44 A.16 To R.O. Manchester acknowledging 78a 79a\n\n80.\n25.8.44 To Air Ministry asking for particulars of LOCKIE 80a\n\n81.\n30.8.44 From M.S. re the T.C. on Freedom Press 81a\n\n82.\n6.9.44 Extract from Return of correspondence on Guy ALDRRD 82a\n\n83.\n10.9.44 To R.O. Nottingham re James ODAY 83a\n12.9.44 From M.S. re. MESENS and OLDAG. 83b\n\n84.\n13.9.44 Note re the T.Cs on FREEDOM PRESS & Vernon RICHARDS 84a\n\n85.\n15.9.44 To R.O.s Manchester and Bristol re ref: No. for OLDAG. 85a\n\n86.\n15.9.44 To R.O. Cardiff re note on OLDAG. 86a.\n\n87.\n19.9.44 F.3.m. note re James ODAY. 87a\n26.9.44 Copy of minute 12 in PF.66674 87b\n\n88.\nOn 13.11.44, it was learned that Mr. Alex Comfort (see 93a) was advertised as speaker at the meeting on 15th November. In view of this, after discussion between Capt. Atkinson, Mr. Himsworth, Miss Sercombe and myself, it was decided that no action should be taken about the meeting beyond that at 'x' in minute 94.\n\nF.3.m.\n13.11.44.\n\nR.G. Micklethwait.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:36:29.318908+00:00",
+  "page": 3,
+  "total_pages": 92
+}

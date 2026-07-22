@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "STATEMENT OF ERNST LOWENHEIM.\n\nI belonged to the Social Democrats in Germany in Berlin from 1929 to 1935 when I came to England. I had formerly been a member of the Communist party.\n\nIn 1930 my brother Walter and I, not being satisfied that the Social Democrats could combat the Nazis, formed a party, a group called \"Neubeginnen\".\n\nWhen Hitler came to power in 1933 we had to go underground. None of our members were prominent so we did not attract attention and were the last to be broken up by the Gestapo. 1935 saw arrests even among us. We never met in larger groups than three and avoided all written communications except with friends abroad. We had a branch in Prague which worked openly.\n\nProminent members of the S.D. Party who fled abroad formed the SOPADE - Social Democratic Party of Germany with Headquarters in Prague. We sent one Karl Frank to Prague to represent the Neubeginnen Group in the Sopade. Sopade gave us funds for our work in Germany. My brother and I wrote a pamphlet called \"Neubeginnen\" which was published by Sopade. The manuscript was microphotographed on a film, put into the binding of a book and sent out of Germany that way. Part of our correspondence went out that way.\n\nWe used a code for foreign communications but not for inland letters. This code was kept by a secretary, Mrs. Richowsky. I had no copy myself but its existence was no secret to me. It was a simple substitution of names.\n\nUntil 1935 there was only one member of Neubeginnen in England. I think here name was Evelyn Lind. Mr. Gilles from Transport House was our foreign relations representative.\n\nMy brother and I resigned Neubeginnen in 1935 and the movement was taken over by Karl Frank from Prague. We indulged in no political activity in England.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:07:03.093402+00:00",
+  "page": 45,
+  "total_pages": 60
+}

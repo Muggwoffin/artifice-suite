@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nSUBJECT:-\n\n17.4.40. A letter of this date, post-mark Kensington, was addressed to Karl OTTEN, and contained a series of short type written summaries of news from Belgium and the work of the German Opposition. The letter was apparently from GROEHL as there were notes in his handwriting and the information was signed \"Ka.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:53:56.004835+00:00",
+  "page": 71,
+  "total_pages": 96
+}

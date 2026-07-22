@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "B. Carabini (Scouts), who replaces J. Foley on the Leinster team to meet Ulster at Belfast on Jan. 15.\n\nTO-MORROW NIGHT'S STADIUM BILL\n\nFOUR Birkenhead boxers, one of whom\u2014V. Harrison\u2014has boxed in Dublin twice already this season, figure on the bill for the Terenure-Rathfarnham Boxing Club's tourney at the Stadium, Dublin, to-morrow night. Following is the full programme:\u2014\nCruiser\u2014M. Behan (Myra) v. J. Kennedy (St. Canice's). Welter\u2014V. Harrison (Birkenhead) v. T. Kavanagh (Scouts), J. Kealy (Terenure) v. M. O'Neill (Guinness).\nLight\u2014Mark Clark (Birkenhead) v. P. Fitzsimons (Terenure), J. Kershaw (Terenure) v. J. Ryan (St. Agnes), J. O'Brien (Terenure) v. V. Harris (Mount Street).\nFeatherweight\u2014P. Maguire (Pollkoff) v. D. Grant (Birkenhead). Bantam\u2014P. Maguire (Terenure) v. T. Dennis (St. Vincents), T. Mardy (Terenure) v. Tom Thomas (Birkenhead). Juvenile\u2014M. Hyland (Rathfarnham) v. T. Kiernan (Terenure); L. Kelly (Rathfarnham) v. J. Ramsey (Terenure).\n\nAmateur Boxing Affairs\n\nIT was stated at the meeting of the Standing Committee of the Irish Amateur Boxing Association that enquiries were being made into the reasons for the non-appearance of three boxers billed to appear in the Sandymount tourney bill last Friday.\n\nThe International team to meet Scotland in Dublin on January 25 will not be selected until after the Internationals with Wales on January 11 and 13 in Dublin and Limerick, respectively.\n\nMeeting of Scottish, Welsh Champions\n\nGEORGE JAMES, Welsh heavyweight champion, is eagerly awaiting his fight with Ken Shaw, Scottish title-holder, at the Seymour Hall, London, on Tuesday next, as he realises that victory will put him in line for a match with champion Bruce Woodcock.\n\nJames, who astonished boxing fans with his second-round win over the",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:39:34.531655+00:00",
+  "page": 22,
+  "total_pages": 103
+}

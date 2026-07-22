@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Secret.\n\nM.I.5. (Mr. White)\n\nReference correspondence ending with your PF.428/6/B.4b of 12.5.38., regarding Karl Friedrich GR\u00d6HL:\n\nThis man applied in Paris on the 17th August for a visa for the U.K. His application was referred to London.\n\nWe have since seen the Passport Control Department file regarding this man, who, according to his application, was born at Schneidernuhl on 10.2.96., is a writer by profession, German by nationality, arrived in France in 1935 from Germany, and is at present living at 7 rue Barrault, Paris 13e. He has subsequently visited the U.K. on two occasions in transit between Denmark and France, viz. 30.4.38, 4.5.38. and 7.7.38. - 9.7.38. He is in possession of passport No. 338, issued at Trier on 14.3.34., valid until 13.3.39., bearing a return visa to France valid until 17.9.38.\n\nGR\u00d6HL gave as his reference Mr. Claud W. SYKES of 32 Soubierie Avenue, Letchworth, whom he wished to visit in connexion with the translation of books from English into German.\n\nAttached hereto is copy of a letter we have sent to the Passport Control Department in connexion with this case.\n\nfor V.V.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:05:23.975164+00:00",
+  "page": 62,
+  "total_pages": 102
+}

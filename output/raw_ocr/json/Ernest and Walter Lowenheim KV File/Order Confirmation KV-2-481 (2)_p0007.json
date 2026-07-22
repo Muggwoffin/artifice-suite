@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "FROM\nCLAUD W. SYKES.\n\nR. Pilkington Esq.\nBox 500.\nG.P.O., Oxford.\n\n32. SOUBERIE AVENUE.\nLETCHWORTH.\nTEL: 1017.\n2060/41\n\n22 JUN 1941\n\nB4C\n\nMy dear Pilkington,\n\nHaving recently received from Major Armitage a copy of the Loewenheim Code, together with several other documents pertaining thereto, I think I might perhaps be able to make a contribution of some slight use, which I enclose.\n\nI may add that some considerable time ago I made a report on activities. I cannot be sure whether this has been embedded in the Loewenheim file or not, but early this year I got a repetition of its contents from [illegible]. I sent a copy of this to Onchan Camp where the Loewenheims are interned. I do not know whether another copy reached the country, but if not and if you are interested, I expect we have a copy in our office.\n\nYours sincerely,\n\nClaud. W. Sykes",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:00:47.390208+00:00",
+  "page": 7,
+  "total_pages": 60
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Uff, am 1. Juni 1935.\n8, Schmin der Elsterstr.\n\nSehr Herr Doktor Hodann!\n\nAnfang August fahre ich h\u00f6chstwahrscheinlich f\u00fcr 6 Wochen nach London. Ich werde mich im Hause amerikanischer Freunde einquartieren, die zu der Zeit den Kontinent besuchen wollen. Die Anschrift ist Barons Court, Barons Court Road, London, W.14. Verpflegen werde ich mich selbst. Das soll nach Stundenmark geschrieben. Schreiben Sie mir bitte jedes Jahr, was man daf\u00fcr als Mindestangabe veranschlagen muss. Im \u00fcbrigen hoffe ich nat\u00fcrlich so manche grund\u00e4tzlichen Fragen mit Ihnen ausf\u00fchrlich besprechen zu k\u00f6nnen. Es steht jetzt fest, dass ich im November wieder nach Argentinien reisen werde, nun nicht in die \"Siegfrieds\" zu verfallen. Bei dieser Gelegenheit will ich auch aktiv mitteilen, was ich tue f\u00fcr die Fl\u00fcchtlinge. Ich habe noch keine klare Vorstellung von den Mitteln und Wegen, die mir offen stehen d\u00fcrften. Immerhin darf ich vorlie",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:48:39.992085+00:00",
+  "page": 72,
+  "total_pages": 143
+}

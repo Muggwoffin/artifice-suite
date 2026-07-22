@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SUMMARY OF INTERCEPTED LETTERS FROM Karl GROEHL, Paris, to Karl OTTEN, London, filed in P.F.45807 OTTEN v 7.\n\n2.5.40. (268x)\nSays that \"Nr. 10\" will be ready in 3 weeks; asks OTTEN not to send anything at all to Julius (Julius DEUTSCH?). His papers for travelling have expired, but if his passport were stamped \"Zslovak\" (?) all would be well.\n\n3.5.40. (268ax)\nCommiserates with OTTEN on his \"misfortune\". Says what a pity it was that \"Silo and ?Utsa\" could not stay as they were such pleasant company. *\n\n5.5.40. (268c)\nSays it is better if the parcels are packed by him personally, as he has things to enclose, and otherwise he has no control. \"I must travel! 3 weeks en route, 1 week here is enough\". Encloses a propaganda pamphlet for distribution in Germany.\n\n8.5.40. (269x)\nThanks OTTEN for his letter. All goes well; they only need to have patience and they will get what they want. Nr. 10 is not yet arrived. The Thyssen letter is still very popular(?).\n\n* Enclosure to this letter gives fairly detailed news of GROEHL's difficulties from the point of view of money, organisation, and the people with whom he is working.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:53:43.341629+00:00",
+  "page": 69,
+  "total_pages": 96
+}

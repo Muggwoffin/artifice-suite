@@ -13,6 +13,9 @@ they resolve `state` from `server`'s own module globals. The fixture below
 patches `server.state` directly for that reason.
 """
 
+import socket
+import sys
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -230,6 +233,192 @@ def test_preview_returns_text_confidence_and_diff(client, tmp_path):
     assert body["confidence_tier"] == "high"
     # a word actually changed between raw and cleaned, so a range exists
     assert body["diff"]["raw_ranges"] or body["diff"]["cleaned_ranges"]
+
+
+# --------------------------------------------------------------------------- #
+# preview: source image (zoom/pan pane) + raw-text correction
+# --------------------------------------------------------------------------- #
+
+def test_image_route_404s_for_unknown_item(client):
+    res = client.get("/api/queue/does-not-exist/image")
+    assert res.status_code == 404
+
+
+def test_image_route_passes_jpg_through_unchanged(client, tmp_path):
+    f = tmp_path / "a.jpg"
+    f.write_bytes(b"\xff\xd8\xff-fake-jpeg-bytes")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    res = client.get(f"/api/queue/{item_id}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/jpeg"
+    assert res.content == b"\xff\xd8\xff-fake-jpeg-bytes"
+
+
+def test_image_route_converts_tiff_to_png(client, tmp_path, monkeypatch):
+    # No TIFF writer is available in this environment (Pillow is deliberately
+    # not a dependency), so the conversion call itself is mocked rather than
+    # exercised against a real TIFF file — the same class of trade-off the
+    # rest of this suite makes for real model calls.
+    import fitz
+
+    f = tmp_path / "a.tif"
+    f.write_bytes(b"not-a-real-tiff")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    class FakePixmap:
+        def __init__(self, path):
+            assert path == str(f)
+
+        def tobytes(self, fmt):
+            assert fmt == "png"
+            return b"\x89PNG-fake-bytes"
+
+    monkeypatch.setattr(fitz, "Pixmap", FakePixmap)
+
+    res = client.get(f"/api/queue/{item_id}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/png"
+    assert res.content == b"\x89PNG-fake-bytes"
+
+
+def test_image_route_renders_only_the_pdf_page_item_points_at(client, tmp_path):
+    import fitz
+
+    from src.ocr_pipeline.jobs import JobItem
+
+    pdf_path = tmp_path / "doc.pdf"
+    doc = fitz.open()
+    doc.new_page(width=200, height=100)  # page 0: 2:1 landscape
+    doc.new_page(width=50, height=150)   # page 1: 1:3 portrait — the one requested
+    doc.new_page(width=300, height=100)  # page 2: 3:1 landscape
+    doc.save(str(pdf_path))
+    doc.close()
+
+    item = JobItem(path=str(pdf_path), page=1)
+    server.state.add_items([item])
+    item_id = server.state.queue_snapshot()[-1]["id"]
+
+    res = client.get(f"/api/queue/{item_id}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/png"
+
+    rendered = fitz.Pixmap(res.content)
+    # Page 1's aspect ratio (tall) is distinct from both its neighbours
+    # (wide) — this would fail if page 0 or page 2 were rendered instead.
+    assert rendered.height > rendered.width
+    assert rendered.width not in (200 * 300 // 72, 300 * 300 // 72)
+
+
+def test_image_route_caps_an_oversized_pdf_page(client, tmp_path):
+    import fitz
+
+    from src.ocr_pipeline.jobs import JobItem
+    from src.ocr_pipeline.web.runtime import IMAGE_MAX_LONG_EDGE
+
+    pdf_path = tmp_path / "huge.pdf"
+    doc = fitz.open()
+    doc.new_page(width=2000, height=1000)  # long edge at 300dpi would be ~8333px
+    doc.save(str(pdf_path))
+    doc.close()
+
+    item = JobItem(path=str(pdf_path), page=0)
+    server.state.add_items([item])
+    item_id = server.state.queue_snapshot()[-1]["id"]
+
+    res = client.get(f"/api/queue/{item_id}/image")
+    rendered = fitz.Pixmap(res.content)
+    assert max(rendered.width, rendered.height) <= IMAGE_MAX_LONG_EDGE
+
+
+def test_raw_text_route_404s_for_unknown_item(client):
+    res = client.post("/api/queue/does-not-exist/raw-text", json={"text": "x"})
+    assert res.status_code == 404
+
+
+def test_raw_text_save_updates_in_memory_only_when_no_output_exists(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    item = server.state.get(item_id)
+    item.results = {"raw": {"extracted_text": "origianl typo"}}
+
+    res = client.post(f"/api/queue/{item_id}/raw-text", json={"text": "original corrected"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["raw"] == "original corrected"
+    assert item.results["raw"]["extracted_text"] == "original corrected"
+    # nothing on disk to touch — no output dir was ever created for this stem
+    assert not (tmp_path / "raw_ocr").exists()
+
+
+def test_raw_text_save_overwrites_disk_output_preserving_other_provenance(client, tmp_path):
+    import json as jsonlib
+
+    output_dir = tmp_path / "output"
+    text_dir = output_dir / "raw_ocr" / "text"
+    json_dir = output_dir / "raw_ocr" / "json"
+    text_dir.mkdir(parents=True)
+    json_dir.mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = server.state.get(item_id)
+    item.results = {"raw": {"extracted_text": "garbld txt"}}
+
+    (text_dir / f"{item.stem}.txt").write_text("garbld txt", encoding="utf-8")
+    original_json = {
+        "source_file": str(f), "stage": "raw_ocr", "extracted_text": "garbld txt",
+        "engine": "lm-studio", "model": "some-vision-model",
+        "ocr_prompt": "OCR: Extract all visible text...",
+        "timestamp": "2026-01-01T00:00:00+00:00", "page": 1, "total_pages": 1,
+    }
+    (json_dir / f"{item.stem}.json").write_text(jsonlib.dumps(original_json), encoding="utf-8")
+
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    res = client.post(f"/api/queue/{item_id}/raw-text", json={"text": "corrected text"})
+    assert res.status_code == 200
+
+    assert (text_dir / f"{item.stem}.txt").read_text(encoding="utf-8") == "corrected text"
+
+    saved = jsonlib.loads((json_dir / f"{item.stem}.json").read_text(encoding="utf-8"))
+    assert saved["extracted_text"] == "corrected text"
+    assert saved["edited"] is True
+    assert "edited_at" in saved
+    # everything about the *original* OCR pass is untouched
+    for key in ("engine", "model", "ocr_prompt", "timestamp", "source_file", "page", "total_pages"):
+        assert saved[key] == original_json[key]
+
+
+def test_raw_text_save_never_touches_cleaned_or_translated_dirs(client, tmp_path):
+    output_dir = tmp_path / "output"
+    (output_dir / "raw_ocr" / "text").mkdir(parents=True)
+    (output_dir / "raw_ocr" / "json").mkdir(parents=True)
+    (output_dir / "cleaned" / "text").mkdir(parents=True)
+    (output_dir / "translated" / "text").mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = server.state.get(item_id)
+
+    (output_dir / "raw_ocr" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
+    (output_dir / "raw_ocr" / "json" / f"{item.stem}.json").write_text(
+        '{"extracted_text": "orig"}', encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    client.post(f"/api/queue/{item_id}/raw-text", json={"text": "edited"})
+
+    assert list((output_dir / "cleaned" / "text").iterdir()) == []
+    assert list((output_dir / "translated" / "text").iterdir()) == []
 
 
 # --------------------------------------------------------------------------- #
@@ -497,3 +686,142 @@ def test_tropy_send_write_reports_blockers_as_409(client, tropy_project):
         "project": str(tropy_project), "targets": [],
     })
     assert res.status_code == 409
+
+
+# --------------------------------------------------------------------------- #
+# bootstrap: waiting for the background uvicorn thread before opening a window
+# --------------------------------------------------------------------------- #
+#
+# `main()` starts uvicorn in a background thread and then immediately opens a
+# window (native or browser) at its URL. Caught live: the window can win that
+# race and load before the socket is bound, showing a connection-refused
+# error on first launch. `_wait_for_server` is the fix; these pin the two
+# outcomes it has to get right.
+
+def test_wait_for_server_returns_true_once_something_is_listening():
+    import threading
+
+    from src.ocr_pipeline.web.server import _wait_for_server
+
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    port = srv.getsockname()[1]
+    accepted = threading.Event()
+
+    # Delay the "server" coming up, the same shape as uvicorn's own startup
+    # lag, to prove this actually polls rather than checking once.
+    def open_late():
+        import time
+        time.sleep(0.3)
+        conn, _ = srv.accept()
+        conn.close()
+        accepted.set()
+
+    threading.Thread(target=open_late, daemon=True).start()
+    try:
+        assert _wait_for_server(port, timeout=3.0) is True
+        accepted.wait(timeout=2.0)  # let accept() finish before srv.close()
+    finally:
+        srv.close()
+
+
+def test_wait_for_server_gives_up_after_timeout():
+    from src.ocr_pipeline.web.server import _wait_for_server
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        never_listening_port = s.getsockname()[1]
+    # The socket is closed again immediately, so nothing is listening on this
+    # port — a short timeout keeps the test itself fast.
+    assert _wait_for_server(never_listening_port, timeout=0.5) is False
+
+
+# --------------------------------------------------------------------------- #
+# bootstrap: reporting it when the server thread never comes up
+# --------------------------------------------------------------------------- #
+#
+# `_wait_for_server` correctly detects the timeout above, but `main()` used to
+# open the pywebview/browser window anyway with just a print() — invisible in
+# a `.pyw` process, which has no console. That's exactly the "OCR Pipeline"
+# window showing Edge WebView2's connection-refused page with zero
+# explanation. These pin the fix: the exception (if any) is captured off the
+# background thread and actually surfaced instead of silently discarded.
+
+def test_start_server_thread_captures_an_exception_from_uvicorn(monkeypatch):
+    import uvicorn
+
+    from src.ocr_pipeline.web.server import _start_server_thread
+
+    monkeypatch.setattr(uvicorn, "run", lambda *a, **k: (_ for _ in ()).throw(
+        RuntimeError("port already in use")))
+
+    thread, errors = _start_server_thread(59999)
+    thread.join(timeout=2.0)
+    assert len(errors) == 1
+    assert isinstance(errors[0], RuntimeError)
+    assert "port already in use" in str(errors[0])
+
+
+def test_report_startup_failure_prints_the_captured_exception(monkeypatch, capsys):
+    from src.ocr_pipeline.web.server import _report_startup_failure
+
+    monkeypatch.setattr("tkinter.messagebox.showerror", lambda *a, **k: None)
+
+    class FakeThread:
+        def is_alive(self):
+            return False
+
+    _report_startup_failure(5099, FakeThread(), [ValueError("bad config")])
+    out = capsys.readouterr().out
+    assert "5099" in out
+    assert "ValueError" in out
+    assert "bad config" in out
+
+
+def test_report_startup_failure_explains_a_plain_timeout(monkeypatch, capsys):
+    from src.ocr_pipeline.web.server import _report_startup_failure
+
+    monkeypatch.setattr("tkinter.messagebox.showerror", lambda *a, **k: None)
+
+    class FakeThread:
+        def is_alive(self):
+            return True
+
+    _report_startup_failure(5099, FakeThread(), [])
+    out = capsys.readouterr().out
+    assert "No response within 10s" in out
+
+
+# --------------------------------------------------------------------------- #
+# bootstrap: sys.stdout/stderr are None in a real (no-terminal) .pyw launch
+# --------------------------------------------------------------------------- #
+#
+# Confirmed live: a genuine double-click of the desktop shortcut (fresh
+# reboot, nothing else holding the port) crashed with
+# "ValueError: Unable to configure formatter 'default'" — uvicorn's logging
+# setup tries to attach a StreamHandler to sys.stderr, which is None (not
+# just quiet) in a truly consoleless process. Reproduced directly by setting
+# sys.stdout/stderr to None and calling logging.config.dictConfig on
+# uvicorn's own LOGGING_CONFIG.
+
+def test_ensure_std_streams_replaces_none_streams(monkeypatch):
+    from src.ocr_pipeline.web.server import _ensure_std_streams
+
+    monkeypatch.setattr(sys, "stdout", None)
+    monkeypatch.setattr(sys, "stderr", None)
+
+    _ensure_std_streams()
+
+    assert sys.stdout is not None
+    assert sys.stderr is not None
+    sys.stdout.write("this must not raise\n")
+    sys.stderr.write("neither must this\n")
+
+
+def test_ensure_std_streams_leaves_real_streams_alone(monkeypatch, capsys):
+    from src.ocr_pipeline.web.server import _ensure_std_streams
+
+    _ensure_std_streams()
+    print("still visible to capsys")
+    assert "still visible to capsys" in capsys.readouterr().out

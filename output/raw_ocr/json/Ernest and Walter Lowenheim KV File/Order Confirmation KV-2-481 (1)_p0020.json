@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Our ref: P.F. 49542/L.5.(3).\nHome Office ref: L.4050 and L.5027\n\n19th September 1941.\n\nDear Prestige,\n\nReference our telephone conversation this morning.\n\nI much regret that the copies of these letters were omitted from the papers I sent to you yesterday. They are, as you see, not of great importance, but they explain the first paragraph of our final report to the Burst Tribunal dated 23.6.41.\n\nYours sincerely,\n\nW.C. Edwards.\n\nH.H.L. Prestige Esq.,\nHome Office,\nBournemouth.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:53:30.255600+00:00",
+  "page": 20,
+  "total_pages": 64
+}

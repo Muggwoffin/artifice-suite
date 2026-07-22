@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY: Original in P.F.45807 vol.5. 221b\n\nTRANSLATION of INT. LETTER from GROEHL to OTTEN\n\nParis, 18.11.39.\n\nL.K.\n\nNow we've got it! Enclosed are two cards of which P. has had 50,000 copies printed and which he had sent to me here to-day.\n\nHe seems to have fallen into the trap of the Nationalbolshevist circles. After Hitler, Stalin, that is the keyword of the Comintern. It is just as stupid as the poster in which Stalin is offering Hitler assistance. That's what the Communists want! That too is the watchword of the French KP. That is what THOREZ wants.\n\nWe must briefly and clearly explain that Stalin will not follow Hitler! There must be no defeatism as far as that is concerned.\n\nAs propaganda it is simply idiotic - why don't we get Stalin to apy for the whole business?\n\nThe very shape shows that the man who had them made has no idea of what he is doing. They won't fit into any ordinary envelope. Therefore quite useless.\n\nIn haste, letter following,\n\nYours, Dante.\n\nYou must keep this from Madame (?)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:55:42.408980+00:00",
+  "page": 85,
+  "total_pages": 96
+}

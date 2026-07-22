@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From National Provincial Bank, Cambridge.\n\nTo A.S. FINKELSTEIN.\n\nDate of Letter 1.1.36.\n\nDate of Postmark 1.1.36.\n\nSUMMARY OF CONTENTS\n\nRegrets an overdraft cannot be granted only on the security of 750 shares of the Cellulose Compositions Company, but will be glad to assist if FINKELSTEIN will make further proposals.\n\nEnclosures: letter from Cumberland Hotel, about translation work FINKELSTEIN is to do at the rate of \u00a34 per 16 pages, and other literary work.\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date) 6.1.36.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:11:12.174419+00:00",
+  "page": 34,
+  "total_pages": 130
+}

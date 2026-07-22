@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY.\nAkademische Verlagsgesellschaft M.B.H.\nLeipzig C I\nSchu/ke\nLeipzig C 1, Den 20. Mai 1935\nHerrn\nDr. Finkelstein\n13, Shelford Park\nGreat shelford\nEngland\nSehr geehrter Herr Doktor.\n\nWir erhielten Ihr freundliches Schreiben vom 10.5. und nahmen davon Kenntnis, dass Sie mit unserer Abrechnung \u00fcbereinstimmen.\n\nF\u00fcr Ihre Arbeit \"Derriswurzel und Rotenon\" zahlten wir am 16.11.33 an Fr\u00e4ulein Karen Finkelstein, Berlin, einen Betrag von RM 22.-. Diese Angelegenheit d\u00fcrfte sich somit erledigt haben. Wir sind bereit, Ihnen monatlich einen Betrag von 10.- zur Verf\u00fcgung zu stellen, die p\u00fcnktliche Einhaltung unserer Zahlungen h\u00e4ngt jedoch von der jeweiligen Genehmigung der Devisenbeh\u00f6rde ab.\n\nMit vorz\u00fcglicher Hochachtung\nganz ergebenst\nAkademische Verlagsgesellschaft M.B.H.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:55:45.277859+00:00",
+  "page": 138,
+  "total_pages": 143
+}

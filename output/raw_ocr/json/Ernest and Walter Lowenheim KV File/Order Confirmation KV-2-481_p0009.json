@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "MINUTE SHEET.\n\nI discussed this case with D.D.F. and A.D.F.2. in view of Serial 96a, and Minute 97.\n\nWhen I saw on 16.5.41 he admitted that his knowledge of Walter LOEWENHEIM's visit to Holland was not \"first hand\" information, but suggested that might be able to give more details. As was at that time very much involved with another case which I was investigating and his association with that case had not been satisfactorily cleared up, I thought it better not to interview himself, but to obtain a report from him through S.O.2.\n\nThe investigations into the other case involving have, however, now been narrowed down and D.D.F. and A.D.F.2. agreed, in view of Minute 97, that there was no reason why should not now be interviewed.\n\nR. Pilkington.\n\nI made arrangements with Mr. Younger of B.2. by telephone to see with in London at 11 a.m. on 13.10.41.\n\nI also spoke by telephone to Mrs. Lambert of E.3. and arranged that she would do what she could to expedite the proposed meeting between Source and Mrs.\n\nWhilst in London on 10.10.41 I reported this orally to D.D.E. as Lord Swinton had, I understood, telephoned to D.D.E. to enquire about the position of the case.\n\nR. Pilkington.\n\nNote of interview with and re the LOEWENHEIMS. From B.O.T. asking for reply to 84a.\n\nA.D.F.\n\nWill you please see the note at 100a of my interview with and on 13.10.41.\n\nYou will see that knows nothing of Walter LOEWENHEIM's visit to Holland.\n\nThe following brief notes deal with the main points",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:12:51.720844+00:00",
+  "page": 9,
+  "total_pages": 68
+}

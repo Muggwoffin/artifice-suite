@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nSUBJECT:-\n\n27.4.40, and 29.4.40. In two letters of these dates, addressed to Karl OTTEN, Karl GROEHL enclosed cuttings from French papers dealing with THYSSEN. He also referred to a letter written by THYSSEN, and wondered whether it was genuine in the light of these newspaper articles.\n\nHe mentions \"Erich\" and the progress of his work in general, remarking that he has found good and helpful friends.\n\nEnclosed in each letter was a circular for distribution in Germany, containing anti-Nazi propaganda.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:53:49.919062+00:00",
+  "page": 70,
+  "total_pages": 96
+}

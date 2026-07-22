@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\401aa01628e87a910b126024268e5670.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "B.26\nFor B.26 use ONLY.\nM15 - PLEASE CARD 25s\n\nM.I.5 REGISTRY: Have you traces, please, of:-\n\nDate 9 Dec 1944\n\nSURNAME\nName at birth if different, or if known by any other name\nvon RAUSCHENPLAT\n\nFull Christian names\nHELLMUT\n\nDate & place of birth\n2 October 1896, Dresden, Germany.\n\nNATIONALITY\nNationality at birth (If different from above)\n\nFull name, nationality at birth, and place of birth of:-\nFather\nMother\nHusband/Wife\nFather: Adolf von Rauschenplat, Bernburg, Anhalt, German (deceased).\nMother: German, Alise von Rauschenplat, Glauchau, Saxony.\n\nIf subject of enquiry or parents naturalized, state No. date and name in which certificate was granted.\n\nPresent private address\n2 Clifton Gardens, London, N.W. 11\n\nPermanent address\n\nNational Registration No.\nIdentity Card No. BCCP 159/2\nAlien Reg. 661028\n\nBrief particulars of previous employment\nFree lance writer\n\nParticulars of relatives in enemy occupied or controlled countries\nMother: Baden-Baden, Oos.\n\nInformation to assist identification if not covered by above:-\n\nREMARKS BY M.I.5:-\n\nTHIS IS A COPY\nORIGINAL DOCUMENT RETAINED IN DEPARTMENT UNDER SECTION 3 (4) OF THE PUBLIC RECORDS ACT 1958. Nov 2010",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:33:21.135651+00:00",
+  "page": 12,
+  "total_pages": 24
+}

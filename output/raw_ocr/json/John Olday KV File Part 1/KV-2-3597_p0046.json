@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Room 055,\n\nP.F.45000/E.3. 7th January, 1942.\n\nDear Colonel Adams,\n\nThank you for your letter of the 23rd December 1941. I am enclosing herewith a brief summary of the information which we have regarding QLDAG. You will see that as far as it goes it confirms the story which he told us and does not add very much to it. As I am sure you will realise, some of our information is derived from very confidential documents.\n\nI must apologise for my delay in answering your letter, which is due to the perennial difficulty of getting hold of files.\n\nYours sincerely,\n\nC. Binney.\n\nLt. Col. C.C. Adams,\nA.G.14, The War Office,\nCHELTENHAM.\n\nCB/AC",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:24:42.867141+00:00",
+  "page": 46,
+  "total_pages": 98
+}

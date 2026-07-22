@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "In reply, state NUMBER and DATE\nCX/7307, dated 20.3.36.\n\n4.I.5. (Mr. Cumming)\n\nInternational Medical Bulletin.\n\nReference your PF.43817/DS9, dated 13.6.35.:\n\nIt may possibly interest you to know that, according to information received from [redacted], the \"International Medical Bulletin\", published at Caslavsk\u00e1 15, Prague XII, is printed at the printing office \"Solidarita\", which also belongs to the Social Democrats. The Bulletin is edited by two Czech doctors, A. TUREK and NEVEKLUNOVA; both are members of the Czech Social Democrat Party and the former is also a member of the Prague Health Insurance Office.\n\nadded that no person of the name of E. SOLDA or SOBVA could be traced and suggested that it might be a pseudonym of an occasional contributor, who had no connexion with the editorial office of the Bulletin.\n\nfor V.V.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:04:07.502922+00:00",
+  "page": 70,
+  "total_pages": 104
+}

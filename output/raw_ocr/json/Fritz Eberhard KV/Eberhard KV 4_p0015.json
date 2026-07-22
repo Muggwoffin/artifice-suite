@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8466790e6bc41f1fdde86057757ac8ec.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Telephone No. GROSVENOR 4741\n\nTelephone TEMPLE BAR 1581\n\nBOX No. 100\nWESTERN DISTRICT POST OFFICE\nWIMPOLE STREET\nLONDON, W. 1\n\nBOX No. 1,\nWESTERN CENTRAL DISTRICT POST OFFICE,\nNEW OXFORD STREET,\nLONDON, W.C. 1\n\nJune 6th, 1942.\n\nDear Osborne,\n\nI write to acknowledge with thanks receipt of your letter of June 4th enclosing the Certificate of Registration of Mr. Rauschenplat, in which the \"New Style\" A.P.A. certificate has been cancelled.\n\nYours sincerely,\n\nWalter Arwan Roberts\n\nSale 9.6.42 ES\n\nF. P. Osborne Esq.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:29:49.525335+00:00",
+  "page": 15,
+  "total_pages": 19
+}

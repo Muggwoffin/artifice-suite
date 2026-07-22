@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S.B. No. 1 (Flimsy).\nSpecial Report\nSUBJECT\nArthur William OLDAG.\nReference to Papers.\nMETROPOLITAN POLICE.\nSPECIAL BRANCH,\nMetropolitan Police,\nScotland House,\n16th September, 9.\nWith reference to telephone message at 4-40 p.m. this day from Colonel Venn, Command Security Officer, London area, regarding a man named OLDAG, who had just arrived from Germany, and who had suggested that he could give some information regarding conditions in Germany:-\n\nIn company with P.C. Mann I proceeded to Waterloo Station and interviewed the above man, who produced British passport No. C. 34071 issued by the Consul General in Hamburg on 12th April, 1937 in the name of Arthur William OLDAG, in which he is described as an author, born in London on 10th April, 1905 and now domiciled in Hamburg.\n\nOLDAG stated that he was the illegitimate child of Anna OLDAG, a German woman, who had taken him to Germany at an early age. He had been cared for and educated by his grandmother in Kiel and later at Hamburg. He remained in the latter town until June, 1937, when he decided to return to England. Prior to this time, however, he had been a most active member of the Young Communist League of Germany, and had latterly earned his living by submitting cartoons to various Hamburg newspapers. He was obliged to leave Germany in view of his refusal to join the Nazi trade union for journalists.\n\nOn arriving in England OLDAG approached various publishers and art editors in Fleet Street - the names of which, he stated, he was unable to remember - and in this manner contrived to earn a livelihood. On 13th September, 1938 he married an Hungarian woman named Hilda MEISEL, a",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:30:15.555989+00:00",
+  "page": 85,
+  "total_pages": 98
+}

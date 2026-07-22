@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Register No.        Minute Sheet No.\n\n27.11.45  From H.Q. Western Command enclosing copies of two letters written to OLDAG.  145\n\n10.1.46.  From HQ., Western Command re OLDAG.  146\n\n17.1.46.  From HQ. Northern Command re OLDAG.  147\n\n30.1.46.  To HQ. Northern Command in reply to 147a and 148a re OLDAG.  148\n\n4.3.46.  From H.Q. Northern Command re OLDAG.  149\n\nF.3. Mr. Mitchell.\n\nYou might care to see the final paragraphs of 147a from Liddington, which would seem to refer to a number of OLDAG's colleagues in Glasgow.\n\nF.3.m. 19.2.46.\n\nF.P.T. Tallent.\n\n13.3.46.  From H.Q. Northern Command enclosing a letter from DEAS to OLDAG and a copy of weekly outward letter from OLDAG.  150",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:38:01.878769+00:00",
+  "page": 12,
+  "total_pages": 92
+}

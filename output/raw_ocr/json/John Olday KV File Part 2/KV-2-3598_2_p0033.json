@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Freedom Press\nBelize Road 127\nN. W. 1\n\nrestriction of freedom. I am free from prison walls & wardens. My thoughts are free, my spirit is free and no power can break them. The police has so far, with all it's perfect machinery, failed to accomplish the simple task of establishing my identity. Feeling itself redoubled, I have been warned, in a real Gestapo manner, that I will feel sorry for keeping up my attitude. They expect you to deliver the noose with which they can hang you, and if you don't provide all the data, or as I do, simply ignore them, they are just as ruthless as any Gestapo or J.P.U. agent. The Court told me I will be kept in prison until I disclose my identity. Seeing what little impression that made, they now try to scare me, by putting me under observation. I shall feel complimented if the executors of an insane society declare me mad. There is hardly anything left",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:54:05.447645+00:00",
+  "page": 33,
+  "total_pages": 91
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "\"In the Soviet Union, in the land where the dictatorship of the proletariat is in force, no important political or organizational problem is ever decided by our soviets and other mass organizations, without directives from our party. In this sense, we may say that the dictatorship of the proletariat is substantially the dictatorship of the party, as the force which most effectively guides the proletariat.\"\n\nJ. Stalin, \"Leninism\", Vol. I, 1928.\n\n\"Nine hundred and nine controllers control the nation's wool. Five hundred and eighty-three controllers control the nation's timber. Between two and three thousand controllers control the nation's food. Sixty-eight dictate to the paper industry. Sixty-four settle the aluminium business. Fifty-four look after leather. Fifty-four others have become little Hitlers in hemp. There are thirty jute Commissions and fifty-one cotton Commissions. The Select Committee on Expenditure may discover that each and all of these are indispensable. But we recall that Pizarro set out to conquer Peru with only thirteen companions, while Horatio held the bridge with a couple of office boys.\"\n\n\"Evening Standard\", 25th Jan. 1940.\n\nRUSSIAN WORKER TO BRITISH WORKER:\n\"DON'T YOU SEE WHAT YOU ARE MISSING COMRADE?\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:10:03.352585+00:00",
+  "page": 46,
+  "total_pages": 57
+}

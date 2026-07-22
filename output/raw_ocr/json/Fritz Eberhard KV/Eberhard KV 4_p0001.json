@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8466790e6bc41f1fdde86057757ac8ec.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "RAUSCHENPLAT, Helmut von\n\nGerman, born Dresden, 2.10.96. R.C. 661028.\n\nThis man, who is a Doctor of Political Economy, arrived in the U.K. on 4.1.38. Until 10.6.38, he studied privately; he then applied to stay indefinitely in order to continue the preparation of a book on \"State Intervention in Economics\", which he hoped to publish in Switzerland. He then intended to take a course of English and Political Economy at the London School of Economics. He was virtually a political refugee from Germany as he was not in agreement with the present regime, but he was in receipt of \u00a33 p.w. from Miss OATTLEY (Swiss), an Assistant Newspaper Editor in Zurich. He intended eventually to go to Switzerland.\n\nIn September, 1939, an anonymous informant suggested that RAUSCHENPLAT might help the War Office, and supplied the following information about him:-\n\n\"Born about 1900, and a member of the old German nobility. From 1933 until 1937 or 38 he directed illegal underground activities in Germany. Politically he is a Socialist, but has no Communist sympathies. About 1939 he was excellently informed about the situation and the spirit of the German people. Obviously he is close contact with friends in Germany. Thus he could tell me beforehand the reaction of the German people upon the Roosevelt message some months ago, and he foretold me the Nazi-Soviet approachment.\"\n\nOn 6.12.39. S.B. reported that he was a member of the CENTRAL EUROPEAN JOINT COMMITTEE (q.v.).\n\nAddress: - 168, Lyttleton Road, N.2.\n\nContacts in the U.K.\nKAHN-FREUND, Dr. Otto.\nLOEWE, Professor Adolf.\nMembers of CENTRAL EUROPEAN JOINT COMMITTEE.\n\nContacts abroad.\nOATTLEY, Miss.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:26:40.338759+00:00",
+  "page": 1,
+  "total_pages": 19
+}

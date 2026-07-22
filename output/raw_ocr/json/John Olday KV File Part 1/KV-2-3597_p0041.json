@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Report on:-\n\nNo. 13095115 Private OLDAG, W.\n\nNotes by Commanding Officer.\n\nAge: 36\nBorn: 10.4.1905. London.\n\nNationality of Parents: Father: \"Dont know anything about my father.\"\nMother: Was German but for about 20 - 25 years has been a naturalised American.\nSelf: Believe I am a British subject. I had a National Registration Card.\n\nMother living: In U.S.A.\n\nOccupation:-\nWriter - Journalism, free lance.\n\nLanguages:-\nGerman (Can read only - Scandinavian and Dutch)\nVery good English.\n\nAbroad: Germany from 9 years old to 32 years old.\n\nPassport: Possesses a British passport made out by consul in Hamburg.\n\nSympathies: Mother: For us.\nSelf: Has been working underground against Hitler for years. Had to escape.\n\nPassport particulars.\nC 34071 issued Hamburg 12.4.37.\n\nNotes by Security.\n\nThis man's case is under active consideration, in accordance with Internal Security procedure. It is not considered that his case is a serious one. He was an active member of the Young Communist League in Germany, and as such was anti-Nazi. It is suggested that his case should continue to be pursued as an Internal Security case.\n\nP.T.O.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:24:09.014107+00:00",
+  "page": 41,
+  "total_pages": 98
+}

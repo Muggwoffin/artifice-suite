@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "the Sozeis. Thus we never get down to any work.\n\nMore to-morrow,\n\nYours,\n\nKARL.\n\nP.S. (on page 1). I want to come to England!!!! Get that fixed!\n\n\"I am sick unto death because of Beatrice!\nHave alreday had a nervous attack - in bed for 3 days.\nI must have a visa - nad come to England!\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:56:01.220217+00:00",
+  "page": 87,
+  "total_pages": 96
+}

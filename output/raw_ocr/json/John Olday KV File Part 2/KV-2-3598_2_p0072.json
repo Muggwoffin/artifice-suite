@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "C. I. D.\nCon. 14E Marsh.\nThe Inspector.\n\nArthur William OLDAG @ John OLDAY.\n\nI beg to report with reference to the letter from Major F.W. Towns, that I have made discreet enquiries and learned that the above named is not known by the Chinese residents of this Borough.\n\nThe occupier of the only Chinese restaurant in this Borough situate 271, Price Street, Birkenhead, has not seen or heard of the man.\n\nI have shown the photograph to all the persons interviewed and have made arrangements for this Office to be notified should OLDAG @ OLDAY be seen.\n\nAccording to the records at the Employment Exchange, National Registration and Food Control Office, the man has not been registered in this Borough.\n\n(Signed) A.L. Marsh Con. 14E.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:59:31.829279+00:00",
+  "page": 72,
+  "total_pages": 91
+}

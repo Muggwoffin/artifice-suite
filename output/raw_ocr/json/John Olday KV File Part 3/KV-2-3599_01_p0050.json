@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "\"J. H. Thomas, representing the railwaymen, found, early in the Strike, that his duties took him to Buckingham Palace. King George asked him a number of questions, and expressed his sympathy for the miners. At the end of the talk, His Majesty, who was gravely disturbed, remarked, it is said: 'Well, Thomas, if the worst happens, I suppose all this\u2014(with a gesture indicating his surroundings)\u2014will vanish?' Fortunately for Britain and the world, it did not come to the worst. The Trades Unions saw to that.\"\nJ. R. Clynes, 'Memoirs'.\n\n\"It must not be forgotten that, apart from the rights and wrongs of the calling of a General Strike, there would in any case, with the miners' lockout, have been widespread unofficial fighting in all parts of the country, which would have produced anarchy in the movement.\"\nErnest Bevin in 'The Record'.\n\n\"What I dreaded about this strike more than anything else was this: if by any chance it should have got out of the hands of those who would be able to exercise some control, every sane man knows what would have happened. I thank God it never did.\"\nJ. H. Thomas in the House of Commons, 13th May, 1926.\n\nDON'T KILL HIM FOR GOD'S SAKE!",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:10:31.476044+00:00",
+  "page": 50,
+  "total_pages": 57
+}

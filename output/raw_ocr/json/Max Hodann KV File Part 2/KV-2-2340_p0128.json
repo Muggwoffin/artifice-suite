@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "an obige Adresse, was Du \u00fcber ihn weisst.\nSimmel, dem es offenbar ganz gut geht, hat diese Adresse:\n961 South Manhattan Place  Los Angeles  California\nHier sind u.a. Gertrud Bartenhewer, Kostja Zetk., Anni Reich etc.\nFritz W. arbeitet an einem Mont. Bl. \u00fcber mediz. Dinge d.h. pharmaz. Reklamesachen.\nSchreibe bitte bald und wenn Du kannst, schicke gelegentlich wieder etwas.\nViela Gr\u00fc\u00dfe von uns Allen\nP.S. Wenn Du Norman Haire siehst, sage ihn bitte von uns, dass wir \u00e4rgerlich sind, dass er uns nicht einmal Abonnementsgeb\u00fchren eingesandt hat.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:54:43.582707+00:00",
+  "page": 128,
+  "total_pages": 143
+}

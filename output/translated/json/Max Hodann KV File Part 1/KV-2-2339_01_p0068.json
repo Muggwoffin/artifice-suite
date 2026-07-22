@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "33",
+  "translated_text": "[Translation Required - Please provide the text to be translated.]\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:46:43.615527+00:00",
+  "confidence": {
+    "score": 1,
+    "reasoning": "The original text is incomplete and contains only a number. Without any source text to translate or clean up, it's impossible to assess accuracy.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 60
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Gotz\nGrau\nGrimm\nGunther\nGerda L.\nHaber\nHanna\nHart\nHeine\nHeinrich\nHella\nHeeb\nHermann\nHerz\nHilferding\nHochdorf\nHobs\nHelene\nHoffstadt\nIGB\nInl.-Leute\nIrene\nITF\nJenny\nJohn\nKemp\nKI\nKP\nKriedemann\nKuhn\nKurier\nKreditbrief\nLange\nLesser\nLessing\nLilli\nLorenz\nLuxemburg\nMargot\nMary (Lilli)\nMichel\nMunzenberg\nNB\nNB-Org\nNeuberg\nNemann\nContard (Ludwig Lazarus)\nSchwarz\nHeitmann (Leader Swiss S.D. Party)\nHerford\nFabig\nRau (Theodore Stein, officer in Swiss Army)\nDieter (Mrs Bloch)\nWeichert\nWachs\nJung (?)\nAhrend (Heinreich Jakubowicz)\nWinzer (Mrs Walter Lowenheim\nHaase\nHoffmann (H. Wiskaw)\nIlling (Member of Reichstag)\nIseler (former Finance Minister, Germany)\nDorf\nSmith, Percy\nBusch (Mrs. Franz Schleiter)\nWehrli\nInt. Handelskammer (International Trade Union Council\nAlpine Montan (Member of N.B., now in London.\nSuse Hoffmeister (daughter of Hoffstadt above)\nTransatlantik (International Transport Federation)\nMauthner (Mrs Franz Sperling)\nKreutz\nZimmermann (Member of Frank's party)\nKalikartell (Comintern)\nKraftwerk (Communist Party)\nLichter\nUnger\nKaufer\nZeichnung\nKurz\nMetzner/Reiss\nBergmann\nSalomon (Mrs Rahmer, now in London, husband in Australia)\nTaussig\nLiechtenstein\nSchwarz\nMiller\nNeder (Waldemar von Knoerringen, ex-Onchan.\nNager (ex member C.P. Murdered by C.P. in Paris)\nMax Weber (Neubeginnen)\nElemente der Physik\nUnsre Firma - do -\nOtto (Eliasberg)\nSchott (H. Jakubowicz)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:02:36.212912+00:00",
+  "page": 17,
+  "total_pages": 60
+}

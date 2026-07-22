@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET\nPF.45807/B.4b.\n25th November 1939.\n\nDear Colonel Vivian,\n\nWith reference to PF.45807/B.4b. of 28.10.39., herewith attached for your information a copy of the translation of an intercepted letter from Karl GIMBELL to OTTEN.\n\nYours sincerely,\n\nF.C.D.\n\nLt.-Colonel V. Vivian, C.B.E.\nS.I.S.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:55:26.112571+00:00",
+  "page": 83,
+  "total_pages": 96
+}

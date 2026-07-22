@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "1. (a) KINN, Alexandre, born at Differdange, Luxembourg, on 2.9.08, son of Francois and de ARENSDORF, Marie, law student, arrived in Brussels on 15.11.34, and lived in the 'Students Ct 22. Avenue Paul Heger, Brussels. He registered with the local Authorities on 19.2.35 and left the address given above on 31.5.35, presumably to return to Differdange, where his address was 1. rue du Val Ste Croix.\n\nNothing was reported to his detriment during his stay in Belgium.\n\nIn Luxembourg he was fined (26.3.35) Frs.30. for being drunk.\n\n(b) ZIELINSKI, Gustave, also known as REITH-ZIELINSKI, Gustave, born at Ichenhouse, Bavaria, on 25.7.94, arrived at Bouillon on 16.6.34. He married NUV, n\u00e9e REITH, born Berlin 15.7.90.\n\nThis man and his wife held a joint passport No.393/33 issued by the German Consul at Alexandria on 24.4.33, and stated that they came from Alexandria where their address has been 13. ru Busiris. They left Bouillon on 28.6.34 and have since lived at Spa, Heusy, and Brussels. Their address at the present time is 13. Avenue des Hortensias, Schaerbeek, Brussels.\n\nZIELINSKI stated that he had been a lawyer at the Berlin Court of Appeal until he left the country in February 1932. Since then he has been struck off the list of lawyers owing to the fact that he was not of Aryan race. His address in Berlin was 34. Ansbacher-strasse. On leaving Germany, he proceeded to Alexandria.\n\nHe collaborated with the lawyers, DE BOTTON, Joseph, and MIZRAHI, Joseph, and was admitted as a lawyer before the German Consulate Tribunal.\n\nOn 24.6.33 he went to Palestine and then to Zurich, Switzerland, care of KARASSEK, 114. Weinbergstrasse.\n\nZIELINSKI receives voluminous correspondence from abroad, also newspapers.\n\nHis occupation and means of",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:05:57.940881+00:00",
+  "page": 88,
+  "total_pages": 104
+}

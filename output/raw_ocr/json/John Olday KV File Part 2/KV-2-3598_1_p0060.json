@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CONFIDENTIAL.\n\nOur Ref: PF.66074Y/F3m.\n\n17th September 1945.\n\nDear Baker,\n\nPte. OIDAG, A.W.\n\nI have considerable interest in this man as one of the leading figures in the Freedom Press Anarchist Movement. He was not one of the four tried last April but this was largely because he was already in prison for an identity card offence. This was a civil crime and there is still outstanding against him a charge for desertion from the 27th March 1943 until apprehended by civil power on 17th November 1944.\n\nOIDAG is due to be released from Brixton on the 24th of this month and I understand that he will be escorted to No. 12 Pioneer Corps Holding & Training Unit, which I believe to be at Prestatyn. Though I expect that he will be sentenced to a term of detention and therefore not worry us for some time to come, I would be grateful if you could make arrangements to discover the result of the Court Martial and if possible any statement of interest to us that he makes to the Court and the standard of his behaviour generally during his Court Martial.\n\nYours sincerely,\n\nCaptain F.P.T. Tallent.\n\nMajor H.E.R. Baker, R.A.,\nHeadquarters, Western Command;",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:45:29.143224+00:00",
+  "page": 60,
+  "total_pages": 92
+}

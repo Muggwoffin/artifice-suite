@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "0.11.32\nInt. wire from VERSCHOYLE, Moscow to S.C.R., London, dated 10.11.32\n\n1.\n\n2.\n\n4.1.33\nSB report 335/MP/2014 re -\n\n2a\n\n3.\n\n21.1.33\nTo M.I.1c re -\n\n3a\n\n4.\n\nIntercepted letter from GOOLD-VERSCHOYLE to ROTHSTEIN.\n\n4a.\n\n27.3.33\nIntercepted letter from GOOLD-VERSCHOYLE to C.P.O.B., London.\n\n5a\n\n31.3.33\nTo C.C. Stafford making enquiries re. GOOLD-VERSCHOYLE.\n\n6a\n\nS.3(a)\nWill you, please, obtain Passport papers for GOOLD-VERSCHOYLE, B.\n\nS.10\n1.4.33.\n\n8.\n\nS.10.\nPassport Office have no trace of B. GOOLD-VERSCHOYLE. I enclose Passport Office papers for Hamilton N.S. GOOLD-VERSCHOYLE, which they have forwarded, in case they are of interest.\n\nS.3.a.\n10.4.33.\n\n9.\n\nPassport papers of GOOLD-VERSCHOYLE returned to S.3a.\n\n12.4.33.\n\n18.4.33.\nFrom C.C. Stafford in reply to 6a.\n\n10a.\n\n18.4.33.\nTo C.C. Stafford acknowledging 10a.\n\n11a\n\n1.6.33.\nFrom C.C. Birmingham re VERSCHOYLE, PHIPSTONE & JACOBY.\n\n12a.\n\n[P.T. Over.]",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:45:22.473317+00:00",
+  "page": 66,
+  "total_pages": 103
+}

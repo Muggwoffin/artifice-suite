@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "LABOUR EXCHANGE\n194\u2014?\nTHE PIT\nTO THE FRONT\nCONSCRIPT YOUTH 1944",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:14:22.395778+00:00",
+  "page": 30,
+  "total_pages": 71
+}

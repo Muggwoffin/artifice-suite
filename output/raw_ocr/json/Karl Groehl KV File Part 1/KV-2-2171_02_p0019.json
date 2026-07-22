@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY. Original in P.F. 45807 OTTEN, vol.4, 163a.\n\n(SOURCE: Intercepted letter from GROEHL (postmark Paris) to OTTEN, dated 27.4.39., in PF.45807, 162a.)\n\nSECRET.\nPF.45807/B4b. 1st May 1939.\n\nDear Major Vivian,\n\nI have just seen a letter passing from GROEHL to OTTEN, in which GROEHL says that the French authorities have now given him a permit for a month's residence which has enable him to acquire a \"Titre de Voyage\".\n\nHe is now proposing to approach the English Consulate, if he can get a suitable invitation to England, and hopes to be in London in the course of the next week. I am not proposing to take any action on this information.\n\nYours sincerely,\n\n(sd.) K.G.Y.\n\nMajor V. Vivian, C.B.E.\nS.I.S.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:59:56.653617+00:00",
+  "page": 19,
+  "total_pages": 102
+}

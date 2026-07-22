@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 81/rev. 12.53\n\nExtract for File No.: L. 158/2374. Name: EBERHARD.\n\nOriginal in File No.: O.P. 1507. Vol.: Serial: 34a. Receipt Date: 29.1.59.\n\nOriginal from: S.D. Under Ref.: 400/58/440. Dated: 26.1.59.\n\nExtracted on: 8.3.59. by: S.H. Section: R.65.\n\nExtract from S.B. Report on the Congress for Nuclear Disarmament. (Non-Communist) Memb: EBERHARD.\n\nWith reference to my report dated 19th January, 1959, on the first European Congress for Nuclear Disarmament, in which it was stated that enquiries were in hand to identify the delegates from abroad who attended the conference:-\n\nThe official list of foreign delegates, as prepared by the Campaign for Nuclear Disarmament, 143, Fleet Street, E.C.4, contained the names of eighty Europeans, all of whom were invited to attend either as delegates from similar organisations, or, in view of their high standing in their own countries, as personalities. Of these, all but seven attended, and in the event, others made the total up to eighty seven. They were as follows:-\n\nEBERHARD, Fritz, councillor, born Dresden 2.10.96. German passport 3774419 Stuttgart 23.3.56. Arrived Dover 14.1. and left Gatwick 18.1.59. Stayed Tavistock Hotel.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:41:15.204232+00:00",
+  "page": 13,
+  "total_pages": 24
+}

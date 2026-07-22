@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "AKADEMISCHE VERLAGSGESELLSCHAFT M. B. H.\nLEIPZIG C 1\nMITGLIED DER REICHSSCHRIFTTUMSKAMMER NR. B 13149\nBANKKONTO: DRESDRER BANK LEIPZIG \u00b7 POSTSCHENCKKONTO: LEIPZIG 54837\nTELEGRAMM-ADRESSE: AKAVERLAG \u00b7 FERNSPRECHER: 14037, 28066, 70766\nSchu/Ni.\n\nLEIPZIG C 1, DEN 7. Januar 1936.\n\nHerrn\nDr. Alexis Finkelstein,\n13, Shelford Park\nGreat Shelford\nCambridge / England\n\nSehr geehrter Herr Doktor!\n\nWir gestatten uns, Ihnen h\u00f6flichst mitzuteilen, dass wir die Buchhandlung David Nutt, London, voranlasst haben, Ihnen die f\u00fcr Reisespesen verauslagten \u00a3 4.-.- zu \u00fcbersenden.\n\nMit vorz\u00fcglicher Hochachtung\nAkademische Verlagsgesellschaft m.b.H.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:08:50.866009+00:00",
+  "page": 12,
+  "total_pages": 130
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CUTTING FROM \"FREEDOM\" dated 17.11.45\n\nTHIS IS ONE OF THE MEN WHOSE FREEDOM WE DEMAND\n\nJohn Olday has been fighting for freedom\u2014and really fighting, not in Whitehall or Broadcasting House\u2014since 1919, when, at the age of fourteen he found himself at a barricade in Hamburg. He was in the thick of the German workers' struggles ever since. He was fighting Nazism while Winston Churchill was dining with Adolf Hitler. A poet, an artist, he posed as a dreamy Bohemian while secretly playing an active part in dangerous underground work against the Nazis. Many of his comrades died in concentration camps and when he finally left Germany (not until 1939), the Gestapo was at his heels.\n\nHe came to England, and later went into the army, but when he could stomach the corruption and tyranny no longer, he deserted and evaded the authorities for two years before he was caught. At the Old Bailey he was given twelve months for having a false identity card\u2014but really for scorning to recognise the authority of the court\u2014really for being an anarchist. He finished that sentence at Brixton six weeks ago and was promptly sentenced by court martial to two years' detention which he is just commencing at Stakehill. Under the present arrangement of considering cases on their individual merits, it is not unlikely that the English Gestapo (the Special Branch of Scotland Yard), will persuade the military authorities to let him do his full sentence. I am not going to comment further than that, but if John Olday was the only one, which he is not, by any means, it would make an amnesty essential.\n\n(From Philip Sansom's speech at Conway Hall, 7th November).",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:42:20.533049+00:00",
+  "page": 39,
+  "total_pages": 92
+}

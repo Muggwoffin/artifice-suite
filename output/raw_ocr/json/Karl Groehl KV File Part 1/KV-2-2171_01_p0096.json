@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSUBJECT: Karl GROEHL.\n\nOn 9.9.39, Karl GROEHL wrote to Karl OTTEN, saying that he was imprisoned in the Prison de la Sant\u00e9, Paris, and had been there since 1.9.39. He asked OTTEN to intervene on his behalf, and to talk with Mr. PRABSCH; he suggests he might be able to come to England, even if he would be interned there.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:57:21.159256+00:00",
+  "page": 96,
+  "total_pages": 96
+}

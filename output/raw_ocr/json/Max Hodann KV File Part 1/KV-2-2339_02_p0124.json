@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Mr. Cooper, Home Office, rang up this morning and said that Max HODANN has been landed for one week. He said of the Society of Friends had intervened on HODANN's behalf. She did not know HODANN personally but had called at the request of whom she knew well. The Home Office decided this was not sufficient guarantee.\n\nLater Mrs. LINDBAEK-NILSSON called and stated that she had a grant of \u00a350 from the Norwegian Academy of Science to enable her to come here and make researches into the archives of the Society of Friends and other bodies in connection with material dealing with the life of Nansen. She said she could not carry out this work without HODANN as her amanuensis. He had been working with her for the past year and she would guarantee his maintenance.\n\nHODANN has instructions to call at the Home Office in a week's time. Mr. Cooper will let us know when this man is coming so that we may arrange to have him picked up.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:35:17.578545+00:00",
+  "page": 124,
+  "total_pages": 131
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PA in PF 46464\n23rd June, 1948\n\nS. RETZLAW @ Karl GROEHL, who was in this country during the war, has been expelled from the Social Democratic Party in the Saar.\n\nUSE WITH CAUTION",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:13:24.653902+00:00",
+  "page": 13,
+  "total_pages": 90
+}

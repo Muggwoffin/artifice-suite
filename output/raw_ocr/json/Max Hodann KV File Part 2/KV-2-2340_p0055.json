@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Mr.\nDr. Max Hodann\nLONDON NW. 63\n63 Haverstock Hill\n\n5. Juli 1935\n\nLieber Freund,\n\nNr. 3 und Nr. 4 habe ich erhalten (mit ihren Anlagen).\n\nDie gew\u00fcnschte Adresse ist: 60 Cambridge Terrace, W.2\n\nHerzlichst\n\nDein R.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:46:58.812211+00:00",
+  "page": 55,
+  "total_pages": 143
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Honorar ist f\u00fcr Beilage von d. 7. pro Bogen & 10 Seiten vorgesehen. Hierzu ist beabsichtigt S. auch an anderen literarischen Hilfsarbeiten heranzuziehen. Die Arbeit soll etwa Mitte Januar beginnen.\n\nIch hoffe auf eine recht enge & erfolgreiche Zusammenarbeit und bin mit bestem Gru\u00df\n\nIhr Kurt Jacobi.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:11:47.406623+00:00",
+  "page": 40,
+  "total_pages": 130
+}

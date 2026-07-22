@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Translation of Int. W 161 C.\n\nDear Dr. HODANN,\n\nMost probably I shall go to London at the beginning of August for six weeks. I shall stay in the house of American friends, who want to visit the continent at that time. The address is Barons Court, Barons Court Road, London W 14. I shall provide my own food, in student fashion. Please write me what is the least one must spend on that. I am hoping to be able to discuss many fundamental questions with you. It is now settled that I am to go alone to the Argentine in November, so as not to become a victim of 'inequality'. I shall also help actively in the work for the refugees. I have no clear idea of the means or ways which may stand open to me. Still I can say that the High Commissioner McDONALD and his travelling companion ZUMAN have left a lot to do. The travel reports of the last are real 'Yankee cocktails' of great technical import with naive claims to humour of insipidity. It is incredible with what credulity and fresh self-confidence this journalistic scientist (or the other way round!) announces the carrying off of the social work for refugees in an aeroplane over every continent. Just think, only one day's stay in Asmirion in Paraguay, and half-hourly stops on the aerodromes of middle-America and running commentary at intervals on his profession according to a pattern. Well! The rest when we meet.\n\nHearty greetings to you and Frau LINDBACK from us all,\n\nFor, SANDELMANN.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:49:07.491307+00:00",
+  "page": 76,
+  "total_pages": 143
+}

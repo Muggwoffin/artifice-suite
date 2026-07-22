@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From. K. Groehl (Editions Asra)\nTo. K. Otten.\nDated. 30.6.38.\n\nI enclose the \"Losen\" and hope this time there will be more luck.\n\nI have received your letter of the 26th. It is a pity that Gans has not sent the picture. She will not do any housework. She is a rich girl and will learn English and English customs etc, but not wash up.\n\nYes, I must have a new invitation-letter. I am going again on Friday to the police. Perhaps I will obtain a visa and then I will write immediately so that you can send me a wonderful invitation.\n\nI will certainly raise the journey money, I have some things to tell you which I cannot write.\n\nBe sure to read the \"Basler National Zeitung\" No. 234 of Thursday evening. There is a very interesting leader on Czechoslovakia.\n\nI do not entirely believe the story about Olden. It is certainly the affair of Prince L\u00f6wenstein. Poor Prince, he enjoys crying so much, it is a pity that there aren't more funerals, as above he likes funerals orations.\n\nBut for you, an author, there is material here for work.\n\nI have given the notice to the journal again. I don't believe it will appear to-morrow, probably not before Monday, we only received it on Thursday.\n\nNaturally I would like to speak to Olden. We known each other quite well. I visited him in London in 1934.\n\nWith reference to Russia, see the enclosed notice.\n\nErich has got the offer of going to China. I have warned him the Russians will try and kill him.\n\nThe best way to try and get money here, is through the former American Ambassador, Dodd. You must go to New York.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:06:45.552101+00:00",
+  "page": 73,
+  "total_pages": 102
+}

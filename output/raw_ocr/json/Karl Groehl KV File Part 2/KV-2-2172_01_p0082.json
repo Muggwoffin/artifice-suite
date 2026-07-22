@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Folgerungen\n\nJeder Deutsche muss unmittelbar an der Wiedergutmachung teilhaben, wie auch jeder Deutsche f\u00fcr seinen Anteil am Kriege und seinen Folgen verantwortlich ist. Die Wiedergutmachung muss in erster Linie durch Gebrauchsgegenst\u00e4nde und Arbeit erfolgen, damit die Menschen in den \u00fcberfallenen L\u00e4ndern nicht Jahrzehnte auf Obdach und den n\u00f6tigsten Hausrat warten m\u00fcssen.\n\nPolitische Fehler r\u00e4chen sich wie milit\u00e4rische stets im Moment, in dem sie begangen werden. Es kann keine Entschuldigung geben f\u00fcr Partei und Gewerkschaftsf\u00fchrer, Minister, Polizeipr\u00e4sidienten und sonstige politische Funktion\u00e4re, die durch ihre gezeigte Unf\u00e4higkeit und ihre Feigheit gegen\u00fcber den Nazis an der Verw\u00fcstung Europas und der Welt Mitschuldige sind.\n\nWenn die deutsche Opposition jetzt nicht zu einer Organisation des Kampfes gegen Hitler kommt, wird die Opposition nach dem Kriege in Deutschland so machtlos sein, wie sie es nach 1918 war.\n\nHitler, der Nationalsozialismus, muss auch in Deutschland geschlagen werden. Das ist die Hauptaufgabe der Opposition.\n\nDie deutschen Refugees bzw. Emigranten, die die M\u00f6glichkeit oder Wirksamkeit einer revolution\u00e4ren Arbeit in Deutschland heute leugnen, tun das aus Ignoranz; da sie noch nie revolution\u00e4r gewirkt haben, k\u00f6nnen sie die Bedeutung und die Wirksamkeit einer konspirativen Arbeit in Deutschland auch nicht ermessen. Nur Ignoranz kann die Wirksamkeit des Spartakus-Bundes w\u00e4hrend des Weltkrieges 1914/18 zu leugnen versuchen.\n\nEine der Ursachen der mangelnden Kraft der deutschen Opposition ist der fehlende leidenschaftliche Hass gegen das Hitler-Regime. Hass aber ist eine Quelle der Energie.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:24:50.207479+00:00",
+  "page": 82,
+  "total_pages": 90
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nSUBJECT:-\n\nOn 14.3.40 M.I.5 forwarded to S.I.S. a note on Wilhelm FRISCHAUER which had been made from the translation of a report forwarded by Karl GROEHL to Karl OTTEN. The report dealt mainly with FRISCHAUER's activities and connections in Austria.\n\nOriginal in....1,169B.(173).41a.............dated.....14.3.40.............\n\nS. Form 81.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:54:45.543977+00:00",
+  "page": 78,
+  "total_pages": 96
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\ebb33ed73fe2fed5c544f11345961a58.jpg",
+  "stage": "raw_ocr",
+  "extracted_text": "Dear Hip,\n\nYour letter of the 21st, which arrived this morning, makes it easier for me to answer the earlier one. Though God knows, it's hard enough. What can I say? I loved getting your long chatty letter, but I hate to do anything to stop these letters. If however it would be easier for you if you didn't hear from me, and if you find it impossible to write, then I suppose we had better both stop. I'm most frightfully sorry Hip, but at the moment I don't feel I can respond to you in the way you want. I am what you would call an unfeeling cow. I think I must be. Of course, it's irrational and unreasonable. You and I are interested in the same things, we both seem to admire each other, and we obviously liked being together. And yet Hip, I don't want to give you anything more than this. I want you very badly for a comrade, and on any part shall do everything within my power to make that possible. But if it is going to worry you or hurt you and interfere with your life, then we must stop it. I suppose it rests with you to decide. I'm not just thinking, but",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T13:10:12.650281+00:00",
+  "page": 1,
+  "total_pages": 1
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8466790e6bc41f1fdde86057757ac8ec.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "BOX No. 2,\nWESTERN CENTRAL DISTRICT\nPOST OFFICE,\nNEW OXFORD STREET,\nLONDON, W.C.1\n\nTelephone:\nTEMPLE BAR 1581\n\nOctober 8th, 1942.\n\nCONFIDENTIAL\n\nDear Osborne,\n\nMr. H. von Rauschenplat\n\nYou will recollect that in June of this year I sent you the Registration Certificate of Mr. Rauschenplat for cancellation of the Alien Protected Areas Certificate as he was leaving our staff.\n\nMr. Rauschenplat has now written to me informing me that the Auxiliary War Service Permit and the A.P.A. certificate (on page 9 of his Registration Certificate) were granted to him prior to his joining our staff and on checking this up I find that he joined our Department on September 27th 1940 and that these two endorsements were granted to him on July 1st 1940, and that they should not have been cancelled at the same time as the A.P.A. certificate on Page 11.\n\nWould you be kind enough to have Mr. Rauschenplat's Registration Certificate endorsed to make these two permits valid again. I much regret troubling you in this matter.\n\nYours sincerely,\n\nWalter Aruman Roberts\n\nF.P. Osborne Esq.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:30:03.986857+00:00",
+  "page": 16,
+  "total_pages": 19
+}

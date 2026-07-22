@@ -1,0 +1,72 @@
+Result of return of correspondence on 15 Orsett Terrace, W.2. from 14.7.48. - 29.7.48.
+
+<table>
+  <tr>
+    <th>Addressee</th>
+    <th>Sender</th>
+    <th>Postmark</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>Dr? F. FRIDAY</td>
+    <td>-</td>
+    <td>W.C.</td>
+    <td>Large letter</td>
+  </tr>
+  <tr>
+    <td>F.W. FRIDAY</td>
+    <td>C.W.S. Bankers, Leman St., E.</td>
+    <td>E.1.</td>
+    <td>P.P.</td>
+  </tr>
+  <tr>
+    <td>John OLDAy</td>
+    <td>Contemporary Press, 67 Clarendon Rd., W.11.</td>
+    <td>Notting Hill</td>
+    <td>Large letter</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td>-</td>
+    <td>Highgate</td>
+    <td>Letter</td>
+  </tr>
+  <tr>
+    <td>Karl BORDER, Dortmund, 7 Hellgendortmund strasse, 2 Brit. Zone Reg. Beg. Westfalen, Germany.</td>
+    <td>-</td>
+    <td></td>
+    <td>Letter</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td>-</td>
+    <td>No.113 (sic)</td>
+    <td>Letter</td>
+  </tr>
+  <tr>
+    <td>ComisInternale Relations, Spri. 8me. Danton, Paris.</td>
+    <td>Paris</td>
+    <td></td>
+    <td>Letter</td>
+  </tr>
+  <tr>
+    <td>Willy (Fritzenkotter?), Germany Wuppertal-Barmen, Feldstr. 33.</td>
+    <td></td>
+    <td></td>
+    <td>Letter (2)</td>
+  </tr>
+  <tr>
+    <td>Oestreitz?, Berlin-Schoneberg, Eberstr. 87.</td>
+    <td>Germany</td>
+    <td></td>
+    <td>Letter</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td>Bournemouth</td>
+    <td></td>
+    <td>Letter (2)</td>
+  </tr>
+</table>
+
+/OVER

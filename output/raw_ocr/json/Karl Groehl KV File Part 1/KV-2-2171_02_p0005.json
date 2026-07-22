@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "G. PD 64A\n24.7.39\nMr. Younger\nThis appears to be an address to which Carl Otten writes from Golvers Green.\nR. Melony\n\nHave we got this address for Grochel?\nyes. Kay 25/7\nPlease see PF. 464164. A. Key 26/7",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:58:03.814405+00:00",
+  "page": 5,
+  "total_pages": 102
+}

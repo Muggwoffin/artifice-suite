@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "and he lives at 131 Regent St. W.1. He is friendly with one STANLEY, a merchant of good repute and is certain to possess a lot of money.\n\nThat lazy fellow HEINZ should get busy about his Englishman. If he has got money we ought start business in Holland and make a lot of money.\n\nIf you should speak to (2) RAPPORT don't mention my political views nor my present miserable lack of money. The man need not know it.\n\n(gh) MAX.\n(LICHTENSTEIN)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:24:11.991678+00:00",
+  "page": 43,
+  "total_pages": 131
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM.\n\nFrom...F.2c. ............................................. To...E.5(3) Mr. Edwards.............\n\nAs spoken: I understand that you will consider the desirability of enquiring from Sir Cecil Hurst whether Traute LOEWENHEIM has recently been in touch with his office and, if so, whether she was given any information which might have formed a basis of the statement attributed by Source respecting \"L's files\".\n\nDate...27.9.41. ............ Signature............. R. Pilkington.\n\nS. Form 161 RP/JW.\n\nTHIS IS A COPY\nORIGINAL DOCUMENT RETAINED\nIN DEPARTMENT UNDER SECTION\n3 (4) OF THE PUBLIC RECORDS\nACT 1958. Dec 2003",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:52:48.797741+00:00",
+  "page": 15,
+  "total_pages": 64
+}

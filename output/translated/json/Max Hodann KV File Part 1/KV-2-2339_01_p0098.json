@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "The National Archives reference KV 2/2339",
+  "translated_text": "The National Archives reference KV 2/2339\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:47:43.630262+00:00",
+  "confidence": {
+    "score": 100,
+    "reasoning": "The source text was clear and legible. There were no ambiguous words or passages. The translation was a direct copy of the original.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 100
+  }
+}

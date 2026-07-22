@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CONFIDENTIAL\n\n19th June, 1945.\n\nSF.411/Ireland/F2a/EHC\n\nDear Captain Moore,\n\nI was much interested in the information contained in your letter C.S.24/8263/278 of 25th May about the attempt being made to re-establish the Communist Party of Eire with the help of the Party in Belfast and London. It is interesting to see that Neill Gould is once more taking an active part in communist work. I should be grateful if you would let me know if he shows any signs of coming over here, but I rather doubt whether he would obtain any more help from Harry Pollitt than from William McCullough.\n\nOf the persons reported on in your enclosures Leslie Daiken has of course spent much of his time in England in recent years. You may like to know that although he moves in Communist Party and Connolly Club circles the Party leaders here do not regard him as a very reliable member. He is a teacher by profession and is in touch with the Teachers Fraction of the Communist Party.\n\nYours sincerely,\n\nEtc\n\nCaptain J. Roger Moore,\nRoyal Ulster Constabulary,\nBelfast.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:40:03.614672+00:00",
+  "page": 26,
+  "total_pages": 103
+}

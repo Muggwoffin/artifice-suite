@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "10th April 1935.\n\nre Max Julius HODANN and LINDBACK-NILSSON.\n\nResult of further observation in this case.\n\nMonday 8th April.\n\nHODANN, carrying attache case, visited Hartington Court from 1.55 to 3.40 p.m. Then at 4.10 to Chatham House where NILSSON entered at 5.25. Both left latter address at 7 p.m. and after taking refreshments at the Criterion Brasserie visited the News Theatre, Shaftesbury Avenue, at 8.35.\n\nTuesday 9th April.\n\nHODANN and NILSSON left 6 Cornwall Gardens at 1.25 p.m. and after visiting Imperial Institute, Victoria and Albert Museum and Kardomah Exhibition Cafe, entered at 3.25 the League of Nationa Union, 15 Grosvenor Crescent, where they remained until 5.30 after which they did some shopping and returned to their lodgings.\n\nObservation now withdrawn.\n\nJ.O.\n\nS.11.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:18:25.706200+00:00",
+  "page": 131,
+  "total_pages": 144
+}

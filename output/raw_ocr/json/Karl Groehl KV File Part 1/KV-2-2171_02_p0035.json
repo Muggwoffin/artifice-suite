@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSUBJECT:-- Groehl.\n\nOn 20.1.39 Groehl wrote to Otten enclosing a letter from Jacob to Lehmann Russbueldt. He considered that the part of the letter about the German Air Force was nonsense but the rest sound. The following is a summary of the contents of his letter.\n\n\"Do not mention Asra - you might as well mention the name. Say simply Mon. Charle. Ma in the south is one of the cleverest people although you can not stand him.\n\nMy friend is Madame Pauli, she is going to help with the publication.\n\nThe bit about the mobilisation and the E.K. may be correct. I heard from a woman who wanted to cross the Brenner into Italy, she was told in Germany that the Brenner was shut for private traffic.\"\n\nInformation concerning the Brenner was sent to S.I.S. on 28.1.39.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:01:48.150551+00:00",
+  "page": 35,
+  "total_pages": 102
+}

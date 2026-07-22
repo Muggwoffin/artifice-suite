@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F.49542/B.15.a.l.  1616 June, 1941.\n\nDear Bruce,\n\nMany thanks for your letter of 23.4.41, COS.2985/40.T.E., about the THAMES GENERAL INVESTMENT CO LTD. I understand that this company carried on business under the name of the THAMES ENGINEERING CO. and I believe that a limited company which carries on business under a name other than its own does not need to register under the Registration of Business Names Act, 1926. However, you will of course be in a better position than I am to deal with this point.\n\nAccording to my latest information the basic patents of the THAMES ENGINEERING BUSINESS have now been acquired by some clients of Col. LOCKHART JARVIS. If this is so and the THAMES GENERAL INVESTMENT CO. have no other patents, their business would seem to be at an end and the company could be wound up.\n\nWe strongly suspect the LOVENHEIMS and are doing our best to prevent them being released from internment. The business in which they have been engaged with the THAMES ENGINEERING CO would give them an opportunity of obtaining information about power stations and other important factories which it is very undesirable for them to obtain.\n\nAlthough I imagine that there are no strict legal grounds on which you can insist on the company being wound up, I think it would be in the national interest that any pressure which you can exert towards that end should be exerted.\n\nYours sincerely,\n\nW.C. Bruce, Esq.,\nBoard of Trade. for J.G. CRAUFURD. JN/ME5",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:07:12.642077+00:00",
+  "page": 46,
+  "total_pages": 60
+}

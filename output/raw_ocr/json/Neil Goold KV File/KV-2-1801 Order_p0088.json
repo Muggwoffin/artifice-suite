@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F. 41426/D.S.10.\n\n27th February, 1936.\n\nDear Mr. Stafford,\n\nMrs. Wilford passed me your files for Brian and Hamilton Neil GOOLD-VERSCHOYLE and asked me to return them to you.\n\nBoth these young men may be classed as Communists, although only in the case of Brian could we definitely prove membership of the Communist Party of Great Britain.\n\nWith regard to Hamilton Neil S. GOOLD-VERSCHOYLE, I notice that although he was granted a British passport No. 13365 on 25.3.24 and subsequently obtained renewals up to 26.3.33, he arrived at Harwich from Moscow on 3.1.33 on Free State passport No. A.11399 after a continuous stay in Russia dating from 2.10.30.\n\nI see also that on the list you kindly sent us on 24.10.33 of persons whose names were supplied you by the High Commissioner of the Irish Free State as being in close association with communist and allied organisations, there is an entry de GOLD VERSHOYLE, Niall. It seems that this must refer to Hamilton Neil S. GOOLD-VERSCHOYLE.\n\nOn looking through the passport papers for Hamilton Neil, I was rather struck by the style of notepaper used by the father in his authorisation of 21.3.24. I see the boy used a sheet out of an exercise book for his letter of the 12th March 1926, but one would hardly expect the same from a barrister of some standing in Dublin. However, this is probably only my suspicious mind!\n\nBrian left England, presumably for Moscow, on 11.2.36 and, so far as we know, Hamilton Neil is also there.\n\nYours sincerely,\n\nJ. W. Stafford Esq., O.B.E.,\nPassport Office.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:48:35.429423+00:00",
+  "page": 88,
+  "total_pages": 103
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "On His Majesty's Service\nFLINTSHIRE\nON HIS MAJESTY'S SERVICE\nFASTEN Envelope by gumming Top Flap.\nOPEN by cutting Label instead of sewing Envelope.\n\nMrs. M.L. Richards\n11 Eton Place\nHaverstock Hill\nLondon\nN.W. 3\n\nA.W. OLDAG\n13095115\nR WING P.C.\nCOMPOUND\nPRESTATYN\nNorth Wales\n\nMy dearest Maikin!\nVery sorry I wasn't able to answer your last letter. We haven't had much luck lately have we? Tami will have told you all the news. The last days in Brixton Good old Albert told me as much he possibly could. Wanted to see you badly and so terribly disappointed it did not come off. But never mind! We shall make up later. I do not regret my stay in Brixton. The time has not been lost. The time will come when I shall exploit my experience. The profit will be ours. At present I am adding new & interesting impressions to my stock of material. By the way did you",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:44:48.709550+00:00",
+  "page": 56,
+  "total_pages": 92
+}

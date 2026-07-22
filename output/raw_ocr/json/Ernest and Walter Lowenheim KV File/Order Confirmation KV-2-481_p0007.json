@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "MIN\n\n81.\nCopy of intercept letter to ERNST LOEWENHEIM from Ruth Loewenheim.\n\n82.\nInformation received from re LOEWENHEIM\n\n83.\nFurther information re LOEWENHEIMs received from\n\n84\nFrom T.E.B. in reply to 68a re THAMES GENERAL INVESTMENT CO., LTD.\n\n85\nFrom H.O. enclosing reports by the Hurst Committee re the LOWENHEIM group\n\nE.3.(S) report ( ) re LOEWENHEIMS.\nTo E.3.(S) acknowledging report, filed at 85b.\n\n86\nTo H.O. re the reports at 85a and our opinion\nFrom E.3. re LOEWENHEIMS.\n\n87\nTo Sir Cecil Hurst re his reports at 85a\nTo E.3., re LOEWENHEIMS, further to 85c.\n\n88.\nTo F.3., passing papers enclosed by E.3. at 86b.\n\n89.\nE.3. report (source Do.) re LEIBETSEDER.\n\n90.\nFrom F.3., in reply to 88a.\nFrom H.O. teleprint message re LOWENHEIM, W & E.\nB.6. report from Somerset House particulars re QUICKTHO\nFrom Board of Trade re Thames Gen. investment Co. [OVER]",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:12:29.827409+00:00",
+  "page": 7,
+  "total_pages": 68
+}

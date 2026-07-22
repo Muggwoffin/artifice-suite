@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Abschaffung der Titel, nur Berufsbezeichnungen bleiben zul\u00e4ssig.\nAbschaffung des Polizeiheeres. Nur st\u00e4dtische-und Gemeinde Polizei.\nAbschaffung des polizeilichen Meldewesens, jeder schikan\u00f6sen Polizeikon-\ntrolle. Das deutsche Polizeimeldewesen diente milit\u00e4rischen Zwecken.\nDurch das Polizeimeldewesen konnten jederzeit milit\u00e4rische Stammrollen\naufgestellt werden.\n\nAbschaffung des Heeres. Abschaffung der Kriegs- und Milit\u00e4erpensionen.\nVernichtung aller milit\u00e4rischen Symbole.\n\nDamit Zerbrechung des deutschen Polizei-und Milit\u00e4rstaates, der jeder-\nzeit, gleichg\u00fcltig unter welcher Regierung, ein wirksames Instrument der\ndeutschen Machtpolitik war. Staatliche Kriegsfuersorge darf es nicht mehr\ngeben. Die Versorgung der Schwerkriegsverletzten, der Kr\u00fcppel, ist Sache\nder St\u00e4dte und Gemeinden.\n\nSelbstverwaltung in D\u00f6rfern, Gemeinden, St\u00e4dten.\n\nGewissensfreiheit, Freiheit des Bekenntnisses in Rede und Schrift.\n\nTrennung von Staat und Kirche. Religion ist Privatsache der einzelnen\nPerson. Keine Zwangskirchensteuer.\n\nUmgestaltung des Rechtswesens auf foederalistischer Basis im Rahmen der\nGesetze des Bundes. Geschworenen-Gerichte. Wahlbarkeit und Absetzbarkeit\nder Richter. Abschaffung der bisherigen Staatsanwaltschaften.\n\nDie deutsche Foederation will ein Teil der europ\u00e4ischen Gemeinschaft\nsein und ist zur weitgehenden Aufgabe seiner politischen Souver\u00e4nit\u00e4t\nbereit, sofern dieses, politisch und wirtschaftlich, dem foederativen\nZusammenschluss Europas dient.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:25:52.845321+00:00",
+  "page": 87,
+  "total_pages": 90
+}

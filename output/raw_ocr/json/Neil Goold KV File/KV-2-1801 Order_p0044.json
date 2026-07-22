@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Secret.\n\nIn reply, state NUMBER and DATE.\n\ndated 3.10.41.\n\nDear Hilary,\n\nReference your P.F.41426/F.2a/EHC of 23.8.41:\n\nIt is confirmed that GOULD VERSCHOYLE is still interned. So far we have not been able to get any information as to whether any of the other fourteen Communists were also interned, but will let you know if and when further details are forthcoming.\n\nYours sincerely,\n\nMiss E.H. Creedy,\nM.I.5.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:42:26.980789+00:00",
+  "page": 44,
+  "total_pages": 103
+}

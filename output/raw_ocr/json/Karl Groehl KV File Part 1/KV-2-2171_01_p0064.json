@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Bertha PAULI\n19 W 76th\nNEW YORK CITY\nDec. 1940.\n\nLieber K.G.,\n\nsch\u00f6nen Dank f\u00fcr Ihre beiden l. Schreiben. Carli teilte mir schon mit, dass er mit gro\u00dfer Freude Arbeit von Ihnen erwartet und ich hoffe, dass er indessen schon damit besch\u00e4ftigt sein wird.\n\nKann ich irgend etwas f\u00fcr Sie tun? Es ist alles ganz anders, als man es sich vorstellt und grossartig in seiner Art. Der Anfang freilich ist schwer, wenn man ohne Vertrag und ohne Mittel herkommt. Ich schreibe \u00f6fter f\u00fcr den \"Aufbau\", den Sie vielfach dr\u00fcben sehen und habe nun endlich auch einen \u00dcbersetzer f\u00fcr meine Arbeiten gefunden. Den Roman versuche ich deutsch einzureichen. Nun arbeite ich aber sogar schon als Sekret\u00e4rin eines Redakteurs der Zeitung P.M. hier - engl. nat\u00fcrlich.\n\nIch vermisse die Freunde von dr\u00fcben aber sehr. Freue mich, dass Sie P. sehen und bitte gr\u00fcssen Sie ihn wieder. Schrecklich, dass W.M. noch immer in Marseille sitzt. Er tr\u00e4ute sich nicht weiter ... H\u00e4tt sich an Ihnen ein Beispiel nehmen sollen!\n\nIch schreibe gleichzeitig an die l. Horvaths wegen Ihres schrecklichen Sorgenkindes WERA - aber sie verdient es nicht ... Sie wissen ja, wie w\u00fctend ich auf sie bin. Ich tu das nur Ihr wegen. Alle besten W\u00fcnsche f\u00fcr Sie zum neuen Jahr und dass unser aller W\u00fcnsche sich bald - endlich - erf\u00fcllen und unsere Sache gewinnt. Wenn man hier nur mehr helfen k\u00f6nnte ...\n\nWann sehen wir uns wieder? Lassen Sie von sich h\u00f6ren, gell, und seien Sie in alter Herzlichkeit begr\u00fcsst von\n\nIhner h. p.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:53:01.253304+00:00",
+  "page": 64,
+  "total_pages": 96
+}

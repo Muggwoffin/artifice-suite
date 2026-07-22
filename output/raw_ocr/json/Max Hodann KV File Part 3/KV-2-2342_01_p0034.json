@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "GLOUCESTER CONSTABULARY\nREPORT FOR THE REGIONAL ADVISORY COMMITTEE\nALIEN IN PROTECTED AREA\n\nFINKELESTEIN, Martha Louise,\nAddress: Buckingham House, Wellington Street, Cheltenham\nBorn: 5.9.79. Lubeck.\n\nPlease see our observations in the case of this alien's husband Alexis Samuel FINKELESTEIN.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:00:17.303400+00:00",
+  "page": 34,
+  "total_pages": 104
+}

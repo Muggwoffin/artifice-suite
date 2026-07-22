@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Addressee    Sender    Postmark    Description\n\nJohn OLDAY (continued)\nZeitungavrts Berlin\nFreidenau, Rheinstr.\nBerlin    Letter\n\nBermann SCHNELLE,\n? 21B Maxe-Hirs Sicking\nStr. 144.\nGermany    Letter\n\n-    Herford\nHolland (sic)    P.P.\n\n-    Herford\nGermany    P.P. (newspaper)\n\n-    W.1.    Letter\n\nKulturfederation,\nFreier Sozialstein,\n? Ammilmarister,\nHamburg.\nHamburg    Letter\n\nM(?W)illy HUPPEREZ,\nMulheim Buhr,\nWinkhauserweg 64,\nGermany.\nGermany    Letter\n\nFurther correspondence was addressed to the subjects of the attached Look-Ups, for whom there is No Trace.\n\nKW/B1a/8.9.48.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:18:29.504129+00:00",
+  "page": 67,
+  "total_pages": 71
+}

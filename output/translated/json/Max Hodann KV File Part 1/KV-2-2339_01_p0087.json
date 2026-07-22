@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "de",
+  "source_language_name": "German",
+  "cleaned_text": "Oslo, 14. IV. 35.\nAdr. Carl Pande,\nTordenskjold 22 III.\n\nLieben On. Modann,\n\nVielen Dank f\u00fcr Ihren Brief.\nIch habe am Karten geschrieben, und sie gebeten, nach Oslo zu kommen, und ich hoffe, dass dies eine Hilfe f\u00fcr Sie werden kann. Bitte halten Sie mich unbescheiden, wenn Sie etwas h\u00f6ren!\n\nIhr ehrerbietigster\nRudolf Harvell",
+  "translated_text": "Oslo, April 14th, 35.\nTo Mr. Carl Pande,\nTordenskjold 22 III.\n\nDear Sir,\n\nThank you for your letter. I have written to [the relevant authority], requesting that they come to Oslo, and I hope this will be of assistance to you. Please do not consider me presumptuous if you hear anything!\n\nYour most humble servant,\nRudolf Harvell\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:47:26.226630+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The translation is accurate and well-written. The original text was clear and legible, and the translation choices were appropriate for the context. Only minor adjustments were needed to improve readability and flow in English.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

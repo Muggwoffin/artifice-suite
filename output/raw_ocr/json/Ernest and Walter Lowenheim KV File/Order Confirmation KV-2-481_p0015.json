@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "MINUTE SHEET.\n\n123.\nExtract from SB report on HITCHINS, JARVIS & PARTNERS, ment. Ernst LOEWENHEIM.\n\nNote by E.7. re the LOEWENHEIMS.\n\n123a\n\n124.\nE.7. Mr Robson Scott.\n\nPlease see 123a. We should be interested to know what are the present political activities of the LOEWENHEIMS?\n\nE.5.3.\n20.4.42.\nW.C. Edwards.\n\nInternal memorandum from E.7 with copy of report from attached.\n\n124b\n\n125.\nShowed to Mr. Shillito (F.2.b.). He agreed that membership of the Red Military Academy showed at least some interest in military matters by LOEWENHEIM.\n\nW.C. Edwards.\n\nE.5.3\n\n126.\nReport from E.7. Source Gottfurcht re Walter LOEWENHEIM'S recent activities.\n\n126a.\n\n127.\nFrom H.O. re nationality of LOEWENHEIM.\n\n127a.\n\n128.\nExtract from Ri source report re German Trotskyists men LOEWENHEIM.\n\n128a.\n\n129.\nE.5.L. (source: Kaspar.) report on Walter and Ernst LOEWENHEIM.\n\n129a.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:13:51.466286+00:00",
+  "page": 15,
+  "total_pages": 68
+}

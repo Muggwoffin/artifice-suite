@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "ACT, 1958\n3 (4) OF THE PARTIC RECORDS\nIN DEPARTMENT UNDER SECTION\nORIGINAL DOCUMENT RETAINED\nTHIS IS A COPY",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:05:47.358576+00:00",
+  "page": 87,
+  "total_pages": 104
+}

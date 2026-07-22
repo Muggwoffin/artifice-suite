@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8466790e6bc41f1fdde86057757ac8ec.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "I hope to do a good thing by suggesting, that one of your officers - with a sufficient legitimation - speaks with him. His name and address are:\nDr. H. von Rauschenplat,\n30 Doughty Street\nLondon WC\n\nYours truly\nA.B.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:27:49.948605+00:00",
+  "page": 6,
+  "total_pages": 19
+}

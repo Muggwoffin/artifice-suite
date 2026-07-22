@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Britain and America \"respect the right of all people to choose the form of government under which they will live, and they wish to see sovereign rights and self-government restored to those who have been forcibly deprived of them.\"\nAtlantic Charter.\n\n\"We have no intention of casting away that most truly bright and precious jewel in the crown of the king, which more than all our other Dominions and Dependencies constitutes the glory and strength of the British Empire.\"\nWinston Churchill, on India, 12th Dec., 1930.\n\nINDEPENDENCE AND SELF-DETERMINATION\n\nTHE DEFENDER OF OPPRESSED PEOPLE",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:11:23.919059+00:00",
+  "page": 1,
+  "total_pages": 71
+}

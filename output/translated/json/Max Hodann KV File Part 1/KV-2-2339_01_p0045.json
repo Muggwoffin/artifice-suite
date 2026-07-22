@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "PF.43817/D.S.9.a.\n\n23rd April, 1935.\n\nDear Mr. Cooper,\n\nWith reference to the cases of Max HODANN and Mrs. LINDBAEK-NILSSON, who were landed on 18.3.35. for six weeks, I should be most grateful if you could arrange for us to be consulted if and when the question of extensions arises.\n\nYours sincerely,\n\n(SD) K.W.W.S.\n\nN. Cooper Esq., O.B.E.,\nHome Office,\nS.W.1.",
+  "translated_text": "PF.43817/D.S.9.a.\n\n23rd April, 1935.\n\nDear Mr. Cooper,\n\nRegarding the cases of Max HODANN and Mrs. LINDBAEK-NILSSON, who arrived on 18th March, 1935, for a period of six weeks, I would be most grateful if you could ensure that we are consulted should the matter of extensions arise at any time.\n\nYours sincerely,\n\n(SD) K.W.W.S.\n\nN. Cooper Esq., O.B.E.,\nHome Office,\nS.W.1.\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:46:03.609422+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The translation is accurate and maintains the original meaning and tone. The changes made (e.g., 'arrived on' instead of 'were landed on', 'ensure that we are consulted' instead of 'could arrange for us to be consulted') improve readability without altering the core message.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

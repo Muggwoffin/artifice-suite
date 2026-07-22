@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy for P.F.45000 OLDAG\n\nS.F.96/Brit/9(5)/E.S.\n\n20th December, 1941.\n\nDear Colonel Adams,\n\nThank you very much for your letter of the 18th December 1941, enclosing copies of your minute and the recommendations regarding these men.\n\nSince returning here I have got up our original files referring to these men. The only one of them of whom we know anything appreciable to add to the information we had before us at Great Barr is OLDAG, who you will probably remember is the Left Wing author. It appears that he is already under observation, and I do not think that the information which we possess would lead you to form any different opinion as to his retention in the Pioneer Corps. If, however, it would be of any interest to you, I shall be very pleased to send you a summary of what we know about him.\n\nI very much enjoyed my trip with you to Great Barr, and am very grateful to you for driving me there and back.\n\nYours sincerely,\n\n(sd) C. Binney.\n\nC. Binney.\n\nLt. Col. C.C. Adams,\nA.O.14, The War Office,\nCHILTERNHAM.\nCB/AC",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:25:34.485118+00:00",
+  "page": 52,
+  "total_pages": 98
+}

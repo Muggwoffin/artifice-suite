@@ -142,6 +142,69 @@ def translate(
     typer.echo(f"JSON written to {output_dir}/translated/json/")
 
 
+@app.command("audit-translations")
+def audit_translations(
+    output_dir: str = typer.Option("output", help="Output directory to scan"),
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable JSON instead of a table"),
+):
+    """Find already-produced translations likely corrupted by the
+    already-English mistranslation bug.
+
+    Before the fix, an English-source document sent through the translate
+    stage got "helpfully" reworded/rewritten by a model asked to translate
+    text that had nothing to translate — rather than being left untouched.
+    This scans every `<output_dir>/translated/json/*.json` (recursively, so
+    Tropy-item subfolders are covered) and reports every one whose
+    `source_language` is "en" but which has no `skipped_translation` marker
+    — i.e. it was translated for real under the old, buggy behaviour, and
+    the text on disk may have been altered. Those need a forced re-run
+    (`--force`) to regenerate; resuming a normal run will just reuse the
+    existing, possibly-corrupted output.
+    """
+    import json as json_module
+
+    json_dir = Path(output_dir) / "translated" / "json"
+    if not json_dir.exists():
+        typer.echo(f"No translated output found at {json_dir}")
+        raise typer.Exit(code=0)
+
+    affected: list[dict] = []
+    total = 0
+    for json_file in sorted(json_dir.rglob("*.json")):
+        total += 1
+        try:
+            data = json_module.loads(json_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if data.get("source_language") == "en" and not data.get("skipped_translation"):
+            affected.append({
+                "stem": str(json_file.relative_to(json_dir).with_suffix("")),
+                "source_file": data.get("source_file", ""),
+                "json_path": str(json_file),
+            })
+
+    if as_json:
+        typer.echo(json_module.dumps(affected, indent=2))
+        return
+
+    typer.echo(f"Scanned {total} translated document(s) under {json_dir}")
+    if not affected:
+        typer.echo("None affected — nothing to re-run.")
+        return
+
+    typer.echo(f"\n{len(affected)} likely affected (English source, translated for real):\n")
+    for entry in affected:
+        typer.echo(f"  {entry['stem']}")
+        if entry["source_file"]:
+            typer.echo(f"      source: {entry['source_file']}")
+
+    typer.echo(
+        f"\nRe-run these with --force (or the GUI/web \"Force re-run\" option) "
+        f"so the fixed translate stage regenerates them instead of reusing "
+        f"the existing output."
+    )
+
+
 @app.command()
 def pipeline(
     input_path: str = typer.Argument(
@@ -393,6 +456,73 @@ def tropy(
         typer.echo(f"Output: {output_dir}/")
         if failed:
             raise typer.Exit(code=1)
+
+
+@app.command("compile-pdf")
+def compile_pdf(
+    folder: str = typer.Argument(help="Folder of processed .txt output"),
+    stage: str = typer.Option("cleaned", "--stage", help="cleaned|raw_ocr|translated"),
+    output: str = typer.Option(None, "--output", help="Output PDF path"),
+    no_structure: bool = typer.Option(False, "--no-structure", help="Skip structuring, concat as-is"),
+    manifest: str = typer.Option(None, "--manifest", help="Explicit tropy_manifest.json path"),
+):
+    """Compile processed text files into a single readable PDF.
+
+    Takes a folder of already-processed .txt output (cleaned, raw_ocr, or
+    translated) and produces one continuous-flow reading document.
+
+    By default, a structuring pass adds paragraph breaks for readability.
+    Use --no-structure to skip the model call and concatenate as-is.
+
+    Examples:
+
+        ocr_pipeline compile-pdf "output/cleaned/text/Fritz Eberhard KV" --no-structure
+
+        ocr_pipeline compile-pdf "output/cleaned/text/ISK Comms" --output isk.pdf
+    """
+    from src.ocr_pipeline import pdf_export
+
+    folder_path = Path(folder)
+    if not folder_path.exists():
+        raise typer.BadParameter(f"Folder not found: {folder}")
+
+    # Determine default output path
+    if output is None:
+        output_dir = Path("output")
+        output_dir.mkdir(exist_ok=True)
+        pdf_path = output_dir / f"{folder_path.name}.pdf"
+    else:
+        pdf_path = Path(output)
+
+    typer.echo(f"Collecting pages from {folder_path}...")
+    pages = pdf_export.collect_folder(
+        str(folder_path),
+        stage=stage,
+        manifest_path=manifest,
+    )
+
+    if not pages:
+        typer.echo("No pages found to process.", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Found {len(pages)} page(s)")
+
+    if not no_structure:
+        typer.echo("Structuring pages (this may take a moment)...")
+        pages = pdf_export.structure_pages(pages)
+
+    title = None
+    for p in pages:
+        if p.item_title:
+            title = p.item_title
+            break
+
+    typer.echo(f"Rendering PDF...")
+    result_path = pdf_export.render_pdf(pages, pdf_path, title=title)
+
+    total_chars = sum(len(p.text) for p in pages)
+    typer.echo(f"Done: {len(pages)} page(s), {total_chars} chars")
+    typer.echo(f"PDF: {result_path}")
 
 
 def _print_batch_summary(result: dict, output_dir: str):

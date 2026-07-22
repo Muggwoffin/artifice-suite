@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "71 Grosvenor Street\nLondon, W1\n20 January 1947\n\nCopy in OF.348-3. \"SPARTACUS\"\n\nMr. Roger Hollis\nM.I.-5\n\nSubject: \"SPARTAKUS\"\n\nDear Roger:\n\nOur representative in Germany has asked that we attempt to identify \"SPARTAKUS\" who put out a pamphlet entitled \"German Communists\", published by Hutchinson and Company, Ltd.\n\nThe pamphlet had a foreword by Alfred M. WALL, translated from the German by E. Fitzgerald. (The foreword was dated London, February 1944).\n\nIt is believed possible that the author of the pamphlet (\"SPARTAKUS\") may be Wilhelm NECKER, recently named Director of DANA, the American sponsored German news agency but we have no reliable means of determining whether or not this is correct.\n\nIt would be greatly appreciated if you could identify \"SPARTAKUS\" for us.\n\nSincerely,\n\nWinston M. Scott\nWINSTON H. SCOTT\nLt. Cmdr., U.S.N.R.\n\nWHS/jmc",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:14:10.838204+00:00",
+  "page": 19,
+  "total_pages": 90
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Photostat filed in: PF.43824. LINDBAEK-NILSSON.\n\nFrom Hugo HOGDAHL, for H. ASCHEHOUG & Co., Oslo.\n\nTo Lise LINDBAEK, Kynance Court, 6, Gloucester Road, S.W.7. (Re-directed from Norwegian Legation.)\n\nDate of letter 25.3.35.\n\nSummary of Contents.\n\nEncloses some notices which addressee may not have seen.\n\nNotices:\n\n3. Sv. Arnvig. The real intention of the authors (one of whom is the German well known writer on sexual matters, Max HODANN - of doubtful reputation) is to show that sexual difficulties matter more than anything else in the life of the Palestine immigrants. An exaggerated attitude which deprives the book of much of its value.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:31:44.215882+00:00",
+  "page": 94,
+  "total_pages": 131
+}

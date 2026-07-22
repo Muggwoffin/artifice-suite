@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8466790e6bc41f1fdde86057757ac8ec.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "BOX No. 2,\nWESTERN CENTRAL\nDISTRICT POST OFFICE,\nNEW OXFORD STREET,\nLONDON, W.C.1\n\n26th May 1942.\n\nDear Osborne,\n\nMr. H. von Rauschenplat who, as you know, has been employed by our Department, has left our service today and proceeded to:-\n\n2 Clifton Gardens,\nN.W.11.\n\nI enclose his Aliens' Certificate of Registration, No: 661028 as I presume that you will now wish to cancel his Aliens Protected Area endorsement. After doing that I shall be obliged if you will return the enclosed certificate.\n\nYours sincerely,\n\nWalter Orwan Roberts\n\nF.P. Osborne Esq.,\nBox 500,\nG.P.O.,\nOxford.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:28:46.042969+00:00",
+  "page": 10,
+  "total_pages": 19
+}

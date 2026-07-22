@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "EXTRACT.\n\nExtract for File No.: P.F. 49542.\nName: LOEWENHEIM. Walther.\n\nOriginal in File No.: S.F. 423/U.K.\nSerial: 21a.\nDated: 22.9.42.\nrcd.: 30.9.42.\n\nInt. Trotskyist Opposition in U.K.\nSource: Ri. report.\nUnder Ref.: source. No. 456\n\nExtracted on: 30.11.42.\nby: T.S.\nSection: R.5.\n\nThe German Trotskyists.\n\nThe following information is from Hans JAEGER. He states that the following belongs to the group of German Trotskyists in this country:\n\nLOEWENHEIM. who formerly belonged to the German Communist Party and later to Neu Beginnen.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:15:47.133929+00:00",
+  "page": 30,
+  "total_pages": 68
+}

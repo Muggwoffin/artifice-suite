@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "7th December, 1941.\n\nDear Rutherford,\n\nIn continuation of our letter of 1.12.41. reference as above, in answer to your SR/WC/568 of 11.8.41., I have now seen our files relating to most of the six men whose names you gave MM who have not yet joined the unit. Unless you hear from me to the contrary, you can take it that they are none of them of interest from an Internal Security point of view on present information.\n\nYours sincerely,\n\nCapt. M. Johnstone.\n\nCapt. L. E. Rutherford,\nH.Q.,\nWestern Command,\nChester.\n\nRGM/PS.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:26:27.114187+00:00",
+  "page": 58,
+  "total_pages": 98
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F. 52095/B.4.c. B.13.\n\nI thank you for your internal memorandum of yesterday enclosing a copy of a letter from S.O.2., ECW/KV/657, dated 25.3.41.\n\nS.O.2. have not, however, dealt in any way with the portions of my letter of 18.3.41 relating to Stanislas RETZLAW and I should be glad if you would kindly ask them to do so as early as possible.\n\nI particularly want to know why RETZLAW is associating with SZYMONCZYK and what is the opinion of S.O.2. upon RETZLAW's reliability from the security point of view.\n\n27.3.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:49:37.637756+00:00",
+  "page": 42,
+  "total_pages": 96
+}

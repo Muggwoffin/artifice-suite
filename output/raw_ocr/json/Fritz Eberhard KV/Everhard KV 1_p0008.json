@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET\n\n453/1101E1\nReference...Loose Minute.......\n\nDr. Helmut EBERHARD\n@ RAUSCHENPLATT\n\nWith reference to your Part III comments on source report 15/10,664 dated 3rd May, 1961, P.A'd on L. 158/1424 you may pass this information to the West German authorities.\n\nE.4.\n12.5.61.\n\nD. Stephens.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:40:09.245683+00:00",
+  "page": 8,
+  "total_pages": 24
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "14th June 1941.\n\nPF.49542/D.4c.\n\nDear Armitage,\n\nWith further reference to my letter of 4th June 1941 respecting the LOHRENBELM brothers, your reference LG/2/12(99), it has been suggested that Walter LOHRENBELM, who sometimes used the name \"Dr. BURGER\", may be identical with a Dr. BURGER who at one time resided in Prague and worked for the Czech Intelligence Service and is thought also to have worked for the Gestapo.\n\nI am informed that Hans JAEGER, who is interned in the Central Camp, knows the second Dr. BURGER and should, therefore, be able to clear up the question of identity at once.\n\nWould it be possible for you to arrange for JAEGER to see Walter LOHRENBELM (perhaps, for example, from the window of a room) in such a way that they do not actually meet?\n\nIf there should be any difficulty in this, the question of identity could perhaps be disposed of by means of a photograph and for this purpose I enclose a photograph of Walter LOHRENBELM.\n\nI should be grateful if you would kindly deal with this matter as soon as possible and you will perhaps at the same time let me know the result of your interrogation of the LOHRENBELMS upon their code.\n\nYours sincerely,\n\nR. Pilkington.\n\nMajor V.L. Armitage,\nBox No. 35,\nG.P.O.,\nDouglas,\nIsle of Man.\n\nRP/JW.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:07:41.842663+00:00",
+  "page": 49,
+  "total_pages": 60
+}

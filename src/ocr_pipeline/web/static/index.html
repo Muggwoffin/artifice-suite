@@ -77,7 +77,7 @@
         <div class="run-row">
           <strong style="font-size:var(--text-sm);">Stages:</strong>
           <label class="check"><input type="checkbox" id="stage-ocr" checked> OCR</label>
-          <label class="check"><input type="checkbox" id="stage-cleanup" checked> Cleanup</label>
+          <label class="check"><input type="checkbox" id="stage-cleanup"> Cleanup</label>
           <label class="check"><input type="checkbox" id="stage-translate"> Translate</label>
           <label class="check"><input type="checkbox" id="stage-force"> Force re-run</label>
         </div>
@@ -100,7 +100,17 @@
 
     <!-- ============================================================= PREVIEW -->
     <section class="panel" id="panel-preview">
-      <div class="card compare-card">
+      <div class="card compare-card compare-card--with-image">
+        <div class="image-pane" id="preview-image-pane">
+          <div class="image-toolbar">
+            <button class="btn" id="btn-image-reset" type="button" title="Reset zoom (or double-click the image)">Reset</button>
+            <span class="dim" id="image-zoom-readout"></span>
+          </div>
+          <div class="image-viewport" id="image-viewport">
+            <img id="preview-image" alt="Source scan" draggable="false">
+            <p class="image-empty dim" id="image-empty">(no document selected)</p>
+          </div>
+        </div>
         <div class="compare-bar">
           <h2 class="compare-title">No document selected</h2>
           <select id="preview-item-select" class="select"></select>
@@ -108,7 +118,13 @@
         </div>
         <div class="compare-panes">
           <div class="compare-pane" data-pane="raw">
-            <div class="compare-pane-head"><span>RAW OCR</span><span class="compare-meta dim"></span></div>
+            <div class="compare-pane-head">
+              <span>RAW OCR</span>
+              <span class="compare-pane-actions">
+                <button class="btn" id="btn-save-raw" type="button" disabled>Save correction</button>
+                <span class="compare-meta dim"></span>
+              </span>
+            </div>
             <div class="compare-text"><span class="empty">(not run)</span></div>
           </div>
           <div class="compare-pane" data-pane="cleaned">
@@ -300,6 +316,7 @@
 
 <script src="/static/js/app.js"></script>
 <script src="/static/js/tropy.js"></script>
+<script src="/static/js/preview_image.js"></script>
 <script src="/static/js/preview.js"></script>
 <script src="/static/js/history.js"></script>
 <script src="/static/js/analytics.js"></script>

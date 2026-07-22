@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "THE ORIGINAL DOCUMENT RETAINED IN DEPARTMENT UNDER SECTION 3(4) OF THE PUBLIC RECORDS ACT 1958.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:55:19.078114+00:00",
+  "page": 134,
+  "total_pages": 143
+}

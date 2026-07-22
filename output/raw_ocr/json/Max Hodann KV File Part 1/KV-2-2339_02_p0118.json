@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "visit his daughter, Renate, aged 14, a student at the Dora Russell School. His divorced wife resides in London and has the custody of the child.\n\nAlien was at first refused permission to land but at 6.30 p.m. on 19th inst. the Home Office telephoned instructions permitting him to stay in this country for 7 days.\n\nHe left for London by the 7.45 p.m. train 19th inst.\n\nCharles Allen\nSergeant.\n\nfor T. M. Foster\nSUPERINTENDENT.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:34:37.669554+00:00",
+  "page": 118,
+  "total_pages": 131
+}

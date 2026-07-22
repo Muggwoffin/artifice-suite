@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET\nTelephone No.\nS.L.O. DOUGLAS 1994.\n\nBOX No. 35,\nG.P.O.,\nDOUGLAS,\nISLE OF MAN.\n\nENCL report & statements\n19 JUN 1941\n\nLG/1/12(173)\nTO 34C\nREF P.F. 49542\n\nJune 16th, 1941.\n\nDear Pilkington,\n\nWith further reference to your PF.49542/B.4.c.\nI am now able to send you the results of Captain Johnson's investigations with regard to the LOEWENHEIM Code. You will find attached here:-\n\n1. Copy of Johnson's report.\n2. Copy of separate interrogations of Ernest and Walter LOEWENHEIM.\n3. Copy of explanations of the names in the code as given by (a) Walter (b) Ernest.\n4. Comments made by Mrs. Lambert to whom the above was sent for a quick perusal and return, Frau [KARTHAUSER] being interned at Port Erin.\n\nNo doubt you have access to a copy of Sykes' report on Walter Lowenheim, E.B. Loewenheim, and B.F. Karthaeuser, which was apparently compiled \"a short while ago.\"\n\nSykes and Johnson have apparently, been in correspondence about these internees for some time, and so I am also sending him copies of the above.\n\nYours sincerely,\n\nValentine Amiltaef\n\nR. PILKINGTON, Esq.,\nBox No. 500,\nG.P.O.,\nOXFORD.\n\nP.S. Returned herewith are your photostat copies, as requested.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:01:57.410976+00:00",
+  "page": 13,
+  "total_pages": 60
+}

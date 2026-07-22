@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Register No. P.F.41426 Minute Sheet No.\n\n60.\n10.42 From R.U.C. in reply to 58a 60a\n\n61.\n10.42 To S.I.S. passing copy of attachment at 60a 61a\n\n62.\nF.2.a (through O.B.I.H. (Mr. Philip)) 21/10/42\nPlease see 60a, from which you will see that the Cardinal is not interested in getting GOOLD out of gaol, but only in getting him away from the fellow prisoners whom he is poisoning with his godless doctrines.\nB.I.H./JS\n21.10.42\nJohn Stephenson\n\n63.\n16.4.43. Censor's comment on int. letter from Pat Dooley to N. GOOLD. 63a\n\n6.44. Extract from Garda List of I.R.A. suspects forwarded by S.I.S. mentioning GOULD-VERSCHOYLE. Filed 11.8.44. 63b.\n\n13.7.44. Extract from Dublin report on I.R.A Activities mentioning Niall GOULD. 64a.\n\n65\n1.8.44 To S.B. re Niall GOULD 65a\n\n66\n1.8.44 To S.I.S. re GOOLD 66a\n\n67.\n17.11.44. Extract from S.I.S. report on SINN FEIN lecture, mentioning GOULD, Neil 67a.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:36:46.140821+00:00",
+  "page": 5,
+  "total_pages": 103
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Carl GROEHL @ Stanislas RETZLAW.\n\nBorn 10.2.96. at Schneidemuhl.\nProfession: Writer.\n\n29.5.36. Carl OTTEN refers to GROEHL, then living in Paris, as his friend and one of the cleverest men he has met in Germany.\n\n14.12.36. GROEHL referred to in S.I.S. as a \"well-known German Communist\" and member of MUENZENBERG Group. Said to have left the Communist Party and then returned to Stalin Communism and in November 1936 he was commissioned by the Comintern to write propaganda pamphlets.\n\nNovember 1937. GROEHL still in Paris. Seemed to be Trotskyist.\n\nJune 1938. M/S reported that GROEHL was letter box in Paris for the OTTEN Group who were doing Intelligence work for Czechoslovakia.\n\nAugust 1938. GROEHL described as an \"old-fashioned type of revolutionary\" who had been thrown out of every Left Wing Party in Germany - quarrelsome.\n\n9.10.40. Arrived in this country from Lisbon.\n\nApril 1941. GROEHL working for S.O 2.\n\n7.6.41. MILLER reported that GROEHL was in touch with RAUSCHNING. GROEHL is a friend of MILLER's.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:32:39.720287+00:00",
+  "page": 40,
+  "total_pages": 107
+}

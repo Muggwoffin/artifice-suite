@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY.\n\nTHE PATENT OFFICE,\n25, Southampton Buildings,\nLONDON. W.C. 2.\n\n18419/35\n\n11 JUL 1935\n\nSir,\n\nWith reference to your application, numbered as above, the Examiner reports that the word \"thermostatic\" on pages 2 and 3 should apparently read \"thermohardening\".\n\nClerical errors indicated in pencil should be corrected.\n\nI am, Sir,\n\nYour obedient Servant,\n\n(sd) H. F. Rogers.\n\nEnclosures:-\nProvisional specification\nNotes.\n\nA. S. Finkelstein, Esq.,\n13, Shelford Park,\nGreat Shelford,\nCambridge.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:40:42.712487+00:00",
+  "page": 37,
+  "total_pages": 143
+}

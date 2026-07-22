@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "RUSHMOOR,\nFLEET,\nHANTS.\nNov. 4 35.\n\nDear Alex,\n\nTo judge by your letter, you seem to be very depressed. I hope this may prove a passing phase, and that everything will come out all right.\n\nI am glad to hear that your index, though anonymous, has received recognition; it must have been done very well indeed, as the average index is not usually commented on, I think, unless it can be criticised.\n\nThanks for calling my attention to a passage in \"Nature\" dealing with my note; I must have a look at it when next in town.\n\nNext week I shall have occasion to go to London & can choose my day; if therefore you should intend to go up too, I could fix arrange if so as to meet you in which case please fix day, time & place, writing me this week. We have returned quite recently from a long stay in France & Switzerland; my wife's nerves required a long rest from house-keeping worries, & she also had to take",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:26:19.246546+00:00",
+  "page": 8,
+  "total_pages": 99
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF.66074 OLDAG\nPF.213,643 RICHARDS\n221975 LOCKIE\n\nOn 23.8.44. Mr. Himsworth, M/S, rang up (scrambler) in connection with the case of OLDAG, and informed me of progress. He asked whether we had any photograph or description of Mrs. RICHARDS.\n\nIn the absence of Miss Sercombe, I obtained PF.213,643 (Mrs. RICHARDS) and gave Mr. Himsworth's secretary her description from that file. I added that we had no photograph of her, but gave particulars of her former names and passport, and suggested that M/S should send direct for her passport papers.\n\nI mentioned to Mr. Himsworth that an airman in the R.A.F. near Cambridge has in his possession the original drawing by OLDAG of \"Defend our Heritage\". This man is L.A.C. J. Andrew LOCKIE (221975).\n\nF.3.m.\n24.8.44.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:59:09.277779+00:00",
+  "page": 69,
+  "total_pages": 91
+}

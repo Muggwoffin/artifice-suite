@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Ref: P.F.49542/E.5.(5).\n\nIn a letter dated 16.11.41. Ernst LOEWENHEIM, writing from 70 Anson Road, N.7., vouches most warmly for the anti-Nazi and pro-British sentiments of Ramon Helmut WINGS (L.258/124). LOEWENHEIM says he knew WINGS at Liverpool Prison Hospital \"a year ago\" and had many political conversations with him. The letter is in WINGS's Home Office file W.622/12.\n\nE.5.(5).\n28.1.42.\nGRM/JMT.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:17:20.794703+00:00",
+  "page": 41,
+  "total_pages": 68
+}

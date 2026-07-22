@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET AND PERSONAL\n\nHEADQUARTERS,\nWESTERN COMMAND,\nCHESTER.\n\n5th October 1945.\n\nDear Tallent,\n\n13095115 Pte OLDAG. A.W.\n\nReference your PF 66074Y/F3m dated 17th Sep 45.\n\nThe above-named soldier has now been tried by D.C.M. and a letter from the C.O. 12 P.C. Hdg & Trg Unit relating to this matter is forwarded herewith.\n\nPlease forward further instructions in due course.\n\nYours sincerely,\n\nCaptain F.P.T. Tallent,\nBox No. 500,\nParliament Street, B.O.\nLONDON, S.W.1.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:44:25.763665+00:00",
+  "page": 53,
+  "total_pages": 92
+}

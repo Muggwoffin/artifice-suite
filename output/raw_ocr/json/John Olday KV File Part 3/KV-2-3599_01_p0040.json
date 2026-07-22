@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "2. THE SYSTEMS\n\n\"New York Stock Exchange had a boom yesterday following Von Ribbentrop's speech at Danzig. Wall Street interprets the speech as meaning a long war. Stocks rose almost to the highest levels of the year.\"\n\"Daily Sketch\", 26th Oct., 1939.\n\n\"The arms manufacturers over the world are the cause of most of this trouble in Europe.\"\n\n\"The Nye investigations in Washington revealed the futility of League armament discussions, while British, American and French armament manufacturers were selling enormous supplies of arms to all the world and were maintaining secret agents at Geneva to defeat the very purpose of the Disarmament Conference.\"\n\n\"Nor have the English been better. They have themselves violated the Versailles Treaty in selling aircraft and other war materials to Germany.\"\nAmbassador Dodds' Diary, 1933-1938.\n\nDOLLAR DEMOCRACY",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:09:21.119593+00:00",
+  "page": 40,
+  "total_pages": 57
+}

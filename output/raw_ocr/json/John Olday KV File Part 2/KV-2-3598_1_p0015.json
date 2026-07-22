@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copies for:-\nPF.64439, PITTS\nPF.53318, SLOANE\nPF.66074, OLDAG\n(MARSTON)\n\nCONFIDENTIAL.\n\nYour Ref. I.S.W.C. 1868\nOur Ref. C.C.106,215/B.l.d.\n\n5th December, 1946.\n\nDear Colonel Gurney,\n\n14684021 Pte. MARSTON, John\n2375918 Pte. PITTS, Michael\n13095115 Pte. OLDAG, Arthur W.\n14235557 Pte. SLOANE, McNeil\n\nI have been talking with Colonel Glegg about the four B.l.d. cases for which you still have open files: MARSTON, OLDAG, PITTS and SLOANE.\n\nI entirely agree that these cases should now be wound up, and accordingly suggest that MARSTON's case should be closed and his file destroyed after the usual period; G.S.O. records have already been asked to let me know when he is apprehended. The OLDAG, PITTS and SLOANE cases may also be closed, but here I should be glad if you would not destroy the files until the men are released from the Army. There is a good deal of material in each file which would be tiresome to recapitulate if the case became active again.\n\nYours sincerely,\n\nC.S. Weldsmith.\n\nLt. Col. C.H. Gurney, O.B.E.,\nA.A.G.,\nHeadquarters,\nWestern Command,\nChester.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:38:24.461706+00:00",
+  "page": 15,
+  "total_pages": 92
+}

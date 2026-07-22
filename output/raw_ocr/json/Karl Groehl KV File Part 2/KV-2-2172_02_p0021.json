@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From: S. Retzlaw,\n10 D Belsize Park Gardens,\nLondon. N.W.3.\n\nTo: Mr. H.G. Frueh,\nLindenweg 4,\nKilchberg bei Zurich.\n\nDate: 2nd March, 1942.\n\nCONFIDENTIAL\n\nWritten in German.\n\nDear Friend,\n\nI am very pleased to have your letter of 9.2. which reached me very quickly. Many thanks for your greetings and those of your family which I return equally affectionately.\n\nUnfortunately things are not quite as you write. Matters are by no means well with me. My hosts are not such \"gentlemen\" as the saying was in novels. You know what it is like with the bourgeoisie: if one receives a blow he has his own back on the first weaker person he can find. Thus it is with me because I have no money, i.e. because I am not rich; have no evening clothes, always refused a title formerly, for this reason they think they can be impertinent. This will end now. The war is developing as I foresaw it would, minds and hearts are becoming hardened, people are becoming spiteful, petty, sordid, etc.\n\nNevertheless your optimism is justified and I hope that you judge correctly when you write that the majority of the population is also optimistic so long as everything necessary is done. And it must be done. It takes a long time but will come in the end.\n\nI am particularly pleased to hear that you have written to Wera. Even if she replies impolitely this will signify little, she is certainly in an unfavourable position. One can only speak reasonably later. But I am hoping for the best",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:29:34.820700+00:00",
+  "page": 21,
+  "total_pages": 107
+}

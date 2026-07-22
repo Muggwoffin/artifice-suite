@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Source 28.9.41\n\nThere are other persons in this country who know LOEVENHEIMS from Berlin times and used to be in touch with him also in this country very frequently; these are the people of his own movement \"Neu Beginnen\" the representative in this country being Erwin SCHOTTLE, a former Social Democratic M.P. of Wurtemberg, an aryan of about forty-five years of age; a very straight-forward man, really pro-British; I know LOEVENHEIMS gave him in their release applications as reference and TRAUTE L. mentioned to me once that SCHOTTLE did not give a very useful answer on being asked by the Home Office; unfortunately I am not of the opinion that he would answer me exactly what I could ask him for your purpose but would there perhaps be anyone else whom you could ask to contact SCHOTTLE? Because I expect there is something to harvest.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:52:31.938072+00:00",
+  "page": 13,
+  "total_pages": 64
+}

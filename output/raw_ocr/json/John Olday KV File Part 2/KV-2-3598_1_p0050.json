@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "This was handed to me in the Compound Holiday Camp, Pioneer Corps, Prestatyn, N. Wales, with a request to forward it on, to your address.\n\n(1) Frank left here\u2014I met him after his Court Martial. He seemed very pleasant. I don't know why!\n\n(2) Could you get one of the Spaniards to look into the case of a refugee in Brixton, named Mina. Failed to notify change of address no criminal record and due for deportation after expiration of sentence. Is a Republican. doesn't know anything about our Mob, but I think there must be some Committee he can contact. He imagines there is no one. It is obvious deportation to Spain would be far too severe a sentence.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:44:05.985218+00:00",
+  "page": 50,
+  "total_pages": 92
+}

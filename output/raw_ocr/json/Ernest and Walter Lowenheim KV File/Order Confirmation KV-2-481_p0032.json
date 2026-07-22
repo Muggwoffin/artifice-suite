@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SOURCE: ____________________________ 10.6.42.\n\nI told me that Walter LOEVENHEIM is very active again. Recently he gave an address to a meeting of about 14 people, who were got together by KRESSMANN. thinks that a combination of LOEVENHEIM and KRESSMANN bodes no good. This information came from SCHOETTLE, who is afraid that LOEVENHEIM's activities will react unfavourably on the reputation of NEUBEGINNEN, although he is no longer a member. This is quite likely, as it is easy for people to confuse LOEVENHEIM with LOEWEINTHAL @ SERING, who leads the British Neubeginnen Group. does not think Neubeginnen are up to any mischief at present.\n\nE.7.(S)\n12.6.42.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:16:01.675315+00:00",
+  "page": 32,
+  "total_pages": 68
+}

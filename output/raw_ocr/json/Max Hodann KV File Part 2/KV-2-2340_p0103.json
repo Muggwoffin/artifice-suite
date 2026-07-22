@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Wie stehts mit Ihren Studien in Richtung auf unser Ziel? Haben Sie Erfolg mit Ihren ersten Ermittlungen gehabt?\nWas k\u00f6nnen wir sonst f\u00fcr Sie tun??\nWir haben uns wirklich mit Ihrem grossgerichteten Menschen gefreut, und wir rechnen mit Ihnen.\nWie stehts mit Genf? Hilfsstelle f\u00fcr Akademiker.\nKonnten Sie mir jetzt die Kleinigkeiten bei ROLLS RAZOR besorgen.\nAlle, aber auch alle Auslagen werden promptest ersetzt.\nSchreiben Sie bitte nicht gar zu telegramm\u00e4ssig.\nIn kameradschaftlicher Liebe\nIhre in Richtung auf Sie sich bewegenden\nKitty mit Gute\nRektor",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:51:57.015915+00:00",
+  "page": 103,
+  "total_pages": 143
+}

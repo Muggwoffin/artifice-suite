@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CENTRAL REGISTER OF ALIENS.\nLIVE SECTION.\nExtract of Particulars of Registration.\n\nCard dated\n\nName REITZLAFF Oscar.\n\nalias\n\nNationality American (previously)\n\nBorn 7.2.1894 in New York.\n\nOccupation Clerk.\n\nArrived U.K. 7/10/1910.\n\nLeft U.K.\n\nRe-entered U.K.\n\nPassport\n\nRegistration District M.P.D. I.B. or R.C. 278101.\nSer. No. 47 2929.\n\nAddress* 3 Hayell Road, East Hane.\n\nRemarks\n\n* Changes of address within the Registration District are not notified to the Central Register.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:33:33.767435+00:00",
+  "page": 48,
+  "total_pages": 107
+}

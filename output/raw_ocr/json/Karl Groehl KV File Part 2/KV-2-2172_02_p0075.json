@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F. 46464/Region 5/S.O.2.  24th October, 1941.\n\nDear Senter,\n\nS. RETZLAW @ K. GROEHL\n\nReferring to our correspondence ending with your letter JS/KV//188 of 11th October, I enclose the original letter sent to the B.B.C., addressed to the above-named man, which you requested us to forward to you for delivery.\n\nYours sincerely,\n\nSgd EJPC\n\nE.J.P. Cussen, Major,\nfor Lieut. Colonel Hinchley Cooke,\nRegional Security Liaison Officer.\n\nLieut. J. Senter, R.N.V.R.,\nS.O.2.\n\n/CK.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:38:06.607755+00:00",
+  "page": 75,
+  "total_pages": 107
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "B.4.c.\nMr. Pilkington.\n\nAccording to information recently received from Captain Johnson, Intelligence Officer at Onchan Camp, LOEWENHEIM was caught trying to smuggle messages out of the Camp via the wife of another internee, who was visiting him. When called for an explanation he told a series of lies, including one to the effect that he was one of the founders of the German Social Democratic Party. He also admitted that he had denounced as a Communist, to the Camp officers a certain Dr. Kurt HILLER who was released from Onchan some months ago, and whom I know personally to be one of the bitterest fighters against Communism among the emigrants.\n\nB.8.c.\n23.6.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:59:45.771941+00:00",
+  "page": 64,
+  "total_pages": 64
+}

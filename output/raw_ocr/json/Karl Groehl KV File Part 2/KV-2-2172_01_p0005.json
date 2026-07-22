@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "10.3.42  Note of a telephone conversation with S.O.E. regarding the fact that RETZLAW had been indiscreet and was giving away information. 121.\n\n10.3.42  Copies of documents forwarded by S.O.E. regarding RETZLAW. 122.\n\n14.3.42  Minute to D.D.G. from S.L.(A) 1 regarding the proposed detention of RETZLAW. 123.\n\n17.3.42  Further minute from S.L.(A) 1 to D.D.G. regarding a proposed interview with RETZLAW. 123a\n\n21.3.42  Report re interview with RETZLAW. 123b.\n\n25.3.42  From S.O.E. asking for the return of their papers (see 121a) 124a\n\n125. The original of the report at 121a was handed to D.D.G. by General Lakin and has now been returned, together with certain other interdepartmental papers belonging to S.O.E.\n\nGeneral Lakin's purpose in handing us these papers was to obtain a view with regard to the possibility of recommending RETZLAW'S internment. This question is still under consideration, but D.D.G. and I are both of the opinion that it would be difficult to make such a recommendation to the Home Office on the information at present available.\n\nS.L.(A) 1. 28.3.42\n\n126. 28.3.42  To S.O.E. returning the originals of the documents at 121a and certain other papers belonging to S.O.E.\n\n127. 31.3.42  From S.O.2. in reply to 126a.\n\n128. 11.5.42  Note from E.7.(s) re meeting with GROEHL and enclosing copy of GROEHL's circular\n\n129. 25.7.42  Source RI report re GROEHL. 31.8.42  Cross-Ref. report from Source re Meeting attended by RETZLAW\n\n130. 30.7.42  Source RI report re the Kulturbund Exhibition, \"ALLIES INSIDE GERMANY\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:12:28.364240+00:00",
+  "page": 5,
+  "total_pages": 90
+}

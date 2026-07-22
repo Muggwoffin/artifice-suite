@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "WARNING.\n\nTo: F3H\n\nFile No. PF 51643\n\nmarked to you 22/12/245 is INCOMPLETE.\n\nPlease Attach this Slip to the File Cover immediately, and either\n(a) Return the file to the Registry for further papers to be joined or\n(b) ask Registry (R. 3, Extension 82, Oxford) to forward the papers for filing.\n\nIf neither (a) nor (b) is acted upon within five days, the papers will be forwarded to you for filing.\n\nIf the file has already left, please Forward this slip Urgently.\n\nNO FURTHER ADVICE WILL BE SENT.\n\nDate: 19/3/245\n\nR. Form 23.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:49:41.721162+00:00",
+  "page": 2,
+  "total_pages": 91
+}

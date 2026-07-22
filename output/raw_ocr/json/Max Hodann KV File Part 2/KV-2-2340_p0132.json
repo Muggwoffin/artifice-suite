@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF.43817/D.S.9.a.  SECRET.\n\nG.P.O. - Captain Booth.\n\nI should be glad if you would kindly submit for the next fortnight the usual return of correspondence addressed to:-\n\n14, Calthorpe Street, W.C.1.\n\n(20) K.W.W.S.\n\n27th May, 1935.\n\nNoted in PF 44634 KILLIAN",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:55:08.012526+00:00",
+  "page": 132,
+  "total_pages": 143
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "[re Mrs. LINDBECK-NILSSON.]\n\nBy discreet enquiries I learned that the above woman under the name of LINDBECK went on her arrival in London to 60, Torrington Square, W.C. where she stayed three days and then departed for Kynance Court, Gloucester Road, S.W. where she is said to be at the present time. She was accompanied by her young daughter and the day after her arrival she was joined by a German, whose name is unknown but who answers to the description of HODANN. Latter stayed one night.\n\nLINDBECK is stated to be a friend of the Norwegian Minister in London and her supposed object inc oming here is for the purpose of certain research work. She appeared to be greatly upset by the H.O. action in detaining herself and her friend at Harwich and she told the proprietress at 60, Torrington Square that she had to raise a certain sum of money as surety before her friend was allowed to land.\n\n[No. 60, Torrington Square] is a residential Club catering for students. It is known as [\"Gowerdene\"] and run by a Norwegian woman named HOLBECK.\n\nFrom the same address is run 'International Holiday and Study Tours' and most of the residential residents are sent through \"The Student Movement\", 32, Russell Square.\n\n(sd) H.H.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:33:05.246262+00:00",
+  "page": 106,
+  "total_pages": 131
+}

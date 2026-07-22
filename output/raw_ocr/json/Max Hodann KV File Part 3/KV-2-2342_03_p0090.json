@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "friendly with the intellectuals of the C.P.G.B.\n\n4. He has, on three occasions, been observed to call at Flat 37, Hartington Court, Lansdowne Road, the residence of Alick WEST who was for some time resident in Basle and has undoubtedly been used as a Comintern courier. In 1932 WEST was in correspondence with Rajani Palme DUTT whom he is believed to have visited in Brussels; in March 1934 he was lecturing at the Workers' School in Basle and was in communication with RATHBONE of the Labour Monthly; in 1935, having returned to this country, he was assisting WINTRINGHAM in connection with the \"Left Review\".\n\n5. He has received two letters from one Max LICHSTENSTEIN in Copenhagen - Norre Farimagsgade 68 - who may be identical with a man of this name denounced to the Immigration Officer at Dover as a Communist agitator.\n\nThe correspondence discloses that LICHSTENSTEIN was friendly with HODANN; that he was associated with members of some Communist Party abroad; that he had control of certain funds which may have been for the relief of distressed German political refugees; and that he had been to Germany as lately as January 1935.\n\n6. HODANN wrote, on 6.4.35. to Otto KATZ or Babette GROSSE, asking for an introduction to Lord Marley of the German Relief Committee here.\n\n7. Another associate of HODANN's appears to be one Alexis S. FINKELSTEIN, interested in Scientific Chemistry, who has some employment at Shelford, Cambridgeshire.\n\nFINKELSTEIN has a daughter Karen who in April 1935 was very worried owing to the fact that she was being watched by the Police. Her father was anxious to get her to Russia or to Norway. He told her that HODANN was \"the Uncle Martin Hansen to whom he had spoken in London.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:35:09.534210+00:00",
+  "page": 90,
+  "total_pages": 99
+}

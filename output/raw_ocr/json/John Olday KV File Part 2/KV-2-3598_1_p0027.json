@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From: Lieut. Colonel W. M. W. Collins MC.,  \nSECRET AND PERSONAL\n\nTel.: York 3031\nExt 105\n\nRef. I.S.N.C. 2730\n\nHEADQUARTERS,\nNORTHERN COMMAND,\nYORK\n\n12 March 1946\n\nDear Miss Weldsmith,\n\nI forward herewith a copy of a letter addressed to Pte Oldag signed \"IVOR\" and also a copy of his outward weekly letter.\n\nYours sincerely,\n\n[signature]\n\nMiss C. S. Weldsmith,\nBox No. 500,\nParliament St B.O.\nLONDON S.W.1.\n\nWMWC/AEP\n\nENCL 3 pages\n13 MAR 1946\nTO F. 3.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:40:13.609733+00:00",
+  "page": 27,
+  "total_pages": 92
+}

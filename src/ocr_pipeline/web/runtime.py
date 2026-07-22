@@ -12,9 +12,11 @@ addresses treeview rows — a stable string key that survives across SSE
 messages without the client needing to understand JobItem internals.
 """
 
+import json
 import queue
 import sqlite3
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +26,11 @@ from ..history import HistoryStore
 from ..jobs import STAGES, JobItem, JobRunner, State
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
+
+# Higher than OCR's own 200 dpi — this pane exists specifically so a user can
+# zoom in past what machine OCR needs, to check an individual word by eye.
+IMAGE_DPI = 300
+IMAGE_MAX_LONG_EDGE = 3000
 
 
 def _item_key(item: JobItem) -> str:
@@ -103,6 +110,77 @@ def serialize_item_preview(item: JobItem) -> dict[str, Any]:
         "language": item.language,
         "diff": _diff_payload(raw, cleaned, translated),
     }
+
+
+def render_page_image(item: JobItem) -> bytes:
+    """PNG bytes for a TIFF source, or the single PDF page `item.page` points
+    at — never the whole document (a 275-page Tropy item would make that a
+    real waste, exactly what `_pdf_single_page_image`'s docstring warns
+    against). JPEG/PNG need no conversion — browsers render them natively —
+    and are served directly by the route instead of coming through here.
+
+    PDF render DPI is capped by long edge rather than left uncapped, so an
+    oversized scan doesn't produce an unreasonably large PNG; TIFF is
+    converted at its native resolution, same as the jpg/png passthrough
+    case leaves those files at whatever resolution they already are.
+    """
+    import fitz  # PyMuPDF
+
+    path = Path(item.path)
+    suffix = path.suffix.lower()
+
+    if suffix in (".tif", ".tiff"):
+        return fitz.Pixmap(str(path)).tobytes("png")
+
+    if suffix == ".pdf":
+        doc = fitz.open(str(path))
+        try:
+            page = doc[item.page or 0]
+            dpi = IMAGE_DPI
+            long_edge_pt = max(page.rect.width, page.rect.height)
+            long_edge_px = long_edge_pt / 72 * dpi
+            if long_edge_px > IMAGE_MAX_LONG_EDGE:
+                dpi = dpi * IMAGE_MAX_LONG_EDGE / long_edge_px
+            return page.get_pixmap(dpi=max(int(dpi), 1)).tobytes("png")
+        finally:
+            doc.close()
+
+    raise ValueError(f"No image renderer for {suffix} files")
+
+
+def save_raw_text(item: JobItem, text: str) -> dict[str, Any]:
+    """Persist a manual correction to an item's raw OCR text.
+
+    Always updates the in-memory copy first — that's what a later
+    cleanup/translate run or a Tropy write-back reads from (`jobs.py`'s
+    `_phase_cleanup` reads `item.results["raw"]`). Also overwrites the
+    on-disk `raw_ocr/text/<stem>.txt` and `raw_ocr/json/<stem>.json` *if a
+    prior OCR run already produced them* for this stem; an item only added
+    to the queue but never run has nothing on disk yet, which isn't an
+    error, just nothing to persist beyond memory yet.
+
+    Only `extracted_text` (+ new `edited`/`edited_at`) changes in the JSON —
+    `engine`/`model`/`ocr_prompt`/`timestamp` keep recording what the
+    *original* OCR pass actually did. Rewriting those to look like the model
+    produced the corrected text would be dishonest provenance, the same
+    principle `_guard.py` argues for automated corrections.
+    """
+    item.results.setdefault("raw", {})["extracted_text"] = text
+
+    output_dir = state.runner.output_dir if state.runner else config.get("output_dir")
+    text_path = Path(output_dir) / "raw_ocr" / "text" / f"{item.stem}.txt"
+    if text_path.exists():
+        text_path.write_text(text, encoding="utf-8")
+
+        json_path = Path(output_dir) / "raw_ocr" / "json" / f"{item.stem}.json"
+        if json_path.exists():
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            data["extracted_text"] = text
+            data["edited"] = True
+            data["edited_at"] = datetime.now(timezone.utc).isoformat()
+            json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    return serialize_item_preview(item)
 
 
 def serialize_history_run(row: sqlite3.Row) -> dict[str, Any]:

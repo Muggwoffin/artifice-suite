@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "GROSS - REFERENCE.\n\nSUBJECT: Karl Groehl.\n\nOn 29.4.38., Groehl wrote to Otten thanking him for the \u00a34 and said he would arrive at Victoria on Saturday or Sunday, 6 p.m. depending on when he received the invitation.\n\nWritten in Groehl's own handwriting.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:09:20.003212+00:00",
+  "page": 92,
+  "total_pages": 102
+}

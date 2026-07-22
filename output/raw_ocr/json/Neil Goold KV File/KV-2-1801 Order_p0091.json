@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Extract from Passport Office file.\n\nName. GOOLD-VERSCHOYLE, Hamilton Neil Stuart.\nBorn. 19.12.04. Dublin.\n\n25.3.29. issued Passport No.13365. (Copy attached)\n\nAddress: 23, Holland Park Road, London.\nOccupation: Student.\nObject: France - pleasure.\nReferee: C.H. ROBINSON, Barrister-at-Law.\n17b, Florence Road, Ealing, W.5.\nNote. His father wrote from 3, St. Mary's Road, Ballsbridge, Dublin giving permission for his son to be granted a passport. The father's occupation was given as Barrister-at-Law and his temporary address as The Manor House, Dunkineely, Co. Donegal.\n\n17.3.26. Address: 24, Paultons Square, Chelsea.\nPassport renewed to 26.3.28.\nReferee: Herbert Henry MILLS, M.D.\n21, St. Mary Abbot's Terrace, W.14.\nPassport endorsed for Germany.\n\n23.7.28. Address: 4a, Inverness Place, W.2.\nPassport renewed to 26.3.33.\nReferee: Stanton COIT, Minister,\nThe Ethical Church, Queen's Road, W.2.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:49:04.960408+00:00",
+  "page": 91,
+  "total_pages": 103
+}

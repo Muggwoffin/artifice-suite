@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "HOME OFFICE RECORDS.\n\nREFERENCE NO: PF.43817 (pending)\n\nSECTION: B.4b.(1)\n\nNAME (in full): Professor Max HODANN\n\nNATIONALITY: German\n\nAGE: Born 30.8.94. at Neiss\n\nOTHER PARTICULARS: Was a refugee from Germany. Went to Norway (?) in 1936 but was thought to be in the U.K. in August last (1940)\n\nS.3a.\n\nIs there any trace of the above in\n\n(1) H.O. Traffic Index.\n(2) H.O. Aliens Branch.\n(3) Central Aliens Registry.\n\nIf so, I should like\n\n(a) Copy of last card in Traffic Index.\n(b) Copies of all cards since\n(c) To see H.O. papers.\n(d) Copy of card in Central Aliens Registry.\n\nPlease see attached\n\n(Signature)\n\nNOTE.\n\nPlease strike out any items not required.\n\nUnless absolutely necessary Officers should not requisition copies of BACK CARDS in Traffic Index as this involves extra work for H.O. Registry Staff.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:00:06.218785+00:00",
+  "page": 32,
+  "total_pages": 104
+}

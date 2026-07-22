@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "M/S report:\n\nOn Friday, June 3rd, I called upon OTTEN and found him alone. When alone he becomes spontaneously confidential, but when his wife or LEHMANN-RUSSBUELDT are present he is more reserved. I therefore learned some particulars which may be interesting.\n\nThe contents of the \"Mr. SMITH\" letters are not merely required for the book; they go first to the Czecho-Slovak Legation. OTTEN and his companions - a group of six in London - are directly working for Czecho-Slovakia now, and are the London terminus of an intelligence service which has agents working in Germany. The letter-box is GROEHL, in Paris. OTTEN told me that in pre-Hitler days GROEHL was one of the three German leaders of the Rotfront, the other seven being Russians. He has now adopted Trotskyist views, and will have nothing to do with Moscow, but is apparently in Czech employment.\n\nThere are evidently two anti-Hitler movements ripening in Germany. One is among the Army officers, who aim at a Hohenzollern restoration; the other is a bourgeois and proletarian one. Some few proletarians would be for a Communist government if Hitler could be overthrown, but the majority have a sickener of Bolshevism dating from the days when Moscow insisted on dictating the policy and tactics of the C.P. in Germany, and are willing to unite with the bourgeoisie for a democratic republic. The civil movement is in touch with the military one, and both are co-operating at present, but their work is seriously hampered for lack of funds, and OTTEN thinks that at the present rate of progress three years will be needed before an open move against Hitler can be made. If even \u00a32000 a year could be secured the rate of progress could be accelerated considerably.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:07:48.592017+00:00",
+  "page": 80,
+  "total_pages": 102
+}

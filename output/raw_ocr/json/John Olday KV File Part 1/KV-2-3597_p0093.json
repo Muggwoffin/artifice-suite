@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "File No. P.F. 66074. OLDAG.\n\nSERIAL 8a.\n\nhas been removed from this file.\n\nSEE Y Box 3138. TODD. Held R.3.Y.\n\nRemoved by NMR R.3.Y.\n\nDate 21.4.44.\n\nS. Form 195/B.P./5000/3.44",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:31:25.927114+00:00",
+  "page": 93,
+  "total_pages": 98
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Fc 81/B.P./5000/7.42.\n\nEXTRACT.\n\nExtract for File No. P.F. 45000 ................................................................. Name: MEISEL/OLDAG\n\nOriginal in File No.: C.C. 300, 682 .................................................... Serial: 1a. .................. Dated: 15.5.41. .................... Rec'd 17.5.41.\n\nOriginal from: S.B. ................................................................. Under Ref.: .............................................................\n\nExtracted on: 22.2.43. ................................................................. by: R.D. ............... Section: R.5. ............\n\nREPORT on Black Brief Case recovered from 54, Lillington St. S.W.1.\n\nAbove house was destroyed by enemy action in April 1941. It's occupants were - Philipp Israel URBACH & Arthur Willaim ORDAG (subject of Special Branch file No. 320/EMP/517). They are now both living at - 49, Upper Montagu Street, W.1.\n\nURBACH met OLDAG at the Fortes Milk Bar, Leicester Square, W.C. where both are employed at biscuit makers.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:28:07.126313+00:00",
+  "page": 70,
+  "total_pages": 98
+}

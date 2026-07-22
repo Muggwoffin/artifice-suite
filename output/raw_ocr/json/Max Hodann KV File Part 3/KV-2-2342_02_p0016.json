@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "The British Xylonite Company Limited\nESTABLISHED 1877\nMANUFACTURERS OF PLASTICS\nHALE END \u00b7 LONDON \u00b7 E\u00b74\nTELEPHONE LARKWOOD 2348\nLONDON SHOWROOM 27 MILTON STREET, E.C.2\nTELEGRAMS XYLONITE PHONE LONDON\n\nYOUR REF.   SUB REF.   ATM   DATE   8th. January 1936.\n\nMr. A. S. Pinkelstein,\n13, Shelford Park,\nGreat Shelford,\nCAMBRIDGE.\n\nDear Sir,\n\nReplying to your recent letter we would inform you that there is no flash point for \"Xylonite\", but it fumes off at temperatures over 300\u00b0 F.\n\nThe material we supply from stock can be considered as an ordinary commercial quality.\n\nAs regards price, this is governed by the thickness. The thicker gauges are cheaper than the thinner ones, but if you will let us know the thicknesses that interest you, we shall be pleased to give you prices.\n\nYours faithfully,\n\nTHE BRITISH XYLONITE Co. LTD.\nBRANTHAM SALES DEPARTMENT.\n\nF. M. 8204",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:09:17.729334+00:00",
+  "page": 16,
+  "total_pages": 130
+}

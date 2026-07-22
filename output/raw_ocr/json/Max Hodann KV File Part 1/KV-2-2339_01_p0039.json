@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "37 Mecklenburg Lgau\nW i\n18-4-35\nTermin: 6086.\n\nSehr geehrter Herr Dr. todauer,\n\nDr. Reisin bat mich, mich mit Ihnen in Verbindung zu setzen.\nRufen Sie mich doch bitte an am besten fr\u00fch gegen 9 1/2.\n\nFr\u00fcher\nK\nTerry Neumann",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:08:57.655240+00:00",
+  "page": 39,
+  "total_pages": 144
+}

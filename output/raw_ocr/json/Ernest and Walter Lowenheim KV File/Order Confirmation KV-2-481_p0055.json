@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM.\n\nFrom: E.3.(S)\nTo: F.3.c. (Mr. Pilkington)\n\nPlease see the attached. tells us he has seen Mrs. Traute Williams (former Mrs. L.) again and learnt from her that both L's and Mr. & Mrs. KARTHAEUSER returned to London a week ago. He would glad to know whether we are interested that he should see them.\n\nAs the Lowenheim's have now been released, you will perhaps reply to this note.\n\nF.3.c. R. Pilkington\n16/11/41\n\nDate: 13.11.41\nSignature: For C.W. Sykes.\n\nS. Form 161",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:19:19.387031+00:00",
+  "page": 55,
+  "total_pages": 68
+}

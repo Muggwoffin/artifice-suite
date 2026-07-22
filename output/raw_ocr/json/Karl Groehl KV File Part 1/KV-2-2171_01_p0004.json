@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "10.\n20.11.37. Cross reference to intercepted letter from GROEHL to OTTEN.\n\n11.\n24.11.37. Copy of letter to S.I.S. re GROEHL and OTTEN.\n\n12.\n18.4.38. Cross reference to intercepted letter from GROEHL to OTTEN.\n\n13.\n29.4.38. Cross reference to intercepted letter from - to Otten\n\n14.\n5.5.38. M/S report re GROEHL and OTTEN.\n\n15.\n12.5.38. Copy of letter to S.I.S. enclosing a letter from Groehl to Otten, dated 8.5.38.\n\n23.5.38. Cross reference to M/S report on Otten's Group.\n\n16.\n5.6.38. Gist of int. letter from Groehl to Otten.\n\n17.\n7.6.38. Gist of int. letter from Groehl to Otten.\n8.6.38. Copy of M/S report re Otten Group.\n13.6.38. Cross reference to M/S report re -\n14.6.38. Copy of information sent by Karl Groehl.\n17.6.38. Cross reference to intercepted letter from - to Otten.\n\n18a.\n30.6.38. Gist of letter from Groehl to Otten.\n22.7.38. Cross reference to M/S report re Groehl.\n19;\n28.7.38. Cross reference to intercepted letter from GROEHL to OTTEN.\n\n20.\n31.7.38. Cross reference to intercepted letter from GROEHL to OTTEN.\n\n21.\n9.8.38. Copy of letter to S.I.S. re 20a.\n\n22.\n9.8.38. Copy of B.5.b.(M/S) report re GROEHL and the OTTEN group.\n9.8.38. Copy of letter to S.I.S. re Groehl.\n\n23.\n12.8.38. Copy of B.5.b.(M/S) report re GROEHL and the OTTEN group.\n\n24.\n17.8.38. Summary of letter from Groehl to Otten.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:44:25.080967+00:00",
+  "page": 4,
+  "total_pages": 96
+}

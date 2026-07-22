@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF 46464\nRoklan\n117B\nNotice in PF 47321\n26.1.42. Roklan\nletter to S/22554\nSelecting and using\npublished propaganda.\nADE7\n14.3.42\nByng",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:33:07.476991+00:00",
+  "page": 44,
+  "total_pages": 107
+}

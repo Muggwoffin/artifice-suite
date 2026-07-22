@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY. Original in PF.45807 OTTEN, v.5. 203a.\n\nP.F.45807/B4b. 28th September 1939\n\nDear Colonel Vivian,\n\nIn a letter which we have seen passing from Karl GROBUL to OTTEN, the former states that he has been in the La Sante Prison in Paris since 1.9.58. He wants OTTEN to help him if possible to come to England and ends his letter by asking OTTEN to speak to Mr. PRALESH.\n\nYours sincerely,\n\nLieut. Colonel V. Vivian, C.B.E., S.I.S.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:56:41.609251+00:00",
+  "page": 91,
+  "total_pages": 96
+}

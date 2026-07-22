@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Suggestions by Security.\n\nRetain but in Pioneer Corps.\n\nFurther Remarks.\n\nSo far as we can see he is doing no harm. He seems to be of very good education and intelligence. He states that he has no interest whatever in English politics. We recommend his retention in the Army.\n\n(sgd) C. C. Adams, Lt. Col.\n\n(sgd) C. Binney.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:24:15.725796+00:00",
+  "page": 42,
+  "total_pages": 98
+}

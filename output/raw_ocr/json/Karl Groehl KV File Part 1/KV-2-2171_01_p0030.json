@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 81/rev. 11.62\n\nEXTRACT\n\nExtract for File No.: PF 46,464\nName: RETZLAW\nOriginal in File No.: RL 451-362\nVol.: 1\nSerial: 45a\nReceipt Date: 29.3.41\nOriginal from: SB\nUnder Ref: 405/40/258\nDated: 21.3.41\nExtracted on: 14.6.67\nby: AAA\nSection: P4\n\nExtract from report on Samuel URIEWICZ (Suspected Comintern Agent) and his contacts mentioning RETZLAW\n\nAnother acquaintance (of URIEWICZ) is Stanislaw RETZLAW, Pole, born 2nd June, 1898 at Inowaratzlow, living at 11 Peters Court, Porchester Road, W.2. mentioned in Special Branch report of 9th January, 1941 (405/40/1434) who is said to have been acting as an agent for the British Government. URIEWICZ has said that this is not the man's correct name but he affirms that RETZLAW is a British agent.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:48:16.234773+00:00",
+  "page": 30,
+  "total_pages": 96
+}

@@ -540,6 +540,80 @@ select.select, .output-row select, .run-row select, label select {
 
 .compare-text .empty { color: var(--ink-faint); font-style: italic; }
 
+/* Preview-only: source-image pane beside the Raw/Cleaned/Translated panes.
+   `.compare-panes` itself is untouched — History uses that same class with
+   no image pane and must keep rendering its unmodified 3-column grid. */
+.compare-card--with-image {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) 2fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "image bar" "image panes";
+}
+.compare-card--with-image .image-pane {
+  grid-area: image;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--rule);
+  min-width: 0;
+}
+.compare-card--with-image .compare-bar { grid-area: bar; }
+.compare-card--with-image .compare-panes { grid-area: panes; }
+
+.image-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.image-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 46vh;
+  overflow: hidden;
+  background: var(--paper-recessed);
+  cursor: grab;
+  touch-action: none;
+}
+.image-viewport:active { cursor: grabbing; }
+
+#preview-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-drag: none;
+  display: none;
+}
+
+.image-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-style: italic;
+}
+
+.compare-pane-actions { display: flex; align-items: center; gap: 0.6rem; }
+
+.raw-edit {
+  width: 100%;
+  height: 46vh;
+  resize: none;
+  border: none;
+  padding: 0.4rem 0.9rem 1rem;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.raw-edit:focus { outline: none; background: var(--accent-wash); }
+
 mark.hl-insert_, mark.hl-delete_ { background: var(--diff-insert); color: inherit; border-radius: 2px; }
 mark.hl-delete_ { background: var(--diff-delete); }
 mark.hl-replace_ { background: var(--diff-replace); color: inherit; border-radius: 2px; }

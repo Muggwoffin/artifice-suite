@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Register No.                                                                 Minute Sheet No. 122\n\nD.D.G.  As spoken - I agree 8/3/36.  16/3.  (see 121a)\n\nI have read the attached documents and also the summary of what we know about RETZLAW alias GROEHL at 119a in his file, which I got hold of.\n\nAiken-Sneath knows a good deal about him and it appears that Sykes knows him quite well personally. There does not seem to be any suggestion that RETZLAW is other than perfectly loyal - indeed he appears to have been of considerable assistance to S.O.E. It is true that he is a German and that the Home Office would probably make no great bones about interning him under the Royal Prerogative. At the same time, I could not personally bring myself to recommend his internment under the only conditions in which such internment could take place, namely as stable companion to BOSQUE!\n\nIn your absence I had a word about the case with General Lakin. I told him that I personally did not feel that we should be justified in recommending internment to the Home Office, and suggested that a really impressive \"talking to\" might do some good. I further suggested that the \"talking to\" could perhaps best be done by someone not in S.O.E., possibly myself. General Lakin told me that RETZLAW had apparently been behaving better during the last week or two. He also stated that RETZLAW had not yet had a \"talking to\" and was inclined to welcome my suggestion. I told him that I would have a word with you on the matter and communicate with him again later.\n\nS.L.(A) 1.  14.3.42",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:27:56.661705+00:00",
+  "page": 9,
+  "total_pages": 107
+}

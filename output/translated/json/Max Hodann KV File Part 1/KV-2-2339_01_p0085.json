@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "no",
+  "source_language_name": "no",
+  "cleaned_text": "N. Hennell, 44, Catt Park, Trelleborg\nOslo, Norway\n\nSLO 13.4.35 8-10 Br.\nBRUK POSTVERKET TIL DERES INKASSO\nOSLO 13.4.35 8-10 Br.\nNORGE 15\nNORGE 15\n\nDear Dr. Max Hodann,\nHymanee Lawn,\nHawesden Road,\nLONDON S.W. 4.",
+  "translated_text": "To Dr. Max Hodann,\nHymanee Lawn,\nHawesden Road,\nLondon, SW4.\n\nN. Hennell, aged 44, residing at Catt Park, Trelleborg, Norway.\n\n[SLO 13.4.35 8-10 Br.] \u2013 [Please utilize the postal service for collection]\nOSLO, 13.4.35 8-10 Br.\nNORWAY, 15\nNORWAY, 15\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:47:23.301305+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The translation is accurate and complete. The original text was relatively clear, with only minor ambiguities resolved through context (e.g., 'Br.' likely meaning 'Business'). The addition of 'residing at' before the address in Norway improves readability.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

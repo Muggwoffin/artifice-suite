@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "(12) REMARKS\n4103 By Treaty:\n\n(13)\nDate\nRegistration District\nSerial Number\nADDRESS OF RESIDENCE OR REMARKS\n10/10/40 Metro CX\n1300\nLexham Mansions Hotel\nLexham Gardens, W.8.\n\n14/11/40\n13.1.41.\ndo.\n58 Hampstead Way, NW14 on 7/11/40 (B.144 7/11/40 E.P.)\n11, Peters Court, Porchester Road, W. 2, on 2.1.41. (B.144 - 2.1.41). B.B.\n\nN.B.\u2014A Continuation Card was added by the\nPolice on / /",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:49:05.672715+00:00",
+  "page": 37,
+  "total_pages": 96
+}

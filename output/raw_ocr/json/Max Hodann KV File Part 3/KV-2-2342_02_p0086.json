@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "An den? Vielleicht waren die Rot. - Ich war auf der ersten Liste der Deuk, denen die Staatsberge oblag. Also nachher wurde. Als mein Pass ablief, bekam ich von H. O. ein Identity Paper, mit dem ich (theoretisch) reisen durfte. (Es waren erst die Ecken des Beckenrings da rein) - Nach meiner Anreise musste irgend eine einflussreiche Person, die ich der Quaker nicht f\u00fcr frei verwenden. Oder jeden, die dort einmal",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:16:39.846469+00:00",
+  "page": 86,
+  "total_pages": 130
+}

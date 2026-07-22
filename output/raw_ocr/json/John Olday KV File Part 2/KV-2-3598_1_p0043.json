@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET AND PERSONAL\n\nHEADQUARTERS,\nWESTERN COMMAND,\nCHESTER.\n\nENCL 2 PAGES\n\n2nd November 1945.\nTO F3m (Direct)\nREF\n\n13095115 Pte OLDAG, A.W.\n\nReference your PF.66074Y/F3m dated 10 Oct 45 and my letter of 25 Oct 45.\n\nThe attached copy letter dated 30.10.45 addressed to the above-named soldier and one written by him this week addressed to Spr. G.I. Deas, Ward 3, Derwen E.M.S. Hospital Nr Oswestry (your ref.PF.221722/F3m) are forwarded.\n\nThese were received by me today from the Commandant, Military Detention Barrack, Snakehill.\n\nYours sincerely,\n\nCaptain F.P.T. Tallent,\nBox No. 500,\nParliament Street B.O.,\nLONDON, S.W.1.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:42:58.574074+00:00",
+  "page": 43,
+  "total_pages": 92
+}

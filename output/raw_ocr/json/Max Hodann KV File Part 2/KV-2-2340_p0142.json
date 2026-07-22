@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Photostat filed in: PF. 43824. LINDBAEK-NILSSON.\n\nFrom Max HODANN, Brussels.\n\nTo Lise LINDBAEK, 63, Tavistock Hill, N.W.3.\n\nDate of letter 12.5.35.\n\nSummary of Contents.\n\nStates that he is returning on Tuesday 22nd via Dover.\nRefers to his lectures.\n\nSee Minute ( )\n\nInitials. (date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:56:09.251365+00:00",
+  "page": 142,
+  "total_pages": 143
+}

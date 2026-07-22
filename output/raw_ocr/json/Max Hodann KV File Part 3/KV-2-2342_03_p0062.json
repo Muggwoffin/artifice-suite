@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Oslo 15/10-1937\n\nDear Gertrude Hodann!\n\nAs I have been asked by Molla Oading if I was willing to undertake some work in a school for coal workers in England, I write you for further informations. (Perhaps you remember the \"wife\" of Andreassen? That is I!). I should be very grateful if you could give me some informations, or - as Molla said - deliver my little haugh (to fra Lindholt or to the school).\n\nI do not know the correct adress of this school. But perhaps you know? I think it was: Maes-Yn-Haf Educational Settlement, Trealan, Rhondda. The lady who wrote fra Lindholt from the settlement was called Mrs. Davies.\n\nUnfortunately it is very difficult for me to undertake the job this winter as I am busy with some work here. But specially interested interested in educational and social work it would be of great importance for me to have this chance of studying social conditions in England. I should therefore be very grateful if it might be arranged in the following summer or winter.\n\nIt is needless to say that I should do my best to give the people there as good an idea of Norwegian language and Norwegian conditions, as possible.\n\nAt all events I should be glad to hear something.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:32:06.162975+00:00",
+  "page": 62,
+  "total_pages": 99
+}

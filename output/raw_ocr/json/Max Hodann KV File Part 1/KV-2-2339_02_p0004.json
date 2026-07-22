@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "13 Shelford Park\nGreat Shelford\n8 April 1935\n\nLiebe Herr Dr. Hodan,\n\nIch habe gestern wiederholt versucht Sie telefonisch zu erreichen. Kevin Walters Brief macht mich sehr ungl\u00fccklich. Sie wird wissen, wie die Dinge laufen, wie sie herabgefallen. Sie m\u00f6chte nach Rapha\u00ebl, ich will nicht wissen, wie freundlichen Menschen, die dort angesiedelt ist (oder war) in Verbindung setzen.\n\nDeshalb m\u00f6chte ich gesagt wissen, ob Sie an den Brief des geschrieben haben, und so, da\u00df er den Ernst der Gefahr versteht, und ob er etwa ganz besorgt ist. Ich f\u00fcrchte, die Familie will Kevin nicht haben, und Sie will nicht nach Norwegen. Es ist aber vielleicht die einzige Rettung. Ich habe aber geschrieben, da\u00df Sie werden. Sie sind Onkel Martin Hause, den ich in London gesprochen habe.\n\nIhr\nAlwin S. Fischelstein\n\nDr. H. Hodan\nKynance Court\nGloucester Rd\nKensington\nLondon",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:20:10.238132+00:00",
+  "page": 4,
+  "total_pages": 131
+}

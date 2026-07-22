@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM.\n\nFrom...F...2...c.............................................    To...F...3......(Mr...Aikin-Sneath)\n\nI understand that you have taken over from Miss Bagot the enquiries into the Neu Beginnen and other similar movements and you will perhaps, therefore, like to see these papers relating to a code used by the LOEWENHEIM brothers in connection with the Neu Beginnen movement.\n\nThe LOEWENHEIM brothers are the subject of P.F. 49542 and I have dealt with their case in so far as it contains an allegation of Soviet Espionage.\n\nThe files are at present with Edwards of E.5. in connection with the LOEWENHEIMS'",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:55:40.539519+00:00",
+  "page": 36,
+  "total_pages": 64
+}

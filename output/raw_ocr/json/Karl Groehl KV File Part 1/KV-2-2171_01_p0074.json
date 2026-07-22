@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SUMMARY OF LETTERS FROM KARL GROEHL TO KARL OTTEN, which are filed in P.F.45807 OTTEN volume 6.\n\nMarch - April 1940.\n\n29.3.40. States that the Kathol. (presumably Catholic) leaflet is being printed, and 30,000 copies are expected.\n\n21.3.40. Refers to some letter by SCHWARZSCHILD which has just appeared. Discusses other Opposition matters: persons, periodicals, politics. Enclosed was a copy of an anti-Nazi leaflet appealing to German Catholics.\n\n4.4.40. Letter enclosing a cutting re Fritz THYSSEN, and another anti-Nazi leaflet.\n\n8.4.40. Answers two letters of OTTEN's as follows:\n1. Says he does not need a rest.\n2. Nothing new from BEATRICE.\n3. He still has 2000 fr. for this month.\n4. Nothing more is to be sent to RUTH, as she is no longer working with them.\n5. Important news from the LEIPZIGER; things may start there at any moment.\n6. He would like to come over.\n\n18.4.40. Short covering letter enclosing anti-Nazi leaflet.\n\n19.4.40. Encloses long press cuttings about THYSSEN. Refers to \"Alex and the Roumania matter\".\n\n24.4.40. Asks why OTTEN has not written. Encloses copy of the sign of the B.F.A.E. (Brot, Friede, Arbeit, Freiheit = Bread, Peace, Work, Freedom).",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:54:17.373046+00:00",
+  "page": 74,
+  "total_pages": 96
+}

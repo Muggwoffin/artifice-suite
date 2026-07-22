@@ -140,6 +140,47 @@ def check(raw: str, cleaned: str) -> GuardResult:
     return result
 
 
+def check_structure_only(original: str, structured: str) -> GuardResult:
+    """Verify that structuring preserved every word of the original.
+
+    This is stricter than check() — it requires exact word-sequence equality
+    (whitespace-insensitive). The structuring stage must never alter a word;
+    it may only add paragraph breaks and blank lines.
+    """
+    result = GuardResult(ok=True)
+
+    if not structured.strip():
+        result.ok = False
+        result.reasons.append("output empty")
+        return result
+
+    original_words = _words(original)
+    structured_words = _words(structured)
+
+    if len(original_words) != len(structured_words):
+        result.ok = False
+        result.words_deleted = abs(len(original_words) - len(structured_words))
+        if len(original_words) > len(structured_words):
+            result.reasons.append(
+                f"structured text has {result.words_deleted} fewer word(s) than original"
+            )
+        else:
+            result.reasons.append(
+                f"structured text has {result.words_deleted} more word(s) than original"
+            )
+        return result
+
+    for i, (orig, struct) in enumerate(zip(original_words, structured_words)):
+        if orig != struct:
+            result.ok = False
+            result.reasons.append(
+                f"word {i+1} differs: '{orig}' -> '{struct}'"
+            )
+            break
+
+    return result
+
+
 def apply(raw: str, cleaned: str) -> tuple[str, GuardResult]:
     """Return the text to keep, plus the verdict.
 

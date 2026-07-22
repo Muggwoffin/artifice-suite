@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Original in P.F. 52095 (SZYMONCZYK)\n\nTranslation of intercepted letter from S. RETZLAW to S. SZYMONCZYK Esq., 106 Oakwood Court, W.14.\n\n30.V.41.\n\nDear Friend,\n\nI have an interesting thing and am looking for somebody who will be interested in it.\n\nAn acquaintance of mine has a collection of lead soldiers of the new German Army. There are several thousand figures and all kinds of arms are represented:-\n\nInfantry.\nArtillery - light and heavy.\nAnti-aircraft artillery and appurtenances.\nCavalry.\nAerodrome troops, searchlights, etc.\nSanitation, with coaches and appurtenances.\nPanzer arms.\nMotorised infantry with automatics.\nMachine gun troops with appurtenances.\nRailway troops with coaches, lines, stations, etc.\n\nThe whole collection cost more than 18,000 marks and it is all made to scale.\n\nMy acquaintance will take \u00a350 but I can get the price brought down by half. The troops are very good for amateurs or schools or officers for practice in tactics.\n\nIt is a complete replica of the German Army.\n\nPlease ask around and perhaps find someone who will buy the collection.\n\nBest wishes, I shall call at mid-day tomorrow. Greetings to Madame.\n\n(sgd) S. RETZLAW.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:45:43.925616+00:00",
+  "page": 12,
+  "total_pages": 96
+}

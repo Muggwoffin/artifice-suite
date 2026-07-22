@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 81/rev. 1.52.\n\nEXTRACT.\n\nExtract for File No.: PF.41,426\nName: GOOLD-VERSCHOYLE\nOriginal in File No.: PF.42,740\nSerial: 62b\nVol.: ______\nReceipt Date: April, 1940\nOriginal from: ____________________________\nUnder Ref.: ____________________________\nDated: ____________________________\nExtracted on: 14.7.53\nby: SP\nSection: B.2.B\n\nExtract from list of MOOS' contacts mentioning GOOLD VERSCHOYLE\n\nBrian GOOLD VERSCHOYLE's journies to Russia\n\nBrian's first visit to Russia was in July, 1933. He was 21 years old and was employed at the English Electric Company, Stafford. He was already a member of the C.P. Loila, Neil GOOLD VERSCHOYLE's wife was very kind to him in Russia and introduced to Irina ADLER, who was married to an engineer. Brian wished to stay in Moscow, his contract with the E.E.C. was almost finished and Loila helped him to find him an engineer's job. However he had to obtain police permission to do this and he was introduced to 2 officials, wearing dark green uniform, by Loila (MOOS states that KRIVITSKY thought they were Loila's relatives) This meeting was very secret and Brian was told to return to London and sever his connection with the C.P, which he did. He lived unemployed in Kings Cross but heard nothing more from the Soviet although he received letters from Loila and Irina. Eventually his brother, Neil, helped to find him a job at the B.B.C.\n\nIn 1934 he returned to Russia and stayed with his brother and Irina, who had divorced her husband. He was reprimanded for having come and told to return to England. He came back very enthusiastic.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:47:33.849365+00:00",
+  "page": 81,
+  "total_pages": 103
+}

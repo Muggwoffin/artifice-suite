@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S.985.A.\nGerman.\n\nFrom Karl (GROEHL),\npostmark Paris.\n\nTo K. OTTEN,\n58, Hampstead Way, London, N.W.11.\n\nDated 17.1.39.\n\nThis morning I came home and found your letter regarding the Richth. business. Immediately I tried to get in touch with RAUSCH. and spoke to him at 3 o'clock. He wanted to go to London to-day but luckily I got hold of him.\n\nHe has no list and no things.\n\nHe has had my list for some days because he wanted to sound some people whom he knows personally. He was also a Major and had been to the Military School. He knew a number of senior officers. He has told TREV. of the list and he asked him to bring it with him. RAUSCHN. wanted to ask me if he could keep it for a day or two. Now R. will be leaving on the day after to-morrow and will not have any further talk with RICHT. He will also break with TREV. He is grateful that we could tell him who RICHTH. is. I hope he tells the Professor nothing. Tell him about this.\n\nParcel address.\nLibrairie Lettres Internationales enclosure for me.\n\nHave you sent off the letter with the book? If not, do nothing more.\n\nIt is not worth while to write to BORNSTEIN.\n\nI will write to-morrow, in haste now.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:01:56.624842+00:00",
+  "page": 36,
+  "total_pages": 102
+}

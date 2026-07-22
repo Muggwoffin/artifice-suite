@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Joseph Cardinal MacRory,  \nArea Coeli, Armagh.\n\nTo: Mr. De Valera,  \nAn Taoiseach, \"Belle Vue\", Blackrock, Co. Dublin.\n\n\"I have just been informed that there is a very undesirable person named Verscoyle Gould interned as a political prisoner in the Curragh. He is described as suave and very clever, with a fine knowledge of German and some knowledge of Irish, and is probably an agent of the Third International. My informant writes: - \"It can easily be imagined what an easy prey the younger lads can be who come under the influence of a clever schemer like this. Unfortunately this has happened with a number of the younger boys, some of whom have given up going to Mass. There is very grave concern that this man should be allowed full rein to spread his dangerous theories, and I have been entreated to do all in my power to have him removed. It has now become common knowledge that Communism is spreading in the Curragh\". Italics mine. I am sorry to have to add to your many cares but I deem it my duty to bring this very important matter under your notice. Hoping you are in very good health.\n\nYours most sincerely\".",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:41:51.490392+00:00",
+  "page": 40,
+  "total_pages": 103
+}

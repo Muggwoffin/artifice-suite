@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From: Lieut. Colonel W.M.W. Collins, MC.,\n\nSECRET AND PERSONAL\n\nHEADQUARTERS,\nNORTHERN COMMAND,\nYORK.\n\nTel.: York 623031\nExt. 105\nRef. I.S.N.C. 2730\n\nwhich please quote\n\nMarch 1946\n\nDear Miss Weldsmith,\n\nI am forwarding you herewith copies of two further letters addressed to Pte A.W. OLDAG.\n\nI have not included the photograph referred to in the one signed \"Tom E\" as this is urgently required back at the Detention Barracks for enclosure in the original letter, which is, meanwhile being withheld from the addressee.\n\nYours sincerely,\n\n[signature]\n\nMiss C.S. Weldsmith,\nBox No. 500,\nParliament St B.O.\nLONDON S.W.1.\n\nWMWC/AEP",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:41:01.222675+00:00",
+  "page": 31,
+  "total_pages": 92
+}

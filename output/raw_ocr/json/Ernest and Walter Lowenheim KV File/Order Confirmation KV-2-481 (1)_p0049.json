@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "organisation had been a hollow pretence. It was as much opposed to the communist International as to the principles of Nazism.\n\nWalter Loewenheim's friendliness to this country and his loyalty to the Allied cause are amply vouched for.\n\nThe Tribunal thinks it right to add that at the beginning of the war Walter Loewenheim did his best to participate in A.R.P. work in Islington.\n\n(Signed) Cecil J.B. Hurst.\n(Signed) Douglas Lowe.\nChairman.\nSecretary.\n16th August, 1941.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:57:30.366332+00:00",
+  "page": 49,
+  "total_pages": 64
+}

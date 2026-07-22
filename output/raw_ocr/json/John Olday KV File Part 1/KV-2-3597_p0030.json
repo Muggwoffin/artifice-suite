@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF 45000/RC  12th August 1943.\n\nR.S.L.O. Leeds\n\nThank you for your SF. 19/3/1 of the 7th August 1943, enclosing a book of caricatures entitled \"The March to Death\" by John OLDAY. We have a file for this man, whose real name is Arthur William OLDAG. He is now in the Pioneer Corps and is of interest to F.1. (Captain Deacon), to whom I am passing the file.\n\nWe also have a file for THE FREEDOM PRESS (S.F.455/49) and I am asking F.1. to pass on your minute to F.3. in this connection.\n\nLt-Colonel A.S. MacIver.\nRegional Control.\n\n/RL",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:22:43.857714+00:00",
+  "page": 30,
+  "total_pages": 98
+}

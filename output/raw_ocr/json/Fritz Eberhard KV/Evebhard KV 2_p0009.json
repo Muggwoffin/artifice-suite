@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\401aa01628e87a910b126024268e5670.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "We know nothing against him from the security point of view.\n\nYours sincerely,\n\n[signature]\n\nMajor N. G. Elliott,\nM.O.1.(S.P.),\nThe War Office,\nWhitehall,\nLondon, S.W.1.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:32:39.220983+00:00",
+  "page": 9,
+  "total_pages": 24
+}

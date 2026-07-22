@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY\nOriginal in P.F. 50874\n\nINTERNAL MEMORANDUM\n\nFrom: B.9.a.        To: B.4.a.2.\n\nIt appears to me that Comrade N. GOOLD, who is mentioned at the bottom of the first column of Nolan's article, on the last page of this Irish Workers' Weekly, may be identical with H.N.S. (Neil) GOOLD-VERSCHOYLE, the subject of P.F. 41426.\n\nNeil GOOLD-VERSCHOYLE is believed, by Kimpton, who knows the family, to be still in Eire; and it seems possible that he is conducting his Communist activities there, under the less aristocratic of his full names.\n\n20.1.41.        John Stephenson.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:45:01.183096+00:00",
+  "page": 63,
+  "total_pages": 103
+}

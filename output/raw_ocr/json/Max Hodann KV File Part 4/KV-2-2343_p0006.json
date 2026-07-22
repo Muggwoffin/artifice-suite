@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\4d8f1c66d53a2d889972ea3a71b9e41f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 81/rev. 12.53\nExtract for File No.: P.F.43,817.\nName: HODANN.\nOriginal in File No.: P.F.44,989.ROSENTHAL.\nVol.: - Serial: 22a. Receipt Date: 13.6.55.\nOriginal from: British Embassy, Washington. Under Ref.: P.F.656. Dated: 10.6.55.\nExtracted on: 12.7.55. by: JJ. Section: R6.\n\nCopy of letter from the British Embassy, Washington re Dr. Fritz ROSENTHAL mentioning: HODANN.\n\nPlease refer to your letter of 31 January, 1955, about ROSENTHAL. ROSENTHAL who now resides at 322 Indianwood Boulevard, Park Forest, Illinois, and is employed as a research chemist by the Armour Research Foundation, 10, West 35th Street, Chicago, was recently interviewed by the F.B.I. concerning Hodann, Finkelstein and Lindbaek. I should add that I was not consulted before this interview took place on the question of our source.\n\n2. As far as Elise LINDBAEK is concerned ROSENTHAL stated that the name was vaguely familiar to him. He said that when he finished college in 1935 he had gone to London in search of work as a chemist and that some individual, whose name he could not recall, told him of a friend, Elise LINDBAEK who might aid him in his search for employment as she was connected in some way with the Norwegian Government. He added, however, that he did not take up this introduction as he had by that time secured employment with the Brimsdown Chemical Works in London.\n\n3. Regarding the name Dr. Max HODMANN, ROSENTHAL stated that he was only known to him as an author who had written some books on sex problems. He claimed to have no knowledge of Alexis FINKELESTEN.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:34:52.368266+00:00",
+  "page": 6,
+  "total_pages": 19
+}

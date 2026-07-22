@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Mrs\nM. L. Richards\n11 Eton Place\nHaverstock Hill\nN. W. 3\n\nmen come back. I don't want to say anything about the trial. I know to little of what happened. From what I read I come to the somewhat depressing conclusion: you have been defeated. I don't believe this trial will have the same effect on the workers in the continent and America as it could have had, had you not left everything to the counsels. But never mind\u2014there is one consolation: we are like the British: we will win the last battle!\n\nEthel has given 3 of her books to me which will become the property of the Prison Library after I have read them. Please give her my thanks & greetings.\n\nHerbert ought also to think of the Prison Library! Tell Bill (he wrote another letter) I can't write a lot as I am allowed only 1 letter every 4 days. I often think of our meals & discussions. We can't carry on these discussions in writing as much as I would like to; but I don't believe in filling up the files of whatever department believes in collecting my letters. I shall save up everything I have to say for later. He sent 'Kingdom of Rags'. Tell him it is no good. He better wait till my new book is finished.\n\nI would like some toilet paste, shaving soap, a razor & blades. If any of the comrades wants to please a poor prisoner, let them hand it over to you.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:48:48.195628+00:00",
+  "page": 87,
+  "total_pages": 92
+}

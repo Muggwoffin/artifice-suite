@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Mrs. Dora RUSSELL, Beacon Hill School, Boyles Court, South Weald, Nr. Brentwood, Essex.\n\nTo Dr. Max HODANN, 63, Haverstock Hill, N.W.3.\n\nDate of Letter 20.6.35.\n\nDate of Postmark 21.6.35.\n\nSUMMARY OF CONTENTS\n\nWriter was glad to hear from addressee \"and to learn that you both are well\".\n\nShe will be able \"to take the three of you at the terms you mention, i.e. \u00a35 per week\". Would like to know when to expect them, this will help her in making arrangements for others who wish to come during the summer.\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:50:48.752753+00:00",
+  "page": 92,
+  "total_pages": 143
+}

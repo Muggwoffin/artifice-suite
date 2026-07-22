@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S.O.E., Park, telephoned re RETZLAW. He said that they had had an indication that RETZLAW had been indiscreet and had been giving away information about S.O.E. to outsiders. S.O.E. are anxious to have RETZLAW interned and Park wished to know if we had any evidence which would enable us to do this. I said that we had no evidence in our files which would warrant us putting up his case to the Home Office but that we could put him under close observation in order to obtain evidence against him. I asked Park whether he knew that RETZLAW had been in touch with the French. He said he knew nothing of this, but that Major Thornley had the impression that RETZLAW might be attempting to sell his information to one of the Allied Governments here.\n\nA.D.E. 7.\n10.3.42.\n\nF.B. Aikin-Sneath.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:28:41.815768+00:00",
+  "page": 14,
+  "total_pages": 107
+}

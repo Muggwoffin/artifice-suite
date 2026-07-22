@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "URGENT MEMORANDUM.\n\nReference No.\nFrom War Office, F3m\nDate 11th September 1945\nSubject 130 95115\nPlt Oldag\n\nTo O i/c Pioneer Corps Records, Bournemouth\n\nReference your memo D2/cc/13095115 of 3rd September 1945 regarding the release from prison of the above-named on 24th September 1945. The War Office memo PF. 66074/F3m dated 1st April 1944 quoted by you, cannot be traced, and does not appear to have originated from F3m as stated.\n\nIt is requested that a copy be forwarded to this Office (F3m) as soon as possible, together with the attached, which is returned for easy reference.\n\nP. Damer\n\n12 SEP 1945",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:45:56.576799+00:00",
+  "page": 64,
+  "total_pages": 92
+}

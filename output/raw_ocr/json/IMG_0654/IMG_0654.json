@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\f411e4ea8180be4800a9ce0dd145f1b0.jpg",
+  "stage": "raw_ocr",
+  "extracted_text": "Pod bless you for your letter. Hig. I feel an awful crime not to have sent a line to the dept. But I've been living in rather a whirl since I've been here\u2014social as well as occupational. Even now I'm writing this at the reporter's table, so I may have to stop any minute.\n\nIt's a great place this, and I don't want to come back a bit. Of course, I would like to know what all you \"cousins\" are doing, and I'm terribly anxious to get news of the dept\u2014Is it as serious as it sounds, or is it one of the usual false alarms? The department has many lives\u2014I have lived through many of them, and I sometimes feel it will weather this storm. Anyhow, I don't believe nor will be able to tear yourself away from England\u2014run over for a job somewhere. Who knows, there may be a \"daily\" by then.\n\nHow do you like your new job? You must have had a hellish time first when I left\u2014with all my dirty work to do. I had many vague moments about it on the journey. I pictured you working all night, sleeping all the morning, turning up with great gusts when you should have been having lunch, getting hungry and dozy towards four, and finally slinking away to a worry. Of course, this is a poor exaggeration and for God's sake don't write back me if I really mean it, and ask that",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T13:07:55.151575+00:00",
+  "page": 1,
+  "total_pages": 1
+}

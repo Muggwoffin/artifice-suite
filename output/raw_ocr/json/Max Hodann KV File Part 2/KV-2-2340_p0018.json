@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "9.2.35.\n\nLiebe Ma\n\nich hatte einen Unfall. Ich bin einigermassen wieder gescheit. Meinein kann ich leider noch nicht schreiben.\n\nK. H. schrieb Dir - glaube ich - des Gelben regen ungl\u00e4ublich. Ich habe bis heute 80 Kr. erhalten.\n\nTonja verlebt ihre Ferien auf Bornholm. Sie schickte heute f\u00fcr Dich unliegen den Brief. Es geht ihr sehr gut sie f\u00fchlt sich wohl. Ihre Anschrift ist: S. Hes. hrs. Philippsborn, Hofshave - Bornholm, Post Svaneke. Wollange sie bleiben kann weiss ich im Augenblick noch nicht. Ich habe angefragt u. gleichzeitig eine Anfrage der Unkosten gebeten. Ich kenne mit Dir \u00fcber ihre Reise nicht vorherzusagen, ob alles sehr gef\u00e4hrlich kann. Ich bin froh, dass sie Gelegenheit hat sich am Meer zu erholen. Sie hat es n\u00f6tig. Ihre Zensur ist wieder gut. Briefe, Aufschriften, Ordnung: sehr gut. Handschrift: gut. Druck: unz\u00fccht./schriftl. 6? Druck unz\u00fccht. 5 schriftl. 6? Reihen unz\u00fccht./schriftl. 4?, Hc unz\u00fccht. 5+ musik 6? Schreiben 5?, beschaunung 5+:\n\nversucht nach 3 u. - das bedeutet leider neue B\u00fccher, Hefte, Handarb. etc.\n\nZu Deinem Brief: Deine Vorschl\u00e4ge nimm ich wieder mit Vorsicht, nicht wie Du meines mit Gegenrichten behandelst. Meine Gr\u00fcnde hierf\u00fcr sind Dir bekannt.\n\nZu 1.) Ich \u00fcbersch\u00e4tze Deine F\u00e4higkeiten die ich sehr gut kenne u. immer bewundert",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:38:35.777647+00:00",
+  "page": 18,
+  "total_pages": 143
+}

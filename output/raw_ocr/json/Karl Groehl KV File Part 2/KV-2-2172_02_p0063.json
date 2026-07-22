@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Conversation with\n\nYesterday asked me whether I knew a certain S. RETZLAW whom he described as a former member of the Communist Party. He said this man had recently approached Robert NEUMANN and questioned him about trade union matters. NEUMANN told him that if he wanted full information on Trade Union matters, he had better go and see RETZLAW refused rather vehemently and definitely. He also made a number of statements in which he ran down the old German movements, Social Democrats, Trade Unions etc. NEUMANN who believes that RETZLAW formerly worked for the 2eme Bureau in Paris, reported this to told me he suspected that RETZLAW had another name and that if they had met would have known him under this name and might have known something to his discredit. Hence his reluctance to meet.\n\nC.W.34410\nE.3.(S)\n14.1.42.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:36:10.938636+00:00",
+  "page": 63,
+  "total_pages": 107
+}

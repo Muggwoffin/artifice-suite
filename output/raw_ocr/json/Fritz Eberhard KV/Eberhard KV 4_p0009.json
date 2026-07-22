@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8466790e6bc41f1fdde86057757ac8ec.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "RAUSCHEL LAT, Dr. Hellmut von.\n\nReference: GERMAN.\n\nExtract from Vol. I of B. cases.\n\n1.7.40.\n661028. B. 2.10.96. 6, Brunswick Square, W.C.1.\nApproved, exempted. G.R.N.\n\n29.5.42.\nR/C from S.R. alien has now left employment, request for cancellation of A.P.A.\n\nR/C to S.R. A.P.A. cert. cancelled. 30 MAY 1942\n\nThe new style A.P.A cert. was inevitably left uncancelled S.R sends R.C. & draws attention.\n\nA.P.A cert. (N.C.) cancelled. Receiving R.C. in lieu apology. 4 JUN 1942\n\nS-R writes. Says alien held Certif. D Permit before he went to his staff. Will we please restore?\n\nThis man was a 'B' case to begin with and got his permit etc as such. Looks as if he were trying to pull a pick me up on us.\n\nNot on your life!\n\n14 DEC 1942\nThis matter is closed. No reason to hold file in sub-section.\n(P.A.) DMO",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:28:33.298648+00:00",
+  "page": 9,
+  "total_pages": 19
+}

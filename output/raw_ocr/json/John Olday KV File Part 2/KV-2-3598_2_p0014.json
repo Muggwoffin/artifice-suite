@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S.B. No. 1. (Flimsy)\nSpecial Report\nSUBJECT Arthur William OLDAG @ John OLDAY.\nReference to Papers 320/EPA/517.\n\nMETROPOLITAN POLICE.\nSPECIAL BRANCH,\n18 JAN 1945\n16th day of January 1945.\n\nWith reference to Arthur William OLDAG, deserter & subject of Special Branch file No. 320/EPA/517:-\n\nThis man appeared to-day before the Recorder of London, Sir. Gerald Dodson, at Court No. 4., Central Criminal Court, Old Bailey, E.C. on the following charges:-\n\n1. 'Did feloniously, on or about 20th day of May 1944, at Gravesend, Kent, steal a National Registration Identity Card No. DIW/659, in the name of Frederick Frostick, value is the property of the said Frederick Frostic.' Contrary to Sec. 2 of the Larceny Act, 1916.\n\n2. 'Did feloniously, on or about the 20th day of May 1944, at Gravesend, Kent, receive the above mentioned Identity Card, knowing it to have been stolen.' Contrary to Sec. 33. of the above Statute.\n\n3. 'Did unlawfully, on the 17th day of November, 1944, at Eversholt Street, N.W.1. use a name, to wit, Frederick Frostick, other than that by which he was ordinarily known prior to the coming into force of the Defence (General) Regulations, 1939.' Contrary to Regulation 20, of the said Regulations.\n\n4. 'Did unlawfully, on the 17th day of November, 1944, at Eversholt Street, N.W.1. with intent to deceive, falsely represent that he was the person to whom an Identity Card related.' Contrary to Section 8 (1) (b) (1) of the National Registration Act, 1939.\n\nOLDAG had been committed for trial on 9th December, 1944, from Clerkenwell Magistrates Court.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:51:19.711445+00:00",
+  "page": 14,
+  "total_pages": 91
+}

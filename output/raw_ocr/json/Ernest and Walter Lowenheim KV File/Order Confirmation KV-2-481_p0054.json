@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "to Russia. Yet another source describes Walter LOEWENHEIM as still being a \"red hot Communist.\"\n\nAfter arrival in England the LOEWENHEIM's formed a Company known as the Thames General Investment Company Limited which carried on business under the name of the Thames Engineering Company. There was no evidence that this Company had been used for espionage purposes but the background of the case bore a striking similarity to others in which Soviet espionage has been established in connection with the firm's business. The LOEWENHEIMs would be able to obtain access to many installations in which important government work was being carried out.\n\nThe above considerations induced us to oppose the release of Walter LOEWENHEIM when he appealed for it under Category 19. The Hurst Tribunal was much impressed by the distinguished record of LOEWENHEIM as an anti-Nazi fighter and particularly by his activities in the Neubeginnen movement. After consideration we did not think that we had a sufficiently strong case against this decision and the release of both brothers was ordered on October 23rd 1941.\n\nM.I.5.3.\n16-11-41. W. C. Edwards.\n\nDespatched 9.12.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:19:12.062375+00:00",
+  "page": 54,
+  "total_pages": 68
+}

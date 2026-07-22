@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "\"From September, 1938-February, 1939, Germany imported 39,000 tons of pig iron from Britain. The normal importation is 5,000 tons!\n\nIn the first months of 1939 Britain exported to Germany 5,136 tons of brass and alloys of copper and 1,156 tons of aluminium and its alloys.\n\nHowever, we will get it all back in some form or another!\nOliver Brown, 'The Hypocrisy and Folly of this War'.\n\n\"The charge that Britain did want war shows strange forgetfulness of the help given by the Governments of Lord Baldwin and Mr. MacDonald to the early progress of the Nazi regime.\"\n'The London Times', 26th Oct., 1939.\n\nTHE NAZI BABY LACKS NOTHING",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:09:43.010905+00:00",
+  "page": 43,
+  "total_pages": 57
+}

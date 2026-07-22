@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF.43817/D.S.9.a.  24th October, 1935.\n\nDear Captain Lindsay,\n\nIn connection with certain investigations I am at present making the name of the following settlement has come to notice: - Maes-Yr-Haf, Educational Settlement, Trealaw, Rhondda.\n\nI should be most grateful for any information you may be able to let me have regarding this Settlement and the nature of the classes and lectures given.\n\nThe manner in which it has come to notice in my investigations would seem to indicate certain Communistic leanings.\n\nYours sincerely,\n\n(G.W.L.)\n\nColonel Sir Vernon Kell.\n\nCaptain L.A. Lindsay, O.B.E., M.V.O.,\nChief Constable,\nGlamorganshire County Constabulary,\nCanton, CARDIFF.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:30:33.314187+00:00",
+  "page": 48,
+  "total_pages": 99
+}

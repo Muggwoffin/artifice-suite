@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "with the persecuted comrades. Give him my greetings and ask him what he is doing to convince us of the fact of how much more better he is than those who carry with their left hand & stab with their right. His research work must have, many a time, made it clear to him, how justice knows to impute crimes to those it wants to slay.\n\nMy best wishes for the reorganization of the paper. I am sure that now as well as in future things will continue to go well.\n\nIt is good to know John, Vero & Phil are cheerful. I hope I shall see them very soon.\n\nPlay a few nice records and if you can afford it drink a glass of something to my health.\n\nAll the very best\nYours\nJohn Way",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:47:10.421486+00:00",
+  "page": 74,
+  "total_pages": 92
+}

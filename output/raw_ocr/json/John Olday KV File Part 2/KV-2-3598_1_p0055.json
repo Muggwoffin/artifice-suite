@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "a period of two years, six months of which is remitted. He will probably go to Stakehill Detention Barracks, Castleton, near Rochdale, Lancs. on Friday next the 5th Oct. 1945.\n\nIf anything else happens whilst he is still in this camp I will let you know.\n\nYours sincerely,\n\nTyped HEP.\n\nColonel.\nCommanding No I2 P.C. Hdg & Tng Unit.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:44:40.647380+00:00",
+  "page": 55,
+  "total_pages": 92
+}

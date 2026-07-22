@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy of Translation. Original and Photostat filed in P.F. 45807 OTTEN, volume 5, 221c\n\n19.11.39.\n\nL.K. Yesterday evening I got your letter of the 16th and to-day an important letter from Aachen. This is to be sent on correctly like DREIR's of the day before yesterday. There is a lot in this new explanation. It should be pretty good. (Pretty good too against the idiots who made the picture of Hitler and Stalin.)\n\nI will answer your letter but must first translate it correctly. (I can read it but always make a careful translation.)\n\nYes, I think our reporting must be put right. This will soon be done.\n\nBUT IT IS NO GOOD WITHOUT TRAVELLING!!!!\n\nI heard from Brussels that yesterday, Friday, there had been an action against SEPP. My informant also said that SEPP had been shot (or defeated - \"geschlagen\")!! So that is English \"protection\". The Germans don't let their people get shot. What actually has happened to SEPP???\n\nYours,\n\nKARL\n\nIf I can get a press-card I shall be allowed to send my letters off the same day!!!",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:55:34.350617+00:00",
+  "page": 84,
+  "total_pages": 96
+}

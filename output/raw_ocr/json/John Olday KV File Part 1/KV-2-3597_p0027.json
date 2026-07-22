@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Your Ref: SF. 19/3/1.\nOur Ref: PF. 45000/F.3.B.2.\n\nMajor C.W. Hordern,\nBox No. 161,\nLEEDS.\n\nF.1. have passed me the file of Arthur William OLDAG. You may care to have the enclosed copy of a note which I wrote on the Freedom Press a year ago. There is really nothing to add to the information contained in this note as the Freedom Press policy remains the same - they are anti-Fascist, anti-Communist, Conscientious Objectors and refuse to submit to authority of any kind. They are not the bomb-throwing type of anarchist as they do not believe in violence; most of their members are of the intellectual type and for this reason the ordinary working classes are not really able to grasp their principles. I am keeping a fairly close watch on their activities, as, although anarchism does not make much headway in this country, I believe that these individuals might try to cause trouble after the war if we have any labour troubles.\n\nThere are very few branches of the Freedom Press groups in the provinces, and those that are in existence are not very strong. The headquarters in London consist of rather sordid premises at 27 Belsize Road and they receive about 2 or 3 letters a day from different parts of the country and from people in the Forces requesting literature.\n\n17th August 1943.\n\nM. Sercombe.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:22:21.973347+00:00",
+  "page": 27,
+  "total_pages": 98
+}

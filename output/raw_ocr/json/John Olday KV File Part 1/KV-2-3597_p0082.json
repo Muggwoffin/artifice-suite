@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "METROPOLITAN POLICE.\n\nSPECIAL BRANCH,\nMetropolitan Police,\nScotland House,\n\n18th day of September, 1939.\n\nWith further reference to Arthur William OLDAG who arrived from the Continent on the 16th September:-\n\nOLDAG has again been seen and he adheres to his story previously told with the following amendments.\n\nHe now states he was taken to New York as a baby and at the age of 8 years he was left under the care of his grandmother at Kiel. He went to school there and at Hamburg until he was 14 years of age when he was employed as an office boy by a firm of warehousemen for a few months. Later he was apprenticed to a jeweller named Reinhardt in Altona, Hamburg, for eighteen months. He ran away from home and his apprenticeship and travelled Germany picking up a living as best he could until 1923 when he returned to Hamburg and worked as a telephonist for the firm of Gote, Hasselbruckstr.\n\nAt that time he was a member of the German Socialist Party Youth organisation and contributed short articles and poems to their periodicals. From 1925 to 1929 he was employed as a journalist by the Hamburg newspaper \"Anzeiger\" and afterwards for the North German Broadcasting Co., (Nora), of Hamburg until that company went bankrupt in 1932, when he returned to his former occupation with the \"Anzeiger\". He was a cartoonist for that newspaper until the year 1937 when he came into conflict with the Nazi party and left for this country.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:29:45.912664+00:00",
+  "page": 82,
+  "total_pages": 98
+}

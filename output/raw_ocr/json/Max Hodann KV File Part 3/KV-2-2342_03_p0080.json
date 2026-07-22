@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF.43817/D.S.9.a.  SECRET.\n\nG.P.O. - Captain Booth.\n\nI should be glad if you would kindly submit for the next fortnight the usual return of correspondence addressed to:-\n\n242, Tufnell Park Road,\nTufnell Park.\n\n(52) G.h.L.\n\n22nd October, 1935.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:34:02.351320+00:00",
+  "page": 80,
+  "total_pages": 99
+}

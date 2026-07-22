@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "is, of course, quite possible that the association can be explained on the ground that both SYMONOWSKYK and LACOUTRE are engaged in journalistic activities. This would, for example, explain why ORCHEL in one letter (No: 159a) asked SYMONOWSKYK for payment for some \"articles\".\n\nIn considering whether alternative (a) or (b) should be adopted reference may usefully be made to the summaries of the case at 71a, 83a and 84a. The actual evidence against SYMONOWSKYK and LACOUTRE may shortly be stated as follows:-\n\n1. On 22.1.40 I.P.I. reported that SYMONOWSKYK was a Soviet agent, and had been endeavouring to negotiate with Stalin for a portion of R.V. Roy, but without success. (See 10a).\n\n2. On 18.7.40 I.P.I. reported that both SYMONOWSKYK and LACOUTRE were \"members of the Com\" and had \"valuable military information in their possession.\" (See 1a).\n\n3. In September and October 1940 \"Thomas\" identified photographs of SYMONOWSKYK and LACOUTRE and confirmed that SYMONOWSKYK was a Comintern agent, and that KATK (CAS MTTK) had been employed by the Soviet Trade Delegation. SYMONOWSKYK associated in arie with MUNICHEBERG from 1933 to 1937, and \"Thomas\" was of the opinion that if LACOUTRE was acting as LACANTHE's secretary she had been placed in that position by MUNICHEBERG. (See 52b). Doctor \"Thomas\" said that SYMONOWSKYK and LACOUTRE might not be of great importance as their connection with the Communist Party was fairly well known, and therefore prevented them from taking part in any mission of importance or requiring secrecy (See 77a).",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:47:33.864010+00:00",
+  "page": 25,
+  "total_pages": 96
+}

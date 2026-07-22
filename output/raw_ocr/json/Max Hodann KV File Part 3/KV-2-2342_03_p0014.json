@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Kitchlands.\n\nDear Mrs. Lindebeck & Dr. Hadam,\n\nI feel I must send you both a line to tell you how deeply sorry I am for the news you brought me on Friday.\n\nI want to explain that I had not had Dr. Hadam's letter & was very much pressed for time between an interview & a meeting - my nature was in a somewhat depressed state & so I did not so readily give",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:26:52.931078+00:00",
+  "page": 14,
+  "total_pages": 99
+}

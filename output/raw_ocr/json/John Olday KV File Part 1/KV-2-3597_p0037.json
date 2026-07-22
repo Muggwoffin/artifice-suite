@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "I should be interested to know what recommendations are eventually made.\n\n(sgd) J.A. Collard.\n\nDy.D.b.\n15.4.42.\n\nDy.D.b.\n\nWe spoke.\n\nI have now discussed this with G.2. D/(C.& D.). He is unwilling to minute this file himself now, and suggested that I should minute it back to you to deal with. I think that the suggested minute by O.C.2. really represents the answer that should be given.\n\n(sgd) C. Binney.\n\nE.3.\n17.4.42.\n\nO.C.2.\n\nThese men's names were first sent to M.I.5. not by reason of their conduct in their units but so that their credentials could be checked up.\n\nThey have been dealt with by C. throughout in conjunction with Mr. Binney whose recommendations have already committed us and were not affected by the recent decision on policy.\n\nMr. Binney agrees with your proposed minute to A.G.1.\n\nIt is for you to answer the A.G.1. minute of 2.3.342.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:23:38.516769+00:00",
+  "page": 37,
+  "total_pages": 98
+}

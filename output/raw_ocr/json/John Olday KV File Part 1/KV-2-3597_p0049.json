@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "HEADQUARTERS, WESTERN COMMAND,\nCHESTER.\n\n26th December, 1941\n\nSECRET AND PERSONAL\n\nDear Johnstone:\n\nNo. 1309515 Private A.W. OLDAG\n\nReference your PF.45000/IS.F1c of 8th December, 1941, I now enclose report of O.C. No. 12 Centre Pioneer Corps concerning the above soldier.\n\nYours sincerely,\n\nL. L. Rutherford\n\nCaptain M. Johnstone,\nBox 500, G.P.O.,\nOXFORD.\n\nENGS. 1.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:25:10.910526+00:00",
+  "page": 49,
+  "total_pages": 98
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Result of return of correspondence on 15 Orsett Terrace, W.2. from 14.7.48. - 29.7.48.\n\n<table>\n  <tr>\n    <th>Addressee</th>\n    <th>Sender</th>\n    <th>Postmark</th>\n    <th>Description</th>\n  </tr>\n  <tr>\n    <td>Dr? F. FRIDAY</td>\n    <td>-</td>\n    <td>W.C.</td>\n    <td>Large letter</td>\n  </tr>\n  <tr>\n    <td>F.W. FRIDAY</td>\n    <td>C.W.S. Bankers, Leman St., E.</td>\n    <td>E.1.</td>\n    <td>P.P.</td>\n  </tr>\n  <tr>\n    <td>John OLDAy</td>\n    <td>Contemporary Press, 67 Clarendon Rd., W.11.</td>\n    <td>Notting Hill</td>\n    <td>Large letter</td>\n  </tr>\n  <tr>\n    <td></td>\n    <td>-</td>\n    <td>Highgate</td>\n    <td>Letter</td>\n  </tr>\n  <tr>\n    <td>Karl BORDER, Dortmund, 7 Hellgendortmund strasse, 2 Brit. Zone Reg. Beg. Westfalen, Germany.</td>\n    <td>-</td>\n    <td></td>\n    <td>Letter</td>\n  </tr>\n  <tr>\n    <td></td>\n    <td>-</td>\n    <td>No.113 (sic)</td>\n    <td>Letter</td>\n  </tr>\n  <tr>\n    <td>ComisInternale Relations, Spri. 8me. Danton, Paris.</td>\n    <td>Paris</td>\n    <td></td>\n    <td>Letter</td>\n  </tr>\n  <tr>\n    <td>Willy (Fritzenkotter?), Germany Wuppertal-Barmen, Feldstr. 33.</td>\n    <td></td>\n    <td></td>\n    <td>Letter (2)</td>\n  </tr>\n  <tr>\n    <td>Oestreitz?, Berlin-Schoneberg, Eberstr. 87.</td>\n    <td>Germany</td>\n    <td></td>\n    <td>Letter</td>\n  </tr>\n  <tr>\n    <td></td>\n    <td>Bournemouth</td>\n    <td></td>\n    <td>Letter (2)</td>\n  </tr>\n</table>\n\n/OVER",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:18:22.413804+00:00",
+  "page": 66,
+  "total_pages": 71
+}

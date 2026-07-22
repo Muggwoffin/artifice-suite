@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "21st January 1933.\n\nDear V.V.,\n\nYou may care to know that one Hamilton Neil Stuart GOOLD-VERSCHOYLE, born Dublin 19.12.04, address, The Manor House, Dunkineely, Co. Donegal, who describes himself as a student and went to Russia on 1.10.30., arrived here on January 5th from the Hook of Holland. He was in possession of Irish Free State Passport No. A.11399. He has been working in Moscow as a translator. His baggage was searched by Customs, but nothing of interest was found.\n\nThis man is presumably identical with an individual of the same name who in 1928 was a subscriber to the S.C.R., at which time he was living at 4a, Inverness Place, W.2. There is also an en clair wire dated 14.11.32. from VERSCHOYLE, Moscow to the S.C.R. London, a copy of which I attach, which indicates that he is still connected with that organisation. In 1930 he wrote from Moscow, sending a subscription to the W.I.R. in London, and expressing his sympathy with its aims.\n\nYours sincerely,\n\nMajor V. Vivian, C.B.E.,\nM.I.I.C.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:50:32.884298+00:00",
+  "page": 102,
+  "total_pages": 103
+}

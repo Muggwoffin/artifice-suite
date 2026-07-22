@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F. 49542.\n\nB.4b.2.        W.5a.\n\nAs spoken I am attaching a copy of a code (encl. 3 to 69a) found in the possession of internees associated with the Neubeginnen Movement as it seems likely that it may be of some use to the code section of the Censorship. So far as I can judge from a cursory glance, it would be suitable for German Socialist correspondence and I think there is no reason to suspect that it was used for any more suspect a purpose.\n\n18.7.41.\n\nM.J.E. Bagot.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:58:33.624946+00:00",
+  "page": 56,
+  "total_pages": 64
+}

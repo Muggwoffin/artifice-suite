@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM.\n\nFrom B.9.\nTo B.9a.\n\nI suppose this should now be referred to B.4.a.2.\nPA in PF.41426 and card Dolrova - EHC F2A 1678\n\nB4a2. The Irish have inlined some Irish communists including Neil Gould (Verschlag). I rather think he has a Russian wife. If so, this may be she.\n\nJohn Stephenson\n\nDate 27.7.41\n\nSignature\n\nThe letter is now so old that I don't think action is possible. (Dated 19.4.41, from Card Tim Walsher address and R8 please CS card him etc.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:42:50.845653+00:00",
+  "page": 47,
+  "total_pages": 103
+}

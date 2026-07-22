@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3a50cf10b688315cccd916f71e58b224.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "The Head Postmaster\nWhitby.\nPlease furnish the date of posting.\n\nC. Goodrich\nI.B. (Special Section)\n2 June 1940\n\nMr. H.\n(Commi Section).\nThe item was posted on 23 May. I am sorry this was not called.\n\nJohn H.\nHead Postmaster.\n\nWhitby\n7 June 1940",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:24:40.572675+00:00",
+  "page": 17,
+  "total_pages": 24
+}

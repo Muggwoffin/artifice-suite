@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "When the search was completed at 11, Eton Place, I accompanied V. Richards to 84A, Whitechapel High Street, E.1. and conducted a search. This resulted only in the seizure of a number of cartoons presumably for publication.\n\nIn this connection it might be mentioned that the artist is known by us to be Arthur William Oldag & John Olday (to whom reference is made in the circular letter dated 25.10.44).\n\nOlday, a deserter from the Pioneer Corps since 27.3.43., was arrested on 17.11.44 and charged with unlawful possession of a typewriter and with offences under the National Registration Act, 1939, and Defence Regulations in respect of an identity card held by him in another name. He is at present awaiting trial at the Central Criminal Court which commences on 9.1.45.\n\nAs a result of further information, on Saturday 30th December, 1944, Inspector Hoare ... conducted a search at No. 7, Camden Studios, Camden Street, N.W.1. rented by Philip Richard Sansom.... an anarchist on the Editorial Board of the Freedom Press...\n\nA number of cartoons by the \"deserter Olday\" (referred to on page 16 of this report) were found, and it appears probable that Olday and Sansom took some part in the preparation and distribution of the circular from this address. It is doubtful, however, if sufficient evidence will be available to involve them as Olday would be unwilling to admit his implication and until Sansom is located we shall not be in a position to prove anything against this man.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:53:11.028761+00:00",
+  "page": 26,
+  "total_pages": 91
+}

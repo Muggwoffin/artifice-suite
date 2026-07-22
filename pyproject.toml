@@ -12,6 +12,7 @@ dependencies = [
     "pyyaml",
     "PyMuPDF",
     "tkinterdnd2",
+    "reportlab",
 ]
 
 [project.optional-dependencies]

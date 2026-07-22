@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Karl Groehl in his letter to Karl Otten enclosed a plan and some notes which are summarized as follows:-\n\nThe chief Air basis against England is now between the Hague and Essen on the North Wilhelmshaven Railway. Underground Hangers have been built in the \"Knuppelwald\" and barracks nearby. The island of Norderney is strongly fortified and has a Seaplane harbour on the south side.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:08:32.889679+00:00",
+  "page": 86,
+  "total_pages": 102
+}

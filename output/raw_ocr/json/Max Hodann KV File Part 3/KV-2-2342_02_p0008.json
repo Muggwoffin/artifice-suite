@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "...\nI have consulted Mr Cooper who directs that we shall say to H referring to his call of the 9th instant that S/S is unable to consider his appn as he has failed to produce confirmation in writing from the Norwegian authorities that permission to enter Norway has been extended. This confirmation should now be forwarded without delay.\n\n12.11.35. Alien forwards translation from Norwegian Legation.\nExtend to 31.12.35.\n\nSend replies to various supporters. 13.11.35.\n\nHis ppt expired on 24.2.36. I have discussed this appn with Sir E. Holderness who agrees that Dr Hodann may have an extension until the end of 1935. It is expected that he will then be leaving for USSR.\n\nE.N.C. 13.11.35.\n\nPt Secy to Lord Cecil forwards infn and enquiries.\n\nDr Hodann has been given an extension till 31.12.35. To PS to inform Lord Cecil accordingly.\n\n30.12.35. Enquiry (Lady Russell to know whether H may leave on 1.1.36 instead of 31.12.35)\n\nAs he will be leaving on 1.1.36 again as noted to check out.\n\nE.B. 30.12.35.\n\nM.I.5. ask to H.O. pp.\nTo M.I.5. accordingly.\n\nN.S. 3.1.36.\n\n(File returned to S3a on 10.1.36 to send back \"Seen thank you\".)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:08:25.263615+00:00",
+  "page": 8,
+  "total_pages": 130
+}

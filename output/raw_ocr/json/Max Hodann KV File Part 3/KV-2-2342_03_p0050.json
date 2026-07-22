@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Gina PHILIPSBORN, Bolshavn, Denmark.\n\nTo Dr. Max HODANN, Beaconhill School, Brentwood.\n\nDate of Letter 16.10.35.\n\nDate of Postmark 17.10.35.\n\nSUMMARY OF CONTENTS\n\nApologises for delay in replying to his letter. Thanks him for his report. Her plans all went to pieces owing to the fact that she did not dare to procure the necessary identity papers for her daughter, as she would have had to send in her own passport.\n\nRefers to having stayed in a house tainted with bourgeois and zionist tendencies, which was very undesirable.\n\nEncloses letter from ? illegible: V. Philipson, Bolshavn/Bornholm.\n\nAsks whether addressee has come across the address of a company in Paris which enables doctors to go to Russia. He would be interested to see the conditions there for himself.\n\nAsks whether HODANN advises him to go there if not absolutely necessary. Does not mind work and living simply but is too old to stand many privations. Actually there is no immediate need for them to leave Denmark.\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:30:46.317055+00:00",
+  "page": 50,
+  "total_pages": 99
+}

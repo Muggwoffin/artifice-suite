@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Reference: L.158/1424\n\nExtract from Home Office file R.9753 - Hellmut von RAUSCHENPLAT - received on 28th April, 1958.\n\nLetter from H.M. Immigration Office, Bovingdon. Dated 16.4.1945.\n\nH.M. Chief Inspector.\n\nHellmut von RAUSCHENPLAT. Ge.\nH.O.: R 9753\n\nAt the request of the S.C.O. under instructions from Central Security, the above named was permitted to embark to-day for France in a Liberator aircraft under U.S. military escort.\n\nAlien was in possession of an I.B. 113 No. R 9753 of 7.1.39 valid to 28.12.1946.\n\nI.B. 29 to T.I. and CNRO.\n\n(Signed) G.L. Harbottle.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:42:06.420552+00:00",
+  "page": 17,
+  "total_pages": 24
+}

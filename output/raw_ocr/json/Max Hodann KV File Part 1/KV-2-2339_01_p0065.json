@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Dora RUSSELL, Beacon Hill School, Boyles Court, South Weald, Nr. Brentwood, Essex.\n\nTo M. HODANN, Kynance Court, Gloucester Road.\n\nDate of Letter 18.4.35.\n\nDate of Postmark 18.4.35.\n\nSUMMARY OF CONTENTS\n\nStates that she thought addressee said (Frau LINDBAEK) could pay \u00a32.10.0. a week. Does not mind making a reduction as it will only be for a short period. Asks if she is to expect Janka next term at \u00a31.10.0. a week.\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:11:40.083765+00:00",
+  "page": 65,
+  "total_pages": 144
+}

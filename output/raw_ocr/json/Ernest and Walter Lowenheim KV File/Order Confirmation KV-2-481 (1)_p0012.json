@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CONFIDENTIAL.\n\nFROM: LOEWENHEIM,\n3-6 Northwood Hall, London, N.6.\n\nTO: ERNST LOEWENHEIM, Esq.,\nHouse 14, N Camp, Isle of Man.\n\nDATED: 4.10.41.\n\nErnst my dear,\n\nNo mail from you and no other news... hope WALTER got my letter of the 2nd....\n\nGot our bookseller to send you the new pamphlet of NCLC \"Why Germany is aggressive.\" Please look at the advertisement of WALTERs and your book on the last page and inform me if and what I shall do about it.\n\nDid you see the Economist this week, the Danish article is by BERND, the German by FRANZ....\n\nThere is one thing where I want your opinion about. There are rumours amongst the German political refugees (I stress the word rumour) whose foundations I do not know, that the difficulty in your cases is the reason that the H.O. does not know if you really wrote \"Neu Beginnen\" and that other people claim the authorship of this book. I don't know what to do about this. The difficulty is that there are only rumours and I thought that WALTER had, in interview with the Camp Officer, cleared this point already long ago. I thought to ask SERING to write me or the solicitors a letter confirming your authorship of the book, if he refuses, I will take legal advice. What do you think about this?\n\nFunny business with BIEBER with whom I phoned and who let me down twice when I come to his appointment... Wish I knew your opinion about the European unrest.....\n\n............ Love to you and Walter\n\nR.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:52:23.901802+00:00",
+  "page": 12,
+  "total_pages": 64
+}

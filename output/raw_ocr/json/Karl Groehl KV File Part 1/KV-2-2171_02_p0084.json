@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY Original in MR 42816 OTTEN\n\nGist of letter written to [Karl Otten] from Karl Groehl dated 5.6.38, sent from Paris.\n\nThe letter is headed No. 9. and written in the form of short notes on the various subjects.\n\nI hope that you have found No. 6. If there is nothing important in it there will be a postcard from BJ and some personal information about Bio.\n\nToday I received a letter from Fritz Gr. and will write to him shortly.\n\nI must find a job for the girl from Luxembourg. Her parents are well off and could easily pay her fare to London.\n\nThe whole difficulty is money, because we cannot very well say what we want it for.\n\nI know a very good printer, who is not dear but would be cleaner than if we made an unreadable print; or we must have a really good machine and also a typewriter which will cost altogether about 6,000 frs.\n\nYou need not send me anything for the next two weeks, if there is anything important I can call on you.\n\nThe affair of Cala-Radjada I have turned to very good account.\n\nI am writing to Dresden today. Always say Saxony not Dresden.\n\nThe machine is noted down but I do not find it very important and can wait until we have more money.\n\nI must meet some people from Berlin and then only can I do something for Herman. I will do something for Erich.\n\nThe affair with the Chemist goes well, one must plant the thoughts more firmly and then convert the ideas to reality. Perhaps I will have time to meet the people personally.\n\nBe careful of No. 10. I must say something about Bio in it.\n\nEnclosed is the roumanian petrol bill for Schmid and also a cutting from the \"Nationalzeitg\" Basle. (The movement of german troops on the Czecho-Slovakian frontier was a rumour started by the British Secret Service.)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:08:20.695555+00:00",
+  "page": 84,
+  "total_pages": 102
+}

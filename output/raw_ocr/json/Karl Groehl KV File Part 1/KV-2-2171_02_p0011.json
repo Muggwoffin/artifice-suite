@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSUBJECT: K. Groehl.\n\nOn 1.6.39 Karl Groehl wrote to Otten and Paris\nsaid he was leaving London on Sunday for London. He also wrote:\n\n\"Im D. ist die ganze S.Z.P. hochgegangen\".\n\nInformation sent to S.I.S. on 5.6.39.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:58:53.758298+00:00",
+  "page": 11,
+  "total_pages": 102
+}

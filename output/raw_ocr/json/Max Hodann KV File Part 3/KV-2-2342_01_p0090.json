@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "existence are unknown; he has a car and a bank account.\n\nIn April, 1935, he got into touch with an expert shoemaker stating that he wished to learn the trade in order that he could proceed to Argentine to set up a Shoe manufactory. It is not known if he still has the intention to do this.\n\nNothing is known against the man by the Authorities in Alexandria, Switzerland, or Belgium, and he is not known in German communist circles in Brussels.\n\n2. HOUDANN or HODANN, Max, born at Neiss on 30.8.94 spoke at a discussion on 'life in U.S.S.R.' at Charleroi on 6.1.36. This discussion was organised by the local section of the Jewish Communist group \"Prokor\", recently constituted, which has taken over the activities of the former \"Kultur Verein\" and \"Gezerd\". The latter was dissolved as a result of the expulsion of the principal chiefs, and is similar to the organisation \"AIKOR\" which exists in Great Britain, Canada, United States of America and Denmark.\n\n\"PROKOR\" is said to have as objective the emigration of Jews to U.S.S.R. (Biro-Bidjan colony).\n\nDuring the discussion, HODANN developed the \"PROKOR\" point of view. He exposed the life of the Soviet women, sanitary service and the social situation of the Soviet people, in comparison to that of people in capitalist countries.\n\nHODANN, who appears to have remained in Belgium without permission, against spoke at a similar reunion organised by \"PROKOR\" in Brussels on 10.1.36. He then spoke about minorities in all countries, the Italian-Ethiopian conflict and against the Hitler regime. He, however, abstained from openly preaching the theories of Karl MARX.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:06:12.131999+00:00",
+  "page": 90,
+  "total_pages": 104
+}

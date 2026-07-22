@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "H.O. file G.10661. Karl Friedrich GROHL\n\n11.8.38.\nCopy of letter to GROEHL from Claud W. SYKES, 32 Souberie Avenue, Letchworth, inviting him over for the weekend, because \"our literary work cannot go on unless I have an immediate consultation with you\",\n\n17.8.38.\nApplication for visa for GROHL, 7 rue Barrault, Paris 13e. Born Schneidenruhl 10.2.96. German. Arrived in France 1935. Writer. Proposed visit 4 days. Previous visits to U.K. 30.4.38 4.5.38., 7.7.38., 9.7.38. Grohl stated that he came to France as a political (Aryan) refugee from Germany. Has no banking account in Paris and appears to have limited means.\n\nMINUTES\n\n1.9.38.\nApplication for visa.\n\n5.10.38\nWe might agree providing he renews his return visa. Authorise visa for 4 days N.E..\n\n................\n\n1.6.39.\nM.I.5 for obsns first.\n\n8.6.39.\nFile returned minuted \"Karl GROEHL is well known in anti-Nazi circles in Paris. We do not raise any objection to a visit of limited duration\".\n\nK.G.Y.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:58:47.761616+00:00",
+  "page": 10,
+  "total_pages": 102
+}

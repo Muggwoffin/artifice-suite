@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Gegen-Angriff\nPOSTSCHEN-KONTO:\nLUDMILA TWRDOK, PRAG VII., KONTO Nr. 31744\nZUSCHRIFTEN AN: GEGEN-ANGRIFF, PRAG VII., POSTAMT 14, Schliessfach 16\n\nHerrn\nMax Hodann\n\nPrag, den 2. Juli 1935\n\nSehr geehrter Herr!\n\nWir sandten Ihnen vor einiger Zeit den Appell des \"Gegen-Angriff\" \"Man muss etwas tun\", mit der Bitte um Stellungnahme zu dem wichtigen Problem einer deutschen Einheitsfront gegen den Hitlerterror und f\u00fcr die Opfer des Hitlerfaschismus.\n\nWir haben leider bisher noch keine \u00c4u\u00dferung in dieser Sache von Ihnen erhalten. Wir bitten Sie, uns Ihre Stellungnahme umgehend zukommen zu lassen.\n\nMit antifaschistischen Gruss:\nGEGEN-ANGRIFF\nPRAG VII., Postamt 14\nSchliessfach 16.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:49:38.228984+00:00",
+  "page": 81,
+  "total_pages": 143
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Extract from B.M. A.G.14.A.5416 re DUAL NATIONALS AT NO. 18 T.C.\n\n13095115 Pte. Oldag W.\n\nA.G.3.\n\nAs these men have already been interviewed by an A.G.14. officer and a Security Service representative, who recommended their retention, we can, in default of fresh evidence, make no further comment.\n\n(egd) Alan Johnston.\nCapt. G.S.\n\nM.I.5.c.\n25.4.42.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:23:05.579671+00:00",
+  "page": 33,
+  "total_pages": 98
+}

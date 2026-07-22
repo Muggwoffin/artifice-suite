@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET\n\nFF.66074/B.1.c/MRS.\n\n27 September 1950.\n\nFurther to my letter of 21 September 1950 about John OLDAY, alias William Arthur OLDAG, I have been informed that 15, Orsett Terrace, W.2. is now empty, and it appears that OLDAY must have moved. I am trying to obtain his present address and thought you would like to know what is happening as it will take a little longer to try to obtain the information you wanted about his correspondents in Belgium.\n\nThis man has been issued with a new passport, No. 881660, dated 29 April 1948 in the name of Arthur William OLDAG, for the purpose of travelling to Paris on holiday.\n\nYours sincerely,\n\nM. Sercombe.\n\nS.I.S.\n\nMRS/AGB.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:15:58.214818+00:00",
+  "page": 47,
+  "total_pages": 71
+}

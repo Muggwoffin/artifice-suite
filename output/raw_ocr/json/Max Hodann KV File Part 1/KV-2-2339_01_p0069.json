@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "BEACON HILL SCHOOL\n\nBOYLE'S COURT,\nSOUTH WEALD,\nNr. BRENTWOOD,\nESSEX.\nApril 18th 193\n\nDear Max Hedann,\n\nI am sorry if I misunderstood your letter. I thought that you wrote that Frau Lindback could pay \"nur\" 2\u00bd pounds a week. I have not got the letter here with me. As you will understand, it would be very difficult for me to carry on the school; if I took all children for very little. I do not mind doing it in this case, since it will not be over a long period. Please ask Frau Lindback to let us know if we are to expect Janka next term.\n\nBy address here is\n\nCarn Veel\nPorthcurno\nCornwall.\n\nYours sincerely,\n\nDr. Russell",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:12:02.495132+00:00",
+  "page": 69,
+  "total_pages": 144
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.C. 72c\nA.E.H. 14.4.43.\nPOSTAL & TELEGRAPH CENSORSHIP\nUNITED KINGDOM\nTYPE OF MAIL\nTERMINAL MAIL. Surface.\nReg. No. Taken off S.S. at (port)\nSubmission No.: LON/PMS/222,228/43\nDate: R2F\non (date) PL L.U.\nFROM: PAT DOOLEY\nIrish Freedom,\n150 Southampton Row,\nLondon. W.C.1.\nTO: MR. N. GOOLD,\n2 Lower Donset Street,\nDublin,\nEire.\nDate of letter (or postmark): April 9th 1943\nLanguage: English\nORIGINAL LETTER: SUBMITTED\nSUBMITTED.\nSUBMITTED TO:\nM.I.5. Original for action\nPress. Comment.\nSeen by: Naval Adviser Air Adviser M.I.12\nOperating Unit Section Examiner D.A.C. Date\nLON/PMS. 4092 D.L. 12.4.43.\nThe writer of this letter is editor of \"Irish Freedom\" organ of the Conolly Club, which is on the S.L. The writer says:\n\"You will be pleased to see an interesting report in the May issue of IRISH FREEDOM which I received via a friend in Belfast. Thank you for your work in this connection and we will be very grateful to have any articles or reports from you as regularly as possible.\"\nD.L. for J.H.C",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:41:23.698118+00:00",
+  "page": 36,
+  "total_pages": 103
+}

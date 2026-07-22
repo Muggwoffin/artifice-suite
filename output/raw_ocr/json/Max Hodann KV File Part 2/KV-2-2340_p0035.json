@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CABRIDGE.\nI.B. 29526\n\nName and address on cover.\n\nDr Alexis Finkelstein\n13 Shelford Park\nGreat Shelford\nCambridge\n\nA.S. Finkelstein, Esq.,\n13, Shelford Park,\nGreat Shelford,\nCambridge.\n(The Patent Office\n25, Southampton Buildings,\nLondon, W.C. 2).\n\nPersonnel Dept.\n(I.B. Special Section).\n\nSubmitted.\n\nCambridge.\n12 July 1935.\n\nPOST OFFICE\nSS 280.\n\nPostmark of office of posting.\n\nBerlin\nCharlottenburg\n10.7.35 20.21\n\nLONDON. OFFICIAL PAID\n2 45 pm\n11 JUL\n1935\n\nfor Head Postmaster.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:40:30.391479+00:00",
+  "page": 35,
+  "total_pages": 143
+}

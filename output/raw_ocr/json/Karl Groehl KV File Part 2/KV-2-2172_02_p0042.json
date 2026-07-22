@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "W.M. 13.2.42.\n(9888D) W: 32894/T261 200000 11/41 H, J, R & L, Ld Gp 745\nPOSTAL & TELEGRAPH CENSORSHIP. SUBMISSION No. PC/056146/42.\nP.C.72.\nTerminal Mail Air Surface\nLetter from ESME LOPEZ\nAddress or postmark RUA AUGUSTA 274/1V/E SETERIOS PORTUGAL.\nDate of letter postmark 27th JAN. 1942.\nTo MR. HANS ROGER MADOL\nTHE 20 HERMITAGE RICHMOND, SURREY, ENGLAND.\nLanguage ENGLISH.\nORIGINAL LETTER:\nSubmitted A Photographed\nRetained Released\nReturned to Sender\nSUBMITTED TO:\nORIG. TO M.I. 5.\nSeen by: Naval Adviser Air Adviser M.I.12\nSUBJECT\n(Include necessary references to Watch Lists, with Authority requiring the Watch)\nLetter appears ambiguous. Writer asks addressee for all possible assistance but appears insistent that he should not write to her.\nOperating Unit Section Examiner D.A.C. Date\nMOL. PRI. F.4. T.2. 1476 O.O'D. 11.2.42.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:32:55.708846+00:00",
+  "page": 42,
+  "total_pages": 107
+}

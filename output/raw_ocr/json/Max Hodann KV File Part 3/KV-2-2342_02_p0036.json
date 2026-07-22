@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "13. SHELFORD PARK.\nGREAT SHELFORD.\nCAMBRIDGE\n\nAkademische Verlagsgesellschaft M.B.H.,\nTranslations.\n\n6th December, 1935.\n\nDear Doctor,\n\nThe transfer of the fee due to you has been, unfortunately, refused by the exchange office. We are obliged to apply once more, giving more details. Please state from your correspondence at what time we have agreed about the General Index 151-175.\n\n(Signed) Jacoby.\n\nCumberland Hotel, London. 27th December, 1935.\n\nDear Doctor,\n\nConfirming yesterday's interview, I beg to state that you agree, in principle, to translate on our resp. the London Company's account parts of Richter Anschlag, the fee to be \u00a34 for the 16 pages sheet. In addition, we hope for your collaboration with other literary work, to begin by the middle of January.\n\nI hope for a close and successful collaboration.\n\nYours sincerely,\n\n(Signed) Kurt Jacoby.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:11:24.739093+00:00",
+  "page": 36,
+  "total_pages": 130
+}

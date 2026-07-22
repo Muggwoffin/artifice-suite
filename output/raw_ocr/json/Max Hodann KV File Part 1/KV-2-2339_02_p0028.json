@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Norman HAIRE, 127, Harley Street, W.l.\n\nTo Max HODANN, Kynance Court, S.W.7.\n\nDate of Letter 3.4.35.\n\nDate of Postmark 4.4.35.\n\nSUMMARY OF CONTENTS\n\nAcknowledges card.\n\nStates that he has been busy with professional and literary work and meetings about an appeal for German refugees.\n\n\"I should be pleased if you and your friend would come to tea about four o'clock next Sunday afternoon.........\"\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials (date) 4.4.35.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:22:43.454373+00:00",
+  "page": 28,
+  "total_pages": 131
+}

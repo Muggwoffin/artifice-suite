@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Register No.        Minute Sheet No.\n\n4.35. Copy of Arrival cards for NEUMANN and Hans PREISS. 64a.\n\n4.35. Result of return of correspondence on 1, Britannia Street. 65a.\n\n4.35. H.O.W. form for ORDING. 66a.\n\n4.35. H.O. file F.825 re FINKELSTEIN. 67a.\n\n4.35. H.O. file passed to S.3.a. to return. 68.\n\n3.35. Intercepted letter from Oslo to HODANN. 69a.\n\n4.35. Extract from H.O. file L.1675. 70a.\n\n.35. Intercepted letter from ROUNG(?) KEUNZ(?) to FINKELSTEIN. 71a.\n\nOwing to delay over the Easter holiday the check on Arne ORDING has not yet been signed by the Home Secretary. Spoke Mr. Harker who obtained permission from the Home Office to put this check on by telephone.\n\nSpoke G.P.O. accordingly.\n\nS.9.a.\n1.5.35.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:05:54.365164+00:00",
+  "page": 10,
+  "total_pages": 144
+}

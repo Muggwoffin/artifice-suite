@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "131a refers to a letter, post-marked London, 18.7.45, addressed to OLDAG. This contained a card with the title \"Man & Woman of Hamburg\", and on the back was written \"Thinking about you. Marie Louise\".\n\nF3m.\n20.7.45.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:47:31.488659+00:00",
+  "page": 77,
+  "total_pages": 92
+}

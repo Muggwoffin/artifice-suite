@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF. 43817\n\nCROSS-REFERENCE.\n\nSubject:\u2014 HODANN\n\n20.6.36. S.I.S. wrote to S.9 under CX/12650/2082, re Dr. Fritz ROSENTHAL, and commented on the fact that he had been recommended to HODANN by a mutual friend in Paris.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:03:06.121570+00:00",
+  "page": 61,
+  "total_pages": 104
+}

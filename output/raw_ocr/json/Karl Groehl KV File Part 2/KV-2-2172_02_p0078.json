@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Cincinnati, Ohio.\nAugust 11, 1941.\n\nDear Karl,\n\nAfter spending the war and part of the armistice in France, I managed to get to the United States June 30. I was on the Winnipeg, which was stopped by the English and taken to Trinidad. The passengers were held there for four weeks, but are now all in America I think.\n\nHere in Cincinnati I've been lucky enough to find a chance to work as writer and speaker for the German anti-nazis broadcasts at the shortwave station WLWO. I have successfully passed the writing and voice tests; now my job depends on my proving that I'm not a Nazi. Can you write me a letter testifying that you know me from my work in Paris (Die Laterne, etc.) and also from my collaboration with you at Paris? If you can send one copy to the Federal Bureau of Investigation, Washington, D.C., and another to Mr. Gunther, WLWO, Cincinnati, Ohio (Crosley Radio Corp) you would be doing me a great service.\n\nYour recommendation should carry enough weight to prove completely my political integrity, and allow me to take the job. I don't want to miss this opportunity of continuing the good work against Hitler, as I always have.\n\nIf you would like to know anything about some of our mutual friends, I should be glad to write you what I know. Quite a few have managed to get to America.\n\nWith thanks in advance, and all good wishes,\n\n(signed) Werner.\n\nWerner Zacharias (called FLORIAN)\n4537 Hector Ave. Cincinnati, Ohio.\n\nP.S. Please send letters by airplane; every minute counts for me.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:38:31.458214+00:00",
+  "page": 78,
+  "total_pages": 107
+}

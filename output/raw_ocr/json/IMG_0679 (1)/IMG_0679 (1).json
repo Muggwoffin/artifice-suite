@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\26430d4dae5c7fd05ad63cac21adefb2.jpg",
+  "stage": "raw_ocr",
+  "extracted_text": "myself over the I. e. I felt at the time I was being lovingly grand-motherly but your few remarks troubled me, & I obviously read on more into them than I was intended to.\n\nAnyhow, your catalogue of activities and plans cheered me no end & we don't go over philosophy, wait till you're 60.\n\nI was on the point of being watered again, but I won't. All I can say is that I can't even enter your delicious joy in being drunk. And you know we well enough to know whose side I am. I've been on if I had been at the Rebs' dance. Anyhow, I warn. I there, so I'm not going to even enter the controversy. But your awful other accounts I've received & those dances have made me feel real homesick.\n\nApart from a wild help we had at the Plenum, I haven't danced during I am London. Oh, except one since I",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T13:11:27.011753+00:00",
+  "page": 1,
+  "total_pages": 1
+}

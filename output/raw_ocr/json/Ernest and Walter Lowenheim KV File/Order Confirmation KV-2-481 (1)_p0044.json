@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "\"I have at last seen Richard BROH. He disclosed to me that his sister-in-law Mrs. Marianne POLGAR, widow after a Hungarian Journalist, herself a full-Aryan, now at 111, Palace Road, S.W.2. used to be for a number of years at Berlin the secretary of Walter LOEVENHEIM. Therefore, if you have still any special question you like to know I may be in a position to find out from her the right answer.\n\nApart from that, I was told i.e. the father of LOEVENHEIMS was dealing with old metals of all sorts and Walter LOEVENHEIM was in his father's firm. This firm made bankruptcy with 1\u00bd Million Gold Marks having only 15,000 or 20,000 Marks assets.\n\nErnst LOEVENHEIM was with Russphoto at least up to 1930 but he left the Communist Party already at about 1924 officially. He, therefore, used to be with Russphoto without being a Party Member. Apparently he was not expelled, at least not before 1930.\n\nThe Russian Boss of Russphoto used to be a Soviet Professor for Geography, called RADO.\n\nLOEVENHEIMS while connected with the German Communist Party belonged to the Group of MUELLERBERG (Willi).\n\nWalter LOEVENHEIM left also officially the Communist Party at about 1924 but was connected with them up to about 1930. He used to write political and economical articles for the Rote Fahne, the official German Communist Daily, and various other party papers and journals; for this service, he was very well paid. Various statistical material, figures etc. used by the Communists in their propaganda, the Reichstags meetings, budget discussions etc. were his work.\n\nBROH does not think, apart from that stated above, that LOEVENHEIM's activity was ever directed against the present or former Allied Cause. But I must say that their activity or views were at least very dangerous to the democracy in Germany.\"\n\nE.3.(S)\n22.8.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:56:45.238128+00:00",
+  "page": 44,
+  "total_pages": 64
+}

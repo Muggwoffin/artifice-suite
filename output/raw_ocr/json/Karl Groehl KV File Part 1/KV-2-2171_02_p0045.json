@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY.\n\nM.I.3.b.\n\nWe have recently seen a summary of an article on the German fortifications on their Western frontier, which appeared in the military periodical \"Die Wehrmacht\", No. 21, dated 1938.\n\nNo doubt you already have seen this periodical. If not, however, and you think it would be of any interest to you to see the summary, I could let you have it.\n\nPrima facie, it does not appear to contain much information which would be of use to you.\n\nM.I.5.\n18.11.38.\n\n(sd) O.A.H.\n\nOriginal filed in S.F.75/Germany/10, Vol.3, 189a.\n\n+ Photostat of article, sent from Karl (GROEHL), Paris, to K. OTTEN, 19, Oppidans Road, N.W.3, postmark 12.11.38, filed in S.F.75/Germany/10, Vol.3, 188a.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:02:59.462514+00:00",
+  "page": 45,
+  "total_pages": 102
+}

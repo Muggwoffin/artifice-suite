@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\401aa01628e87a910b126024268e5670.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Source: Kaspar.\n\nHelmuth RAUSCHENPLAT.\n\nFrom the beginning of his political activity in Germany RAUSCHENPLAT belonged to the I.S.K., which he left about a year ago in order to do research work for the Fabian Society, W.E.A. etc., for which he did not wish to be bound to any party. He was the leader of the Independent Socialist Trade Unions (USG) as the small, insignificant ISK trade union of little more than 100 members was called and is regarded as the trade union expert of the I.S.K. He undoubtedly has valuable knowledge in this sphere. He lived for a long time with Hilda MONTE, but has now separated from her. He is described as a reliable Socialist of the I.S.K. type with leanings towards the S.P.D. and as anti-Communist and anti-nationalist. He is a member of the Executive of the German Trades Union Group.\n\nE.5.(L).\n23.2.45.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:32:14.098675+00:00",
+  "page": 7,
+  "total_pages": 24
+}

@@ -38,6 +38,18 @@ _DEFAULTS: dict[str, Any] = {
     "cleanup_guard_max_deleted_words": 2,
     "cleanup_guard_min_length_ratio": 0.97,  # letters, not characters
     "cleanup_guard_protect_nouns": True,
+    # Content-preservation guard for the structure stage. When the model's
+    # output has altered any word, the original text is kept instead, so a
+    # page is either structured or untouched — never reworded.
+    "structure_guard": True,
+    # An LLM asked to "translate into English" text that is already English
+    # has nothing to genuinely translate, and reliably "helps" by rewording,
+    # dropping, or otherwise rewriting it instead — corrupting an
+    # already-correct document. When the language-detection pass confidently
+    # identifies English, skip the translate call entirely and pass the
+    # cleaned text through untouched. Only ever skips on a confident "en"
+    # result; an uncertain/failed detection still translates as before.
+    "skip_translation_if_english": True,
     # P6: GUI persistence
     "history_db": None,  # defaults to ~/.ocr_pipeline/history.db
     "gui_theme": "paper",  # "paper" (light) or "night" (dark)

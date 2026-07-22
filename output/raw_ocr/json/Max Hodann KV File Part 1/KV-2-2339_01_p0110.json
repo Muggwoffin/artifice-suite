@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "81-4-35\n\nThe merchant Khr\nNo. Haddam\nMrs. Haddam for\nKhran acc. is Ex P.\nleverage d. No. 60.00\ndes pidergie. For\nVorfigung s. deben\nIhr sein. einwohner\nmacht Manchester\nalso vielleicht daftka\nwir uns finden in\nLondon.\nFremdlokal-privat\nsuche am Frei leidtak\nKhr.\nKhr. Haddam",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:16:20.122238+00:00",
+  "page": 110,
+  "total_pages": 144
+}

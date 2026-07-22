@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF.66074/Y/F.3.m.\n\nMajor F.W. Towns,\nBox No. 500,\nMANCHESTER.\n\n6517 dated\n2.8.44. & 1 enc.\n\n25.8. 44.\n\nMany thanks. Our reference was misquoted in our previous letter and should read PF.66074.\n\nRGM/PB",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:59:01.241842+00:00",
+  "page": 68,
+  "total_pages": 91
+}

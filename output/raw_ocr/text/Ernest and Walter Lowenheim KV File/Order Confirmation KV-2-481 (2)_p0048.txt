@@ -1,0 +1,41 @@
+Forms/W5176/2. Wt. 88868/1470. 100,000 pads. D.P.W. 51-6824.
+
+SHIPPING ADVICE AND
+
+Ultimate Consignee ............................................................ Convoy .....................................................
+Consignor ............................................................ Port of Shipment .....................................................
+
+The undermentioned stores have been
+DESPATCHED to Movement Control for shipment (see Col. 5) ... ... ... ...
+RECEIVED in apparent good order and condition ... ... ... ... ...
+RECEIVED and SHIPPED in apparent good order and condition and to be delivered in like good order and condition (see Col. 11) ... ... {
+RECEIVED in apparent good order and condition (see Col. 13) ... ... {
+DESPATCHED to consignee (see Col. 14) ... ... ... ... ...
+
+NOTE.—Columns 1—9 will be filled in by Consignor, 10—12 by M.C. Port of Shipment after agreement 14 by Military Docks Directorate. Col. 15 will be reserved for use by M.C. Port of Shipment.
+
+<table>
+  <tr>
+    <th>Store movement schedule or W.5170.</th>
+    <th>Description of packages and contents.</th>
+    <th>Marks.</th>
+    <th>No. of Packages.</th>
+    <th>Shipping Tons.</th>
+  </tr>
+  <tr>
+    <th>Ref. No. (1)</th>
+    <th>Item No. (2)</th>
+    <th>(3)</th>
+    <th>(4)</th>
+    <th>(5)</th>
+    <th>(6)</th>
+  </tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>

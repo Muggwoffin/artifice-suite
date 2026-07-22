@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From [Dr. Felix TIETZE,] Wahringerstrasse 5-7, Vienna IX/2.\n\nTo Max HODANN, Boyle's Court, South Weald, Brentwood.\n\nDate of Letter 19.10.35.\n\nDate of Postmark 19.10.35.\n\nSUMMARY OF CONTENTS\n\nStates that he has just received a letter from Dr. PILLAY from Bombay \"in which he enclosed a copy of your letter of the 2nd October, to him.\"\n\nStates that he has been asked, on the recommendation of Dr. C.P. BLACKER and Major Leonard DARWIN, by Dr. PILLAY, to take on the position of editor for the European Continent for the journal \"Marriage Hygiene\".\n\nStates that Dr. PILLAY has informed him of addressee's ideas of founding a society - does not think it would be successful, partly on account of the language difficulty.\n\n\"I am, as you see, a children's doctor. I am also on the way to the field of work of M.H.\"\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:32:57.552961+00:00",
+  "page": 70,
+  "total_pages": 99
+}

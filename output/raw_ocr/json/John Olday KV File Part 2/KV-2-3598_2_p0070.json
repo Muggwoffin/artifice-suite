@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 81/B.P./5000/7.44\n\nEXTRACT.\n\nExtract for File No.: PF.66074\nName: OLDAG.\n\nOriginal in File No.: 221,975 LOCKIE\nSerial: la\nDated: 22.8.44\n\nOriginal from: Intercept\nUnder Ref.: None\n17.8.44\n\nExtracted on: 24.8.44\nby: VJ\nSection: R4\n\nExtract from Letter from 1451610 LAC LOCKIE, J. Andrew, Block D., Room 7 R.A.F., Watebeach, Cambs, to Freedom Press, 27 Belsize Road, London N.W.6.\n\nMany thanks to John OLDAY for sending me the original drawing of \"Defend our Heritage\". I shall be collecting it in the near future from my home where it is held for me.\n\nI agree that it is \"asking for trouble\" to have it in the billet, but, believing in the liberty of the individual, I ask nothing more than to defend myself and my principles, and thereby defend the liberty of mankind, even though in a small way.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:59:17.336980+00:00",
+  "page": 70,
+  "total_pages": 91
+}

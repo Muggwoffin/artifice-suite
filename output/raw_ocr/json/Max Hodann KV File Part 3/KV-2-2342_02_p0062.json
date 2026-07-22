@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Babette GROSS, Editions du Carrefour, 83, Bd. de Montparnasse, Paris, VI.\n\nTo Dr. Max HODANN, Boyle's Court, Brentwood, Essex.\n\nDate of Letter 4.12.35.\n\nDate of Postmark 4.12.35.\n\nSUMMARY OF CONTENTS\n\nAcknowledges note of 21.11.35. Refers to \"Yellow Stain\" which has been sold to Gollancz. Therefore they are being very careful about sending prospectuses to the English addresses named by writer but have sent prospectuses to all the Scandinavian and Belgian addresses.\n\nAsks addressee whether he will find someone to do an English translation of a biological work which appeared in the U.S.S.R.\n\nFor translation see attached sheet.\n\nCOMMENT\n(a) No action required. P.A.\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:14:15.049387+00:00",
+  "page": 62,
+  "total_pages": 130
+}

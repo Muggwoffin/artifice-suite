@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "To F362.\nFrom: F.3.b.2.\nTo: F.2.a. Mr. Clark.\n\nI see from the attached note from M/S that F.2.a. are dealing with John OLDAG. I am interested to see this second publication of his which has been printed by the Freedom Press. You may like to have it for his file - on the other hand it might be rather convenient if it could be kept in the Library as it will presumably be distributed by the Freedom Press anarchists and I may have enquiries about it.\n\nYou may have seen from OLDAG's file that I had an enquiry from Cambridge. I gave them a non-committal reply as it had not been decided who was going to deal with him, and I felt that at that stage it would be better not to pass on the information obtained from M/S as it did not appear to be my case.\n\nF.3.b.2.\n20.5.44.\n\nThis is news to me. I should have thought Olday was yours - perhaps you could ask ADT.\nMr. Sercombe",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:21:16.436606+00:00",
+  "page": 18,
+  "total_pages": 98
+}

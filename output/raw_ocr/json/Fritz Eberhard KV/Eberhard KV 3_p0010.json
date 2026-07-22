@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3a50cf10b688315cccd916f71e58b224.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "T.C.10223/M.L.9/B.10.m.  13th June, 1940\n\nDear Colonel Chaytor,\n\nI should be glad if you would let me have any information as to the names and activities of the tenants of \"Duona Vista\", a house in Sleights Village, near Whitby.\n\nIt has been reported that a member of the household recently posted a registered letter of suspicious bulk, thought to contain photographs, and addressed to:\n\nDr. Helmut von RAUSCHENPLAT,\n6, Brunswick Square,\nLondon, W.C.1.\n\nWe have the following information concerning Dr. Rauschenplat. He arrived in England on the 4th January, 1938, stated that he was a Doctor of Political Economy, and is said to be engaged in the preparation of a book entitled \"State Intervention in Economics\".\n\nHe is said to be a Socialist, but has no Communistic sympathies. In 1939 he joined the Central European Joint Committee, which compiles information from various continental sources, makes comments and puts the results at the disposal of the Ministry of Information.\n\nFrom the above, it can be seen that Dr. Rauschenplat seems to be of irreproachable integrity, but it would be interesting to know, if possible the contents of the above mentioned registered letter. I think it would do no harm to approach directly, in this case, the people concerned.\n\nYours sincerely,\n\nMajor General Sir Vernon Kell,\n\nLieut-Col. J.C. Chaytor, D.S.O., M.C.,\nChief Constable,\nCounty Constabulary,\nNorthallerton, Yorks.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:22:59.891991+00:00",
+  "page": 10,
+  "total_pages": 24
+}

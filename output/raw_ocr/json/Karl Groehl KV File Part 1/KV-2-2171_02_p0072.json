@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF 46464.\n\nCROSS-REFERENCE.\n\nSUBJECT: Karl Groehl.\n\nExtract from M/S report on Otten Group, 22.7.38.\n\n....It appears that GROEHL has postponed his visit to London, because he will have to \"go on tour\" about the end of the month. I elicited that this meant a visit to Denmark, which Otten says is a safer place to receive agents having to report outside Germany than any other neighbouring country. Nevertheless, I understand that GROEHL met one of his agents in Switzerland about a fortnight ago, and the report was sent direct to Otten.\n\n....I told Otten I should like to meet Groehl when he came over, and he said I should.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:06:36.318644+00:00",
+  "page": 72,
+  "total_pages": 102
+}

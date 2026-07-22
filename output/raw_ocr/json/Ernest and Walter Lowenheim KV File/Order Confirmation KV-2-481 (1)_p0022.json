@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "13th September 1941\n\nRe:- THAMES FLU-TITE ENGINEERING COMPANY LIMITED.\n\nThe above company was registered on the 22nd March 1941 with a nominal capital of \u00a310,000 divided into \u00a31 shares.\n\nThe registered offices are at, Point Pleasant, Wandsworth, SW.18. and the objects of the company are:-\n\nTo acquire from QUICKTHO (1928) LIMITED the sole licence to make and sell Flue dampers and all rights etc vested in that company by virtue of a deed of licence dated 14.2.1941, between Bruno Fritz KARTHAUSER and Walter LOEVENHEIM of the first part, Thames General Investment Co Ltd of the second part and Quicktho (1928) Ltd of the third part.\n\nOn the 23rd April 1941 the directors were:-\n\nFrederick W BERWICK. British.\n97 Barkston Gardens, SW.5.\nEngineer.\n\nWilliam QUICK. British.\n12 Tudor Way, Ealing. W.5.\nCoachbuilder.\n\nBeresford C LOCKHART-JERVIS. British.\nBramshott Lodge, Liphook.\nDirector of - Notting Hill Electric Lighting Co Ltd\n\nHenry B LUCKCHUCK. British.\n12 Brookfield Ave. W.5. (Secretary)\nDirector of - QUICKTHO (1928) Ltd.\n\nNo share return has been issued, but 9,000 shares have been allotted to QUICKTHO (1928) LIMITED.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:53:46.876649+00:00",
+  "page": 22,
+  "total_pages": 64
+}

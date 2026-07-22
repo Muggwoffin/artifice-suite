@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "25.\nSergeant Smith, S.B., called for information about the VERSCHOYLES.\n\nI gave him spare photographs of Hamilton Neil Stuart GOOLD-VERSCHOYLE and Brian GOOLD-VERSCHOYLE and the last London address we had for the former.\n\nS.10\n9.8.35\n\n26.\n1.8.32 S.B. report arrival of GOULD-VERSCHOYLE from Leningrad.\n\n16.8.35 S.B. Report re Brian Goold VERSCHOYLE.\n\n23.8.35 Copy of letter to S.B. re MOOS.\n\n20.11.35 S.B. report re Brian GOOLD VERSCHOYLE, (photo put in 24a).\n\n27.\n28.\n29.\n30.\n31.\n32.\n33.\n34.\n35.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:45:40.147051+00:00",
+  "page": 68,
+  "total_pages": 103
+}

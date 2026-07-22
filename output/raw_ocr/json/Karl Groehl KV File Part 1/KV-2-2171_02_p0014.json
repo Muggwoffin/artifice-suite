@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Original in PF. 44156. Knop. 34a.\n\nSECRET.\n\nPF. 44156/B4b. 24th May 1939.\n\nDear Major Vivian,\n\nWith reference to your CX/12650/4544/2 of 16.5.39., we have now ascertained that Werner Gustav John KNOP became a naturalised British passport No. 195908. It was presumably this document which he used when travelling to Paris.\n\nKnop has not come to our notice as being in any way connected with the communist party and we therefore raised no objection to his application for naturalisation. Nevertheless I am not entirely satisfied about him. We saw a letter from Karl GROEHL to Karl OTTEN IN April which showed that GROEHL wanted information about KNOP, who was giving himself out to be \"a leading member of the German Left Group\". We also saw about the same time a letter which showed that OTTEN had been making enquiries about KNOP from Wickham Stead, who said he had known KNOP for some years and would need very positive proof before he would suspect him of playing a double game. The following statement in Wickham Stead's letter to OTTEN may be of interest to you, - \"I am somewhat suspicious of the information given you in regard to certain persons. My impression is that some people in our War Office have got 'Jewish Communists' on the brain. They have been wrong in certain instances but I happen to know that they have been wrong in others\". I will let you know if we hear anything further of interest about KNOP.\n\nYours sincerely,\n\nK.G.Y.\n\nMajor V. Vivian, C.B.E.\nS.I.S.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:59:16.167760+00:00",
+  "page": 14,
+  "total_pages": 102
+}

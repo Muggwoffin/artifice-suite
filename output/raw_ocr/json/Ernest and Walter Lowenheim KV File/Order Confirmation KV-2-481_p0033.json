@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM\n\nFrom: E.7.(S)\nTo: F.2.B. ES (R.W. Edwards)\n\nI attach hereto a report from in original. It concerns the LOEVENHEIMs and I think you may already have all the information it contains. If you would like a record of it on the file, however, perhaps you would be good enough to have a copy made in the form of a report and let me have the original back.\n\nDate: 11.5.42\nSignature: Prudence Wilson\nfor C.W. Sykes.\n\nS. Form 161/B.P./10000/8.42.\n\nTHIS IS A COPY\nORIGINAL DOCUMENT RETAINED\nIN DEPARTMENT UNDER SECTION\n3 (4) OF THE PUBLIC RECORDS\nACT 1958. Dec 2000",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:16:09.287861+00:00",
+  "page": 33,
+  "total_pages": 68
+}

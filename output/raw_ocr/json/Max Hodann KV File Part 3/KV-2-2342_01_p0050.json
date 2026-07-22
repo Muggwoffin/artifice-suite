@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "15th December, 1938.\n\nDear Major Vivian,\n\nYou may be interested to know that Max HODANN, last mentioned in your CX/12171 dated 20.1.36, has recently returned from Spain where he has been doing 1 1/2 years sanitary service in the army, and is now staying at the Hotel Parkheimen, Drammensveien 2, Oslo.\n\nHe has written to Page ARNOT in London asking whether the latter could interest Gollancz in an English translation of a new political novel for children which HODANN has just written.\n\nYours sincerely,\n\nV. Vivian, C.B.E.,\n.I.S.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:01:55.118974+00:00",
+  "page": 50,
+  "total_pages": 104
+}

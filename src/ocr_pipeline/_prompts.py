@@ -64,6 +64,19 @@ _CLEANUP_PROMPTS: dict[str, dict[str, str]] = {
     },
 }
 
+_STRUCTURE_PROMPTS: dict[str, dict[str, str]] = {
+    "default": {
+        "system": (
+            "You are an archivist structuring text for reading. You are not an "
+            "editor: you never alter a single word, never reorder sentences, "
+            "never translate, modernise, or rewrite. You may only add paragraph "
+            "breaks and blank lines to improve readability. When in doubt, "
+            "leave the text as one continuous paragraph."
+        ),
+        "user_template": None,  # loaded from file
+    },
+}
+
 _TRANSLATION_PROMPTS: dict[str, dict[str, str]] = {
     "default": {
         "system": (
@@ -163,6 +176,18 @@ def get_cleanup_prompt(doc_type: str = "default") -> dict[str, str]:
     user_template = prompts["user_template"]
     if user_template is None:
         user_template = _load_prompt_file("cleanup_prompt.txt")
+    return {"system": prompts["system"], "user": user_template}
+
+
+def get_structure_prompt(doc_type: str = "default") -> dict[str, str]:
+    """Get system + user prompt template for structure stage.
+
+    Falls back to 'default' if doc_type not found.
+    """
+    prompts = _STRUCTURE_PROMPTS.get(doc_type, _STRUCTURE_PROMPTS["default"])
+    user_template = prompts["user_template"]
+    if user_template is None:
+        user_template = _load_prompt_file("structure_prompt.txt")
     return {"system": prompts["system"], "user": user_template}
 
 

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF.43817/D.S.9.a.  SECRET.\n\nG.P.O. - Captain Booth.\n\nIn confirmation of my telephone conversation this morning will you please add the following address to the check on Max Julius Alexander HODANN:-\n\n24, Cockspur Street,\nS.V.1.\n\nMiss Sissmore.\n\n27th March, 1935.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:31:55.395486+00:00",
+  "page": 96,
+  "total_pages": 131
+}

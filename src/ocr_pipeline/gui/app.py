@@ -49,7 +49,7 @@ class App(TkinterDnD.Tk):
         self._run_started_at = 0.0
 
         self.var_ocr = tk.BooleanVar(value=True)
-        self.var_cleanup = tk.BooleanVar(value=True)
+        self.var_cleanup = tk.BooleanVar(value=False)
         self.var_translate = tk.BooleanVar(value=False)
         self.var_force = tk.BooleanVar(value=False)
         self.output_var = tk.StringVar(value=str(config.get("output_dir") or "output"))

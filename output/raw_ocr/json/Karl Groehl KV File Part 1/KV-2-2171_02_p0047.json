@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSUBJECT: - GROHEL.\n\nOn 29.10.38. Groehl wrote to Otten from Paris. He sent various instructions regarding the payment of money to their agents.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:03:15.782571+00:00",
+  "page": 47,
+  "total_pages": 102
+}

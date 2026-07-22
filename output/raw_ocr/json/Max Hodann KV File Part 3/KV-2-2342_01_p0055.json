@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "HOME OFFICE FILE No. H.4758.\n\nre: Renate HODANN.\n\nSummary of contents.\n\nRenate HODANN, known as Renate SARAN, whose address is given as c/o Mrs. CHANCE, Kitelands, Micheldever Station, Hanst, and her occupation as 'Scholar', was born at Copenhagen on 15.6.1921. She is of German nationality.\n\nRenate HODANN was naturalised in September, 1936.\n\nHer father, Max Carl Alexander HODANN, doctor and journalist, residing in Norway since 1934, is a political refugee from Germany, where he was born on 30.8.1894.\n\nHer mother, Mrs. Maria Martha FLANDERS, formerly HODANN, nee SARAN, was previously of German nationality (she was the wife of M.C.A. HODANN, from whom she obtained a divorce on 13.7.27.) is now British; having been married to Allan David FLANDERS, a British subject on 3.1.36.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:02:29.539178+00:00",
+  "page": 55,
+  "total_pages": 104
+}

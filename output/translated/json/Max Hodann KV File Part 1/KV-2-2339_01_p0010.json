@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "Register No.        Minute Sheet No.\n\n4.35. Copy of Arrival cards for NEUMANN and Hans PREISS. 64a.\n\n4.35. Result of return of correspondence on 1, Britannia Street. 65a.\n\n4.35. H.O.W. form for ORDING. 66a.\n\n4.35. H.O. file F.825 re FINKELSTEIN. 67a.\n\n4.35. H.O. file passed to S.3.a. to return. 68.\n\n3.35. Intercepted letter from Oslo to HODANN. 69a.\n\n4.35. Extract from H.O. file L.1675. 70a.\n\n.35. Intercepted letter from ROUNG(?) KEUNZ(?) to FINKELSTEIN. 71a.\n\nOwing to delay over the Easter holiday the check on Arne ORDING has not yet been signed by the Home Secretary. Spoke Mr. Harker who obtained permission from the Home Office to put this check on by telephone.\n\nSpoke G.P.O. accordingly.\n\nS.9.a.\n1.5.35.",
+  "translated_text": "Register No. Minute Sheet No.\n\n4.35. Copy of arrival cards for NEUMANN and Hans PREISS, located at 64a.\n\n4.35. Result of correspondence returned from 1, Britannia Street. 65a.\n\n4.35. H.O.W. form for ORDING. 66a.\n\n4.35. H.O. file F.825 concerning FINKELSTEIN. 67a.\n\n4.35. H.O. file passed to S.3.a. for return. 68.\n\n3.35. Intercepted letter from Oslo to HODANN. 69a.\n\n4.35. Extract from H.O. file L.1675. 70a.\n\n.35. Intercepted letter from ROUNG(?) KEUNZ(?) to FINKELSTEIN. 71a.\n\nDue to the delay caused by the Easter holiday, the verification of Arne ORDING has not yet been signed by the Home Secretary. I spoke with Mr. Harker, who obtained permission from the Home Office to complete this verification via telephone.\n\nI then informed G.P.O. accordingly.\n\nS.9.a.\n1.5.35.",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:45:02.785323+00:00",
+  "confidence": {
+    "score": 85,
+    "reasoning": "The translation is accurate and maintains the original meaning. The changes are minor clarifications for better readability (e.g., 'check on Arne ORDING has not yet been signed' to 'verification of Arne ORDING has not yet been signed'). The ambiguity in the original text regarding 'ROUNG(?) KEUNZ(?)' was preserved, indicating a careful approach to translation rather than imposing assumptions.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 94
+  }
+}

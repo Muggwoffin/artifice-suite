@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "16",
+  "translated_text": "Anno Domini Millesimo Sexcenta et Sextus. (In the year of our Lord, one thousand six hundred and sixteen.)\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:45:46.993776+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The source text is clear and concise. The translation accurately reflects the Latin phrase 'Anno Domini Millesimo Sexcenta et Sextus' which translates to 'In the year of our Lord, one thousand six hundred and sixteen.' There are no ambiguous words or passages in the original text.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

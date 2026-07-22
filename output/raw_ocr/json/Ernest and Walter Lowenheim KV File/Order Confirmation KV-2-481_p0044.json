@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SOURCE:\n\nIt may be of interest to you that KARTHAEUSER who was released from the married camp this November has become my client today. I remember that AMOS was asked at Onchan to report about KARTHAEUSER and from my conversation with KARTHAEUSER I take it that it may be useful to cultivate his acquaintance. KARTHAEUSER is associated in business with one of the LOEWENHEIM brothers, he also professes to be a friend of SCHOETTLE'S and Werner KLATT'S about whom you wanted some information last summer. RIESS and HACKLAENDER are further names KARTHAEUSER mentioned; both are at the married camp, and I understand from KARTHAEUSER that RIESS was until 1939 a Storm Troop man or leader and that HACKLAENDER is a Nazi-sympathiser.\n\nE.3.(s)\n22.12.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:17:48.105014+00:00",
+  "page": 44,
+  "total_pages": 68
+}

@@ -49,9 +49,17 @@ def _call_lang_detect(text: str, doc_type: str = "default") -> str:
 
 
 def detect_language(text: str, doc_type: str = "default") -> str:
-    """Detect source language via LLM. Returns ISO 639-1 code."""
+    """Detect source language via LLM. Returns ISO 639-1 code.
+
+    `doc_type="multi_lang"` asks the model for several comma-separated codes
+    in prevalence order (see its prompt in `_prompts.py`) — the first is
+    taken as the primary/majority language. Previously any comma in the
+    response failed the `isalpha()` check below, so multi_lang detection
+    silently always returned "unknown"; splitting first fixes that.
+    """
     try:
-        code = _call_lang_detect(text, doc_type)
+        raw = _call_lang_detect(text, doc_type)
+        code = raw.split(",")[0].strip()
         if len(code) <= 3 and code.isalpha():
             return code
         return "unknown"
@@ -131,18 +139,30 @@ def perform(
     lang_name = COMMON_LANGUAGES.get(detected_lang, detected_lang)
     log.info("Detected language: %s (%s)", lang_name, detected_lang)
 
-    prompts = get_translation_prompt(doc_type)
-    system_prompt = prompts["system"]
-    user_template = prompts["user"]
+    # A model asked to "translate into English" text that is already English
+    # has nothing to genuinely translate, and reliably "helps" instead —
+    # rewording, dropping, or otherwise rewriting an already-correct document.
+    # Only skip on a *confident* "en" result; "unknown" (detection failed)
+    # still goes through translation as before, since we can't be sure.
+    skip_translation = detected_lang == "en" and cfg("skip_translation_if_english")
 
-    log.info("Translating with %s (doc_type=%s)", cfg("translate_model"), doc_type)
-    translated_text = _translate_with_chunking(
-        cleaned_text, system_prompt, user_template,
-    )
+    system_prompt = None
+    if skip_translation:
+        log.info("Source already English — skipping translation, passing cleaned text through unchanged")
+        translated_text = cleaned_text
+    else:
+        prompts = get_translation_prompt(doc_type)
+        system_prompt = prompts["system"]
+        user_template = prompts["user"]
 
-    # Confidence scoring
+        log.info("Translating with %s (doc_type=%s)", cfg("translate_model"), doc_type)
+        translated_text = _translate_with_chunking(
+            cleaned_text, system_prompt, user_template,
+        )
+
+    # Confidence scoring — meaningless when nothing was actually translated.
     confidence = None
-    if cfg("confidence_enabled"):
+    if cfg("confidence_enabled") and not skip_translation:
         log.info("Evaluating confidence...")
         confidence = evaluate_confidence(
             cleaned_text, translated_text,
@@ -178,6 +198,9 @@ def perform(
         "document_type": doc_type,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+    if skip_translation:
+        data["skipped_translation"] = True
+        data["skip_reason"] = "source_already_english"
 
     if confidence:
         data["confidence"] = confidence.to_dict()

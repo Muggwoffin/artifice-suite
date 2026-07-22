@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Extracted from L.154/262, v.14, 496a\n\nSpecial Branch,\nNew Scotland Yard, S.W.1.\n\n1st August, 1936.\n\nThe undermentioned are applying for certificates of naturalisation. Will you please say if anything is known or recorded of the following names and addresses. Lists should be returned to this office by the 10th August, 1936.\n\nHODANN, Renate @ SARAN, scholar,\nAge 15, German,\nfirst arr'd in UK in 1933\nKitelands, Micheldever Station, Hants\nSt. Swithun's School\n\nResult of Search:-\n\nRenate HODANN @ SARAN, about whom we have nothing recorded against, is the daughter of Max HADANN, the subject of your report No. 320/FGN/530 of the 22nd March, 1935, who is believed to have been associated with Mrs. Marie Louise MARTIN who received the maximum sentence for Soviet military espionage in Finland.\n\nAt the end of 1935, the Home Office refused to extend permission for Max Hodann to remain in this country, and he left for Ostend on 1.1.36.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:02:54.751255+00:00",
+  "page": 59,
+  "total_pages": 104
+}

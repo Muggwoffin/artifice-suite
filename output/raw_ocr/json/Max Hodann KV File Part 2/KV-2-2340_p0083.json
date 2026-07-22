@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Translation of Int. W535C.\n\nTo Herr Max HODANN.\n\nDear Sir,\n\nSome time ago we sent you the call of the \"Counter-Attack\", \"One must do something\", with the request as to the attitude you take towards the important problem of a German united front against the Hitler Terror and for the victims of the Hitler Fascism.\n\nUp till now, we have unfortunately not had any statement of your opinion on this matter. We beg you to let us know by return of post your attitude.\n\nWith anti-fascist greetings,\n\nAW. 12/7.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:49:50.139696+00:00",
+  "page": 83,
+  "total_pages": 143
+}

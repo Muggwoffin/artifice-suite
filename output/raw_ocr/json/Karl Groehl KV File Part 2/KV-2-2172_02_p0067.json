@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CONFIDENTIAL\n\nFROM:\nS. Retzlaw,\n10.D. Belsize Park Gardens\nLondon. N.W.3.\n\nTO:\nMrs Herta Pauli,\n2035 N. Beverly Glen\nW. Los Angeles.\nCalifornia.\n\n1.12.41.\nLetter in German translated from photostat.\n\nDear Herta P., dear FRUCHT, dear MEHRING,\nI hope this letter will reach you at the beginning of the New Year. My best wishes for the New Year, and may it see the downfall of Hitler's Germans.\nGreat strides have been made during the past few days, and the Germans have sustained some severe defeats. However much they try with all possible means to keep up the morale in Germany, there is nevertheless always the possibility that the Regime there will collapse from one day to the next.\nI am enclosing my draft suggestions for a Programme of future policy. Please let TH.MANN read it too. In fact, anybody who is interested. If possible, you could have it printed. At all costs we must see that the bankrupt scoundrels like BERNHARDT, GRESZINSKY, STAMPFER, etc, etc, whom we have to thank for our past misfortunes, do not get the chance of establishing another Noske r\u00e9gime.\nWe must therefore establish an organisation. You Austrians cannot help me much, but MEHRING can. So he must consider how best he can fit in.\nPASSER has been to see me several times. He is well. When he is in London, he lives near me. He read the letter of the 4th October and said he would write at once himself.\nAgain my best wishes...\n(good luck to WERA)\n\n(SGD) S. Retzlaw.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:36:46.645016+00:00",
+  "page": 67,
+  "total_pages": 107
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "M.C.5.\nTRANSIT MAILS.\n(PRIVATE BRANCH)\nEx. S.S.\nDate Recd. by F.S.\nDate Recd by M.C.5\nPort\nDate\nSack No.\nNo. DM/P\n30/6/1941.\n54a\nC.S.\nFrom\n[Tim Walsh]\n249 St Attracta Rd,\nCabra,\nDublin.\nDate of letter submitted:-\nPostmark:-\n19/4/41.\n27/5/41.\nTo\nOIGA IVANOVNA DOKROVA,\nMoscow 21,\nPoste Restante,\nU.S.S.R.\nPrevious References\nNo.\nNONE.\nSubmitted to\nOriginal to:-\nCopies to:-\nW.I.S.\nDOM.\nI.B.B.\nPlease return the form with or without the accompanying letter, marking one or more of the sentences overleaf with an X.\nCOMMENT.\nThe writer, an Irishman in Dublin, is in touch with a Russian now in an internment camp and writes to his wife in Moscow.\nThe Irishman and the Russian worked together and belonged to the \"Communist Party of Ireland\".\nExtracts:-\n\"I am instructed by your husband to write to you and tell you that he is in an internment camp and will be unable to write to you for some time. We worked very closely together and I miss him very much. We were both members of the G.P.I. here and our work placed us very much together.\"\n\"You may write through me to him if you wish too. We expect to go to Moscow sometime in the future. Any questions about him that you would like to know I will do my best to answer. Boy's Greetings to C.S.R.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:43:29.374274+00:00",
+  "page": 52,
+  "total_pages": 103
+}

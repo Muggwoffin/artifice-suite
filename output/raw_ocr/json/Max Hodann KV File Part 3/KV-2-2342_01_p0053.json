@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY.\n\nOriginal filed in S.F. 420/UK, Suppl. Vol. 3, 201a (held by B.4b).\n\nMost Secret & Personal.\n\n/UK. Supp/B.4b.\n\n6th December, 1938.\n\nDear Major Vivian,\n\nWill you please refer to Russian special material of 11.15.19.11.\n\nOur records show that 180 Regents Park Road, N.W.1., is the address of Professor Max BEHR. BEHR was born on 10.8.04 at Tarnobrzeg, Germany. He lived in this country from 1894 until May 1914 when he left for Austria. As early as 1896 he was connected with revolutionary politics and was a writer of advanced pamphlets.\n\nHe came to notice again in 1922 and 1923 in connection with extremists, but there was no evidence to show that he was himself a Communist. He visited England from March 1934 to January 1935, when he returned to Germany. He did not come to England again until 17.6.33. He has lived here as a refugee ever since.\n\nBEHR is a friend of Max HODAHI, last mentioned in your CX/12171 of 20.1.38. As far as I can see, neither BEHR nor HODAHI were in this country in 1930.\n\nI am taking steps to see who else lives at 180 Regents Park Road and will let you know if I discover anything of interest.\n\nIt may perhaps also interest you to know that \"John\", [redacted], mentioned in the Russian special material for the same day at 10.30, is John Edward Morrison MALLY, who is a member of the C.P.O.R.\n\nYours sincerely,\n\nMajor V. Vivian, C.B.E., S.I.B.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:02:16.820431+00:00",
+  "page": 53,
+  "total_pages": 104
+}

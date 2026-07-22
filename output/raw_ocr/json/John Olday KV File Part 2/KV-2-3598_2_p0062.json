@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET.\n\nPF.66074/P.3.m.  10th September, 1944.\n\nDear Glover,\n\nAn H.O.W. has revealed that within about the last week James ODAY, Croft, Leicester, has been in touch with Guy ALDRED the pacifist and anarchist, and has sent him a subscription to \"The Word\". We have no previous record of ODAY.\n\nSeveral sections of this office have for some time been trying to trace Arthur William OLDAG, @ John OOLDAY, a deserter from the Pioneer Corps who supports the Freedom Press anarchists and has been supplying them with the most poisonous anti-war cartoons. I dare say you have seen his little booklet \"The March to Death\".\n\nI should be grateful if you would have a discreet enquiry made just to make sure that ODAY is not the man we are looking for. If by any chance he is, would you communicate with me immediately and ask the police to hold their hand? OLDAG is probably in possession of much literature which we should like to see before any associate has time to destroy it upon his arrest as a deserter.\n\nPlease impress upon the Police the necessity for great discretion as enquiries of a very secret nature about OLDAG are being made elsewhere.\n\nI enclose a photograph of OLDAG taken in 1937. He was born on 10.4.05 and his personal description is as follows:-\n\nReported",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:58:17.389568+00:00",
+  "page": 62,
+  "total_pages": 91
+}

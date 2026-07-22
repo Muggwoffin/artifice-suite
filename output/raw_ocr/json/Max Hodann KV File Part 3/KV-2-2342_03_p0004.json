@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From B. Fl. (Dr. Bernard FLEURSCHEIM) Rushmoor, Fleet, Hants.\n\nTo Dr. Alexis FINKELSTEIN, Great Shelford, Cambridgeshire.\n\nDate of Letter 4.11.35.\n\nDate of Postmark 4.11.35.\n\nSUMMARY OF CONTENTS\n\nAcknowledges letter from addressee whom, he says, sounds depressed.\n\nIs glad addressee's index, although anonymous, has received recognition.\n\nHas to go to London next week and suggests that he might meet addressee.\n\nHas just returned from a long stay in France and Switzerland where they have been for his wife's health. She apparently took a cure at Evian and saw a specialist at Geneva.\n\nHopes addressee's wife and little girl are keeping well.\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:25:56.356117+00:00",
+  "page": 4,
+  "total_pages": 99
+}

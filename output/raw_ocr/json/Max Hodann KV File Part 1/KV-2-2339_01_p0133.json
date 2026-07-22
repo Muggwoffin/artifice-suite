@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Bertold HARVOLD, c/o Carl PANDE, Tostrupsgate 22111, Oslo.\n\nTo Max HODANN, Kynance Court, Gloucester Road, S.W.7.\n\nDate of Letter 5.4.35.\n\nDate of Postmark -\n\nSUMMARY OF CONTENTS\n\nAcknowledges letter. States that he did not read the letter from Karen which he passed to addressee as he thought it might be private.\n\nStates that Karen has written to say that one of girl friends was arrested whilst she (Karen) was away. \"Some of her things were with her friend and therefore the Police have her (Karen) also under suspicion. She also was imprisoned for a short time but the two incidents were not connected. Finally she writes that she is now \"nicely exposed\".\n\n\"Has anything happened. Please tell me if you know more. I am expecting your answer and will send my invitation to Karen on receipt.\"\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:18:38.332540+00:00",
+  "page": 133,
+  "total_pages": 144
+}

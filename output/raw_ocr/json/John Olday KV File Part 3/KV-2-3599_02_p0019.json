@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "FREEDOM PRESS PUBLICATIONS\n\nPETER KROPOTKIN\nTHE WAGE SYSTEM\n16 pages Crown 8vo. 3d. (postage 1d.)\nMODERN SCIENCE AND ANARCHISM\n112 pages Crown 8vo. 1/- (postage 1d.)\nREVOLUTIONARY GOVERNMENT\n16 pages Demy 8vo. 3d. (postage 2d.)\nTHE STATE\u2014ITS HISTORIC ROLE\n44 pages Demy 8vo. 1s. (postage 2d.)\nKROPOTKIN\u2014\nSelections from his Writings\nChosen by Herbert Read\n152 pages Demy 8vo. 2s. 6d. (postage 3d.)\nSpecial library edition 8s. 6d. (postage 3d.)\n\nWILLIAM GODWIN\nSELECTIONS FROM POLITICAL JUSTICE\n32 pages 3d. (postage 1d.)\n\nHERBERT READ\nTHE PHILOSOPHY OF ANARCHISM\n36 pages Demy 8vo. 1s. (postage 2d.)\n\nTOM BROWN\nTRADE UNIONISM OR SYNDICALISM?\n24 pages Demy 8vo. 3d. (postage 2d.)\nTHE BRITISH GENERAL STRIKE\n16 pages Crown 8vo. 3d. (postage 1d.)\n\nGEORGE WOODCOCK\nNEW LIFE TO THE LAND\n32 pages Demy 8vo. 6d. (postage 2d.)\n\nALEXANDER BERKMAN\nABC OF ANARCHISM\n120 pages Demy 8vo. 1/- (postage 2d.)\n\nE. MALATESTA\nANARCHY\n44 pages Crown 8vo. 3d. (postage 1d.)\n\nA full list of publications will be sent on application.\n\n27 BELSIZE ROAD, LONDON, N.W.6",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:13:23.676636+00:00",
+  "page": 19,
+  "total_pages": 71
+}

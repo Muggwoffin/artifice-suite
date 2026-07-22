@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "GROSS - REFERENCE.\n\nSUBJECT: Karl GROEHL.\n\nThe following is an extract from the translation of an intercepted letter from Karl OTTEN to \"Lucia\", forwarded by \"Lucia\" to Otto LEHMANN RUESSPUELDT in a letter dated 9.5.36:\n\n\"....The Berthold JACOB case is nice enough - but it was terribly stupid for an otherwise intelligent Jew first to get drunk and secondly to go to B. against expressed agreements. When Karl GROEHL who was with addressee informed J. from HIM - that WESEMANN was a criminal, all the little louse said was 'These are just Emigrants Jealousies'.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:11:38.656971+00:00",
+  "page": 102,
+  "total_pages": 102
+}

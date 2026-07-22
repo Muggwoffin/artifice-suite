@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "F.U.C.           E.3.(s) (Mr. Sykes)\n\nI regret the delay in replying to your note of 10.11.41, but I have only just been able to obtain the files.\n\nIn reply to your enquiry, it is, I think, better that your source should not endeavour to make contact with the LOWE MEMBERS.\n\n23.11.41.\n\nN. Pilkington.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:18:45.198957+00:00",
+  "page": 51,
+  "total_pages": 68
+}

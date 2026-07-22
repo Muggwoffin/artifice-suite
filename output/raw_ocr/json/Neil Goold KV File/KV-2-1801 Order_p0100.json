@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSubject: GOOLD-VERSCHOYLE, Hamilton Neil Stuart.\n\nOn the 24th October 1933 Passport Office forwarded copy of correspondence with the High Commissioner of the Irish Free State regarding a list he supplied of persons from whom it is recommended passport facilities be withheld in view of their close association with communist and allied organisations.\n\nAmong those mentioned in this list were:-\n\nWALSH, Patrick. Possibly identical with one Patrick WALSH, 12 Parnell Street, Limerick, who in 1920, was excluded from the Irish School of Telegraphy owing to an unfavourable report from the Irish Police.\n\nde GOLD VERSHOYLE, Presumably Hamilton Neil Stuart GOOLD-VERSCHOYLE.\n\nGRALTON, James. American citizen and well known communist who has been instructed to leave the Irish Free State.\n\nOn 18.11.33. the above information was sent to S.I.S. together with a number of notes from our files on the lesser known people mentioned on the Free State List.\n\nOriginal in... R. List 451(151) 1a, 2a. dated 18.11.33.\nD.W.H.\n5.12.33.\nS. Form 81",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:50:14.652531+00:00",
+  "page": 100,
+  "total_pages": 103
+}

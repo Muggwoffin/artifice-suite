@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "JG/R4 29.10.48.\nCOPY\nFor: P.F. 66074. (Held R.5.)\nOriginal filed in: O.F. 348-3. 2a. Received 25.9.48.\nCopy of letter from S.I.S. enclosing letter from Willy FRITZENKOETER to Arthur KRULL.\n\nSecret.\n\nIn reply, state NUMBER and DATE.\n\nOf 24th September 1948.\n\nENCL. 1 page\n25 SEP 1948\nTO BIB\nREF\nPlease correct L271/124\nded APR 27/9\n\nDear Miss Bagot,\n\nI enclose one copy of a letter sent by Willy FRITZENKOETER of Suppertal-Barmen to Arthur KRULL, former K.P.D. functionary in Brunswick, who resigned from the party in autumn 1947.\n\nThis letter was intercepted in Germany and has been forwarded to us by [redacted] there. Intelligence Division is informed.\n\nJohn OLDAY is well known to us both from correspondence ending with your L.271(124) of 19 December 1939 and our [redacted] 21 October 1939.\n\nWe have no other information on this Spartabund alleged to be rapidly developing in countries abroad.\n\nWe are leaving it to you whether you should inform the Canadians, and you will wish to consider the remaining Empire angles. We are proposing to inform the F.B.I. through our Washington link about the American aspect. Before we do so, we should very much appreciate receiving your opinion whether this letter is a Trotskyist product and any recent information which you may have on OLDAY and on this Spartabund.\n\nYours sincerely,\n\nMiss J.E. Bagot,\nM.I. 5.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:17:53.392592+00:00",
+  "page": 63,
+  "total_pages": 71
+}

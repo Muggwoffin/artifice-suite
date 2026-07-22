@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "REGISTRY ACTION SLIP.\n\n(a) Card names and addresses as marked at serial..................... 32a............. O\n\n(b) Note new particulars of.................... at serial............................................. O\n\n(c) No carding............................................................................................................. O\n\n(d) Card impersonal matter as under............................................................................. O\n\nMAKE FILE COVER FOR:.............................................................................................\n\nEXTRACT and/or OTHER INSTRUCTIONS: 32a-\nX-refer Goold Verschoyle into PF 41426. + pass to 72a to note.\n\n(Continue overleaf if necessary)\n\nOfficer's Signature.................. E. Gask\nSection.................. B1H............. Date........ 21/11\n\nS. Form 180/B.P./3000/3.44",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:40:33.043731+00:00",
+  "page": 30,
+  "total_pages": 103
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Original in PF 42816 Lehmann-Russbueldt. v. 5. 227a.\n\n8.5.38\n\nLieber Karl, weil ich heute fr\u00fch den Zug nicht kriegte, noch ein paar Zeilen.\n\nAnbei ein Auschnitt aus einem Brief von Wolleherberg. Bitte lasse nicht merken, dass ich Dir solche Ausschnitte schicke. Du siehst aber, wie der arme Kerl h\u00e4ngt. Schade, dass der immer noch in \"Programmen\" denkt, der er nicht den letzten Willen hat die Pest zu bek\u00e4mpfen, ganz egal wie. Er ist halt fr\u00fcherer Offizier und Sohn eines Generaloberarztes.\n\nWann das Buch erscheint habe ich Erich inzwischen mitgeteilt.\n\nHerzliche Gr\u00fcsse\n\nMr. Smith",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:08:39.995742+00:00",
+  "page": 87,
+  "total_pages": 102
+}

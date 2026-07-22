@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INCOMING DOCUMENT.\n\nreceived from\non\nat a.m.\np.m.\n\nSenders Reference (or File No.)\n\nSchedule No.\n\nDelivered to\non\nat a.m.\np.m.\n\nPassed for action to\non\nat a.m.\np.m.\n\nR for former papers or traces\n\n* ? PF 47704 Vol 2 142a\n* Trave unu in PF 49542 119a 1220 X\nLOEWENHEIM\nWALTER & ERNST\nP.F. 49542 Y2\n22-6-B8T\n(P.F. 49542 LOEWENHEIM)\nB8T 22/6\nMaryhampton\nB5\nno",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:02:05.092102+00:00",
+  "page": 14,
+  "total_pages": 60
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\a9b47e774b86f99196f638ffb3b5dd24.jpg",
+  "stage": "raw_ocr",
+  "extracted_text": "worry you & hurt you & interfere with your life, then we must stop it. I suppose it rests with you to decide. (Sorry this is rather blotting paper). I'm not just shirking, but it's obviously easier for me than for you.\n\nWhat a luck you're learning Russian. Do you find it very difficult? I'm going rather slow at the moment, cos my teacher is apt to fall ill, or else her child does, so I have to struggle on my own a bit. You'll probably get it quicker than I will.\n\nI'm distressed about the I.C. Jean sympathise w. you only too well. How often did I feel I wanted to chuck the whole thing up. Of course one goes on, cos the thing we one after is so much bigger than the littleness of some of our brethren. Don't tell me that, like J.T.H., you are getting bored w. the little details & want to dwell on high politics. Yes, that's very nasty of me. But you were just feeling fed up when you wrote? And now it's all clear, & Harry's back, full of beans, & you're all pulling tog., & John Smith is making things hum in Plymouth after his little fast of",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T13:07:40.630648+00:00",
+  "page": 1,
+  "total_pages": 1
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\401aa01628e87a910b126024268e5670.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Tel. No.: Abbey 6131\n\nThe War Office, M.O.I. (S.P.)\nWhitehall,\nLondon, S.W.1\n\nAny further communication on this subject should be addressed to:\u2014\nNGM/135.\n\n28th December, 1944.\n\nDear Stone,\n\nVon RAUSCHENPLAT, Hellmut.\n\nOur O.S.S. contacts have been advised by P.W.E. that the a/n man has Communist leanings and they have asked me whether you are able to substantiate or amplify this information.\n\nI am afraid they have provided me with no further details regarding him except that he was vetted through their X.2. branch, which they tell me has direct contact with you.\n\nYours sincerely,\n\n[signature]\nMajor.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:32:52.274581+00:00",
+  "page": 10,
+  "total_pages": 24
+}

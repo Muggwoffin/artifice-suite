@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.A. in L. 158/1424.\nOriginal in O.F. 1507. Serial 41a. Dated 25.3.59.\n\nSECRET\n\nFirst European Congress for Nuclear Disarmament, held in London on 16th, 17th & 18th January 1959.\n\nFurther to our letter, OF.1383/E.1./JHL, of 14th January 1959, we now attach a list of 89 foreign delegates who are known to have attended this Conference. You will see that a number of individuals who had previously been expected to attend did not in the event do so. The list was obtained by checking against traffic index the names of those people whom the organisers of the Congress had invited to attend. It is possible that other foreign delegates came to the meeting, but if they did so it has not been possible to identify them.\n\n2. Some of the names were mentioned in your of 27th January 1959. In addition, we have the following traces:-\n\n.......................\n\n(3) EBERHARD, Fritz: identical with Fritz EBERHARD, formerly Helmuth von RAUSCHENPLAT, who was the subject of your B.26. enquiry, CX.48670/A of the 9th December 1944. We replied that we knew of nothing against EBERHARD from a security point of view and he was not since come to notice.\n\n.......................\n\nEM/R6\n7.5.59.\n\n25th March, 1959.\n\nSECRET",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:41:00.322518+00:00",
+  "page": 12,
+  "total_pages": 24
+}

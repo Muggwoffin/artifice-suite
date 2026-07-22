@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "20G 3RD TO MR EDWARDS OXFORD\nYOUR P F 49542/E 5(3) OF 26.8.41. PLEASE SEND ANY\nREPRESENTATIONS ON WALTER AND ERNST LOWXXX LOEWENHEIM, BRUNO\nKARTHAUSER AND IRENE RISCHOWSKI TO ME PERSONALLY AT YOUR\nVERY EARLIEST CONVENIENCE PREFERABLY IN\nQUADRUPLEPLICATE.\nFROM PRESTIGE BOURNEMOUTH\n17.00 HRS",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:55:03.260259+00:00",
+  "page": 31,
+  "total_pages": 64
+}

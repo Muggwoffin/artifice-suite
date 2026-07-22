@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From L.F. PENDLEBURY, c/o Mrs. Hamilton, Canon Hall, Bridge of Earn, Perthshire.\n\nTo Dr. A.S. FINKELSTEIN, 13, Shelford Park, Great Shelford.\n\nDate of Letter 6.11.35.\n\nDate of Postmark 7.11.36.\n\nSUMMARY OF CONTENTS\n\nAcknowledges letter. Doubts whether the C.D.N. will take a letter from him at this distance.\n\nHas had one or two specimens of Karen's journalism and has congratulated her. \"I think we'll see her in the Spring.\"\n\n\"I think regular work is improving my character. I thought it would\".\n\n\"I wonder if Karen is still at Motystr. Her last letter had no address and something else she said seemed to suggest she might have moved, though otherwise I should have assumed the address was still the same. Her removals are a bit confusing and as often as not I write to Clara's.\"\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:18:28.052575+00:00",
+  "page": 104,
+  "total_pages": 130
+}

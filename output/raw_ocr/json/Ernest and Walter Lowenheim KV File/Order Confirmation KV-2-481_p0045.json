@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "E.3./GEN/RKDR.\n\n18th December, 1941.\n\nDear Paddon,\n\nThank you for your letter of the 13th December, 1941, Ref: I/P.371, sending me two files, the property of Walter LOEVENHEIM.\n\nWe have no objection to these files being returned to Walter LOEVENHEIM and I accordingly enclose them herewith.\n\nYours sincerely,\n\nR.K.D. Henton.\n\nW.J. Paddon, Esq.,\nHome Office, B.3. Division,\nThe Hydro,\nDurley Gardens,\nBOURNEMOUTH.\n\nRKDR/PW.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:17:54.998813+00:00",
+  "page": 45,
+  "total_pages": 68
+}

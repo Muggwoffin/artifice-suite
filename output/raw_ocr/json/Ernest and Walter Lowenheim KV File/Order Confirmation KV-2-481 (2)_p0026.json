@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "NB\nMax Weber (Neubeginnen book)\nElemente der Physik\nNB-Org\nUnsre Firma (New Beginnen organisation)\nNeuberg\nOtto (Husband of Margot - now in German prison)\nNemann\nSchott (\nNeumann, Franz\nOmmen (came in 1933 as refugee to London)\nNeumann, Richard\nJager\nNiemann\nHamann\nHoppe\nOesterreich\nJugoslawien\nOllenhauer\nPrausnitz (German Socialist - now in London - former M.P.)\nOpp\nLeu & Co (opposition)\nOrganisation\nFirma, Verbana\nParis\nStrassburg\nPartei\nAktienges\nPelzer\nKurschner\nPohl\nScheiller (Dupres - now in France)\nPolizei\nDr. Bruno\nCook\nDr. Ernst\nGerichtsyzolzieher\nVollstreckungsbehorde\nPostlagernd\nHotel\nPrag\nHaden\nPreiss\nRudolf (Max Breyer, sect. Socialist International - now in Brussels)\nRabe\nLarsen (Gurland - French soldier - now P. of W. in Germany)\nRath\nWebster (A woman now in England - real name Abraham-moezitz)\nRechlin\nSorge\nReichswehr\nBoy Scouts\nReinhard\nSuchard (Leading Member Swiss Socialist Party)\nReinbold\nSeibt\nRichard\nBusch\nRinner\nSauer\nRomer\nOehmler\nRuth\nBrown (Ernst Lowenheim's wife)\nScholz\nSchulz\nSAI\nSyndikat (Socialist International)\nSeydewitz\nTaube (Member of Reichstag - now in France)\nSchevenels\nTurgot (Dutch Socialist Leader)\nSender\nTrack\nSieburg\nLorrisson\nSnell\nThomas (German Trade Unionist in Berlin)\nSollmann\nTulsner (Member of Reichstag)\nSopade\nMaschinenfabrik\nSP\nShell (German Socialist Party)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:04:09.791474+00:00",
+  "page": 26,
+  "total_pages": 60
+}

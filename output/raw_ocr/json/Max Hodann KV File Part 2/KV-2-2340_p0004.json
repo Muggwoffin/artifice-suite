@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Register No. Minute Sheet No.\n\n73.\n10.5.35. Intercepted letter from Molla ORDING to Arne ORDING. 73a.\n\n74.\n5.5.35. Intercepted letter from HOLT......... to ORDING. 74a.\n\n75.\n10.5.35. Intercepted letter from H.V. to ORDING. 75a.\n13.5.35. Intercepted letter from HODANN to LINDBAEK. 75b.\n\n76.\n16.5.35. Letter to S.I.S. forwarding translation of letters at 73a and 75a. 76a.\n16.5.35. Intercepted letter from SUNDE to ORDING. 76b.\n\n77.\n22.5.35. From S.I.S. re KAREN. 77a.\n22.5.35. Intercepted letter from ? Leipzig to FINKELSTEIN. 77b.\n\n78.\n27.5.35. Intercepted letter from (?) to ORDING. 78a.\n\n79.\n27.5.35. Letter to G.P.O. 79a.\n31.5.35. Intercepted letter from Molla ORDING to ORDING. 79b.\n\n80.\n3.6.35. From H.O. (dated 3.5.35.) re extension for HODANN. 80a.\n4.6.35. Intercepted letter from Medical International to HODANN. 80b.\n\n81.\n7.6.35. Intercepted letter from RICHTER to ORDING. 81a.\n\n82.\n7.6.35. Traffic Index particulars requisitioned. 82.\n\n83.\n7.6.35. From S.I.S. with reference to 51a re LICHTENSTEIN. 83a.\n\n84.\n12.6.35. Copy of Arrival Card for Ella RICHTER. N.T. of Hans. 84a.\n13.6.35. Intercepted letter from [PENDLEBURY] to FINKELSTEIN. 84b.\n\n85.\n13.6.35. Intercepted letter from PENDLEBURY to FINKELSTEIN. 85.\n\n86.\n13.6.35. Result of return of correspondence to 14, Calthorpe Street, W.C.1. 86a.\n15.6.35. Intercepted letter from REITH to HODANN. 86b.\n15.6.35. Intercepted letter from PENDLEBURY to FINKELSTEIN. 86b.\n\n87.\n18.6.35. Traffic Index particulars requisitioned for Fritz KILLIAN or KILLINER.\n\n88.\n20.6.35. Copies of T.I. cards for KILLIAN. 88a.\n\n89.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:36:57.334836+00:00",
+  "page": 4,
+  "total_pages": 143
+}

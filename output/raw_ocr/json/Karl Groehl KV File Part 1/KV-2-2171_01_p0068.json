@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "GROEHL Karl\nBorn SCHNEIDEMUHL 10/2/96. German\n\nREPORT\nThis man produced papers in the name of RETZLAW, Stanislaw Nazimierz (Polish)\nBorn JNOWOCTAW 2.6.98.\nPpt. 729/40 TOULOUSE 19/7/40.\nVisa 1273 LISBON 4/10/40.\nHome Office Authority K23229.\n\nIn view of the fact that the man spoke perfect German and no Polish and had a strong Berlin accent he was asked for his right name, which he gave after some little time. When identified he was facilitated and sent forward under instructions from M.I.5 to 46, Lexham Gardens, Kensington, LONDON, S.W.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:53:34.460613+00:00",
+  "page": 68,
+  "total_pages": 96
+}

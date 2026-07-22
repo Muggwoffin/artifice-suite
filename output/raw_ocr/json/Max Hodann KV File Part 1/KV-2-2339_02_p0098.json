@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "23rd March, 1935.\n\nre Max Julius HODANN and LINDBAEK-NILSSON.\n\nThe following is the result of observation on the above named:\n\nWednesday 20th March, 1935.\n\nAt 7.5 p.m. the two above named were driven in car GF-312 to 180, Regent Park Road where HODANN entered for five minutes after which he re-entered the car, then went to Kensington Road where he and the woman alighted and the car was driven away. HODANN and his companion after purchasing fruit and visiting a restaurant at 50, Gloucester Road went to Kynance Court, 6, Cornwall Gardens, S.W. where the woman opened the street door with key. Watch on the latter address was kept until 10 p.m. but nothing more seen.\n\nNote. The said car, an Autin Saloon, Maroon colour, 15.7 h.p. is owned by Edward R. ELKAN, M.D., L.R.C.P., of 14a, Manchester Square, W., and garaged at same address. Kynance Court is let off as residential furnished flats.\n\nThursday, 21st March.\n\nAt 11.20 a.m. HODANN and NILSSON left 6, Cornwall Gardens and visited for 45 minutes, Norway House, 24, Cockspur Street, then for five minutes at 20, Adam Street, W., and after taking refreshments at an Express Diary, the woman entered the Westminster Bank, Margaret Street for 10 minutes (2.0. to 2.10 p.m.) and on leaving carried \u00a31 notes in her hand. She joined HODANN who had waited outside the Bank. Both then went to P.T.A. Ltd., 311, Regent Street, but left immediately and NILSSON then entered Barclays Bank, 15, Langham Place from 2.30. to 2.35., then joined HODANN outside and handed him several \u00a31 notes and silver. Both next called at 127, Harley Street for a few minutes, then to Friends Meeting House, Euston Road from 3.25. to 3.30. after which they rested on a seat nearby and whilst there the man wrote a post card and posted same. They then entered Lyons Caf\u00e9 in Euston Road where the",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:32:11.132469+00:00",
+  "page": 98,
+  "total_pages": 131
+}

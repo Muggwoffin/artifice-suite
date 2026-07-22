@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Reference\n\nP.A. in PF 43817 (HODANN)\nC.S. traces FINKELSTEIN.\n\nOrig. in PFR 4342/SOPP (Infomator given by KRIOITSKY RIS Detector)\n\nVol. 1 Serial 2a Receipt date 23.1.40\n\nP.M. Notes taken to confirm a.m. conversations.\n23.1.40 Page 2\n\nNote: Alexis FINKELSTEIN is a possible candidate for this old man.\n(probably along with a hundred others!)\nalso perhaps",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:01:03.159402+00:00",
+  "page": 42,
+  "total_pages": 104
+}

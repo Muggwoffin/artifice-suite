@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "writes a letter asking Aiken by what law he has no right to use his own name. How about it, Mr. Aiken - why not admit that sometimes you speak in the approved Goebbels fashion?\"\n\nOur most recent information about Neil GOOLD until we got your report was contained in a letter of 25.2.41 from Jim PRENDERGAST of the Communist Party in Dublin to Bagenal HARVEY of the Connolly Club in London, in which he wrote:\n\n\".....Our old friend Goold opposes our main line and in all his work is carrying a line opposite to that of the party. I am enclosing a number of copies of a Bulletin which he is issuing on behalf of a tenants Committee which should be carefully read.\"\n\nThis extract indicates that GOOLD's orthodoxy is in question. Any further information about these points and the names of GOOLD's fellow defendants would be of interest.\n\n28th May, 1941\nJFES/VS\n\nJohn Stephenson",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:44:02.347245+00:00",
+  "page": 56,
+  "total_pages": 103
+}

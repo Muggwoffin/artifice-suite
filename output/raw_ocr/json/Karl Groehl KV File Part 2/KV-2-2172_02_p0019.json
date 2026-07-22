@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "MOST SECRET\n\nTo: Mr. Gibbs, M.I.5.\nFrom: Deputy Director.\n\nThank you for your minute of 2nd March with regard to S. Retzlaw, returning Neame's two letters to me of the 27th February.\n\nIn the circumstances, I should prefer that your Department should notify Neame of the officer in your organisation whom he should contact in this matter.\n\n3. 3. 42.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:29:17.496278+00:00",
+  "page": 19,
+  "total_pages": 107
+}

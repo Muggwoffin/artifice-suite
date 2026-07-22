@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Traute NEUMANN, Genneml\u00f8bet 17, Vanlose, Copenhagen.\n\nTo Max HODANN, 63, Haverstock Hill, N.W.3.\n\nDate of Letter 9.7.35\nDate of Postmark 9.7.35\n\nSUMMARY OF CONTENTS\n\nHas had an accident but has recovered to a certain extent.\n\nRefers to Sonja (his daughter).\n\nUnderstands that addressee is living in a better way than she. \"If you leave me in the lurch and if I cannot carry on any longer (as in this month) I shall not hesitate to come to you.\"\n\nStates that she can only go to the Argentine if the return journey is assured as she does not want to leave Germany for ever.\n\n\"The S.U. - I have not to station myself there! On the contrary I have to report truthfully to them over there, why I want to go there. These matters are settled by comrades............\"\n\nReminds addressee again that he is responsible for her and Sonja.\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:38:09.638900+00:00",
+  "page": 14,
+  "total_pages": 143
+}

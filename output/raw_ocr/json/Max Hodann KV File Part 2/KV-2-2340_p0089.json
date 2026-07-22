@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "POST\nMANCHESTER\n10.00 PM\n20 JUN\n1935\nK\n\nTo Max Hodann\n63, Haverstock Hill\nLondon N.W.3.\n\nMannheim 14. 10. Wilhelmstr. Rd.\n20. June 35.\n\nLieber Hodann,\n\nBedenk Dein f\u00fcr Ihre Karte. Ich freue\nmir sehr, Sie wieder zu sehen u. Hoffe\ndeshalb, das es Ihnen m\u00f6glich ist, bis\nMittwoch hierher zu kommen. Ich\nwerde\nnun mit Donnerstag fr\u00fch zu einer Kon-\nferenz und dem H. den fahren. werde\neine Woche fortbleiben. Meine Frau ist\nhier, aber sie m\u00f6chte Sie dnl, wenn m\u00f6glich,\nsehr sehen. Vielleicht geben Sie mir wohl\neine kurze Antwort.\n\nIm Settlement kommt man um gut,\nda manche hier dort arbeiten. Wollen Sie\ndort? Wir k\u00f6nnen Sie wohl auf einer\nLond bei uns lassen.\n\nBeste freundliche\nIhr\nIda L\u00f6we",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:50:29.152708+00:00",
+  "page": 89,
+  "total_pages": 143
+}

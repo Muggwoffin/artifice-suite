@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\8466790e6bc41f1fdde86057757ac8ec.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSUBJECT: RAUSCHENPLAT.\n\nOn 8.12.39, S.B. reported the formation of the CENTRAL EUROPEAN JOINT COMMITTEE, soon after the War began, at No.6 Gordon Square, W.C.1.\n\nThis committee consists of politicians, journalists and economists from Germany, Austria, Czechoslovakia and Poland, and is presided over by Dr. August WEBER, a former member of the Reichstag and leader of the \"Staatspartei\", a Liberal party.\n\nThe committee is compiling information from various Continental sources, particularly from newspapers supplied through the Ministry of Information. It makes comments upon these matters, and puts the results at the disposal of the Ministry of Information and various Government departments. The Home Office is aware of the activities of the committee.\n\nIn view of the fact that the committee has also been called upon to advise on propaganda in enemy territory, there have been various attempts from Communist quarters to obtain admission and an opportunity of collaborating, but these have so far not succeeded.\n\nA full list of membership of the committee, forwarded with the above report, included:-\n\nRAUSCHENPLAT, Helmut von. German, b. 2.10.96. Reg. No. 661,028, arrived in UK on 4.1.38. Add: 158 Lyttleton Rd., N.2.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:26:55.924978+00:00",
+  "page": 2,
+  "total_pages": 19
+}

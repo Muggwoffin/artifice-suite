@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Katy and Gutse (?) Smith, 4, Place Quetelet, Brussels.\n\nTo M. HODANN, 63, Haverstock Hill, N.W.3.\n\nDate of Letter 14.6.35.\n\nDate of Postmark -\n\nSUMMARY OF CONTENTS\n\nPresumes addressee is still busy with laboratory work.\n\nStates that a reply has just come from DANG.\n\n\"In the meantime Germania has allowed herself the joke of making you a non-resident. Hold on tight to your passport, and do not make too much fuss about this circumstance as otherwise the journey in without a passport would create unnecessarily great difficulties.\"\n\n\"How are your studies going in so far as OUR aim is concerned? Have you had any success with your first enquiries? What else can we do for you? What is the position with Geneva?\"\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:51:09.636290+00:00",
+  "page": 95,
+  "total_pages": 143
+}

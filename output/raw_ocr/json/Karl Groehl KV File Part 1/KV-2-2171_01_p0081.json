@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Extract from Intercepted Letter to\nMr. K. OTTEN.\n58, Hampstead Way.\nLondon. N.W.11.\n\nNews from Bayern.\n\nIn Ingolstadt there has been a mutiny amongst the section of the 27th Artillery Regiment which is stationed there.\n\nIn Munich too, there were minor riots in a Foot Artillery regiment. The troops are discontented with the hard work and poor food. The Nazis have already dug trenches round the various Party buildings, ostensibly against air attack.\n\nThe Ingolstadt troops appear to be very untrustworthy. This battery was in Poland and has gone back.\n\nOf the Munich affair I can only tell you what I have heard as our connections there are cut.\n\nThe Burning of the S.S. camp in Constance was done by anti-Nazis. In Constance this is quite openly admitted.\n\nThe anti-Nazis will not dare to come out into the open until he has suffered some defeats in the war, for it will be impossible to fight this menace without the help of the troops although the anti-war feeling grows apace.\n\nIn the Rau Affair, Meier is wrong, R. has tried many times. Meier does not have to know everything. It was true and was arranged through Spieker. R. went to Switzerland every month before the War.\n\nI have got into touch with H.'s sister through a friend. She seems to know many people, but as yet nothing has come of it.\n\nStrasser has been making a fuss over the Nichte affair. Years ago I had a report of how she was shot. Why are reports suddenly the only things for us? What is happening? I could have many things but must travel and will not do so on a false passport in war time.\n\nPro is coming but I have another appointment and cannot see him. I will ask him why he did not speak to you. In the end he will have to find his own helpers.\n\nI have not written to Max yet, as I did not know of what use he could be to us. Until I can travel I cannot make reports on the War.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:55:11.974960+00:00",
+  "page": 81,
+  "total_pages": 96
+}

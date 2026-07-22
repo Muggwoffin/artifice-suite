@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "JS/KV/188.\n\n11th October 1941.\n\nDear Langdon,\n\nS. RETZLAW, @ Karl GROEHL.\n\nWith reference to the letter for the above which was sent to the B.B.C. for him and passed by them to the Home Office,\n\nI confirm that we shall be grateful if you will obtain the letter and pass it to me.\n\nYours sincerely,\n\nJohn Curtis\n\nMajor G.H. Langdon,\nM.I.5,\nLondon.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:38:44.476579+00:00",
+  "page": 80,
+  "total_pages": 107
+}

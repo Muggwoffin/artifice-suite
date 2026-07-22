@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "DEPARTURE.\n\nCopy of Card in Traffic Index.\n\nPort of Disembarkation abroad: Go Lend.\n\nName: [illegible]\n\nAge: 61\nSex: [illegible]\n\nNames and ages of dependents under 16 accompanying: [illegible]\n\nOccupation: [illegible]\n\nNationality: German\n\nAddress in United Kingdom: Boyles Court, South Weald, Essex\n\nI.O. Stamp No.: [illegible]\nPort: [illegible]\nDescription of passenger and class travelled: [illegible]\n\nOther information: [illegible]",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:07:11.229476+00:00",
+  "page": 100,
+  "total_pages": 104
+}

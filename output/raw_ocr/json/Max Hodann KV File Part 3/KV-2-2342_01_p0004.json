@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Register No. PF.43817. HODANN. Minute Sheet No.\n\n159.\nD.35. Traffic Index enquiry re SANDELMANN.\n\n160.\nD.35. Arrival Card for Hans SANDELMANN. 160a.\n\n161.\nD.35. Analysis of case. 161a.\n\n162.\nD.35. Letter to S.I.S. enclosing copy of 161a. 162a.\n\n163.\nD.35. Letter to G.P.O. Return of correspondence on 17, Hurstwood Road, N.W.11. (See 119a). 163a.\n\n164.\nD.35. Letter to G.P.O. Return of correspondence on 242, Tufnell Park Road, Tufnell Park, (see 107a) 164a.\n\n165.\nD.35. Traffic Index particulars requisitioned for Helen THILO.\n\n166.\nD.35. Traffic Index particulars requisitioned for Hans and Ella RICHTER (see 81a and 112a).\n\n167.\nD.35. Intercepted letter from HILLER to HODANN. 167a.\n\n168.\nD.35. Intercepted letter from TIETZE to HODANN. 168a.\n\n169.\nD.35. Intercepted letter from DORUMSGAARD to HODANN d/17.10.35. 169a.\n\n170.\nD.35. Intercepted letter from PHILIPSBORN to HODANN. 170a.\n\n171.\nD.35. Letter to S.B. 171a.\n\n172.\nD.35. Letter to C.C. Glamorganshire. 172a.\n\n173.\nD.35. Result of return of correspondence on 52, Gordon Square, W.C. 173a.\n\n174.\nD.35. From H.O. re application for extension for HODANN. 174a.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:56:41.303911+00:00",
+  "page": 4,
+  "total_pages": 104
+}

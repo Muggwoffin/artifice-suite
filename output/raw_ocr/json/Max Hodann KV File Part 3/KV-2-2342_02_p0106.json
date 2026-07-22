@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "1/2 Mrs Hamilton\nCanon Hall\nBridge of Earn\nPerthshire\n6 Nov 1935\n\nDear Dr. Finkelstein,\n\nI was very pleased to hear from you. But I very much doubt whether the CDN will take a letter from me at this distance any more than from you.\n\nI have had one or two specimens of Karen's journalism and have congratulated her in my own elegant phrase upon her rise from the executive to the creative department of the craft. I think we'll see her in spring.\n\nI think regular work is improving my character. I thought it would.\n\nThe Scotch highlands in autumn are magnificently coloured & the rivers & waterfalls are all full, and there aren't any visitors. I was out at the weekend with Conyande as you call her - Loch Earn, Loch Tay, full circle round Loch Rannoch, and climbed a hill covered with snowdrifts to the north.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:18:40.248459+00:00",
+  "page": 106,
+  "total_pages": 130
+}

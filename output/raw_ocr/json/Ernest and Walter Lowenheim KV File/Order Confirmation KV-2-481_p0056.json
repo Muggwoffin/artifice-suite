@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SOURCE: 10.11.41.\n\n\"I see that the information obtained from Mrs. Mizi Mills ne Brauner, 266, Kew Road, Kew, Surrey, given you on Tuesday last is wrong; it should read:\n\"Knowing these two Loewenheim's from Berlin I can say that they used to be known under ten different names and it will be, no doubt, difficult for them to proof their genuine character and real point of view.\"\n\nE.3.(S)\n12.11.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:19:26.182981+00:00",
+  "page": 56,
+  "total_pages": 68
+}

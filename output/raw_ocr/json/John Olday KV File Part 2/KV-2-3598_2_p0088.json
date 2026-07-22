@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "know it now, clearer than ever, means War.\n\n\"In Germany, France, Italy, Spain, Holland, England, America - wherever Fascism secretly or openly raises its head, there is only one possibility for the working class to defeat it: the social revolution.\"\n\nBy bitter experiences the working-class will learn to appreciate the Anarchist alternative to capitalism in its different disguises. When that time has come - and come it will world domination shared among the three victorious powers will crumble into freedom by the answer of the united workers' world revolution.\n\nWILLY FREIMANN.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:02:01.902467+00:00",
+  "page": 88,
+  "total_pages": 91
+}

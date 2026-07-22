@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "1",
+  "translated_text": "[Original text missing - please provide the text you would like me to translate.]\n\nOnce you provide the original text, I will do my best to translate it into English while adhering to your constraints. I will pay close attention to maintaining the tone and style of the original document, ensuring accurate translation of names, locations, and technical terms from that era, and using brackets for any uncertain parts due to OCR errors.\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:44:33.336861+00:00",
+  "confidence": {
+    "score": 0,
+    "reasoning": "The prompt indicates that the original source text is missing, so I cannot assess the accuracy of a translation or cleanup.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 60
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "4. WHOSE WAR?\n\n\"We must ascertain what are the contributing factors to the present world situation, and it will be found that possibly the biggest contributor is this country, is not Germany, for one of the most potent causes of world disorder has been our dominant financial policy.\"\n\nErnest Bevin at Southport Labour Conference, 1939.\n\n\"Any attempt to interpret literally the phrase 'equality of sacrifice' would of course not help prosecute the war to victory, but would hopelessly sabotage it. There is not, and cannot be, any literal equality of sacrifice as between workers and capitalists in this war. The workers must make the main sacrifices, and they have enough common sense to know, and enough patriotism not to object to it.\"\n\nEarl Browder in his book, \"Victory and After.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:10:44.829137+00:00",
+  "page": 52,
+  "total_pages": 57
+}

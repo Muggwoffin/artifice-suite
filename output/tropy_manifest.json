@@ -1,8 +1,8 @@
 {
   "project": {
-    "name": "ISK Project",
-    "database": "E:\\Tropy\\ISK Project Primary Sources.tropy\\project.tpy",
-    "bundle": "E:\\Tropy\\ISK Project Primary Sources.tropy"
+    "name": "Rose Cohen Letters",
+    "database": "E:\\Tropy\\Rose Cohen Letters.tropy\\project.tpy",
+    "bundle": "E:\\Tropy\\Rose Cohen Letters.tropy"
   },
   "output_layout": "<stage>/text/<item title>/<file>_p<page>.txt",
   "pages": {
@@ -5674,6 +5674,1046 @@
       "page": 0,
       "page_number": 1,
       "source_path": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d1e4db3bf1018893261f979b0039ad26.jpeg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0649/IMG_0649": {
+      "photo_id": 110,
+      "item_id": 109,
+      "item_title": "IMG_0649",
+      "filename": "IMG_0649.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\0d9875b7c9cf81c3294471748076abb1.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0650/IMG_0650": {
+      "photo_id": 114,
+      "item_id": 113,
+      "item_title": "IMG_0650",
+      "filename": "IMG_0650.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\1f5afcb205fc0acd8137390d5f058b60.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0651/IMG_0651": {
+      "photo_id": 118,
+      "item_id": 117,
+      "item_title": "IMG_0651",
+      "filename": "IMG_0651.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\005c670bbee9b65e78ef2e574144989f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0652/IMG_0652": {
+      "photo_id": 120,
+      "item_id": 119,
+      "item_title": "IMG_0652",
+      "filename": "IMG_0652.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\a9b47e774b86f99196f638ffb3b5dd24.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0653/IMG_0653": {
+      "photo_id": 124,
+      "item_id": 123,
+      "item_title": "IMG_0653",
+      "filename": "IMG_0653.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\23a02bab8527957e5f40182b249185b0.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0654/IMG_0654": {
+      "photo_id": 128,
+      "item_id": 127,
+      "item_title": "IMG_0654",
+      "filename": "IMG_0654.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\f411e4ea8180be4800a9ce0dd145f1b0.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0655/IMG_0655": {
+      "photo_id": 132,
+      "item_id": 131,
+      "item_title": "IMG_0655",
+      "filename": "IMG_0655.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\a71d7a35059313170a4abb10c0d07ed7.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0656 (1)/IMG_0656 (1)": {
+      "photo_id": 134,
+      "item_id": 133,
+      "item_title": "IMG_0656 (1)",
+      "filename": "IMG_0656 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\ccdddae2cd28f9f9852afd7d4e6a318e.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0656/IMG_0656": {
+      "photo_id": 178,
+      "item_id": 177,
+      "item_title": "IMG_0656",
+      "filename": "IMG_0656.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\ccdddae2cd28f9f9852afd7d4e6a318e.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0657/IMG_0657": {
+      "photo_id": 180,
+      "item_id": 179,
+      "item_title": "IMG_0657",
+      "filename": "IMG_0657.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\4ee4160a16db61df263c9228edb5dd3d.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0658/IMG_0658": {
+      "photo_id": 182,
+      "item_id": 181,
+      "item_title": "IMG_0658",
+      "filename": "IMG_0658.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\06f0cc3f98e726fa1d4d5b5e1671ce7d.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0659/IMG_0659": {
+      "photo_id": 184,
+      "item_id": 183,
+      "item_title": "IMG_0659",
+      "filename": "IMG_0659.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\a7403b251f759aac24c1104d9f1ab041.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0660/IMG_0660": {
+      "photo_id": 186,
+      "item_id": 185,
+      "item_title": "IMG_0660",
+      "filename": "IMG_0660.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\a3bcf6c94f3da65a31278420e2e1b01f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0661/IMG_0661": {
+      "photo_id": 188,
+      "item_id": 187,
+      "item_title": "IMG_0661",
+      "filename": "IMG_0661.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\88f5ab3ac823d3bf5ccfd0f74bfe4a5e.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0662/IMG_0662": {
+      "photo_id": 190,
+      "item_id": 189,
+      "item_title": "IMG_0662",
+      "filename": "IMG_0662.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\3ddf07cf1b3356e8ad5632ffb3f10b54.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0663/IMG_0663": {
+      "photo_id": 192,
+      "item_id": 191,
+      "item_title": "IMG_0663",
+      "filename": "IMG_0663.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\93ce15909ef31e8778d46cb88766a9c1.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0664 (1)/IMG_0664 (1)": {
+      "photo_id": 194,
+      "item_id": 193,
+      "item_title": "IMG_0664 (1)",
+      "filename": "IMG_0664 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\1282b409a54ffa505f40dd4e02152846.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0664/IMG_0664": {
+      "photo_id": 196,
+      "item_id": 195,
+      "item_title": "IMG_0664",
+      "filename": "IMG_0664.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\b6302c5c87d2af1584a0c2c63fd4c02a.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0665/IMG_0665": {
+      "photo_id": 198,
+      "item_id": 197,
+      "item_title": "IMG_0665",
+      "filename": "IMG_0665.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\50dcf1dfc9849aa25f0e32350f4f6a67.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0666/IMG_0666": {
+      "photo_id": 200,
+      "item_id": 199,
+      "item_title": "IMG_0666",
+      "filename": "IMG_0666.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\bf5293a500531db27759ae56022dbda1.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0667/IMG_0667": {
+      "photo_id": 202,
+      "item_id": 201,
+      "item_title": "IMG_0667",
+      "filename": "IMG_0667.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\eb5fd7857b36d5bf5601d13a5eb4b994.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0668 (1)/IMG_0668 (1)": {
+      "photo_id": 204,
+      "item_id": 203,
+      "item_title": "IMG_0668 (1)",
+      "filename": "IMG_0668 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\89ebfe78d629a06032964a5985f7b38c.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0668/IMG_0668": {
+      "photo_id": 206,
+      "item_id": 205,
+      "item_title": "IMG_0668",
+      "filename": "IMG_0668.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\6e1c497dfb77283b35dcb0f8cc89a507.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0669/IMG_0669": {
+      "photo_id": 208,
+      "item_id": 207,
+      "item_title": "IMG_0669",
+      "filename": "IMG_0669.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\ebb33ed73fe2fed5c544f11345961a58.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0670/IMG_0670": {
+      "photo_id": 210,
+      "item_id": 209,
+      "item_title": "IMG_0670",
+      "filename": "IMG_0670.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\1d8c8c23fd6c9a08af78231ec28321f6.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0671/IMG_0671": {
+      "photo_id": 212,
+      "item_id": 211,
+      "item_title": "IMG_0671",
+      "filename": "IMG_0671.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\868245da6e35eea50695b2e2c6a20515.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0672/IMG_0672": {
+      "photo_id": 214,
+      "item_id": 213,
+      "item_title": "IMG_0672",
+      "filename": "IMG_0672.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\2b7298e7a6c83b03d80b06136dae1675.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0673/IMG_0673": {
+      "photo_id": 216,
+      "item_id": 215,
+      "item_title": "IMG_0673",
+      "filename": "IMG_0673.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\a1cee333d443a2f8ccdd49a81ed98e5b.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0674/IMG_0674": {
+      "photo_id": 218,
+      "item_id": 217,
+      "item_title": "IMG_0674",
+      "filename": "IMG_0674.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\bc1cc646a74caceb19e8ac8640c8dc7f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0675/IMG_0675": {
+      "photo_id": 220,
+      "item_id": 219,
+      "item_title": "IMG_0675",
+      "filename": "IMG_0675.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\7bdb5cffa14c1de7042e6c6c902fe5b7.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0676/IMG_0676": {
+      "photo_id": 222,
+      "item_id": 221,
+      "item_title": "IMG_0676",
+      "filename": "IMG_0676.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\f9531d8ed46a49a62370045f65013697.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0677/IMG_0677": {
+      "photo_id": 224,
+      "item_id": 223,
+      "item_title": "IMG_0677",
+      "filename": "IMG_0677.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\0cd0a1bc392af303a792962fc704de1f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0678/IMG_0678": {
+      "photo_id": 226,
+      "item_id": 225,
+      "item_title": "IMG_0678",
+      "filename": "IMG_0678.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\06f952fed3fc4b11e9281dc9408dfedd.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0679 (1)/IMG_0679 (1)": {
+      "photo_id": 228,
+      "item_id": 227,
+      "item_title": "IMG_0679 (1)",
+      "filename": "IMG_0679 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\26430d4dae5c7fd05ad63cac21adefb2.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0679/IMG_0679": {
+      "photo_id": 230,
+      "item_id": 229,
+      "item_title": "IMG_0679",
+      "filename": "IMG_0679.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\26430d4dae5c7fd05ad63cac21adefb2.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0680/IMG_0680": {
+      "photo_id": 232,
+      "item_id": 231,
+      "item_title": "IMG_0680",
+      "filename": "IMG_0680.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\610890d2412db7e796b947da823dba3b.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0681 (1)/IMG_0681 (1)": {
+      "photo_id": 234,
+      "item_id": 233,
+      "item_title": "IMG_0681 (1)",
+      "filename": "IMG_0681 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\1d79199d90d8a799434e8bc30cec95c4.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0681/IMG_0681": {
+      "photo_id": 236,
+      "item_id": 235,
+      "item_title": "IMG_0681",
+      "filename": "IMG_0681.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\1d79199d90d8a799434e8bc30cec95c4.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0682 (1)/IMG_0682 (1)": {
+      "photo_id": 238,
+      "item_id": 237,
+      "item_title": "IMG_0682 (1)",
+      "filename": "IMG_0682 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\d7329ffd6bc690403142e3fd83e8b398.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0682/IMG_0682": {
+      "photo_id": 240,
+      "item_id": 239,
+      "item_title": "IMG_0682",
+      "filename": "IMG_0682.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\d7329ffd6bc690403142e3fd83e8b398.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0683/IMG_0683": {
+      "photo_id": 242,
+      "item_id": 241,
+      "item_title": "IMG_0683",
+      "filename": "IMG_0683.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\ba2cafb91eaf1c461ee5e2138eb579e3.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0684/IMG_0684": {
+      "photo_id": 244,
+      "item_id": 243,
+      "item_title": "IMG_0684",
+      "filename": "IMG_0684.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\44586f05d7b666325e2a0420c91453a3.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0685/IMG_0685": {
+      "photo_id": 246,
+      "item_id": 245,
+      "item_title": "IMG_0685",
+      "filename": "IMG_0685.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\d8e3cf580815db8c3c4753567c422c24.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0686/IMG_0686": {
+      "photo_id": 248,
+      "item_id": 247,
+      "item_title": "IMG_0686",
+      "filename": "IMG_0686.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\882a73b2d347702448a87013a1d7d619.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0687/IMG_0687": {
+      "photo_id": 250,
+      "item_id": 249,
+      "item_title": "IMG_0687",
+      "filename": "IMG_0687.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\eb9a336c79b5f87448636a3bf9251734.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0688 (1)/IMG_0688 (1)": {
+      "photo_id": 252,
+      "item_id": 251,
+      "item_title": "IMG_0688 (1)",
+      "filename": "IMG_0688 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\2236c6cda29c48072de1c28f9cc2ce9f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0688/IMG_0688": {
+      "photo_id": 254,
+      "item_id": 253,
+      "item_title": "IMG_0688",
+      "filename": "IMG_0688.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\2236c6cda29c48072de1c28f9cc2ce9f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0689/IMG_0689": {
+      "photo_id": 256,
+      "item_id": 255,
+      "item_title": "IMG_0689",
+      "filename": "IMG_0689.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\8b20e01dbeedcc2a3d8faef6093f893c.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0690/IMG_0690": {
+      "photo_id": 258,
+      "item_id": 257,
+      "item_title": "IMG_0690",
+      "filename": "IMG_0690.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\44185cdcfbc99db1f9503f47976ceae6.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0691/IMG_0691": {
+      "photo_id": 260,
+      "item_id": 259,
+      "item_title": "IMG_0691",
+      "filename": "IMG_0691.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\40c01d8e3d9df31b18058e3ab9fd4f67.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0692/IMG_0692": {
+      "photo_id": 262,
+      "item_id": 261,
+      "item_title": "IMG_0692",
+      "filename": "IMG_0692.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\c77bb23db661ab542469141ff8d3cb56.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0693/IMG_0693": {
+      "photo_id": 264,
+      "item_id": 263,
+      "item_title": "IMG_0693",
+      "filename": "IMG_0693.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\de5ef212f2dbb12c18f7ed6aa141977d.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0694/IMG_0694": {
+      "photo_id": 266,
+      "item_id": 265,
+      "item_title": "IMG_0694",
+      "filename": "IMG_0694.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\c74a6d82f296ec641872a1a1dd030dfb.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0695/IMG_0695": {
+      "photo_id": 268,
+      "item_id": 267,
+      "item_title": "IMG_0695",
+      "filename": "IMG_0695.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\29ce224a0e2db3edde66eb0bf2427c5f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0696/IMG_0696": {
+      "photo_id": 270,
+      "item_id": 269,
+      "item_title": "IMG_0696",
+      "filename": "IMG_0696.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\2a1a00bf79b38d82c2e9c93da8867f6a.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0697/IMG_0697": {
+      "photo_id": 272,
+      "item_id": 271,
+      "item_title": "IMG_0697",
+      "filename": "IMG_0697.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\e7637109c605e400194324ded2a64bf2.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0698/IMG_0698": {
+      "photo_id": 274,
+      "item_id": 273,
+      "item_title": "IMG_0698",
+      "filename": "IMG_0698.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\0ca570efc72ff4b11a5eddfc094838e5.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0699/IMG_0699": {
+      "photo_id": 276,
+      "item_id": 275,
+      "item_title": "IMG_0699",
+      "filename": "IMG_0699.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\578cd73522fddae1c514762f3d270124.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0700/IMG_0700": {
+      "photo_id": 278,
+      "item_id": 277,
+      "item_title": "IMG_0700",
+      "filename": "IMG_0700.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\fb877af4cb07585040364ac67c55fb45.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0701/IMG_0701": {
+      "photo_id": 280,
+      "item_id": 279,
+      "item_title": "IMG_0701",
+      "filename": "IMG_0701.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\a8af2434e9b16549fd053837a6038eeb.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0702/IMG_0702": {
+      "photo_id": 282,
+      "item_id": 281,
+      "item_title": "IMG_0702",
+      "filename": "IMG_0702.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\b864517dd2d686bfa7ada162b8bbfa84.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0703/IMG_0703": {
+      "photo_id": 284,
+      "item_id": 283,
+      "item_title": "IMG_0703",
+      "filename": "IMG_0703.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\dd75728c8bbd143e5e594715ea2c3a7f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0704 (1)/IMG_0704 (1)": {
+      "photo_id": 286,
+      "item_id": 285,
+      "item_title": "IMG_0704 (1)",
+      "filename": "IMG_0704 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\ba548b5cf8cffb2ae1073a1a6bab6c4d.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0704/IMG_0704": {
+      "photo_id": 288,
+      "item_id": 287,
+      "item_title": "IMG_0704",
+      "filename": "IMG_0704.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\9b38434b39a02cce7ee1026b21ac828f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0705/IMG_0705": {
+      "photo_id": 290,
+      "item_id": 289,
+      "item_title": "IMG_0705",
+      "filename": "IMG_0705.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\89d867827f9fccb845ba7f90ccae06ab.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0706/IMG_0706": {
+      "photo_id": 292,
+      "item_id": 291,
+      "item_title": "IMG_0706",
+      "filename": "IMG_0706.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\91f48b479671793a530c9ae5c7934788.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0707/IMG_0707": {
+      "photo_id": 294,
+      "item_id": 293,
+      "item_title": "IMG_0707",
+      "filename": "IMG_0707.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\d81e02978f9d5a9a4b82da2bc7b50cac.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0708/IMG_0708": {
+      "photo_id": 296,
+      "item_id": 295,
+      "item_title": "IMG_0708",
+      "filename": "IMG_0708.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\de43d66f3da1a5eb79b7b4ab8268ba91.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0709/IMG_0709": {
+      "photo_id": 298,
+      "item_id": 297,
+      "item_title": "IMG_0709",
+      "filename": "IMG_0709.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\4d51f3c2056fb491b6c07fafd99b4b02.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0710/IMG_0710": {
+      "photo_id": 300,
+      "item_id": 299,
+      "item_title": "IMG_0710",
+      "filename": "IMG_0710.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\4b16c32526df7985aae515d1c4f06d24.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0711/IMG_0711": {
+      "photo_id": 302,
+      "item_id": 301,
+      "item_title": "IMG_0711",
+      "filename": "IMG_0711.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\bff9351842d2c66c7a68dce9bd05a3b8.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0712/IMG_0712": {
+      "photo_id": 304,
+      "item_id": 303,
+      "item_title": "IMG_0712",
+      "filename": "IMG_0712.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\66466859b57ad1989bece226de23fffe.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0713/IMG_0713": {
+      "photo_id": 306,
+      "item_id": 305,
+      "item_title": "IMG_0713",
+      "filename": "IMG_0713.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\2048ebc1069c77de545dabb640567ebd.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0714/IMG_0714": {
+      "photo_id": 308,
+      "item_id": 307,
+      "item_title": "IMG_0714",
+      "filename": "IMG_0714.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\f7cd8054bf1987c09f6f3660b758d251.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0715/IMG_0715": {
+      "photo_id": 310,
+      "item_id": 309,
+      "item_title": "IMG_0715",
+      "filename": "IMG_0715.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\2596fef0027e3bc4ba5739e651b8fdbd.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0716 (1)/IMG_0716 (1)": {
+      "photo_id": 312,
+      "item_id": 311,
+      "item_title": "IMG_0716 (1)",
+      "filename": "IMG_0716 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\78c08061ab7dbd57c0b9d194c26d6a2b.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0716/IMG_0716": {
+      "photo_id": 314,
+      "item_id": 313,
+      "item_title": "IMG_0716",
+      "filename": "IMG_0716.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\c89b440d144e56da9b9e16602123d858.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0717/IMG_0717": {
+      "photo_id": 316,
+      "item_id": 315,
+      "item_title": "IMG_0717",
+      "filename": "IMG_0717.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\7538f1c90f12eb0aae2c1c331e394e31.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0718/IMG_0718": {
+      "photo_id": 318,
+      "item_id": 317,
+      "item_title": "IMG_0718",
+      "filename": "IMG_0718.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\27f71bdd7147f247a7030899c6182e4a.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0719/IMG_0719": {
+      "photo_id": 320,
+      "item_id": 319,
+      "item_title": "IMG_0719",
+      "filename": "IMG_0719.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\8fe7d7db159b6cadb7dc5352b099671a.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0720/IMG_0720": {
+      "photo_id": 322,
+      "item_id": 321,
+      "item_title": "IMG_0720",
+      "filename": "IMG_0720.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\f32e91f15d4af5a685bd06240aebefbe.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0721/IMG_0721": {
+      "photo_id": 324,
+      "item_id": 323,
+      "item_title": "IMG_0721",
+      "filename": "IMG_0721.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\24a3c79f73b4e950bf807dd1b4e40868.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0722 (1)/IMG_0722 (1)": {
+      "photo_id": 326,
+      "item_id": 325,
+      "item_title": "IMG_0722 (1)",
+      "filename": "IMG_0722 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\62bfa76c7ebe9bfae3464ab360ba92c1.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0722/IMG_0722": {
+      "photo_id": 328,
+      "item_id": 327,
+      "item_title": "IMG_0722",
+      "filename": "IMG_0722.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\62bfa76c7ebe9bfae3464ab360ba92c1.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0723/IMG_0723": {
+      "photo_id": 330,
+      "item_id": 329,
+      "item_title": "IMG_0723",
+      "filename": "IMG_0723.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\0dfb2d792572f979de17fd08655059b1.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0724/IMG_0724": {
+      "photo_id": 332,
+      "item_id": 331,
+      "item_title": "IMG_0724",
+      "filename": "IMG_0724.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\d58c4842f10e698a7cac60f101c77937.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0725 (1)/IMG_0725 (1)": {
+      "photo_id": 334,
+      "item_id": 333,
+      "item_title": "IMG_0725 (1)",
+      "filename": "IMG_0725 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\f3a5cefb628cc6f16e2d3997f65ec20c.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0725/IMG_0725": {
+      "photo_id": 336,
+      "item_id": 335,
+      "item_title": "IMG_0725",
+      "filename": "IMG_0725.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\f3a5cefb628cc6f16e2d3997f65ec20c.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0726/IMG_0726": {
+      "photo_id": 338,
+      "item_id": 337,
+      "item_title": "IMG_0726",
+      "filename": "IMG_0726.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\28da2c35f508afd2c167c8352343d3de.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0636/IMG_0636": {
+      "photo_id": 340,
+      "item_id": 339,
+      "item_title": "IMG_0636",
+      "filename": "IMG_0636.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\ede62016cc92590a7f8f06dd87dce942.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0637/IMG_0637": {
+      "photo_id": 342,
+      "item_id": 341,
+      "item_title": "IMG_0637",
+      "filename": "IMG_0637.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\59add35b4932eafae8a29a035532a408.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0638/IMG_0638": {
+      "photo_id": 344,
+      "item_id": 343,
+      "item_title": "IMG_0638",
+      "filename": "IMG_0638.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\6269d5ee2cbd5d2c05c7e41f1c0b7654.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0639/IMG_0639": {
+      "photo_id": 346,
+      "item_id": 345,
+      "item_title": "IMG_0639",
+      "filename": "IMG_0639.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\89ba91937d93039498a970bed605fb2a.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0640/IMG_0640": {
+      "photo_id": 348,
+      "item_id": 347,
+      "item_title": "IMG_0640",
+      "filename": "IMG_0640.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\9f58de936a76e12d09a21a730d8a6c07.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0641/IMG_0641": {
+      "photo_id": 350,
+      "item_id": 349,
+      "item_title": "IMG_0641",
+      "filename": "IMG_0641.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\b3ef0bb623564fb8bf5bf849eed19e0d.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0642/IMG_0642": {
+      "photo_id": 352,
+      "item_id": 351,
+      "item_title": "IMG_0642",
+      "filename": "IMG_0642.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\4286cf80c1f2236948c4c6e00e62d66d.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0643 (1)/IMG_0643 (1)": {
+      "photo_id": 354,
+      "item_id": 353,
+      "item_title": "IMG_0643 (1)",
+      "filename": "IMG_0643 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\60a8681af7661f2b31606ea3a055288a.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0643/IMG_0643": {
+      "photo_id": 356,
+      "item_id": 355,
+      "item_title": "IMG_0643",
+      "filename": "IMG_0643.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\60a8681af7661f2b31606ea3a055288a.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0644/IMG_0644": {
+      "photo_id": 358,
+      "item_id": 357,
+      "item_title": "IMG_0644",
+      "filename": "IMG_0644.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\11de097a6ab383575ba6ef6e9d4f397b.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0645/IMG_0645": {
+      "photo_id": 360,
+      "item_id": 359,
+      "item_title": "IMG_0645",
+      "filename": "IMG_0645.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\d373c07873210c6e10cd5dfb59295cd9.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0646/IMG_0646": {
+      "photo_id": 362,
+      "item_id": 361,
+      "item_title": "IMG_0646",
+      "filename": "IMG_0646.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\b4689db5dc03a6ea1d35e5350ab5ee42.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0647 (1)/IMG_0647 (1)": {
+      "photo_id": 364,
+      "item_id": 363,
+      "item_title": "IMG_0647 (1)",
+      "filename": "IMG_0647 (1).jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\cc3e61995b8277b8de9ccc667ca6891f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0647/IMG_0647": {
+      "photo_id": 366,
+      "item_id": 365,
+      "item_title": "IMG_0647",
+      "filename": "IMG_0647.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\cc3e61995b8277b8de9ccc667ca6891f.jpg",
+      "mimetype": "image/jpeg"
+    },
+    "IMG_0648/IMG_0648": {
+      "photo_id": 368,
+      "item_id": 367,
+      "item_title": "IMG_0648",
+      "filename": "IMG_0648.jpg",
+      "page": 0,
+      "page_number": 1,
+      "source_path": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\c96b0c36a00dc669f05342594f8330c2.jpg",
       "mimetype": "image/jpeg"
     }
   }

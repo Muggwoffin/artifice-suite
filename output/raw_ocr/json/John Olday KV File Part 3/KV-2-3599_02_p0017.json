@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "'There is no greater condemnation of our civilisation than the fact that it results in means becoming ends, while the true end, which is man himself, has become a means\u2014no doubt a more expensive one than a dog, but cheaper than a cow or a machine gun.'\n\nIgnazio Silone, 'The School for Dictators'.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:13:06.032906+00:00",
+  "page": 17,
+  "total_pages": 71
+}

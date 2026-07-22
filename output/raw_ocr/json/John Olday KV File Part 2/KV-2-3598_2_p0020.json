@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copies in S.F. 455/49.\nP.F. 66074/Y.\n\nThe H.O.W. intercept filed in S.F. 455/49 Vol. 7 284a shows that in October 1944 the Freedom Press Group of Anarchists sent a typed statement to the Anarchist Federation Group dealing with the dispute which had arisen between the two groups. The only signature at the end was a group of initials, one being \"F.A\". Neither Miss Sercombe nor I can think who F.A. might be if it is not OLDAG. The other initials are easily identifiable.\n\nP.F. 66074 contains at 98a a H.O.W. intercept of a letter written by OLDAG from Brixton Prison to the Freedom Press. This is signed 'F.A.'\n\nF.3.m.\n16.1.45.\n\nR.G. Micklethwait.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:52:09.204049+00:00",
+  "page": 20,
+  "total_pages": 91
+}

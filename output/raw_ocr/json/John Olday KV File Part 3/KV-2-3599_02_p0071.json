@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Paris, 15. Juni 1948.\n\nAn\nC. CARVER\n256, Harrow Rd.\nLONDON W 2\n\nWerter Genosse,\n\nWir teilen Dir mit, dass in Deutschland vor kurzem der \"Spartakusbund\" gegr\u00fcndet worden ist. Du kannst hier\u00fcber N\u00e4heres bei unserem Londoner Vertreter John OLDAY, 15 Orsett Ter, LONDON W 2, erfahren.\n\nDie Anschrift der Pariser Spartakusgruppe ist: \"Spartakus\", JOULIN, 145, Quai Valmy, PARIS.\n\nWir werden Dir ab jetzt unser Material regelm\u00e4\u00dfig zuseenden.\n\nMit kameradschaftlichen Gr\u00fc\u00dfen,\n\n[signature]",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:18:54.456657+00:00",
+  "page": 71,
+  "total_pages": 71
+}

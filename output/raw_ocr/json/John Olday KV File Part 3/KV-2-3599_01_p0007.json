@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "FILE NUMBER: 66074 /v3\nNAME: OLDRAK ARTHUR WILLIAM\n\nIn accordance with Para 36 of Part I of Office Instructions the following documents may be kept in this envelope which MUST be filed on the third tag of the current volume:\n\nPassport papers \u2714 Serial(s):\nFor SONN OLDRAK @ OLDAY\n\nBirth certificate Serial(s):\nMarriage certificate Serial(s):\nDeath certificate Serial(s):\nAliens Reg. card Serial(s):\n*Photographs Serial(s):\n*Maps/plans/drawings Serial(s):\n\n*Large photographs, maps etc., may be kept in a larger envelope which MUST also be filed on the third tag.\n\n\u2020The name of an individual or subject, file number and date of photograph MUST be written in pencil on the reverse of each photograph (Para 77 of Part I of Office Instructions refers). Passport photos should continue to be kept in the clear plastic envelopes provided.\n\nS Form 1040 500 10/74",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:03:21.880388+00:00",
+  "page": 7,
+  "total_pages": 57
+}

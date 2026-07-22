@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Paris, 13.XI.1935\n\nLieber Max,\n\nwir bitten Dich dringlich um folgende Au kunft:\n\nGumbel m\u00f6chte raschestens Bescheid haben \u00fcber Ferber, der jetzt bei ihm in Lyon lebt. F. ist seinerzeit durch Traute bei einer eingef\u00fchrt worden. Er beruft sich Gumbel gegen\u00fcber auf einen gewissen Egon Burkert, einen deutschen Emigranten aus dem Kreis von Scheringer, dem auch F. angeh\u00f6rt haben soll. Egon Burkert soll jetzt in England (Sussex) leben. Ich w\u00e4re Dir ungeheuer dankbar, wenn Du mit Burkert in Verbindung treten und uns seinen Meinung \u00fcber Ferber mitteilen wolltest. Vielleicht kennst Du auch selbst Ferber und kannst uns \u00fcber ihn Auskunft geben?\n\nDie Sache ist sehr dringlich.\n\nBesten Gru\u00df\n\n[signature]",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:17:38.464893+00:00",
+  "page": 96,
+  "total_pages": 130
+}

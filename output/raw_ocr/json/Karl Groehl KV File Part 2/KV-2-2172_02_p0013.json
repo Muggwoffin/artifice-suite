@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY\n\nFROM:\nS. Retzlaw\n10.d. Belsize Park Gardens,\nLondon N.W.3.\n\nTO:\nElse Hersberger,\nWangen-Aareder(?)\nAare,\nSwitzerland.\n\n7.2.42\nLetter in German, translated in full from photostat.\n\nDear Friend,\n\nMost grateful thanks for your letter of January 15th. I had already heard that you were ill. Tante told me so in a letter. But now I hope you are well. Take care of yourself in this weather - and with it no coal and too little money! Pierrette also has too little money. She ought to grow up larger as a result.\n\nPlease observe little Pierrettechen carefully. I am worried about her. Tante is too oldfashioned to understand her, - she doesn't understand me either. Tante is all right personally, but none of the relations are of much use. Always giving others orders and being greedy and lazy themselves. When I wanted to start a real shop and expand the business, they wouldn't. Everything is petty stuff with them. If Tante scolds then ask me. After all Pierrette is my child and not Tante's. Please take care that she is warmly clothed and well nourished\n\nUnfortunately I am not very well. The climate is too damp. I have so much pain in the chest. But it is not dangerous, only very uncomfortable. Then the stupid feeling of dependence. But I don't complain. After all everyone has to put up with things nowadays. I am only so terribly lonely here.\n\nTo you and Pierrette, Mother and Sister,\nall the best,\nStanislaw Retzlaw.\n\nM.G.B. ............... 21.2.42\n\n*(Underlining done in red pencil on original).",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:28:34.097916+00:00",
+  "page": 13,
+  "total_pages": 107
+}

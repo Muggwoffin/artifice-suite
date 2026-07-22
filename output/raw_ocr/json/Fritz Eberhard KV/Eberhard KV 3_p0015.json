@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3a50cf10b688315cccd916f71e58b224.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nSUBJECT:-- Dr. Hellmut von RAUSCHENPLAT.\n\nFrom Extract from B.M. AE/376 from S. of S. - suggestions re refugees. \"Emergency Union of German Scientists Abroad\" 28.5.40.\n\nA letter sent by the above Union to Sir John Anderson was signed by a number of the members. Among these was a Dr. Hellmut von Rauschenplat, former leader of anti-Nazi Trade Union Groups in Germany, 1933-37.)\n\nOriginal in.....O.F..559/1...18A.............dated...as above.....\nP.M.\n6/9/40.\n\nS. Form 81.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:24:09.215310+00:00",
+  "page": 15,
+  "total_pages": 24
+}

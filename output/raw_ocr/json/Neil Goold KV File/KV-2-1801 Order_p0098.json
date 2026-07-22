@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Names shown in Voters' List under\n1, Sheffield Terrace, W.8.\n\nFlat 3.  DUDENEY, Edward\n         TAYLOR, James Richard William\n         TAYLOR, Marion Murray (Snr)\n         TAYLOR, Marion Murray (Jnr)\n\nFlat 4.  BADGER, Evelyn.\n         DUVIVIER, Doris Winifred Helen\n         DUVIVIER, Jack.\n\nFlat 5.  NICHOLSON, Geoffrey\n         PEMBRIDGE, Mary\n         TIZZARD, Elizabeth.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:49:58.907659+00:00",
+  "page": 98,
+  "total_pages": 103
+}

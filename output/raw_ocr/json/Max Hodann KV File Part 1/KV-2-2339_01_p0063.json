@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSubject: Dr. Max HODANN.\n\n20.4.35. Lise LINDBAEK-NILSSON wrote from 63, Haverstock Hill, N.W.3., to the Under-Secretary of State asking for an extension of her visa and that of Dr. Max HODANN, her amanuensis, for a further 6 months. Mentions the fact that HODANN has been asked to go to Brussels to lecture during the week from April 29th - 5th May. (Extract from H.O. file L.1675.)\n\nMinute to H.O.:\n\n\"With regard to Max HODANN, we think that his employment as amanuensis to Lise LINDBAEK is merely an excuse to remain here.\n\nAs a refugee who may turn out to be highly undesirable, we are not anxious that he should settle down permanently in this country. We should not, however, object to his being granted a short extension at the conclusion of which we should be glad to have the opportunity of submitting further observations.\n\n(Sd.) O.A.H.\"\n\nM.I.5.\n30.4.35.\n\nOriginal in PF.43824...LINDBAEK-NILSSON...38a, dated...as above........\n\nC.M.S. 20.5.35.\n\nS. Form 81",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:11:27.969646+00:00",
+  "page": 63,
+  "total_pages": 144
+}

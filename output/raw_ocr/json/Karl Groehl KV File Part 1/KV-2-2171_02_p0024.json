@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Original in PF. 45807 Otten vol. 4. 154a.\n\nSecret.\n\nCX.12650/4199, 6.4.39. V.\n\nDear Younger,\n\nReference your P.F. 45807/B.4h, dated 10th March:\n\nThis is only an ad interim reply to tell you that we have ascertained a considerable amount about OTTEN, GROEHL and half-a-dozen other refugee organisations, which are supplying information, and their connexions one with another. The whole matter has assumed great importance in view of tendentious information which is being purveyed, often, we have no doubt, originally emanating from German official sources.\n\nWe hope to have a conference of officers here on the matter shortly after Easter, and we will ask you if you will, to be present.\n\nYours sincerely, G.S.\n\nK.G. Younger, Esq.,\nM.I.5.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:00:29.278164+00:00",
+  "page": 24,
+  "total_pages": 102
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CONFIDENTIAL\n\nL.158/1424/E.1/MHP\nIM C5/115/58 (C5(B))\n\nMiss B. S. Haldane,\nC.5(B),\nWAR OFFICE.\n\nDr. Fritz EBERHARD\n\nWith reference to your minute of 16th April, enclosing correspondence which is now returned, we can confirm that Dr. Fritz EBERHARD left this country on 16th April, 1945. He apparently travelled to France in an aircraft under U.S. military escort. We have no further details of his movements.\n\n2. EBERHARD was known as Dr. Helmut von RAUSCHENPLAT while in this country and changed his name to EBERHARD in 1946 or 1947. This information may assist in tracing his movements.\n\n30th April, 1958.\nM. H. Phillimore.\n\nEnclosures: 2",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:41:27.400796+00:00",
+  "page": 14,
+  "total_pages": 24
+}

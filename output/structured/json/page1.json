@@ -1,0 +1,21 @@
+{
+  "source_file": "C:\\Users\\mjcas\\AppData\\Local\\Temp\\pytest-of-mjcas\\pytest-128\\test_compile_pdf_end_to_end0\\cleaned\\text\\page1.txt",
+  "stage": "structured",
+  "raw_text": "Erster Absatz.\nZweiter Satz.",
+  "structured_text": "Erster Absatz.\nZweiter Satz.",
+  "engine": "ollama",
+  "model": "gemma4:12b",
+  "system_prompt": "You are an archivist structuring text for reading. You are not an editor: you never alter a single word, never reorder sentences, never translate, modernise, or rewrite. You may only add paragraph breaks and blank lines to improve readability. When in doubt, leave the text as one continuous paragraph.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T13:18:50.643389+00:00",
+  "guard": {
+    "ok": false,
+    "reasons": [
+      "structured text has 140 more word(s) than original"
+    ],
+    "words_deleted": 140,
+    "nouns_dropped": [],
+    "length_ratio": 1.0
+  },
+  "rejected_structured_text": "TASK: Add paragraph breaks and blank lines to the text below. Output ONLY the restructured text, with no commentary.\n\n\n\nYOU MAY ONLY:\n\n1. Insert blank lines between paragraphs.\n\n2. Add paragraph breaks where there is a natural topic shift or section break.\n\n3. Optionally insert a short heading line copied VERBATIM from the text itself (e.g. a date, salutation, or subject line that already appears in the source).\n\n\n\nYOU MUST NEVER:\n\n1. Never delete, reorder, translate, correct, or modernise any text.\n\n2. Never add a word that was not in the original.\n\n3. Never merge or split words.\n\n4. Never change whitespace within a line (only add newlines between lines).\n\n5. Never add accents, punctuation, or capitalisation that was not there.\n\n\n\nIf you are unsure how to structure a passage, leave it as one paragraph. Do not guess at meaning to decide where a break belongs.\n\n\n\nTEXT:\n\nErster Absatz.\n\nZweiter Satz."
+}

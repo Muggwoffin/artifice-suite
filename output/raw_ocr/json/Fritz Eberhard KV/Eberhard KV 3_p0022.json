@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3a50cf10b688315cccd916f71e58b224.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nSUBJECT:-\n\nOn 7.2.40 a list of the DEMUTH COMMITTEE was received through B.2. Members of the Propaganda Section included:-\n\nDr. H. von RAUSCHENPLAT. Teacher of Economics, Farming. Formerly at a People's College near Cassel. Was economic Editor of a Berlin Socialist Daily.\n\nOriginal in.....S.F.75/Germany/32.V.2.36b..dated...7.2.40\n\nS. Form 81.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:25:58.725707+00:00",
+  "page": 22,
+  "total_pages": 24
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "infiltrated through every political organisation, Sinn Fein, the Irish Volunteers, the Citizen Army and finally got control of all.\n\nIt do not know how much importance is to be attributed to this new movement. Repressive measures have driven all such organisations underground, but it is apparent that they are still alive.\n\nI am told that this man Goold is quite a clever fellow. His wife is said to be living in Moscow. All this may possibly be known already at HQ. As mentioned on a previous occasion Goold created a bit of a scene at a Sinn Fein lecture in April last. He said then that he did not agree with the lecturer, J.J. O'Kelly, who had praised Hitler, and declared that Hitler had smashed all trade unions in Germany. A member of the audience shouted that as the result of Goold's activities in the Curragh, where he had been interned, four internees were then in the British R.A.F. O'Kelly got very hot and bothered and called Goold a pup and told him and his supporters to clear out of the hall as he was not going to make that place a jumping-off ground for communists in Dublin. Another member of the audience called on the Chairman, Mrs. Buckley to allow Goold to speak, but she screamed out that he would not be allowed to speak as he had attacked Hitler.\n\nApart from the prominence given to the I.R.A. in this case, I have heard nothing more concerning this organisation since last report.\n\n31st January, 1946.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:38:18.138185+00:00",
+  "page": 16,
+  "total_pages": 103
+}

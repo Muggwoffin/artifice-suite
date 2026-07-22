@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "die durch ihre gezeigte Unf\u00e4higkeit und ihre Feigheit gegen\u00fcber den Nazis an der Verw\u00fcstung Europas und der Welt mitschuldig sind.\n\nWenn die deutsche Opposition jetzt nicht zu einer Organisation des Kampfes gegen Hitler kommt, wird die Opposition nach dem Kriege in Deutschland so machtlos sein, wie sie es nach 1918 war.\n\nHitler, der Nationalsozialismus, muss auch in Deutschland geschlagen werden. Das ist die Aufgabe der Opposition.\n\nDie deutschen Refugees bzw. Emigranten, die die M\u00f6glichkeit oder Wirksamkeit einer revolution\u00e4ren Arbeit in Deutschland heute leugnen, tun das aus Ignoranz; da sie noch niemals revolution\u00e4r gearbeitet haben, k\u00f6nnen sie die Bedeutung und die Wirksamkeit einer konspirativen Arbeit in Deutschland auch nicht ermessen. Nur Ignoranz kann die bedeutende Arbeit des Spartakus-Bundes w\u00e4hrend des Weltkrieges 1914/18 zu leugnen versuchen.\n\nEine der Ursachen der mangelnden Kraft der deutschen Opposition ist der fehlende leidenschaftliche Hass gegen das Hitler-Regime. Hass ist aber eine Quelle der Energie.\n\nBUND DEUTSCHER REVOLUTION\u00c4RER SOZIALISTEN - B D R S\n\nNovember 1941/August 1942",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:20:36.136736+00:00",
+  "page": 57,
+  "total_pages": 90
+}

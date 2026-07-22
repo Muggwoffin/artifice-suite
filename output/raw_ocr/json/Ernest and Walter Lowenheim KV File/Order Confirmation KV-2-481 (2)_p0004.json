@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET\nTelephone No.\nS.L.O. DOUGLAS 1994.\n\nBOX No. 35,\nG.P.O.,\nDOUGLAS,\nISLE OF MAN.\n\nLG/1/12(190)\n\nJune 21st, 1941.\n\nDear Pilkington,\n\nReference your PF.49542/B.4.c. of June 14th,\n\nI am returning you the photograph of Walter LOEWEINHEIM as Hans JAEGER is no longer in the Isle of Man.\n\nHe was released on February 27th to 39, Kensington Park Gardens, W.11, and is now working for Sykes. Captain Johnson states he was once before shown a photograph supposed to be of the man at Prague, but failed to identify it as such.\n\nYours sincerely,\n\nValentine Amittagh\n\nR. PILKINGTON, Esq.,\nBox No. 500,\nG.P.O.,\nOXFORD.\nDM.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:00:24.471233+00:00",
+  "page": 4,
+  "total_pages": 60
+}

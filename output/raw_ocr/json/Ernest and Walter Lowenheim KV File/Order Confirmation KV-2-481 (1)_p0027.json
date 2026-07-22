@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INCOMING DOCUMENT.\n\nreceived from\non\nat a.m. p.m.\nSenders Reference (or File No.)\nSchedule No.\n\nDelivered to\non at a.m. p.m.\nPassed for action to\non at a.m. p.m.\n\nR for former papers or traces\n\nBERWICK, Frederick William N.T.\n\nQUICK, William N.L.T.\n\nLOCKHART-TERVIS, P.F. 48931 Est. Bensford\n\nLUCKUCK, Henry N.T.\n\nTHAMES FLU-SITE PF. 49542 9/1/40\nENGINEERING Co LTD LOEWE NHEIM S.A. CS 9/2/40\nList 258 (257) 3a 3a ES(4) 10/10\n15.81\n\nQUICK TNO LTD PF. 49542 9/1/40\n(1928) 3a 3a\n\nExecutive Instructions\n\nP.A. Section Date\nFiled in PF. 49542, Vol. 2.\nCarded Names Subjects Places\nas Enclosure No. 90c. by",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:54:25.991874+00:00",
+  "page": 27,
+  "total_pages": 64
+}

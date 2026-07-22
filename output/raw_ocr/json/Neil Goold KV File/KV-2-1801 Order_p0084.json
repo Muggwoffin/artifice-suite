@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Special Branch,\nNew Scotland Yard,\nLONDON, S.W.I.\n\n12th April 1939.\n\nM.I.5.\n\nI am sending you, herewith, copies of a letter and report received at this office from the Dublin Police, regarding one Hamilton N.S. Gould Verschoyle.\n\nThis man has come under notice of this department, when he arrived at Harwich from the Hook of Holland on the 3rd January 1933, travelling on Irish Free State Passport No. A. 11399, in which he was stated to be a student.\n\nA copy of a report regarding his arrival was forwarded to you on the 4th January 1933.\n\nCHIEF CONSTABLE.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:47:58.494806+00:00",
+  "page": 84,
+  "total_pages": 103
+}

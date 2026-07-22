@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "POSTAL & TELEGRAPH CENSORSHIP. SUBMISSION No. PO/35019/41\nP.C.72\nTerminal Mail Air Surface\nDM 4.6.41.\n\nLetter from S. RETZLAW\nAddress 24 COMPAYNE GARDENS\nLONDON\nN.W.6.\nDate of letter or postmark 29.5.41.\n\nTo\nMR. VALERI MARCH\nC/O HERMANN KESTEN\nHOTEL PARK PLAZA\n50 WEST 77TH STREET\nNEW YORK CITY.\n\nLanguage GERMAN\n\nORIGINAL LETTER:\nSubmitted X Photographed\nRetained Released\nReturned to Sender\n\nSUBMITTED TO:\nOrig M.I.5.\nComment PRESS\nS.E.\nINF\nBBC\n\nSeen by: Naval Adviser Air Adviser M.I.12\n\nSUBJECT PO/09165/41\n(Include necessary references to Watch Lists, with Authority requiring the Watch)\n\nWriter presumably a german criticizes British unpreparedness. He asserts that the Editors of the ZEITUNG were Nazis until 1938 and that the Social Democrats here are afraid of a future vendetta.\n\nEXTRACTS\n\"Only today, the 29.5, I received your letter of 27.III from Lisbon! I am giving the letter to the proper quarter, they will find out where the letter lay for so long - Certainly at the Censorship.\nI would be very pleased if we could work a bit - There is much to be done. But here there is very very little understanding for political work. Americans surely understand much more about it. The English think they could beat Germany in the field. That of course might also be possible; but perhaps only after 6-8 years. The Germans are immeasurably better-armed and prepared than in 1914. Political work is certainly being gradually grasped but much time may yet pass before it is begun. A German paper \"Zeitung\" has appeared here already - the authors are however person, who were Nazis themselves till 1938. The Wireless on the other hand is still more idiotic. A row of former actors sit there who consider all they",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:45:54.266021+00:00",
+  "page": 13,
+  "total_pages": 96
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "House where NILSBON entered shortly afterwards, and both remained until 7.5. when they visited the Criterion Brasserie, Jermyn Street for 40 minutes and then went home.\n\nNILSSON was previously seen when she left 6, Cornwall Gardens, carrying attache case, at 3.15. when she went to Norway House, from 3.50. to 4.45. then to Royal Institute of International Affairs, Chatham House, as previously mentioned.\n\nNote. A woman named \"Saran\" occupies the basement flat at 8, Blenheim Road, but no alien of that name appears to be registered at Bow Street.\n\nThe occupants of Flat 37, Hartington Court are said to be a British subject named WEST and his wife. They are said to have been there about 6 weeks and to have arrived from Vienna where he is stated to have held a good position as Excise Officer.\n\nWEST's furniture was apparently brought to England under the supervision of the Custom and Excise. His wife is a native of Austria.\n\nFriday, 5th April:\n\nHODANN and NILSSON visited Chatham House at 2.30 p.m. the latter leaving at 4.15. and went to Norway House for 40 minutes and then returned to Chatham House where she and HODANN remained until 7 p.m. when they went back to Cornwall Gardens.\n\nSaturday, 6th April:\n\nHODANN at 12.50. posted letters, bought newspaper and returned to his lodgings. Woman out shopping. Nothing important seen.\n\n(sd) J.O. S.11.\n\nThis is Hodaun's divorced wife Maria Hodaun n\u00e9e Saran who is correctly registered under Hodaun.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:21:26.569042+00:00",
+  "page": 15,
+  "total_pages": 131
+}

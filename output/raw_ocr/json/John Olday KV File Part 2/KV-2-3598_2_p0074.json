@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Telephone No. 3213.\nT.H.\nReference No. :-\nS.B. Gen. 164/44.\nYour Reference :-\nSub. 43/12.\n24th July 1944.\nPOLICE HEADQUARTERS,\nLAW COURTS,\nCARDIFF.\nEncls. CONFIDENTIAL.\n\nSir,\n\nArthur William OLDAG @ John OLDAY.\n\nI have to acknowledge the receipt of your letter of the 14th instant and enclosures respecting the above named man. Discreet enquiries have been made and so far as can be ascertained he has not contacted any of the Chinese resident in this City. Certain arrangements have been made which should ensure the Police being informed in the event of OLDAG seeking shelter in a Chinese establishment here.\n\nThe photographed specimen of this man's handwriting has been copied and the copy is being retained for reference purposes. The original is returned herewith as requested.\n\nI am,\nSir,\nYour obedient servant,\n\n[signature]\nChief Constable.\n\nCaptain G.E. Callaghan,\nBox No. 500.,\nCardiff.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:59:46.838920+00:00",
+  "page": 74,
+  "total_pages": 91
+}

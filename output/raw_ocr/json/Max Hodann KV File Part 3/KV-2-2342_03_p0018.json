@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Chief Constable's Office,\n\nOur Ref.\nYour Ref. PF.43817/D.S.9.a. Canton, Cardiff.\nSECRET.\nSECRET.\n29th October, 1935.\n\nBox. No. 500,\nParliament Street B.O.,\nLONDON. S.W.1.\n\nDear Sir,\n\nMaes-yr-Haf Educational Settlement, Trealaw.\n\nIn reply to your letter of the 24th instant:\nI beg to forward herewith a good report which has been submitted to me by the local Police officer in the district where this Settlement is situated, and which, I think, will give you the information you require.\n\nAs far as we are aware, this Settlement has always been very well conducted, and we have received no hint of any Communistic leanings in connection with their activities.\n\nYours faithfully,\n\nLionel Lindsay\nChief Constable.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:27:16.640901+00:00",
+  "page": 18,
+  "total_pages": 99
+}

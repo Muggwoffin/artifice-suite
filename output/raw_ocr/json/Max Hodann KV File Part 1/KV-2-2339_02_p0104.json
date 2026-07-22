@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Extracts from Medical Directory 1935.\n\nDr. Otto BODE.\n\n14a, Manchester Square, W.1.\nM.R.C.S. Eng: L.R.C.P. London 1927.\nPhysician German Embassy. Hon. Assistant Physician German Hospital.\n\nDr. Edgar OBERMER.\n\nM.D. Lausanne 1920. M.R.C.S. Eng:\nL.R.C.P. Lond. 1923. Lausanne and St. Bar. Cons.\nApplied Biochen, Marylebone Rhumatism Centre;\nAsst. Phys. Margaret Street Hospital; Fel. Royal Soc.\nMedicine; mem. American Soc, Study Internal Secretions\nand Soc. de Chimie Biologique; late medical superintendent\nPreston Hall, Aylesford. H. Phys. Cambs Tuber. Colony,\nPapworth; Clin Asst. Great Ormond Street Childrens Hos.\nand Mount Vernon Chest Hosp.\n\nExtract from Medical Register 1935.\n\nDr. Rudolf Edward ELKAN.\n\n14a, Manchester Square.\nL.R.C.P. Edin. 1934; L.R.C.S. Edin. 1934;\nL.R.F.P.S. Glasgow 1934.\n\n(sd) H.H.\n\nNote. There is a record at Bow Street of one O. BODE\nbecoming a naturalised British Subject, but his full\nChristian name is not given and no other particulars\nare available.\n\n(sd) H.H.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:32:51.951656+00:00",
+  "page": 104,
+  "total_pages": 131
+}

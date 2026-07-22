@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "M.I.5.\n\nYour letter L.183(608)DS/DyD. of the 2-10-39 states that OLDAG is well-known to you. All copies of Special Branch reports regarding this man have been sent you.\n\nIn June, 1941, he came under notice of Police for indulging in a series of indecent practices with John Thornton HARE, age 15, No action, however, was taken against him.\n\nS.B.\n24-9-41.\n\nENCL\n25 SEP 1941\nTO DyD. q/c 26\nREF Direct",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:27:51.956298+00:00",
+  "page": 68,
+  "total_pages": 98
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "EXTRACT.\n\nP.F.43817.                HODANN.\n\nO.F. 42/17.                2a.                26.2.44.\n\nBrit. Legation Stockholm.    C.2364/712/18 of 12.2.44.\n\n17.3.44.                HMFB                R.4.\n\nCross reference to report on formation of Free German League of Culture in Sweden.\n\nReports that one of the signatories of the announcement of the creation of the Kulturbund in Sweden was Dr. Hodann, a writer on sexual psychology of some eminence. He was one of the principal speakers at the first meeting held in the Stockholms Borgarskola on 28.1.44. He explains that, contrary to general opinion, the Kulturbund was not formed to conduct sympathy propaganda for Germany. He then outlined the aims of the League concluding by stating that Jews would certainly have a part to play in rebuilding Germany after the war.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:58:42.279300+00:00",
+  "page": 19,
+  "total_pages": 104
+}

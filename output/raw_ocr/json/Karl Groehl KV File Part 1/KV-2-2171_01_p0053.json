@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "For:\nOriginal filed in: P.V. 52095 Vol. 2. at 162b.\n\nS. Szymonczyk Esq.\n106, Oakwood Court 106\nLONDON W. 14\n\n15. III. 41\n\nMein lieber,\n\nheute liege ich im Bett, ich habe mich vergiftet.\n\nMontag habe ich ein Rendezvous um 1 Uhr, darum kann ich nicht kommen.\n\nBitte kannst Du Montag um 6 abends zu mir kommen? Die Steno habe ich n\u00e4mlich zu 6 bestellt.\n\nWas hast Du eigentlich zu Uriewitsch geredet?? Der wird Dich jetzt als Referenz angeben! Du hast ihm gesagt, dass Du bei France Libre bist. Er hat dass schon weit gesagt und ein anderer Bekannter erz\u00e4hlte es mir schon.\n\nSei vorsichtiger!\n\nBesten Gruss Karl\n\nGru\u00df an Madame.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:51:29.976549+00:00",
+  "page": 53,
+  "total_pages": 96
+}

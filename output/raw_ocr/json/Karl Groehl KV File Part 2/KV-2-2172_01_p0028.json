@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "p.a. for P.F. 46464. Y. Box 808. GROEHL.\nOriginal filed in S.F. 97/Germany & Austria/2. 58a\n\nExtract from List of GERMAN POLITICAL REFUGEES in GT. BRITAIN for War Department, Washington, dated 11.10.44.\n\nSocialists and Democrats:-\n\nGROEHL, Karl & REZIAW, Stanislas. PB 46464 Y Box 808.\n\nBorn: Schneidenm\u00fchl, 10th February 1896.\nRace: Aryan.\n\nDuring the last war GROEHL was a leading member of the Spartacus League, and was imprisoned for his anti-militarist activities. He was one of the founder members of the German Communist Party, and for a short time held a position in the Munich police presidency in the Bavarian Soviet Republic in 1919. Later he worked for Willy MUEHLEBERG's Communist publishing concern in Berlin and was frequently in Moscow. After Hitler's advent to power he fled to Switzerland, went over to the Trotskyists and acted for some time as Trotsky's representative for Central Europe with headquarters in Basel. He was expelled from Switzerland and went from there to the Saar territory, where he took part in the plebiscite campaign. He then broke with Trotsky and moved to Paris, where he was one of a group of German refugees in various countries engaged in obtaining information about German military matters. After the collapse of France he escaped via Spain and Portugal, and obtained Polish papers in the name of REZIAW, with which he came to England in October 1940. In 1942 he formed a so-called League of German Revolutionary Socialists, of which he is virtually the sole member, and which has issued from time to time memoranda on the future Germany.\n\nHe advocates a federalist and socialist solution of the German problem, and is in favour of complete German disarmament, the final destruction of German militarism and the socialization of big industry and the Junker estates.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:15:18.947839+00:00",
+  "page": 28,
+  "total_pages": 90
+}

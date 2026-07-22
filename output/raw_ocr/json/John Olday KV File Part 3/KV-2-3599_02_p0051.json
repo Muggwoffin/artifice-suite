@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "BOX No 500,\nPARLIAMENT STREET B.O.,\nLONDON, S.W.1.\n\nREQUEST FOR PASSPORT OR PERMIT PAPERS.\n\nPASSPORT AND PERMIT OFFICE,\nDARTMOUTH STREET, S.W.1.\n\nMay we please borrow:\u2014LATEST PASSPORT FILE [X] LATEST PERMIT FILE [ ]\n(Mark item(s) required.)\n\nfor the following:\u2014\n\nOUR FILE NO.: PF.66,074/Y.\n\nSURNAME: OLDAG,\n\nCHRISTIAN NAMES: William Arthur. (@ John OLDAY).\n\nPLACE AND DATE OF BIRTH: London 10.5.1905.\n\nPROFESSION: Author.\n\nADDRESS: 15 Orsett Terrace, London, W.2.\n\n*PARTICULARS OF TRAVEL ABROAD:\n\n*NUMBER AND DATE OF PASSPORT: Passport subsequent to C.34071 issued by British Consulate in Hamburg in 1937.\n\nSection...........B.1.c............ Signature.............M. R. Sercombe.\n\nDate.............21.9.50.\n\n* Where known.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:16:23.270214+00:00",
+  "page": 51,
+  "total_pages": 71
+}

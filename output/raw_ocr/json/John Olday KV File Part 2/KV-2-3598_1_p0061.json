@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Subject: Rejoining from Desertion.\n\nThe Under-Secty of State,\nThe War Office (F.3M), Room 055,\nLONDON. S.W.1\n\nRef: D2/CC/13095115\n\nWith reference to Army Form C2127-4 dated 11th September 1945, in respect of No. 13095115, Private, OLDAG, W.\n\nAttached herewith copy of War Office memo PF.66074/F.3.m. dated 1st April 1944 as requested.\n\nP.E. Haigh\nfor Colonel,\nO.i/c Pioneer Corps Records.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:45:35.868727+00:00",
+  "page": 61,
+  "total_pages": 92
+}

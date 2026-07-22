@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F.49542/B.4.b/JGC.  28th October, 1941.\n\nDear Bruce,\n\nI must apologise for not having previously answered your letter, COS/2985/40 of 14.10.41 concerning THAMES GENERAL INVESTMENT CO. LTD.\n\nIt appears from the copies of documents enclosed in your letter of 9.8.41 that the patent rights in the Flu Tite Damper have been assigned not to QUICKTHO (1928) LTD., but by QUICKTHO (1928) LTD. to THAMES 'FLU-TITE' ENGINEERING CO. LTD.\n\nThis last named company was registered on 22.3.41 to acquire these rights and has a nominal capital of \u00a310,000 in \u00a31 shares of which QUICKTHO (1928) LTD. hold 9,000.\n\nOn 23.4.41 the directors of THAMES FLU-TITE ENGINEERING CO. LTD. were:-\n\nFrederick W. BERWICK, British, of 97 Barkston Gardens, S.W.5, engineer.\n\nWilliam QUICK, British, of 12 Tudor Way, Ealing, W.5., coachbuilder.\n\nCol. Beresford Clayton Lockhart JERVIS, British, of Bramshott Lodge, Liphook, Hants, Consulting engineer, Director of Notting Hill Electric Lighting Co. Ltd.\n\nHenry Benjamin LUCKUCK, British, of 12 Brookfield Avenue, W.5, Chartered accountant.\n\nQUICKTHO (1928) LTD. was registered on 2.3.28 and has a nominal capital of \u00a3125,000 in two shilling shares.\n\nW. C. Bruce, Esq.,\nTrading with the Enemy Section,\nFinance Department,\nBOARD OF TRADE.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:19:54.592040+00:00",
+  "page": 59,
+  "total_pages": 68
+}

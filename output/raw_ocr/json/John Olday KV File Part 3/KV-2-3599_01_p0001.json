@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF 66074 FILE CLOSED V3\nOLDAG, ARTHUR WILLIAM\nHISTORICAL\nFILE CLOSED\nR0213\nSEE ALSO LIST INSIDE COVER\nKV2/3599\nS. 960 Edn2\nPF 66074 FILE CLOSED V3",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:02:35.782245+00:00",
+  "page": 1,
+  "total_pages": 57
+}

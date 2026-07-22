@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "To Special Branch\n\nRegistration Card attached\n\n2.4.41 B4C\n\nM.I.S.\n\nRegistration card attached\n\n3/A/H.\n\nChief Inspector.\n\n(Sgd) A. Harwood, P.S.\n\nREC. NO 141\nENCL eq. card\n5 APR 1941\nTO B.4C\nREF P.E. 52095",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:49:23.314528+00:00",
+  "page": 40,
+  "total_pages": 96
+}

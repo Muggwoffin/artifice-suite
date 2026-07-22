@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "13.\n9.6.33. To C.C. Birmingham in reply to 12a.\n\n14.\n12.6.33. From C.C. Birmingham acknowledging 13a.\n\n15.\n18.11.33. Cross reference to correspondence between the Passport Office and the High Commissioner of the Irish Free State regarding -\n\n16.\n30.5.34. Intercepted cablegram from NEIL, Moscow, to VERSCHOYLE.\n\n17.\nS.3a.\nPlease ascertain from Voters' List names of occupants of 1 Sheffield Terrace, London.\n\nS.10.\n19.6.34.\n\n18.\nS.10.\n25/3/34\nPlease see list of names as shown in the Voters' List under the address 1, Sheffield Terrace, W.8., at 18a.\n\nS.3.a.\n23.6.34.\n\n19.\n23.6.34. Intercepted cablegram from NEIL, Moscow, to VERSCHOYLE.\n15.4.35. Cross reference re GOOLD-VERSCHOYLE from S.I.S. report.\n\n20.\n25.4.35. Passport papers requisitioned.\n\nNote. These have been requisitioned owing to the fact that a Captain VERSCHOYLE is mentioned in connection with M.A. MATLACHOVA @ Erna GRUBICH q.v. (PF.43925) and it is desired to ascertain whether he can have any connection with the subject of this file.\n\n21.\n29.4.35. Passport papers.\n\n21a.\n\n22.\n30.4.35. Passport papers passed to S.3.a. to return.\n\n23.\n7.5.35\nCopy of telegram from ZASLAVSKY, Moscow to SOVCCONSUL London.\n\n24.\n17.5.35\nPapers (ppt.) for Brian GOOLD-VERSCHOYLE applied for through S.3a.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:45:32.672376+00:00",
+  "page": 67,
+  "total_pages": 103
+}

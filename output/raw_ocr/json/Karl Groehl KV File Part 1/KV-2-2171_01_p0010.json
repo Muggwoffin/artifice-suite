@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "85.\n\n20.5.41. Minute from B.13. to S.O.2. attaching minute from S.4.c. 85x.\n23.5.41. Translation of letter from GROEHL to SZYMONCZYK, 85a.\n\n86.\n\n30.5.41. Translation of int. letter from RETZLAW to SZYMONCZYK. 86a.\n31.5.41. Censor's comment on int. letter from RETZLAW. 86b.\n\n87.\n\n4.6.41. To B.13. asking them to forward a copy of letter at 86a to S.O.2.\n\n\"FILE CLOSED\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:45:27.716526+00:00",
+  "page": 10,
+  "total_pages": 96
+}

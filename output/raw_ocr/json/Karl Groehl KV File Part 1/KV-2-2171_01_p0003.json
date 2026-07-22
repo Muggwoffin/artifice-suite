@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "1.\n9.5.36. Cross reference to intercept letter re GROEHL\n\n2.\n29.5.36. Cross reference to intercept letter re GROEHL.\n\n3.\n14.12.36. Cross reference to S.I.S. report re GROEHL.\n\n4.\n17.12.36. Cross reference to letter to S.I.S. re 3a.\n\n5.\nB.\n\nHISTORICAL\n\nSince we cancelled the check on Otto LEHMANN RUSSBUELDT in October 1936 new developments have made him again of interest to us. The situation in Spain, the various peace movements, and the workings of United Front policy in general have brought many members of the German emigre society with which he is in touch both in London and Paris into renewed activity. In particular two of RUSSBUELDT's contacts, Karl OTTEN and Karl GROEHL, have been appointed 'collaborators' for the Paris secretariat or Munzenberg Committee. Entirely on account of the RUSSBUELDT correspondence we were able to furnish S.I.B. with some interesting material about these two men.\n\nAt the time of the Cancellation of the previous check, we were inclined to regard the RUSSBUELDT material as of somewhat academic interest, and as it was prolific it did not seem fair to burden the G.P.Q. with so much work for such slender results. In view of our renewed interest I should like your permission to re-impose the H.O.W., but to limit it to correspondence from abroad. There is a chance that we may get some valuable insight thereby into the workings of the MUNZENBERG Committee.\n\nHerewith H.O.W. for signature, if approved\n\nS.9.\n17.12.36. (sd.) D.G.W.\n\n(H.O.W. re-imposed on LEHMANN RUSSBUELDT on 21.12.36.)\n\n6.\n9.3.37. Extract from S.I.S. report re GROEHL.\n\n7.\n4.10.37. Cross reference to intercepted letter to OTTEN from GROEHL.\n\n8.\n11.10.37. Cross reference to intercepted letter from GROEHL to OTTEN.\n\n9.\n19.10.37. Cross reference to intercepted letter re GROEHL.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:44:14.167919+00:00",
+  "page": 3,
+  "total_pages": 96
+}

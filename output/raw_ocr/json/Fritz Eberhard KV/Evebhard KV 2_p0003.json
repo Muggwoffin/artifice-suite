@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\401aa01628e87a910b126024268e5670.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "10th September, 1949\n\nDr. Fritz EBERHARD, who was in this country during the war when he belonged to the I.S.K. Group (Militant Socialist International), has been put in charge of production at Radio Stuttgart. EBERHARD used the alias Helmut RAUSCHENPLAT in this country. After the war he joined the German Social Democratic Party and returned to Germany. He was for a time Secretary of State in the Wurttemberg Government in Stuttgart, where he was a Socialist member of the Wurttemberg Diet before the war. Until recently he was Head of the Peace Office in Stuttgart, which is a substitute for the Western German Ministry for Foreign Affairs.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:31:22.764453+00:00",
+  "page": 3,
+  "total_pages": 24
+}

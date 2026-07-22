@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nSUBJECT:\nGROEHL\n\nExtract from Note of Interview with Bedford. Re SZYMONCZYK and LECOUTRE. B.4.c. 27.2.41.\n\nBedford mentioned that Mrs. ORLOW had told him that SZYMONCZYK regularly met a German whose Christian name was Karl who had represented that he was acting for the British Intelligence Service. Bedford believed that SZYMONCZYK and Karl often met at the Jewish restaurant at 55(?) Berwick Street.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:52:19.698231+00:00",
+  "page": 59,
+  "total_pages": 96
+}

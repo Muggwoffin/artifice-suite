@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Neill GOULD: Born in Dublin and educated at Bray and later at Oxford. Travelled to France and Germany and in August, 1930, visited the U.S.S.R. where he studied at Liekysy Nickbd(?), after which he was for a time on the staff of \"Isvesta\", the official organ of the Communist Party in the U.S.S.R. While there he married a Russian and there are two children of the marriage. Gould returned to Dublin on 16.4.1938 and immediately became an active member of the local Communist Party and from May, 1938 to June, 1939 was responsible for the publication of an organ known as the \"Workers' Bulletin\". In June, 1939 he replaced this publication with the \"Irish Workers' Weekly\". In January, 1940, he was convicted on a charge of obstruction while leading an Unemployed Demonstration in Dublin and fined \u00a32.\n\nGould's father was a Barrister-at-law and his mother was a daughter of a Colonel F. Le-Mesurier.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:40:26.178977+00:00",
+  "page": 29,
+  "total_pages": 103
+}

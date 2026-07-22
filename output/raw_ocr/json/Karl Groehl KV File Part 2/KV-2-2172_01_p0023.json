@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "was speaking at a Free German youth meeting in Holborn. In 1946 he was writing in a pamphlet on German Communists under the name of SPARTAKUS. This pamphlet was published by the Fight For Freedom organisation and propagated ultra Vansittart views.\n\nYours sincerely,\n\nE.L. Spencer.\n\nH.A.R. Philby, Esq., O.B.E., S.I.S.\n\nEIS/MD",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:14:38.564329+00:00",
+  "page": 23,
+  "total_pages": 90
+}

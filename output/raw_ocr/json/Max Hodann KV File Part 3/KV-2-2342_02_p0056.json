@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Pfennig vor Mai zu bekommen, ist ausgeschlossen. Wir haben uns selbstverst\u00e4ndlich nicht begn\u00fcgt nur mit dem einen Regisseur zu verhandeln. Es laufen noch Besprechungen mit zwei anderen Gesellschaften. Auch hier liegen durchaus g\u00fcnstige Ergebnisse besprechungsm\u00e4ssig vor, aber auch hier ist ein Ergebnis ebenfalls nicht vor der neuen Saison, d.h. Mai zu erzielen. Ich schreibe Dir das so ausf\u00fchrlich, damit Du siehst, dass f\u00fcr mich die Dinge hier nicht ung\u00fcnstig liegen und dass ich mit einer Stabilisierung rechnen kann. Aus diesem Grunde m\u00f6chte ich selbstverst\u00e4ndlich auf alle F\u00e4lle noch einige Zeit hier bleiben, d.h. bis Mai durchhalten. Was mich betrifft, dar\u00fcber brauchen wir nicht zu sprechen, das muss ich ja schon seit Monaten selbst verantworten, aber die Verantwortung f\u00fcr Sonja kann ich in finanzieller Beziehung Dir nicht abnehmen. Aus diesem Grunde bitte ich Dich, mir genau mitzuteilen, wie Du Dir die finanzielle Regelung f\u00fcr Sonja denkst. Das muss geschehen bevor Du abf\u00e4hrst, denn wenn Du diese M\u00f6glichkeit nicht hast, bin ich gezwungen mit Dir mitzufahren. Ich habe f\u00fcr mich nur ein Minimum zur Verf\u00fcgung und zwar vorl\u00e4ufig nur bis Februar. Es ist ausgeschlossen auch das Kind davon zu ern\u00e4hren, zur Schule zu schicken und anzuziehen. Ich muss Dich leider vor diese Alternative stellen, aber ich weiss wirklich nicht wie ich es anders machen soll. Nat\u00fcrlich liegt mir mein Beruf sehr am Herzen und ich glaube, ich habe bisher ganz grosses Gl\u00fcck damit; denn niemand weiter hat hier in der Emigration solche Aussichten. Also bitte ich Dich sehr, mir sofort zu antworten, damit ich f\u00fcr die n\u00e4chste Zeit disponieren kann. Denn es gibt jetzt nur dieses eine Entweder-Oder.\n\nHerzlichen Gru\u00df und ein besseres \"Neues Jahr\"\nT.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:13:39.103832+00:00",
+  "page": 56,
+  "total_pages": 130
+}

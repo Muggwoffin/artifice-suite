@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "GROSS - REFERENCE.\n\nSUBJECT: Karl Groehl.\n\nOn 19.10.37., Grumbach wrote to Karl Otten and said that Groehl had received 1000 frs from the Comite d'Assistance and 2000 frs from other sources. That is was quite untrue that he had been refused help because he was not a jew and it is well known in Paris that the Comite help many political refugees when they are non-jews. It has also come to light that Groehl has formerly received help through Fritz Wolff.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:09:40.813153+00:00",
+  "page": 95,
+  "total_pages": 102
+}

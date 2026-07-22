@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSUBJECT:-\n\nThe following note is taken from S.I.S. note on different individuals engaged in anti Nazi activities.\n\nKarl Groehl.\n\nNominally independent, but cooperates with Karl Otten and J.F. Glas in London and with Munzenberg in Paris. Has contacts in Amsterdam and Sweden. Groehl, Otten and Glas are in direct touch with Wickham Steed.\n\nNB. see also chart at end of this report.\n\nOriginal in.............................................dated.......................\n\nS. Form 81.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:59:42.224537+00:00",
+  "page": 17,
+  "total_pages": 102
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM.\n\nFrom: E.1.A/c.\nTo: L.R. Major Langdon.\n\nAs GROEHL @ RETZLAW is apparently working for S.O.2. I am passing this Home Office enquiry to you to deal with.\n\nDate: 4.10.41.\nSignature: W.D. Robson-Scott.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:39:03.047221+00:00",
+  "page": 83,
+  "total_pages": 107
+}

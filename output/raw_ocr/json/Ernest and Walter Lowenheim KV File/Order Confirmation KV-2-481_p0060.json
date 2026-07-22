@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "On 4.7.41 the directors were:-\n\nFrederick William BERWICK\nWilliam QUICK\nHenry Benjamin LUCKCUCK\nCol. B.C. LOCKHART-JERVIS.\n\nParticulars as above.\n\nThe rights which the THAMES FLU-TITE ENGINEERING CO. LTD. now hold are held by them under licence from the patentees, Bruno Fritz KARTHAUSER and Walter LOEVENHEIM, who presumably receive information through the accounts rendered to them in respect of their royalties, which show where the furnaces, in which FLU-TITE dampers are installed, are situated.\n\nIt is unlikely under present circumstances that the patentees will put their information to improper use.\n\nCol. LOCKHART-JERVIS has come to our notice from time to time in connection with arms deals.\n\nYours sincerely,\n\nJ. G. Craufurd.\n\nJGC/JK",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:20:02.099317+00:00",
+  "page": 60,
+  "total_pages": 68
+}

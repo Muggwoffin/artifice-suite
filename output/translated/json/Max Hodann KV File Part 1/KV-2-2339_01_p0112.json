@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "From Alexis S. FINKELSTEIN, 13, Shelford Park, Great Shelford.\n\nTo Dr. M. HODANN, Kynance Court, Gloucester Road, S.W.7.\n\nDate of Letter 12.4.35.\n\nDate of Postmark 12.4.35.\n\nSUMMARY OF CONTENTS\n\nHopes to see HODANN and [Frau LINDBAEK] on Sunday.\n\nSuggests sightseeing etc. Says if programme does not meet with approval of addressee will he telephone him at Trumpington 233 before 12.0. as he has no telephone at his address.\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "translated_text": "To Dr. M. Hodann, Kynance Court, Gloucester Road, S.W.7.\n\nFrom Alexis S. Finkelstein, 13 Shelford Park, Great Shelford.\n\nDate of Letter: April 12, 1935.\n\nDate of Postmark: April 12, 1935.\n\nSUMMARY OF CONTENTS\n\nHopes to meet with Hodann and [Frau Lindbaek] on Sunday.\n\nSuggests sightseeing, etc. States that if the proposed itinerary does not meet with the recipient's approval, he will telephone him at Trumpington 233 before noon, as he has no telephone at his residence.\n\nFor translation, please refer to the attached sheet.\n\nCOMMENT:\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n[Date]\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:48:06.222391+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The text was clear and legible. The translation choices were accurate and consistent with the original meaning. Minor adjustments were made for clarity and formatting, but the core information remains unchanged.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

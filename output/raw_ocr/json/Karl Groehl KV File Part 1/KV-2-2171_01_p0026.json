@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "With regard to 2., I understand that the report from S.I.S. originated from the Deuxi\u00e8me Bureau, and that the Deuxi\u00e8me Bureau informant was thought to be a very reliable source.\n\nIt will be seen from 119a that Mr. Turner (C.8) is satisfied that the existing evidence against SEYMONCZYK and LECOUTRE is sufficient to justify detention under article 12 (5a) of the Aliens Order 1920, and that, with the Lindley Committee as at present constituted, the odds are in favour of any appeal being unsuccessful.\n\nIt is, however, material to bear in mind that SEYMONCZYK and LECOUTRE are, and have been for some months, living in the same flat as Andre LABARTHE, the Editor of \"La France Libre\", and the possibility of political repercussions from this angle, in the event of the detention of SEYMONCZYK and LECOUTRE, should not be overlooked.\n\nI have reason to believe that SEYMONCZYK and LECOUTRE play a large part in the production of \"La France Libre\" and have thereby been able to build up an admirable cover for espionage activities. I am given to understand that SEYMONCZYK writes a number of the articles which appear under LABARTHE's name in \"La France Libre\" and there is no doubt that LECOUTRE is consulted upon any major questions affecting that publication.\n\nIt is possible that the activities of SEYMONCZYK and LECOUTRE are purely politically communistic and not espionage, but on the other hand the fact that there has been no evidence of espionage activities since their arrival in this country is not conclusive as it is quite consistent with the general practice of Soviet agents that they should spend a considerable time after their arrival in this country in establishing a bone fide business cover for any underground activities in which they may wish to engage.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:47:43.420471+00:00",
+  "page": 26,
+  "total_pages": 96
+}

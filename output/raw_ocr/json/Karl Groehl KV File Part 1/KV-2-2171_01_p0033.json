@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F. 52095/B.4.c.  28th March, 1941.\n\nDear Whetmore,\n\nI have received through Colonel Hinchley-Cooke your ECW/KV/657 of 25.3.41 respecting SZYMONCZYK.\n\nYou do not, however, deal with the portions of my letter of 18.3.41 relating to Stanislas RETZLAW and I should be grateful if you would do so at your earliest convenience.\n\nI particularly want to know whether the man associating with SZYMONCZYK is identical with the RETZLAW whom you know and if so the significance of this regular association. It may be that you are satisfied that RETZLAW's activities are entirely innocent, but I should be glad to know your views of RETZLAW's reliability from the security point of view.\n\nI am writing to you direct with the approval of Colonel Hinchley-Cooke in view of the urgency of the matter and of the fact that the address of Colonel Hinchley-Cooke's office is in process of being changed. I am sending Colonel Hinchley-Cooke a copy of this letter.\n\nYours sincerely,\n\nR. Pilkington.\n\nMajor Whetmore,\nRoom O55A.\nWar Office.\nRP/DB.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:48:39.495541+00:00",
+  "page": 33,
+  "total_pages": 96
+}

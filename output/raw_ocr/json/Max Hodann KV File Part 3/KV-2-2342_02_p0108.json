@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "of Loch Tay.\n\nI wonder if Karen is still at Motysto. Her last letter had no address, & something she said seemed to suggest she might have moved, though otherwise I should have assumed the address was still the same. Her removals are a bit confusing & as often as not I write to Clara's.\n\nBest wishes to Mrs Finkelstein, and to Hilde-Marie\u2014especially if she has gone to her new school.\n\nYours sincerely,\n\nL. F. Pendlebury",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:18:51.567681+00:00",
+  "page": 108,
+  "total_pages": 130
+}

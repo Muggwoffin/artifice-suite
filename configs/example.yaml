@@ -32,3 +32,8 @@ ollama_think: false
 # Leave unset unless you have actually seen one: a cap that bites truncates the
 # document silently.
 max_output_tokens: null
+
+# Content-preservation guard for the structure stage. When the model's output
+# has altered any word, the original text is kept instead, so a page is either
+# structured or untouched — never reworded.
+structure_guard: true

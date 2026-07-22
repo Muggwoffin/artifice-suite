@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Max LICHTENSTEIN, Copenhagen.\n\nTo Dr. Max HOBANN, Kynance Court, 6, Gloucester Road, S.W.7.\n\nDate of Letter -\n\nDate of Postmark 30.3.35.\n\nSUMMARY OF CONTENTS\n\n\"You can thank your stars and Lisa that you have been allowed to enter England. My emigration was terribly difficult.........\"\n\nSays that it is important that Lisa should publish her memorandum and suggests sending it to the English, French and Dutch. \"May we publish the work\"?\n\nAcknowledges letters from Frau MICHAELS. States that addressee's letter to J.(?)T. was short and reasonable and writer has seen him only once since HODANN's departure.\n\n\"How is our old friend [BEER\"?]\n\nStates that he has an acquaintance in London named Maurice (?) RAPAPORT who lives at 131, Regent Street, W.1. who is friendly with one STANLEY \"a merchant of good repute who is certain to possess a lot of money.\"\n\n\"That lazy fellow HEINZ should get busy about the Englishman. If he has got money he might start business in Holland and make a lot of money.\"\n\nFor translation see attached sheet. \"If you should speak to(?) RAPAPORT don't mention my political views nor my present miserable lack of money. He need not know either.\"\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:23:53.766269+00:00",
+  "page": 40,
+  "total_pages": 131
+}

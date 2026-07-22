@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Tel: Bournemouth 7140, Ext. 29\nRef. D2/CC/13095115\n\nSubject: REJOINING FROM DESERTION\n\nThe Under-Secty. of State,\nThe War Office (F.3M), Room 055,\nLONDON, S.W.1.\n\n13095115 Private OLDAG, W.\n\nReference your memo. PF.66074/F.3M, dated 1 Apr 44.\n\nIt is notified for information that the above-named soldier is due to be released from H.M. Prison, Brixton on 24 Sep 45.\n\nPrivate OLDAG will be escorted to No.12 Pioneer Corps Holding & Training Unit, and will be tried for deserting H.M. Service with effect from 27 Mar 43 until apprehended by Civil Power on 17 Nov 44.\n\nA.A.O.,\nfor Colonel,\nO. i/c Pioneer Corps Records",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:46:04.240136+00:00",
+  "page": 65,
+  "total_pages": 92
+}

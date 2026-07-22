@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Home Office,\nAliens Department,\nP.O. Box No. 2,\nBournemouth,\nHampshire.\n\nL 5027/6.\nPF. 49542/E.5.(3)\n\n23rd October, 1941.\n\nMr. W.C. Edwards.\nM.I.5 (B.8).\n\nInstructions have to-day been given for the release of Walter \"LOEWENHEIM\" now interned, Category 19.\n\nHe is to be exempted from the Special Restrictions imposed by Articles 6A and 9A of the Aliens Order, 1920, as amended.\n\nThe Aliens is to proceed direct to another place.\n\nON THE BLACK LIST.\n\nENCL\n24 OCT 1941\nTO ES\nREF PF 49542\nVol. 2\nWith ADF 23/10\nRB",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:20:40.997649+00:00",
+  "page": 65,
+  "total_pages": 68
+}

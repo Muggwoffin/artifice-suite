@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM.\n\nFrom B.13 (Major Langdon) ....... To B.4.c (Mr. Pilkington)\n\nI attach copy of letter, ECW/KV/1096 of June 10th, from Whetmore, with reference to the LOEWNHEIM brothers.\n\nThe two photographs of the LOEWEHNEIM brothers are likewise returned herewith.\n\nDate 12.6.41.\n\nSignature P.H. Langdon\n\nS. Form 161. for Lieut. Colonel Hinchley Cooke.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:07:54.895063+00:00",
+  "page": 51,
+  "total_pages": 60
+}

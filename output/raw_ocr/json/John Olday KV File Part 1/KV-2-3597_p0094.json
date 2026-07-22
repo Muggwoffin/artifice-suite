@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "L.183/608/B.5b.\n\n14th October, 1938.\n\nDear Blank,\n\nI return herewith, with many thanks, the passport papers relating to Arthur William OLDAG, which were forwarded under your letter HB. of 13.10.38. I am very grateful to you for your assistance in this matter.\n\nYours sincerely,\n\nH. Blank, Esq.,\nPASSPORT OFFICE.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:31:32.515889+00:00",
+  "page": 94,
+  "total_pages": 98
+}

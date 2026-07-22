@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "98.\n23.7.41. Photostat copy of int. letter to RETZLAW with translation. 98a.\n24.7.41. Photostat copy of int. telegram from RETZLAW & translation. 98b.\n99.\n28.7.41. Minute from B.4.c. to B.13. ment. RETZLAW. 99a.\n100.\n8.8.41. Photostat copy of int. letter from GROEHL with translation. 100a.\n101.\n11.8.41. Copy of int. letter from ZACHARIAS to the B.B.C. enclosing letter for GROEHL Karl. 101a.\n102.\n30.8.41. Copy of int. letter from RETZLAW to Marcel ROLLIN. 102x.\n31.8.41. Int. letter from S. RETZLAW to Mrs. Marcel ROLLIN. 102a.\n103.\n22.9.41. Copy of minute from Colmore with reference to letter mentionin at 101a. 103a.\n104.\n4.10.41. Minute from E.1.A/c. to L.R. with reference to 103a. 104a.\n105.\n9.10.41. London Region note with reference to 103a. 105a.\n106.\n11.10.41. London Region note re telephone message from S.O.2. 106a.\n107.\n11.10.41. From S.O.2. confirming telephone message at 106a. 107a.\n108.\n11.10.41. Copy of extract from H.O. File for GROHL - minute from London Region. 108a.\n109.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:12:04.713076+00:00",
+  "page": 3,
+  "total_pages": 90
+}

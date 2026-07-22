@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\Rose Cohen Letters.tropy\\assets\\0d9875b7c9cf81c3294471748076abb1.jpg",
+  "stage": "raw_ocr",
+  "extracted_text": "there, about 3 hours. Hardly a soul stirred \u2014 & every speech was translated. They love talking here. In the evening we were entertained by the Village Co-ops, who gave us an enormous dinner, & still they went on talking, saying the same old thing over & over again. Tonight there will be more speeches in a grand final bust-up at the Bolshoi Theatre, ending up with Boris Goudour. I'm going late. I feel I couldn't bear another speech.\n\nHow are things w. you all? I've just heard from Budden about the Burns catastrophe! Has he gone mad? It just puzzles me. Do you think he deliberately meant it to be a wrecking motion, because he couldn't seriously believe it would be accepted. I feel very gloomy indeed about the Left. now \u2014 Robin's shoulders don't seem to be broad enough to bear it alone. Tell me, what is happening to Rath? I hear no word of him. Clements too, has he been fixed up yet? Sorry to ploy you with so many questions, but I hunger for news.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T13:07:18.286709+00:00",
+  "page": 1,
+  "total_pages": 1
+}

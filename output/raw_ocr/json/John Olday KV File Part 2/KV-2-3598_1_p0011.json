@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "134.\n\n2.8.45. To Governor, Brixton Prison acknowledging letter from OLDAG to WATSON TAYLOR 134a\n\n8.9.45. To Governor, Brixton Prison, returning letter from RICHARDS TO OLDAG. 134b.\n\n10.9.45. To Governor, Brixton Prison, returning letter from LEAN to OLDAG. 134c.\n\n12.9.45. To Governor, Brixton Prison, returning letters from LEAN & DEAS to OLDAG. 135.\n\n14.9.45. Correspondence from Officer i/c Pioneer Corps Records re OLDAG. 135a.\n\n136.\n\n17.9.45. To Western Command re OLDAG. 136a.\n\n22.9.45. Press cutting from \"Freedom\" re John OLDAG 136ab.\n\n5.10.45. Int. letter from A.W. OLDAG to M.L. RICHARDS. 136b.\n\n137.\n\n6.10.45. From Western Command in reply to 136a enclosing letter re OLDAG 137a.\n\n138.\n\n10.10.45. To Western Command in reply to 137a 138a.\n\n11.10.45. Photostat of note to Freedom Press handed in at Prestatyn, N. WALES. 138b.\n\n139.\n\n20.10.45. From HQ. Western Command re OLDAG. 139a.\n\n140\n\n20.10.45. Cutting re OLDAG from \"Freedom\" dared 20.10.45. 140a.\n\n141.\n\n3.11.45. From HQ. Western Command re OLDAG. 141a.\n\n142.\n\n10.11.45. To HQ. Western Command in answer to 139a and 141a re OLDAG. 142a.\n\n14.11.45. Photostat of letter from A.Wn OLDAG 142b.\n\n143.\n\n17.11.45. Press cutting from \"Freedom\" re OLDAG. 143a.\n\n144.\n\n26.11.45. From H.Q. Western Command re OLDAG. filed in 144a.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:37:53.481271+00:00",
+  "page": 11,
+  "total_pages": 92
+}

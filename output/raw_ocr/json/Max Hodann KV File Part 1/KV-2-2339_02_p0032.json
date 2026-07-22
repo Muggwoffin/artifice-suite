@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Edward R. ELKAN, 14a, Manchester Square, W.1.\n\nTo Max HODANN, Kynance Court, Gloucester Road, S.W.7.\n\nDate of Letter 5.4.35.\n\nDate of Postmark 3.4.35.\n\nSUMMARY OF CONTENTS\n\nNo covering note - merely encloses letter of introduction to H.J. LASKI, 5, Addison Bridge Place, W.14.\n\nEnclosure:\n\n\"Dr. HODANN is an old friend of mine and I should be very pleased if you could find time to see him and give him some advice how to get on in England. I am sure you would find him a most interesting person.\"\n\nStates that HODANN was formerly municipal physician, Berlin.\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials (date) 4.4.35.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:23:07.688699+00:00",
+  "page": 32,
+  "total_pages": 131
+}

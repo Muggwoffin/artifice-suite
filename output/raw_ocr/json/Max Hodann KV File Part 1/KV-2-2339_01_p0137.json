@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Oslo, den 6. April '35.\nAdr.: Carl Pande,\nTostningsgade 22 III.\n\nLiebe Die Hodann,\n\nVielen Dank f\u00fcr Ihren Brief! Den Brief, den ich Ihnen von Haren \u00fcbermittelte, habe ich leider nicht gelesen, da ich dachte, es w\u00e4re vielleicht eine Privatbrief, und ich bin deshalb nicht ganz orientiert. Am mich hat Haren geschrieben, das eine ihrer Freundinnen verhaftet wurde, weil Haren vermisst war. Einige von Haren's T\u00f6chtern standen bei ihrer Freundin, und die Polizei hat deshalb auch an sie Verdacht ge\u00e4ussert. Sie hat eine kurze Weile in Verhaft gewesen, aber diese offiziellen Begr\u00fcndungen haben keine gen\u00fcgende Verbindung gebracht. Schliesslich erhielt sie, dass sie jetzt \"ganz weit auf dem Priesterschubbett sitzt\". Ist dann etwas Wei\u00dfes geschehen? Bitte verzeihen Sie mir ob sie etwas mehr wissen!\n\nIch erwarte jetzt Ihre Antwort, und werde beim Empfang davon meine Einladung nach Haren schicken.\n\nKunst der Musare!\nBurchold Harwell",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:19:02.116134+00:00",
+  "page": 137,
+  "total_pages": 144
+}

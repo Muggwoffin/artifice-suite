@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PORT OF HARWICH\nSPECIAL BRANCH\nRef. 320/FGN/530\nDate 22.3.35\nTo M.I.5.\n\n19th March 5\n\nArrived here from Esbjerg on 17th inst., Max HODANN, born Neisse on 30.8.94, travelling on German passport 48/Rev/28/31, issued Berlin 24.2.31, formerly a doctor of medicine but now a journalist.\n\nHe stated that he wished to stay here for about four weeks for the purpose of studying social conditions in this country and would reside with his friend Max Beer at 180 Regents Park Road, N.W. Beer he states has resided in the U.K. for the past two years and is a writer on socialism. In a letter to HODANN, Beer refers to the book which he, Beer, has just completed entitled \"Fifty Years of Socialism\" and draws HODANN'S attention to the chapter 'Talks with Lenin'.\n\nHODANN was accompanied by Mrs. LINDBOK-NILSON (see separate report of 19th inst.). With this woman he was in Palestine in 1924 and jointly they published a book entitled \"The Jews are coming home\". He is now collaborating with her in writing the biography of Dr. Nansen.\n\nAlien is a political refugee from Germany and since November 1934 has been living in Norway. He no longer practices as a medical doctor and appears to have obtained a livelihood from his articles on socialism. He is a member of the Danish P.E.N. Club and correspondent of \"Arbeiderbladet\", a Danish newspaper, and produced newspaper cuttings showing that his articles have been published in various European countries. He has also written articles on eugenics and birth control.\n\nHODANN stated that whilst in this country he would",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:34:26.064694+00:00",
+  "page": 116,
+  "total_pages": 131
+}

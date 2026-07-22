@@ -283,3 +283,39 @@ are what makes running without reasoning safe.
 
 Turn reasoning back on in **Settings → Model reasoning**, or with
 `ollama_think: true`.
+
+### PDF export
+
+Compile a folder of processed text files into a single readable PDF. The output
+is a continuous-flow reading document — one continuous document for a multi-page
+KV file, not 275 separate page images.
+
+```bash
+# Quick check: concatenate cleaned text as-is (no model call)
+ocr_pipeline compile-pdf output/cleaned/text/Fritz\ Eberhard\ KV --no-structure
+
+# Full: structure for reading, then render to PDF
+ocr_pipeline compile-pdf output/cleaned/text/ISK\ Comms\ with\ Switzerland\ Part\ I \
+    --output isk_comms.pdf
+
+# Choose which stage to read from
+ocr_pipeline compile-pdf output/cleaned/text/My\ Item --stage translated
+```
+
+The structuring pass (enabled by default) asks a model to add paragraph breaks
+and blank lines for readability. It does **not** change any words — a strict
+guard verifies word-for-word equality of the original text, and if the model
+alters anything the page appears unstructured in the final PDF.
+
+| key | default | meaning |
+|---|---|---|
+| `structure_guard` | `true` | Enable the word-preservation guard |
+
+The PDF uses Playfair Display (headings) and Libre Baskerville (body text) for
+visual consistency with the rest of the app. Each page section carries a small
+provenance marker (e.g. `[page1]`) so passages can be traced back to their
+source scan.
+
+When a `tropy_manifest.json` is present in the folder's parent chain, pages are
+ordered by their manifest `page_number` and the item title is used as the PDF
+title.

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Register No.        Minute Sheet No.\n\n190.\n11.35. Intercepted letter from TOLLER to HODANN. 190a.\n191.\n11.35. Intercepted letter from Arbeiderbladet, Oslo, to HODANN. 191a.\n192.\n11.35. Letter to S.I.S. sending copy of translation of 188b. 192a.\n193. (PF65384)\n11.35. Letter from C.C. Bradford. 193a.\n194.\nS.10. Please see letter from C.C. Bradford at 193a.\nS.9.a. 28.11.35.\n195.\n65. Passport papers requisitioned for L.F. PENDLEBURY.\n196.\n65. S.9.a. note. 196a.\n197.\n65. From S.B. forwarding registration card for Ella RICHTER. 197a.\n198. (PF47113 SCHURIGHT)\n1.35. Traffic Index and C.A.R. particulars requisitioned for Eugene LAHR.\n199.\n1.35. C.A.R. particulars requisitioned for E. LAHR, 68, Red Lion Street.\n200.\n1.35. Letter to S.B. (PF47113 SCHURIGHT) 200a.\n201.\n.35. Voters' Lists requisitioned for 17, Hurstwood Road and 242, Tufnell Park Road.\n202.\n2.35. Passport papers for L.F. PENDLEBURY. PF65384.\n2.35. Intercepted letter from GROSS to HODANN. 202a. 202b.\n203.\n2.35. Passport papers passed to S.3.a. to return.\n204.\n2.35. Voters' Lists for 242, Tufnell Park Road and 17, Hurstwood Road. 204a. [P.T. Over.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:57:01.920018+00:00",
+  "page": 6,
+  "total_pages": 104
+}

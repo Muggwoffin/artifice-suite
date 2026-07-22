@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS-REFERENCE.\n\nSUBJECT:\u2014 GROEHL.\n\nThe following extract is taken from M/S report dated 7.10.38.\n\n\"I must also bring to your notice the fact that Wolffsohn is definitely sceptical about Groehl's ability to procure accurate information from Germany, especially in matters of aviation. He says that Groehl boasted about this when they met in London, whereupon Wolffsohn gave him a list of about 12 questions to which he asked for answers. Although about 6 months have elapsed since that time, the questions still remain unanswered. I understand that the League have sent Groehl \u00a312 for his fare to London and back, but he has not yet received permission from the Consulate, and Wolffsohn says he never will.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:03:46.411097+00:00",
+  "page": 51,
+  "total_pages": 102
+}

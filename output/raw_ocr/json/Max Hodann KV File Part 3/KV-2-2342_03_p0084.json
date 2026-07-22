@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy in P.F. 43824. Undated. Nilsson 162a\n\nPF.43817/D.S.9.a.\n\n22nd October, 1935.\n\nDear V.V.,\n\nWith reference to Max HODANN and Lise LINDBAEK, I enclose herewith an analysis of the case and certain conclusions, which you may like to have on record.\n\nOur investigations have been rather hampered by the fact that the head of the C.I.D. in Norway is considered unreliable and I imagine that as long as he remains there you are of the opinion that it would be unwise to make further enquiries.\n\nWe are proposing to carry out intensive observation on Alick WEST and will let you know should we obtain anything of interest.\n\nIn the meantime there are one or two minor points affecting individuals abroad which it might be worth while clearing up. Would it be possible for you to obtain any information regarding the following:-\n\n1. Alexander KLIN, 6 JUN 1934, the Paul Heger(?), Brussels.\n\nThis man wrote to HODANN on 10.4.36. from Luxemburg, stating that he had had to leave Brussels \"on account of his business.\"\n\n2. Dr. Gustav TURIN, 4, 3 MAR 1935, Metelet, Brussels, 3.\n\n3. Hans SAMUELHAHN, (Our letter PF.43817/D.S.9.a. of 8, Chemin des Clochettes, Geneva. 3.7.35.)\n\nThis man wrote to HODANN on 1.7.35. stating that he hoped to come to London at the beginning of August when they would be able to \"discuss many fundamental questions.\" Actually he arrived on 23.8.35. for six weeks and according to the Traffic Index is still here.\n\n4. No.547, Densen, Czecho-Slovakia.\n\nOn 5.7.35. an individual signing himself 'R' wrote from this address to HODANN: \"Have received your numbers 3 and 4 (with sketches or enclosures).\"\n\nV. Vivian, C.B.E.,\nS.T.S.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:34:28.683319+00:00",
+  "page": 84,
+  "total_pages": 99
+}

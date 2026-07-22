@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "127 HARLEY ST. W.1.\nPHONE WELBECK 7840\n\n3.4.35.\n\nDear Dr. Hodann,\n\nThanks for your postcard. I have been terribly busy, not only with professional work, but with some literary work that I am trying to get finished, and with meetings about an appeal for German refugees, which is taking up far too much of my time. This accounts for my not having yet made an appointment for you to come and see me. But I should be pleased if you and your friend would come to tea about four o'clock next Sunday afternoon, if you are not otherwise engaged. Will you let me know if this time suits you?\n\nYours sincerely,\n\nYehuda Halevi\n\nDr. Hodann.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:22:55.384964+00:00",
+  "page": 30,
+  "total_pages": 131
+}

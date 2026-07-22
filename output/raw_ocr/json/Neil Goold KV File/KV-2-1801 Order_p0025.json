@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 81/B.P./5000/7.45.\n\nEXTRACT.\n\nExtract for File No.: P.F. 41426. Name: GOULD. VERSCHOYLE\n\nOrigin in File No.: S.F. 411/Ireland. Vol. 8. Serial: 462a. Receipt Date: 21.6.45.\n\nOriginal from: R.U.C. Belfast. Under Ref.: CS/24/8263. Dated: 278.\n\nExtracted on: 4.7.45. by: JMM. Section: R.4.\n\nCopy of letter from R.U.C. Belfast mentioning GOULD.\n\n\"With reference to my letter of the 25th May last (CS/24/8263/278) it seems that the proposal to send a delegation from Gould's Section of the Dublin Communist Party to Belfast has been cancelled as Sean NOLAN has informed Gould that the Party in Dublin will shortly be reorganized on an entirely new basis. There is some doubt as to whether Nolan will carry this into effect but should I receive any further information concerning this Party, I shall pass it along.\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:39:55.208749+00:00",
+  "page": 25,
+  "total_pages": 103
+}

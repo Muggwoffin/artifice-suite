@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\449b79e03571f6bad2be9f7c95609448.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Reference.\nMr. Blank - HB\n\n12 APR 1937\nC. 34071\nPassport may be issued.\nValid for: 5 years\nNational Status: British subject by birth\nBritish Empire (see regulations 6 and 7), also\nall countries in Europe, including the Union\nof Soviet Socialist Republics and Turkey.\nPurpose: not valid for Spain\nDocuments produced:\nBirth certificate No. 379 issued on 18th March 1907,\nshowing that Arthur William Odley was born\nat London on 10th April 1905.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:03:14.457989+00:00",
+  "page": 6,
+  "total_pages": 57
+}

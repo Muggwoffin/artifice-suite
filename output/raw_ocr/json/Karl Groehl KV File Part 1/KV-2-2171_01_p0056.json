@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "F.L.  \nCOPY\nFor: P.F. 46464 CROEMIL\nOriginal filed in: P.F. 52095 Vol. 2. at 159a.\n\n6.8.41.\n\nMy dear,\n\nI have to-day received a letter from Marseille by messenger. Tell Aaron please that the writer sends the following information about public opinion there:\u2014 The Germans are very active in the South of France as well as in occupied territory, they make use of every difficulty by means of propaganda against England. But in spite of this the opinion is universally spreading and the people are continuously saying secretly that they will attack the Germans in the rear if they should make an invasion of England which fails. Everything is waiting for that. But the people speak much more about Weygand than about de Gaulle. It is said that Weygand is preparing a pretended revolt against Germany.\n\n2) Provide me with two pounds. The article is in fact worth twenty, but I send you the others.\n\n3) Denicke is still in Marseille.\n\n4) First of all give a greeting to Mad. O. (? Madame ORLOW).\n\n5) I left my umbrella behind at your house.\n\nGreetings Ka.\n\nThis intercept should be compared with the one at 124d. It is probable that the typewriter used is the same and the methods of typing bear a very strong resemblance. In",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:51:57.640296+00:00",
+  "page": 56,
+  "total_pages": 96
+}

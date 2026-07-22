@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "23.4.35. Copy of letter to S.I.S.\n23.4.35. Intercepted letter from GOLDSTEIN to HODANN.\n23.4.35. Intercepted letter from KUNO(?) to HODANN.\n23.4.35. Letter to H.O.\n\nFrom G.P.O. re 24, Calthorpe Street.\n\nFrom G.P.O. re change of address for HODANN.\n\nTraffic Index, C.A.R. and H.O. papers requisitioned for Karl KORST.\n\nSpoke Mr. Hunter and asked him to let us have the registration particulars, if any, of Mrs. O. SKUSE, 63a, Haverstock Hill.\n\nS.9.a.\n23.4.35.\n\nThe H.O.W. on Max HODANN and Lisa LINDBAEK has produced an interesting letter from one Molla ORDING in Oslo.\n\nWe know that the governess who looked after Mrs. MARTIN's son was a Miss ORDING and the intercept at 52a shows pretty clearly that this was Molla ORDING and also that she knows more about the Martin case than was at first thought.\n\nReference is made in the intercept to one Arne who is Professor Arne ORDING of 1, Britannia Street, W.C.1. who is also in correspondence with HODANN.\n\nIf you agree I think a H.O.W. on this man's correspondence is justified. H.O.W. submitted herewith for signature if approved.\n\nS.9.a.\n23.4.35.\n\nIntercepted letter from NEUMANN to HODANN.\n\nTraffic Index particulars requisitioned for NEUMANN and PR\n\nS.11. report re registration of O. SKUSE.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:05:46.360433+00:00",
+  "page": 9,
+  "total_pages": 144
+}

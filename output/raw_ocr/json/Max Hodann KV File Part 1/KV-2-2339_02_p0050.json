@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Traute NEUMANN Gennemlobet 17, Vanlose-Copenhagen.\nTo Max HODANN, Kynance Court, 6, Gloucester Road, S.W.7.\n\nDate of Letter 1.4.35.\nDate of Postmark 2.4.35.\n\nSUMMARY OF CONTENTS\n\nAcknowledges letter with 100 Kr.\n\nRefers to separation question which she states addressee now refuses to sign.\n\nAdvises HODANN to return to Copenhagen where he, she and Sonja can live more cheaply together.\n\nReferences to Specht and Kuddell. The latter has asked whether HODANN got the manuscript of \"Igel\" which she sent at Christmas.\n\n\"K. is coming at Easter and asks for 25 Kr. of his money as he can't bring any out.\"\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:27:04.693960+00:00",
+  "page": 50,
+  "total_pages": 131
+}

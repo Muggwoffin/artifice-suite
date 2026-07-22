@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "GROSS-REFERENCE.\n\nSUBJECT:-- Groehl.\n\nAccording to a M/S report dated 9.12.38, Wollenberg (author of the \"Red Army\") is staying incognito on Groehl's premises; having been refused permission by the French authorities to stay in France he has no alternative but to hide there.\n\nOriginal in PF. 45807 Otten v.2. 107a. dated as above. MGH. 13.12.38.\n\nS. Form 81.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:02:37.048504+00:00",
+  "page": 42,
+  "total_pages": 102
+}

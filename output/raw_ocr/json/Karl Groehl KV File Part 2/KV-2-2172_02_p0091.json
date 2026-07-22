@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "B.13. (Colonel Hinchley Cooke)\n\nI am investigating the case of SZYMONCZYK - LECOUTRE who live at 106, Oakwood Court, London, W., in a flat which is also occupied by M. Andre LABARTHE, the Editor of \"La France Libre\".\n\nI find that these people are endeavouring to get into touch with a man named BODDINGTON who is said to be \"at the War Office\".\n\nI believe that there is a Mr. N. BODDINGTON employed in S.O.2. and I shall be glad if you will please enquire through your link in S.O.2. whether this is the case and, if so, whether Mr. BODDINGTON has any knowledge of the SZYMONCZYK - LECOUTRE entourage.\n\nS.O.2. will no doubt remember that a little while ago I made an enquiry from them (through you) respecting a man named Stanislaus RETZLAW who was associated with SZYMONCZYK and S.O.2. will appreciate that it is important that RETZLAW should not become aware that the activities of SZYMONCZYK are under investigation.\n\nI enclose a spare carbon copy of this note to facilitate your enquiry.\n\n30 JUL 1941\n\nB.4.c.\n28.7.41.\n\nR. Pilkington.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:41:25.494185+00:00",
+  "page": 91,
+  "total_pages": 107
+}

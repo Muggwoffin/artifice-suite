@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "guarantees against any revival of German militarism have been created.\nSome remarks on the former German political parties state that conservative opposition to the Nazis came only from a clash of interests and not from any real abhorrence of Nazism and its aggressive policy. Christian-conservative circles, to which persons such as RAUSCHNING and BRUENING belong have also produced the brutal types of military Junkerdom. The Centre Party stands solely for Catholic interests and helped to give the Weimar Republic its death-blow.\nThe German democrats never really opposed German rearmament or the Nazis.\nThe Socialists bolstered up capitalism and repressed the masses who were striving for real liberty. The Trade Unions supported the first world war and helped to strengthen the reaction which followed it.\nThe communist party lacked leaders and ideas; in the last years before Hitler it showed weakness and made fatal mistakes. It lost its influence on the masses by its imitation of Nazi methods. It become thoroughly nationalist.\nThe whole concludes with a warning that unless the German opposition can be welded into a fighting force against Hitler, it will become as feeble after the end of this war as it was in 1918. The German emigrants have never taken part in any real revolutionary work and are therefore not in a position to estimate the true value of conspirative work in Germany.\nOne of the causes of the German opposition's weakness is the lack of a passionate hatred of the Hitler regime, which could provide a source of energy.\n\nC.W. Sykes,\nE.5.L. 28.10.42",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:18:14.434326+00:00",
+  "page": 46,
+  "total_pages": 90
+}

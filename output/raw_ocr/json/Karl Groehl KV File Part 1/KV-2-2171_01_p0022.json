@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Note to B.4.b.2.\n\nThis is your case. RETZLAN is GRO\u00dfHL who was in contact with Karl OTTEN. B.4.c. might be interested to see the attached letter.\n\n14.5.41.\n\nCaptain F.C. Derbyshire.\n\nB.4.c (Mr. Pilkington) saw attached letter on 15.5.41.\n\nA.G.F. 15/5/41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:47:05.209844+00:00",
+  "page": 22,
+  "total_pages": 96
+}

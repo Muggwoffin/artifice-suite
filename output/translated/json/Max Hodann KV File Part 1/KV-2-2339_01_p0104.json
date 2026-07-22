@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "(12) REMARKS\n(3) Was Austrian became German by naturalization at Bensberg\n(4) in January, 1920.\n\nDate | Registration District | Serial Number | ADDRESS OF RESIDENCE OR REMARKS\n\n16-10-1933 | Cambridgeshire | | to land at Harwich on 21-8-33 on condition not to remain in U.K. longer than one month. Arrived 40 Mr. White, Great Shelford, Cambs; on 9th Sept. 1933.\n\n21-9-1934 | | | Variation of leave to land varied so as to require grant from U.K. not later than 21st Sept. 1934. Charged to 25, Shelford Park Estate, Shelford, Cambs, 31-1-1934. Condition of landing varied so as to request departure from U.K. not later than 21-9-35.",
+  "translated_text": "(12) NOTES\n(3) Austrian became German through naturalization at Bensberg in January 1920.\n\nDate | Registration District | Serial Number | ADDRESS OF RESIDENCE OR REMARKS\n\n16-10-1933 | Cambridgeshire | | To land at Harwich on 21-8-33, subject to the condition that he would not remain in the U.K. for longer than one month. Arrived at 40 Mr. White, Great Shelford, Cambs; on 9th September 1933.\n\n21-9-1934 | | | Variation of leave to land varied, requiring a grant from the U.K. not later than 21st September 1934. Charged to 25, Shelford Park Estate, Shelford, Cambs, 31-1-1934. Condition of landing varied, requesting departure from the U.K. not later than 21-9-35.\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:47:53.683394+00:00",
+  "confidence": {
+    "score": 90,
+    "reasoning": "The translation is accurate and maintains the original meaning. The addition of 'subject to' and 'on 9th September 1933' improves clarity without altering the core information.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 96
+  }
+}

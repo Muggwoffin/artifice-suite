@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "fr",
+  "source_language_name": "French",
+  "cleaned_text": "Biro-Bidjan et dans les autres centres juifs de la Crim\u00e9e et de la Russie blanche.\n\nVeuillez me r\u00e9pondre dans votre lettre si vous pouvez donner satisfaction \u00e0 nos d\u00e9sideratas.\n\nVotre conf\u00e9rence peut se donner en langue allemande et je me permets de vous proposer comme cachet la somme de Frs. 500.- (cinq cents francs) par conf\u00e9rence, soit Frs. 1000.- pour les deux; Les frais de voyage \u00e0 votre charge. Il est utile que je vous fasse remarquer que vous b\u00e9n\u00e9ficieriez d'une r\u00e9duction sur la travers\u00e9e depuis le 1 mai \u00e0 la suite de l'exposition internationale qui se tient \u00e0 Bruxelles.\n\nIl se pourrait \u00e9galement qu'\u00e0 la suite de votre conf\u00e9rence, nous puissions organiser d'autres manifestations de ce genre pendant votre s\u00e9jour \u00e0 Bruxelles, mais ceci sans aucun engagement de notre part.\n\nJe serai tr\u00e8s heureux d'avoir de vos nouvelles et dans cette attente, je vous pr\u00e9sente, Monsieur, l'expression de mes sentiments les meilleurs.\n\nLe Pr\u00e9sident\nJacques Goldstein\n\n34, rue d'Arenberg\nBruxelles.",
+  "translated_text": "**To Mr. Biro-Bidjan and others in Jewish communities of Crimea and White Russia:**\n\nI would be grateful if you could inform me whether you are able to fulfill our requests.\n\nYou may address your conference in German, and I am pleased to offer a fee of 500 French Francs (five hundred francs) per conference, or 1000 francs for both; travel expenses will be at your own cost. It is important that you know that you will receive a discount on transportation from May 1st onwards, following the International Exhibition held in Brussels.\n\nFurthermore, it may be possible to organize further events of this kind during your stay in Brussels, but this would be without any commitment on our part.\n\nI eagerly await your response and extend to you, Mr., my best regards.\n\nThe President,\nJacques Goldstein\n\n34, Rue d'Arenberg\nBrussels.\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:46:27.323992+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The translation is accurate and maintains the original tone. The formatting is also correct.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

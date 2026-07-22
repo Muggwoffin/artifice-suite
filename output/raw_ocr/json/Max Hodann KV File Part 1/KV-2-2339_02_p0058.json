@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "To Hodann, London\nFrom Trunte Kierkegaard, Copenhagen\n2-4-35\n\nAcknowledge registered letter with 100 Kr.\n\n1. Separation. Having plagued writer writer for months on the separation question, Hodann now refuses to sign. She is convinced this is not a new decision.\n\n2. Money question. Agrees that emigration is not a luxury. They cannot afford two households. Advise Hodann to return to Copenhagen where he & she & Sonja can live more cheaply together. She cannot manage on the money he sends her.\n\n3. Her work. [Film scenario writer]. This is encouraging, and if she can hold on for two months ought to succeed. Longs for the",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:28:03.378614+00:00",
+  "page": 58,
+  "total_pages": 131
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "3.\n\nMaes-yr-haf itself, being the Headquarters, interests its members in the same manner, if anything, on a far more advanced scale from an educational and social standpoint.\n\nSince its inception a Handicraft Centre has been formed. A two storey weaving house has been erected, where a staff of about 20 is regularly employed in spinning and weaving, dressmaking, embroidery and quilting. The articles made are mostly sent away and sold by the Settlement management.\n\nThe \"Malt House\" at Wick is under their management and used as a holiday centre for men.\n\n\"Boverton Camp\" Wick is also under command and is used as a holiday centre for women and girls. Only a nominal charge is made in both instances for a weeks holiday.\n\nEach winter, commencing in October, educational classes and social functions are held at Maesyrhaf.\n\nThe weekly programme for this winter shows as follows:-\n\nSundays: Men's & Women's Adult School.\n\nMondays: Economic Planning in the Modern World.\nWomen's Sewing Group.\nKnitting Class. Country Dancing.\nHome Management. Ladies Choir.\n\nTuesday: Economic Planning in the Modern World.\nJunior Girl's Club.\nWomen's Recreational Gymnastics.\nAnthropology.\nCitizenship. Orchestra.\n\nWednesday: Pipers Guild. Girl's Club.\nGirl's Piping Class. Social Study Circle.\n\nThursdays: Women's Handicraft Class.\n\" Adult School.\nDemocracy and the Modern World.\nDramatic Society.\n\nFridays: Boy's Club. Boy's Piping Class.\nYoung Members Evening. Men's Gymnasium.\nMusic Lover's Society. (Alternate weeks)\nPiper's Guild.\n\nSaturdays: Open day after from Wireless Listening Groups.\n\nPiper's Guild = Pipers Band Class. The instruments used being made from Bamboo canes under instruction of a tutor at the Settlement.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:27:59.932321+00:00",
+  "page": 24,
+  "total_pages": 99
+}

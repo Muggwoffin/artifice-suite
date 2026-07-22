@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 81/B.P./3000/9.43.\n\nEXTRACT.\n\nExtract for File No.: P.F. 41426. Name: GOULD-VERSCHOYLE, H.S.\n\nOriginal in File No.: S.P. 92/IR.A./H.O. (3) Serial: 98. Dated: 20.6.44.\n\nOriginal from: S.I.S. Under Ref.: OK/6807. 16.6.44.\n\nExtracted on: 9.8.44. by: B.R.W. Section: R.4.\n\nExtract from Garda List of I.R.A. suspects forwarded by S.I.S.\n\nPhoto-\ngraph No: Name, Address and Description.\n\n1300. GOULD-VERSCHOYLE, Hamilton Nial S. (Nial Gould)\nb. Dublin, 1904; 147, Thomas Street (rear) Dublin.\n5'9 1/4\"; h. dark, wavy; e. grey-green; square face;\nmedium build; good carriage.\n\nA photograph of this man is filed in SF:92/IRA/HO(3) v.4.980\n\nNO ACTION TO BE TAKEN WITHOUT REFERENCE TO B.I.H.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:41:14.738579+00:00",
+  "page": 35,
+  "total_pages": 103
+}

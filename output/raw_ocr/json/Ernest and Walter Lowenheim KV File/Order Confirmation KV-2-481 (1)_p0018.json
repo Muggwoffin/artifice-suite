@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "H.O. refs:- L.5027 and L.4050.\nOur ref:- PF 49542/E.5.(3)\n\nHOME OFFICE - (Aliens Department).\n\nWalter LOEWENHEIM - Ernst LOWENHEIM.\n\nWe would first invite your attention to our reports (copies enclosed) on these brothers made to the Hurst Tribunal and dated 31.1.41. and 23.6.41. In order to explain part of the latter report, we also enclose copies of a letter from Sir Cecil Hurst to us dated 26.5.41. and our reply dated 29.5.41.\n\nThe above reports set out our case against the LOEWENHEIMs. We would, however, add that information since received confirms in a remarkable degree that already obtained. This new source, which we regard as entirely reliable and which has no connection with those previously used in this case states that:-\n\n(a) The LOEWENHEIM brothers whilst in Germany supplied the U.S.S.R. authorities with military information.\n\n(b) That Ernst was employed in Berlin by Russphoto and that Russphoto while ostensibly engaged in the supply of photographs from the Soviet Union to other countries, was in fact used as a cover for other activities.\n\nOur earlier suspicions regarding the LOEWENHEIMs (dating back to 1929) were admittedly indefinite and confirmation of them was never obtained. It is, however, noteworthy that we have now received reports from three separate and independent sources, all of which corroborate one another and moreover tend to confirm the earlier and more nebulous suspicions",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:53:14.895007+00:00",
+  "page": 18,
+  "total_pages": 64
+}

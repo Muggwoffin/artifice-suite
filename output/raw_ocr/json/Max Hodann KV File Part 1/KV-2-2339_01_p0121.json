@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Lieber Max!\n\nIch habe vor mehrmals versucht telefonisch mit Euch in Verbindung zu kommen aber leider ohne Erfolg. Ich m\u00f6chte Euch doch gern von einmal wiedersehen. Schreibt mir eine Note und sag mir ob ihr einen Abend zu Hause sind. Oder vielleicht k\u00f6nnen wir uns anderswo treffen - bis mein geht es kaum.\n\nBeste Gr\u00fc\u00dfe\n\nMax Berlin\n\nadr. 1 Britannia Street, W.C.1.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:17:24.940045+00:00",
+  "page": 121,
+  "total_pages": 144
+}

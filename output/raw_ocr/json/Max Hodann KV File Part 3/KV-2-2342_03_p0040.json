@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "H: 2807.                                                                 24th October, 1935.\n\nMiss M. Homan - M.I. 5.\n\nDr. Max HODANN.\n\nReference previous correspondence (P.F.43231/D.S.9.a) and your minute dated 28.9.35.\n\nThe attached copies of letters dated 21.10.35. and 23.10.35. are forwarded for your information.\n\nT.B.W.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:29:42.234199+00:00",
+  "page": 40,
+  "total_pages": 99
+}

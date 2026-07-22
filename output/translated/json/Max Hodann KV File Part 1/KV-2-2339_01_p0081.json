@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "With regard to FINKELSTEIN, the writer of one of the letters forwarded to you on 11.4.35., we have ascertained that this man is a German Chemist, born 25.1.77. at Leipzig. He arrived in this country on 21.8.58. We are hoping to obtain further information regarding him and have taken out a warrant on his correspondence.\n\nWith regard to HARYOLL or HARE, also referred to in our letter of 11.4.35., we have received a further letter from this individual in which he states that he has asked Karen to come to Oslo which he hopes will be a refuge for her. He asks HODANN to keep him informed if he hears anything.\n\nParticularly interesting I think may be his connection with a Professor Arne ORDING who arrived in this country on 7.3.35. to study for three months. You will remember that Miss ORDING was the name of the governess to whom Mrs. HARTIN's son George was handed over.\n\nI wonder if you have come across this Professor ORDING in the course of any investigations, or whether they have any further details of Miss ORDING's family which would help us to connect the two.\n\nYours sincerely,\n\nG. H. L.",
+  "translated_text": "Regarding FINKELSTEIN, the author of one of the letters forwarded to you on April 11th, 1935, we have determined that this man is a German chemist, born on January 25th, 1877, in Leipzig. He arrived in this country on August 21st, 1935. We are hoping to obtain further information about him and have obtained a warrant for his correspondence.\n\nRegarding HARYOLL or HARE, also referred to in our letter of April 11th, 1935, we have received a further letter from this individual in which he states that he has asked Karen to come to Oslo, which he hopes will be a safe haven for her. He asks HODANN to keep him informed if he hears anything.\n\nParticularly interesting, I believe, is his connection with Professor Arne ORDING, who arrived in this country on March 7th, 1935, to study for three months. You will recall that Miss ORDING was the governess to whom Mrs. HARTIN's son George was entrusted.\n\nI wonder if you have come across this Professor ORDING during any investigations, or whether you have further details of Miss ORDING's family which would help us to connect the two.\n\nYours sincerely,\n\nG. H. L.\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:47:16.758844+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The translation is accurate and maintains the original meaning. The changes made (e.g., '11.4.35.' to 'April 11th, 1935.', '25.1.77' to 'January 25th, 1877') are standard conventions for date and number formatting in English. The overall flow and context are preserved.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

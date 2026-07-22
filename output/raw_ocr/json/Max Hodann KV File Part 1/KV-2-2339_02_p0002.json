@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From Alexis S. FINKELSTEIN, 13, Shelford Park, Great Shelford.\n\nTo Dr. M. HODANN, Kynance Court, Gloucester Road, S.W.7.\n\nDate of Letter 5.4.35.\n\nDate of Postmark 5.4.35.\n\nSUMMARY OF CONTENTS\n\nStates that he tried in vain to get addressee on the telephone yesterday.\n\n\"Karen's last letter has made me very uneasy. She is moving because she is being watched by the porter's family. She wants to go to Russia and I am to get into touch with a chemist I know who is or was employed there.\"\n\n\"On this account have you written to the brother and if so does he realise the seriousness of the danger and has he by any chance replied. I fear the family do not want Karen and she does not want to go to Norway but this may be the only escape.\"\n\n\"I have written and advised her that you are the Uncle Martin Hansen to whom I spoke in London.\"\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:19:57.449102+00:00",
+  "page": 2,
+  "total_pages": 131
+}

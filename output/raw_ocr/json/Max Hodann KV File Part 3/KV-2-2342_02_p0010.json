@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "8, Hanover Terrace,\nRegent's Park, N.W.1.\n9th January, 1936.\n\nDr. Alexis Finkelstein,\nThe Cellulose Composition Co.\n13, Shelford Park,\nGreat Shelford.\nCAMBRIDGE.\n\nDear Dr. Finkelstein,\n\nI have heard of the very excellent research work that you are engaged upon, and have great pleasure in sending you herewith my cheque for \u00a320 which I hope will come in useful in meeting some of your expenses.\n\nI am,\nYours faithfully,\n\nD. King-Farlow\n\nEnclo.\n\nNo. B016199 136. BISHOPSGATE. E.C.2. LONDON 7 Jan 1936\nWESTMINSTER BANK LIMITED\nBISHOPSGATE BRANCH\nPAY Dr. Alexis Finkelstein or Order\nthe sum of twenty pounds\n\u00a320.00\nD. King-Farlow\nThis Cheque requires endorsement",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:08:37.851334+00:00",
+  "page": 10,
+  "total_pages": 130
+}

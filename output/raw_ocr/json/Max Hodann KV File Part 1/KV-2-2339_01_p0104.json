@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "(12) REMARKS\n(3) Was Austrian became German by naturalization at Bensberg\n(4) in January, 1920.\n\nDate | Registration District | Serial Number | ADDRESS OF RESIDENCE OR REMARKS\n\n16-10-1933 | Cambridgeshire | | to land at Harwich on 21-8-33 on condition not to remain in U.K. longer than one month. Arrived 40 Mr. White, Great Shelford, Cambs; on 9th Sept. 1933.\n\n21-9-1934 | | | Variation of leave to land varied so as to require grant from U.K. not later than 21st Sept. 1934. Charged to 25, Shelford Park Estate, Shelford, Cambs, 31-1-1934. Condition of landing varied so as to request departure from U.K. not later than 21-9-35.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:15:46.029378+00:00",
+  "page": 104,
+  "total_pages": 144
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "they fully appreciate what HODANN's background is, then I can see no objection to them using him.\n\n254.\nTo S.O.E. in reply to 251a.\n\n255.\nCopy of letter from S.I.S. re FINCKELSTEIN.\n\n256.\nT.I. particulars of Alexie Samuel FINCKELSTEIN requested.\n\n257.\nT.I. particulars of Karen FINCKELSTEIN requested.\n\n258.\nTo S.I.S. re FINCKELSTEIN.\n\n259.\nExt. from S.I.S. re. HINKS ment. HODANN.\n\n\"FILE CLOSED\"",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:57:53.046153+00:00",
+  "page": 12,
+  "total_pages": 104
+}

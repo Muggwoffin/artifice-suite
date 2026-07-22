@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET\n\nB1a/Gen/WHO\n\nColonel M.F. Allan, M.B.E., Investigation Branch, G.P.O., E.C.1.\n\nI should be grateful if you would arrange for a return of correspondence for two weeks on the following:-\n\nAny Name,\n15 Orsett Terrace,\nLondon, W.2.\n\nW.H. Oughton\n\n10 Jul 48",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:18:42.304055+00:00",
+  "page": 69,
+  "total_pages": 71
+}

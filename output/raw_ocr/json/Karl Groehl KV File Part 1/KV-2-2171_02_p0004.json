@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "HEADQUARTERS\nTelephone: [redacted]\nTelegrams: Postaff Cent London\nYour Reference\nP.O. Reference\n\nSpecial Section Investigation Branch\nPERSONNEL DEPARTMENT,\nGENERAL POST OFFICE,\nLONDON, E.C.I.\n\n21.7.1939.\n\nThe Officer in Charge\nGolven Green Bo.\nNo. 4.\n\nOn the 19th inst a reply letter was posted in your district & presumably at your office which received the Rpi No 'Golven Green' 3073.\nIt is desired to know what is recorded as being the name & address of the addressee.\nBe good enough to enclose a copy of the certificate of posting. Please return this letter and, by Rpi Post, forward it to The Officer in Charge Special Section I.B. as above.\n\nF. G. Melvyn",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:57:57.755173+00:00",
+  "page": 4,
+  "total_pages": 102
+}

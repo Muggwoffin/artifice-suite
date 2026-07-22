@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "7.12.35. P.P. 45671. Passport papers for Helen THILS requisitioned.\n\n13.12.35. Intercepted letter from PENDLEBURY to FINKELSTEIN.\n\nS.9.a.\n\nReference Min. 205 Passport Office have no papers under the name THILS. They have, however, given me the following particulars of a passport issued to a Miss Helen THILO:\n\nBorn Bradford 5.6.10. Passport No. 2438 issued Berlin on 15.6.27. Miss Thilo was then 17 years old and had held no previous passport. The above document was made available for Germany and the U.K.\n\nS.3.a.\n13.12.35.\n28.12.35. Int. letter to HODANN from Traute NEUMANN.\n\n1.1.36. From S.I.S. referring to 162a, enclosing note re Hans SANDELMANN.\n\n1.1.36. Int: letter from the National & Provincial Bank to FINKELSTEIN.\n\n2.1.36. From S.I.S. re GUMBEL.\n2.1.36. Int. letter to Dr. A. FINKELSTEIN from Carl, Uppsala, Sweden.\n\n7.1.36. T.I. cards for SANDELMANN.\n\n8.1.36. H.O. File No.K,1466 re Friedrich KILLIAN.\n8.1.36. Photostats of 4 intercepted letters to FINKELSTEIN.\n\n10.1.36. H.O. file for HODANN.\n11.1.36. From S.I.S. re 162a, enclosing photograph of Samuel ORNSTEIN @ Max LICHTENSTEIN.\n\n13.1.36. Departure card for HODANN.\n\n13.1.36. S3a asked to insert green card for HODANN. (noted)\n\n14.1.36. To S.I.S. re departure of HODANN.\n\n20.1.36. Extract from S.I.S. letter re HODANN.\n\n27.1.36. Cancellation of H.O.W.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:57:12.426694+00:00",
+  "page": 7,
+  "total_pages": 104
+}

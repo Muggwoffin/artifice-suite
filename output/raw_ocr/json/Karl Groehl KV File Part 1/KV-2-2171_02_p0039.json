@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY. Original in P.F. 45807 OTTEN. v.2., 109b.\n\nB.4.b.\n\nOTTEN group:\n\nAccording to WOLFFSOHN, both Carl GROEHL and Berthold JACOB have been in trouble with the French police. During the Prime Minister's visit to Paris both of them were under detention until the visit was over.\n\n19.12.38.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:02:17.027054+00:00",
+  "page": 39,
+  "total_pages": 102
+}

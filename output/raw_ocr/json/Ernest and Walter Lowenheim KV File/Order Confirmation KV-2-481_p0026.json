@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET\n\nWe have little to add to our previous correspondence with you under the above reference. In September, 1942 LOWENHEIM was said to belong to the German Trotskyists group in this country and in October, 1944 it was reported that as far as was known LOWENHEIM had no contacts with Communists at that time and was thought to be anti-Communist. We have no further information.\n\n(Inf) R.R.S.\n31-10-46\n\napproved by Dr. Evans.\n\nSeen\ncns.\n6-11-46",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:15:10.150237+00:00",
+  "page": 26,
+  "total_pages": 68
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Route MARCONI. Serial No. 36. No. of words 11. Copied by 4.6.34.\n\nFrom NEIL MOSCOW.\n\nTo VERSCHOYLE 1 SHEFFIELD TERRACE LONDON.\n\nDate 30.5.34.\n\nNo.\n\nCANNOT LEAVE MOSCOW SEND TELEPHONE NUMBER.\n\nNEIL.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:50:05.714530+00:00",
+  "page": 99,
+  "total_pages": 103
+}

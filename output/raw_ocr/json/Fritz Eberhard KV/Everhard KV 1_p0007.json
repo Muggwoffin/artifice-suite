@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "28.4.58.\nFrom H.O. with file.\n\n28.4.58.\nExt. from H.O. file.\n\n30.4.58.\nTo War Office.\n29.1.59.\nExt. from S.B. Report.\n25.3.59.\nTo M.I.6.\n\n15.6.59.\nE.4. Report No. 15/3818\n\n24.6.59.\nTo M.I.6.\n\n29.9.59.\nExt. from T/C\nTransferred to PF 705663 Eas/RE 12.5.61\n\n30.9.59.\nExt. from T/G\nTransferred to PF 705663 Eas/RE 12.5.61\n\n3.5.61.\nE4 Source Report\n\n12.5.61\nLoose Minute",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:39:58.387604+00:00",
+  "page": 7,
+  "total_pages": 24
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY\n\nRef.: XS03/18 K 8/658\n\nFOREIGN OFFICE\nS.W.1.\nMarch 14, 1958.\n\nSir,\n\nI am directed by Mr. Secretary Lloyd to transmit to you a copy of a letter which has been sent to this office by the British Embassy at Bonn, and to enquire whether the War Office has any record of Doctor Eberhard's service.\n\nI am,\nSir,\nYour obedient Servant,\n\n(Signed) Illegible.\n\nThe Under Secretary of State,\nWar Office.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:41:39.510274+00:00",
+  "page": 15,
+  "total_pages": 24
+}

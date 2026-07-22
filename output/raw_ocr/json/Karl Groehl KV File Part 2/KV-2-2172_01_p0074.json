@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "No. 410.\n\nSOURCE: Ri. 25th July, 1942.\n\nInformation from Otto LEHMANN-RUESSBUELDT.\n\nWith reference to the Party of the German Socialist Federation recently founded by S. RETZLAW, Karl GROEHL, L-R remarked that GROEHL, with whom he is friendly, stands quite alone in this new party, for which he has won over practically no members at all.\n\nTranslated on 31.7.42.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:23:07.492675+00:00",
+  "page": 74,
+  "total_pages": 90
+}

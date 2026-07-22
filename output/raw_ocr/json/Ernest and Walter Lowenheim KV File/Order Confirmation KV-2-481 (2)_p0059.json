@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY LETTER.\n\n3-6, Northwood Hall,\nLondon,\nN.6.\n\n12.5.41.\n\nDear Ernst and Walter,\n\nSince I left Onchan I had no news from you except the circular which indicated the new way to write your address. I hope you got the letter Wilkinson I sent via registered letter. I had written to the Secretary which promised me the interview and heard that she works now in another capacity - the fact, that the H.O. has not got your recommendations may have the following reasons:-\n\n1. SCHOETTLE and KLATT, who wrote to you the fact that the 19 Tribunal recommended the release, may have been wrong. This, I think, is unlikely (new address SCHOETTLE-KLATT, Neu Beginnen 10 Devon Rise, N.2.) although SANDER does not tell me anything one way or the other. I have at once written to SCHOETTLE, got no answer have again written and got no answer either. But still, I am sure that his informations are correct. I would ask BRUNO to ask SCHOETTLE to get into touch with me, as SCHOETTLE did not do that I could not find out about the KLATT letter which BRUNO did not receive.\n\n2. WILKINSONS asked for your files at a date when the recommendations was not decided yet, i.e. before her letter to you and she just tells me this old information. This, I think, is likely to be the case.\n\n3. H.O. filed things the wrong way.\n\nMy answer to WILKINSON must be in your hands, I think that you should write the same, but stress the fact that you are social democrats and interned now for one year, facts which I have already stressed in my letter of the 6th. Let me know what you did. BRUNO should write to SCHOETTLE and ask for explanation (to me as well) and help.\n\nI think that this does not mean a new delay, but neither BILLSON nor mother got until now any answers from the H.O. Perhaps the fact, the WILKINSON looks after the cases, might delay every-",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:09:03.265880+00:00",
+  "page": 59,
+  "total_pages": 60
+}

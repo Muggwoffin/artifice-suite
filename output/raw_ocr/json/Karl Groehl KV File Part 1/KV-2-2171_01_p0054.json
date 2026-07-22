@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "F.L. COPY\nFor: J.F. 46464 GROEHL\nOriginal filed in: P.F. 52095 Vol. 2. at 161b.\n\nREPORT RE SZYMONCZYK AND \"KARL\", from [redacted]\n\nIt is reported that Karl and SZYMONCZYK have known each other for a long time and that together with LECOUTRE they were Communist agitators in Berlin. LECOUTRE was then a German and passed under a different name. Although German Karl holds a Polish passport bearing the name Stanislas WETZLAR or WETZLAF, but it is not known whether this name is on his pass. Karl states that the passport was given him, to disguise him and protect him from the Germans, by the British Government and he claims quite openly to work for our S.S.\n\nKarl was first in Spain and later in Portugal during the Spanish civil war and he claims that the Government sent over a special plane to bring him from Lisbon to England. He now advises the British S.S. on the circulation of anti-Nazi propaganda in Germany, particularly amongst the working classes and he also claims to gain much valuable information from Germany as he is the head of an organisation of many agents.\n\nHe often meets SZYMONCZYK sometimes at Oakwood Court where, even when other visitors are there, he speaks quite openly about his work and with equal frankness he criticises the Government and the S.S. On one occasion he told openly how a letter of his (setting out the position of England and stating what was wrong with it) having been stopped by the censor on its way abroad, the W.O. doubled his salary on the condition that he would take it back.\n\nKarl has been described as a typical German of middle age and as being so deaf that he has to use a microphone attachment. So far as is known he only can speak German.\n\nA.4.c.\n10.6.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:51:39.769884+00:00",
+  "page": 54,
+  "total_pages": 96
+}

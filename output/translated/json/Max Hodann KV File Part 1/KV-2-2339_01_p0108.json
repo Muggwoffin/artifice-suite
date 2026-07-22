@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "da",
+  "source_language_name": "da",
+  "cleaned_text": "K\u00d8B BREVKORT. TIL FESTIVITET\nSTAT. DANMARK\nPOST\n\u00d8RE POSTERIM\u00c6RKE\n1910\n12 APR\n1935\nK\nAfsender\nDANMARK\n7\nMrs Hedawen\nKynance Lane\nGloucester Rd\nLondon SW 7\nR 144",
+  "translated_text": "POSTCARD. FOR FESTIVITIES\nSTATE OF DENMARK\nPOST\nSTAMP REQUIRED\n1910\nAPR 12, 1935\n[Sender Name]\nDENMARK\n7\nMrs. Hedawen\nKynance Lane\nGloucester Road\nLondon SW 7\nR 144\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:47:59.735260+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The text was relatively clear and legible despite some OCR errors (e.g., '\u00d8RE' became 'STAMP'). The translation choices were straightforward and accurate based on the context. I am confident in the accuracy of the output.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

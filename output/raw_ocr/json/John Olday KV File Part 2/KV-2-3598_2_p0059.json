@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SF.455/49  FREEDOM PRESS\nPF.66074  OLDAG\nPF.40634  RICHARDS\n\nWith reference to Mr. Himsworth's minute of 30.8.44., the telephone check on PRImrose 0625 was cancelled in SF.455/49, and a fresh check taken out in PF.40634 RICHARDS on PRImrose 2333.\n\nAt minute 256 in SF.455/49 the D.D.G. asked to be shown the result of the original check. As the second one is in substitution for the first, this should be referred to him in due course.\n\nF.3.m.\n13.9.44.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:57:51.873177+00:00",
+  "page": 59,
+  "total_pages": 91
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Photostat filed in: PF 45807 (Otten) vol. 2. 85a.\n\nFrom Karl Groehl\n\nTo Karl Otten.\n\nDate of letter 15.9.38.\n\nSummary of Contents\n\nI read parts of your letter of the 13th aloud to some journalists, they were in full agreement. Everywhere fury is directed against England. In a letter I have received from Prague they say \"We have two enemies, England and Germany\". Sykes seems to be very light-headed, through his stupidity I have no visa. Wol. says that the American edition has been refused because of the bad translation. Sykes knows no German. I have to meet 2 men from Germany it will be very difficult. Czecho-Slovakia will be a second Spain unless they are freed from Germany. Be J agrees with me that there will be a bath of blood in Germany when things are let loose. Follows particulars about the \"Heeresaufstellung\" (Distribution of Troops)\n\nSee Minute ( )\n\nInitials (date).",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:04:18.428549+00:00",
+  "page": 54,
+  "total_pages": 102
+}

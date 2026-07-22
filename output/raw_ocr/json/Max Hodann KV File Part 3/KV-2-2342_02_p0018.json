@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "DEPARTURE.\n\nCopy of Card in Traffic Index.\n\nPort of Disembarkation abroad: Dunppe.\n\nName: Samuel Mann Hans.\n\nAge: 37. Sex: Male.\n\nNames and ages of dependents under 16 accompanying: None.\n\nOccupation: Farmer.\n\nNationality: German.\n\nAddress in United Kingdom: 1 Bannock, County Rd., W. H.\n\nI.O. Stamp No.: 71/ha. 25.10.35.\n\nDescription of passenger and class travelled: None.\n\nOther information: None.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:09:29.121542+00:00",
+  "page": 18,
+  "total_pages": 130
+}

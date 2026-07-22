@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "31.\n23.11.41 Photostat of Extract from B.M. 5416/A.G. 14a re OLDAG.\n\n32.\n28.11.41 Photostat of int. Memo. from C.2. L. to F.l. attaching photostat of minute from the D.M.I. to the D.of O.\n\n33.\n5.12.41. Photostat of Minute from C.2.L. to G 2./D(C&D) re OLDAG.\n\n34.\nCopy of Minute 54 in PF. 45000\n\nF.l.c.\n\nThis man is one of eleven soldiers now serving at No. 12 Centre, Pioneer Corps, to whom our attention has been drawn by A.G. 14. The question of their continued retention in the Army is at present under consideration by D.C&D. I have been in touch with Captain Stone C.2. about all the cases and have made it clear to him that you are investigating this one. You will note the change of location of OLDAG.\n\nF.l.a.\n7.12.41\n(Sgd.) R.G. Mickelthwait.\n\n35\n7.12.41 To H.Q. Western Command re OLDAG and others.\n\n36\n8.12.41 To H.Q. Western Command further to 29a\n\n37\n17.12.41 Photostat of extract from report from E.3. re OLDAG.\n\n38\n20.12.41 Photostat of letter from War Office, Cheltenham enclosing copy of minute from A.G. 14 to A.G. 1c re OLDAG.\n\n39\n20.21.41 To A.G. 14 War Office, Cheltenham re OLDAG.\n\n40\n23.12.41. From A.G. 14 War Office, Cheltenham in reply to 39a",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:19:37.902720+00:00",
+  "page": 5,
+  "total_pages": 98
+}

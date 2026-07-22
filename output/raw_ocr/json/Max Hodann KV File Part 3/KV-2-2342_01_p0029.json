@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Extract from report No. 2. on the H.Q. of the Western European Bureau of the Communist International in Stockholm forwarded by S.I.S. on 3.9.41. CX 95736/VA",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:59:45.377725+00:00",
+  "page": 29,
+  "total_pages": 104
+}

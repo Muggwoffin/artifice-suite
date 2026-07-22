@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "124d. the first month in the date is designated by a capital I and not by the figure 1 and the month of March in this intercept is designated by three capital Is. Both intercepts begin \"Mein Lieber\". Both are written on a German typewriter and neither uses a manuscript signature.\n\nIn each case the envelope is addressed to SZYMONCZYK Esq., the Esquire has been placed on the line below SZYMONCZYK. The addressing of \"106, Oakwood Court\" is in each case identical and it would seem to be very probable that the writer (or typist) is in each case the same. Ka. may be Karl to whom SZYMONCZYK has spoken by telephone.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:52:04.568807+00:00",
+  "page": 57,
+  "total_pages": 96
+}

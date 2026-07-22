@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "do and say is well and good. All that is completely valueless for Germany even when now and again something good is sent in.\n\nI have the opportunity to speak with people who might help a bit, that is to say, who have some understanding. It might be well for you to write direct to Wickham Steed for example and mention me there also. I believe W. Steed to be the one and only Englishman who has grasped the great significance of the 5th column. This is everywhere, but unfortunately not, not by a long way, in Germany.\n\nThe Social Democrats who are here, do as little as formerly. They would like to be back in the Ministerial saddle, but they won't do anything which might compromise themselves. They fear even today that later on still more Political Murders will take place in Germany than in the pre-Hitler time, and that all the emigrants returning home will be murdered etc. etc. They already talk this nonsense, because they fear the return........\n\nN.K.L.\n\n1.6.41.\n\n12.00\n\nFOR MINISTRIES ONLY\nRecommendation for Disposal of Letter and Reason\n\nFOR CENSORSHIP INTERNAL ACTION\nLetter Condemned............. Returned to Sender.................. Released..........................",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:46:02.297480+00:00",
+  "page": 14,
+  "total_pages": 96
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\a755bd9d51a57416599b184afe10bc5a.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PROF. DR. FREUD\nWIEN IX., BERGGASSE 19\n20. X. 1935\n\nGraefen Frau Volker\nIhre Briefe interessieren\nmir sehr, auch die Frage Kolumne\nmir ist sehr nah. Ich\nbin froh, da\u00df ich Sie\nzugetroffen zu haben\nbin. Nunmehr zu Abend nach\nzehn! In London (Mond)\n11 Kent Terrace Dr. E. Rickman\nAnalogiepraxis Psychopathologische\nPublikationen Index Psychoanalytisches 1893-1926\nzu Dr. Rickman m\u00f6glich w\u00e4re\nzu mir. Meine Briefe sind\nnunmehr 1926 auf-\ngefordert.\n\nF\u00fcr weitere, scheinbar\nungl\u00fcckliche Briefe, ge-\nfahrlos, der Briefweg\ngeht nach Dr. E. Jones, Dr. H. S.\nMit besten W\u00fcnschen\nS. Freud",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:28:49.632940+00:00",
+  "page": 32,
+  "total_pages": 99
+}

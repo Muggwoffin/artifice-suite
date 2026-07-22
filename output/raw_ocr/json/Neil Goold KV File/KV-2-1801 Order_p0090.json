@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F. 41426. GOULD-VERS-CHOYLE.\n\nCROSS-REFERENCE.\n\nSubject:\u2014 GOULD-VERSCHOYLE, H.S.\n\n11.8.32. The undermentioned British subjects arrived at Hay's Wharf to-day per the s.s. Dzerjinsky from Leningrad:\u2014\n\nGOULD-VERSCHOYLE, Hamilton Stuart. Free State Passport No. A. 11399.\n\nAs these passengers did not fill in landing cards it was impossible to obtain their addresses.\n\nS.B. 11.8.1932.\n320/FRS/2189.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:48:55.775988+00:00",
+  "page": 90,
+  "total_pages": 103
+}

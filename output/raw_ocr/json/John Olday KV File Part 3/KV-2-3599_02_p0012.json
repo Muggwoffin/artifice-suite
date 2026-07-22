@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "\"Mr. Kershner, who has been working for the American Friends' Service Committee as Director of Relief in Europe... described to me what is perhaps the most ghastly thing in war\u2014the unbearable tragedy of growing children who lose weight every week, who develop tuberculosis and rickets, who faint with hunger at school, whose legs become sticks and whose bellies swell into drums.\"\n\"New Statesman and Nation\", 6th Feb., 1943.\n\nBUILDING A HEALTHY RACE",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:12:35.281404+00:00",
+  "page": 12,
+  "total_pages": 71
+}

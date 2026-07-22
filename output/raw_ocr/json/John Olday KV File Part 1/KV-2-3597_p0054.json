@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Sr 96/Binc/9(s)\n\n11.\n\nA.G.1.(c).\nM.I.5.\n\n1. Lt.-Col. C.C. Adams (A.G.14.) and Mr. C. Binney (M.I.5.) went to No.12 Training Centre, Pioneer Corps on 16/12/41 and interviewed nine men, that is to say the original eleven, with the exception of Private H.A. Steinbichler and Private A. Armani who are to be discharged. (See Min. 7).\n\n2. At 11A are summaries of previous reports on these nine men and on each form are given our recommendations. We recommend the retention of seven in the Pioneer Corps and the discharge of two, namely Privates H. Quasmitzchka, and R. Mutzke.\n\n3. If these recommendations are agreed, will you kindly arrange the discharge of the following four men, previously sending full particulars to M.I.5.\n\n13095178 H.A. Steinbichler\n13089900 A. Armani\n13095130 H. Quasmitzchka\n13095106 R. Mutzke\n\nSee Minutes 7 and 9\n\n4. Will M.I.5. please consider the recommendations and make any further arrangements for observation that are considered necessary.\n\n(Sd) C.C. Adams\nA.A.G.\n\nA.G.14.\n19/12/41.\nThackeray 2152.\n\nCopies to: - D.D. of O.(O).\nMr. C. Binney (M.I.5.)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:25:51.290571+00:00",
+  "page": 54,
+  "total_pages": 98
+}

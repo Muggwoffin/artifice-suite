@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Extract from letter from Assistant Adjutant General, War Office, A.G.14. Cheltenham, to Officer Commanding, No. 12 Training Centre, Pioneer Corps, dated 16.3.42. concerning \"Disposal of Dual Nationals\"\n\nThe following will be posted to British Pioneer Corps Companies:\n\n13095115  Pte W. OLDAG.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:24:22.207713+00:00",
+  "page": 43,
+  "total_pages": 98
+}

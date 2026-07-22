@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\9a210b0c86f61c70ef7c7dcb4c390ca9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "sagen, dass der High Commissioner McDonald und sein Reisebegleiter Inman nach nichts zu tun \u00fcbrig gelassen haben. Die Reisekosten der letzten sind echte J\u00e4gercocktails und wertvollen zahlreichen Ank\u00fcnften mit naiven, Einfachheit und humor erhebenden Plastiksteinen. Entt\u00e4uschend ist, mit welcher \u00dcberfl\u00e4chenhkeit und demuth sich der Mann gegen\u00fcber Selbstgegnernheit dieser journalistischen Wissenschaftler oder ungekehrt! Das vorz\u00fcgliche Hilfswerk f\u00fcr Fl\u00fcchtlinge von vorne herein in Fl\u00fcgengang \u00fcber jeden Kontinent hinweg verk\u00fcndet. Denken Sie, nur einen Tag aufenthalt in Comodin in Paraguay, im Mittelamerika sogar nur halbst\u00fcndige Stops auf den Flugpl\u00e4tzen und dementsprechend vorbliebend reiner der 'Abratz' seiner Programme nach Musterkatalog! Nun, mindestens \u00fcber alles mehr!\nHerzliche Gr\u00fc\u00dfe f\u00fcr Sie und Frau sind doch von uns allen.\nFw\nTandemann",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:48:53.180429+00:00",
+  "page": 74,
+  "total_pages": 143
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "letter of March 14th which of course pleased me as it was a confirmation of the words I addressed to Germany. My well-meant suggestion of a future federation of German countries was more or less an improvisation; But all the same I have a feeling that a reform of the REICH on the lines of dismemberment and decentralization would be the best for Germany and the world and corresponds with \"German Liberty\" best, and could be brought about very naturally under the new circumstances.\n\nIt is only too obvious that an end must be made of the unholy German empire of the Prussian nation, this centralized, empire of power and war. This opinion of course earns one the bitter enmity of the Social Democratic patriots here and in London, however, I must maintain it, in as unaggressive a way as I can.\n\nWith regard to LORD VANSITTART, I have never listened to the stupid nonsense that these people talk about him.\n\nWith warmest greetings\nyours\nTHOMAS MANN\n\n(the letter is written by hand.)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:15:08.959141+00:00",
+  "page": 27,
+  "total_pages": 90
+}

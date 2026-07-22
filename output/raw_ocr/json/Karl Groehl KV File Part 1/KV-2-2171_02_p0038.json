@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "From. Karl Groehl\nTo. Karl Otten.\ndated. 9.1.39.\n\nSummary.\n\nI have received your letters of 7th and 8th.\nI am trying to deal with the translation. The publishers must make the final decision as to whether they will sell the translation. I am trying everything and have sent the book to a Spanish official. Where are the reviews? I have not seen them in the Paris or Basle papers.\n\nYes, Bornstein is the chief and B.J. is military collaborator. Olden is not a certain correspondent. He is paid quite enough.\n\nRauschn. is coming again to London (do not talk about it). I gave him your address and he will come and see you. Since Christmas I have received no money. B.J. was here yesterday and had got the 300,00 I had obtained for him. He has received nothing from the Daily paper. I had many notices on the first page. I am so ill through personal troubles that I cannot work and am going to Nice for 8 days. On my return I will be with Marcu, but not living with him.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:02:10.873388+00:00",
+  "page": 38,
+  "total_pages": 102
+}

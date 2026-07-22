@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PTE. A.W. OLDAG.\n\nCOPY.\n\nSheet 2.\n\npatients/\nStraining beneath the windows, seeing the morning thin and sidelong\nKnit cloudy brows in silence,\nAnd turn a sad shoulder on their former lovers.\nTo dream of them instead, and of running away with them.\nTo morning worlds guiltless of time and sickness.\n\nI hope you are well, dear comrade. I'll write again in a few days.\n\nAuf Wiederselin,\n\nIva.\n\nCertified true copy and typed by me -\n\n[signature]\nWelfare Officer,\nNo. 10 Military Detention Barrack.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:41:37.401840+00:00",
+  "page": 34,
+  "total_pages": 92
+}

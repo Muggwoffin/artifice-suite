@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "L.158/1424/E.1/RC\n\nFritz EBERHARD\nformerly H. von RAUSCHENPLAT\nNat.: German\nBorn: Dresden on 2nd October 1896\nAdd.: Stuttgart, Wurttemberg.\nOcc.: Until recently Intendant of South German Radio\n\nThe above-named was last referred to in our letter OF.1507/E.1. of 23rd March, 1959, after he had attended the First European Congress for Nuclear Disarmament held in London. In that letter we said that we had nothing recorded against EBERHARD from a security point of view.\n\n2. A delicate and reliable source has now reported that the Press Service of the Christian Democratic Union has issued a warning about EBERHARD because he is said to have established contacts in Eastern Germany, which apparently he has recently visited. He is said to be planning the production of a film about the German Democratic Republic.\n\n3. In view of the delicacy of our source, we must ask that the above information is passed only to your own representatives.\n\n24th June, 1959\n(In duplicate)\nPG/JP",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:40:34.788299+00:00",
+  "page": 10,
+  "total_pages": 24
+}

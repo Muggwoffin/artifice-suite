@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SOURCE: M.D.  20.1.42.\n\nThe RETZLAW Affair\n\nThe affair is now clear. There are two RETZLAV's, one is connected with the Sopade, was formerly a Communist. He is hardly active politically at all, is an extremely decent and loyal political refugee.\n\nThe other RETZLAV (initial S.) is the one who gave the document to Dr. OP(POCENSKI - official of the Ripka-Benes Secretariat)?. He was formerly a Communist and in fact during the \"Raete\" time (temporary Communist Republic in Munich in 1919-20?) he held a high police job in Munich. He is deaf. He left the Communist Party because of fundamental differences. I have been assured from many sides that he is absolutely reliable too, in his attitude towards England.\n\nE.3.(S)\n22.1.42.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:34:18.715808+00:00",
+  "page": 53,
+  "total_pages": 107
+}

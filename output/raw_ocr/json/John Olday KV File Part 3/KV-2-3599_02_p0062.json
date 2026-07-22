@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "We have no information to show that branches of the \"Spartakusbund\" have yet been found in the Dominions or the U.S.A.\n\nYours sincerely,\n\nPamela Stiebel.\n\nS.I.S.\n\nHMG/CAC\n\nJG/R4 28.10.43.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:17:44.194611+00:00",
+  "page": 62,
+  "total_pages": 71
+}

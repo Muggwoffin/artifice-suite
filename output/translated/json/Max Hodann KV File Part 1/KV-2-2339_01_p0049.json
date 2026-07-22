@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "de",
+  "source_language_name": "German",
+  "cleaned_text": "Herrn Dr. Max Hodaun\n90 Skane\n63 Haverstock Hill\nN.W. 3.",
+  "translated_text": "Mr. Dr. Max Hodaun\n90 Skane\n63 Haverstock Hill\nN.W. 3.\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:46:09.381636+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The text was clear and legible. The translation choices were straightforward: 'Herrn' to 'Mr.', adding 'Dr.' before the name, and maintaining the address format.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

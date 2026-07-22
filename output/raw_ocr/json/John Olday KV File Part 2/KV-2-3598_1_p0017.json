@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET AND PERSONAL\n\nHEADQUARTERS,\nWESTERN COMMAND,\nCHESTER.\n\nTO: T.S.M.\n24 April 46.\n\nDear Miss Weldsmith,\n\nI thank you for your letter PF.66074 of 18th April, giving me the full story of Oldag.\n\nI visited his present O.C. this morning and understand that he is being drafted on 26 April to 276 Coy, 23 Group Pioneer Corps, Craven Arms, Salop.\n\nI have arranged to see his new O.C. on Friday morning and will talk over the case with him prior to Oldag's arrival there. His conduct for the short while he has been at Cuddington has been good.\n\nYours sincerely,\n\n[signature]\n\nMiss C.S. Weldsmith,\nBox 500,\nParliament Street B.O.,\nLONDON. S.W.1.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:38:39.394140+00:00",
+  "page": 17,
+  "total_pages": 92
+}

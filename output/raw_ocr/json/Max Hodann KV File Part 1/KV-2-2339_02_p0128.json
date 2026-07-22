@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Mr. Cooper, Home Office, rang up yesterday and asked whether we knew anything about a [Mrs. LINDBAEK-NILSSON] who had turned up at Harwich with a German named Max HODANN. They were travelling together and had been collaborating in a book recently published in Norway. They were both refused leave to land on account of being in possession of insufficient funds.\n\nMr. Cooper's interest was aroused as the Norwegian Minister - who called at the Home Office on behalf of Mrs. LINDBAEK-NILSSON, and an alien journalist - whose name sounded like \"Brotoi\" who called on behalf of Max HODANN - both jumped to the conclusion that the pair had been refused on political grounds.\n\nNote. Mrs. LINDBAEK-NILSSON is identical with the woman whom M.I.l.c. had warned us in November last was likely to be bringing Mrs. MARTIN's son to this country. Her case is dealt with in PF.42334.\n\nIn view of what we knew of Max HODANN I went to the Home Office to see Mr. Cooper and find out the exact position. I gave him such facts as we knew about HODANN.\n\nIt appears that Max HODANN is a Doctor and Journalist; a member of the Hirchfelde Institute; was in a concentration camp from where he went to Scandinavia, Switzerland and Palestine.\n\nMr. Cooper told me that this alien was being detained at Harwich pending the decision of the Home Office. He was apparently intending to visit his divorced wife Maria HODANN (PF.43231) who has the custody of their child.\n\nMr. Cooper also told me that the journalist who had called on HODANN's behalf, when asked to guarantee a sum to cover HODANN's expenses said he could not do so but that another person would, who, however, did not wish to give his name.\n\nAfter consultation with Mr. Harker and Captain Liddell it was decided to tell Mr. Cooper that we were prepared for this case to be dealt with on its merits from the Home Office",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:35:46.135516+00:00",
+  "page": 128,
+  "total_pages": 131
+}

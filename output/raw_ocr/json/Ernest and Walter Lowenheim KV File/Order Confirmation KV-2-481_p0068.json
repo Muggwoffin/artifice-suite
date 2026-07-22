@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "9th October, 1941.\n\nDear [redacted],\n\nIf it is at all possible, I should be extremely grateful if you could make a special effort to see soon. It is desirable to speed up enquiries about the L's and so I would like to have all information possible.\n\nHoping this will not cause you an inconvenience, and thanks for all you have done so far.\n\nYours sincerely,\n\nfor C.W. Sykes.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:21:01.355883+00:00",
+  "page": 68,
+  "total_pages": 68
+}

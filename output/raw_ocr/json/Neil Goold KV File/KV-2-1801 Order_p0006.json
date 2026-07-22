@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "F.2a Miss Creedy.\n\nI learnt on my recent visit to Dublin that GOOLD VERSCHOYLE, who was released from internment in the autumn of last year, has been trying to recruit ex-I.R.A. internees for the Communist Party.\n\nB.1H/GL\n28.3.45\n\n25.5.45. Extract from letter from R.U.C. Belfast re GOULD. (Filed 27.6.45)\n\n19.6.45. Copy of letter to R.U.C. mentioning GOULD\n\n21.6.45. Copy of letter from R.U.C. mentioning GOULD\n\n21.12.45. Press cutting from Irish Press re Nial GOOLD.\n\n3.1.46. Press cutting from Irish Press re Nial GOOLD etc.\n\nNov. '46. Summary of Brial GOULD VERSCHOYLE.\n\n27.11.46. From S.I.S. re GOOLD and Committee of Republican Unity",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:36:54.004191+00:00",
+  "page": 6,
+  "total_pages": 103
+}

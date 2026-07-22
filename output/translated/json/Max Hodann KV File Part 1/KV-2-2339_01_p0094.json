@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "COUNTY CHIEF CONSTABLE'S OFFICE,\nCASTLE HILL,\nCAMBRIDGE.\n\n12th April, 1935.\n\nTELEPHONIC ADDRESS:\nWEBB, CAMBRIDGE 3451.\n\nDear Sir Vernon,\n\nIn reply to your letter of 11th instant, PF. 43817/D.S.9.a., I enclose registration card of Alexis Samuel Finkelstein for your perusal as desired. Please cause card to be returned to me in due course.\n\nYours faithfully,\n\n[signature]\nChief Constable of Cambridgeshire.\n\nColonel Sir V.G.W. Kell,\nBox No. 500,\nParliament Street, B.O.,\nLondon, S.W.1.",
+  "translated_text": "COUNTY CONSTABLE'S OFFICE,\nCASTLE HILL,\nCAMBRIDGE.\n\nApril 12th, 1935.\n\nTELEPHONE NUMBER:\nWEBB, CAMBRIDGE 3451.\n\nDear Mr. Vernon,\n\nIn response to your letter dated April 11th, PF. 43817/D.S.9.a., I am enclosing the registration card for Alexis Samuel Finkelstein for your review, as you requested. Please arrange for the card to be returned to me at your convenience.\n\nYours sincerely,\n\n[signature]\nChief Constable of Cambridgeshire.\n\nColonel Sir V.G.W. Kell,\nBox No. 500,\nParliament Street, B.O.,\nLondon, S.W.1.\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:47:38.055509+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The translation is accurate and maintains the formality of the original. Minor changes like 'in reply' to 'in response', 'perusal' to 'review', and 'cause card to be returned' to 'arrange for the card to be returned' improve readability without altering the meaning.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

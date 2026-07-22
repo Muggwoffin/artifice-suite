@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "PF.45000\n\nM/S (Major Maxwell Knight)\n\nJohn & Mrs. OLDAG.\n\nMany thanks for your letter of the 24th May, and subsequent report on the above. OLDAG's file is still with A.D.F. so that I am not taking any action until I have his opinion and appreciation of the situation. I will of course let you know what action is being taken, as requested.\n\nM. Sercombe.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:20:31.110713+00:00",
+  "page": 12,
+  "total_pages": 98
+}

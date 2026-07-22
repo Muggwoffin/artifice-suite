@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET AND PERSONAL\n\nO.E. Major Mott.\n\nMax HODANN.\n\nThis man has long been connected with Communism. In 1928 he was prominently associated with the German section of the F.S.U. and in 1929 he is understood to have become International Secretary of that Organisation.\n\nIn 1928, according to an S.I.S. report, HODANN arranged a meeting in Berlin between the Chief of the Russian espionage service and a Dr. GUMBEL of Heidelberg who was then given the post of Russian agent in Germany and the neighbouring States.\n\nIn 1935, HODANN visited Palestine with a woman (sa LINDBAKK) who was known to be closely connected with another woman who was at that time serving a term of imprisonment in Finland for Soviet espionage.\n\nAfter his arrival in U.K. in March 1935, he was in touch with Communist circles and on occasions was the visitor to the flat of an individual who had undoubtedly been used as a Comintern courier. He also corresponded with a friend in Denmark who was an associate of members of the Communist Party abroad. Correspondence also showed that he was in touch with a Norwegian professor, Dr. Arne ING. ORDING was friendly with a Swedish revolutionary. In 1935 was associated with the International Bureau of Revolutionary Socialist Unity in London. At the end of 1935 the Home Office refused to extend permission for HODANN to remain in U.K. He left for Ostend on 1.1.36.\n\nIn 1936 S.I.S. received information from the ssels Surete that HODANN was a speaker on \"Life in the U.S.R.\" This discussion had been organised by the rleroi section of the Jewish Communist group, \"Prokor\". The group was said to have as its objective the emigration of the Jews to U.S.S.R.\n\nIn December 1938 it was discovered that HODANN recently arrived back in Norway from Spain after years service in Spain in the Army Sanitary Service.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:58:02.649960+00:00",
+  "page": 13,
+  "total_pages": 104
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY/\n\nGARDA SIOCHANA\n\nDublin Metropolitan Division.\nAssistant Commissioner's Office,\nDublin Castle.\n\n6th April 1939.\n\nThe Commissioner of Police,\nof the Metropolis,\nNew Scotland Yard,\nLONDON, S.W.1.\n\nSir,\n\nHamilton N.S. Gould Verschoyle charged with loitering at Dublin - in possession of Communist Literature.\n\nI beg to forward for your information the annexed copy of report relative to above subject, and to request that you kindly cause the suggested action to be taken and favour me with a report as soon as convenient.\n\nI am, Sir,\nYour obedient Servant,\n\n----- Chief Superintendent.\nfor ASSISTANT COMMISSIONER.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:48:05.776026+00:00",
+  "page": 85,
+  "total_pages": 103
+}

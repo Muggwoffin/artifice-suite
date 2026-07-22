@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "22.9.41.\n\n\"I have been told by Martin [illegible], at present 33, Greencroft Gardens, W...3, released about 3 weeks ago from the Isle of Man that he has been asked by LOM[illegible] to give Traute L[illegible] the following message after his arrival in London.\n\n\"LOM[illegible] have been questioned by Capt. Johnson (it was probably Hapier) about the code which LOM[illegible] used in their correspondence with friends abroad; remaining unclear points about the code have been entirely explained to Capt. Johnson and he was really satisfied about the explanations given.\"\n\nAs L's regard regard the above interview with Capt. J. as the most important fact during the last 3 to 4 months, Lippmann has been requested by Ls to give this message to Traute L.\n\nIn addition to my last letter I beg to state that I have apparently omitted to tell you that Mrs. Traute L. is intending to visit Ls on the Isle of Man early October if she has no news about their release.\n\nIt appears to me that Mr. Wilhelm [illegible] left for South America in July last.\n\nI regret to have not yet news from\n\nB.3.(B)\n26.9.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:52:41.141129+00:00",
+  "page": 14,
+  "total_pages": 64
+}

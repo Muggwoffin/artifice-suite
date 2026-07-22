@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Ref: P.F. 60074.\n\nB.6.\n\nI should be grateful if you would obtain for me the birth certificate of Arthur William OLDAG. This man who was born on 10.4.05. at St. Pancras, London, is the illegitimate son of a German mother and a Scottish father.\n\nF.3.m.\n6.7.44.\n\nF.3.m.\n\nCopy birth certificate herewith.\n\nB.6.\n8.7.44.\n\nR.G. Micklethwait.\n\nH. Hunter.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:02:16.156474+00:00",
+  "page": 90,
+  "total_pages": 91
+}

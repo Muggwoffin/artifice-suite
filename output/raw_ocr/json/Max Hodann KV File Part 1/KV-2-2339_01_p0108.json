@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "K\u00d8B BREVKORT. TIL FESTIVITET\nSTAT. DANMARK\nPOST\n\u00d8RE POSTERIM\u00c6RKE\n1910\n12 APR\n1935\nK\nAfsender\nDANMARK\n7\nMrs Hedawen\nKynance Lane\nGloucester Rd\nLondon SW 7\nR 144",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:16:08.632823+00:00",
+  "page": 108,
+  "total_pages": 144
+}

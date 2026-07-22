@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "EXTRACT FROM THE ARMY PAPERS OF\nPte. W. OLDAG.\n\nNo. 13095115, William OLDAG.\nPioneer Corps.\nBorn. St. Pancras, London 10-4-05.\nAddress. 49 Upper Montague Street,\nLondon W.1.\nNationality. British.\nNationality of Parents at Birth. Father: Unknown.\nMother. German.\nNext of Kin. Hilda Oldag (Wife)\n4 Park Avenue,\nLondon N.W. 11.\nOccupation. Shop Assistant.\nReligion. Atheist.\nEnlistment Date. 17-7-41.\nPrevious Service. Nil.\nPersonal Description. Height. 5' 8 3/4\"\nWeight. 135 lbs.\nEyes. Blue.\nHair. Fair.\nMilitary History. Enlisted in the I.T.C. 17-7-41.\nTransferred to the Buffs. 10-10-41.\nTransferred to the Pioneer Corps. 4-11-41.\nPresent Location. Declared a Deserter. 27-3-43.\nCIV. 20-8-43.\n\nPAPERS returned to RECORDS, 5.9.43.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:22:13.133780+00:00",
+  "page": 26,
+  "total_pages": 98
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "175.\n24.10.35. H.O. papers for HODANN requisitioned.\n\n176.\n25.10.35. Extract from H.O. file H.2807.\n\n177.\n25.10.35. H.O. papers passed to S.3.a. to return.\n\n178.\n25.10.35. Intercepted letter from FREUD to HODANN d/20.10.35.\n\n179.\n30.10.35. From C.C.Glamorganshire re Maes-yr-Haf Educational Settlement.\n\n180.\n4.11.35. Intercepted letter from Janet CHANCE to HODANN.\n\n181.\n5.11.35. Intercepted letter from FLEURSCHHEIM to FINKELSTEIN.\n\n182.\n5.11.35. Intercepted letter from LEUNBACH to HODANN.\n\n183.\n5.11.35. Intercepted letter from Karen FINKELSTEIN to FINKELSTEIN.\n5.11.35. Result of return of correspondence on 242, Tufnell Park Road, N.19.\n\n184.\n6.11.35. Intercepted letter from ELKAN to FINKELSTEIN.\n6.11.35. Result of return of correspondence on 17, Hurstwood Road, N.W.11.\n\n185.\n9.11.35. Intercepted letter from PENDLEBURY to FINKELSTEIN.\n\n186.\n11.11.35. Intercepted letter from FLEURSCHHEIM to FINKELSTEIN.\n\n187.\n12.11.35. Letter to C.C.Bradford.\n\n188.\nIntercept at 185a shown to S.10. who would like to see result of enquiries regarding PENDLEBURY.\nS.9.a.\n12.11.35. Intercepted letter from 'Babett' to HODANN.\n\n189.\n14.11.35. Letter from C.C.Bradford.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:56:51.581981+00:00",
+  "page": 5,
+  "total_pages": 104
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "I spoke to Mr. Pilkington and arranged, on Colonel Hinchley Cooke's behalf, that in view of the urgency of this case, B.4.c. should deal direct with S.O.2. and send us copies of correspondence.\n\n28.3.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:48:45.280899+00:00",
+  "page": 34,
+  "total_pages": 96
+}

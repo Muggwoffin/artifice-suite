@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Uppsala 2.1.36.\n\nLieber Herrs,\n\neigentlich wollte ich Dir erst zu Deinem Geburtstage schreiben, werde Dir aber die zaghafte R\u00fcckw\u00e4rtschub mit Neujahrsgr\u00fcnen schon sende, weil ich Dir wegen einer anderen Sache schreiben muss.\n\nVor einiger Woche erhielt ich eine Einladung von der Kos. Kaiser Akademie zu einer \"Conferenz \u00fcber galv. Elektrische Accumulationen\". Ich war also dort - im ganzen 14 Tage fort von hier - und bin gestern heimgekehrt. Dieses mal war uns ein Freund der, In mancherlei, \u00fcbrigens ein sehr guter Techniker und sprachliches Meister. Innen waren wieder Vorbringen werde alles in einem abgehandelt, und Abschiedszeuge habe ich auch nicht geahnt. Der eigentlich, wie ich das immer jedenfalls dachte, oder von Eingaldserssonen, die wir, einmal als allein, mittels einer einzelnen Voltmeterkette nicht Teil mitzuverfolgen hatten und bei denen wir durchaus ausgezeichnet worden. Wenn uns nach bestem Kenntnis ich was gesagt hatten, kann, besonders bez\u00fcglich einer technischen Methode, also die Frage: und was ist besser? oder auch: und welche Firma ist besser? Sie waren daher freundig, wenn uns dann regelm\u00e4\u00dfig zugesagt; das, wenn wir nicht das m\u00fcssen f\u00fcr in Frage eigenen Fabriken selbst ausprobieren.\n\nNun der war die Hauptsache, das war uns dann, wenn wir m\u00fcndlich den Auftrag zur Wartung nach Norwegen und",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:10:45.957654+00:00",
+  "page": 30,
+  "total_pages": 130
+}

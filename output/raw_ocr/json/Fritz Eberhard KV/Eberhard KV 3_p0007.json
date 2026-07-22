@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3a50cf10b688315cccd916f71e58b224.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "11.6.40. From DEMUTH stating that the calling in of the wireless sets seriously curtails the work of reporting on the German Press and radio propaganda. Exemption from radio ban asked for for RAUSCHENPLAT among others.\n\n26.6.40. More information regarding the work of the Committee asked for.\n\n24.7.40. Application supported by Mr. Gibbs Smith, and asking that Dr. Josef Adolf BONDY and Dr. Hellmut von RAUSCHENPLAT, should be allowed to keep their sets for the purpose of their work.\n\nFrom MINUTE SHEET.\n\nSubject to any observations from M.I.5. grant permits under the Aliens (W.A.R.) Order to Dr. F. DEMUTH, Dr. J.A. BONDY, and DR. H. RAUSCHENPLAT.\n\nTO M.I.5.\n\nHome Office\n\nWe do not wish to raise any objection to Hellmut Von RAUSCHENPLAT being given permission to have a wireless receiving set.\n\nWe are making further inquiries about Dr. DEMUTH and Dr. BONDY.\n\nM.I.5.\n23.8.40.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:22:09.851333+00:00",
+  "page": 7,
+  "total_pages": 24
+}

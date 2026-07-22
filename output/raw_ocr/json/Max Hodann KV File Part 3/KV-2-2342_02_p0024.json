@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\2624c02f352a45e8144e7e4db79b53a9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Gist of Int. F.M. 8162.\n\nFrom 'Carl', Uppsala, Sweden.\nTo Dr. Alexis FINKELSTEIN, 13 Shelford Park, Great Shelford.\n\n2.1.36.\n\nDid not mean to write till the addressee's birthday, but has to write to-day about another matter. A few weeks ago he received an invitation from the Moscow Academy to a Conference on 'galv.' elements and Accumulators. He went and was away for 14 days in all and returned yesterday. Besides himself there was only one foreigner, IUMAN(?) from Paris, a great expert. Apart from their speeches all the business was conducted in Russian and the writer has not yet received the translation. The chief point was three or four discussions which were held among the technical experts with the help of interpreters. Deals at some length with the conference.\n\nNow the main point. The suggestion was made to the writer that he should go to Moscow and take up a good position there. In his surprise the writer answered in a dilatory fashion and promised to take steps on his return. This he wishes to do now after asking advice from KONNIG in Moscow. He is afraid he has not sufficient technical knowledge and if he refuses, would like to know if he should suggest the addressee. He has already scolded them for not inviting him, which was because they did not know his address. If the addressee will let him know for certain, the writer will send details.\n\nNo particular news from home except that Gertrud's sister K\u00e4the has been with them since November. Mentions Isa who is still struggling to regain her name and nationality.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:10:08.799506+00:00",
+  "page": 24,
+  "total_pages": 130
+}

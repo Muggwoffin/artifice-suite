@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "NAME\nRELATIONSHIP\nPRESENT ADDRESS\nUNITRIES (including any largest foreign, foreign service, or overseas duty)\nRIGULARE OF RELATIVES NOW IN ENEMY OCCUPIED OR CONTROLLED\nSECOND WIFE\nNAME NATIONALITY AT BIRTH AND PLACE OF BIRTH OF FATHER, MOTHER\nDATE OF REGISTRATION NUMBER\nCIVILIAN ADDRESS\nNATIONALITY AT BIRTH (if foreign born state)\nLOCATIONALLY\nDATE OF BIRTH\nIF CHRISTIAN NAMES\nNAME\n(Enter name of parent if deceased if father of one more years)\nMITR",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:58:34.742396+00:00",
+  "page": 18,
+  "total_pages": 104
+}

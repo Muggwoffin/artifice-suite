@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "As I write this, I look through the open door to swaying fir trees and hills. Birds are singing\u2014\n\n\"Die V\u00f6gel im Walde singen wunder-wundersch\u00f6n\nIm der heimat, im der heimat,\nDort gibt's ein wiedersehen.\"\n\nI quote from memory.\nOur wiedersehen will come one day. It is something good to look forward to, isn't it?\nI shall write you again soon.\nAuf Wiedersehen\n'Bebeli.'\n\nA. W. OLDAG,\nBRIXTON PRISON,\nLONDON S.W.2.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:47:52.456963+00:00",
+  "page": 80,
+  "total_pages": 92
+}

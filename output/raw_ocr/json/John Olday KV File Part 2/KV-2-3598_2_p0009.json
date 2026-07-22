@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 81/B.P./5000/12.44\n\nEXTRACT.\n\nExtract for File No.: PF 66074 Y Box. Name: OLDAG.\n\nOriginal in File No.: PF 112,517 Serial: 49a Dated: 23.2.45.\n\nOriginal from: S.B. Under Ref.: 79/45/344 dated 20.2.45.\n\nExtracted on: 23.4.45. by: RW Section: R4.\n\nExtract from S.B. report re Josef MORAVEK, Czech suspected of Trotskyist sympathies, when a raid was made on his flat, London Road, Paddington, where various Printed and written Material was found. Report mentions OLDAG.\n\nInformation was received that Arthur William OLDAG anarchist cartoonist (S.B. reference 320/EPA/517), now serving twelve months imprisonment for National Registration Offences, had stayed in MORAVEK's flat at 12, London Street, Paddington at a time when he (OLDAG) was a deserter from the British Army. A search warrant was therefore issued by Superintendent under Defence Regulation 88A and executed by me at that address, on 16th February 1945 (with the assistance of Inspector HO RE and Sergeant DICKINSON).\n\nAs already stated our information was that OLDAG stayed with MORAVEK at 12, London Street, W.2. and the finding of the former's drawings, (item 2 in list) when we searched, confirms this information. (According to MORAVEK he got the drawings in Hyde Park from two different men whom he forgets).\n\nThe informant further declared that duplicating on behalf of anarchists was carried out by OLDAG whilst he was there. On the base plate of the duplicating set seized we found traces of what seemed to be one of OLDAG's cartoons. (Enquiries about",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:50:40.177359+00:00",
+  "page": 9,
+  "total_pages": 91
+}

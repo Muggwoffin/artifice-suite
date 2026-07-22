@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy to Bristol.\n\nOur Ref: P.F. 66074/Y/N.3.m.\n\nMr F.W. Towns,\nBox No. 500,\nManchester.\n\nOLDAG, A.W.\n\nPlease note that our reference number in this case is P.F. 66074/Y and not P.F. 60074/Y as previously stated. Your reference number 6517 refers.\n\nR.G. Micklethwait.\n\n15th September, 1944.\nRGM/ECS.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:57:44.903624+00:00",
+  "page": 58,
+  "total_pages": 91
+}

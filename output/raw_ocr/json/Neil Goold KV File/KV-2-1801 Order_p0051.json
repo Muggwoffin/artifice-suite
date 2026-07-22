@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "S. Form 22. 71B.\nTRANSIT\nBranch .............................................................\nInitial ............................................. Date .....................................................\nPersonal File No.    Subject File No.    Passed to\nD 35671-1 50,000 D/d 9923 7/39 R P",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:43:19.027470+00:00",
+  "page": 51,
+  "total_pages": 103
+}

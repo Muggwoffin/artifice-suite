@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy\n\n32 Souberie Avenue\nLetchworth\n\n11.8.38.\n\nMy dear Groehl,\n\nI hope you are coming over to see me this week-end as you promised, because our literary work cannot go on unless I have an immediate consultation with you. But I think I have told you that before, and I feel sure you will put off any engagement you have in Paris and come along. I can put you up as usual.\n\nYours sincerely,\n\n(s) Claud W. SYKES",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:05:50.632036+00:00",
+  "page": 66,
+  "total_pages": 102
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "STATEMENT OF WALTER LOWENHEIM.\n\nI became a member of the Communish Party in 1920. I then became a friend of Paul Levy, a Social Democrat and a member of the Reichstag. He left the Communist Party but I remained an inactive member until I was expelled in 1927-8 because they became too Radical for me.\n\nIn 1929 I entered the Social Democratic Party and formed within it a group called \"Neubeginnen\".\n\nIn 1933 when the Nazis came into power we went underground to circumvent the Gestapo. We assumed false names, our real names being known only to the leading officials of the group. We also formed a branch at Prague and I wrote a manifesto, called \"Neubeginnen\". I sent it to Prague for publication. I do not know how it was concealed to get it across the frontier. It was published in England, France and America. I was the head of the movement for three years, when there was a split; part followed me and part Karl Frank at Prague.\n\nI left Germany in 1935 with some of my followers and went to Prague. There I attended to my business interests and tried to help friends who were imprisoned in Germany.\n\nIn 1936 I came to England via Switzerland and France and, en route, met famous labour leaders in these countries who were friends of mine.\n\nErwin Schoettle, later interned in Onchan Camp, headed the Neubeginnen Party here.\n\nIn England I neither formed nor joined any political party, but confined myself to political research work.\n\nIn Germany we used a code among the leading members - a simple substitution of names.\n\nOver here we used this code only for writing to Prague concerning our friends imprisoned in Germany. At least it may have been so used.\n\nMy brother had a copy in England.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:06:53.035665+00:00",
+  "page": 44,
+  "total_pages": 60
+}

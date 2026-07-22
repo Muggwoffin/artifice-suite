@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\90e8c7e7b99411378e6285ccc26514ce.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Ref. No: L4056 (R601)\n\nNATIONALITY DIVISION,\nHOME OFFICE,\nPRINCETON HOUSE,\n271, HIGH HOLBORN,\nLONDON, W.C.1.\n\nM.I.5\n\nThe under-mentioned person has applied for the grant of a certificate of naturalization and enquiry is made as to whether anything is known or recorded about him:-\n\nNames ERNST BRUNO LOEWENHEIM\n\n(and aliases)\n\nAddress 70 Anson Road\nLafnill Park, London, N.7\n\nOccupation Accountant\n\nPlace and date of birth Berlin 28 Oct 1898\n\nNationality German\n\n(Initials) 98\n\nDate 12.3-1948\n\n/REPLY",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:14:55.718684+00:00",
+  "page": 24,
+  "total_pages": 68
+}

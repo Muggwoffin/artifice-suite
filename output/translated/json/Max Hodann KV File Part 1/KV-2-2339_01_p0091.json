@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "From Alexis S. FINKELSTEIN, 13, Shelford Park, Great Shelford.\n\nTo Dr. M. HODANN, Kynance Court, Gloucester Road, S.W.7.\n\nDate of Letter 14.4.35.\n\nDate of Postmark 14.4.35.\n\nSUMMARY OF CONTENTS\n\nWas disappointed not to see HOFANN.\n\n\"I shall be in town Thursday afternoon. I want very much to see you and [Mrs. LINDBAEK]. Will you give me a sure appointment? My last train leaves 8.22. Liverpool Street.\"\n\nFor translation see attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n(date)",
+  "translated_text": "To Dr. M. Hodann, Kynance Court, Gloucester Road, S.W.7.\n\nFrom Alexis Finkelstein, 13 Shelford Park, Great Shelford.\n\nDate of Letter: April 14, 1935.\nDate of Postmark: April 14, 1935.\n\nSUMMARY OF CONTENTS\n\nDisappointed not to have seen Dr. Hodann.\n\n\"I will be in town on Thursday afternoon. I would very much like to see you and [Mrs. Lindbeck]. Will you please arrange a definite appointment? My last train departs from Liverpool Street at 8:22.\"\n\nFor translation, please refer to the attached sheet.\n\nCOMMENT\n\n(a) No action required. P.A.\n\n(b) See Minute ( )\n\nInitials\n[Date]\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:47:32.578136+00:00",
+  "confidence": {
+    "score": 95,
+    "reasoning": "The text was clear and legible. The translation choices were accurate and reflected the original meaning. Minor adjustments were made for clarity and formatting, but the core information remained unchanged.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 98
+  }
+}

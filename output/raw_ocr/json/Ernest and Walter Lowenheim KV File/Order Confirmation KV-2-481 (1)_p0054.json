@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\829ebb54c230f2c22dc97648cb8d7d2f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "14/7/41.\n\nI should like to remind that I have received on 29/6/41 an information i.e.\n\"Mrs. Traute L\u00f6wenheim thinks that the authorities here 'are believing that the Thames Engineering Company' had 'the only purpose to cover certain political activities' of her people an assumption which is wrong.\n\nNow she is telling that the Thames Engineering Company was used for real business purposes but that the 'Metropolitan Engineering Company', the office of which used to be in the same building, and the sole director of which was Ernst L. was used only and for the sole purpose to carry on in the office room of the Company L\u00f6wenheims political activities, correspondence etc. No transactions whatsoever have been made by the Metropolitan Engineering Company through all the years.\n\nShe did not tell me details about this political activities but no doubt they are known to her.\n\nI was told that after Ernst L. was expelled by the Communists in Berlin he lost his job as a Manager of the Russphoto but started a Photoagency of his own using it as a cover for his political activities.\n\nShe declined to tell me about the profession of Walter L. anything but assures me that he was only engaged in politics, first for the Communists, later for Neu Beginnen, while in Berlin.\n\nBruno Karth\u00e4user who has been transferred to the Married Internment Camp, Port St. Mary, was not yet informed about his pending application for joining the Pioneers.\n\nFurther information is going to follow.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:58:17.112745+00:00",
+  "page": 54,
+  "total_pages": 64
+}

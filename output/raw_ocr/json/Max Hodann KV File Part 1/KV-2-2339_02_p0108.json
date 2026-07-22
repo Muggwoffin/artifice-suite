@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy in P.F. 43824. Lindbaek-Nilson.\n\nPlease quote:-\nH.2807.\n\nAliens Department,\nHOME OFFICE,\nWHITEHALL,\nS.W.1.\n\nSECRET.\n\n23rd March, 1935.\n\nDear Miss Sissmore,\n\nWith reference to your letter of 20th March (PF.42334/D.S.9.a), I enclose, for your information, copies of the reports we have received from the Immigration Officer at Harwich regarding Dr. Max Hodann and Mrs. Lindbaek-Nilson. After consultation with the Ministry of Labour, we have been able to agree to the employment of Mrs. Lindbaek-Nilson of Dr. Hodann as her amanuensis during the period for which she has permission to remain in this country, and have asked him to call here with his passport in order that the necessary endorsement may be made in it. As arranged, I will let you know as soon as he calls in order that you may arrange for him to be picked up.\n\nYours sincerely,\n\nG.H. Cooper\n\nMiss K. Sissmore.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:33:18.119954+00:00",
+  "page": 108,
+  "total_pages": 131
+}

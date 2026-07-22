@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "\"Disarmament following the war would seem unlikely, and with an excellent goodwill established with a number of foreign powers, with the Admiralty, and with individual owners of speed boats, the outlook is promising.\"\nFrom the chairman's speech at the annual general meeting of Vospers, 'Evening Standard', 25th Jan., 1940.\n\n\"A trade war will follow the present war.\"\nMr. Shepard Morgan Chase, Nation Bank of New York, 'Glasgow Citizen', 3rd Jan., 1941.\n\n\"The victory of Japan clearly spells the extirpation of all European and American interest in the Far East. The victory of China if aided by the great democracies might win for them a century of fertile and beneficent trade.\"\nWinston Churchill, New York 'Herald Tribune', 14th August, 1939.\n\nGOLD FOR THE GREEDY",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:11:44.365003+00:00",
+  "page": 4,
+  "total_pages": 71
+}

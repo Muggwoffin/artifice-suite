@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Allgemeine Korrespondenz (Ernst Lowenheim)\n\nAdank\nAdler\nAmsterdam\nAntwerpen\nArchiv\nAufhauser\nArndt\nAlbrecht\nBreitscheid\nBartels\nBauer\nBelgien\nBerlin\nBerger\nBericht\nBlum\nBochel\nBraun\nBrussel\nCrips\nCrummenerl\nDan\nDeutschland\nDora\nDrucker\nElla\nEhlert\nEllen\nFerl\nFimmen\nFlor\nFranz\nFred\nFritz\nGruner Otto\nGabriele\nGeld\n100\n1000\n2000\nGewerkschaft\nGillies\nGleich\nBendler\nFalk (Frederick Adler, Member Socialist International)\nRotterdam\nLuttich\nVorrat\nGottfried (member Clerks Trade Union, Germany)\nHartmann (Ralf Troje, Member of NB in Holland)\nBrecht (now in Brussels)\nKennadd (member of Reichstag)\nBroger\nCaro (Otto Bauer, leader of Austrian Socialists)\nSchottland\nWien\nMayer (Walter Lowenheim)\nArtikel\nProf. Charles (Leon Blum, ex Premier France)\nMartin\nRoth (Max Braun)\nHaag\nDavis (Sir Stafford Cripps)\nDiener\nDaniel (Russian refugee. Leader of Manchiwicks - now in Paris.)\nDanemark/Rumania\nWinter (Sommer - German member)\nMuller\nAlt (Frank's Sect. in Prague)\nFlach\nLenau\nGaul\nGartner (International Transport Workers Union I.T)\nGrun\nMerker (Franz Schleiter (ex-Central) husband of Hellene)\nHillmer (Karl Frank, now in America)\nReichert\nLyon (Ernst Lowenheim)\nSchone Wienerin\nRitter/Frida (Mrs Rischowsky, Foreign Sect. of N.I)\nWasche\nStrumpfe\nKleid\nMantel\nHandelskammer\nHenry\nSpath (Richard Lowenthal - in London",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:03:47.436588+00:00",
+  "page": 24,
+  "total_pages": 60
+}

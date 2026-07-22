@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Hertha PAULI,\n19 W 76th,\nNEW YORK CITY.\n\nDear K.G.\n\nMany thanks for both your kind letters. Carli has already told me that he awaits work from you with great pleasure, and I presume that he will meanwhile already be busy with it.\n\nCan I do anything for you? Everything here is quite different to what one would imagine and great in its way. The beginning is indeed difficult, when one comes here without contract or other means. I am writing for the \"Aufbau\" (construction) which you have probably have seen over there and have at last found a translator for my work. I am trying to hand the novel in in German. I am, however, already working here as secretary to the editor of P.M. here - English naturally.\n\nI miss the friends over there very much. I am glad that you see P. and please give him my love again. Dreadful that W.M. is still in Marseilles. He didn't trust himself further ... He should have taken his example from you.\n\nI am writing at the same time to the dear HORVATHs about their great worry WERA, but sheydoesnot deserve it. You know how furious I am with her. I only do it on your account. All the best wishes for you in the New Year, and may all our wishes soon be fulfilled at last and our cause will win. If one could only help more here.\n\nWhen shall we be seeing each other again? Let us hear from you, won't you.\n\nWishing you all the best,\n\nYours,\n\n(sgd) H.P.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:53:15.545435+00:00",
+  "page": 66,
+  "total_pages": 96
+}

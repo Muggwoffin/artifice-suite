@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Same letter also sent to R.Os of Reading, Bristol, Manchester, Cardiff and Leeds.\n\nYour: 3276.\nOur: PF.66074/F.3.m.\n\n30th December, 1944.\n\nDear Glover,\n\nJohn OLDAY @ Arthur William OLDAG.\n\nYou may be interested to hear that John OLDAY @ Arthur William OLDAG is in custody at Brixton Prison, having been caught using a false Identity Card in the name of Frederick FROSTICK. Would you please inform any police forces whom you have asked to look out for him.\n\nYours sincerely,\n\nR.G. Micklethwait.\n\nMajor G. Glover,\nBox No. 500,\nNottingham.\n\nRGM/EMG.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:53:24.872233+00:00",
+  "page": 28,
+  "total_pages": 91
+}

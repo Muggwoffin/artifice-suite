@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\482e78ccaad1258537765544b1a837e1.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "THE MARCH TO DEATH\nAn eighty page volume containing 50 striking drawings\nBy JOHN OLDAY\nThis publication is, in the estimation of the publishers, the most uncompromising attack made on War, and on the existing political and economic systems since the outbreak of hostilities, and one of the most effective pieces of anti-militarist propaganda yet published.\n\n\"... it is a bitter indictment of capitalist imperialist war and the humbug of its noble war aims, and an extremely useful little work of reference.\"\nETHEL MANNIN in The New Leader.\n\n\"... is unsurpassed, to our knowledge, as a picture of present-day existence in general. Certainly we think Olday's great and imaginative effort should be supported by every C.O.\"\nThe Tribunal.\n\n\"The Freedom Press have published over 40 cartoons... illustrating the folly, brutality and hypocrisy of militarism in a series of witty, clever and devastating drawings.\"\nOLIVER BROWN in Scots Socialist.\n\n80 pages  8 1/2 x 5 1/2  1/6 (postage 3d.)\nFREEDOM PRESS 27 Belsize Road, London, N.W.6",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:00:16.207014+00:00",
+  "page": 78,
+  "total_pages": 91
+}

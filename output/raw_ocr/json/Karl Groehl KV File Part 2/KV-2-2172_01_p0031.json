@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\32f09fd798d96adfdb37c64b8fbe936f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "INTERNAL MEMORANDUM\n\nFrom...P.F.48014/F.2.b/c........... To: E.5.L...Mr...Robson.Scott.\n\nEgon and Ursula LEHRBURGER\n\nHas Kaspar been able to obtain any further information about Ursula LEHRBURGER? You will remember that I spoke to you on the telephone concerning the error over her father's name. He is described by Kaspar as being a Dr. BURS-CHELL, whilst according to the woman herself his name is Ludwig LIPPMANN.\n\nPl. see attached Kaspar report.\n\nDate...27.3.44.........\n\nS. Form 161/B.P./15000/3.42.\n\nSignature..................... H. Shillpto.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:15:44.829584+00:00",
+  "page": 31,
+  "total_pages": 90
+}

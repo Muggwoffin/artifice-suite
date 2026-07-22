@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Request for Information regarding Aliens from Home Office Records\n\nOur Reference: L.158/1424\nSection: E.1/MIP\nH.O. Reference: R.9753\n\n1. Surname: EBERHARD @ RAUSCHENPLAT\n   Christian Names: Fritz @ Helmut (Dr.)\n   von\n\n2. Address(es): As from 1946: Germany\n\n3. Born: 2.10.1896\n   at: Dresden\n   Sex: M.\n\n4. Nationality: German\n\n5. Occupation: Doctor of Political Economy\n\n6. Passport/A.R.C./Naturalisation Number\n\nN.B. Use a separate form for each name.\n\nTo Home Office (through B.3/Mails)\n\nPlease supply (tick information required):\n[X] HOME OFFICE FILE.\n[ ] PERSONAL PARTICULARS\n[ ] LOCATION AND REGISTRATION PARTICULARS\n[ ] Date and particulars of latest arrival in U.K. within the last time\n[ ] Date and particulars of latest departure from U.K. within the last time\n\nInformation lacking in 1-6 above, or if different from that in 1-6 above.\n\nSignature: pp M.H. Phillimore\nDate: 21.4.58\n*Only Aliens are required*",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:42:37.112617+00:00",
+  "page": 19,
+  "total_pages": 24
+}

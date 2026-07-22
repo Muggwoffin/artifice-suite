@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Allgemeine Korrespondenz Teil B\n\nAhrend\nAktiengesellschaft\nAlpine Montan\nAlt\nArtikel\nAtlantis\nBaden\nBecher\nBeier\nBendler\nBergmann\nBilanz\nBloom\nBoy Scouts\nBroger\nBrown\nBruno, Dr.\nBurger\nBusch\nCaillauz\nCaro\nCharles, Prof.\nCohn\nCook\nDenemark\nDaniel\nDavis\nDiener\nDieter\nDorf\nElemente d. Physik\nErnst, Dr.\nFabig\nFalk\nFirma\nFlach\nFussli\nGartner\nGaul\nGerichtsvollzieher\nGontard\nGottfried\nGrun\nHeinrich\nPartei\nInl. Leute\nElla\nBericht\nWeisse Willi\nPrag\nSchwarzbach\nZech\nAdank\nLossing\nZeitung\nVera\nReichswehr\nBartels\nRuth\nPolizei\nWolff\nHelene\nRichard\nBrouckere\nBauer\nBlum\nBergner\nPolizei\nDeutschland\nDan\nCrips\nRummenerl\nHannes\nHochdorf\nNB\nPolizei\nGerda L.\nAdler\nOrganisation\nEhlert\nSpyri\nFimmen\nFerl\nPolizei\nGotz\nAufhauser\nFlohr",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:05:39.559831+00:00",
+  "page": 36,
+  "total_pages": 60
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7c0991f43b9d46a38b8918b6f7b1c966.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "P.F. No. 66074\n\"FILE CLOSED\"\nName: OLDAG, ARTHUR WILLIAM\nOLDAY, JOHN\nHISTORICAL\nFILE CLOSED\nSee Also:\n18.10.43.\n20 OCT 1943\n1 OCT 1944\n1 FEB 1944\n29 MAY 1952\n5 OCT 1956\n16 OCT 1961\n26 OCT 1961\n26 OCT 1961\n4 SEP 1963\n5 SEP 1963\n3 JAN 1964\n24 JAN 1964\n20 FEB 1964\n20 FEB 1964\n70 MAR 1980\n11 APR 2002\nKV2/3597",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:19:02.315081+00:00",
+  "page": 1,
+  "total_pages": 98
+}

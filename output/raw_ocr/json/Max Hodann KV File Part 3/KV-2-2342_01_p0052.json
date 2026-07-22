@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Oslo Hotel Parkheimen\nDrammensveien 2\n8th dec. 1938\n\nDear comrade,\n\nI came just back from Spain after 1 1/2 years sanitary service in the army. Now, I published here in Norway a children-novel concerning the history of a half-jewish schoolboy in Germany who has to emigrate after being maltreated by the Nazis. It is an experiment to write a political novel for children between 12-15 years. The children who read it were very satisfied. Do you think that we could interest Gollancz to start an english translation? He has, of course, a lector who is reading norwegian?\n\nHoping to hear soon from you, with the best regards to the West's\n\nYours sincerely\n\nMax Hodann\n(Max Hodann)",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:02:07.200304+00:00",
+  "page": 52,
+  "total_pages": 104
+}

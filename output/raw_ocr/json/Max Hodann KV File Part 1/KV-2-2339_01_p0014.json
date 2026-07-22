@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY.\n\nMoskau den 22 IV 1935\nKusmetzki Most 9 Quartier 9\n\nLieber Dr. Finkelstein\nDank f\u00fcr Ihre Zeilen. Aber das ist nicht ganz einfach. Falls Karin in der Partei ist, muss sie erst die Erlaubnis der letzten haben, wenn sie nach hier fahren will. Will sie hier arbeiten, dann muss sie dies unter den gleichen Bedingungen tun, wie die Russen arbeiten. D.h. sie hat nicht die \u00fcblichen verg\u00fcnstigungen, welche ausl\u00e4ndische Spezialisten haben. Die Wohnungsfrage ist die am schwierigsten zu l\u00f6sende. Im Sommer ist das noch m\u00f6glich, da viele, die auf der Datsche wohnen, in dieser Zeit ihre Zimmer in M. vermieten. Aber im Winter ist dies bedeutend schwieriger. Au\u00dferdem kostet so ein Zimmer immerhin gegen 100-150 Rubel. Wenn sie also im Anfang 2-300 Rubel verdient, so bleibt ihr nicht viel \u00fcbrig. Sie m\u00fcsste sonst auf einer Datsche wohnen, was bedeutend billiger ist, aber sehr anstrengend, wegen der ewigen Bahn und Laufereien und noch mehr Zeit in Anspruch nimmt und zweitens, was wichtiger ist: wir haben keinen Platz. Wir wohnen zu 6 Mann in zwei Zimmern. Sonst werden wir ihr helfen, wo und wie wir k\u00f6nnen.\n\nHaben sie die Adresse von Prof. Nathanson? Haben Sie eine Ahnung von Herstellung von Furfurolen aus Destillation von Holz? Falls ja, dann schreiben Sie mir bitte, welche Litteratur es dar\u00fcber gibt.\n\nMit vielen Gr\u00fcssen von uns allen Ihr alter\n(sd) K. Ceul Roung (or Keunz)\n\nLetter typewritten.\nIn ink - ? Kuzedhn en das greulsche Brief papier\n\nN.B. The hyphenated words occurred in each case at the end of a line and beginning of next.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:06:22.353483+00:00",
+  "page": 14,
+  "total_pages": 144
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "BY AIR MAIL\nPAR AVION\n\nMrs Eileen Palmer,\n14, Maidstone Road,\nNew Southgate, N.11\nENGLAND.\n\nM489K\n\n\"MARRIAGE HYGIENE\"\n\u2014 QUARTERLY \u2014\nKODAK HOUSE,\nHORNBY ROAD,\nBOMBAY\u2014INDIA.\n20th April 1936\n\nAir Mail\nPF. 44030\nMrs Eileen Palmer,\n14, Maidstone Road,\nNew Southgate N.11\n\nDear Mrs Palmer,\n\nEnclosed please find copy of a letter received from Dr Hodann. I am writing to Dr Hodann to say that I cannot at present pay him anything for the article. As you know Miss Stella Brown well, can you get her to do the translation of Hodann's article for us gratis. I am so sorry that \"Marriage Hygiene\" is not yet in a position to pay for contributions but I expect the time will come when we shall be able to recompense all those who have been helpful to us.\n\nHodann's articles are generally good and I am hoping that this one also will come up to his usual standard. It is enough if I get it about the middle of May. That means Miss Brown will have to take up the translation immediately and the copy sent to me by air mail.\n\nI have decided to appoint Hodann as Editor for Soviet Russia provided he will not expect any payment.\n\nI hope you are better and on your feet again.\n\nWith best wishes and many thanks,\n\nyours sincerely,\n\nA. L. Fisher\n\nEnc: 1\n\nAPP/14\n\nM489K",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:03:44.672047+00:00",
+  "page": 67,
+  "total_pages": 104
+}

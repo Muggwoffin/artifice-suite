@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\20cadde776dd660c7c20cd91cf6227b0.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "34.\n10.9.49. B2c/1084 Source Report re EBERHARD.\n\n35.\n17.1.50. Letter from American Embassy enclosing visa application for Dr. Fritz EBERHARD formerly Baron Helmut von RAUSCHENPLAT.\n\n36.\nC.1.a/Major Badham.\nI suggest that we reply that EBERHARD has not come to adverse notice since our previous correspondence.\n\nD.M. Quin.\n\n37.\n27.1.50. Reply to American Embassy re letter at 35a.\n\n38.\n19.10.54. Copy of B.A.O.P.19 Security Services report.\n25.10.54. Copy of letter to B.S.S.O. re SCHUTZ ment. Von RAUSCHENPLAT.\n\n39.\n17.4.58. From C.5\n\n40.\n21.4.58. Home Office file requested.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:39:34.900080+00:00",
+  "page": 5,
+  "total_pages": 24
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\628f70288a793e73f33d6180750d6d0f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Amritsar, 1919.\u2014\"Heaps of bodies lay here\u2014some on their backs and some with their faces upturned. A number of them were poor innocent children. I shall never forget the sight. I saw heaps of dead bodies and I began to search for my husband. After passing through the heaps I found the dead body of my husband. The way towards it was full of blood and dead bodies.\"\nMadam Ratan Devi in her report to Congress.\n\nTHIS WON'T HAPPEN TO YOU!",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:12:02.329273+00:00",
+  "page": 7,
+  "total_pages": 71
+}

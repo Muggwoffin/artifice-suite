@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "CROSS REFERENCE.\n\nJECT:-- FINKELSTEIN, Alexis Samuel.\n\n.39. Source:- Report from C.C. Cambridge re. Henry Peter BAYON.\n\nReport mentions that BAYON used to associate with Alexis Samuel FINKELSTEIN, a German alien, who resided at Great Shelford but removed to Girton believed during 1936.\n\nFootnote to report says that FINKELSTEIN removed on 30.9.38. from Pepys Way, Girton, to C/o Mrs. Miles, 44c Denning Rd., London, N.W.3. He was a professor of chemistry at Cambridge University.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:00:40.724467+00:00",
+  "page": 38,
+  "total_pages": 104
+}

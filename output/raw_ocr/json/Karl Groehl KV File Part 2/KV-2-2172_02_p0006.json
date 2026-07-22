@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\b82cdadb5f0c87fe993ee2f670802f1f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "JS/KV/3085\n\n25th March, 1942.\n\nDear Pilcher,\n\nI understand that you very kindly arranged with Thornley for the interrogation of RETZLAW and that he left with you some of our papers. I shall be grateful if you will return these direct to me.\n\nYours sincerely,\n\nJohn Lester\n\nG. St.C. Pilcher, Esq., K.C., M.I.5., London.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:27:28.771296+00:00",
+  "page": 6,
+  "total_pages": 107
+}

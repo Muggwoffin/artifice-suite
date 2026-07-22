@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy in PF.41426\n\nOriginal in:\nSF.92/IRA/HO/B.1H\n\nDeputy Assistant Commissioner,\nSpecial Branch.\n\nWith reference to my 92/IRA/HO/B.1H of 28.2.44. I enclose a further situation report on the I.R.A. in Eire dated 21st June 1944.\n\nNeil Gould is identical with Hamilton Neil Stuart Gould-Verschoyle @ Neil Gould who is already known to you, your reference 335/MP/2014 of 12.4.39. Gould has been interned since May 1941 when a number of Communists were arrested in Dublin for the attempted distribution of pamphlets advocating non-payment of rent by certain Dublin Corporation tenants.\n\nOf the other names mentioned we do not appear to have any previous record of Joseph Crowe or T. Wall. Fearse Paul Kelly was a former I.R.A. leader from Northern Ireland who was arrested in Dublin in November 1941 when he was in touch with the German agent Hermann Gcertz.\n\n1.8.44\n\nCL/EBP\n\nCecil Liddell.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:40:41.479117+00:00",
+  "page": 31,
+  "total_pages": 103
+}

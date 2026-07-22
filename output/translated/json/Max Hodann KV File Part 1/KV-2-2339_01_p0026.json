@@ -1,0 +1,20 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "translated",
+  "source_language": "en",
+  "source_language_name": "English",
+  "cleaned_text": "12",
+  "translated_text": "The provided text \"12\" is extremely brief and lacks any context. Therefore, a direct translation into English would be:\n\nTwelve.\n",
+  "engine": "ollama",
+  "model": "translategemma:4b",
+  "system_prompt": "You are a translator specializing in historical documents. You translate text into English while preserving tone and style.",
+  "document_type": "default",
+  "timestamp": "2026-07-22T12:45:30.934109+00:00",
+  "confidence": {
+    "score": 75,
+    "reasoning": "The source was very short and clear, so the translation 'Twelve' is highly likely to be accurate. The confidence score reflects that while there's no ambiguity in the original, a longer document might present more challenges.",
+    "heuristic_score": 100,
+    "uncertainty_markers_found": [],
+    "overall_score": 90
+  }
+}

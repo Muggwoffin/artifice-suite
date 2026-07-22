@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\3e7c8549fdec9f7878fe0ecc85da5f85.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Personally have a rotten time, my mother is nuisance, she bothers me a lot, I feel rotten as a whole and need you, badly. Had no time to do anything for the book, I am ashamed, but even I cannot split myself into halves.\n\nWhat about HESS? If the Nazis were in a military defeat I would regard this a symptom but so I think it is a personal problem of this so-called \"honest Nazi\" or \"sane refugee\" as the B.B.C. called him.\n\nYours,\n\nR.\n\nenclosures.\n\nB.8.c.\n11.6.41.\n\nLetter written to LOEWENHEIM, House 32, Onchan Camp, I.O.M.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:08:52.539103+00:00",
+  "page": 58,
+  "total_pages": 60
+}

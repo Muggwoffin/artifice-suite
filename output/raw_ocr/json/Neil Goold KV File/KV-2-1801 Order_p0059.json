@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\7f03fb01538ef981efea24b90b390089.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "COPY. Original filed in P.F. 49128 V.3.103a\n\nP.F. 49128/B.9a\n\n30th March, 1941.\n\nDear Archer,\n\nYou may be interested in the attached photostat copy of a letter from Jim Prendergast to another member of the Connolly Club named Bagenal Harvey, now working for communist publishers in London.\n\nInformation obtained from censorship indicates that Prendergast is starting a bookshop in Dublin and generally trying to put new life into the Communist Party of Ireland. Of the people mentioned in the letter, probably known to you, WATTERS, is Thomas WATTERS the new Chairman of the Communist Party of Ireland from Belfast and GOOLD is Neil GOOLD whose real names are Hamilton Neil GOOLD-VERSCHOYLE, Mac is, I think, Michael McInerney and Celia is of course Celia SEVITT, who has, it is now understood, joined PRENDERGAST in Dublin.\n\nYours sincerely,\n\nCecil Liddell.\n\nColonel Liam Archer,\nDefence Ministry,\nDublin.\n\nD.E.G.\n16.4.41.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T10:44:25.614556+00:00",
+  "page": 59,
+  "total_pages": 103
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\6082bd4e34d3230334d1472b0b8b7c7f.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "EXTRACT.\n\nExtract for File No.: P.F. 43817\nName: Max HODANN\nSerial: 157x\nDated: 13.12.43\nOriginal from: S.I.S. report\nUnder Ref.: CX/12535/36\nExtracted on: 16.1.44\nby: MCG\nSection: R4\nCross Ref. to S.I.S. report re FREE GERMAN CTE in SWEDEN\n\nA Swedish Communist Arnold L JUNGDAHL issued invitations to a meeting to elect a Free German Cte modelled after that of Moscow.\n\nThe Movement's Sponsors decided to wait for official Swedish reactions before making public announcement of the names of those who were chosen to serve on local Free German Cte but it is reported that Max HODANN (Pres) is one of four secretly chosen members of Cte. Nothing is known of the Cte's functions. Some Communists are reported to be dissatisfied with its composition.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T09:59:23.220186+00:00",
+  "page": 25,
+  "total_pages": 104
+}

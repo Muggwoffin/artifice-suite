@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\d40d4730c08dce6a98737f544eba8703.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "POST CARD\nTHE ADDRESS TO BE WRITTEN ON THIS SIDE\n\nDr. M. Hodann,\nWhittem Court\n6 Cromwell Gardens\nGloucester Rd\nL W 7\n\n3.4.37\nL. M.,\nich muss morgen ges. Weise morgen zwischen 12 und 2 im Vig. Rest ausleihen. K\u00f6nntest Du vielleicht um 2.20 dorthin kommen, vor h\u00e4ttin dort Ruhe, zu essen mit uns mit Renate zu unterhalten. Autounfalls riski wills bitte morgen fr\u00fch, vor 9.15, um damit wir keine andere Zeit verabreden k\u00f6nnen. Renate kommt morgen um 10.13 an. \u2014 Besten Gruss! /7:\n+ Ahr. Uncle Fauton in Whitechapel,\nN\u00e4he Haymarket.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:22:25.273082+00:00",
+  "page": 25,
+  "total_pages": 131
+}

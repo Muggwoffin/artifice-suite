@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\72405c037a9aa4cdbf568b8b3c8b77d9.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "MINUTE SHEET\n\n79.\nCross ref. to intl letter from GROEHL to OTTEN.\nCross ref. to letters from GROEHL to OTTEN.\n\n80.\nSummary of intl lettes from GROEHL to OTTEN (2.5.40-8.5.40)\n\n81.\nFrom Bristol Airport re arrival of passengers + GROEHL.\nPhotostat copy of int. letter to GROEHL with translation.\nPhotostat of S.B. Report.\n\nPhotostat of note from B.4c. with translation of letter from RETZLAW.\n\nCross ref. to extract from Note of Interview with BEDFORD.\n\nPhotostat of letter (& translation) to SZYMONCZYK.\n\nPhotostat of note of interview with Bedford.\n\nPhotostat of report re SZYMONCZYK and 'KARL'.\n\nPhotostat of letter from KARL to SZYMONCZYK.\n\nCross ref. to extract from tel. check on WES.4930.\nMinute from B.4.c. to B.13 attaching letter to Major Whetmore ment. RETZLAW.\n\n82.\nPhotostat of S.B. report re RETZLAW.\n\nPhotostat of report re SZYMONCZYK.\n\nB.4.c. note to B.13. re SZYMONCZYK.\n\nTo S.B., requesting Alien card for RETZLAW (photo of card, and three photos of RETZLAW filed here.)\n\nNote from B.13. re RETZLAW & SZYMONCZYK case.\n\nPhotostat of letter from B.4.c. encl. in minute from B.4.c. to B.13.\n\nExt. from SB Report\n\nNote of interview with S.O.2. re GROEHL.\n\nFrom B.4.c. forwarding information re GROEHL.\n\nInt. letter from RETZLAW to FREETEL. Canada.\n\n83.\nFrom B.3. to B.4.b.1. enclosing two letters to RETZLAW.\n\n84.\nMinute from B.4.c. to B.13. re RETZLAW.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:45:20.732898+00:00",
+  "page": 9,
+  "total_pages": 96
+}

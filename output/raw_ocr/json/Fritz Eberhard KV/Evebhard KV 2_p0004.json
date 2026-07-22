@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\401aa01628e87a910b126024268e5670.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "USE WITH CAUTION\n\n11th June, 1947.\n\nHelmut von RAUSCHENPLAT.\n\nHelmut von RAUSCHENPLAT, during the war in the U.K., who returned last year to Germany, has joined the S.P.D. and has become Secretary of State for Wurttemburg; he has changed his name to EBERHARD.\n\nR4.\nPA in L158/1424 - second Index!",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T11:31:34.216431+00:00",
+  "page": 4,
+  "total_pages": 24
+}

@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\89bf563c3fdd28e5d67338433bedd375.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Original filed in DI=43824\nLINDBAEK-NILSSON\n\nExtract from H.O. file L.1675.\n\nMinutes.\n\nThe appropriate files (H.2807 for HODANN and N.904 for NILSSON) are now attached. Unfortunately HODANN will presumably have left U.K. by now for Brussels.\n\nIndex to M.I.5. for observations.\n\n(signed) T.B.W.\n29.4.35.\n\nHome Office.\n\nAs far as Lise LINDBAEK is concerned we do not feel that we can object to an extension.\n\nWith regard to Max HODANN we think that his employment as amanuensis to Lise LINDBAEK is merely an excuse to remain here.\n\nAs a refugee who may turn out to be highly undesirable, we are not anxious that he should settle down permanently in this country. We should not, however, object to his being granted a short extension at the conclusion of which we should be glad to have the opportunity of submitting further observations.\n\nM.I.5.\n30.4.35.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:06:47.593549+00:00",
+  "page": 18,
+  "total_pages": 144
+}

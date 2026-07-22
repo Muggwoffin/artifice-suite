@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\f23efbe21d5578badad74a9bee90ddd3.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "SECRET AND PERSONAL.\n\nTele:- Prestatyn 714.\nYour ref:- I.S.W.C.\nI842.\n\nNew Holiday Camp,\nPrestatyn,\nNorth Wales.\n3rd Octr. 1945.\n\nMajor H. Baker,\nHeadquarters,\nWestern Command,\nChester.\n\nDear Major Baker,\n\nNo. I3095II5. Pte OLDAG A.W.\n\nFurther to my letter dated 22nd Sept. 45. I have received from my acting Courts Martial officer a report on this man, as follows:-\n\n\"I have the honour to report that the trial of the above named soldier by Court Martial took place on 28th Septr. 45.\"\n\n\"The soldier elected not to give evidence so that no information was forthcoming by way of cross-examination. In a plea of mitigation, however, the soldier stated that during his absence he and his wife had been engaged in Anti-Nazi activities. He further stated that his wife went to France on Anti-Nazi work not long before \"D\" day and was subsequently killed by the Germans\".\n\n\"The soldier's attitude throughout the trial was reserved and respectful without being subservient. I understand he thanked the defending officer for the efforts made on his behalf\".\n\nThe sentence of the Court was promulgated by me this morning. He is to undergo detention for\n\nContd.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T08:44:34.193513+00:00",
+  "page": 54,
+  "total_pages": 92
+}

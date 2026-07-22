@@ -1,0 +1,11 @@
+{
+  "source_file": "E:\\Tropy\\ISK Project Primary Sources.tropy\\assets\\af8f7db2b2dfe170b652e991d845bd08.pdf",
+  "stage": "raw_ocr",
+  "extracted_text": "Copy. Original in 45807 Otten v.2. 106a.\n\nFrom Groehl\nTo Otten\nDated 9,12,38.\n\nWriter hopes that Otten is settled in.\n\nEnclosed letter from BJ. Groehl said that during the recent visit of Ribbentrop to Paris a certain number of German communists had been detained at the request of the German Government. Although the principals of the party had not affected BJ had been confined for a couple of days. Groehl thinks a pact with Poland is very important. He had nothing much of importance to tell about his journey to Switzerland, but it was necessary to go there now and again, otherwise his agents became slack. Otten's book costs 9.40 in Switzerland which is much too expensive. Groehl saw the girl he hopes to marry while in Switzerland, she wants to wait.\n\nThe enclosed letter from BJ. comments on his detention. His wife is working with him.\n\nCopies in PF. 43895 B. Jacob\n46464 K. Groehl.",
+  "engine": "lm-studio",
+  "model": "allenai/olmocr-2-7b",
+  "ocr_prompt": "OCR: Extract all visible text from this document image. Return only the raw text exactly as it appears. Do not add commentary, labels, or formatting.",
+  "timestamp": "2026-07-22T12:02:44.676156+00:00",
+  "page": 43,
+  "total_pages": 102
+}
