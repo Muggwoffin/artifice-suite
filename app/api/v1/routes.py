@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from datetime import datetime, timezone
@@ -68,7 +69,8 @@ async def _run_transcription(
                 logger.debug("Job %s progress: %.0f%%", job_id, pct * 100)
 
             engine = _get_engine()
-            segments = engine.transcribe(
+            segments = await asyncio.to_thread(
+                engine.transcribe,
                 audio_path,
                 language=options.language,
                 min_speakers=options.min_speakers,

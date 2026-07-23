@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import gc
-import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -115,7 +114,11 @@ class TranscriptionEngine:
 
         # 3. Diarize
         logger.info("Running diarization...")
-        diarize_segments = self._diarize_model(audio_path)
+        diarize_segments = self._diarize_model(
+            audio_path,
+            min_speakers=min_speakers,
+            max_speakers=max_speakers,
+        )
         result = whisperx.assign_word_speakers(diarize_segments, result)
         if progress_callback:
             progress_callback(0.9)
@@ -136,65 +139,5 @@ class TranscriptionEngine:
 
         if progress_callback:
             progress_callback(1.0)
-
-        return segments
-
-    def transcribe_and_save(
-        self,
-        job_id: str,
-        audio_path: str | Path,
-        db_session: "AsyncSession",
-        *,
-        language: str | None = None,
-        min_speakers: int | None = None,
-        max_speakers: int | None = None,
-    ) -> list[Segment]:
-        """Transcribe and persist segments + speaker mappings to the database."""
-        from sqlalchemy import select
-
-        from app.db.models import SpeakerMapping, TranscriptSegment
-
-        def _progress(pct: float) -> None:
-            logger.debug("Job %s progress: %.0f%%", job_id, pct)
-
-        segments = self.transcribe(
-            audio_path,
-            language=language,
-            min_speakers=min_speakers,
-            max_speakers=max_speakers,
-            progress_callback=_progress,
-        )
-
-        # Collect unique speakers in order
-        seen: dict[str, int] = {}
-        for seg in segments:
-            if seg.speaker not in seen:
-                seen[seg.speaker] = len(seen)
-
-        # Persist segments
-        db_segments = [
-            TranscriptSegment(
-                job_id=job_id,
-                speaker_label=seg.speaker,
-                start_time=seg.start,
-                end_time=seg.end,
-                text=seg.text,
-            )
-            for seg in segments
-        ]
-        db_session.add_all(db_segments)
-
-        # Persist default speaker mappings
-        existing = db_session.execute(
-            select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)
-        ).scalars().all()
-        existing_labels = {m.speaker_label for m in existing}
-
-        new_mappings = [
-            SpeakerMapping(job_id=job_id, speaker_label=label, custom_name=label)
-            for label in seen
-            if label not in existing_labels
-        ]
-        db_session.add_all(new_mappings)
 
         return segments

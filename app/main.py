@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup
+    # Ensure data directory exists, then create tables
+    settings.data_path
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables ensured")
@@ -36,7 +37,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -52,7 +53,13 @@ async def health():
 def cli():
     import uvicorn
 
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        reload_excludes=["data/*", "uploads/*", "__pycache__/*", "*.db"],
+    )
 
 
 if __name__ == "__main__":
