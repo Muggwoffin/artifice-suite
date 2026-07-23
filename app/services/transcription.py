@@ -199,10 +199,12 @@ class TranscriptionEngine:
         min_speakers: int | None = None,
         max_speakers: int | None = None,
         progress_callback: callable | None = None,
+        custom_vocabulary: str | None = None,
     ) -> list[Segment]:
         """Run full pipeline: transcribe -> align -> diarize.
 
-        Returns a list of Segment dataclasses ordered by start time.
+        Accepts an optional custom_vocabulary string (comma-separated terms)
+        passed as Whisper's initial_prompt to bias toward domain-specific words.
         """
         import whisperx
 
@@ -212,9 +214,12 @@ class TranscriptionEngine:
         if progress_callback:
             progress_callback(0.1)
 
-        # 1. Transcribe
+        # 1. Transcribe (with optional custom vocabulary as initial_prompt)
         logger.info("Transcribing %s", audio_path)
-        result = self._whisper_model.transcribe(audio_path, batch_size=16, language=language)
+        kwargs = {"batch_size": 16, "language": language}
+        if custom_vocabulary:
+            kwargs["initial_prompt"] = custom_vocabulary
+        result = self._whisper_model.transcribe(audio_path, **kwargs)
         if progress_callback:
             progress_callback(0.4)
 

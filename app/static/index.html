@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PersonaeTranscribe</title>
 
-<!-- Same Google Fonts the OCR Pipeline / public_history site use, unmodified. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Archivo:wght@500;600;700&display=swap">
@@ -17,7 +16,10 @@
 
   <header class="masthead">
     <h1>PersonaeTranscribe</h1>
-    <span class="tag">speech-to-text &middot; diarization</span>
+    <span class="tag">speech-to-text &middot; diarization &middot; oral history</span>
+    <div class="masthead-search" id="masthead-search">
+      <input type="text" id="global-search-input" placeholder="Search transcripts (/)" class="search-input">
+    </div>
   </header>
 
   <nav class="tabs">
@@ -45,6 +47,7 @@
           <label>Language: <input type="text" id="opt-language" placeholder="auto-detect" style="width:6rem;"></label>
           <label>Min speakers: <input type="number" id="opt-min-speakers" min="1" placeholder="&ndash;"></label>
           <label>Max speakers: <input type="number" id="opt-max-speakers" min="1" placeholder="&ndash;"></label>
+          <label>Vocabulary: <input type="text" id="opt-vocabulary" placeholder="names, terms, places..." style="width:14rem;" title="Comma-separated proper nouns to improve accuracy"></label>
         </div>
 
         <div class="toolbar">
@@ -52,6 +55,8 @@
           <button class="btn" id="btn-clear-file" disabled>Clear</button>
           <div class="spacer"></div>
           <span class="dim" id="upload-status"></span>
+          <button class="btn" id="btn-batch-upload">Batch Upload</button>
+          <input type="file" id="batch-file-input" accept="audio/*,video/*" multiple style="display:none;">
         </div>
       </div>
 
@@ -78,14 +83,17 @@
       <div class="card" style="margin-bottom:1rem;">
         <div class="card-head">
           <h2>Library</h2>
-          <button class="btn" id="btn-library-refresh">Refresh</button>
+          <div style="display:flex;gap:0.4rem;align-items:center;">
+            <input type="text" id="library-search-input" placeholder="Search current transcript..." class="search-input" style="width:16rem;">
+            <button class="btn" id="btn-library-refresh">Refresh</button>
+          </div>
         </div>
         <div class="queue-wrap">
           <table class="queue">
             <thead>
-              <tr><th>File</th><th class="c">Status</th><th>Created</th><th class="c" style="width:6rem;"></th></tr>
+              <tr><th>File</th><th class="c">Status</th><th>Created</th><th>Interviewee</th><th class="c" style="width:6rem;"></th></tr>
             </thead>
-            <tbody id="library-body"><tr><td colspan="4" class="dim" style="text-align:center;">Loading&hellip;</td></tr></tbody>
+            <tbody id="library-body"><tr><td colspan="5" class="dim" style="text-align:center;">Loading&hellip;</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -95,46 +103,101 @@
       <div class="card transcript-card hidden" id="transcript-card">
         <div class="audio-pane">
           <audio controls id="audio-player"></audio>
+          <canvas id="waveform-canvas" height="80" style="width:100%;border-radius:6px;background:var(--paper-recessed);cursor:pointer;"></canvas>
+          <details class="metadata-form" id="metadata-form" open>
+            <summary>Interview Metadata</summary>
+            <div class="metadata-grid">
+              <label>Interviewee: <input type="text" id="meta-interviewee" placeholder="Full name"></label>
+              <label>Interviewer: <input type="text" id="meta-interviewer" placeholder="Full name"></label>
+              <label>Date: <input type="text" id="meta-date" placeholder="YYYY-MM-DD or circa"></label>
+              <label>Location: <input type="text" id="meta-location" placeholder="City, State"></label>
+              <label>Project: <input type="text" id="meta-project" placeholder="Project name"></label>
+              <label>Collection ID: <input type="text" id="meta-collection" placeholder="e.g. OH-2024-001"></label>
+              <label>Access: <input type="text" id="meta-access" placeholder="Open / restrictions"></label>
+              <label>Vocabulary: <input type="text" id="meta-vocabulary" placeholder="names, terms, places"></label>
+            </div>
+            <button class="btn accent" id="btn-save-metadata">Save Metadata</button>
+          </details>
           <div class="speaker-form" id="speaker-form">
             <h3>Speakers</h3>
             <div id="speaker-rows"></div>
             <button class="btn" id="btn-save-speakers">Save Names</button>
           </div>
           <div class="export-row">
-            <button class="btn" data-export="json">Export JSON</button>
-            <button class="btn" data-export="srt">Export SRT</button>
-            <button class="btn" data-export="vtt">Export VTT</button>
-            <button class="btn" data-export="txt">Export TXT</button>
-            <button class="btn" data-export="md">Export MD</button>
-            <button class="btn" data-export="pdf">Export PDF</button>
+            <button class="btn" data-export="json">JSON</button>
+            <button class="btn" data-export="srt">SRT</button>
+            <button class="btn" data-export="vtt">VTT</button>
+            <button class="btn" data-export="txt">TXT</button>
+            <button class="btn" data-export="md">MD</button>
+            <button class="btn" data-export="pdf">PDF</button>
+            <button class="btn" data-export="ohms">OHMS</button>
+            <button class="btn" data-export="tei">TEI</button>
             <button class="btn danger" id="btn-delete-job" style="margin-left:auto;">Delete</button>
           </div>
         </div>
         <div class="transcript-bar">
           <h2 class="transcript-title" id="transcript-title">&nbsp;</h2>
           <span class="status-pill" id="transcript-status-pill"></span>
+          <span class="meta-badge" id="meta-badge"></span>
+          <span class="dim" id="search-hit-info"></span>
           <div class="edit-toolbar" id="edit-toolbar">
-            <button class="btn" id="btn-diff-toggle" title="Show/hide diff view">Diff</button>
-            <button class="btn accent" id="btn-save-edits" disabled title="Save all edits">Save</button>
-            <button class="btn" id="btn-revert-edits" disabled title="Revert all edits">Revert</button>
+            <button class="btn" id="btn-diff-toggle" title="Toggle diff view">Diff</button>
+            <button class="btn" id="btn-history-toggle" title="Show edit history">History</button>
+            <button class="btn accent" id="btn-save-edits" disabled title="Save all edits (Ctrl+S / Ctrl+Enter)">Save</button>
+            <button class="btn" id="btn-revert-edits" disabled title="Revert all edits (Ctrl+Z)">Revert</button>
           </div>
         </div>
         <div class="segments" id="segments"></div>
+        <div class="transcript-stats dim" id="transcript-stats"></div>
+      </div>
+
+      <!-- History panel -->
+      <div class="history-panel hidden" id="history-panel">
+        <div class="card">
+          <div class="card-head">
+            <h2>Edit History</h2>
+            <button class="btn tiny" id="btn-history-close">&times;</button>
+          </div>
+          <div class="history-list" id="history-list">
+            <p class="dim" style="padding:1rem;">Select a segment to view its edit history.</p>
+          </div>
+        </div>
       </div>
 
     </section>
 
   </div>
 
+  <!-- Search results modal -->
+  <div class="modal-overlay hidden" id="search-modal">
+    <div class="modal">
+      <div class="card">
+        <div class="card-head">
+          <h2>Search Results</h2>
+          <div style="display:flex;gap:0.4rem;align-items:center;">
+            <span class="dim" id="search-result-count"></span>
+            <button class="btn tiny" id="btn-search-close">&times;</button>
+          </div>
+        </div>
+        <div class="search-results-list" id="search-results-list">
+          <p class="dim" style="padding:1rem;">No results.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="statusbar">
     <span id="status-text">Ready</span>
     <span class="dim" id="status-detail"></span>
-    <div class="health-indicator" id="health-indicator" title="System health">
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <button class="btn tiny" id="btn-theme-toggle" title="Toggle dark/light mode">&#127769;</button>
+      <div class="health-indicator" id="health-indicator" title="System health">
       <span class="health-dot" id="health-db" title="Database"></span>
       <span class="health-dot" id="health-whisper" title="Whisper model"></span>
       <span class="health-dot" id="health-diarize" title="Diarization model"></span>
       <span class="health-dot" id="health-gpu" title="GPU"></span>
       <button class="btn tiny" id="btn-health-details">Health</button>
+    </div>
     </div>
   </div>
 
@@ -201,6 +264,5 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script src="/static/js/app.js"></script>
-<button class="theme-toggle" id="btn-theme-toggle" title="Toggle dark mode">&#127769;</button>
 </body>
 </html>

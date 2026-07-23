@@ -20,9 +20,9 @@ ruff format .                   # format
 - **Entry point:** `app/main.py` → FastAPI app with lifespan, serves web UI at `/`
 - **Web UI:** `app/static/` — vanilla HTML/CSS/JS SPA (no build step). Served by FastAPI at `/` and `/static/`
 - **Routes:** `app/api/v1/routes.py` — all endpoints + background worker
-- **Engine:** `app/services/transcription.py` — WhisperX wrapper (lazy-loads models, frees VRAM after every job). Alignment models cached per-language (not cleared by unload). Alignment model loaded per-language on demand
-- **Exports:** `app/services/exports.py` — SRT/VTT/TXT/JSON/MD/PDF formatters
-- **ORM:** `app/db/models.py` — `TranscriptionJob`, `TranscriptSegment`, `SpeakerMapping`
+- **Engine:** `app/services/transcription.py` — WhisperX wrapper (lazy-loads models, frees VRAM after every job). Alignment models cached per-language (not cleared by unload). Alignment model loaded per-language on demand. Supports `custom_vocabulary` as Whisper `initial_prompt`.
+- **Exports:** `app/services/exports.py` — SRT/VTT/TXT/JSON/MD/PDF/OHMS/TEI formatters
+- **ORM:** `app/db/models.py` — `TranscriptionJob` (with oral history metadata), `TranscriptSegment` (with tags), `SpeakerMapping`, `SegmentEditVersion`
 - **Config:** `app/config.py` — pydantic-settings, reads `.env`
 - **DB:** SQLite by default (`./data/transcribe.db`), async via `aiosqlite`
 

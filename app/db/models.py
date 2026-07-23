@@ -39,6 +39,16 @@ class TranscriptionJob(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     options: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON string
 
+    # Oral history metadata
+    interviewee: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    interviewer: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    interview_date: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    project_name: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    collection_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    access_restrictions: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    custom_vocabulary: Mapped[str | None] = mapped_column(Text, nullable=True)  # comma-separated
+
     segments: Mapped[list[TranscriptSegment]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
@@ -56,6 +66,7 @@ class TranscriptSegment(Base):
     start_time: Mapped[float] = mapped_column(Float)
     end_time: Mapped[float] = mapped_column(Float)
     text: Mapped[str] = mapped_column(Text)
+    tags: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list of tag strings
 
     job: Mapped[TranscriptionJob] = relationship(back_populates="segments")
 
@@ -69,3 +80,16 @@ class SpeakerMapping(Base):
     custom_name: Mapped[str] = mapped_column(String(128))
 
     job: Mapped[TranscriptionJob] = relationship(back_populates="speakers")
+
+
+class SegmentEditVersion(Base):
+    __tablename__ = "segment_edit_versions"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    segment_id: Mapped[str] = mapped_column(
+        ForeignKey("transcript_segments.id", ondelete="CASCADE")
+    )
+    job_id: Mapped[str] = mapped_column(String(32))
+    text_before: Mapped[str] = mapped_column(Text)
+    text_after: Mapped[str] = mapped_column(Text)
+    edited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)

@@ -33,7 +33,85 @@
       throw new Error(detail);
     }
     if (resp.status === 204) return null;
-    return resp.json();
+    if (resp.headers.get('content-type')?.includes('application/json')) {
+      return resp.json();
+    }
+    return resp;
+  }
+
+  // ----------------------------------------------------------- keyboard shortcuts
+
+  function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+S or Ctrl+Enter: save edits
+      if ((e.ctrlKey && e.key === 's') || (e.ctrlKey && e.key === 'Enter')) {
+        e.preventDefault();
+        saveEdits();
+      }
+      // Ctrl+Z: revert edits
+      if (e.ctrlKey && e.key === 'z') {
+        if (!e.target.closest('[contenteditable]')) {
+          e.preventDefault();
+          revertEdits();
+        }
+      }
+      // /: focus global search (when not in an input)
+      if (e.key === '/' && !e.target.closest('input, textarea, [contenteditable]')) {
+        e.preventDefault();
+        const searchInput = $('global-search-input');
+        if (searchInput) { searchInput.focus(); searchInput.select(); }
+      }
+      // Escape: close modals
+      if (e.key === 'Escape') {
+        closeSearchModal();
+        $('history-panel')?.classList.add('hidden');
+      }
+      // Alt+S: split segment at cursor
+      if (e.altKey && e.key === 's') {
+        e.preventDefault();
+        splitSegment();
+      }
+      // Alt+M: merge segment with next
+      if (e.altKey && e.key === 'm') {
+        e.preventDefault();
+        mergeSegment();
+      }
+      // Tab/Shift+Tab: navigate between editable segments
+      if (e.key === 'Tab' && e.target.closest('[data-seg-text]')) {
+        e.preventDefault();
+        const segs = [...document.querySelectorAll('[data-seg-text]')];
+        const idx = segs.indexOf(e.target);
+        if (idx >= 0) {
+          const next = e.shiftKey ? segs[Math.max(0, idx - 1)] : segs[Math.min(segs.length - 1, idx + 1)];
+          next.focus();
+          // Move cursor to end
+          const range = document.createRange();
+          range.selectNodeContents(next);
+          range.collapse(false);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }
+      // Arrow Up/Down: navigate between segments from the focused contenteditable
+      if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const focused = e.target.closest('[data-seg-text]');
+        if (!focused) return;
+        const all = [...document.querySelectorAll('[data-seg-text]')];
+        const idx = all.indexOf(focused);
+        if (idx < 0) return;
+        e.preventDefault();
+        const next = e.key === 'ArrowDown' ? all[Math.min(all.length - 1, idx + 1)] : all[Math.max(0, idx - 1)];
+        next.focus();
+        const range = document.createRange();
+        range.selectNodeContents(next);
+        range.collapse(e.key === 'ArrowUp');
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        next.closest('[data-seg-index]')?.scrollIntoView({ block: 'nearest' });
+      }
+    });
   }
 
   // ------------------------------------------------------------------ tabs
@@ -54,13 +132,17 @@
 
   function initTheme() {
     const stored = localStorage.getItem('pt-theme');
-    if (stored) document.documentElement.setAttribute('data-theme', stored);
-    $('btn-theme-toggle').addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme')
-        || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const initial = stored || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', initial);
+    const btn = $('btn-theme-toggle');
+    btn.textContent = initial === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+    btn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('pt-theme', next);
+      btn.textContent = next === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
     });
   }
 
@@ -120,8 +202,36 @@
     });
 
     btnClear.addEventListener('click', () => { fileInput.value = ''; setFile(null); });
-
     btnStart.addEventListener('click', startTranscription);
+
+    // Batch upload
+    $('btn-batch-upload').addEventListener('click', () => {
+      $('batch-file-input').click();
+    });
+    $('batch-file-input').addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      const btn = $('btn-batch-upload');
+      btn.disabled = true;
+      btn.textContent = 'Uploading...';
+      let queued = 0;
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+          const resp = await fetch(`${API}/transcribe`, { method: 'POST', body: formData });
+          if (resp.ok) {
+            const created = await resp.json();
+            trackActiveJob(created.job_id, file.name);
+            queued++;
+          }
+        } catch (_) { /* skip failed */ }
+      }
+      btn.disabled = false;
+      btn.textContent = 'Batch Upload';
+      toast(`Queued ${queued} file(s)`, 'accent');
+      e.target.value = '';
+    });
   }
 
   async function startTranscription() {
@@ -165,7 +275,7 @@
 
   // -------------------------------------------------------------- active jobs
 
-  const activeJobs = new Map(); // jobId -> { filename, status, progress, created_at }
+  const activeJobs = new Map();
   const pollTimers = new Map();
 
   function trackActiveJob(jobId, filename) {
@@ -243,7 +353,7 @@
     try {
       libraryJobs = await api('/jobs');
     } catch (err) {
-      body.innerHTML = `<tr><td colspan="4" class="dim" style="text-align:center;">${escapeHtml(err.message)}</td></tr>`;
+      body.innerHTML = `<tr><td colspan="5" class="dim" style="text-align:center;">${escapeHtml(err.message)}</td></tr>`;
       return;
     }
     renderLibrary();
@@ -252,18 +362,20 @@
   function renderLibrary() {
     const body = $('library-body');
     if (libraryJobs.length === 0) {
-      body.innerHTML = '<tr><td colspan="4" class="dim" style="text-align:center;">No transcriptions yet.</td></tr>';
+      body.innerHTML = '<tr><td colspan="5" class="dim" style="text-align:center;">No transcriptions yet.</td></tr>';
       return;
     }
     body.innerHTML = libraryJobs.map((j) => {
       const errorHtml = j.error_message
         ? `<div class="job-error-msg">${escapeHtml(j.error_message)}</div>`
         : '';
+      const interviewee = j.interviewee || '';
       return `
       <tr class="clickable ${j.id === currentJobId ? 'selected' : ''}" data-row-job="${j.id}">
         <td>${escapeHtml(j.filename)}${errorHtml}</td>
         <td class="c">${statusPill(j.status)}</td>
         <td>${formatDate(j.created_at)}</td>
+        <td class="meta-cell">${escapeHtml(interviewee)}</td>
         <td class="c"><button class="btn danger" data-delete-job="${j.id}">Delete</button></td>
       </tr>`;
     }).join('');
@@ -291,10 +403,14 @@
 
   let currentJobId = null;
   let currentSegments = [];
-  let segmentEdits = new Map(); // index -> { originalText, editedText }
+  let segmentEdits = new Map();
   let diffMode = false;
+  let inTranscriptSearchTerm = '';
 
   async function selectJob(jobId) {
+    if (segmentEdits.size > 0) {
+      if (!confirm('You have unsaved edits. Discard changes?')) return;
+    }
     try {
       const [job, transcript, speakers] = await Promise.all([
         api(`/jobs/${jobId}`),
@@ -305,11 +421,25 @@
       currentSegments = transcript.segments;
       segmentEdits.clear();
       diffMode = false;
+      inTranscriptSearchTerm = '';
       renderLibrary();
       renderTranscript(job, transcript, speakers);
+      fillMetadataForm(job);
+      loadWaveform();
     } catch (err) {
       toast(err.message, 'error');
     }
+  }
+
+  function fillMetadataForm(job) {
+    $('meta-interviewee').value = job.interviewee || '';
+    $('meta-interviewer').value = job.interviewer || '';
+    $('meta-date').value = job.interview_date || '';
+    $('meta-location').value = job.location || '';
+    $('meta-project').value = job.project_name || '';
+    $('meta-collection').value = job.collection_id || '';
+    $('meta-access').value = job.access_restrictions || '';
+    $('meta-vocabulary').value = job.custom_vocabulary || '';
   }
 
   function renderTranscript(job, transcript, speakers) {
@@ -324,8 +454,7 @@
     const audio = $('audio-player');
     audio.src = `${API}/jobs/${job.id}/audio`;
 
-    // Speaker rename rows, keyed by the raw speaker_label so PATCH targets
-    // the right mapping even after a custom name has replaced it everywhere.
+    // Speaker rename rows
     const rowsEl = $('speaker-rows');
     if (speakers.speakers.length === 0) {
       rowsEl.innerHTML = '<p class="dim">No speakers detected.</p>';
@@ -338,7 +467,17 @@
       `).join('');
     }
 
-    // Segments, clickable to seek + auto-highlighted during playback + editable.
+    // Map speaker labels to swatch colors
+    const speakerColorMap = {};
+    speakers.speakers.forEach((s, i) => {
+      speakerColorMap[s.custom_name] = swatchColor(i);
+    });
+
+    // Metadata badge
+    const badgeParts = [job.interviewee, job.interview_date, job.project_name].filter(Boolean);
+    $('meta-badge').textContent = badgeParts.length ? badgeParts.join(' \u00b7 ') : '';
+
+    // Segments
     const segEl = $('segments');
     if (transcript.segments.length === 0) {
       segEl.innerHTML = '<p class="dim">No segments.</p>';
@@ -347,21 +486,27 @@
         const edit = segmentEdits.get(i);
         const displayText = edit ? edit.editedText : s.text;
         const editedClass = edit ? ' edited' : '';
+        const tags = s.tags || [];
+        const spColor = speakerColorMap[s.speaker_label] || 'transparent';
         return `
-        <div class="segment${editedClass}" data-seg-index="${i}" data-start="${s.start_time}">
+        <div class="segment speaker-border${editedClass}" data-seg-index="${i}" data-seg-id="${escapeHtml(s.id)}" data-start="${s.start_time}" style="--speaker-color:${spColor}">
           <span class="seg-time">${formatClock(s.start_time)}</span>
           <div class="seg-body">
-            <div class="seg-speaker">${escapeHtml(s.speaker_label)}</div>
+            <div class="seg-speaker" style="color:${spColor}">${escapeHtml(s.speaker_label)}</div>
             <div class="seg-text" contenteditable="true" data-seg-text="${i}">${escapeHtml(displayText)}</div>
+            <div class="seg-tags" data-tags-for="${i}">
+              ${tags.map((t) => `<span class="seg-tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}
+              <span class="seg-tag-add" data-add-tag="${i}">+ tag</span>
+            </div>
           </div>
           ${edit ? '<span class="seg-edited-badge" title="Edited">edited</span>' : ''}
         </div>`;
       }).join('');
 
-      // Click to seek audio
+      // Click to seek
       segEl.querySelectorAll('[data-seg-index]').forEach((el) => {
         el.addEventListener('click', (e) => {
-          if (e.target.closest('[contenteditable]')) return;
+          if (e.target.closest('[contenteditable], .seg-tag, .seg-tag-add')) return;
           audio.currentTime = parseFloat(el.dataset.start);
           audio.play().catch(() => {});
         });
@@ -371,7 +516,9 @@
       segEl.querySelectorAll('[data-seg-text]').forEach((el) => {
         el.addEventListener('blur', () => {
           const idx = parseInt(el.dataset.segText, 10);
-          const original = transcript.segments[idx].text;
+          const seg = currentSegments[idx];
+          if (!seg) return;
+          const original = seg.text;
           const edited = el.textContent.trim();
           if (edited !== original) {
             segmentEdits.set(idx, { originalText: original, editedText: edited });
@@ -380,31 +527,187 @@
           }
           updateEditToolbar();
         });
-
-        // Prevent segment click when editing
         el.addEventListener('click', (e) => e.stopPropagation());
-
-        // Enter in contenteditable should blur (save), not insert newline
         el.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            el.blur();
+          if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+        });
+      });
+
+      // Tag add
+      segEl.querySelectorAll('[data-add-tag]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.addTag, 10);
+          const seg = currentSegments[idx];
+          if (!seg) return;
+          const tag = prompt('Add tag (e.g. anecdote, reflection):');
+          if (tag && tag.trim()) {
+            const tags = seg.tags || [];
+            if (!tags.includes(tag.trim())) {
+              tags.push(tag.trim());
+              updateSegmentTags(idx, tags);
+            }
           }
+        });
+      });
+
+      // Tag remove
+      segEl.querySelectorAll('[data-tag]').forEach((el) => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const tagEl = e.target;
+          const segEl2 = tagEl.closest('[data-seg-index]');
+          if (!segEl2) return;
+          const idx = parseInt(segEl2.dataset.segIndex, 10);
+          const seg = currentSegments[idx];
+          if (!seg) return;
+          const tag = tagEl.dataset.tag;
+          const tags = (seg.tags || []).filter((t) => t !== tag);
+          updateSegmentTags(idx, tags);
         });
       });
     }
 
+    // Stats footer
+    const segments = transcript.segments;
+    const totalWords = segments.reduce((sum, s) => sum + (s.text ? s.text.split(/\s+/).filter(Boolean).length : 0), 0);
+    const totalDuration = segments.length ? (segments[segments.length - 1].end_time - segments[0].start_time) : 0;
+    let speakerChanges = 0;
+    for (let i = 1; i < segments.length; i++) {
+      if (segments[i].speaker_label !== segments[i - 1].speaker_label) speakerChanges++;
+    }
+    $('transcript-stats').textContent =
+      `${segments.length} segment${segments.length !== 1 ? 's' : ''} \u00b7 ` +
+      `${totalWords.toLocaleString()} word${totalWords !== 1 ? 's' : ''} \u00b7 ` +
+      `${formatClock(totalDuration)} duration \u00b7 ` +
+      `${speakerChanges} speaker change${speakerChanges !== 1 ? 's' : ''}`;
+
+    // Export buttons
     document.querySelectorAll('[data-export]').forEach((btn) => {
       btn.onclick = () => window.open(`${API}/jobs/${job.id}/export?format=${btn.dataset.export}`, '_blank');
     });
     $('btn-delete-job').onclick = () => deleteJob(job.id);
     $('btn-save-speakers').onclick = () => saveSpeakers(job.id);
+    $('btn-save-metadata').onclick = () => saveMetadata(job.id);
     initEditToolbar();
     updateEditToolbar();
+
+    // In-transcript search
+    $('library-search-input').oninput = (e) => {
+      inTranscriptSearchTerm = e.target.value.trim().toLowerCase();
+      highlightInTranscript(inTranscriptSearchTerm);
+    };
+    $('library-search-input').value = '';
+    $('search-hit-info').textContent = '';
+  }
+
+  async function updateSegmentTags(idx, tags) {
+    const seg = currentSegments[idx];
+    if (!seg) return;
+    try {
+      await api(`/jobs/${currentJobId}/segments/${seg.id}/tags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags }),
+      });
+      seg.tags = tags;
+      // Re-render tags
+      const container = document.querySelector(`[data-tags-for="${idx}"]`);
+      if (container) {
+        container.innerHTML = tags.map((t) =>
+          `<span class="seg-tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`
+        ).join('') +
+        `<span class="seg-tag-add" data-add-tag="${idx}">+ tag</span>`;
+        // Re-bind
+        container.querySelectorAll('[data-add-tag]').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const i = parseInt(btn.dataset.addTag, 10);
+            const s = currentSegments[i];
+            if (!s) return;
+            const t = prompt('Add tag:');
+            if (t && t.trim()) {
+              const ts = s.tags || [];
+              if (!ts.includes(t.trim())) { ts.push(t.trim()); updateSegmentTags(i, ts); }
+            }
+          });
+        });
+        container.querySelectorAll('[data-tag]').forEach((el) => {
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const segEl = el.closest('[data-seg-index]');
+            if (!segEl) return;
+            const i = parseInt(segEl.dataset.segIndex, 10);
+            const s = currentSegments[i];
+            if (!s) return;
+            updateSegmentTags(i, (s.tags || []).filter((t) => t !== el.dataset.tag));
+          });
+        });
+      }
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  function highlightInTranscript(term) {
+    const textEls = document.querySelectorAll('[data-seg-text]');
+    let hitCount = 0;
+    textEls.forEach((el) => {
+      const idx = parseInt(el.dataset.segText, 10);
+      const seg = currentSegments[idx];
+      if (!seg) return;
+      const edit = segmentEdits.get(idx);
+      const baseText = edit ? edit.editedText : seg.text;
+      if (!term) {
+        el.textContent = baseText;
+        el.closest('.segment')?.classList.remove('search-active');
+        return;
+      }
+      const lower = baseText.toLowerCase();
+      const pos = lower.indexOf(term);
+      if (pos >= 0) {
+        hitCount++;
+        const before = escapeHtml(baseText.slice(0, pos));
+        const match = escapeHtml(baseText.slice(pos, pos + term.length));
+        const after = escapeHtml(baseText.slice(pos + term.length));
+        el.innerHTML = `${before}<span class="search-hl">${match}</span>${after}`;
+        el.closest('.segment')?.classList.add('search-active');
+      } else {
+        el.textContent = baseText;
+        el.closest('.segment')?.classList.remove('search-active');
+      }
+    });
+    $('search-hit-info').textContent = term ? `${hitCount} hit(s)` : '';
   }
 
   const SWATCHES = ['#2f7d45', '#bf9b30', '#9a3324', '#3d5a80', '#7a4fa0', '#c06d2f'];
   function swatchColor(i) { return SWATCHES[i % SWATCHES.length]; }
+
+  // --------------------------------------------------------- metadata save
+
+  async function saveMetadata(jobId) {
+    const data = {
+      interviewee: $('meta-interviewee').value.trim() || null,
+      interviewer: $('meta-interviewer').value.trim() || null,
+      interview_date: $('meta-date').value.trim() || null,
+      location: $('meta-location').value.trim() || null,
+      project_name: $('meta-project').value.trim() || null,
+      collection_id: $('meta-collection').value.trim() || null,
+      access_restrictions: $('meta-access').value.trim() || null,
+      custom_vocabulary: $('meta-vocabulary').value.trim() || null,
+    };
+    try {
+      await api(`/jobs/${jobId}/metadata`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      toast('Metadata saved', 'accent');
+      if ($('panel-library').classList.contains('active')) loadLibrary();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
 
   // --------------------------------------------------------- editing / diff
 
@@ -412,6 +715,8 @@
     $('btn-save-edits').onclick = saveEdits;
     $('btn-revert-edits').onclick = revertEdits;
     $('btn-diff-toggle').onclick = toggleDiff;
+    $('btn-history-toggle').onclick = toggleHistory;
+    $('btn-history-close').onclick = () => $('history-panel')?.classList.add('hidden');
   }
 
   function updateEditToolbar() {
@@ -437,7 +742,6 @@
         body: JSON.stringify({ updates }),
       });
       toast(`Saved ${updates.length} edit(s)`, 'accent');
-      // Update originals to match saved state
       for (const [idx, edit] of segmentEdits) {
         currentSegments[idx].text = edit.editedText;
       }
@@ -450,6 +754,7 @@
   }
 
   function revertEdits() {
+    if (segmentEdits.size === 0) return;
     segmentEdits.clear();
     updateEditToolbar();
     refreshSegmentsDisplay();
@@ -480,6 +785,80 @@
     });
   }
 
+  // segment split/merge
+
+  async function splitSegment() {
+    const activeSeg = document.querySelector('.segment.active');
+    if (!activeSeg) return;
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const textEl = activeSeg.querySelector('[data-seg-text]');
+    if (!textEl || !sel.containsNode(textEl, true)) return;
+    const range = sel.getRangeAt(0);
+    const preCaret = range.cloneRange();
+    preCaret.selectNodeContents(textEl);
+    preCaret.setEnd(range.startContainer, range.startOffset);
+    const pos = preCaret.toString().length;
+    if (pos <= 0 || pos >= textEl.textContent.length) {
+      toast('Move cursor inside the text to split', 'warning');
+      return;
+    }
+    const segId = activeSeg.dataset.segId;
+    try {
+      const result = await api(`/jobs/${currentJobId}/segments/${segId}/split`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ split_position: pos }),
+      });
+      // Reload transcript data
+      const [job, transcript, speakers] = await Promise.all([
+        api(`/jobs/${currentJobId}`),
+        api(`/jobs/${currentJobId}/transcript`),
+        api(`/jobs/${currentJobId}/speakers`),
+      ]);
+      currentSegments = transcript.segments;
+      segmentEdits.clear();
+      diffMode = false;
+      renderTranscript(job, transcript, speakers);
+      fillMetadataForm(job);
+      loadWaveform();
+      toast('Segment split', 'accent');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  async function mergeSegment() {
+    const activeSeg = document.querySelector('.segment.active');
+    if (!activeSeg) return;
+    const segId = activeSeg.dataset.segId;
+    const idx = parseInt(activeSeg.dataset.segIndex, 10);
+    if (idx >= currentSegments.length - 1) {
+      toast('No next segment to merge with', 'warning');
+      return;
+    }
+    try {
+      const result = await api(`/jobs/${currentJobId}/segments/${segId}/merge`, {
+        method: 'POST',
+      });
+      // Reload transcript data
+      const [job, transcript, speakers] = await Promise.all([
+        api(`/jobs/${currentJobId}`),
+        api(`/jobs/${currentJobId}/transcript`),
+        api(`/jobs/${currentJobId}/speakers`),
+      ]);
+      currentSegments = transcript.segments;
+      segmentEdits.clear();
+      diffMode = false;
+      renderTranscript(job, transcript, speakers);
+      fillMetadataForm(job);
+      loadWaveform();
+      toast('Segments merged', 'accent');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
   function toggleDiff() {
     diffMode = !diffMode;
     const btn = $('btn-diff-toggle');
@@ -494,16 +873,49 @@
         el.innerHTML = computeDiffHtml(edit.originalText, edit.editedText);
         if (seg) seg.classList.add('diff-active');
       } else {
-        el.textContent = edit ? edit.editedText : currentSegments[idx].text;
+        el.textContent = edit ? edit.editedText : (currentSegments[idx]?.text || '');
         if (seg) seg.classList.remove('diff-active');
       }
     });
   }
 
+  async function toggleHistory() {
+    const panel = $('history-panel');
+    if (!panel.classList.contains('hidden')) {
+      panel.classList.add('hidden');
+      return;
+    }
+    // Check if a segment is selected
+    const activeSeg = document.querySelector('.segment.active');
+    if (!activeSeg) {
+      toast('Click a segment first, then open History', 'warning');
+      return;
+    }
+    const segId = activeSeg.dataset.segId;
+    if (!segId) return;
+    try {
+      const data = await api(`/jobs/${currentJobId}/segments/${segId}/history`);
+      const list = $('history-list');
+      if (data.versions.length === 0) {
+        list.innerHTML = '<p class="dim">No edit history for this segment.</p>';
+      } else {
+        list.innerHTML = data.versions.map((v) => `
+          <div class="history-version">
+            <div class="hist-time">${formatDate(v.edited_at)}</div>
+            <div class="hist-before">${escapeHtml(v.text_before)}</div>
+            <div class="hist-after">${escapeHtml(v.text_after)}</div>
+          </div>
+        `).join('');
+      }
+      panel.classList.remove('hidden');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
   function computeDiffHtml(original, edited) {
     const origWords = original.split(/(\s+)/);
     const editWords = edited.split(/(\s+)/);
-    // Simple longest-common-subsequence for word-level diff
     const lcs = buildLCS(origWords, editWords);
     let oi = 0, ei = 0, li = 0;
     let html = '';
@@ -518,9 +930,7 @@
       } else if (ei < editWords.length && (li >= lcs.length || editWords[ei] !== lcs[li])) {
         html += `<span class="diff-add">${escapeHtml(editWords[ei])}</span>`;
         ei++;
-      } else {
-        break;
-      }
+      } else { break; }
     }
     return html;
   }
@@ -534,7 +944,6 @@
           : Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
-    // Backtrack
     const result = [];
     let i = m, j = n;
     while (i > 0 && j > 0) {
@@ -600,7 +1009,221 @@
         const el = document.querySelector(`[data-seg-index="${activeIndex}"]`);
         if (el) el.classList.add('active');
       }
+      updateWaveformCursor(t);
     });
+  }
+
+  // ------------------------------------------------------------ waveform
+
+  let waveformPeaks = null;
+  let waveformDuration = 0;
+
+  async function loadWaveform() {
+    const canvas = $('waveform-canvas');
+    if (!canvas) return;
+    if (!currentJobId) { canvas.style.display = 'none'; return; }
+    canvas.style.display = 'block';
+
+    // Get audio duration from the player
+    const audio = $('audio-player');
+    if (!audio.src) return;
+
+    try {
+      const resp = await fetch(audio.src);
+      const blob = await resp.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const ctx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100, 44100);
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      waveformDuration = audioBuffer.duration;
+      const raw = audioBuffer.getChannelData(0);
+      // Downsample to canvas width
+      const w = canvas.clientWidth || canvas.parentElement.clientWidth || 600;
+      canvas.width = w;
+      canvas.height = 80;
+      const step = Math.floor(raw.length / w);
+      waveformPeaks = [];
+      for (let i = 0; i < w; i++) {
+        let max = 0;
+        for (let j = 0; j < step; j++) {
+          const val = Math.abs(raw[i * step + j] || 0);
+          if (val > max) max = val;
+        }
+        waveformPeaks.push(max);
+      }
+      drawWaveform(0);
+
+      // Click to seek
+      canvas.onclick = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const pct = x / canvas.width;
+        audio.currentTime = pct * waveformDuration;
+      };
+    } catch (_) {
+      canvas.style.display = 'none';
+    }
+  }
+
+  function drawWaveform(currentTime) {
+    const canvas = $('waveform-canvas');
+    if (!canvas || !waveformPeaks) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+      || matchMedia('(prefers-color-scheme: dark)').matches;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Background
+    ctx.fillStyle = isDark ? '#1f1b16' : '#efebdf';
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw segments as region highlights
+    if (currentSegments.length > 0 && waveformDuration > 0) {
+      currentSegments.forEach((seg) => {
+        const sx = (seg.start_time / waveformDuration) * w;
+        const ex = (seg.end_time / waveformDuration) * w;
+        ctx.fillStyle = 'rgba(47, 125, 69, 0.08)';
+        ctx.fillRect(sx, 0, ex - sx, h);
+      });
+    }
+
+    // Draw waveform
+    const center = h / 2;
+    ctx.strokeStyle = isDark ? '#4aa066' : '#2f7d45';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < waveformPeaks.length; i++) {
+      const x = (i / waveformPeaks.length) * w;
+      const amp = waveformPeaks[i] * (center - 4);
+      if (i === 0) ctx.moveTo(x, center - amp);
+      ctx.lineTo(x, center - amp);
+    }
+    ctx.stroke();
+
+    // Mirror bottom half
+    ctx.beginPath();
+    for (let i = 0; i < waveformPeaks.length; i++) {
+      const x = (i / waveformPeaks.length) * w;
+      const amp = waveformPeaks[i] * (center - 4);
+      if (i === 0) ctx.moveTo(x, center + amp);
+      ctx.lineTo(x, center + amp);
+    }
+    ctx.stroke();
+
+    // Playback cursor
+    if (currentTime > 0 && waveformDuration > 0) {
+      const cx = (currentTime / waveformDuration) * w;
+      ctx.strokeStyle = '#bf9b30';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(cx, h);
+      ctx.stroke();
+    }
+  }
+
+  let waveformAnimFrame = null;
+
+  function updateWaveformCursor(t) {
+    if (waveformAnimFrame) cancelAnimationFrame(waveformAnimFrame);
+    waveformAnimFrame = requestAnimationFrame(() => drawWaveform(t));
+  }
+
+  // ------------------------------------------------------------ global search
+
+  function initGlobalSearch() {
+    const input = $('global-search-input');
+    let debounceTimer = null;
+    input.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const q = input.value.trim();
+        if (q.length >= 2) {
+          performSearch(q);
+        }
+      }, 350);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const q = input.value.trim();
+        if (q.length >= 2) performSearch(q);
+      }
+    });
+  }
+
+  async function performSearch(q) {
+    try {
+      const data = await api(`/search?q=${encodeURIComponent(q)}`);
+      showSearchResults(data, q);
+    } catch (err) {
+      toast(`Search failed: ${err.message}`, 'error');
+    }
+  }
+
+  function showSearchResults(data, query) {
+    const modal = $('search-modal');
+    const list = $('search-results-list');
+    const count = $('search-result-count');
+    count.textContent = `${data.total} result(s)`;
+
+    if (data.results.length === 0) {
+      list.innerHTML = '<p class="dim">No results found.</p>';
+    } else {
+      list.innerHTML = data.results.map((r) => {
+        const meta = [r.interviewee, r.interview_date, r.project_name].filter(Boolean).join(' — ');
+        const highlighted = r.text.replace(
+          new RegExp(escapeRegex(query), 'gi'),
+          (m) => `<span class="hl">${escapeHtml(m)}</span>`
+        );
+        return `
+        <div class="search-result-item" data-search-job="${escapeHtml(r.job_id)}" data-search-seg="${escapeHtml(r.segment_id)}" data-search-time="${r.start_time}">
+          <div class="search-result-meta">
+            <span><strong>${escapeHtml(r.filename)}</strong></span>
+            <span>${escapeHtml(r.speaker_label)}</span>
+            <span>${formatClock(r.start_time)}</span>
+            ${meta ? `<span>${escapeHtml(meta)}</span>` : ''}
+          </div>
+          <div class="search-result-text">${highlighted}</div>
+        </div>`;
+      }).join('');
+
+      list.querySelectorAll('.search-result-item').forEach((el) => {
+        el.addEventListener('click', () => {
+          const jobId = el.dataset.searchJob;
+          const segId = el.dataset.searchSeg;
+          const time = parseFloat(el.dataset.searchTime);
+          closeSearchModal();
+          // Switch to library tab and select job
+          document.querySelector('.tab[data-tab="library"]').click();
+          selectJob(jobId);
+          // Seek to time after render
+          setTimeout(() => {
+            const audio = $('audio-player');
+            audio.currentTime = time;
+            audio.play().catch(() => {});
+            // Highlight segment
+            document.querySelectorAll('[data-seg-id]').forEach((s) => {
+              if (s.dataset.segId === segId) {
+                s.classList.add('active');
+                s.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            });
+          }, 300);
+        });
+      });
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  function escapeRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function closeSearchModal() {
+    $('search-modal')?.classList.add('hidden');
   }
 
   // ------------------------------------------------------------ config load
@@ -636,10 +1259,9 @@
   }
 
   function mapModelState(state) {
-    // untested -> warn, loaded -> ok, failed -> error
     if (state === 'loaded') return 'ok';
     if (state === 'failed') return 'error';
-    return 'warn'; // untested
+    return 'warn';
   }
 
   async function loadHealth() {
@@ -647,13 +1269,11 @@
       const h = await api('/health/detailed');
       const e = h.engine;
 
-      // Status bar dots — use 3-state mapping
       setDot('health-db', h.database.status === 'ok' ? 'ok' : 'error');
       setDot('health-whisper', mapModelState(e.whisper_model.state));
       setDot('health-diarize', mapModelState(e.diarization_model.state));
       setDot('health-gpu', e.gpu ? 'ok' : 'warn');
 
-      // Detail panel — Whisper
       const whisperLabel = e.whisper_model.state === 'loaded'
         ? `${e.whisper_model.name} (loaded)`
         : e.whisper_model.state === 'failed'
@@ -662,30 +1282,21 @@
       $('health-whisper-name').textContent = whisperLabel;
       setStatusDot('health-whisper-status', mapModelState(e.whisper_model.state));
 
-      // Diarization
       const diarizeLabel = e.diarization_model.state === 'loaded'
-        ? 'Loaded'
-        : e.diarization_model.state === 'failed'
-          ? 'Failed'
-          : 'Not loaded';
+        ? 'Loaded' : e.diarization_model.state === 'failed' ? 'Failed' : 'Not loaded';
       $('health-diarize-status').textContent = diarizeLabel;
       setStatusDot('health-diarize-dot', mapModelState(e.diarization_model.state));
 
-      // Alignment
       const langs = e.alignment_models.loaded_languages;
       const alignLabel = e.alignment_models.state === 'loaded'
         ? `${langs.join(', ')} (loaded)`
-        : e.alignment_models.state === 'failed'
-          ? 'Failed'
-          : 'Not loaded';
+        : e.alignment_models.state === 'failed' ? 'Failed' : 'Not loaded';
       $('health-align-langs').textContent = alignLabel;
       setStatusDot('health-align-dot', mapModelState(e.alignment_models.state));
 
-      // Device
       $('health-device').textContent = e.device.toUpperCase();
       setStatusDot('health-device-dot', 'ok');
 
-      // GPU / VRAM
       if (e.gpu) {
         $('health-gpu-name').textContent = e.gpu.name;
         $('health-vram').textContent = `${e.gpu.vram_used_mb} / ${e.gpu.vram_total_mb} MB`;
@@ -699,26 +1310,15 @@
         setStatusDot('health-vram-dot', 'warn');
       }
 
-      // HF Token
       $('health-hf-token').textContent = e.hf_token_configured ? 'Configured' : 'Missing';
       setStatusDot('health-hf-dot', e.hf_token_configured ? 'ok' : 'error');
 
-      // Database
       $('health-db-status').textContent = h.database.status === 'ok' ? 'Connected' : 'Error';
       setStatusDot('health-db-dot', h.database.status === 'ok' ? 'ok' : 'error');
 
-      // Error display
-      if (e.last_error) {
-        showHealthError(e.last_error);
-      } else {
-        hideHealthError();
-      }
-
+      if (e.last_error) { showHealthError(e.last_error); } else { hideHealthError(); }
     } catch (_) {
-      setDot('health-db', 'error');
-      setDot('health-whisper', 'error');
-      setDot('health-diarize', 'error');
-      setDot('health-gpu', 'error');
+      ['health-db', 'health-whisper', 'health-diarize', 'health-gpu'].forEach((id) => setDot(id, 'error'));
     }
   }
 
@@ -727,15 +1327,10 @@
     btn.classList.add('loading');
     btn.textContent = 'Loading…';
     hideHealthError();
-
     try {
       const result = await api('/health/preload', { method: 'POST' });
-      if (result.ok) {
-        toast('Models loaded successfully', 'accent');
-      } else {
-        toast(`Model load failed: ${result.error}`, 'error');
-        showHealthError(result.error);
-      }
+      if (result.ok) { toast('Models loaded successfully', 'accent'); }
+      else { toast(`Model load failed: ${result.error}`, 'error'); showHealthError(result.error); }
     } catch (err) {
       toast(`Preload failed: ${err.message}`, 'error');
       showHealthError(err.message);
@@ -753,9 +1348,7 @@
       panel.classList.toggle('hidden');
       if (wasHidden) loadHealth();
     });
-    $('btn-health-close').addEventListener('click', () => {
-      $('health-panel').classList.add('hidden');
-    });
+    $('btn-health-close').addEventListener('click', () => { $('health-panel').classList.add('hidden'); });
     $('btn-load-models').addEventListener('click', preloadModels);
   }
 
@@ -767,8 +1360,15 @@
     initUploadForm();
     initAudioHighlight();
     initHealthPanel();
+    initGlobalSearch();
+    initKeyboardShortcuts();
     loadConfig();
     loadHealth();
     $('btn-library-refresh').addEventListener('click', loadLibrary);
+    $('btn-search-close').addEventListener('click', closeSearchModal);
+    // Close search on overlay click
+    $('search-modal').addEventListener('click', (e) => {
+      if (e.target === $('search-modal')) closeSearchModal();
+    });
   });
 })();

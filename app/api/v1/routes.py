@@ -11,13 +11,28 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.db.models import JobStatus, SpeakerMapping, TranscriptionJob, TranscriptSegment
+from app.db.models import (
+    JobStatus,
+    SegmentEditVersion,
+    SpeakerMapping,
+    TranscriptionJob,
+    TranscriptSegment,
+)
 from app.db.session import async_session, get_db
 from app.schemas.transcription import (
+    EditHistoryResponse,
+    EditVersionOut,
     ExportFormat,
     JobCreated,
+    JobMetadataUpdate,
     JobStatusResponse,
+    SearchMatch,
+    SearchResults,
+    SegmentMergeResponse,
     SegmentOut,
+    SegmentSplitRequest,
+    SegmentSplitResponse,
+    SegmentTagUpdate,
     SegmentUpdateRequest,
     SegmentUpdateResponse,
     SpeakerMappingOut,
@@ -59,7 +74,6 @@ async def _run_transcription(
     """Background task: run transcription engine, update DB on completion/failure."""
     async with async_session() as db:
         try:
-            # Mark processing
             job = await db.get(TranscriptionJob, job_id)
             if job is None:
                 return
@@ -71,6 +85,9 @@ async def _run_transcription(
                 logger.debug("Job %s progress: %.0f%%", job_id, pct * 100)
 
             engine = _get_engine()
+            custom_vocab = None
+            if job.custom_vocabulary:
+                custom_vocab = job.custom_vocabulary
             segments = await asyncio.to_thread(
                 engine.transcribe,
                 audio_path,
@@ -78,9 +95,9 @@ async def _run_transcription(
                 min_speakers=options.min_speakers,
                 max_speakers=options.max_speakers,
                 progress_callback=_progress,
+                custom_vocabulary=custom_vocab,
             )
 
-            # Persist segments
             from app.db.models import TranscriptSegment as TS
 
             db_segs = [
@@ -95,7 +112,6 @@ async def _run_transcription(
             ]
             db.add_all(db_segs)
 
-            # Build speaker mappings for any new speakers
             seen = []
             for seg in segments:
                 if seg.speaker not in seen:
@@ -115,7 +131,6 @@ async def _run_transcription(
             ]
             db.add_all(new_mappings)
 
-            # Finalize
             job.status = JobStatus.completed
             job.progress_percentage = 100.0
             job.completed_at = datetime.now(timezone.utc)
@@ -132,7 +147,6 @@ async def _run_transcription(
                 await db.commit()
 
         finally:
-            # Free VRAM after every job
             engine = _get_engine()
             engine.unload()
 
@@ -154,7 +168,6 @@ async def health_detailed():
     engine = _get_engine()
     engine_status = engine.health_check()
 
-    # Test database connectivity
     db_ok = True
     try:
         async with async_session() as db:
@@ -186,12 +199,10 @@ async def create_transcription(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> JobCreated:
-    # Validate file size
     contents = await file.read()
     if len(contents) > settings.max_upload_size:
         raise HTTPException(413, "File too large")
 
-    # Persist upload
     job = TranscriptionJob(
         filename=file.filename or "unknown",
         status=JobStatus.queued,
@@ -206,11 +217,9 @@ async def create_transcription(
     db.add(job)
     await db.commit()
 
-    # Save audio to disk
     audio_path = settings.upload_path / f"{job.id}_{file.filename}"
     audio_path.write_bytes(contents)
 
-    # Enqueue background work
     opts = TranscriptionOptions(
         language=language,
         min_speakers=min_speakers,
@@ -219,6 +228,35 @@ async def create_transcription(
     background_tasks.add_task(_run_transcription, job.id, str(audio_path), opts)
 
     return JobCreated(job_id=job.id)
+
+
+@router.post("/transcribe/batch", status_code=202)
+async def create_batch_transcription(
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Upload multiple audio files for batch transcription."""
+
+    upload_dir = settings.upload_path
+    audio_exts = ("*.wav", "*.mp3", "*.m4a", "*.ogg", "*.flac", "*.mp4", "*.m4v")
+    files = []
+    for ext in audio_exts:
+        files.extend(upload_dir.glob(ext))
+
+    queued = 0
+    for fp in files:
+        job = TranscriptionJob(
+            filename=fp.name,
+            status=JobStatus.queued,
+            options=json.dumps({"language": None, "min_speakers": None, "max_speakers": None}),
+        )
+        db.add(job)
+        await db.commit()
+        opts = TranscriptionOptions(language=None, min_speakers=None, max_speakers=None)
+        background_tasks.add_task(_run_transcription, job.id, str(fp), opts)
+        queued += 1
+
+    return {"queued": queued, "message": f"Queued {queued} file(s) for transcription"}
 
 
 @router.get("/jobs", response_model=list[JobStatusResponse])
@@ -279,6 +317,14 @@ async def get_transcript(job_id: str, db: AsyncSession = Depends(get_db)) -> Tra
     )
     name_map = {m.speaker_label: m.custom_name for m in name_map_row}
 
+    def _parse_tags(seg: TranscriptSegment) -> list[str]:
+        if seg.tags:
+            try:
+                return json.loads(seg.tags)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return []
+
     return TranscriptResponse(
         job_id=job_id,
         segments=[
@@ -288,30 +334,262 @@ async def get_transcript(job_id: str, db: AsyncSession = Depends(get_db)) -> Tra
                 start_time=s.start_time,
                 end_time=s.end_time,
                 text=s.text,
+                tags=_parse_tags(s),
             )
             for s in segs
         ],
     )
 
 
-@router.get("/jobs/{job_id}/speakers", response_model=SpeakerMapResponse)
-async def get_speakers(job_id: str, db: AsyncSession = Depends(get_db)) -> SpeakerMapResponse:
+@router.patch("/jobs/{job_id}/metadata", response_model=JobStatusResponse)
+async def update_job_metadata(
+    job_id: str,
+    body: JobMetadataUpdate,
+    db: AsyncSession = Depends(get_db),
+) -> TranscriptionJob:
     job = await db.get(TranscriptionJob, job_id)
     if job is None:
         raise HTTPException(404, "Job not found")
 
-    mappings = (
-        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+    update_data = body.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(job, field, value)
+
+    await db.commit()
+    return job
+
+
+@router.patch("/jobs/{job_id}/segments", response_model=SegmentUpdateResponse)
+async def update_segments(
+    job_id: str,
+    body: SegmentUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+) -> SegmentUpdateResponse:
+    job = await db.get(TranscriptionJob, job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+    if job.status != JobStatus.completed:
+        raise HTTPException(409, f"Job is {job.status.value}, not completed")
+
+    from app.db.models import TranscriptSegment as TS
+
+    updated = 0
+    for item in body.updates:
+        seg_id = item.get("segment_id")
+        text = item.get("text")
+        if not seg_id or text is None:
+            continue
+        seg = await db.get(TS, seg_id)
+        if seg and seg.job_id == job_id and seg.text != text:
+            db.add(
+                SegmentEditVersion(
+                    segment_id=seg.id,
+                    job_id=job_id,
+                    text_before=seg.text,
+                    text_after=text,
+                )
+            )
+            seg.text = text
+            updated += 1
+
+    await db.commit()
+    return SegmentUpdateResponse(job_id=job_id, updated_count=updated)
+
+
+@router.get("/jobs/{job_id}/segments/{segment_id}/history", response_model=EditHistoryResponse)
+async def get_segment_history(
+    job_id: str,
+    segment_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> EditHistoryResponse:
+    seg = await db.get(TranscriptSegment, segment_id)
+    if seg is None or seg.job_id != job_id:
+        raise HTTPException(404, "Segment not found")
+
+    versions = (
+        (
+            await db.execute(
+                select(SegmentEditVersion)
+                .where(SegmentEditVersion.segment_id == segment_id)
+                .order_by(SegmentEditVersion.edited_at.desc())
+            )
+        )
         .scalars()
         .all()
     )
 
-    return SpeakerMapResponse(
-        job_id=job_id,
-        speakers=[
-            SpeakerMappingOut(speaker_label=m.speaker_label, custom_name=m.custom_name)
-            for m in mappings
+    return EditHistoryResponse(
+        segment_id=segment_id,
+        versions=[
+            EditVersionOut(
+                id=v.id,
+                segment_id=v.segment_id,
+                text_before=v.text_before,
+                text_after=v.text_after,
+                edited_at=v.edited_at,
+            )
+            for v in versions
         ],
+    )
+
+
+@router.patch("/jobs/{job_id}/segments/{segment_id}/tags")
+async def update_segment_tags(
+    job_id: str,
+    segment_id: str,
+    body: SegmentTagUpdate,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    seg = await db.get(TranscriptSegment, segment_id)
+    if seg is None or seg.job_id != job_id:
+        raise HTTPException(404, "Segment not found")
+
+    seg.tags = json.dumps(body.tags)
+    await db.commit()
+    return {"tags": body.tags}
+
+
+@router.post("/jobs/{job_id}/segments/{segment_id}/split", response_model=SegmentSplitResponse)
+async def split_segment(
+    job_id: str,
+    segment_id: str,
+    body: SegmentSplitRequest,
+    db: AsyncSession = Depends(get_db),
+) -> SegmentSplitResponse:
+    seg = await db.get(TranscriptSegment, segment_id)
+    if seg is None or seg.job_id != job_id:
+        raise HTTPException(404, "Segment not found")
+
+    text = seg.text
+    pos = body.split_position
+    if pos <= 0 or pos >= len(text):
+        raise HTTPException(400, "Split position must be inside the text")
+
+    first_text = text[:pos].strip()
+    second_text = text[pos:].strip()
+    if not first_text or not second_text:
+        raise HTTPException(400, "Split would create an empty segment")
+
+    split_ratio = pos / len(text)
+    orig_duration = seg.end_time - seg.start_time
+    mid_time = seg.start_time + orig_duration * split_ratio
+
+    seg.text = first_text
+    old_end = seg.end_time
+    seg.end_time = mid_time
+
+    new_seg = TranscriptSegment(
+        job_id=job_id,
+        speaker_label=seg.speaker_label,
+        start_time=mid_time,
+        end_time=old_end,
+        text=second_text,
+    )
+    db.add(new_seg)
+    await db.commit()
+
+    segs = (
+        (
+            await db.execute(
+                select(TranscriptSegment)
+                .where(TranscriptSegment.job_id == job_id)
+                .order_by(TranscriptSegment.start_time)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    name_map_row = (
+        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+        .scalars()
+        .all()
+    )
+    name_map = {m.speaker_label: m.custom_name for m in name_map_row}
+
+    def _parse_tags(s: TranscriptSegment) -> list[str]:
+        if s.tags:
+            try:
+                return json.loads(s.tags)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return []
+
+    return SegmentSplitResponse(
+        segments=[
+            SegmentOut(
+                id=s.id,
+                speaker_label=name_map.get(s.speaker_label, s.speaker_label),
+                start_time=s.start_time,
+                end_time=s.end_time,
+                text=s.text,
+                tags=_parse_tags(s),
+            )
+            for s in segs
+        ],
+    )
+
+
+@router.post("/jobs/{job_id}/segments/{segment_id}/merge", response_model=SegmentMergeResponse)
+async def merge_segments(
+    job_id: str,
+    segment_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> SegmentMergeResponse:
+    seg = await db.get(TranscriptSegment, segment_id)
+    if seg is None or seg.job_id != job_id:
+        raise HTTPException(404, "Segment not found")
+
+    next_seg = (
+        (
+            await db.execute(
+                select(TranscriptSegment)
+                .where(
+                    TranscriptSegment.job_id == job_id,
+                    TranscriptSegment.start_time > seg.start_time,
+                )
+                .order_by(TranscriptSegment.start_time)
+                .limit(1)
+            )
+        )
+        .scalars()
+        .first()
+    )
+
+    if next_seg is None:
+        raise HTTPException(400, "No next segment to merge with")
+
+    seg.text = seg.text.rstrip(" ") + " " + next_seg.text.lstrip(" ")
+    seg.end_time = next_seg.end_time
+    deleted_id = next_seg.id
+    await db.delete(next_seg)
+    await db.commit()
+
+    name_map_row = (
+        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+        .scalars()
+        .all()
+    )
+    name_map = {m.speaker_label: m.custom_name for m in name_map_row}
+
+    def _parse_tags(s: TranscriptSegment) -> list[str]:
+        if s.tags:
+            try:
+                return json.loads(s.tags)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return []
+
+    return SegmentMergeResponse(
+        segment=SegmentOut(
+            id=seg.id,
+            speaker_label=name_map.get(seg.speaker_label, seg.speaker_label),
+            start_time=seg.start_time,
+            end_time=seg.end_time,
+            text=seg.text,
+            tags=_parse_tags(seg),
+        ),
+        deleted_segment_id=deleted_id,
     )
 
 
@@ -361,33 +639,56 @@ async def rename_speakers(
     )
 
 
-@router.patch("/jobs/{job_id}/segments", response_model=SegmentUpdateResponse)
-async def update_segments(
-    job_id: str,
-    body: SegmentUpdateRequest,
+@router.get("/search", response_model=SearchResults)
+async def search_transcripts(
+    q: str,
     db: AsyncSession = Depends(get_db),
-) -> SegmentUpdateResponse:
-    job = await db.get(TranscriptionJob, job_id)
-    if job is None:
-        raise HTTPException(404, "Job not found")
-    if job.status != JobStatus.completed:
-        raise HTTPException(409, f"Job is {job.status.value}, not completed")
+) -> SearchResults:
+    """Full-text search across all completed transcripts."""
+    if not q.strip():
+        return SearchResults(results=[], total=0)
 
-    from app.db.models import TranscriptSegment as TS
+    search_term = f"%{q.strip()}%"
 
-    updated = 0
-    for item in body.updates:
-        seg_id = item.get("segment_id")
-        text = item.get("text")
-        if not seg_id or text is None:
+    segs = (
+        (
+            await db.execute(
+                select(TranscriptSegment)
+                .join(TranscriptionJob)
+                .where(
+                    TranscriptionJob.status == JobStatus.completed,
+                    TranscriptSegment.text.ilike(search_term),
+                )
+                .order_by(TranscriptSegment.start_time)
+                .limit(100)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    results = []
+    for seg in segs:
+        job = await db.get(TranscriptionJob, seg.job_id)
+        if job is None:
             continue
-        seg = await db.get(TS, seg_id)
-        if seg and seg.job_id == job_id:
-            seg.text = text
-            updated += 1
+        results.append(
+            SearchMatch(
+                job_id=seg.job_id,
+                filename=job.filename,
+                segment_id=seg.id,
+                speaker_label=seg.speaker_label,
+                text=seg.text,
+                start_time=seg.start_time,
+                end_time=seg.end_time,
+                interviewee=job.interviewee,
+                interviewer=job.interviewer,
+                interview_date=job.interview_date,
+                project_name=job.project_name,
+            )
+        )
 
-    await db.commit()
-    return SegmentUpdateResponse(job_id=job_id, updated_count=updated)
+    return SearchResults(results=results, total=len(results))
 
 
 @router.get("/jobs/{job_id}/export")
@@ -411,6 +712,8 @@ async def export_transcript(
         ExportFormat.txt: "text/plain",
         ExportFormat.md: "text/markdown",
         ExportFormat.pdf: "application/pdf",
+        ExportFormat.ohms: "application/xml",
+        ExportFormat.tei: "application/xml",
     }
     exporters = {
         ExportFormat.json: exports.export_json,
@@ -419,6 +722,8 @@ async def export_transcript(
         ExportFormat.txt: exports.export_txt,
         ExportFormat.md: exports.export_md,
         ExportFormat.pdf: exports.export_pdf,
+        ExportFormat.ohms: exports.export_ohms,
+        ExportFormat.tei: exports.export_tei,
     }
 
     body = await exporters[format](db, job_id)
@@ -439,7 +744,6 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)) -> None:
     if job is None:
         raise HTTPException(404, "Job not found")
 
-    # Remove audio file(s) from disk
     upload_dir = settings.upload_path
     for p in upload_dir.glob(f"{job_id}_*"):
         p.unlink(missing_ok=True)
