@@ -8,13 +8,14 @@ Usage:
     If no audio file is provided, the script tests all non-engine endpoints
     (health, missing-job handling, export of non-existent job).
 """
+
 from __future__ import annotations
 
+import json
 import sys
 import time
-import urllib.request
 import urllib.error
-import json
+import urllib.request
 
 BASE = "http://127.0.0.1:8000"
 
@@ -50,10 +51,14 @@ def _post_multipart(path: str, filepath: str) -> dict | None:
         file_data = f.read()
 
     body = (
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
-        f"Content-Type: {mime}\r\n\r\n"
-    ).encode() + file_data + f"\r\n--{boundary}--\r\n".encode()
+        (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+            f"Content-Type: {mime}\r\n\r\n"
+        ).encode()
+        + file_data
+        + f"\r\n--{boundary}--\r\n".encode()
+    )
 
     req = urllib.request.Request(
         f"{BASE}{path}",
@@ -101,7 +106,7 @@ def test_missing_job():
 
 def test_transcribe_and_poll(audio_path: str):
     print(f"3. POST /api/v1/transcribe with {audio_path}")
-    resp = _post_multipart("/api/v1/transcribe?model_size=base", audio_path)
+    resp = _post_multipart("/api/v1/transcribe", audio_path)
     assert resp and "job_id" in resp, f"Unexpected: {resp}"
     job_id = resp["job_id"]
     print(f"   job_id = {job_id}")
@@ -145,7 +150,7 @@ def test_transcribe_and_poll(audio_path: str):
         print(f"6. GET /api/v1/jobs/{job_id}/export?format={fmt}")
         resp = _get(f"/api/v1/jobs/{job_id}/export?format={fmt}")
         if resp is None:
-            print(f"   (raw response checked via urllib)")
+            print("   (raw response checked via urllib)")
         else:
             print(f"   OK ({len(str(resp))} bytes)")
 

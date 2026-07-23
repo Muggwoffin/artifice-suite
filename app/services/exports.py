@@ -29,18 +29,22 @@ async def _load_data(
     db: AsyncSession, job_id: str
 ) -> tuple[list[TranscriptSegment], dict[str, str]]:
     segs = (
-        await db.execute(
-            select(TranscriptSegment)
-            .where(TranscriptSegment.job_id == job_id)
-            .order_by(TranscriptSegment.start_time)
+        (
+            await db.execute(
+                select(TranscriptSegment)
+                .where(TranscriptSegment.job_id == job_id)
+                .order_by(TranscriptSegment.start_time)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     mappings = (
-        await db.execute(
-            select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)
-        )
-    ).scalars().all()
+        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+        .scalars()
+        .all()
+    )
     name_map = {m.speaker_label: m.custom_name for m in mappings}
 
     return list(segs), name_map
@@ -97,3 +101,43 @@ async def export_txt(db: AsyncSession, job_id: str) -> str:
             buf.write(f"\n[{name}]\n")
         buf.write(f"{s.text} ")
     return buf.getvalue().strip() + "\n"
+
+
+async def export_md(db: AsyncSession, job_id: str) -> str:
+    segs, name_map = await _load_data(db, job_id)
+    buf = StringIO()
+    buf.write(f"# Transcript — {job_id}\n\n")
+    current_speaker = None
+    for s in segs:
+        name = _speaker_name(s.speaker_label, name_map)
+        if name != current_speaker:
+            current_speaker = name
+            buf.write(f"\n**{name}**\n\n")
+        buf.write(f"{s.text}\n\n")
+    return buf.getvalue()
+
+
+async def export_pdf(db: AsyncSession, job_id: str) -> bytes:
+    from fpdf import FPDF
+
+    segs, name_map = await _load_data(db, job_id)
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, f"Transcript — {job_id}", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(4)
+
+    current_speaker = None
+    for s in segs:
+        name = _speaker_name(s.speaker_label, name_map)
+        if name != current_speaker:
+            current_speaker = name
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 7, name, new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 10)
+        pdf.multi_cell(0, 5, s.text)
+        pdf.ln(2)
+
+    return bytes(pdf.output())

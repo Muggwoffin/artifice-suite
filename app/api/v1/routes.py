@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,11 +18,13 @@ from app.schemas.transcription import (
     JobCreated,
     JobStatusResponse,
     SegmentOut,
-    SpeakerMapResponse,
+    SegmentUpdateRequest,
+    SegmentUpdateResponse,
     SpeakerMappingOut,
+    SpeakerMapResponse,
     SpeakerRenameRequest,
-    TranscriptResponse,
     TranscriptionOptions,
+    TranscriptResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -100,10 +102,10 @@ async def _run_transcription(
                     seen.append(seg.speaker)
 
             existing = (
-                await db.execute(
-                    select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)
-                )
-            ).scalars().all()
+                (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+                .scalars()
+                .all()
+            )
             existing_labels = {m.speaker_label for m in existing}
 
             new_mappings = [
@@ -138,10 +140,46 @@ async def _run_transcription(
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 
+@router.get("/config")
+async def get_config():
+    return {
+        "whisper_model": settings.whisper_model,
+        "device": settings.device,
+    }
+
+
+@router.get("/health/detailed")
+async def health_detailed():
+    """Full health check: model load state, GPU info, database connectivity."""
+    engine = _get_engine()
+    engine_status = engine.health_check()
+
+    # Test database connectivity
+    db_ok = True
+    try:
+        async with async_session() as db:
+            await db.execute(select(TranscriptionJob).limit(1))
+    except Exception:
+        db_ok = False
+
+    return {
+        "status": "ok" if db_ok else "degraded",
+        "engine": engine_status,
+        "database": {"status": "ok" if db_ok else "error"},
+    }
+
+
+@router.post("/health/preload")
+async def health_preload():
+    """Load all models into memory. Returns success or error details."""
+    engine = _get_engine()
+    result = await asyncio.to_thread(engine.preload)
+    return result
+
+
 @router.post("/transcribe", response_model=JobCreated, status_code=202)
 async def create_transcription(
     file: UploadFile,
-    model_size: str = "base",
     language: str | None = None,
     min_speakers: int | None = None,
     max_speakers: int | None = None,
@@ -159,7 +197,6 @@ async def create_transcription(
         status=JobStatus.queued,
         options=json.dumps(
             {
-                "model_size": model_size,
                 "language": language,
                 "min_speakers": min_speakers,
                 "max_speakers": max_speakers,
@@ -175,7 +212,6 @@ async def create_transcription(
 
     # Enqueue background work
     opts = TranscriptionOptions(
-        model_size=model_size,
         language=language,
         min_speakers=min_speakers,
         max_speakers=max_speakers,
@@ -185,12 +221,35 @@ async def create_transcription(
     return JobCreated(job_id=job.id)
 
 
+@router.get("/jobs", response_model=list[JobStatusResponse])
+async def list_jobs(db: AsyncSession = Depends(get_db)) -> list[TranscriptionJob]:
+    jobs = (
+        (await db.execute(select(TranscriptionJob).order_by(TranscriptionJob.created_at.desc())))
+        .scalars()
+        .all()
+    )
+    return list(jobs)
+
+
 @router.get("/jobs/{job_id}", response_model=JobStatusResponse)
 async def get_job_status(job_id: str, db: AsyncSession = Depends(get_db)) -> TranscriptionJob:
     job = await db.get(TranscriptionJob, job_id)
     if job is None:
         raise HTTPException(404, "Job not found")
     return job
+
+
+@router.get("/jobs/{job_id}/audio")
+async def get_job_audio(job_id: str, db: AsyncSession = Depends(get_db)) -> FileResponse:
+    job = await db.get(TranscriptionJob, job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+
+    matches = list(settings.upload_path.glob(f"{job_id}_*"))
+    if not matches:
+        raise HTTPException(404, "Audio file not found")
+
+    return FileResponse(matches[0], filename=job.filename)
 
 
 @router.get("/jobs/{job_id}/transcript", response_model=TranscriptResponse)
@@ -202,30 +261,56 @@ async def get_transcript(job_id: str, db: AsyncSession = Depends(get_db)) -> Tra
         raise HTTPException(409, f"Job is {job.status.value}, not completed")
 
     segs = (
-        await db.execute(
-            select(TranscriptSegment)
-            .where(TranscriptSegment.job_id == job_id)
-            .order_by(TranscriptSegment.start_time)
+        (
+            await db.execute(
+                select(TranscriptSegment)
+                .where(TranscriptSegment.job_id == job_id)
+                .order_by(TranscriptSegment.start_time)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     name_map_row = (
-        await db.execute(
-            select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)
-        )
-    ).scalars().all()
+        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+        .scalars()
+        .all()
+    )
     name_map = {m.speaker_label: m.custom_name for m in name_map_row}
 
     return TranscriptResponse(
         job_id=job_id,
         segments=[
             SegmentOut(
+                id=s.id,
                 speaker_label=name_map.get(s.speaker_label, s.speaker_label),
                 start_time=s.start_time,
                 end_time=s.end_time,
                 text=s.text,
             )
             for s in segs
+        ],
+    )
+
+
+@router.get("/jobs/{job_id}/speakers", response_model=SpeakerMapResponse)
+async def get_speakers(job_id: str, db: AsyncSession = Depends(get_db)) -> SpeakerMapResponse:
+    job = await db.get(TranscriptionJob, job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+
+    mappings = (
+        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+        .scalars()
+        .all()
+    )
+
+    return SpeakerMapResponse(
+        job_id=job_id,
+        speakers=[
+            SpeakerMappingOut(speaker_label=m.speaker_label, custom_name=m.custom_name)
+            for m in mappings
         ],
     )
 
@@ -262,10 +347,10 @@ async def rename_speakers(
     await db.commit()
 
     all_mappings = (
-        await db.execute(
-            select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)
-        )
-    ).scalars().all()
+        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+        .scalars()
+        .all()
+    )
 
     return SpeakerMapResponse(
         job_id=job_id,
@@ -274,6 +359,35 @@ async def rename_speakers(
             for m in all_mappings
         ],
     )
+
+
+@router.patch("/jobs/{job_id}/segments", response_model=SegmentUpdateResponse)
+async def update_segments(
+    job_id: str,
+    body: SegmentUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+) -> SegmentUpdateResponse:
+    job = await db.get(TranscriptionJob, job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+    if job.status != JobStatus.completed:
+        raise HTTPException(409, f"Job is {job.status.value}, not completed")
+
+    from app.db.models import TranscriptSegment as TS
+
+    updated = 0
+    for item in body.updates:
+        seg_id = item.get("segment_id")
+        text = item.get("text")
+        if not seg_id or text is None:
+            continue
+        seg = await db.get(TS, seg_id)
+        if seg and seg.job_id == job_id:
+            seg.text = text
+            updated += 1
+
+    await db.commit()
+    return SegmentUpdateResponse(job_id=job_id, updated_count=updated)
 
 
 @router.get("/jobs/{job_id}/export")
@@ -295,17 +409,23 @@ async def export_transcript(
         ExportFormat.srt: "text/srt",
         ExportFormat.vtt: "text/vtt",
         ExportFormat.txt: "text/plain",
+        ExportFormat.md: "text/markdown",
+        ExportFormat.pdf: "application/pdf",
     }
     exporters = {
         ExportFormat.json: exports.export_json,
         ExportFormat.srt: exports.export_srt,
         ExportFormat.vtt: exports.export_vtt,
         ExportFormat.txt: exports.export_txt,
+        ExportFormat.md: exports.export_md,
+        ExportFormat.pdf: exports.export_pdf,
     }
 
     body = await exporters[format](db, job_id)
+    is_binary = format in (ExportFormat.pdf,)
+    content = body if is_binary else body.encode("utf-8") if isinstance(body, str) else body
     return Response(
-        content=body,
+        content=content,
         media_type=content_type_map[format],
         headers={
             "Content-Disposition": f'attachment; filename="transcript_{job_id}.{format.value}"'

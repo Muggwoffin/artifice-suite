@@ -14,7 +14,6 @@ class JobStatus(str, Enum):
 
 
 class TranscriptionOptions(BaseModel):
-    model_size: str = "base"
     language: str | None = None
     min_speakers: int | None = None
     max_speakers: int | None = None
@@ -37,6 +36,7 @@ class JobStatusResponse(BaseModel):
 
 
 class SegmentOut(BaseModel):
+    id: str
     speaker_label: str
     start_time: float
     end_time: float
@@ -72,3 +72,18 @@ class ExportFormat(str, Enum):
     srt = "srt"
     vtt = "vtt"
     txt = "txt"
+    md = "md"
+    pdf = "pdf"
+
+
+class SegmentUpdate(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000)
+
+
+class SegmentUpdateRequest(BaseModel):
+    updates: list[dict] = Field(..., examples=[[{"segment_id": "abc123", "text": "Hello world"}]])
+
+
+class SegmentUpdateResponse(BaseModel):
+    job_id: str
+    updated_count: int

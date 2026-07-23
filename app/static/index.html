@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PersonaeTranscribe</title>
+
+<!-- Same Google Fonts the OCR Pipeline / public_history site use, unmodified. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Archivo:wght@500;600;700&display=swap">
+
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <h1>PersonaeTranscribe</h1>
+    <span class="tag">speech-to-text &middot; diarization</span>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="transcribe">Transcribe</button>
+    <button class="tab" data-tab="library">Library</button>
+  </nav>
+
+  <div class="panels">
+
+    <!-- =========================================================== TRANSCRIBE -->
+    <section class="panel active" id="panel-transcribe">
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>New Transcription</h2>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          <span id="dropzone-text">Drop an audio file here, or click to browse</span>
+        </div>
+        <input type="file" id="file-input" accept="audio/*,video/*" style="display:none;">
+
+        <div class="form-row">
+          <label>Model: <span id="opt-model-size" class="model-badge">—</span></label>
+          <label>Language: <input type="text" id="opt-language" placeholder="auto-detect" style="width:6rem;"></label>
+          <label>Min speakers: <input type="number" id="opt-min-speakers" min="1" placeholder="&ndash;"></label>
+          <label>Max speakers: <input type="number" id="opt-max-speakers" min="1" placeholder="&ndash;"></label>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn accent" id="btn-start" disabled>&#9654; Start Transcription</button>
+          <button class="btn" id="btn-clear-file" disabled>Clear</button>
+          <div class="spacer"></div>
+          <span class="dim" id="upload-status"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Active Jobs</h2>
+          <span class="dim" id="active-count">0 running</span>
+        </div>
+        <div class="queue-wrap">
+          <table class="queue">
+            <thead>
+              <tr><th>File</th><th class="c">Status</th><th class="c">Progress</th><th>Started</th><th class="c" style="width:6rem;"></th></tr>
+            </thead>
+            <tbody id="active-body"><tr><td colspan="5" class="dim" style="text-align:center;">No active jobs yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =============================================================== LIBRARY -->
+    <section class="panel" id="panel-library">
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Library</h2>
+          <button class="btn" id="btn-library-refresh">Refresh</button>
+        </div>
+        <div class="queue-wrap">
+          <table class="queue">
+            <thead>
+              <tr><th>File</th><th class="c">Status</th><th>Created</th><th class="c" style="width:6rem;"></th></tr>
+            </thead>
+            <tbody id="library-body"><tr><td colspan="4" class="dim" style="text-align:center;">Loading&hellip;</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-empty" id="transcript-empty">No transcript selected. Choose a completed job from the table above.</div>
+
+      <div class="card transcript-card hidden" id="transcript-card">
+        <div class="audio-pane">
+          <audio controls id="audio-player"></audio>
+          <div class="speaker-form" id="speaker-form">
+            <h3>Speakers</h3>
+            <div id="speaker-rows"></div>
+            <button class="btn" id="btn-save-speakers">Save Names</button>
+          </div>
+          <div class="export-row">
+            <button class="btn" data-export="json">Export JSON</button>
+            <button class="btn" data-export="srt">Export SRT</button>
+            <button class="btn" data-export="vtt">Export VTT</button>
+            <button class="btn" data-export="txt">Export TXT</button>
+            <button class="btn" data-export="md">Export MD</button>
+            <button class="btn" data-export="pdf">Export PDF</button>
+            <button class="btn danger" id="btn-delete-job" style="margin-left:auto;">Delete</button>
+          </div>
+        </div>
+        <div class="transcript-bar">
+          <h2 class="transcript-title" id="transcript-title">&nbsp;</h2>
+          <span class="status-pill" id="transcript-status-pill"></span>
+          <div class="edit-toolbar" id="edit-toolbar">
+            <button class="btn" id="btn-diff-toggle" title="Show/hide diff view">Diff</button>
+            <button class="btn accent" id="btn-save-edits" disabled title="Save all edits">Save</button>
+            <button class="btn" id="btn-revert-edits" disabled title="Revert all edits">Revert</button>
+          </div>
+        </div>
+        <div class="segments" id="segments"></div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="statusbar">
+    <span id="status-text">Ready</span>
+    <span class="dim" id="status-detail"></span>
+    <div class="health-indicator" id="health-indicator" title="System health">
+      <span class="health-dot" id="health-db" title="Database"></span>
+      <span class="health-dot" id="health-whisper" title="Whisper model"></span>
+      <span class="health-dot" id="health-diarize" title="Diarization model"></span>
+      <span class="health-dot" id="health-gpu" title="GPU"></span>
+      <button class="btn tiny" id="btn-health-details">Health</button>
+    </div>
+  </div>
+
+  <div class="health-panel hidden" id="health-panel">
+    <div class="card">
+      <div class="card-head">
+        <h2>System Health</h2>
+        <div style="display:flex;gap:0.4rem;align-items:center;">
+          <button class="btn accent" id="btn-load-models">Load Models</button>
+          <button class="btn tiny" id="btn-health-close">&times;</button>
+        </div>
+      </div>
+      <div class="health-error hidden" id="health-error-box">
+        <span class="health-error-icon">!</span>
+        <span class="health-error-text" id="health-error-text"></span>
+      </div>
+      <div class="health-grid" id="health-grid">
+        <div class="health-row">
+          <span class="health-label">Whisper Model</span>
+          <span class="health-value" id="health-whisper-name">—</span>
+          <span class="health-status" id="health-whisper-status"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">Diarization</span>
+          <span class="health-value" id="health-diarize-status">—</span>
+          <span class="health-status" id="health-diarize-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">Alignment Models</span>
+          <span class="health-value" id="health-align-langs">—</span>
+          <span class="health-status" id="health-align-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">Device</span>
+          <span class="health-value" id="health-device">—</span>
+          <span class="health-status" id="health-device-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">GPU</span>
+          <span class="health-value" id="health-gpu-name">—</span>
+          <span class="health-status" id="health-gpu-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">VRAM</span>
+          <span class="health-value" id="health-vram">—</span>
+          <span class="health-status" id="health-vram-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">HF Token</span>
+          <span class="health-value" id="health-hf-token">—</span>
+          <span class="health-status" id="health-hf-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">Database</span>
+          <span class="health-value" id="health-db-status">—</span>
+          <span class="health-status" id="health-db-dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/static/js/app.js"></script>
+<button class="theme-toggle" id="btn-theme-toggle" title="Toggle dark mode">&#127769;</button>
+</body>
+</html>
