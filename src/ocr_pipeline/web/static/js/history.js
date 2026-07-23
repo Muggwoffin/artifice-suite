@@ -163,11 +163,15 @@ const HistoryTab = (function () {
     try {
       const data = await api("POST", paneConfigs[key].endpoint(currentItemId), { text: textarea.value });
       renderCompare(compareContainer, {
-        title: data.name, raw: data.raw, cleaned: data.cleaned,
-        translated: data.translated, confidence: data.confidence,
+        title: data.name, raw: data.raw, original_raw: data.original_raw || "",
+        cleaned: data.cleaned, original_cleaned: data.original_cleaned || "",
+        translated: data.translated, original_translated: data.original_translated || "",
+        confidence: data.confidence,
         confidence_tier: data.confidence_tier, language: data.language,
       }, { editableStages: new Set(["raw", "cleaned", "translated"]) });
       wireAllPanes();
+      wireOriginalToggles(compareContainer);
+      wireCrossHighlight(compareContainer);
       originalText[key] = textarea.value;
       if (window.Toast) window.Toast.accent(`${key.charAt(0).toUpperCase() + key.slice(1)} text saved.`, 2000);
     } catch (err) {
@@ -232,11 +236,14 @@ const HistoryTab = (function () {
 
     const data = await api("GET", `/api/history/items/${currentItemId}`);
     renderCompare(compareContainer, {
-      title: data.name, raw: data.raw, cleaned: data.cleaned,
-      translated: data.translated, confidence: data.confidence,
+      title: data.name, raw: data.raw, original_raw: data.original_raw || "",
+      cleaned: data.cleaned, original_cleaned: data.original_cleaned || "",
+      translated: data.translated, original_translated: data.original_translated || "",
+      confidence: data.confidence,
       confidence_tier: data.confidence_tier, language: data.language,
     }, { editableStages: new Set(["raw", "cleaned", "translated"]) });
     wireAllPanes();
+    wireOriginalToggles(compareContainer);
 
     if (window.HistoryImage) window.HistoryImage.load(`/api/history/items/${currentItemId}/image`);
     renderThumbnails(currentItemId);
@@ -304,6 +311,10 @@ const HistoryTab = (function () {
   searchBox.addEventListener("keydown", (e) => { if (e.key === "Enter") search(); });
 
   TAB_ACTIVATE.history = refresh;
+
+  // Find & Replace
+  const historyFindReplace = new FindReplace(compareContainer);
+  historyFindReplace.attach();
 
   return { refresh };
 })();

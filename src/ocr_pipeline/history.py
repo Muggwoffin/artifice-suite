@@ -64,6 +64,9 @@ _MIGRATED_COLUMNS = {
     "page": "INTEGER",
     "edited": "INTEGER NOT NULL DEFAULT 0",
     "edited_at": "TEXT",
+    "original_raw_text": "TEXT",
+    "original_cleaned_text": "TEXT",
+    "original_translated_text": "TEXT",
 }
 
 
@@ -172,8 +175,26 @@ class HistoryStore:
         self._update_stage_text("raw_text", item_id, text)
 
     def _update_stage_text(self, column: str, item_id: int, text: str) -> None:
-        """Internal: update a text column with edited flag."""
+        """Internal: update a text column with edited flag.
+
+        On first edit, the original text is preserved in the corresponding
+        ``original_{column}`` column so the user can audit what changed.
+        """
         with self._lock:
+            row = self._conn.execute(
+                f"SELECT {column}, original_{column} FROM run_items WHERE item_id = ?",
+                (item_id,),
+            ).fetchone()
+            if row is None:
+                return
+            current = row[column] or ""
+            stored_original = row[1]  # original_{column}
+            # Preserve original on first edit
+            if current and current != text and not stored_original:
+                self._conn.execute(
+                    f"UPDATE run_items SET original_{column} = ? WHERE item_id = ?",
+                    (current, item_id),
+                )
             self._conn.execute(
                 f"UPDATE run_items SET {column} = ?, edited = 1, edited_at = ? "
                 "WHERE item_id = ?",

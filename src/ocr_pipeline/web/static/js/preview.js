@@ -15,6 +15,7 @@ const PreviewTab = (function () {
 
   let currentItemId = null;
   const originalText = { raw: "", cleaned: "", translated: "" };
+  const btnReprocess = document.getElementById("btn-reprocess");
 
   const paneConfigs = {
     raw: {
@@ -78,12 +79,36 @@ const PreviewTab = (function () {
       const data = await api("POST", paneConfigs[key].endpoint(currentItemId), { text: textarea.value });
       renderCompare(container, data, { editableStages: new Set(["raw", "cleaned", "translated"]) });
       wireAllPanes();
+      wireOriginalToggles(container);
+      wireCrossHighlight(container);
       log(`${key.charAt(0).toUpperCase() + key.slice(1)} text corrected and saved.`, "accent");
     } catch (err) {
       log(`Could not save correction: ${err.message}`, "error");
       btn.disabled = false;
     } finally {
       btn.textContent = label;
+    }
+  }
+
+  async function reprocessItem() {
+    if (!currentItemId || !btnReprocess) return;
+    btnReprocess.disabled = true;
+    const label = btnReprocess.textContent;
+    btnReprocess.textContent = "Processing\u2026";
+    try {
+      const data = await api("POST", `/api/queue/${currentItemId}/reprocess`, {
+        from_stage: "raw", stages: ["cleanup", "translate"],
+      });
+      renderCompare(container, data, { editableStages: new Set(["raw", "cleaned", "translated"]) });
+      wireAllPanes();
+      wireOriginalToggles(container);
+      wireCrossHighlight(container);
+      log("Re-processing complete.", "accent");
+    } catch (err) {
+      log(`Re-processing failed: ${err.message}`, "error");
+    } finally {
+      btnReprocess.textContent = label;
+      btnReprocess.disabled = false;
     }
   }
 
@@ -94,6 +119,7 @@ const PreviewTab = (function () {
   if (btnSaveRaw) btnSaveRaw.addEventListener("click", () => savePaneText("raw"));
   if (btnSaveCleaned) btnSaveCleaned.addEventListener("click", () => savePaneText("cleaned"));
   if (btnSaveTranslated) btnSaveTranslated.addEventListener("click", () => savePaneText("translated"));
+  if (btnReprocess) btnReprocess.addEventListener("click", reprocessItem);
 
   async function open(id) {
     refreshList(false);
@@ -104,12 +130,16 @@ const PreviewTab = (function () {
       const data = await api("GET", `/api/queue/${id}/preview`);
       renderCompare(container, data, { editableStages: new Set(["raw", "cleaned", "translated"]) });
       wireAllPanes();
+      wireOriginalToggles(container);
+      wireCrossHighlight(container);
+      if (btnReprocess) btnReprocess.disabled = !data.raw;
     } catch (err) {
       clearCompare(container);
       container.querySelector(".compare-title").textContent = `Could not load: ${err.message}`;
       if (btnSaveRaw) btnSaveRaw.disabled = true;
       if (btnSaveCleaned) btnSaveCleaned.disabled = true;
       if (btnSaveTranslated) btnSaveTranslated.disabled = true;
+      if (btnReprocess) btnReprocess.disabled = true;
     }
 
     if (window.PreviewImage) window.PreviewImage.load(`/api/queue/${id}/image`);
@@ -128,3 +158,7 @@ const PreviewTab = (function () {
 })();
 
 window.PreviewTab = PreviewTab;
+
+// Find & Replace
+const previewFindReplace = new FindReplace(container);
+previewFindReplace.attach();

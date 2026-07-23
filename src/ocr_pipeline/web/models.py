@@ -68,3 +68,15 @@ class ReorderRequest(BaseModel):
     drag_id: str
     drop_id: str
     before: bool = True
+
+
+class ReprocessRequest(BaseModel):
+    from_stage: str
+    stages: list[str]
+
+
+class BatchReplaceRequest(BaseModel):
+    find: str
+    replace: str
+    stages: list[str]
+    item_ids: list[str] | None = None

@@ -450,14 +450,22 @@ function renderCompare(container, data, { editableStages = new Set() } = {}) {
   confEl.textContent = confBits.join("   ");
   confEl.className = `compare-conf dim conf-${data.confidence_tier || "none"}`;
 
+  // Store original text for "Show original" toggle
+  container.dataset.originalRaw = data.original_raw || "";
+  container.dataset.originalCleaned = data.original_cleaned || "";
+  container.dataset.originalTranslated = data.original_translated || "";
+
   const panes = {
-    raw: { text: data.raw, ranges: data.diff?.raw_ranges || [] },
-    cleaned: { text: data.cleaned, ranges: data.diff?.cleaned_ranges || [] },
-    translated: { text: data.translated, ranges: data.diff?.translated_ranges || [] },
+    raw: { text: data.raw, ranges: data.diff?.raw_ranges || [], original: data.original_raw || "" },
+    cleaned: { text: data.cleaned, ranges: data.diff?.cleaned_ranges || [], original: data.original_cleaned || "" },
+    translated: { text: data.translated, ranges: data.diff?.translated_ranges || [], original: data.original_translated || "" },
   };
-  for (const [key, { text, ranges }] of Object.entries(panes)) {
+  for (const [key, { text, ranges, original }] of Object.entries(panes)) {
     const el = container.querySelector(`.compare-pane[data-pane="${key}"] .compare-text`);
     const meta = container.querySelector(`.compare-pane[data-pane="${key}"] .compare-meta`);
+    // Store original text on the pane itself for toggle access
+    const paneEl = container.querySelector(`.compare-pane[data-pane="${key}"]`);
+    if (paneEl) paneEl.dataset.originalText = original;
     // Any stage in editableStages gets a plain-text textarea instead of highlighted innerHTML.
     if (editableStages.has(key)) {
       el.innerHTML = "";
@@ -486,6 +494,90 @@ function clearCompare(container) {
     el.innerHTML = `<span class="empty">(not run)</span>`;
   });
   container.querySelectorAll(".compare-meta").forEach(el => { el.textContent = ""; });
+  container.querySelectorAll(".compare-pane").forEach(el => { delete el.dataset.originalText; });
+}
+
+// Shared: toggle between current/edited text and original text.
+// Called from both Preview and History tabs.
+function wireOriginalToggles(container) {
+  container.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-show-original");
+    if (!btn) return;
+    const pane = btn.closest(".compare-pane");
+    if (!pane) return;
+    const textEl = pane.querySelector(".compare-text");
+    const textarea = textEl ? textEl.querySelector("textarea") : null;
+    const currentText = textarea ? textarea.value : (textEl ? textEl.textContent || textEl.innerText : "");
+    const originalText = pane.dataset.originalText || "";
+
+    if (!originalText) return; // nothing to show
+
+    const showingOriginal = btn.classList.toggle("showing-original");
+    btn.textContent = showingOriginal ? "Edited" : "Original";
+
+    if (textarea) {
+      // Editable pane: swap textarea value
+      if (showingOriginal) {
+        textarea.dataset.editedText = currentText;
+        textarea.value = originalText;
+      } else {
+        textarea.value = textarea.dataset.editedText || currentText;
+        delete textarea.dataset.editedText;
+      }
+      // Trigger input event so save button state updates
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+}
+
+// Shared: cross-highlight — when text is selected in one pane,
+// find and select the same text in all other editable panes.
+function wireCrossHighlight(container) {
+  let lastSearch = "";
+  let lastKey = "";
+  let timer = null;
+
+  function findInPane(key, query) {
+    const pane = container.querySelector(`.compare-pane[data-pane="${key}"]`);
+    if (!pane) return;
+    const textarea = pane.querySelector("textarea.raw-edit");
+    if (!textarea) return;
+    const text = textarea.value;
+    const idx = text.indexOf(query);
+    if (idx !== -1) {
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx + query.length);
+      // Scroll into view roughly
+      const linesBefore = text.slice(0, idx).split("\n").length - 1;
+      const lineHeight = 20;
+      textarea.scrollTop = Math.max(0, linesBefore * lineHeight - textarea.clientHeight / 3);
+    }
+  }
+
+  container.addEventListener("mouseup", (e) => {
+    const textarea = e.target.closest("textarea.raw-edit");
+    if (!textarea) return;
+    const pane = textarea.closest(".compare-pane");
+    if (!pane) return;
+    const key = pane.dataset.pane;
+    if (!key) return;
+    const selected = textarea.value.substring(
+      textarea.selectionStart, textarea.selectionEnd
+    ).trim();
+    if (!selected || selected.length < 2) {
+      lastSearch = "";
+      return;
+    }
+    if (selected === lastSearch && key === lastKey) return;
+    lastSearch = selected;
+    lastKey = key;
+
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      const others = ["raw", "cleaned", "translated"].filter((k) => k !== key);
+      others.forEach((k) => findInPane(k, selected));
+    }, 200);
+  });
 }
 
 // A tag maps 1:1 to a CSS class (delete_/insert_/replace_/marker); markers
@@ -663,3 +755,135 @@ const ColVis = (function () {
 })();
 
 window.ColVis = ColVis;
+
+// -------------------------------------------------------- batch correct
+
+const TEMPLATE_STORAGE_KEY = "ocr_batch_templates";
+
+const BatchCorrect = (function () {
+  const modal = document.getElementById("modal-batch-correct");
+  const findInput = document.getElementById("batch-find");
+  const replaceInput = document.getElementById("batch-replace");
+  const stageRaw = document.getElementById("batch-stage-raw");
+  const stageCleaned = document.getElementById("batch-stage-cleaned");
+  const stageTranslated = document.getElementById("batch-stage-translated");
+  const applySelected = document.getElementById("batch-apply-selected");
+  const statusEl = document.getElementById("batch-status");
+  const templateSelect = document.getElementById("batch-template-select");
+  const btnApply = document.getElementById("btn-batch-apply");
+  const btnSave = document.getElementById("btn-batch-template-save");
+  const btnDelete = document.getElementById("btn-batch-template-delete");
+  const btnClose = document.getElementById("btn-batch-cancel");
+
+  function loadTemplates() {
+    try { return JSON.parse(localStorage.getItem(TEMPLATE_STORAGE_KEY)) || []; } catch { return []; }
+  }
+
+  function saveTemplates(templates) {
+    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
+  }
+
+  function renderTemplates(selectEl) {
+    const templates = loadTemplates();
+    selectEl.innerHTML = `<option value="">-- Load template --</option>`
+      + templates.map((t, i) => `<option value="${i}">${escapeHtml(t.name)}</option>`).join("");
+  }
+
+  function open() {
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    renderTemplates(templateSelect);
+    statusEl.textContent = "";
+  }
+
+  function close() {
+    if (modal) modal.classList.add("hidden");
+  }
+
+  async function apply() {
+    const find = findInput.value.trim();
+    const replace = replaceInput.value;
+    if (!find) { statusEl.textContent = "Enter text to find."; return; }
+    const stages = [];
+    if (stageRaw.checked) stages.push("raw");
+    if (stageCleaned.checked) stages.push("cleaned");
+    if (stageTranslated.checked) stages.push("translated");
+    if (!stages.length) { statusEl.textContent = "Select at least one stage."; return; }
+
+    btnApply.disabled = true;
+    const label = btnApply.textContent;
+    btnApply.textContent = "Applying\u2026";
+    statusEl.textContent = "";
+
+    try {
+      const body = { find, replace, stages };
+      if (applySelected.checked) body.item_ids = [...selected];
+      const result = await api("POST", "/api/queue/batch-replace", body);
+      setQueue(result.items);
+      statusEl.textContent = `Applied to ${result.updated} text(s) across ${result.items.length} item(s).`;
+      log(`Batch correct applied: "${find}" -> "${replace}" (${result.updated} change(s))`, "accent");
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+      log(`Batch correct failed: ${err.message}`, "error");
+    } finally {
+      btnApply.textContent = label;
+      btnApply.disabled = false;
+    }
+  }
+
+  function saveTemplate() {
+    const name = prompt("Template name:");
+    if (!name) return;
+    const templates = loadTemplates();
+    templates.push({
+      name,
+      find: findInput.value,
+      replace: replaceInput.value,
+      stages: {
+        raw: stageRaw.checked,
+        cleaned: stageCleaned.checked,
+        translated: stageTranslated.checked,
+      },
+    });
+    saveTemplates(templates);
+    renderTemplates(templateSelect);
+    templateSelect.value = templates.length - 1;
+  }
+
+  function loadTemplate() {
+    const idx = parseInt(templateSelect.value, 10);
+    if (isNaN(idx)) return;
+    const templates = loadTemplates();
+    const t = templates[idx];
+    if (!t) return;
+    findInput.value = t.find || "";
+    replaceInput.value = t.replace || "";
+    stageRaw.checked = t.stages?.raw ?? true;
+    stageCleaned.checked = t.stages?.cleaned ?? true;
+    stageTranslated.checked = t.stages?.translated ?? true;
+  }
+
+  function deleteTemplate() {
+    const idx = parseInt(templateSelect.value, 10);
+    if (isNaN(idx)) return;
+    if (!confirm("Delete this template?")) return;
+    const templates = loadTemplates();
+    templates.splice(idx, 1);
+    saveTemplates(templates);
+    renderTemplates(templateSelect);
+  }
+
+  templateSelect.addEventListener("change", loadTemplate);
+  btnSave.addEventListener("click", saveTemplate);
+  btnDelete.addEventListener("click", deleteTemplate);
+  btnApply.addEventListener("click", apply);
+  btnClose.addEventListener("click", close);
+  // Close on backdrop click
+  modal?.addEventListener("click", (e) => { if (e.target === modal) close(); });
+
+  document.getElementById("btn-batch-correct")?.addEventListener("click", open);
+
+  return { open, close };
+})();
+
+window.BatchCorrect = BatchCorrect;

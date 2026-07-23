@@ -16,6 +16,7 @@ import json
 import queue
 import sqlite3
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,7 @@ from .. import config
 from .._diff import confidence_tier, diff_ranges, marker_ranges
 from ..history import HistoryStore
 from ..jobs import STAGES, JobItem, JobRunner, State
+from ..pipeline import run_cleanup_step, run_translate_step
 from .serializers import serialize_item, serialize_item_preview
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
@@ -113,10 +115,20 @@ def _save_stage_text(item: JobItem, stage: str, text: str) -> dict[str, Any]:
     Only the text field (+ new `edited`/`edited_at`) changes in the JSON — provenance
     fields (`engine`/`model`/`prompt`/`timestamp`) are left untouched to record what
     the original stage actually produced.
+
+    On the first edit, the original text is preserved alongside the corrected version
+    (``original_{text_key}``) so the user can review what the model originally produced.
     """
     if stage not in _SAVE_CONFIG:
         raise ValueError(f"Unknown stage: {stage}")
     cfg = _SAVE_CONFIG[stage]
+
+    current = (item.results.get(cfg["result_key"]) or {}).get(cfg["text_key"], "")
+    # Preserve original text on first edit
+    if current and current != text:
+        orig_key = f"original_{cfg['text_key']}"
+        if orig_key not in (item.results.get(cfg["result_key"]) or {}):
+            item.results.setdefault(cfg["result_key"], {})[orig_key] = current
 
     item.results.setdefault(cfg["result_key"], {})[cfg["text_key"]] = text
 
@@ -128,6 +140,10 @@ def _save_stage_text(item: JobItem, stage: str, text: str) -> dict[str, Any]:
         json_path = Path(output_dir) / cfg["dir"] / "json" / f"{item.stem}.json"
         if json_path.exists():
             data = json.loads(json_path.read_text(encoding="utf-8"))
+            # Preserve original text on first disk edit
+            orig_key = f"original_{cfg['text_key']}"
+            if orig_key not in data and current and current != text:
+                data[orig_key] = current
             data[cfg["text_key"]] = text
             data["edited"] = True
             data["edited_at"] = datetime.now(timezone.utc).isoformat()
@@ -149,6 +165,89 @@ def save_cleaned_text(item: JobItem, text: str) -> dict[str, Any]:
 def save_translated_text(item: JobItem, text: str) -> dict[str, Any]:
     """Persist a manual correction to an item's translated text."""
     return _save_stage_text(item, "translated", text)
+
+
+def reprocess_item(item: JobItem, from_stage: str, stages: list[str]) -> dict[str, Any]:
+    """Re-run downstream stages after a manual correction.
+
+    ``from_stage`` is the stage whose text was corrected (``"raw"`` or
+    ``"cleaned"``). ``stages`` lists which downstream stages to re-run
+    (e.g. ``["cleanup", "translate"]``).
+
+    Each re-run stage calls the same pipeline step the runner uses, so the
+    on-disk text/JSON files are overwritten with fresh model output. The item's
+    in-memory results, language, and confidence are updated in place.
+
+    Returns the same shape as ``serialize_item_preview``.
+    """
+    output_dir = state.runner.output_dir if state.runner else config.get("output_dir")
+
+    for stage in stages:
+        if stage == "cleanup" and from_stage in ("raw", "cleanup"):
+            raw_text = (item.results.get("raw") or {}).get("extracted_text", "")
+            raw_data = {
+                "source_file": item.path,
+                "extracted_text": raw_text,
+                "stage": "raw_ocr",
+            }
+            cleaned = run_cleanup_step(
+                raw_data, item.stem, output_dir,
+                skip_cleanup=False, resume=False, force=True,
+            )
+            item.results["cleaned"] = cleaned
+            item.results.setdefault("cleaned", {})["cleaned_text"] = cleaned.get("cleaned_text", "")
+
+        elif stage == "translate" and from_stage in ("raw", "cleaned", "translate"):
+            cleaned_text = (item.results.get("cleaned") or {}).get("cleaned_text", "")
+            cleaned_data = {
+                "source_file": item.path,
+                "cleaned_text": cleaned_text,
+                "stage": "cleaned",
+            }
+            translated = run_translate_step(
+                cleaned_data, item.stem, output_dir,
+                resume=False, force=True,
+            )
+            item.results["translated"] = translated
+            item.results.setdefault("translated", {})["translated_text"] = translated.get("translated_text", "")
+            item.language = translated.get("source_language_name", "")
+            conf = translated.get("confidence") or {}
+            item.confidence = conf.get("overall_score")
+
+    return serialize_item_preview(item)
+
+
+def batch_replace(find: str, replace: str, stages: list[str], item_ids: list[str] | None = None) -> dict:
+    """Apply a find/replace correction to one or more queue items.
+
+    ``stages`` lists which text stages to modify (``"raw"``, ``"cleaned"``,
+    ``"translated"``). If ``item_ids`` is None or empty, applies to every
+    item currently in the queue.
+
+    Returns the updated queue snapshot.
+    """
+    items = state.items
+    if item_ids:
+        items = [state.get(i) for i in item_ids if state.get(i) is not None]
+
+    updated = 0
+    for item in items:
+        if item.state in ("pending", "running", "cancelled"):
+            continue
+        for stage in stages:
+            if stage not in _SAVE_CONFIG:
+                continue
+            cfg = _SAVE_CONFIG[stage]
+            current = (item.results.get(cfg["result_key"]) or {}).get(cfg["text_key"], "")
+            if not current:
+                continue
+            if find not in current:
+                continue
+            new_text = current.replace(find, replace)
+            _save_stage_text(item, stage, new_text)
+            updated += 1
+
+    return {"updated": updated, "items": state.queue_snapshot()}
 
 
 class RunState:

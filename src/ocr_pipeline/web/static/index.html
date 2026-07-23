@@ -75,6 +75,7 @@
           <div class="rule-v"></div>
           <button class="btn" id="btn-skip">Skip</button>
           <button class="btn" id="btn-retry">Retry</button>
+          <button class="btn" id="btn-batch-correct">Batch Correct&hellip;</button>
           <div class="spacer"></div>
           <button class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
           <button class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
@@ -127,12 +128,14 @@
           <h2 class="compare-title">No document selected</h2>
           <select id="preview-item-select" class="select"></select>
           <span class="compare-conf dim"></span>
+          <button class="btn" id="btn-reprocess" type="button" disabled style="margin-left:0.5rem;" title="Re-run downstream stages after correction">Re-process</button>
         </div>
         <div class="compare-panes">
           <div class="compare-pane" data-pane="raw">
             <div class="compare-pane-head">
               <span>RAW OCR</span>
               <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
                 <button class="btn" id="btn-save-raw" type="button" disabled>Save correction</button>
                 <span class="compare-meta dim"></span>
               </span>
@@ -143,6 +146,7 @@
             <div class="compare-pane-head">
               <span>CLEANED</span>
               <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
                 <button class="btn" id="btn-save-cleaned" type="button" disabled>Save correction</button>
                 <span class="compare-meta dim"></span>
               </span>
@@ -153,6 +157,7 @@
             <div class="compare-pane-head">
               <span>TRANSLATED</span>
               <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
                 <button class="btn" id="btn-save-translated" type="button" disabled>Save correction</button>
                 <span class="compare-meta dim"></span>
               </span>
@@ -223,6 +228,7 @@
             <div class="compare-pane-head">
               <span>RAW OCR</span>
               <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
                 <label class="diff-toggle" title="Show diff highlights in editable mode">
                   <input type="checkbox" id="btn-history-diff-toggle"> Diff
                 </label>
@@ -236,6 +242,7 @@
             <div class="compare-pane-head">
               <span>CLEANED</span>
               <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
                 <button class="btn" id="btn-history-save-cleaned" type="button" disabled>Save correction</button>
                 <span class="compare-meta dim"></span>
               </span>
@@ -246,6 +253,7 @@
             <div class="compare-pane-head">
               <span>TRANSLATED</span>
               <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
                 <button class="btn" id="btn-history-save-translated" type="button" disabled>Save correction</button>
                 <span class="compare-meta dim"></span>
               </span>
@@ -458,12 +466,53 @@
   </div>
 </div>
 
+<!-- Batch correct dialog -->
+<div class="modal-backdrop hidden" id="modal-batch-correct">
+  <div class="modal" style="width:min(480px, 94vw);">
+    <h3>Batch Correct</h3>
+    <p class="dim" style="margin-bottom:0.6rem;">Apply a find/replace correction to all items or selected items in the queue.</p>
+
+    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+      <label>Find:
+        <input type="text" id="batch-find" class="input" style="width:100%;" placeholder="Text to find">
+      </label>
+      <label>Replace with:
+        <input type="text" id="batch-replace" class="input" style="width:100%;" placeholder="Replacement text">
+      </label>
+      <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+        <label class="check"><input type="checkbox" id="batch-stage-raw" checked> Raw OCR</label>
+        <label class="check"><input type="checkbox" id="batch-stage-cleaned" checked> Cleaned</label>
+        <label class="check"><input type="checkbox" id="batch-stage-translated" checked> Translated</label>
+      </div>
+      <label class="check" style="margin-top:0.3rem;">
+        <input type="checkbox" id="batch-apply-selected"> Selected items only
+      </label>
+      <div style="display:flex; gap:0.5rem; align-items:center; margin-top:0.3rem;">
+        <span class="dim">Templates:</span>
+        <select id="batch-template-select" class="select" style="flex:1;">
+          <option value="">-- Load template --</option>
+        </select>
+        <button class="btn" id="btn-batch-template-save">Save</button>
+        <button class="btn danger" id="btn-batch-template-delete">Delete</button>
+      </div>
+    </div>
+
+    <p class="dim" id="batch-status" style="margin-top:0.6rem;"></p>
+
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <button class="btn" id="btn-batch-cancel">Close</button>
+      <button class="btn accent" id="btn-batch-apply">Apply</button>
+    </div>
+  </div>
+</div>
+
 <script src="/static/js/app.js"></script>
 <script src="/static/js/toast.js"></script>
 <script src="/static/js/palette.js"></script>
 <script src="/static/js/onboarding.js"></script>
 <script src="/static/js/tropy.js"></script>
 <script src="/static/js/pdf_export.js"></script>
+<script src="/static/js/find_replace.js"></script>
 <script src="/static/js/preview_image.js"></script>
 <script src="/static/js/preview.js"></script>
 <script src="/static/js/history.js"></script>
