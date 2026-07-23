@@ -169,13 +169,25 @@ class HistoryStore:
         the original OCR pass untouched, same honesty principle as the
         live-queue correction path.
         """
+        self._update_stage_text("raw_text", item_id, text)
+
+    def _update_stage_text(self, column: str, item_id: int, text: str) -> None:
+        """Internal: update a text column with edited flag."""
         with self._lock:
             self._conn.execute(
-                "UPDATE run_items SET raw_text = ?, edited = 1, edited_at = ? "
+                f"UPDATE run_items SET {column} = ?, edited = 1, edited_at = ? "
                 "WHERE item_id = ?",
                 (text, _now(), item_id),
             )
             self._conn.commit()
+
+    def update_cleaned_text(self, item_id: int, text: str) -> None:
+        """Persist a manual correction to cleaned text from the History pane."""
+        self._update_stage_text("cleaned_text", item_id, text)
+
+    def update_translated_text(self, item_id: int, text: str) -> None:
+        """Persist a manual correction to translated text from the History pane."""
+        self._update_stage_text("translated_text", item_id, text)
 
     def finish_run(self, run_id: int, *, succeeded: int, failed: int, elapsed: float) -> None:
         with self._lock:

@@ -86,39 +86,69 @@ def render_page_image(item: JobItem) -> bytes:
     return render_page_image_from(item.path, item.page)
 
 
-def save_raw_text(item: JobItem, text: str) -> dict[str, Any]:
-    """Persist a manual correction to an item's raw OCR text.
+_SAVE_CONFIG = {
+    "raw": {
+        "dir": "raw_ocr",
+        "text_key": "extracted_text",
+        "result_key": "raw",
+    },
+    "cleaned": {
+        "dir": "cleaned",
+        "text_key": "cleaned_text",
+        "result_key": "cleaned",
+    },
+    "translated": {
+        "dir": "translated",
+        "text_key": "translated_text",
+        "result_key": "translated",
+    },
+}
 
-    Always updates the in-memory copy first — that's what a later
-    cleanup/translate run or a Tropy write-back reads from (`jobs.py`'s
-    `_phase_cleanup` reads `item.results["raw"]`). Also overwrites the
-    on-disk `raw_ocr/text/<stem>.txt` and `raw_ocr/json/<stem>.json` *if a
-    prior OCR run already produced them* for this stem; an item only added
-    to the queue but never run has nothing on disk yet, which isn't an
-    error, just nothing to persist beyond memory yet.
 
-    Only `extracted_text` (+ new `edited`/`edited_at`) changes in the JSON —
-    `engine`/`model`/`ocr_prompt`/`timestamp` keep recording what the
-    *original* OCR pass actually did. Rewriting those to look like the model
-    produced the corrected text would be dishonest provenance, the same
-    principle `_guard.py` argues for automated corrections.
+def _save_stage_text(item: JobItem, stage: str, text: str) -> dict[str, Any]:
+    """Persist a manual correction to an item's stage text.
+
+    Updates the in-memory copy first (what subsequent stages or Tropy write-back read).
+    Also overwrites on-disk text/JSON files *if a prior run already produced them*.
+    Only the text field (+ new `edited`/`edited_at`) changes in the JSON — provenance
+    fields (`engine`/`model`/`prompt`/`timestamp`) are left untouched to record what
+    the original stage actually produced.
     """
-    item.results.setdefault("raw", {})["extracted_text"] = text
+    if stage not in _SAVE_CONFIG:
+        raise ValueError(f"Unknown stage: {stage}")
+    cfg = _SAVE_CONFIG[stage]
+
+    item.results.setdefault(cfg["result_key"], {})[cfg["text_key"]] = text
 
     output_dir = state.runner.output_dir if state.runner else config.get("output_dir")
-    text_path = Path(output_dir) / "raw_ocr" / "text" / f"{item.stem}.txt"
+    text_path = Path(output_dir) / cfg["dir"] / "text" / f"{item.stem}.txt"
     if text_path.exists():
         text_path.write_text(text, encoding="utf-8")
 
-        json_path = Path(output_dir) / "raw_ocr" / "json" / f"{item.stem}.json"
+        json_path = Path(output_dir) / cfg["dir"] / "json" / f"{item.stem}.json"
         if json_path.exists():
             data = json.loads(json_path.read_text(encoding="utf-8"))
-            data["extracted_text"] = text
+            data[cfg["text_key"]] = text
             data["edited"] = True
             data["edited_at"] = datetime.now(timezone.utc).isoformat()
             json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     return serialize_item_preview(item)
+
+
+def save_raw_text(item: JobItem, text: str) -> dict[str, Any]:
+    """Persist a manual correction to an item's raw OCR text."""
+    return _save_stage_text(item, "raw", text)
+
+
+def save_cleaned_text(item: JobItem, text: str) -> dict[str, Any]:
+    """Persist a manual correction to an item's cleaned text."""
+    return _save_stage_text(item, "cleaned", text)
+
+
+def save_translated_text(item: JobItem, text: str) -> dict[str, Any]:
+    """Persist a manual correction to an item's translated text."""
+    return _save_stage_text(item, "translated", text)
 
 
 class RunState:

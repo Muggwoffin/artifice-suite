@@ -440,7 +440,7 @@ document.querySelectorAll(".tab").forEach(tab => {
  * (`_diff.py`) rather than recomputed here, so the highlight logic can never
  * quietly diverge from the desktop build's.
  */
-function renderCompare(container, data, { editableRaw = false } = {}) {
+function renderCompare(container, data, { editableStages = new Set() } = {}) {
   const confBits = [];
   if (data.language) confBits.push(`source: ${escapeHtml(data.language)}`);
   if (data.confidence != null) confBits.push(`confidence ${data.confidence}/100`);
@@ -458,12 +458,8 @@ function renderCompare(container, data, { editableRaw = false } = {}) {
   for (const [key, { text, ranges }] of Object.entries(panes)) {
     const el = container.querySelector(`.compare-pane[data-pane="${key}"] .compare-text`);
     const meta = container.querySelector(`.compare-pane[data-pane="${key}"] .compare-meta`);
-    // Preview's raw pane only: a plain-text textarea instead of highlighted
-    // innerHTML, so a user can correct a transcription against the source
-    // image. This does mean it temporarily loses the diff-highlight marks
-    // while it's the editable copy — History's raw pane (this branch's
-    // default, `editableRaw` false) is completely unaffected.
-    if (key === "raw" && editableRaw) {
+    // Any stage in editableStages gets a plain-text textarea instead of highlighted innerHTML.
+    if (editableStages.has(key)) {
       el.innerHTML = "";
       const textarea = document.createElement("textarea");
       textarea.className = "raw-edit";

@@ -17,6 +17,8 @@ const HistoryTab = (function () {
   const searchBox = document.getElementById("history-search");
   const compareContainer = document.querySelector("#panel-history .compare-card");
   const btnSaveRaw = document.getElementById("btn-history-save-raw");
+  const btnSaveCleaned = document.getElementById("btn-history-save-cleaned");
+  const btnSaveTranslated = document.getElementById("btn-history-save-translated");
   const diffToggle = document.getElementById("btn-history-diff-toggle");
   const thumbStrip = document.getElementById("history-thumbnails");
 
@@ -25,15 +27,30 @@ const HistoryTab = (function () {
   let selectedRunRow = null;
   let selectedItemRow = null;
   let currentItemId = null;
-  let originalRawText = "";
+  const originalText = { raw: "", cleaned: "", translated: "" };
   let autoSaveTimer = null;
-  let currentItemIds = [];  // ordered list for keyboard nav
+  let currentItemIds = [];
+
+  const paneConfigs = {
+    raw: {
+      btn: btnSaveRaw,
+      endpoint: (id) => `/api/history/items/${id}/raw-text`,
+    },
+    cleaned: {
+      btn: btnSaveCleaned,
+      endpoint: (id) => `/api/history/items/${id}/cleaned-text`,
+    },
+    translated: {
+      btn: btnSaveTranslated,
+      endpoint: (id) => `/api/history/items/${id}/translated-text`,
+    },
+  };
 
   async function refresh() {
     searchBox.value = "";
     const data = await api("GET", "/api/history/runs");
-    runsById = new Map(data.runs.map(r => [String(r.run_id), r]));
-    runsBody.innerHTML = data.runs.map(r => `
+    runsById = new Map(data.runs.map((r) => [String(r.run_id), r]));
+    runsBody.innerHTML = data.runs.map((r) => `
       <tr data-id="${r.run_id}" class="${r.failed ? "history-failed" : ""}">
         <td>${escapeHtml((r.started || "").replace("T", " ").slice(0, 16))}</td>
         <td>${escapeHtml(r.stages)}</td>
@@ -42,7 +59,7 @@ const HistoryTab = (function () {
         <td class="c">${r.elapsed.toFixed(1)}s</td>
       </tr>`).join("") || `<tr><td colspan="5" class="dim">No runs recorded yet.</td></tr>`;
 
-    runsBody.querySelectorAll("tr[data-id]").forEach(tr => {
+    runsBody.querySelectorAll("tr[data-id]").forEach((tr) => {
       tr.addEventListener("click", () => selectRun(tr));
     });
 
@@ -65,17 +82,17 @@ const HistoryTab = (function () {
   }
 
   function renderItems(rows) {
-    itemsById = new Map(rows.map(r => [String(r.item_id), r]));
-    currentItemIds = rows.map(r => String(r.item_id));
-    itemsBody.innerHTML = rows.map(r => `
+    itemsById = new Map(rows.map((r) => [String(r.item_id), r]));
+    currentItemIds = rows.map((r) => String(r.item_id));
+    itemsBody.innerHTML = rows.map((r) => `
       <tr data-id="${r.item_id}" class="history-state-${r.state}">
         <td>${escapeHtml(r.name)}</td>
         <td>${escapeHtml(r.state)}</td>
-        <td>${escapeHtml(r.language || "—")}</td>
-        <td class="c">${r.confidence ?? "—"}</td>
+        <td>${escapeHtml(r.language || "\u2014")}</td>
+        <td class="c">${r.confidence ?? "\u2014"}</td>
       </tr>`).join("") || `<tr><td colspan="4" class="dim">No documents.</td></tr>`;
 
-    itemsBody.querySelectorAll("tr[data-id]").forEach(tr => {
+    itemsBody.querySelectorAll("tr[data-id]").forEach((tr) => {
       tr.addEventListener("click", () => selectItem(tr));
     });
     clearCompare(compareContainer);
@@ -83,76 +100,89 @@ const HistoryTab = (function () {
     if (thumbStrip) thumbStrip.innerHTML = "";
   }
 
-  // ---- raw text editing with auto-save debounce ----
+  // ---- text editing with auto-save debounce ----
 
-  function getRawTextarea() {
-    return compareContainer.querySelector('.compare-pane[data-pane="raw"] textarea.raw-edit');
+  function getPaneTextarea(key) {
+    return compareContainer.querySelector(`.compare-pane[data-pane="${key}"] textarea.raw-edit`);
   }
 
-  function updateCharWordCount(textarea) {
-    const meta = compareContainer.querySelector('.compare-pane[data-pane="raw"] .compare-meta');
+  function updateCharWordCount(key) {
+    const textarea = getPaneTextarea(key);
+    const meta = compareContainer.querySelector(`.compare-pane[data-pane="${key}"] .compare-meta`);
     if (!meta || !textarea) return;
     const text = textarea.value;
     const chars = text.length;
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    meta.textContent = `${chars.toLocaleString()} chars · ${words.toLocaleString()} words`;
+    meta.textContent = `${chars.toLocaleString()} chars \u00b7 ${words.toLocaleString()} words`;
   }
 
   function scheduleAutoSave() {
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => {
-      if (!btnSaveRaw.disabled) saveRawText();
+      const dirtyKey = Object.keys(originalText).find((k) => {
+        const btn = paneConfigs[k].btn;
+        return btn && !btn.disabled;
+      });
+      if (dirtyKey) savePaneText(dirtyKey);
     }, 2000);
   }
 
-  function wireRawEditing() {
-    const textarea = getRawTextarea();
-    if (!textarea || !btnSaveRaw) return;
-    originalRawText = textarea.value;
-    btnSaveRaw.disabled = true;
-    updateCharWordCount(textarea);
+  function wirePaneEditing(key) {
+    const textarea = getPaneTextarea(key);
+    const btn = paneConfigs[key].btn;
+    if (!textarea || !btn) return;
+    originalText[key] = textarea.value;
+    btn.disabled = true;
+    updateCharWordCount(key);
     textarea.addEventListener("input", () => {
-      btnSaveRaw.disabled = textarea.value === originalRawText;
-      updateCharWordCount(textarea);
+      btn.disabled = textarea.value === originalText[key];
+      updateCharWordCount(key);
       scheduleAutoSave();
     });
     textarea.addEventListener("keydown", (e) => {
       if ((e.key === "s" || e.key === "S") && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         if (autoSaveTimer) clearTimeout(autoSaveTimer);
-        if (!btnSaveRaw.disabled) saveRawText();
+        if (!btn.disabled) savePaneText(key);
       }
     });
   }
 
-  async function saveRawText() {
+  function wireAllPanes() {
+    ["raw", "cleaned", "translated"].forEach(wirePaneEditing);
+  }
+
+  async function savePaneText(key) {
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
-    const textarea = getRawTextarea();
-    if (!textarea || !currentItemId || !btnSaveRaw) return;
-    btnSaveRaw.disabled = true;
-    const label = btnSaveRaw.textContent;
-    btnSaveRaw.textContent = "Saving…";
+    const textarea = getPaneTextarea(key);
+    const btn = paneConfigs[key].btn;
+    if (!textarea || !currentItemId || !btn) return;
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.textContent = "Saving\u2026";
     try {
-      const data = await api("POST", `/api/history/items/${currentItemId}/raw-text`, { text: textarea.value });
-      renderCompare(compareContainer, data, { editableRaw: true });
-      wireRawEditing();
-      originalRawText = textarea.value;
-      if (window.Toast) window.Toast.accent("Raw text saved.", 2000);
+      const data = await api("POST", paneConfigs[key].endpoint(currentItemId), { text: textarea.value });
+      renderCompare(compareContainer, {
+        title: data.name, raw: data.raw, cleaned: data.cleaned,
+        translated: data.translated, confidence: data.confidence,
+        confidence_tier: data.confidence_tier, language: data.language,
+      }, { editableStages: new Set(["raw", "cleaned", "translated"]) });
+      wireAllPanes();
+      originalText[key] = textarea.value;
+      if (window.Toast) window.Toast.accent(`${key.charAt(0).toUpperCase() + key.slice(1)} text saved.`, 2000);
     } catch (err) {
       if (window.Toast) window.Toast.error(`Could not save: ${err.message}`);
-      btnSaveRaw.disabled = false;
+      btn.disabled = false;
     } finally {
-      btnSaveRaw.textContent = label;
+      btn.textContent = label;
     }
   }
 
   // ---- diff toggle (overlay highlights on editable raw) ----
 
   function applyDiffOverlay() {
-    const textarea = getRawTextarea();
+    const textarea = getPaneTextarea("raw");
     if (!textarea || !diffToggle) return;
-    // For now, diff toggle is a visual indicator — true overlay requires
-    // a more complex transparent-layer approach. Store for future use.
   }
 
   if (diffToggle) {
@@ -163,20 +193,18 @@ const HistoryTab = (function () {
 
   function renderThumbnails(currentId) {
     if (!thumbStrip) return;
-    // Only show thumbnails if there are multiple items from the same source
     const current = itemsById.get(String(currentId));
     if (!current) { thumbStrip.innerHTML = ""; return; }
-    // Check if other items share a similar name pattern (Tropy page items)
     const match = (current.name || "").match(/^(.+?)\s+p\.(\d+)$/);
     if (!match) { thumbStrip.innerHTML = ""; return; }
     const prefix = match[1];
     const siblings = currentItemIds
-      .map(id => itemsById.get(id))
-      .filter(item => item && (item.name || "").startsWith(prefix + "  p."));
+      .map((id) => itemsById.get(id))
+      .filter((item) => item && (item.name || "").startsWith(prefix + "  p."));
 
     if (siblings.length < 2) { thumbStrip.innerHTML = ""; return; }
 
-    thumbStrip.innerHTML = siblings.map(item => {
+    thumbStrip.innerHTML = siblings.map((item) => {
       const pageMatch = (item.name || "").match(/p\.(\d+)$/);
       const pageNum = pageMatch ? pageMatch[1] : "?";
       const isActive = String(item.item_id) === String(currentId);
@@ -185,7 +213,7 @@ const HistoryTab = (function () {
       </div>`;
     }).join("");
 
-    thumbStrip.querySelectorAll(".thumb").forEach(el => {
+    thumbStrip.querySelectorAll(".thumb").forEach((el) => {
       el.addEventListener("click", () => {
         const id = el.dataset.id;
         const row = itemsBody.querySelector(`tr[data-id="${id}"]`);
@@ -207,8 +235,8 @@ const HistoryTab = (function () {
       title: data.name, raw: data.raw, cleaned: data.cleaned,
       translated: data.translated, confidence: data.confidence,
       confidence_tier: data.confidence_tier, language: data.language,
-    }, { editableRaw: true });
-    wireRawEditing();
+    }, { editableStages: new Set(["raw", "cleaned", "translated"]) });
+    wireAllPanes();
 
     if (window.HistoryImage) window.HistoryImage.load(`/api/history/items/${currentItemId}/image`);
     renderThumbnails(currentItemId);
@@ -226,10 +254,8 @@ const HistoryTab = (function () {
   }
 
   document.addEventListener("keydown", (e) => {
-    // Only handle when History tab is active
     const panel = document.getElementById("panel-history");
     if (!panel || !panel.classList.contains("active")) return;
-    // Don't intercept when typing in an input/textarea
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
     if (e.key === "ArrowDown" || e.key === "j") {
@@ -263,7 +289,7 @@ const HistoryTab = (function () {
     if (!selectedRunRow) return;
     const runId = selectedRunRow.dataset.id;
     if (!confirm(`Delete run #${runId} and all of its recorded documents?\n` +
-                "This only removes history — output files are left alone.")) {
+                "This only removes history \u2014 output files are left alone.")) {
       return;
     }
     await api("DELETE", `/api/history/runs/${runId}`);
@@ -272,7 +298,9 @@ const HistoryTab = (function () {
 
   document.getElementById("btn-history-refresh").onclick = refresh;
   document.getElementById("btn-history-delete").onclick = deleteSelectedRun;
-  if (btnSaveRaw) btnSaveRaw.addEventListener("click", saveRawText);
+  if (btnSaveRaw) btnSaveRaw.addEventListener("click", () => savePaneText("raw"));
+  if (btnSaveCleaned) btnSaveCleaned.addEventListener("click", () => savePaneText("cleaned"));
+  if (btnSaveTranslated) btnSaveTranslated.addEventListener("click", () => savePaneText("translated"));
   searchBox.addEventListener("keydown", (e) => { if (e.key === "Enter") search(); });
 
   TAB_ACTIVATE.history = refresh;

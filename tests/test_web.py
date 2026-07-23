@@ -472,6 +472,186 @@ def test_raw_text_save_never_touches_cleaned_or_translated_dirs(client, tmp_path
 
 
 # --------------------------------------------------------------------------- #
+# cleaned-text + translated-text
+# --------------------------------------------------------------------------- #
+
+def test_cleaned_text_404s_for_unknown_queue_item(client):
+    res = client.post("/api/queue/does-not-exist/cleaned-text", json={"text": "x"})
+    assert res.status_code == 404
+
+
+def test_translated_text_404s_for_unknown_queue_item(client):
+    res = client.post("/api/queue/does-not-exist/translated-text", json={"text": "x"})
+    assert res.status_code == 404
+
+
+def test_cleaned_text_save_updates_in_memory_when_no_output_exists(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    item = runtime.state.get(item_id)
+    item.results = {"cleaned": {"cleaned_text": "garbld cln"}}
+
+    res = client.post(f"/api/queue/{item_id}/cleaned-text", json={"text": "corrected clean"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["cleaned"] == "corrected clean"
+    assert item.results["cleaned"]["cleaned_text"] == "corrected clean"
+
+
+def test_translated_text_save_updates_in_memory_when_no_output_exists(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    item = runtime.state.get(item_id)
+    item.results = {"translated": {"translated_text": "garbld trn"}}
+
+    res = client.post(f"/api/queue/{item_id}/translated-text", json={"text": "corrected translation"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["translated"] == "corrected translation"
+    assert item.results["translated"]["translated_text"] == "corrected translation"
+
+
+def test_cleaned_text_save_overwrites_disk_output_preserving_provenance(client, tmp_path):
+    import json as jsonlib
+
+    output_dir = tmp_path / "output"
+    text_dir = output_dir / "cleaned" / "text"
+    json_dir = output_dir / "cleaned" / "json"
+    text_dir.mkdir(parents=True)
+    json_dir.mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+    item.results = {"cleaned": {"cleaned_text": "garbld cln"}}
+
+    (text_dir / f"{item.stem}.txt").write_text("garbld cln", encoding="utf-8")
+    original_json = {
+        "source_file": str(f), "stage": "cleaned", "cleaned_text": "garbld cln",
+        "raw_text": "raw ocr text",
+        "engine": "ollama", "model": "some-cleanup-model",
+        "system_prompt": "Clean up the text...",
+        "document_type": "default",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+    }
+    (json_dir / f"{item.stem}.json").write_text(jsonlib.dumps(original_json), encoding="utf-8")
+
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    res = client.post(f"/api/queue/{item_id}/cleaned-text", json={"text": "corrected clean"})
+    assert res.status_code == 200
+
+    assert (text_dir / f"{item.stem}.txt").read_text(encoding="utf-8") == "corrected clean"
+
+    saved = jsonlib.loads((json_dir / f"{item.stem}.json").read_text(encoding="utf-8"))
+    assert saved["cleaned_text"] == "corrected clean"
+    assert saved["edited"] is True
+    assert "edited_at" in saved
+    for key in ("engine", "model", "system_prompt", "timestamp", "source_file"):
+        assert saved[key] == original_json[key]
+
+
+def test_translated_text_save_overwrites_disk_output_preserving_provenance(client, tmp_path):
+    import json as jsonlib
+
+    output_dir = tmp_path / "output"
+    text_dir = output_dir / "translated" / "text"
+    json_dir = output_dir / "translated" / "json"
+    text_dir.mkdir(parents=True)
+    json_dir.mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+    item.results = {"translated": {"translated_text": "garbld trn"}}
+
+    (text_dir / f"{item.stem}.txt").write_text("garbld trn", encoding="utf-8")
+    original_json = {
+        "source_file": str(f), "stage": "translated", "translated_text": "garbld trn",
+        "cleaned_text": "cleaned text",
+        "source_language": "fr",
+        "source_language_name": "French",
+        "engine": "ollama", "model": "some-translate-model",
+        "system_prompt": "Translate the text...",
+        "document_type": "default",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+    }
+    (json_dir / f"{item.stem}.json").write_text(jsonlib.dumps(original_json), encoding="utf-8")
+
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    res = client.post(f"/api/queue/{item_id}/translated-text", json={"text": "corrected translation"})
+    assert res.status_code == 200
+
+    assert (text_dir / f"{item.stem}.txt").read_text(encoding="utf-8") == "corrected translation"
+
+    saved = jsonlib.loads((json_dir / f"{item.stem}.json").read_text(encoding="utf-8"))
+    assert saved["translated_text"] == "corrected translation"
+    assert saved["edited"] is True
+    assert "edited_at" in saved
+    for key in ("engine", "model", "system_prompt", "timestamp", "source_file"):
+        assert saved[key] == original_json[key]
+
+
+def test_cleaned_text_save_never_touches_raw_or_translated_dirs(client, tmp_path):
+    output_dir = tmp_path / "output"
+    (output_dir / "cleaned" / "text").mkdir(parents=True)
+    (output_dir / "cleaned" / "json").mkdir(parents=True)
+    (output_dir / "raw_ocr" / "text").mkdir(parents=True)
+    (output_dir / "translated" / "text").mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+
+    (output_dir / "cleaned" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
+    (output_dir / "cleaned" / "json" / f"{item.stem}.json").write_text(
+        '{"cleaned_text": "orig"}', encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    client.post(f"/api/queue/{item_id}/cleaned-text", json={"text": "edited"})
+
+    assert list((output_dir / "raw_ocr" / "text").iterdir()) == []
+    assert list((output_dir / "translated" / "text").iterdir()) == []
+
+
+def test_translated_text_save_never_touches_raw_or_cleaned_dirs(client, tmp_path):
+    output_dir = tmp_path / "output"
+    (output_dir / "translated" / "text").mkdir(parents=True)
+    (output_dir / "translated" / "json").mkdir(parents=True)
+    (output_dir / "raw_ocr" / "text").mkdir(parents=True)
+    (output_dir / "cleaned" / "text").mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+
+    (output_dir / "translated" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
+    (output_dir / "translated" / "json" / f"{item.stem}.json").write_text(
+        '{"translated_text": "orig"}', encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    client.post(f"/api/queue/{item_id}/translated-text", json={"text": "edited"})
+
+    assert list((output_dir / "raw_ocr" / "text").iterdir()) == []
+    assert list((output_dir / "cleaned" / "text").iterdir()) == []
+
+
+# --------------------------------------------------------------------------- #
 # settings: document types + health
 # --------------------------------------------------------------------------- #
 

@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, Response
 
 from ..models import AddPathsRequest, RawTextRequest, RemoveRequest, ReorderRequest
-from ..runtime import _IMAGE_PASSTHROUGH_TYPES, render_page_image, save_raw_text, state
+from ..runtime import (_IMAGE_PASSTHROUGH_TYPES, render_page_image, save_cleaned_text,
+                       save_raw_text, save_translated_text, state)
 from ..serializers import serialize_item_preview
 
 router = APIRouter(tags=["queue"])
@@ -68,6 +69,22 @@ def save_raw_text_route(item_id: str, req: RawTextRequest) -> dict:
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found in the queue")
     return save_raw_text(item, req.text)
+
+
+@router.post("/api/queue/{item_id}/cleaned-text")
+def save_cleaned_text_route(item_id: str, req: RawTextRequest) -> dict:
+    item = state.get(item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Item not found in the queue")
+    return save_cleaned_text(item, req.text)
+
+
+@router.post("/api/queue/{item_id}/translated-text")
+def save_translated_text_route(item_id: str, req: RawTextRequest) -> dict:
+    item = state.get(item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Item not found in the queue")
+    return save_translated_text(item, req.text)
 
 
 @router.post("/api/queue/reorder")

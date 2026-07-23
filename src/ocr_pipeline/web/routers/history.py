@@ -98,3 +98,23 @@ def history_item_save_raw_text(item_id: int, req: RawTextRequest) -> dict:
     state.history.update_raw_text(item_id, req.text)
     updated = state.history.get_item(item_id)
     return serialize_history_item_detail(updated)
+
+
+@router.post("/api/history/items/{item_id}/cleaned-text")
+def history_item_save_cleaned_text(item_id: int, req: RawTextRequest) -> dict:
+    row = state.history.get_item(item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="History item not found")
+    state.history.update_cleaned_text(item_id, req.text)
+    updated = state.history.get_item(item_id)
+    return serialize_history_item_detail(updated)
+
+
+@router.post("/api/history/items/{item_id}/translated-text")
+def history_item_save_translated_text(item_id: int, req: RawTextRequest) -> dict:
+    row = state.history.get_item(item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="History item not found")
+    state.history.update_translated_text(item_id, req.text)
+    updated = state.history.get_item(item_id)
+    return serialize_history_item_detail(updated)
