@@ -76,9 +76,6 @@
           <h2>Settings</h2>
         </div>
         <div class="settings-grid">
-          <label>Provider:
-            <select id="set-llm_provider"></select>
-          </label>
           <label>Editing Style:
             <select id="set-editing_style"></select>
           </label>
@@ -91,24 +88,14 @@
           <label>Export Format:
             <select id="set-export_format"></select>
           </label>
-          <label>Batch Size:
-            <input type="number" id="set-batch_size" min="1" max="20">
-          </label>
-          <label>Temperature:
-            <input type="number" id="set-temperature" min="0" max="2" step="0.1">
-          </label>
-          <label>Author Name:
-            <input type="text" id="set-author_name">
-          </label>
           <label class="check">
             <input type="checkbox" id="set-enable_review">
             Review edits before saving
           </label>
-          <label style="grid-column: 1 / -1;">Custom Prompt <span class="dim">(used when style is "custom")</span>:
-            <input type="text" id="set-custom_system_prompt">
-          </label>
         </div>
-        <p class="dim" id="model-hint" style="padding:0 1.1rem 0.9rem;"></p>
+        <div class="card-actions">
+          <button class="btn" id="btn-model-settings">&#9881; Model Settings</button>
+        </div>
       </div>
 
     </section>
@@ -182,6 +169,39 @@
           <span class="spacer"></span>
           <button class="btn accent" id="btn-save-guide">Save Guide</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================== MODEL SETTINGS MODAL -->
+  <div class="modal-overlay" id="model-settings-modal" style="display:none;">
+    <div class="modal modal-sm">
+      <div class="modal-head">
+        <h2>Model Settings</h2>
+        <button class="btn" id="btn-model-close">&times;</button>
+      </div>
+      <div class="modal-body model-form">
+        <label title="Which AI service powers the editor. Ollama runs a model on your own computer (free, no API key needed); OpenAI and Anthropic send text to cloud services (require API keys).">
+          Provider:
+          <select id="set-llm_provider"></select>
+        </label>
+        <label title="Number of paragraphs the editor reads at once. Larger batches can improve consistency across the document but use more memory and may hit provider rate limits.">
+          Batch Size:
+          <input type="number" id="set-batch_size" min="1" max="20">
+        </label>
+        <label title="Controls how strictly the editor follows rules versus making creative suggestions. Lower values (0.0–0.3) give predictable, precision edits; higher values (0.5–1.0) produce varied wording. 0.1 is typical for copy-editing.">
+          Temperature:
+          <input type="number" id="set-temperature" min="0" max="2" step="0.1">
+        </label>
+        <label title="Your name as it will appear in the tracked changes (revisions) of the output Word document.">
+          Author Name:
+          <input type="text" id="set-author_name">
+        </label>
+        <label title="Extra instructions for the editor on top of the chosen style. Only used when Editing Style is set to 'custom'.">
+          Custom Prompt <span class="dim">(used when style is "custom")</span>:
+          <input type="text" id="set-custom_system_prompt">
+        </label>
+        <p class="dim" id="model-hint" style="margin:0.6rem 0 0;"></p>
       </div>
     </div>
   </div>

@@ -110,12 +110,22 @@ function readSettingsForm() {
   };
 }
 
-document.querySelectorAll(".settings-card input, .settings-card select").forEach(el => {
+document.querySelectorAll(".settings-card input, .settings-card select, #model-settings-modal input, #model-settings-modal select").forEach(el => {
   el.addEventListener("change", () => {
     api("POST", "/api/settings", readSettingsForm())
       .then(cfg => { document.getElementById("model-hint").textContent = `Active model: ${cfg.active_model}`; })
       .catch(err => logLine(`Settings error: ${err.message}`, "error"));
   });
+});
+
+document.getElementById("btn-model-settings").addEventListener("click", () => {
+  document.getElementById("model-settings-modal").style.display = "flex";
+});
+document.getElementById("btn-model-close").addEventListener("click", () => {
+  document.getElementById("model-settings-modal").style.display = "none";
+});
+document.getElementById("model-settings-modal").addEventListener("click", e => {
+  if (e.target === e.currentTarget) e.currentTarget.style.display = "none";
 });
 
 // ----------------------------------------------------------------- upload

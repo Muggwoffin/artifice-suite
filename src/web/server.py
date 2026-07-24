@@ -299,7 +299,17 @@ def main() -> None:
     pywebview is not installed or `--browser` is passed.
     """
     import argparse
+    import sys as _sys
     import threading
+
+    # pythonw.exe has sys.stdout and sys.stderr set to None.  uvicorn's
+    # logging formatter calls sys.stdout.isatty(), which blows up with an
+    # AttributeError when stdout is None.  Seed them with /dev/null so the
+    # server can start; the browser / pywebview window is the real UI.
+    if _sys.stdout is None:
+        _sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if _sys.stderr is None:
+        _sys.stderr = open(os.devnull, "w", encoding="utf-8")
 
     import uvicorn
 

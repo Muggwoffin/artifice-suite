@@ -309,6 +309,10 @@ button.btn.danger:hover:not(:disabled) { background: var(--error); color: var(--
   height: 15px;
 }
 
+.settings-card .card-actions {
+  padding: 0.7rem 1.1rem 0.9rem;
+}
+
 /* ---------------------------------------------------------------- review list */
 
 .review-list {
@@ -443,4 +447,37 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; border-radius: 2p
   font-size: var(--text-sm);
   color: var(--ink-soft);
   margin-bottom: 0.6rem;
+}
+
+.modal-sm { max-width: 32rem; }
+
+.modal-body {
+  padding: 1rem 1.1rem;
+  overflow-y: auto;
+}
+
+.model-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  margin-bottom: 0.75rem;
+  cursor: help;
+  border-bottom: 1px dotted transparent;
+  transition: border-color 0.15s ease;
+}
+
+.model-form label:hover {
+  border-bottom-color: var(--brand);
+}
+
+.model-form select,
+.model-form input {
+  border: 1px solid var(--rule);
+  background: var(--paper-recessed);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  color: var(--ink);
+  cursor: auto;
 }
