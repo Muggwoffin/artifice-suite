@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copy Editor</title>
+
+<!-- Same Google Fonts link the public_history site and the OCR Pipeline
+     tool's web build use, unmodified — one shared type system. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Archivo:wght@500;600;700&display=swap">
+
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <h1>Copy Editor</h1>
+    <span class="tag">local-first &middot; tracked changes</span>
+  </header>
+
+  <div class="panels">
+    <section class="panel active" id="panel-main">
+
+      <!-- ============================================================ DOCUMENT -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Document</h2>
+          <span class="dim" id="doc-info">No document loaded</span>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          Drop a .docx file here, or click to browse
+        </div>
+        <input type="file" id="file-input" accept=".docx" style="display:none;">
+
+        <div class="toolbar">
+          <button class="btn" id="btn-browse">Browse&hellip;</button>
+          <button class="btn accent" id="btn-start" disabled>&#9654; Start Editing</button>
+          <span class="spacer"></span>
+          <a class="btn" id="btn-download" href="#" download style="display:none;">&#11015; Download Result</a>
+        </div>
+
+        <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        <div class="log" id="log"></div>
+      </div>
+
+      <!-- ============================================================= REVIEW -->
+      <div class="card" id="card-review" style="margin-bottom:1rem; display:none;">
+        <div class="card-head">
+          <h2>Review Changes</h2>
+          <span class="dim" id="review-count"></span>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="btn-approve-all">Approve All</button>
+          <button class="btn" id="btn-reject-all">Reject All</button>
+          <span class="spacer"></span>
+          <button class="btn accent" id="btn-finalize">Apply &amp; Save</button>
+        </div>
+        <div class="review-list" id="review-list"></div>
+      </div>
+
+      <!-- ============================================================= RESULT -->
+      <div class="card" id="card-result" style="margin-bottom:1rem; display:none;">
+        <div class="card-head">
+          <h2>Result</h2>
+        </div>
+        <pre class="changelog" id="changelog-text"></pre>
+      </div>
+
+      <!-- ============================================================ SETTINGS -->
+      <div class="card settings-card">
+        <div class="card-head">
+          <h2>Settings</h2>
+        </div>
+        <div class="settings-grid">
+          <label>Provider:
+            <select id="set-llm_provider"></select>
+          </label>
+          <label>Editing Style:
+            <select id="set-editing_style"></select>
+          </label>
+          <label>Export Format:
+            <select id="set-export_format"></select>
+          </label>
+          <label>Batch Size:
+            <input type="number" id="set-batch_size" min="1" max="20">
+          </label>
+          <label>Temperature:
+            <input type="number" id="set-temperature" min="0" max="2" step="0.1">
+          </label>
+          <label>Author Name:
+            <input type="text" id="set-author_name">
+          </label>
+          <label class="check">
+            <input type="checkbox" id="set-enable_review">
+            Review edits before saving
+          </label>
+          <label style="grid-column: 1 / -1;">Custom Prompt <span class="dim">(used when style is "custom")</span>:
+            <input type="text" id="set-custom_system_prompt">
+          </label>
+        </div>
+        <p class="dim" id="model-hint" style="padding:0 1.1rem 0.9rem;"></p>
+      </div>
+
+    </section>
+  </div>
+
+</div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/review.js"></script>
+</body>
+</html>

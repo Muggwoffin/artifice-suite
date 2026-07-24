@@ -1,0 +1,9 @@
+# Extra dependencies for the web frontend (src/web/). The desktop tkinter
+# build (requirements.txt) needs none of these.
+#
+#   pip install -r requirements.txt -r requirements-web.txt
+
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+pywebview>=4.4
