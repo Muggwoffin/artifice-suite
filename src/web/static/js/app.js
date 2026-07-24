@@ -76,14 +76,17 @@ async function loadSettings() {
 
   const provider = document.getElementById("set-llm_provider");
   const style = document.getElementById("set-editing_style");
+  const guide = document.getElementById("set-style_guide");
   const fmt = document.getElementById("set-export_format");
 
   provider.innerHTML = cfg.providers.map(p => `<option value="${p}">${p}</option>`).join("");
   style.innerHTML = cfg.styles.map(s => `<option value="${s}">${s}</option>`).join("");
+  guide.innerHTML = cfg.style_guides.map(g => `<option value="${g}">${g}</option>`).join("");
   fmt.innerHTML = cfg.export_formats.map(f => `<option value="${f}">${f}</option>`).join("");
 
   provider.value = cfg.llm_provider;
   style.value = cfg.editing_style;
+  guide.value = cfg.style_guide || "";
   fmt.value = cfg.export_format;
   document.getElementById("set-batch_size").value = cfg.batch_size;
   document.getElementById("set-temperature").value = cfg.temperature;
@@ -97,6 +100,7 @@ function readSettingsForm() {
   return {
     llm_provider: document.getElementById("set-llm_provider").value,
     editing_style: document.getElementById("set-editing_style").value,
+    style_guide: document.getElementById("set-style_guide").value,
     export_format: document.getElementById("set-export_format").value,
     batch_size: parseInt(document.getElementById("set-batch_size").value, 10) || 5,
     temperature: parseFloat(document.getElementById("set-temperature").value),
@@ -208,6 +212,6 @@ async function onRunFinished(docId) {
   logLine(`Saved to ${status.output_filename}`, "success");
 }
 
-window.CopyEditorApp = { logLine, setProgress, onRunFinished };
+window.PersonaeApp = { logLine, setProgress, onRunFinished };
 
 loadSettings().catch(err => logLine(`Could not load settings: ${err.message}`, "error"));

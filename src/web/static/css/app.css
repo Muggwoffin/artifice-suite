@@ -390,3 +390,57 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; border-radius: 2p
   max-height: 40vh;
   overflow: auto;
 }
+
+/* -------------------------------------------------------------- guide import modal */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lifted);
+  width: 90%;
+  max-width: 42rem;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.1rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.modal-head h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-h3);
+  margin: 0;
+}
+
+.modal-step {
+  padding: 0.9rem 1.1rem 1rem;
+  overflow-y: auto;
+}
+
+.guide-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  margin-bottom: 0.6rem;
+}

@@ -1,18 +1,15 @@
-"""Windowed launcher for the Copy Editor GUI.
+"""Windowed launcher for the PersonaeEdit web frontend.
 
-Equivalent to ``python scripts/run_edit.py --gui``, but without a console
-window. Because `.pyw` suppresses the console, an unhandled error would vanish
-silently, so failures are logged to ~/.copyedit/launcher.log and shown in a
-dialog.
+Mirrors `launch_personae.pyw` — same self-healing interpreter search, same
+"log and show a dialog rather than vanish silently" discipline, because a
+`.pyw` process has no console to reveal a crash on. See that file for why
+each piece exists; only the dependency list and the entry point differ here.
 
-Two classes of dependency are handled differently:
-
-* REQUIRED — the tool cannot run without these. If the interpreter that
-  started the launcher lacks them, another is found and the launcher
-  re-executes itself with it.
-* PREFERRED — `tkinterdnd2` only enables drag-and-drop; ``src/gui.py`` falls
-  back to a file-picker button without it. A missing preferred package is
-  worth switching interpreters for, but never worth refusing to start.
+Preference order for how the UI is shown:
+  1. A native pywebview window — no browser chrome.
+  2. The system's default browser — used automatically if pywebview isn't
+     installed, or forced with --browser. The server behaves identically
+     either way; only the window chrome changes.
 """
 
 from __future__ import annotations
@@ -25,14 +22,15 @@ import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-SCRIPT = ROOT / "scripts" / "run_edit.py"
-LOG = Path.home() / ".copyedit" / "launcher.log"
+LOG = Path.home() / ".personaeedit" / "launcher_web.log"
 
-# `docx` is python-docx; `docx_revisions` provides the tracked-change writer.
-REQUIRED = ("docx", "docx_revisions", "requests", "tkinter")
-PREFERRED = ("tkinterdnd2",)
+# `docx`/`docx_revisions`/`requests` are the pipeline's own deps; the rest are
+# the web stack. No `tkinter`/`tkinterdnd2` — the web build has no tkinter
+# drop zone to need either.
+REQUIRED = ("fastapi", "uvicorn", "multipart", "docx", "docx_revisions", "requests")
+PREFERRED = ("webview",)  # native windowing; falls back to the browser without it
 
-SENTINEL = "COPYEDIT_LAUNCHER_REEXEC"
+SENTINEL = "PERSONAE_WEB_LAUNCHER_REEXEC"
 
 
 def _log(message: str) -> None:
@@ -113,16 +111,18 @@ def _find_interpreter(names: tuple[str, ...]) -> Path | None:
     return None
 
 
-def _relaunch(exe: Path) -> int:
+def _relaunch(exe: Path, extra_args: list[str]) -> int:
     """Start the launcher again under `exe`. Not os.execv: on Windows that
     builds a command line without quoting, so a path containing spaces
-    ("...\\CopyEdit Tool\\...") is split and the child never starts."""
+    ("...\\PersonaeEdit\\...") is split and the child never starts."""
     env = dict(os.environ, **{SENTINEL: "1"})
     try:
-        subprocess.Popen([str(exe), str(Path(__file__).resolve())],
-                         cwd=str(ROOT), env=env)
+        subprocess.Popen(
+            [str(exe), str(Path(__file__).resolve()), *extra_args],
+            cwd=str(ROOT), env=env,
+        )
     except OSError as exc:
-        _show_error("Copy Editor failed to start",
+        _show_error("PersonaeEdit (web) failed to start",
                     f"Could not start {exe}\n\n{exc}\n\nLog: {LOG}")
         return 1
     return 0
@@ -131,6 +131,7 @@ def _relaunch(exe: Path) -> int:
 def main() -> int:
     os.chdir(ROOT)
     sys.path.insert(0, str(ROOT))
+    extra_args = sys.argv[1:]
 
     already_switched = bool(os.environ.get(SENTINEL))
 
@@ -138,11 +139,12 @@ def main() -> int:
     if missing:
         if already_switched:
             _show_error(
-                "Copy Editor — missing dependencies",
-                f"This Python cannot run the tool.\n\n"
+                "PersonaeEdit (web) — missing dependencies",
+                f"This Python cannot run the web build.\n\n"
                 f"Interpreter: {sys.executable}\n"
                 f"Missing: {', '.join(missing)}\n\n"
-                f"Install them with:\n    pip install -r requirements.txt\n\n"
+                f"Install them with:\n"
+                f"    pip install -r requirements.txt -r requirements-web.txt\n\n"
                 f"Log: {LOG}",
             )
             return 1
@@ -150,37 +152,32 @@ def main() -> int:
         replacement = _find_interpreter(REQUIRED)
         if replacement is None:
             _show_error(
-                "Copy Editor — missing dependencies",
+                "PersonaeEdit (web) — missing dependencies",
                 f"Missing packages: {', '.join(missing)}\n\n"
                 f"No installed Python has them. From\n{ROOT}\nrun:\n"
-                f"    pip install -r requirements.txt\n\nLog: {LOG}",
+                f"    pip install -r requirements.txt -r requirements-web.txt\n\n"
+                f"Log: {LOG}",
             )
             return 1
 
         _log(f"Re-launching with {replacement} (missing: {', '.join(missing)})")
-        return _relaunch(replacement)
+        return _relaunch(replacement, extra_args)
 
-    # Everything essential is present. Drag-and-drop is a nicety, so only
-    # switch interpreters for it if one is available, and carry on regardless.
-    if not already_switched and _missing(PREFERRED):
+    # pywebview is a nicety (native window); missing it means the browser
+    # fallback, not a hard failure — same policy as tkinterdnd2 in the
+    # desktop launcher.
+    if not already_switched and "--browser" not in extra_args and _missing(PREFERRED):
         better = _find_interpreter(REQUIRED + PREFERRED)
         if better is not None:
-            _log(f"Re-launching with {better} for drag-and-drop support")
-            return _relaunch(better)
-        _log("tkinterdnd2 unavailable — starting with the file picker only")
+            _log(f"Re-launching with {better} for the native window")
+            return _relaunch(better, extra_args)
+        _log("pywebview unavailable — falling back to the browser")
+        extra_args = [*extra_args, "--browser"]
 
-    if not SCRIPT.exists():
-        _show_error("Copy Editor failed to start",
-                    f"Entry point not found:\n{SCRIPT}")
-        return 1
+    from src.web.server import main as web_main
 
-    # Run the documented entry point rather than reaching into src.gui, so
-    # config and logging are set up exactly as they are from the command line.
-    sys.argv = [str(SCRIPT), "--gui"]
-    spec = importlib.util.spec_from_file_location("run_edit", SCRIPT)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    module.main()
+    sys.argv = [str(Path(__file__)), *extra_args]
+    web_main()
     return 0
 
 
@@ -191,7 +188,7 @@ if __name__ == "__main__":
         detail = traceback.format_exc()
         _log(detail)
         _show_error(
-            "Copy Editor failed to start",
+            "PersonaeEdit (web) failed to start",
             f"{detail.strip().splitlines()[-1]}\n\nFull details in:\n{LOG}",
         )
         sys.exit(1)

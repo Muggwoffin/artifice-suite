@@ -1,4 +1,4 @@
-"""Shared type definitions for the copy-edit pipeline."""
+"""Shared type definitions for the PersonaeEdit pipeline."""
 
 from __future__ import annotations
 
@@ -45,6 +45,7 @@ class EditingStyle(Enum):
     CREATIVE = "creative"
     CONCISE = "concise"
     BUSINESS = "business"
+    JOURNAL = "journal"
     CUSTOM = "custom"
 
 

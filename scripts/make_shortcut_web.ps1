@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Create the "Copy Editor (Web)" desktop shortcut.
+    Create the "PersonaeEdit (Web)" desktop shortcut.
 
 .DESCRIPTION
-    Writes "Copy Editor (Web).lnk" into the project root, pointing at the
+    Writes "PersonaeEdit (Web).lnk" into the project root, pointing at the
     windowed Python interpreter (pythonw.exe) best able to run the web
     frontend. Drag the result onto your Desktop, or pass -Desktop to place a
     copy there directly.
@@ -31,14 +31,14 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$launcher = Join-Path $root "launch_copyedit_web.pyw"
-$icon = Join-Path $root "assets\copyedit_web.ico"
+$launcher = Join-Path $root "launch_personae_web.pyw"
+$icon = Join-Path $root "assets\personaeedit_web.ico"
 
 if (-not (Test-Path $launcher)) {
     throw "Launcher not found: $launcher"
 }
 
-# Matches launch_copyedit_web.pyw's REQUIRED tuple. No tkinter/tkinterdnd2 —
+# Matches launch_personae_web.pyw's REQUIRED tuple. No tkinter/tkinterdnd2 —
 # the web build has no tkinter drop zone to need either.
 $required = "fastapi, uvicorn, multipart, docx, docx_revisions, requests"
 $preferred = "$required, webview"
@@ -102,18 +102,18 @@ function New-AppShortcut([string]$Path) {
     $sc.TargetPath = $target
     $sc.Arguments = '"' + $launcher + '"'
     $sc.WorkingDirectory = $root
-    $sc.Description = "Copy Editor (Web) - browser frontend for the same tracked-change copy editor"
+    $sc.Description = "PersonaeEdit (Web) - browser frontend for the same tracked-change editor"
     $sc.WindowStyle = 1
     if (Test-Path $icon) { $sc.IconLocation = "$icon,0" }
     $sc.Save()
     Write-Host "Created     : $Path"
 }
 
-New-AppShortcut (Join-Path $root "Copy Editor (Web).lnk")
+New-AppShortcut (Join-Path $root "PersonaeEdit (Web).lnk")
 
 if ($Desktop) {
-    New-AppShortcut (Join-Path ([Environment]::GetFolderPath("Desktop")) "Copy Editor (Web).lnk")
+    New-AppShortcut (Join-Path ([Environment]::GetFolderPath("Desktop")) "PersonaeEdit (Web).lnk")
 } else {
     Write-Host ""
-    Write-Host "Drag 'Copy Editor (Web).lnk' onto your Desktop, or re-run with -Desktop."
+    Write-Host "Drag 'PersonaeEdit (Web).lnk' onto your Desktop, or re-run with -Desktop."
 }

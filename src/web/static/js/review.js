@@ -70,9 +70,9 @@ const ReviewUI = (function () {
     try {
       await api("POST", `/api/run/${docId}/review`, { decisions });
       card.style.display = "none";
-      await CopyEditorApp.onRunFinished(docId);
+      await PersonaeApp.onRunFinished(docId);
     } catch (err) {
-      CopyEditorApp.logLine(`Could not finalize: ${err.message}`, "error");
+      PersonaeApp.logLine(`Could not finalize: ${err.message}`, "error");
     }
   });
 
@@ -85,7 +85,7 @@ const ReviewUI = (function () {
       // Nothing the model changed needs a human decision — finalize with no
       // decisions recorded, same as running with review disabled.
       await api("POST", `/api/run/${id}/review`, { decisions: [] });
-      await CopyEditorApp.onRunFinished(id);
+      await PersonaeApp.onRunFinished(id);
       return;
     }
 

@@ -1,4 +1,4 @@
-"""FastAPI backend for the Copy Editor web frontend.
+"""FastAPI backend for the PersonaeEdit web frontend.
 
 Additive, not a replacement: `src/gui.py` and the CLI entry point in
 `scripts/run_edit.py` are untouched, and every pipeline module this imports
@@ -36,9 +36,12 @@ from .runtime import (
     state,
 )
 
+from src.style_guides import delete_custom_guide, list_guides, save_custom_guide
+from src.style_guides.base import StyleGuide
+
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
-app = FastAPI(title="Copy Editor")
+app = FastAPI(title="PersonaeEdit")
 
 
 # --------------------------------------------------------------------------- #
@@ -49,6 +52,7 @@ class SettingsPatch(BaseModel):
     llm_provider: str | None = None
     editing_style: str | None = None
     custom_system_prompt: str | None = None
+    style_guide: str | None = None
     export_format: str | None = None
     batch_size: int | None = None
     temperature: float | None = None
@@ -66,6 +70,15 @@ class ReviewSubmitRequest(BaseModel):
     decisions: list[ReviewDecisionIn]
 
 
+class GuideImportRequest(BaseModel):
+    url: str
+
+
+class GuideSaveRequest(BaseModel):
+    name: str
+    guide: dict
+
+
 # --------------------------------------------------------------------------- #
 # settings
 # --------------------------------------------------------------------------- #
@@ -80,6 +93,48 @@ def update_settings(patch: SettingsPatch) -> dict:
     data = {k: v for k, v in patch.model_dump().items() if v is not None}
     save_settings(data)
     return serialize_settings(config_from_settings())
+
+
+@app.get("/api/style-guides")
+def get_style_guides() -> dict:
+    return {"guides": list_guides()}
+
+
+@app.post("/api/style-guides/preview")
+def preview_guide(req: GuideImportRequest) -> dict:
+    """Scrape a URL and parse it into a StyleGuide without saving."""
+    from src.style_guides.scraper import preview_guide_from_url
+    from src.web.runtime import config_from_settings
+
+    cfg = config_from_settings()
+    try:
+        guide = preview_guide_from_url(req.url, cfg)
+    except (ValueError, ImportError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"guide": guide.to_dict()}
+
+
+@app.post("/api/style-guides/save")
+def save_guide(req: GuideSaveRequest) -> dict:
+    """Save a scraped/edited StyleGuide as a custom guide."""
+    from src.web.runtime import config_from_settings
+
+    name = req.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Guide name is required")
+    guide = StyleGuide.from_dict(req.guide)
+    guide.name = name
+    save_custom_guide(name, guide)
+    return {"guides": list_guides(), "saved": name}
+
+
+@app.delete("/api/style-guides/{name}")
+def delete_guide(name: str) -> dict:
+    """Delete a custom style guide by name."""
+    deleted = delete_custom_guide(name)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Guide '{name}' not found")
+    return {"guides": list_guides(), "deleted": name}
 
 
 # --------------------------------------------------------------------------- #
@@ -276,7 +331,7 @@ def main() -> None:
 
     if use_browser:
         webbrowser.open(url)
-        print(f"Copy Editor running at {url}  (Ctrl+C to stop)")
+        print(f"PersonaeEdit running at {url}  (Ctrl+C to stop)")
         try:
             server_thread.join()
         except KeyboardInterrupt:
@@ -285,7 +340,7 @@ def main() -> None:
 
     import webview
 
-    window = webview.create_window("Copy Editor", url, width=1100, height=800)
+    window = webview.create_window("PersonaeEdit", url, width=1100, height=800)
     webview.start()
 
 

@@ -139,6 +139,7 @@ def call_ollama(
     sys_prompt = system_prompt or get_system_prompt(
         style=config.editing_style,
         custom_prompt=config.custom_system_prompt,
+        style_guide_name=config.style_guide,
     )
 
     max_tokens = config.num_ctx

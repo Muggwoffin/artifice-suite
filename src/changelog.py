@@ -1,4 +1,4 @@
-"""Generate a summary of changes made during copy editing."""
+"""Generate a summary of changes made during editing."""
 
 from __future__ import annotations
 
@@ -22,7 +22,12 @@ class ChangeSummary:
     total_characters_added: int = 0
     estimated_words_removed: int = 0
     estimated_words_added: int = 0
+    word_count_before: int = 0
+    word_count_after: int = 0
+    character_count: int = 0
+    estimated_pages: float = 0.0
     entries: list[dict] = field(default_factory=list)
+    advisories: list[dict] = field(default_factory=list)
 
     @property
     def edit_rate(self) -> float:
@@ -59,9 +64,15 @@ def classify_change(original: str, edited: str) -> str:
 def generate_change_summary(
     edits: list[LLMEdit],
     paragraphs: list[dict],
+    advisories: list[dict] | None = None,
 ) -> ChangeSummary:
     """Generate a comprehensive summary of all changes made."""
     summary = ChangeSummary(total_paragraphs=len(paragraphs))
+
+    # Word count and character count
+    all_original_text = " ".join(p["text"] for p in paragraphs)
+    summary.word_count_before = len(all_original_text.split())
+    summary.character_count = len(all_original_text)
 
     para_map = {p["paragraph_index"]: p for p in paragraphs}
 
@@ -93,11 +104,28 @@ def generate_change_summary(
         else:
             summary.paragraphs_unchanged += 1
 
+    # Compute post-edit word count
+    edited_texts = []
+    for edit in edits:
+        if edit.is_changed() and edit.edited_text:
+            edited_texts.append(edit.edited_text)
+        else:
+            para = para_map.get(edit.paragraph_index)
+            if para:
+                edited_texts.append(para["text"])
+    summary.word_count_after = len(" ".join(edited_texts).split())
+    summary.estimated_pages = summary.word_count_after / 250.0
+
+    if advisories:
+        summary.advisories = advisories
+
     logger.info(
-        "Change summary: %d/%d paragraphs edited (%.1f%%)",
+        "Change summary: %d/%d paragraphs edited (%.1f%%), ~%d words, ~%.1f pages",
         summary.paragraphs_edited,
         summary.total_paragraphs,
         summary.edit_rate,
+        summary.word_count_after,
+        summary.estimated_pages,
     )
     return summary
 
@@ -106,7 +134,7 @@ def format_change_log(summary: ChangeSummary) -> str:
     """Format the change summary as a human-readable string."""
     lines: list[str] = []
     lines.append("=" * 60)
-    lines.append("COPY EDIT — CHANGE SUMMARY")
+    lines.append("PERSONAEEDIT — CHANGE SUMMARY")
     lines.append("=" * 60)
     lines.append(f"Total paragraphs:    {summary.total_paragraphs}")
     lines.append(f"Paragraphs edited:   {summary.paragraphs_edited}")
@@ -114,6 +142,8 @@ def format_change_log(summary: ChangeSummary) -> str:
     lines.append(f"Edit rate:           {summary.edit_rate:.1f}%")
     lines.append(f"Words removed:       {summary.estimated_words_removed}")
     lines.append(f"Words added:         {summary.estimated_words_added}")
+    lines.append(f"Word count:          {summary.word_count_before} → {summary.word_count_after}")
+    lines.append(f"Est. pages:          {summary.estimated_pages:.1f}")
     lines.append("")
 
     if summary.entries:
@@ -136,6 +166,22 @@ def format_change_log(summary: ChangeSummary) -> str:
             lines.append(f"    + {edit_preview}")
     else:
         lines.append("No changes were made.")
+
+    if summary.advisories:
+        lines.append("")
+        lines.append("--- Style Advisories ---")
+        severity_counts: dict[str, int] = {}
+        for a in summary.advisories:
+            sev = a.get("severity", "info")
+            severity_counts[sev] = severity_counts.get(sev, 0) + 1
+
+        for sev, count in sorted(severity_counts.items()):
+            lines.append(f"  {sev}: {count}")
+
+        lines.append("")
+        for a in summary.advisories:
+            lines.append(f"  [{a.get('paragraph_index', '?')}] ({a.get('rule', 'unknown')})")
+            lines.append(f"    {a.get('message', '')}")
 
     lines.append("=" * 60)
     return "\n".join(lines)

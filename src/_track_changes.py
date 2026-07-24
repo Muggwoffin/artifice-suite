@@ -27,7 +27,7 @@ def apply_track_changes_to_docx(
     paragraphs: list[dict],
     changes: dict[int, str],
     output_path: str,
-    author: str = "AI Copy Editor",
+    author: str = "PersonaeEdit",
 ) -> None:
     """Apply tracked changes to a .docx file using docx-revisions.
 
@@ -37,7 +37,7 @@ def apply_track_changes_to_docx(
         paragraphs: List of paragraph dicts from doc_parser.parse_docx().
         changes: Dict mapping paragraph index to the replacement text.
         output_path: path for the resulting .docx
-        author: author name shown in tracked changes (default: "AI Copy Editor").
+        author: author name shown in tracked changes (default: "PersonaeEdit").
     """
     if not changes:
         return

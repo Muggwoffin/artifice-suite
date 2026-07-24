@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Create the "Copy Editor" desktop shortcut.
+    Create the "PersonaeEdit" desktop shortcut.
 
 .DESCRIPTION
-    Writes "Copy Editor.lnk" into the project root, pointing at the windowed
+    Writes "PersonaeEdit.lnk" into the project root, pointing at the windowed
     Python interpreter (pythonw.exe) best able to run the tool. Drag the
     result onto your Desktop, or pass -Desktop to place a copy there directly.
 
@@ -27,8 +27,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$launcher = Join-Path $root "launch_copyedit.pyw"
-$icon = Join-Path $root "assets\copyedit.ico"
+$launcher = Join-Path $root "launch_personae.pyw"
+$icon = Join-Path $root "assets\personaeedit.ico"
 
 if (-not (Test-Path $launcher)) {
     throw "Launcher not found: $launcher"
@@ -96,18 +96,18 @@ function New-AppShortcut([string]$Path) {
     $sc.TargetPath = $target
     $sc.Arguments = '"' + $launcher + '"'
     $sc.WorkingDirectory = $root
-    $sc.Description = "Copy Editor - tracked-change copy editing with a local LLM"
+    $sc.Description = "PersonaeEdit - tracked-change editing with a local LLM"
     $sc.WindowStyle = 1
     if (Test-Path $icon) { $sc.IconLocation = "$icon,0" }
     $sc.Save()
     Write-Host "Created     : $Path"
 }
 
-New-AppShortcut (Join-Path $root "Copy Editor.lnk")
+New-AppShortcut (Join-Path $root "PersonaeEdit.lnk")
 
 if ($Desktop) {
-    New-AppShortcut (Join-Path ([Environment]::GetFolderPath("Desktop")) "Copy Editor.lnk")
+    New-AppShortcut (Join-Path ([Environment]::GetFolderPath("Desktop")) "PersonaeEdit.lnk")
 } else {
     Write-Host ""
-    Write-Host "Drag 'Copy Editor.lnk' onto your Desktop, or re-run with -Desktop."
+    Write-Host "Drag 'PersonaeEdit.lnk' onto your Desktop, or re-run with -Desktop."
 }

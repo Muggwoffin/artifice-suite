@@ -19,7 +19,7 @@ def apply_edits_to_docx(
     paragraphs: list[dict],
     edits: dict[int, str | None],
     output_path: str,
-    author: str = "AI Copy Editor",
+    author: str = "PersonaeEdit",
 ) -> None:
     """Write a new .docx with tracked insertions/deletions for each edited paragraph.
 
@@ -58,7 +58,7 @@ def apply_edits(
     edits: dict[int, str | None],
     output_path: str,
     export_format: ExportFormat = ExportFormat.DOCX_TRACK_CHANGES,
-    author: str = "AI Copy Editor",
+    author: str = "PersonaeEdit",
 ) -> str:
     """Apply edits and export to the requested format.
 

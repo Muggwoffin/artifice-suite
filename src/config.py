@@ -1,4 +1,4 @@
-"""Centralised settings for the copy-edit tool."""
+"""Centralised settings for the PersonaeEdit tool."""
 
 from __future__ import annotations
 
@@ -35,11 +35,12 @@ class AppConfig:
 
     editing_style: EditingStyle = EditingStyle.ACADEMIC
     custom_system_prompt: str = ""
+    style_guide: str = ""
 
     export_format: ExportFormat = ExportFormat.DOCX_TRACK_CHANGES
 
     enable_review: bool = False
-    author_name: str = "AI Copy Editor"
+    author_name: str = "PersonaeEdit"
 
     log_level: str = "INFO"
     log_file: str = ""
@@ -84,6 +85,8 @@ class AppConfig:
                 logger.warning("Unknown EDITING_STYLE '%s', keeping default", env)
         if env := os.environ.get("CUSTOM_SYSTEM_PROMPT"):
             cfg.custom_system_prompt = env
+        if env := os.environ.get("STYLE_GUIDE"):
+            cfg.style_guide = env
 
         if env := os.environ.get("EXPORT_FORMAT"):
             try:

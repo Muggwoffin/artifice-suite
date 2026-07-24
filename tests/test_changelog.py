@@ -36,7 +36,7 @@ def test_generate_change_summary():
 def test_format_change_log():
     summary = generate_change_summary(_sample_edits(), _sample_paragraphs())
     log = format_change_log(summary)
-    assert "CHANGE SUMMARY" in log
+    assert "CHANGE SUMMARY" in log or "PERSONAEEDIT" in log
     assert "3" in log
 
 

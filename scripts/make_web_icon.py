@@ -31,7 +31,7 @@ INSERT = (47, 125, 69)         # inserted text
 GOLD = (191, 155, 48)          # badge — the one shared token unused elsewhere here
 
 ROOT = Path(__file__).resolve().parent.parent
-TARGET = ROOT / "assets" / "copyedit_web.ico"
+TARGET = ROOT / "assets" / "personaeedit_web.ico"
 SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 SS = 4  # supersample factor
@@ -117,7 +117,7 @@ def main() -> None:
                     append_images=frames[:-1])
     print(f"Wrote {TARGET}  ({', '.join(f'{n}x{n}' for n in SIZES)})")
 
-    preview = ROOT / "assets" / "copyedit_web_preview.png"
+    preview = ROOT / "assets" / "personaeedit_web_preview.png"
     draw_icon(256).save(preview)
     print(f"Wrote {preview}")
 

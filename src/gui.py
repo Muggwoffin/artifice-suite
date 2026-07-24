@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class EditGUI:
-    """Main GUI window for the copy-edit tool."""
+    """Main GUI window for the PersonaeEdit tool."""
 
     def __init__(self):
         self.root = tk.Tk()
@@ -35,7 +35,7 @@ class EditGUI:
         self._paragraphs: list[dict] = []
 
         self._build_ui()
-        self.root.title("Copy Editor")
+        self.root.title("PersonaeEdit")
         self.root.minsize(700, 500)
 
     def _build_ui(self):
@@ -119,6 +119,16 @@ class EditGUI:
             state="readonly", width=12,
         )
         style_combo.pack(side="left", padx=(5, 20))
+
+        ttk.Label(row1, text="Journal Guide:").pack(side="left")
+        from src.style_guides import list_guides
+        self.guide_var = tk.StringVar(value=self._cfg.style_guide)
+        guide_combo = ttk.Combobox(
+            row1, textvariable=self.guide_var,
+            values=list_guides(),
+            state="readonly", width=15,
+        )
+        guide_combo.pack(side="left", padx=(5, 20))
 
         ttk.Label(row1, text="Export Format:").pack(side="left")
         self.export_var = tk.StringVar(value=self._cfg.export_format.value)
@@ -221,6 +231,7 @@ class EditGUI:
         self._cfg.enable_review = self.review_var.get()
         self._cfg.author_name = self.author_var.get()
         self._cfg.custom_system_prompt = self.prompt_var.get()
+        self._cfg.style_guide = self.guide_var.get()
 
     def _start_processing(self, path: str):
         self._drop_file_path = path

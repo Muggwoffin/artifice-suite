@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Copy Editor</title>
+<title>PersonaeEdit</title>
 
 <!-- Same Google Fonts link the public_history site and the OCR Pipeline
      tool's web build use, unmodified — one shared type system. -->
@@ -17,7 +17,7 @@
 <div class="app">
 
   <header class="masthead">
-    <h1>Copy Editor</h1>
+    <h1>PersonaeEdit</h1>
     <span class="tag">local-first &middot; tracked changes</span>
   </header>
 
@@ -82,6 +82,12 @@
           <label>Editing Style:
             <select id="set-editing_style"></select>
           </label>
+          <label>Journal Guide:
+            <span style="display:flex;gap:0.4rem;align-items:center;">
+              <select id="set-style_guide" style="flex:1;"></select>
+              <button class="btn" id="btn-import-guide" title="Import from URL">&#8635; Import</button>
+            </span>
+          </label>
           <label>Export Format:
             <select id="set-export_format"></select>
           </label>
@@ -108,9 +114,82 @@
     </section>
   </div>
 
+  <!-- ======================================================== GUIDE IMPORT MODAL -->
+  <div class="modal-overlay" id="guide-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Import Style Guide from URL</h2>
+        <button class="btn" id="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-step" id="step-url">
+        <p class="dim">Enter the URL of a journal's author guidelines or style guide page.</p>
+        <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
+          <input type="url" id="guide-url" placeholder="https://..." style="flex:1;padding:0.45rem 0.6rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          <button class="btn accent" id="btn-scrape">Scrape &amp; Preview</button>
+        </div>
+        <div class="log" id="scrape-log" style="display:none;height:8vh;min-height:60px;margin-top:0.7rem;"></div>
+      </div>
+
+      <div class="modal-step" id="step-review" style="display:none;">
+        <p class="dim">Review the extracted guide below. Edit any field before saving.</p>
+        <div class="guide-form" style="margin-top:0.6rem;max-height:50vh;overflow-y:auto;padding-right:0.5rem;">
+          <label>Name:
+            <input type="text" id="gf-name" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Edition:
+            <input type="text" id="gf-edition" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Citation Style:
+            <input type="text" id="gf-citation_style" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Heading Capitalization:
+            <input type="text" id="gf-heading_capitalization" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Footnote Format:
+            <textarea id="gf-footnote_format" rows="3" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Bibliography Format:
+            <textarea id="gf-bibliography_format" rows="3" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Prose Rules <span class="dim">(one per line)</span>:
+            <textarea id="gf-prose_rules" rows="4" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Quotation Rules:
+            <textarea id="gf-quotation_rules" rows="3" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Abbreviation Rules:
+            <textarea id="gf-abbreviation_rules" rows="2" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Date Format:
+            <input type="text" id="gf-date_format" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Page Reference Format:
+            <input type="text" id="gf-page_reference_format" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>URL/DOI Format:
+            <textarea id="gf-url_format" rows="2" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>System Prompt Addendum <span class="dim">(key rules the editor LLM will follow)</span>:
+            <textarea id="gf-system_prompt_addendum" rows="6" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Custom Rules <span class="dim">(one per line)</span>:
+            <textarea id="gf-custom_rules" rows="3" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.7rem;">
+          <button class="btn" id="btn-back-url">&larr; Back</button>
+          <span class="spacer"></span>
+          <button class="btn accent" id="btn-save-guide">Save Guide</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="/static/js/app.js"></script>
 <script src="/static/js/review.js"></script>
+<script src="/static/js/guide-import.js"></script>
 </body>
 </html>

@@ -21,7 +21,7 @@ from src.web.server import app
 
 @pytest.fixture(autouse=True)
 def isolated_settings(tmp_path, monkeypatch):
-    """Never let a test touch the real ~/.copyedit/web_settings.json.
+    """Never let a test touch the real ~/.personaeedit/web_settings.json.
 
     OCR Pipeline (the sibling project this web build is modeled on) shipped a
     test that skipped this once and wrote real content into a developer's

@@ -1,4 +1,4 @@
-"""Adapter between the copy-edit pipeline and the FastAPI web layer.
+"""Adapter between the PersonaeEdit pipeline and the FastAPI web layer.
 
 One `RunState` instance per server process — a local tool run by one person on
 their own machine does not need per-session isolation, same rationale the OCR
@@ -41,8 +41,8 @@ from src.review import apply_decisions, create_review_items
 
 logger = logging.getLogger(__name__)
 
-_SETTINGS_PATH = Path.home() / ".copyedit" / "web_settings.json"
-_WORK_DIR = Path(tempfile.gettempdir()) / "copyedit_web"
+_SETTINGS_PATH = Path.home() / ".personaeedit" / "web_settings.json"
+_WORK_DIR = Path(tempfile.gettempdir()) / "personaeedit_web"
 
 _EXT_MAP = {
     ExportFormat.DOCX_TRACK_CHANGES: "_edited.docx",
@@ -100,6 +100,8 @@ def config_from_settings() -> AppConfig:
             pass
     if "custom_system_prompt" in saved:
         cfg.custom_system_prompt = saved["custom_system_prompt"]
+    if "style_guide" in saved:
+        cfg.style_guide = saved["style_guide"]
     if v := saved.get("export_format"):
         try:
             cfg.export_format = ExportFormat(v)
@@ -124,10 +126,12 @@ def config_from_settings() -> AppConfig:
 
 
 def serialize_settings(cfg: AppConfig) -> dict:
+    from src.style_guides import list_guides
     return {
         "llm_provider": cfg.llm_provider.value,
         "editing_style": cfg.editing_style.value,
         "custom_system_prompt": cfg.custom_system_prompt,
+        "style_guide": cfg.style_guide,
         "export_format": cfg.export_format.value,
         "batch_size": cfg.batch_size,
         "temperature": cfg.temperature,
@@ -137,6 +141,7 @@ def serialize_settings(cfg: AppConfig) -> dict:
         "providers": [p.value for p in LLMProvider],
         "styles": [s.value for s in EditingStyle],
         "export_formats": [f.value for f in ExportFormat],
+        "style_guides": list_guides(),
     }
 
 

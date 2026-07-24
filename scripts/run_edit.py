@@ -36,6 +36,8 @@ def main():
         print("  --gui                  Launch the drag-and-drop GUI")
         print("  --headless FILE [OUT]  Edit FILE, save to OUT (or _edited.docx)")
         print("  --styles               List available editing styles")
+        print("  --style-guides         List available journal style guides")
+        print("  --import-style-guide URL  Scrape a URL and save as a custom style guide")
         print("  --help                 Show this help message and exit")
         print()
         print("Environment variables:")
@@ -47,8 +49,9 @@ def main():
         print("  OPENAI_BASE_URL        OpenAI-compatible base URL")
         print("  ANTHROPIC_API_KEY      API key for Anthropic")
         print("  ANTHROPIC_MODEL        Anthropic model name")
-        print("  EDITING_STYLE          academic | creative | concise | business | custom")
+        print("  EDITING_STYLE          academic | creative | concise | business | journal | custom")
         print("  CUSTOM_SYSTEM_PROMPT   Custom system prompt (when style=custom)")
+        print("  STYLE_GUIDE            Journal style guide name (when style=journal)")
         print("  EXPORT_FORMAT          docx_track_changes | docx_plain | markdown | html | plain_text")
         print("  BATCH_SIZE             Paragraphs per LLM call (default: 5)")
         print("  TEMPERATURE            LLM temperature (default: 0.3)")
@@ -63,6 +66,41 @@ def main():
         print("Available editing styles:")
         for s in list_styles():
             print(f"  - {s}")
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--style-guides":
+        from src.style_guides import list_guides
+        print("Available journal style guides:")
+        for g in list_guides():
+            print(f"  - {g}")
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--import-style-guide":
+        if len(sys.argv) < 3:
+            print("Usage: python scripts/run_edit.py --import-style-guide URL")
+            sys.exit(1)
+        url = sys.argv[2]
+        from src.config import AppConfig
+        from src.style_guides import save_custom_guide
+        from src.style_guides.scraper import preview_guide_from_url
+
+        cfg = AppConfig.from_env()
+        print(f"Scraping: {url}")
+        try:
+            guide = preview_guide_from_url(url, cfg)
+        except (ValueError, ImportError) as exc:
+            print(f"Error: {exc}")
+            sys.exit(1)
+        print(f"Extracted: {guide.name or '(unnamed)'}")
+        if guide.system_prompt_addendum:
+            preview = guide.system_prompt_addendum[:200]
+            print(f"Preview: {preview}{'…' if len(guide.system_prompt_addendum) > 200 else ''}")
+        name = input(f"Save as [{guide.name}]: ").strip() or guide.name
+        if not name:
+            print("A name is required.")
+            sys.exit(1)
+        path = save_custom_guide(name, guide)
+        print(f"Saved to {path}")
         return
 
     from src.config import AppConfig
