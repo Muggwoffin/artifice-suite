@@ -154,6 +154,10 @@ def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
         cfg.export.graph_formats = body["graph_formats"]
     if "use_semantic" in body:
         cfg.entity_resolution.use_semantic = bool(body["use_semantic"])
+    if ebu := body.get("embedding_base_url"):
+        cfg.embedding.base_url = ebu
+    if em := body.get("embedding_model"):
+        cfg.embedding.model = em
     return cfg, bool(body.get("incremental", False))
 
 
@@ -256,10 +260,22 @@ def _do_resolve(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True)
     entities = [Entity.model_validate(d) for d in raw_entities]
     relationships = [Relationship.model_validate(d) for d in raw_rels]
     store.save_models("entities_raw.json", entities)
-    resolver = _build_resolver(cfg)
+    try:
+        resolver = _build_resolver(cfg)
+    except RuntimeError as exc:
+        _log(run_key, f"  Embedder error: {exc}", "error")
+        _mark_run_failed(run_key, f"Resolve — embedder unreachable at {cfg.embedding.base_url}")
+        _log_done(run_key, "Resolve — failed (embedder unreachable)", close_stream=close_stream)
+        return
     method = "semantic" if isinstance(resolver, SemanticEntityResolver) else "fuzzy"
     _log(run_key, f"  Using {method} resolution")
-    merged, updated = resolver.resolve(entities, relationships)
+    try:
+        merged, updated = resolver.resolve(entities, relationships)
+    except RuntimeError as exc:
+        _log(run_key, f"  Resolution failed: {exc}", "error")
+        _mark_run_failed(run_key, f"Resolve — embedder error during resolution")
+        _log_done(run_key, "Resolve — failed (embedder error)", close_stream=close_stream)
+        return
     if not merged:
         _log(run_key, "  Refusing to overwrite non-empty entities.json with empty resolution result.", "warn")
     else:
@@ -285,8 +301,20 @@ def _do_vault(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -
     relationships = [Relationship.model_validate(d) for d in store.load("relationships.json")]
     documents = [Document.model_validate(d) for d in store.load("documents.json")]
     chunks = [TextChunk.model_validate(d) for d in store.load("chunks.json")]
-    resolver = _build_resolver(cfg)
-    merged, updated = resolver.resolve(entities, relationships)
+    try:
+        resolver = _build_resolver(cfg)
+    except RuntimeError as exc:
+        _log(run_key, f"  Embedder error: {exc}", "error")
+        _mark_run_failed(run_key, f"Vault — embedder unreachable at {cfg.embedding.base_url}")
+        _log_done(run_key, "Vault — failed (embedder unreachable)", close_stream=close_stream)
+        return
+    try:
+        merged, updated = resolver.resolve(entities, relationships)
+    except RuntimeError as exc:
+        _log(run_key, f"  Resolution failed: {exc}", "error")
+        _mark_run_failed(run_key, "Vault — embedder error during resolution")
+        _log_done(run_key, "Vault — failed (embedder error)", close_stream=close_stream)
+        return
     obsidian = ObsidianExporter(resolver, cfg.export)
     vault_path = obsidian.build_vault(merged, updated, documents, chunks)
     note_count = sum(1 for _ in Path(vault_path).rglob("*.md"))
@@ -594,6 +622,10 @@ async def api_save_config(body: dict[str, Any]):
             cfg.export.graph_formats = body["graph_formats"]
         if "use_semantic" in body:
             cfg.entity_resolution.use_semantic = bool(body["use_semantic"])
+        if ebu := body.get("embedding_base_url"):
+            cfg.embedding.base_url = ebu
+        if em := body.get("embedding_model"):
+            cfg.embedding.model = em
 
         save_user_config(cfg)
 
