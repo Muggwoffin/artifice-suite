@@ -83,11 +83,12 @@ text: var(--ink)
 
 ### Font Families
 
-| Role | Family | Fallback Stack | Weights Loaded |
-|---|---|---|---|
-| Display | Playfair Display | `'Playfair Display', Georgia, serif` | 700, 900 (normal), 700 (italic) |
-| Body | Libre Baskerville | `'Libre Baskerville', Georgia, serif` | 400, 700 (normal), 400 (italic) |
-| Labels / UI | Archivo | `'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif` | 500, 600, 700 |
+| Role | Token | Family | Fallback Stack | Weights Loaded |
+|---|---|---|---|---|
+| Display | `--font-display` | Playfair Display | `'Playfair Display', Georgia, serif` | 700, 900 (normal), 700 (italic) |
+| Body | `--font-body` | Libre Baskerville | `'Libre Baskerville', Georgia, serif` | 400, 700 (normal), 400 (italic) |
+| Labels / UI | `--font-label` | Archivo | `'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif` | 500, 600, 700 |
+| Monospace | `--font-mono` | SF Mono / Consolas | `'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace` | Regular (system default) — log panels, code blocks, confidence readouts |
 
 ### Font Size Scale (Fluid)
 
@@ -500,7 +501,7 @@ if (prefersReducedMotion()) {
 
 ```css
 .button-primary {
-    font-family: var(--font-sans);
+    font-family: var(--font-label);
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.16em;
@@ -591,7 +592,7 @@ Add `border-top: 3px solid var(--ink)` or `border-top: 3px solid var(--accent)` 
 
 ```css
 .chip {
-    font-family: var(--font-sans);
+    font-family: var(--font-label);
     font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.16em;
@@ -746,7 +747,7 @@ Every app must include a skip link:
     padding: 0.6rem 1.1rem;
     background-color: var(--ink);
     color: var(--paper-raised);
-    font-family: var(--font-sans);
+    font-family: var(--font-label);
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.16em;
@@ -839,7 +840,7 @@ On dark backgrounds, place logos on a warm paper plate:
     /* Typography */
     --font-display: 'Playfair Display', Georgia, serif;
     --font-body: 'Libre Baskerville', Georgia, serif;
-    --font-sans: 'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif;
+    --font-label: 'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif;
 
     /* Fluid Scale */
     --text-xs: 0.72rem;

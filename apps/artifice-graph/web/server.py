@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import sys
 import threading
@@ -38,6 +39,8 @@ from artifice_graph.models.entity import Entity, EntityType
 from artifice_graph.models.relationship import Relationship
 from artifice_graph.storage.file_store import FileStore
 from web.config_helper import load_saved_config, save_user_config
+
+logger = logging.getLogger(__name__)
 
 # ── App setup ──────────────────────────────────────────────────────
 

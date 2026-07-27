@@ -27,7 +27,7 @@
   margin: 0 0 0.35rem;
 }
 .panel-sub {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
@@ -88,7 +88,7 @@
   flex: 1 1 auto;
 }
 .stage-card .stage-num {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
@@ -102,7 +102,7 @@
 }
 .stage-card .stage-desc {
   display: block;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: 0.72rem;
   color: var(--ink-faint);
   margin-top: 0.2rem;
@@ -124,8 +124,8 @@
 .stage-card[data-state="running"] .stage-num { color: var(--accent-deep); }
 .stage-card[data-state="done"] { border-color: var(--accent); }
 .stage-card[data-state="error"] {
-  border-color: var(--reg-poetic);
-  background: color-mix(in srgb, var(--reg-poetic) 8%, var(--paper));
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 8%, var(--paper));
 }
 
 .stage-spinner {
@@ -141,7 +141,7 @@
 @keyframes stage-spin { to { transform: rotate(360deg); } }
 
 .stage-badge {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: 0.65rem;
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
@@ -151,11 +151,19 @@
   color: var(--ink-faint);
   margin-left: 0.4rem;
 }
+/* The badge element (and its data-stage-badge hook) is always present in
+   the DOM — pipeline.js:295 queries for it to set textContent at runtime —
+   but a badge with no state yet should render nothing at all, not an
+   empty bordered pill. :empty only matches while the node truly has no
+   text, so this disappears the instant JS populates it. */
+.stage-badge:empty {
+  display: none;
+}
 .stage-card[data-state="done"] .stage-badge {
   border-color: var(--accent); color: var(--accent-deep); background: var(--accent-wash);
 }
 .stage-card[data-state="error"] .stage-badge {
-  border-color: var(--reg-poetic); color: var(--reg-poetic);
+  border-color: var(--error); color: var(--error);
 }
 .stage-card[data-state="running"] .stage-badge {
   border-color: var(--accent); color: var(--accent-deep);
@@ -175,7 +183,7 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
@@ -192,7 +200,7 @@
 }
 .status-strip[data-state="running"] .dot { background: var(--accent); animation: dot-pulse 1.2s ease-in-out infinite; }
 .status-strip[data-state="done"] .dot { background: var(--accent); }
-.status-strip[data-state="error"] .dot { background: var(--reg-poetic); }
+.status-strip[data-state="error"] .dot { background: var(--error); }
 .status-strip .dot-connected { background: var(--accent) !important; }
 @keyframes dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
@@ -206,13 +214,13 @@
   border-radius: var(--radius-lg);
   background: var(--paper-raised);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   z-index: 500;
   box-shadow: var(--shadow-lifted);
 }
 .notification-success { border-color: var(--accent); color: var(--accent-deep); }
-.notification-error { border-color: var(--reg-poetic); color: var(--reg-poetic); }
+.notification-error { border-color: var(--error); color: var(--error); }
 .notification-info { border-color: var(--rule-dark); }
 
 /* ── Log panel ────────────────────────────────────────────── */
@@ -239,7 +247,7 @@
 }
 .log-line { padding: 0.05rem 0; }
 .log-line.log-success { color: var(--accent-deep); }
-.log-line.log-error { color: var(--reg-poetic); }
+.log-line.log-error { color: var(--error); }
 .log-line.log-info { color: var(--ink); }
 .log-line.log-dim { color: var(--ink-faint); }
 .log-line.log-head {
@@ -279,7 +287,7 @@
 }
 .breakdown-row:last-child { border-bottom: 0; }
 .breakdown-row .key {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   color: var(--ink-soft);
   letter-spacing: 0.04em;
@@ -302,7 +310,7 @@
 .entity-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
 }
 .entity-table th,
@@ -338,7 +346,7 @@
   display: inline-block;
   padding: 0.12rem 0.5rem;
   border-radius: var(--radius-sm);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: 0.68rem;
   letter-spacing: 0.04em;
@@ -406,7 +414,7 @@
   padding: 1.5rem;
   text-align: center;
   color: var(--ink-faint);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   background: var(--paper);
 }
@@ -432,7 +440,7 @@
   border: 0;
   border-bottom: 2px solid transparent;
   padding: 0.55rem 0.9rem;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
@@ -516,7 +524,7 @@
   }
 }
 .drawer-section-title {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: 0.7rem;
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
@@ -532,7 +540,7 @@
   gap: 0.25rem;
 }
 .drawer-relation-item {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   padding: 0.3rem 0.5rem;
   background: var(--paper);
@@ -553,7 +561,7 @@
   width: 100%;
   padding: var(--space-5);
   text-align: left;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   color: var(--ink);
   background: var(--paper-raised);
   border: 1px solid var(--rule);
@@ -586,7 +594,7 @@
   color: var(--ink);
 }
 .preset-desc {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-xs);
   color: var(--ink-faint);
   line-height: 1.4;
@@ -600,7 +608,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-3);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   color: var(--ink-soft);
   cursor: pointer;

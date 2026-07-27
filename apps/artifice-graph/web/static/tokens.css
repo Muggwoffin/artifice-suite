@@ -1,5 +1,20 @@
 /* The New Masses Design System — ArtificeGraph / Artifice web UI.
-   Consumed exclusively through these variables; never hardcode values. */
+   Consumed exclusively through these variables; never hardcode values.
+
+   NOTE ON DUPLICATION: the canonical source of truth for every token below
+   is now `packages/shared-ui/tokens.css`. This file is a temporary,
+   byte-identical mirror of it, kept only because the running app cannot
+   reach that file over HTTP yet — `base.html` loads `/static/tokens.css`,
+   and the app's `StaticFiles` mount only serves `web/static/`, not the
+   monorepo root. Wiring an additional static mount (or a sync/build step)
+   in `server.py` so this file can become a thin `@import` of
+   `packages/shared-ui/tokens.css` is tracked as follow-up work, not done
+   here. Do not edit values here without also updating shared-ui/tokens.css
+   (and vice versa) until that wiring lands.
+
+   Domain colours (register taxonomy, entity-type accents) and the dead
+   Reading-View word-status colours that used to live in this file have
+   been removed/relocated — see `entity-colors.css` for the former. */
 
 :root {
   /* ── Paper & Ink (Light Theme) ───────────────────────────────── */
@@ -18,10 +33,15 @@
   --accent-wash:     rgba(47, 125, 69, 0.07);
   --gold:            #bf9b30;
 
+  /* ── Semantic (status, not part of core identity) ─────────────── */
+  --success:         #28a745;
+  --warning:         #ffc107;
+  --error:           #a8322b;
+
   /* ── Typography ──────────────────────────────────────────────── */
   --font-display:    'Playfair Display', Georgia, serif;
   --font-body:       'Libre Baskerville', Georgia, serif;
-  --font-sans:       'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif;
+  --font-label:      'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif;
   --font-mono:       'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
   --label-tracking:  0.16em;
 
@@ -72,31 +92,6 @@
   /* ── Layout ──────────────────────────────────────────────────── */
   --nav-height:    56px;
   --container-max: 1200px;
-
-  /* ── Word-Status Colours (Reading View) ─────────────────────── */
-  --w-new:         rgba(47, 125, 69, 0.13);
-  --w-unfamiliar:  rgba(191, 155, 48, 0.28);
-  --w-learning:    rgba(191, 155, 48, 0.12);
-  --w-familiar:    transparent;
-  --w-known:       transparent;
-  --w-ignored:     transparent;
-
-  /* ── Register Taxonomy Colours ───────────────────────────────── */
-  --reg-bureaucratic:  #5b6b73;
-  --reg-underground:   var(--accent);
-  --reg-personal:      #a6733b;
-  --reg-scholarly:     #6a6a86;
-  --reg-journalistic:  #c1652b;
-  --reg-epistolary:    #7d5a8c;
-  --reg-legal:         #3f6f8c;
-  --reg-poetic:        #8c3f5a;
-
-  /* ── Entity-type accent colours ──────────────────────────────── */
-  --type-person:       var(--reg-personal);
-  --type-organization: var(--reg-bureaucratic);
-  --type-location:     var(--reg-legal);
-  --type-event:        var(--reg-journalistic);
-  --type-concept:      var(--reg-scholarly);
 }
 
 /* ── Dark Theme Override ("Lamplight Archive") ──────────────── */
@@ -111,9 +106,14 @@
     --rule:            #38332b;
     --rule-dark:       #5b554a;
     --accent:          #4aa066;
+    /* Lighter than --accent — intentional, matches Design_Philosophy.md
+       §2 ("used as text — must read light"). Do not "fix". */
     --accent-deep:     #7cc492;
     --accent-wash:     rgba(74, 160, 102, 0.12);
     --gold:            #bf9b30;
+    --success:         #4aa066;
+    --warning:         #d9b64a;
+    --error:           #e06060;
     --shadow-paper:    0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);
     --shadow-lifted:   0 2px 4px rgba(0,0,0,0.5), 0 22px 42px -16px rgba(0,0,0,0.7);
     --shadow-nav:      0 6px 24px -16px rgba(0,0,0,0.5);
@@ -131,9 +131,13 @@
   --rule:            #38332b;
   --rule-dark:       #5b554a;
   --accent:          #4aa066;
+  /* See the matching comment in the prefers-color-scheme block above. */
   --accent-deep:     #7cc492;
   --accent-wash:     rgba(74, 160, 102, 0.12);
   --gold:            #bf9b30;
+  --success:         #4aa066;
+  --warning:         #d9b64a;
+  --error:           #e06060;
   --shadow-paper:    0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);
   --shadow-lifted:   0 2px 4px rgba(0,0,0,0.5), 0 22px 42px -16px rgba(0,0,0,0.7);
   --shadow-nav:      0 6px 24px -16px rgba(0,0,0,0.5);

@@ -5,6 +5,12 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
+  // ── Element cache & shared state ──────────────────────────────────
+  var els = {};
+  var running = false;
+  var currentEventSource = null;
+  var stageCards = { ingest: "idle", extract: "idle", resolve: "idle", vault: "idle", graph: "idle" };
+
   // Enhanced Configuration State Management
   var cfg = {
     inputDir: $("inputDir"),
@@ -262,11 +268,295 @@
     if (el) el.textContent = (n == null ? "—" : n);
   }
 
-  // ── Existing pipeline.js code continues... (rest of the file)
-  // This preserves all existing functionality while adding the new interactions
+  // ── Pipeline execution ─────────────────────────────────────────────
+
+  function _populateEls() {
+    els.btnRunAll    = $("btnRunAll");
+    els.btnDemo      = $("btnDemo");
+    els.btnClearLog  = $("btnClearLog");
+    els.logPanel     = $("logPanel");
+    els.statusStrip  = $("statusStrip");
+    els.lastRunLabel = $("lastRunLabel");
+    els.logConnState = $("logConnState");
+    els.autoscroll   = $("autoscroll");
+    els.typeBreakdown = $("typeBreakdown");
+    els.relBreakdown = $("relBreakdown");
+    els.statRow      = $("statRow");
+  }
+
+  // ── Stage card helpers ────────────────────────────────────────────
+
+  var STAGE_ORDER = ["ingest", "extract", "resolve", "vault", "graph"];
+
+  function setStageState(key, state) {
+    var card = document.querySelector(".stage-card[data-stage=\"" + key + "\"]");
+    if (card) {
+      card.setAttribute("data-state", state);
+      var badge = card.querySelector("[data-stage-badge]");
+      if (badge) badge.textContent = state;
+    }
+    stageCards[key] = state;
+  }
+
+  function _allStagesDone() {
+    for (var i = 0; i < STAGE_ORDER.length; i++) {
+      if (stageCards[STAGE_ORDER[i]] !== "done") return false;
+    }
+    return true;
+  }
+
+  // ── File pickers ──────────────────────────────────────────────────
+
+  function wireFilePickers() {
+    var rows = document.querySelectorAll(".dir-row");
+    for (var i = 0; i < rows.length; i++) {
+      (function (row) {
+        var input = row.querySelector(".dir-file");
+        var btn = row.querySelector("button");
+        if (input && btn) {
+          btn.addEventListener("click", function () { input.click(); });
+        }
+      })(rows[i]);
+    }
+    var dirInputs = document.querySelectorAll(".dir-file");
+    for (var j = 0; j < dirInputs.length; j++) {
+      dirInputs[j].addEventListener("change", function () {
+        var row = this.closest(".dir-row");
+        if (row) {
+          var label = row.querySelector(".dir-label");
+          if (label) label.textContent = this.value || "(none)";
+        }
+      });
+    }
+  }
+
+  // ── Log helpers ───────────────────────────────────────────────────
+
+  function _appendLogLine(text, level) {
+    level = level || "info";
+    var div = document.createElement("div");
+    div.className = "log-line log-" + level;
+    div.textContent = text;
+    els.logPanel.appendChild(div);
+    if (els.autoscroll && els.autoscroll.checked) {
+      els.logPanel.scrollTop = els.logPanel.scrollHeight;
+    }
+  }
+
+  function _appendLogSep() {
+    var div = document.createElement("div");
+    div.className = "log-sep";
+    els.logPanel.appendChild(div);
+  }
+
+  function clearLog() {
+    while (els.logPanel.firstChild) {
+      els.logPanel.removeChild(els.logPanel.firstChild);
+    }
+  }
+
+  // ── SSE stream handling ───────────────────────────────────────────
+
+  function _handleSSEEvent(evt, runMode) {
+    try {
+      var data = JSON.parse(evt.data);
+    } catch (e) { return; }
+
+    if (data.sep) { _appendLogSep(); return; }
+
+    if (data.gotoState !== undefined) {
+      var text = data.text || "";
+      // Advance stage state
+      if (runMode === "single") {
+        // Find the single running stage (there should be exactly one)
+        for (var i = 0; i < STAGE_ORDER.length; i++) {
+          if (stageCards[STAGE_ORDER[i]] === "running") {
+            setStageState(STAGE_ORDER[i], "done");
+            break;
+          }
+        }
+      } else if (runMode === "run-all" || runMode === "demo") {
+        // Advance through stages: mark first "running" as done,
+        // then mark the next stage as running if it exists
+        var advanced = false;
+        for (var j = 0; j < STAGE_ORDER.length; j++) {
+          if (stageCards[STAGE_ORDER[j]] === "running") {
+            setStageState(STAGE_ORDER[j], "done");
+            // If there's a next stage, mark it running
+            if (j + 1 < STAGE_ORDER.length && !_allStagesDone()) {
+              setStageState(STAGE_ORDER[j + 1], "running");
+            }
+            advanced = true;
+            break;
+          }
+        }
+        if (!advanced && runMode === "run-all") {
+          // No running stage found — first gotoState after stream start
+          // (e.g., stream reconnected). Just mark all done.
+          for (var k = 0; k < STAGE_ORDER.length; k++) {
+            setStageState(STAGE_ORDER[k], "done");
+          }
+        }
+      }
+      if (data.gotoState === "done") {
+        _appendLogLine(text || "Stage complete", "success");
+      } else {
+        _appendLogLine(text || "Complete", "success");
+      }
+      // If all stages are done, mark pipeline idle
+      if (_allStagesDone()) { _finishRun(); }
+      return;
+    }
+
+    if (data.text !== undefined) {
+      _appendLogLine(data.text, data.level || "info");
+    }
+  }
+
+  function _finishRun() {
+    running = false;
+    if (currentEventSource) {
+      currentEventSource.close();
+      currentEventSource = null;
+    }
+    setStatus("idle", "Idle");
+    updateConnectionStatus("connected");
+    refreshState();
+  }
+
+  // ── Stage wiring ──────────────────────────────────────────────────
+
+  function wireStageButtons() {
+    var buttons = document.querySelectorAll("[data-run-stage]");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener("click", function () {
+        var stage = this.getAttribute("data-run-stage");
+        if (stage) runStage(stage);
+      });
+    }
+  }
+
+  // ── runStage — the main pipeline executor ─────────────────────────
+
+  function runStage(stage) {
+    if (running) return;
+
+    var endpoint;
+    if (stage === "run-all") {
+      endpoint = "/api/run-all";
+    } else if (stage === "demo") {
+      endpoint = "/api/demo";
+    } else {
+      var stageToEndpoint = {
+        ingest: "/api/ingest",
+        extract: "/api/extract",
+        resolve: "/api/resolve",
+        vault: "/api/build-vault",
+        graph: "/api/build-graph"
+      };
+      endpoint = stageToEndpoint[stage];
+      if (!endpoint) return;
+    }
+
+    // Close any stale SSE connection
+    if (currentEventSource) {
+      currentEventSource.close();
+      currentEventSource = null;
+    }
+
+    running = true;
+    clearLog();
+
+    var runMode = (stage === "run-all" || stage === "demo") ? stage === "demo" ? "demo" : "run-all" : "single";
+
+    // Set stage state(s)
+    if (runMode === "run-all") {
+      for (var i = 0; i < STAGE_ORDER.length; i++) {
+        setStageState(STAGE_ORDER[i], i === 0 ? "running" : "idle");
+      }
+    } else if (runMode === "demo") {
+      for (var j = 0; j < STAGE_ORDER.length; j++) {
+        setStageState(STAGE_ORDER[j], "running");
+      }
+    } else {
+      setStageState(stage, "running");
+    }
+
+    setStatus("running", stage === "demo" ? "Running Demo..." : "Running " + stage + "...");
+
+    var config = collectConfig();
+
+    window.fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(config)
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      if (!data.run_key) {
+        _appendLogLine("Error: No run key returned from server", "error");
+        running = false;
+        setStatus("idle", "Error");
+        return;
+      }
+
+      var runKey = data.run_key;
+      if (els.lastRunLabel) els.lastRunLabel.textContent = "Run: " + stage + " (" + runKey + ")";
+      updateConnectionStatus("connected (streaming)");
+
+      var es = new EventSource("/api/stream?run=" + encodeURIComponent(runKey));
+      currentEventSource = es;
+
+      es.addEventListener("message", function (evt) {
+        _handleSSEEvent(evt, runMode);
+      });
+
+      es.addEventListener("error", function () {
+        if (es.readyState === EventSource.CLOSED && running) {
+          // Stream closed but we think we're still running — finish up
+          _finishRun();
+        }
+      });
+    }).catch(function (err) {
+      _appendLogLine("Error: " + (err && err.message ? err.message : err), "error");
+      running = false;
+      setStatus("idle", "Error");
+      updateConnectionStatus("disconnected");
+    });
+  }
+
+  // ── Breakdown rendering ───────────────────────────────────────────
+
+  function renderBreakdowns(state) {
+    if (!els.typeBreakdown || !els.relBreakdown) return;
+
+    // Entity type breakdown
+    if (state && state.type_counts && state.type_counts.length) {
+      var html = "";
+      for (var i = 0; i < state.type_counts.length; i++) {
+        var tc = state.type_counts[i];
+        html += "<div class=\"breakdown-row\"><span class=\"breakdown-label\">" + esc(tc.type) + "</span><span class=\"breakdown-count\">" + tc.count + "</span></div>";
+      }
+      els.typeBreakdown.innerHTML = html;
+    } else {
+      els.typeBreakdown.innerHTML = '<p class="stat-empty">No entities yet — run Extract or Demo.</p>';
+    }
+
+    // Relationship type breakdown
+    if (state && state.rel_counts && state.rel_counts.length) {
+      var relHtml = "";
+      for (var j = 0; j < state.rel_counts.length; j++) {
+        var rc = state.rel_counts[j];
+        relHtml += "<div class=\"breakdown-row\"><span class=\"breakdown-label\">" + esc(rc.type) + "</span><span class=\"breakdown-count\">" + rc.count + "</span></div>";
+      }
+      els.relBreakdown.innerHTML = relHtml;
+    } else {
+      els.relBreakdown.innerHTML = '<p class="stat-empty">No relationships yet — run Extract or Demo.</p>';
+    }
+  }
 
   // Wiring
   function init() {
+    _populateEls();
+
     // Wiring for preset buttons
     var presetButtons = document.querySelectorAll(".preset-card");
     Array.prototype.forEach.call(presetButtons, function(btn) {

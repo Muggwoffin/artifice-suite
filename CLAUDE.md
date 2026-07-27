@@ -59,24 +59,43 @@ both, so every cross-runtime handoff routes through it.
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | Feature implementation, core logic, refactors |
 | `tester` | OpenCode | `opencode-go/kimi-k3` | Test execution, log analysis, regression triage |
 | `arch-auditor-docs` | OpenCode | `opencode-go/glm-5.2` | Cross-app parity audits, folder standards, docs |
+| `security-auditor` | OpenCode | `google/gemini-3.1-pro-preview` (read-only) | Static analysis, secret handling, input sanitization |
 | `ui-ux` | Claude Code | `sonnet` | Frontend views, design tokens, accessibility |
-| `security-auditor` | Claude Code | `sonnet` (read-only) | Static analysis, secret handling, input sanitization |
 
 Definitions live in `.opencode/agents/*.md` and `.claude/agents/*.md`.
 
-**Sonnet agents run on the maintainer's Claude subscription via Claude Code.** Do not route them
-through OpenRouter, and do not re-add them to `.opencode/agents/`.
+**`ui-ux` runs on the maintainer's Claude subscription via Claude Code.** Do not route it through
+OpenRouter, and do not add it to `.opencode/agents/`. It stays on Sonnet because it writes code
+against `Design_Philosophy.md` and must hold that document precisely.
+
+**`security-auditor` runs on Gemini via OpenCode**, on the maintainer's own Google API key (already
+in `opencode auth`; never write the key to a file). It moved off Sonnet to reduce Claude token
+usage. It is a safe candidate because it is read-only and its findings route through the
+orchestrator before any code is written. Its `write`, `edit`, `bash` and `patch` tools are disabled
+in its config — keep them disabled. It must exist in exactly one runtime: a leftover
+`.claude/agents/security-auditor.md` would shadow the OpenCode definition.
 
 **Never put agent instructions in `.claude/rules/`.** Files there load as project-wide instructions
 into *every* session rather than scoping to one agent, contaminating the orchestrator's context.
 
 ### Dispatching
-- OpenCode: `opencode run --agent <name> "<brief>"`. All three are `mode: all`; a `mode: subagent`
-  agent will **silently answer as the default `build` agent** while looking like it worked.
-  Always confirm the response banner reads `> <agent> · <expected-model>`.
-- Claude Code: dispatch `ui-ux` / `security-auditor` as subagents. New or edited agent files are
-  only picked up on session start.
+- OpenCode: use `bash scripts/dispatch-opencode.sh <agent> <brief-file>`. Do **not** hand-roll
+  `opencode run` from a Windows-side shell — quoting, `$var` expansion, heredocs and process
+  backgrounding all break silently across the Windows/WSL boundary, and `pkill -f <agent>` kills
+  the caller's own wrapper while leaving the agent running. The script guards all four.
+  All four OpenCode agents are `mode: all`; a `mode: subagent` agent will **silently answer as the
+  default `build` agent** while looking like it worked. Always confirm the response banner reads
+  `> <agent> · <expected-model>`.
+- Claude Code: dispatch `ui-ux` as a subagent. New or edited agent files are only picked up on
+  session start.
 - Verify the whole fleet with `bash scripts/smoke-test-agents.sh` after any config change.
+
+### What OpenCode agents cannot do
+They have **no browser tool**. Never brief one to "verify in the browser", load a page, or take a
+screenshot — they will not decline, they will stall indefinitely on the instruction. Ask for static
+verification only (greps, counts, test runs, `file:line` citations); rendered confirmation is the
+orchestrator's job. Their logs are also **block-buffered** when redirected to a file, so a frozen
+log says nothing about liveness — judge progress by file mtimes and `git diff`.
 
 ### Task brief format
 Every delegation states, in order: **objective**, **scope** (explicit file/directory boundaries),

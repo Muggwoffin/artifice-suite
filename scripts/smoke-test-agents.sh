@@ -34,6 +34,7 @@ OPENCODE_AGENTS=(
   "lead-engineer:deepseek-v4-pro"
   "tester:kimi-k3"
   "arch-auditor-docs:glm-5.2"
+  "security-auditor:gemini-3.1-pro-preview"
 )
 
 bold "OpenCode runtime"
@@ -79,7 +80,7 @@ fi
 
 bold "Claude Code runtime"
 
-CLAUDE_AGENTS=(ui-ux security-auditor)
+CLAUDE_AGENTS=(ui-ux)
 
 for agent in "${CLAUDE_AGENTS[@]}"; do
   f=".claude/agents/${agent}.md"
@@ -93,6 +94,22 @@ for agent in "${CLAUDE_AGENTS[@]}"; do
     bad "$agent is not pinned to model: sonnet"
   fi
 done
+
+# security-auditor moved to OpenCode/Gemini to reduce Claude token usage. It must
+# not be defined in both runtimes — a stale Claude Code copy would shadow the
+# OpenCode one when the orchestrator dispatches by name.
+if [[ -f .claude/agents/security-auditor.md ]]; then
+  bad "security-auditor still defined in .claude/agents/ — it now lives in .opencode/agents/"
+else
+  ok "security-auditor not duplicated in Claude Code runtime"
+fi
+
+# It is read-only by design. Write access would let an audit mutate what it audits.
+if grep -qE '^[[:space:]]*(write|edit|bash|patch):[[:space:]]*true' .opencode/agents/security-auditor.md; then
+  bad "security-auditor has a write/edit/bash/patch tool enabled — must stay read-only"
+else
+  ok "security-auditor is read-only (no write/edit/bash/patch)"
+fi
 
 # `.claude/rules/` was superseded by `.claude/agents/`. Files left there load as
 # project-wide instructions into every session instead of scoping to an agent.
