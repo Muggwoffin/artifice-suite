@@ -21,4 +21,11 @@ env/
 Thumbs.db
 .idea/
 .vscode/
+*.swp
+*.swo
 *Zone.Identifier*
+
+# Local secrets — never commit
+.env
+.env.*
+.mcp.json

@@ -6,12 +6,17 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
+ocr = ["artifice-ocr", "model-harness", "core-types"]
+draft = ["artifice-draft", "model-harness", "core-types"]
+graph = ["artifice-graph", "model-harness", "core-types"]
+transcribe = ["artifice-transcribe", "model-harness", "core-types"]
 all = [
     "artifice-ocr",
     "artifice-draft",
     "artifice-graph",
     "artifice-transcribe",
     "model-harness",
+    "core-types",
 ]
 
 [build-system]
@@ -23,16 +28,20 @@ build-backend = "setuptools.build_meta"
 # extra and the uv workspace below have somewhere to be declared.
 py-modules = []
 
-# Plain `pip` cannot install transitive local-path dependencies in editable
-# mode, so the four apps + model-harness are declared as a uv workspace: uv
-# resolves each member editable and installs the "all" extra as a single
-# operation. Install with either:
-#   uv sync --extra all
-#   uv pip install -e ".[all]"
-# Individual apps remain independently installable the normal way, e.g.
+# These extras name workspace-only packages that are not published anywhere
+# (no PyPI, no private index). Plain `pip install "artifice-suite[ocr]"`
+# CANNOT resolve them — pip has no way to find an unpublished local sibling
+# package from a bare dependency name, and PEP 508 has no portable syntax for
+# "the sibling directory of wherever this repo happens to be cloned". This
+# is exactly what a uv workspace is for: `[tool.uv.sources]` below maps each
+# name to its workspace member, so uv resolves and installs all of them
+# (each editable) in one step. Install with:
+#   uv sync --extra ocr        # or draft / graph / transcribe / all
+#   uv pip install -e ".[ocr]" # uv's pip-compatible interface also works
+# Plain `pip` (not `uv pip`) only works for a single app installed directly:
 #   pip install -e apps/artifice-ocr
 [tool.uv.workspace]
-members = ["apps/*", "packages/model-harness"]
+members = ["apps/*", "packages/model-harness", "packages/core-types"]
 
 [tool.uv.sources]
 artifice-ocr = { workspace = true }
@@ -40,3 +49,4 @@ artifice-draft = { workspace = true }
 artifice-graph = { workspace = true }
 artifice-transcribe = { workspace = true }
 model-harness = { workspace = true }
+core-types = { workspace = true }
