@@ -27,6 +27,35 @@ pip install -e "apps/artifice-ocr[web]" # include its optional web extra, if rel
 Each app also documents its own setup and entry points in its own
 `README.md` and `CLAUDE.md`.
 
+### Developer tooling
+
+Beyond `uv` and Python, a few command-line tools are assumed by the repo's
+scripts and by day-to-day work. On Debian/Ubuntu (including WSL2):
+
+```bash
+sudo apt install -y ripgrep jq brotli shellcheck gitleaks
+```
+
+| Tool | Why |
+|---|---|
+| `ripgrep` | Assumed by tooling and contributors; `grep` works but is slower on this tree |
+| `gitleaks` | Required by the Zero Secrets Policy — run it before opening a PR |
+| `brotli` | Needed to compress vendored web fonts to `.woff2`; without it they ship as `.ttf` at roughly twice the size |
+| `shellcheck` | `scripts/*.sh` are real systems code and should be linted |
+| `jq` | Convenience for the JSON-heavy pipeline output |
+
+If you installed `uv` with the standalone installer it lands in
+`~/.local/bin`, which **is not on the `PATH` of a non-login shell** — so
+`bash some-script.sh` will fail with `uv: command not found` even though your
+interactive terminal is fine. Symlink it once:
+
+```bash
+sudo ln -s "$HOME/.local/bin/uv" /usr/local/bin/uv
+```
+
+`ffmpeg` is required only by `artifice-transcribe`. Install the Linux package
+if you are working on that app; a Windows `ffmpeg.exe` is not usable from WSL.
+
 ## Running tests
 
 Each app has its own pytest suite. Run it from inside the app directory:

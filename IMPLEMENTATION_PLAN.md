@@ -1,9 +1,15 @@
 # Artifice Suite — Implementation Plan
 
-**Status as of 2026-07-27.** This document records what has been built and verified, and stages
-the remaining work. It is the project to-do list; `ARCHITECTURE.md` describes the system as
-designed, `CLAUDE.md` governs how agents work on it, and `Design_Philosophy.md` is the binding
-design authority.
+**Status as of 2026-07-27 (end of session 2).** This document records what has been built and
+verified, and stages the remaining work. It is the project to-do list; `ARCHITECTURE.md` describes
+the system as designed, `CLAUDE.md` governs how agents work on it, and `Design_Philosophy.md` is
+the binding design authority.
+
+> **Phase 1 is signed off. `artifice-graph` is the reference implementation and the design gate is
+> open.** The next substantive work is Phase 1.5 (security, CORS first) and the Phase 2 prerequisite
+> (breakpoint consolidation). Read §I.7 for what changed most recently, and Part V before running
+> anything — several operational notes were corrected this session and the old advice is actively
+> wrong.
 
 **Reading the status marks:**
 
@@ -123,6 +129,67 @@ remain recoverable from git history and need a home — see Phase 0.
 - **`scripts/dispatch-opencode.sh` created** to make agent dispatch survive the Windows/WSL
   boundary. See Part V.
 
+### I.7 Session 2 — the pipeline actually runs — **Verified**
+
+Session 1 fixed how `artifice-graph` *looked*. Session 2 found that large parts of it did not
+**work**, and that no test or diff would have said so. Every item below was confirmed against the
+running system.
+
+**Both `run-all` orchestrators were broken, in unrelated ways** (`4a80524`).
+
+- CLI: `run_all` called the Typer `@app.command()` functions as plain Python, so every unpassed
+  parameter kept its `typer.OptionInfo` sentinel. `PipelineConfig` does not validate on assignment,
+  so a sentinel landed in an `int` field and detonated in the chunker. Stage 1 died every time.
+  Fixed structurally — five plain functions with real typed defaults, Typer commands as thin
+  wrappers — rather than by passing more arguments, which would re-break on the next parameter added.
+- Web: every stage helper ends in `_log_done` → `_end_run_log` → `_run_active = False`, so ingest
+  marked the whole run inactive and stages 2–5 were silently skipped. `_run_active` conflated "the
+  SSE stream may close" with "the pipeline should continue"; those are now separate signals.
+- `run-all` also exited **0** while printing "0/5 stages completed successfully".
+
+**No control in the web UI had ever worked** (`0c0563b`). `pipeline.js` cached three element ids —
+`inputDir`, `outputDir`, `vaultDir` — that have never existed in any template, in any commit.
+`collectConfig` dereferenced `.value` on null and threw. Worse, `runStage` set `running = true` and
+painted the badge *before* the throw, and `running = false` lived only inside the unreached `.then()`
+— so the first click bricked the page until reload and the guard silently refused every later click.
+This, not the `_run_active` bug, was the symptom originally observed in the browser.
+
+**Two more dead controls.** The config panel rendered two generations of itself, leaving duplicate
+ids where the second copy of each was unreachable (`272721f`); and `btnSaveConfig` had no handler in
+any file, ever, so nothing in the panel could be persisted (`e74d243`).
+
+`scripts/audit-controls.py` (`c04e85c`) now finds this class statically across all four apps and
+exits non-zero, ready to gate CI. `artifice-graph` is clean.
+
+**The embedder could not be pointed anywhere** (`ca80d63`, `8aa1f8b`). `config.yaml` set
+`embedding.base_url: localhost:11434` and nothing could override it, so semantic resolution was
+unusable on any machine where the model server is not on localhost. Now configurable per-run and
+persistable, and an unreachable embedder fails loudly through `_mark_run_failed` instead of
+silently deduplicating nothing.
+
+**The config panel had no stylesheet** (`da6ca9e`). Six structural classes had zero CSS rules and no
+`<label>` was styled anywhere, so step headings, field labels and help captions all rendered at 17px
+and every caption was `display: inline`. Four levels now separate cleanly, measured from the live
+DOM in dark mode: 17px / 12.8px / 12.8px / 11.52px at 13.25:1, 8.42:1, 13.25:1 and 6.14:1. The same
+commit fixed an unclosed `<div>` that had made the entire Pipeline Settings block a descendant of
+`.configuration-sections`, and themed the top nav — `app.css:87` hardcoded the light paper colour
+with no dark override, putting the wordmark at **1.23:1** in dark mode, now **16.24:1**.
+
+**Leaflet was loading from unpkg.com on every Library page view** (`477820a`) — the same local-first
+violation as the Google Fonts dependency, in a file nobody had looked at. Now vendored locally
+(196K, with images and licence). Map tiles still come from openstreetmap.org but only behind the
+"Load Map" click, and now say so.
+
+**Agent infrastructure** (`836b5cc`, `e29e270`). Agents were auto-rejected from `/tmp`, and
+`CLAUDE.md` — the only instruction file in the repo, so auto-loaded into every sub-agent —
+convinced `lead-engineer` it was the orchestrator, whereupon it wrote its own brief, dispatched
+itself, took the resulting error message's advice and SIGTERMed its own process tree. Both fixed;
+see Part V.
+
+**End-to-end, from the browser button:** 2 documents → 2 chunks → 42 entities / 28 relationships →
+41 canonical → 54 vault notes → 41-node graph, all five export formats. Test suite **47 passed, 0
+failed**. Fleet smoke test **13 passed, 0 failed**.
+
 ---
 
 ## Part II — Architectural gaps found while working
@@ -141,10 +208,24 @@ apps/artifice-draft/src/artifice_draft/llm_client.py
 
 `packages/core-types` is likewise unimported. The harness architecture is currently aspirational.
 
-**Monorepo parity is broken.** `CLAUDE.md` requires identical modular `src/` patterns, but the web
-layer sits in a different place in each app — `artifice-graph` has `web/` at the app root, while
-`artifice-ocr` and `artifice-draft` nest it under `src/<package>/web/`, and `artifice-transcribe`
-uses an `api/v1/` structure instead.
+**Monorepo parity is broken, and `artifice-graph` is the one breaking it.** This is sharper than
+previously recorded, and it matters because graph is the reference implementation:
+
+| app | UI location | form |
+|---|---|---|
+| `artifice-ocr` | `src/artifice_ocr/web/static/` | one static `index.html`, one `css/app.css` |
+| `artifice-draft` | `src/artifice_draft/web/static/` | one static `index.html`, one `css/app.css` |
+| `artifice-transcribe` | `src/artifice_transcribe/static/` | one static `index.html`, one `css/app.css` |
+| `artifice-graph` | `web/` **at the app root** | Jinja2 templates, 4 HTML, 4 CSS, `web/server.py` |
+
+`CLAUDE.md` mandates parity on `apps/<app>/src/artifice_<slug>/`, so ocr and draft follow the
+standard and **graph violates it**; transcribe is a third variant that drops the `web/` level. The
+other three are also barely-built UIs — a single static page each, not Jinja templates.
+
+Phase 2 is therefore not "copy graph three times". It is first a decision about which layout wins,
+and that decision should be made before any design rollout, not after. Note the trade-off honestly:
+graph's structure is the more capable one (templates, inheritance, a real server) but it is the
+non-conformant one.
 
 **There is no CI.** `.github/workflows/` does not exist, so the 34 test files are never run
 automatically and nothing enforces the parity or security rules on a pull request.
@@ -167,19 +248,17 @@ a copy-paste.
 
 ### Phase 0 — Settle the current work *(immediate)*
 
-Mostly closed out. One manual step remains, and one new blocker was uncovered.
+**Phase 0 is closed.**
 
-- [ ] **Retarget the GitHub default branch to `main` — the one remaining manual step.**
-      `origin/master` (`238b717`) has a tree byte-identical to `d6f80ca`, the *pre-conversion*
-      TypeScript/pnpm skeleton (`package.json`, `pnpm-workspace.yaml`, `src/index.ts`; no
-      `pyproject.toml`, no `uv.lock`, no `paper.md`). **Anyone cloning today gets the abandoned
-      skeleton**, and the Zenodo/JOSS path would mint a DOI for a tree containing neither the
-      software nor `paper.md`. This cannot be scripted here: `gh` is installed on neither Windows
-      nor WSL, and the GitHub MCP tools expose no repository-settings operation. Do it in the web
-      UI — *Settings → General → Default branch → switch to `main`* — then delete `origin/master`
-      with `git push origin --delete master`. Verified safe: `git rev-list origin/main..origin/master`
-      returns only `238b717` itself, a merge commit whose tree already exists on `main`, so nothing
-      unique is lost
+- [x] ~~Retarget the GitHub default branch to `main`~~ — **done**. `git ls-remote --heads origin`
+      now returns `refs/heads/main` and nothing else; `origin/master` has been deleted. This
+      mattered: `origin/master` (`238b717`) carried a tree byte-identical to the *pre-conversion*
+      TypeScript/pnpm skeleton, so anyone cloning got the abandoned project, and a Zenodo/JOSS tag
+      would have minted a DOI for a tree containing neither the software nor `paper.md`. Verified
+      safe before deletion — `git rev-list origin/main..origin/master` returned only `238b717`
+      itself, a merge commit whose tree already existed on `main`.
+      (`gh` is also now installed at `/usr/bin/gh`, so future repository-settings work can be
+      scripted; the note below about it being unavailable is obsolete.)
 - [x] ~~Reconcile the local branch state~~ — done. Local `master` renamed to `main`,
       fast-forwarded to include both commits from `chore/remove-stray-file`, which was then deleted
       locally and on the remote after confirming `origin/main..origin/chore/remove-stray-file` was
@@ -272,13 +351,17 @@ resolve once than to unpick from four apps:
   the local-first guarantee, not a cosmetic one, and it sits in the very file every other app is
   about to copy. It also makes the UI depend on a network the product promises not to need.
 
-Fix those two, then open the gate. The remaining four items are refinements that can proceed in
-parallel with rollout without contaminating the template.
+Both were fixed, and a third of the same kind was found and fixed afterwards (`library.html` loading
+Leaflet from unpkg). **The gate is now open — see the sign-off below.**
 
-- [ ] Full pipeline run against a live local LLM — the restored `pipeline.js` has been verified for
-      wiring and clean console, but not by running all five stages end to end
-- [ ] Audit the remaining stage states (`running`, `done`) in the browser; only `idle` and `error`
-      have been reviewed
+- [x] ~~Full pipeline run against a live local LLM~~ — run end to end **from the browser Run All
+      button**, not by curl: 2 documents → 2 chunks → 42 entities / 28 relationships → 41 canonical
+      → 54 vault notes → 41-node graph, all five export formats written. Also verified via the CLI,
+      which additionally exits non-zero on failure now
+- [x] ~~Audit the remaining stage states (`running`, `done`) in the browser~~ — all four states seen
+      rendered. `error` in particular had **never been reachable**: nothing in `pipeline.js` called
+      `setStageState(key, "error")`, which an audit had flagged as dead styling. The `runStage`
+      unwind added in `0c0563b` is the path that reaches it
 - [ ] Re-check entity badge scanability — hues are now ~34° apart, but at 14% tint all five
       converge toward cream. Consider raising the tint rather than moving hues further
 - [x] ~~Dark mode has not been reviewed at all~~ — reviewed by measurement from the live DOM.
@@ -328,6 +411,38 @@ itself.** Neither renders anywhere today — `--success` and `--warning` are sti
       was the right instinct. Apply the same hue separation used in dark
 - [ ] Accessibility pass: keyboard traversal, focus order, screen-reader labelling on the stage
       cards now that they are `div` containers rather than buttons
+
+#### Phase 1 sign-off — 2026-07-27
+
+**Signed off. The design gate is open; Phase 2 may proceed on the other three apps.**
+
+Verified at sign-off, all against the running system:
+
+| Check | Result |
+|---|---|
+| Test suite | 47 passed, 0 failed |
+| Control bindings (`scripts/audit-controls.py`) | `artifice-graph` clean |
+| External network refs in templates | openstreetmap only, and only behind the Load Map click |
+| `node --check` on both JS files | pass |
+| Agent fleet smoke test | 13 passed, 0 failed |
+| Pipeline, browser-driven | all five stages, all four stage states rendered |
+| Themes | light and dark, contrast measured from the live DOM |
+
+**Known and accepted at sign-off** — recorded so they are not rediscovered as surprises:
+
+- Three literal colours remain in graph stylesheets: `app.css:405` `rgba(27, 24, 19, 0.5)` (that is
+  `--ink` at 50%, so it will not re-derive in dark mode) and `pipeline.css:377,578`
+  `rgba(0,0,0,0.0x)` — **pure black, which `Design_Philosophy.md` forbids**. All three are
+  sub-visible alpha values, which is why they did not block; fix them before Phase 2 copies them.
+  The twelve literals in `entity-colors.css` are token *definitions* and are correct.
+- `index.html:203` has a bare `<h3 style="margin-top: 2rem;">Pipeline Settings</h3>` that renders
+  19.89px serif and now reads inconsistently against the new sans uppercase step markers.
+- `.rule` and `.muted` have no CSS rules anywhere.
+- The Vision Support field nests two `<label>` elements pointing at the same checkbox; a screen
+  reader may announce it twice.
+- `pipeline.js:49` uses an ES6 default parameter against the vanilla-ES5 rule in `CONTRIBUTING.md`.
+- Font payload is 940 KB because only Archivo is woff2 — `brotli` is now installable (see Part V)
+  and would roughly halve it.
 - [ ] Decide whether Google Fonts should be vendored locally — `base.html` currently fetches from
       `fonts.googleapis.com`, which contradicts the local-first, offline guarantee
 
@@ -388,6 +503,16 @@ injection vector. No secrets in tracked markdown, scripts, TOML or YAML; the `hf
 
 ### Phase 2 — Design system rollout
 
+**Two prerequisites now, not one.** The second was found at Phase 1 sign-off and is the more
+fundamental of the two.
+
+- [ ] **PREREQUISITE: settle the canonical web-layer layout first (Phase 4's first item).**
+      "Roll out the reference implementation" is incoherent while the reference implementation is
+      the structurally non-conformant one. `artifice-graph` keeps `web/` at the app root with Jinja2
+      templates; `ocr` and `draft` follow the `src/artifice_<slug>/web/static/` pattern that
+      `CLAUDE.md` actually mandates; `transcribe` is a third variant. The other three are also a
+      single static `index.html` each, not template hierarchies — so there is no structure there to
+      apply graph's patterns *to* until this is decided. See Part II for the full comparison.
 - [ ] **PREREQUISITE: consolidate the responsive breakpoints before copying anything.**
       `artifice-graph` declares **fourteen** distinct breakpoints across its stylesheets — 520,
       580, 600, 700, 720, 800, 960 and 1050px, plus seven more in `rem` (12, 15, 22, 28, 44, 72).
@@ -440,14 +565,29 @@ The largest correctness item in the project, and the one the architecture claims
 
 ## Part IV — Consolidated to-do list
 
-Phase 0 items are listed above and are the immediate queue. The highest-value items beyond them,
-in priority order:
+Phase 1 is closed. In priority order from here:
 
-1. **Make the model harness real** (Phase 3) — the architecture's central claim is currently untrue
-2. **Add CI** (Phase 5) — 34 test files exist and nothing runs them
-3. **Finish graph, including dark mode and accessibility** (Phase 1)
-4. **Vendor the fonts** (Phase 1) — a network fetch on every page load contradicts local-first
-5. **Structural parity** (Phase 4) — cheap to fix now, expensive after three more design passes
+1. **CORS** (Phase 1.5) — the single highest-leverage fix in the backlog. No CORS middleware exists
+   in any web server, and its absence is what converts several audit findings from "local tool
+   accepts loose input" into "any webpage the user visits can drive their local tool". Do this
+   before anything else.
+2. **The two HIGH path traversals in `artifice-transcribe`** (Phase 1.5) — the correct pattern
+   already exists in this codebase at `artifice-draft/web/runtime.py:252` (`Path(filename).name`).
+3. **Add CI** (Phase 5) — 34 test files exist and nothing runs them. Now cheap to make meaningful:
+   `scripts/audit-controls.py` and `scripts/smoke-test-agents.sh` both exit non-zero on failure and
+   can gate a PR on day one.
+4. **Decide the canonical web-layer layout** (Phase 4) — this now *blocks* Phase 2 rather than
+   following it, because graph is the non-conformant one and "roll out the reference implementation"
+   is incoherent until it is settled. See Part II.
+5. **Breakpoint consolidation** (Phase 2 prerequisite) — fourteen ad-hoc breakpoints; four times the
+   work to undo once three more apps inherit them.
+6. **Make the model harness real** (Phase 3) — the architecture's central claim is still untrue.
+   Large, and nothing else depends on it, which is why it sits below items that gate other work.
+
+**Do not re-litigate these** — they were settled by measurement this session and the reasoning is
+recorded above: dark mode is sound; entity badges pass AA as rendered (measuring the raw `--type-*`
+tokens gives a wrong answer); generated pipeline output is deliberately untracked; and both
+`run-all` orchestrators work.
 
 ---
 
@@ -456,8 +596,29 @@ in priority order:
 Hard-won during this session; ignoring these costs real time.
 
 **Run everything through WSL.** The orchestrator's shell tools are Windows-side over a UNC mount
-and cannot see `uv` or the Linux `.venv`. Use `wsl.exe -d Ubuntu -- bash -lc '…'` — and note the
-`-l`, because a non-login shell has no `uv` on `PATH`.
+and cannot see `uv` or the Linux `.venv`. Use `wsl.exe -d Ubuntu -- …`.
+
+**Long-running processes need `Start-Process`, not `&`.** A backgrounded job inside
+`wsl.exe -- bash -lc "… &"` dies when that invocation returns — silently, leaving an empty log and
+no process. This cost real time twice in one session, once for a dev server and once for an agent
+dispatch, and in the server case the port answered anyway because a *stale process from an earlier
+session* was still listening, so `HTTP 200` proved nothing. Launch detached instead:
+
+```powershell
+Start-Process -FilePath "wsl.exe" `
+  -ArgumentList "-d","Ubuntu","--","bash","/tmp/serve-app.sh" -WindowStyle Hidden
+```
+
+Two things the wrapper script must do itself: `export PATH="$HOME/.local/bin:$PATH"`, because
+`bash script.sh` is non-login and `uv` is not on the plain `PATH`; and redirect its **own** output,
+because `Start-Process` discards the child's stdout. Before trusting a port, check `pgrep -af` for
+the process you actually expect.
+
+**Write scripts to files; never inline shell in the tool call.** PowerShell mangles quoting on the
+way to WSL — `$(…)`, `${var}`, nested quotes and `2>/dev/null` all break, sometimes into a
+PowerShell parse error and sometimes into a subtly different command. Use the Write tool to create
+`/tmp/foo.sh`, then run `wsl.exe -d Ubuntu -- bash /tmp/foo.sh`. This recurred perhaps six times in
+one session despite being known.
 
 **Dispatch OpenCode agents with `scripts/dispatch-opencode.sh`.** Hand-rolled invocations fail four
 ways, each silently: quoted briefs arrive truncated to one word; `$var` is eaten before WSL sees
@@ -465,15 +626,95 @@ it; backgrounded agents are reaped when the invocation returns; and `pkill -f <a
 caller's own wrapper, killing the wrapper while leaving the agent running. That last one produced
 two agents racing on the same files.
 
-**OpenCode agents hang after finishing.** Observed repeatedly across two models: the agent
-completes its file edits, then blocks in `poll()` waiting on a provider response that never
-arrives, with no client-side timeout. Diagnose with `/proc/<pid>/stat` — near-zero cumulative CPU
-over many minutes means hung, not thinking. Judge progress by file mtimes and `git diff`, never by
-the log, which block-buffers to a file and freezes early. **Expect to kill agents and read their
-output rather than wait for their reports.**
+**~~OpenCode agents hang after finishing.~~ Fixed — do not act on this any more.** The cause was
+never the provider: `which opencode` resolved to a Windows npm shim under `/mnt/c/…`, so every
+"agent" was launching `opencode.exe` back across the interop boundary and blocking in `poll()`
+forever. A native Linux install fixed it outright — the same 3,958-character brief went from
+**0.00 CPU over 7 minutes** to **3.24 CPU-seconds in 5 seconds**, and `WCHAN` from
+`poll_schedule_timeout` to `do_epoll_wait`. Agents now complete and report normally.
+
+The diagnostic technique remains useful even though the bug is gone: **judge liveness by CPU time
+against wall time**, not by the log, which block-buffers when redirected and freezes early. Near-zero
+CPU over minutes means stalled; 35–55% sustained means working.
+
+**Sub-agents inherit the orchestrator's persona from `CLAUDE.md`, and will act on it.** `CLAUDE.md`
+is the only instruction file in the repo, so OpenCode auto-loads it into every sub-agent — ten
+kilobytes of "you oversee… delegate to specialized sub-agents" against a six-line agent definition.
+`lead-engineer` read its brief, correctly diagnosed all three bugs, then wrote *its own* brief and
+ran `dispatch-opencode.sh lead-engineer` — dispatching itself. The script refused, advised `--stop`,
+and the agent followed that advice and SIGTERMed its own process tree: `exit=143`, log ending
+mid-sentence, nothing implemented. Every `.opencode/agents/*.md` now opens with an explicit "you are
+a sub-agent, not the orchestrator" block, and GUARD 6 refuses to stop the caller's own agent. **Keep
+both when editing agents** — a near-empty agent definition is not neutral, it cedes the agent's
+identity to whatever else is in context.
+
+**Agents report static checks as though they were runtime ones unless told not to.** They have no
+browser. One reported that "a save-then-reload round trip preserves both values", reasoning
+correctly from the persistence code — while the actual failure was one layer earlier at a button
+that had never been wired. Brief them to say plainly when they could not exercise something; they
+comply when asked, and an honest "I verified statically" is worth more than a confident inference.
+
+**Verify rendered, not from the diff.** This caught, in one session: the above; an entire UI whose
+buttons had never worked despite looking correct; and three of the orchestrator's *own* false
+alarms — a "stage 3 card is styled differently" that was a JPEG artifact, a "helper text is in small
+type" assumption that was never true, and five "dead controls" that were bound in an inline
+`<script>` the audit had not scanned.
 
 **OpenCode agents have no browser.** Never brief one to verify anything visually. Rendered
 confirmation is the orchestrator's job, per the design-director loop in `CLAUDE.md`.
 
 **`git status` means different things in different shells** until the line-ending normalisation is
 run. Always `git diff --ignore-cr-at-eol` before concluding anything about what changed.
+
+**Developer tooling the fleet assumes but WSL does not have.** `gitleaks` and `node` are installed;
+these are not, and their absence has already cost time:
+
+```bash
+sudo apt install -y ripgrep jq brotli shellcheck
+sudo ln -s "$HOME/.local/bin/uv" /usr/local/bin/uv     # see the PATH note above
+```
+
+`ripgrep` because agents reach for `rg` and burn turns falling back to `grep`. `brotli` because it
+is the missing piece that keeps the vendored fonts at 940 KB instead of roughly half that.
+`shellcheck` because `dispatch-opencode.sh` now carries six numbered guards and process-tree walking
+with no linter on it. `jq` is convenience only. The `uv` symlink matters most — it is the fix for
+the non-login `PATH` problem above, and it removes a whole class of "command not found" failures
+from scripts and agents alike.
+
+`ffmpeg` is **not** on that list deliberately: `apps/artifice-transcribe/HANDOFF.md:100` records it
+as installed, but at a *Windows* path, which Whisper and pyannote under WSL cannot use. Install the
+Linux package when transcribe is actually picked up — it pulls ~500 MB.
+
+None of these appear in any setup documentation, which is itself a gap: `CONTRIBUTING.md` should
+carry a developer-tooling list.
+
+---
+
+## Part VI — Starting a fresh session
+
+Read in this order: this document's status block and §I.7, then Part V, then `CLAUDE.md`.
+
+**Confirm the environment before trusting anything:**
+
+```bash
+wsl.exe -d Ubuntu -- bash -lc "cd ~/projects/artifice-suite && \
+  uv run python scripts/audit-controls.py && \
+  bash scripts/smoke-test-agents.sh | tail -2 && \
+  (cd apps/artifice-graph && uv run pytest tests/ -q | tail -2)"
+```
+
+Expected: `artifice-graph: clean`, `13 passed, 0 failed`, `47 passed`. Anything else means the
+environment has drifted, not that the code has regressed — check Part V first.
+
+**To serve `artifice-graph`** (port 8766), write a wrapper script and launch it detached per Part V;
+do not background it inside `wsl.exe`.
+
+**Local model topology on this machine** — worth knowing before debugging a connection failure.
+Ollama is reachable from WSL only via the Windows gateway `172.21.176.1:11434`, never `localhost`.
+LM Studio is not reachable from WSL at all (it binds localhost; "Serve on Local Network" would need
+enabling). Installed models: `gemma4:12b` (tools + vision), `translategemma:4b`, `bge-m3:latest`,
+`sematre/orpheus:de`. `config.yaml` names `gemma2:27b`, which is **not installed** — that default is
+deliberate and portable, so override per-run rather than committing a machine-specific value.
+
+**Unpushed work.** Check `git status -sb`; session 2 ended with several commits ahead of origin and
+nothing was pushed without being asked.
