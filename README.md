@@ -1,6 +1,6 @@
 # Artifice Suite
 
-[![DOI](https://zenodo.org/badge/1313540750.svg)](https://doi.org/10.5281/zenodo.21621935)]
+[![DOI](https://zenodo.org/badge/1313540750.svg)](https://doi.org/10.5281/zenodo.21621935)
 
 A collection of local-first, bring-your-own-model (BYOM) desktop tools designed around rigid software harnesses rather than conversational AI interfaces.
 
