@@ -1,4 +1,4 @@
-"""Shared type definitions for the PersonaeEdit pipeline."""
+"""Shared type definitions for the ArtificeDraft pipeline."""
 
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ class ParagraphData(TypedDict):
     is_list_item: bool
     list_level: int
     language: str | None
+    images: list[dict]
 
 
 class ExportFormat(Enum):

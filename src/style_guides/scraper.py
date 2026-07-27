@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 _MAX_RESPONSE_BYTES = 5 * 1024 * 1024  # 5 MB — journal guidelines are small
 _REQUEST_TIMEOUT = 30  # seconds
 _USER_AGENT = (
-    "PersonaeEdit/1.0 (+https://github.com/anomalyco/opencode) "
+    "ArtificeDraft/1.0 (+https://github.com/anomalyco/opencode) "
     "style-guide-scraper"
 )
 
@@ -188,6 +188,111 @@ def preview_guide_from_url(
     calling ``save_custom_guide()`` if approved.
     """
     text = fetch_and_extract(url)
+    return parse_guide_with_llm(text, config)
+
+
+# ---------------------------------------------------------------------------
+# alternative import methods (text, docx, pdf)
+# ---------------------------------------------------------------------------
+
+
+def extract_text_from_docx(path: str) -> str:
+    """Extract plain text paragraphs from a .docx file.
+
+    Raises ``ValueError`` if the file cannot be read or contains no text.
+    """
+    try:
+        from docx import Document
+    except ImportError:
+        raise ImportError(
+            "python-docx is required to import from .docx files. "
+            "Install it with: pip install python-docx"
+        )
+
+    try:
+        doc = Document(path)
+    except Exception as exc:
+        raise ValueError(f"Could not read .docx file {path}: {exc}") from exc
+
+    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+    text = "\n\n".join(paragraphs).strip()
+    if len(text) < 50:
+        raise ValueError(
+            "The .docx file contains very little readable text. "
+            "Please check the file contains a style guide or author guidelines."
+        )
+    return text
+
+
+def extract_text_from_pdf(path: str) -> str:
+    """Extract text from a PDF file.
+
+    Uses PyMuPDF (fitz) — install with ``pip install PyMuPDF``.
+    Raises ``ValueError`` if the file cannot be read or contains no text.
+    """
+    try:
+        import fitz
+    except ImportError:
+        raise ImportError(
+            "PyMuPDF is required to import from PDF files. "
+            "Install it with: pip install PyMuPDF"
+        )
+
+    try:
+        doc = fitz.open(path)
+    except Exception as exc:
+        raise ValueError(f"Could not read PDF file {path}: {exc}") from exc
+
+    pages = []
+    for page_num in range(len(doc)):
+        text = doc[page_num].get_text().strip()
+        if text:
+            pages.append(text)
+    doc.close()
+
+    text = "\n\n".join(pages).strip()
+    if len(text) < 50:
+        raise ValueError(
+            "The PDF file contains very little readable text. "
+            "Please check the file contains a style guide or author guidelines."
+        )
+    return text
+
+
+def preview_guide_from_text(
+    text: str, config: AppConfig | None = None
+) -> StyleGuide:
+    """Parse raw text directly into a StyleGuide via LLM.
+
+    The result is NOT saved; the caller is responsible for showing a review
+    and calling ``save_custom_guide()`` if approved.
+    """
+    text = text.strip()
+    if len(text) < 50:
+        raise ValueError(
+            "The provided text is too short. "
+            "Please paste at least 50 characters of a style guide or author guidelines."
+        )
+    return parse_guide_with_llm(text, config)
+
+
+def preview_guide_from_file(
+    path: str, config: AppConfig | None = None
+) -> StyleGuide:
+    """Read a .docx or .pdf file, extract text, and parse into a StyleGuide.
+
+    The result is NOT saved; the caller is responsible for showing a review
+    and calling ``save_custom_guide()`` if approved.
+    """
+    lower = path.lower()
+    if lower.endswith(".docx"):
+        text = extract_text_from_docx(path)
+    elif lower.endswith(".pdf"):
+        text = extract_text_from_pdf(path)
+    else:
+        raise ValueError(
+            f"Unsupported file type: {path}. Please provide a .docx or .pdf file."
+        )
     return parse_guide_with_llm(text, config)
 
 

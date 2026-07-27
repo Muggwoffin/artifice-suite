@@ -38,6 +38,9 @@ def main():
         print("  --styles               List available editing styles")
         print("  --style-guides         List available journal style guides")
         print("  --import-style-guide URL  Scrape a URL and save as a custom style guide")
+        print("  --import-style-guide URL   Scrape a URL and save as a custom style guide")
+        print("  --import-style-guide-text TEXT  Parse text directly as a style guide")
+        print("  --import-style-guide-file FILE  Import a .docx or .pdf file as a style guide")
         print("  --help                 Show this help message and exit")
         print()
         print("Environment variables:")
@@ -88,6 +91,62 @@ def main():
         print(f"Scraping: {url}")
         try:
             guide = preview_guide_from_url(url, cfg)
+        except (ValueError, ImportError) as exc:
+            print(f"Error: {exc}")
+            sys.exit(1)
+        print(f"Extracted: {guide.name or '(unnamed)'}")
+        if guide.system_prompt_addendum:
+            preview = guide.system_prompt_addendum[:200]
+            print(f"Preview: {preview}{'…' if len(guide.system_prompt_addendum) > 200 else ''}")
+        name = input(f"Save as [{guide.name}]: ").strip() or guide.name
+        if not name:
+            print("A name is required.")
+            sys.exit(1)
+        path = save_custom_guide(name, guide)
+        print(f"Saved to {path}")
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--import-style-guide-text":
+        if len(sys.argv) < 3:
+            print("Usage: python scripts/run_edit.py --import-style-guide-text TEXT")
+            sys.exit(1)
+        text = sys.argv[2]
+        from src.config import AppConfig
+        from src.style_guides import save_custom_guide
+        from src.style_guides.scraper import preview_guide_from_text
+
+        cfg = AppConfig.from_env()
+        print("Parsing text...")
+        try:
+            guide = preview_guide_from_text(text, cfg)
+        except (ValueError, ImportError) as exc:
+            print(f"Error: {exc}")
+            sys.exit(1)
+        print(f"Extracted: {guide.name or '(unnamed)'}")
+        if guide.system_prompt_addendum:
+            preview = guide.system_prompt_addendum[:200]
+            print(f"Preview: {preview}{'…' if len(guide.system_prompt_addendum) > 200 else ''}")
+        name = input(f"Save as [{guide.name}]: ").strip() or guide.name
+        if not name:
+            print("A name is required.")
+            sys.exit(1)
+        path = save_custom_guide(name, guide)
+        print(f"Saved to {path}")
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--import-style-guide-file":
+        if len(sys.argv) < 3:
+            print("Usage: python scripts/run_edit.py --import-style-guide-file FILE")
+            sys.exit(1)
+        file_path = sys.argv[2]
+        from src.config import AppConfig
+        from src.style_guides import save_custom_guide
+        from src.style_guides.scraper import preview_guide_from_file
+
+        cfg = AppConfig.from_env()
+        print(f"Importing: {file_path}")
+        try:
+            guide = preview_guide_from_file(file_path, cfg)
         except (ValueError, ImportError) as exc:
             print(f"Error: {exc}")
             sys.exit(1)

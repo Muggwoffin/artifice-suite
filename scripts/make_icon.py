@@ -25,7 +25,7 @@ DELETE = (154, 51, 36)         # struck-out text
 INSERT = (47, 125, 69)         # inserted text
 
 ROOT = Path(__file__).resolve().parent.parent
-TARGET = ROOT / "assets" / "personaeedit.ico"
+TARGET = ROOT / "assets" / "artifice_draft.ico"
 SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 SS = 4  # supersample factor
@@ -99,7 +99,7 @@ def main() -> None:
                     append_images=frames[:-1])
     print(f"Wrote {TARGET}  ({', '.join(f'{n}x{n}' for n in SIZES)})")
 
-    preview = ROOT / "assets" / "personaeedit_preview.png"
+    preview = ROOT / "assets" / "artifice_draft_preview.png"
     draw_icon(256).save(preview)
     print(f"Wrote {preview}")
 

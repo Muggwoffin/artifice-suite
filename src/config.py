@@ -1,4 +1,4 @@
-"""Centralised settings for the PersonaeEdit tool."""
+"""Centralised settings for the ArtificeDraft tool."""
 
 from __future__ import annotations
 
@@ -14,6 +14,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AppConfig:
     """Configuration values — override via environment variables if set."""
+
+    # Bring Your Own Model (BYOM) configuration
+    base_url: str = "http://localhost:11434/v1"
+    api_key: str = "not-needed"
+    model_name: str = "gemma4:12b"
+    vision_enabled: bool = False
 
     ollama_model: str = "gemma4:12b"
     ollama_base_url: str = "http://localhost:11434"
@@ -40,7 +46,7 @@ class AppConfig:
     export_format: ExportFormat = ExportFormat.DOCX_TRACK_CHANGES
 
     enable_review: bool = False
-    author_name: str = "PersonaeEdit"
+    author_name: str = "ArtificeDraft"
 
     log_level: str = "INFO"
     log_file: str = ""
@@ -56,10 +62,23 @@ class AppConfig:
         """Build config from environment variables."""
         cfg = cls()
 
+        if env := os.environ.get("BASE_URL"):
+            cfg.base_url = env
+        if env := os.environ.get("API_KEY"):
+            cfg.api_key = env
+        if env := os.environ.get("MODEL_NAME"):
+            cfg.model_name = env
+            cfg.ollama_model = env
+            cfg.openai_model = env
+        if env := os.environ.get("VISION_ENABLED"):
+            cfg.vision_enabled = env.lower() in ("1", "true", "yes")
+
         if env := os.environ.get("OLLAMA_MODEL"):
             cfg.ollama_model = env
+            cfg.model_name = env
         if env := os.environ.get("OLLAMA_URL"):
             cfg.ollama_base_url = env
+            cfg.base_url = env
         if env := os.environ.get("LLM_PROVIDER"):
             try:
                 cfg.llm_provider = LLMProvider(env.lower())
@@ -68,10 +87,13 @@ class AppConfig:
 
         if env := os.environ.get("OPENAI_API_KEY"):
             cfg.openai_api_key = env
+            cfg.api_key = env
         if env := os.environ.get("OPENAI_MODEL"):
             cfg.openai_model = env
+            cfg.model_name = env
         if env := os.environ.get("OPENAI_BASE_URL"):
             cfg.openai_base_url = env
+            cfg.base_url = env
 
         if env := os.environ.get("ANTHROPIC_API_KEY"):
             cfg.anthropic_api_key = env
@@ -126,6 +148,8 @@ class AppConfig:
     @property
     def active_model(self) -> str:
         """Return the model name for the currently selected provider."""
+        if self.model_name:
+            return self.model_name
         if self.llm_provider == LLMProvider.OLLAMA:
             return self.ollama_model
         elif self.llm_provider == LLMProvider.OPENAI:
@@ -133,6 +157,16 @@ class AppConfig:
         elif self.llm_provider == LLMProvider.ANTHROPIC:
             return self.anthropic_model
         return self.ollama_model
+
+    def __post_init__(self) -> None:
+        """Keep the model_name field synced with provider-specific fields."""
+        if self.model_name == "gemma4:12b":
+            if self.llm_provider == LLMProvider.OLLAMA and self.ollama_model != "gemma4:12b":
+                self.model_name = self.ollama_model
+            elif self.llm_provider == LLMProvider.OPENAI and self.openai_model != "gemma4:12b":
+                self.model_name = self.openai_model
+            elif self.llm_provider == LLMProvider.ANTHROPIC and self.anthropic_model != "gemma4:12b":
+                self.model_name = self.anthropic_model
 
 
 if __name__ == "__main__":

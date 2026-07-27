@@ -4,11 +4,15 @@
  * build, which this frontend is deliberately styled and structured after.
  */
 
-async function api(method, path, body) {
+async function api(method, path, body, isFormData = false) {
   const opts = { method, headers: {} };
   if (body !== undefined) {
-    opts.headers["Content-Type"] = "application/json";
-    opts.body = JSON.stringify(body);
+    if (isFormData) {
+      opts.body = body;
+    } else {
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body);
+    }
   }
   const res = await fetch(path, opts);
   if (!res.ok) {

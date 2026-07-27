@@ -179,16 +179,19 @@ def test_dynamic_batch_sizes_empty():
 
 def test_config_active_model_ollama():
     cfg = AppConfig(llm_provider=LLMProvider.OLLAMA, ollama_model="test-model")
+    assert cfg.ollama_model == "test-model"
     assert cfg.active_model == "test-model"
 
 
 def test_config_active_model_openai():
     cfg = AppConfig(llm_provider=LLMProvider.OPENAI, openai_model="gpt-4o")
+    assert cfg.openai_model == "gpt-4o"
     assert cfg.active_model == "gpt-4o"
 
 
 def test_config_active_model_anthropic():
     cfg = AppConfig(llm_provider=LLMProvider.ANTHROPIC, anthropic_model="claude-3")
+    assert cfg.anthropic_model == "claude-3"
     assert cfg.active_model == "claude-3"
 
 

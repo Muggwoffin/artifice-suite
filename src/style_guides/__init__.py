@@ -1,7 +1,7 @@
 """Journal style guide registry and loaders.
 
 Built-in guides (Chicago, MLA, APA) are always available. Custom guides
-are loaded from JSON files in ``~/.personaeedit/style_guides/``.
+are loaded from JSON files in ``~/.artifice_draft/style_guides/``.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from .mla import mla_guide
 
 logger = logging.getLogger(__name__)
 
-_CUSTOM_DIR = Path.home() / ".personaeedit" / "style_guides"
+_CUSTOM_DIR = Path.home() / ".artifice_draft" / "style_guides"
 
 _BUILTIN_GUIDES: dict[str, callable] = {
     "chicago": chicago_guide,

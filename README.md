@@ -1,191 +1,134 @@
-# PersonaeEdit
+# ArtificeDraft
 
-A Python tool for academic historians that reads a `.docx` file, sends each paragraph to an LLM (Ollama, OpenAI, or Anthropic), and returns a new Word document with copy-edit changes applied as tracked edits (grammar fixes, typos, unclear phrasing, journal style conformance).
+**Precision Copy-Editing & Journal Style Compliance for Academic Historians & Scholars**
 
-## How it works
+ArtificeDraft is an advanced desktop and web application designed specifically for academic historians, researchers, and rigorous writers. It reads a `.docx` manuscript, analyzes each paragraph against scholarly editing standards and specific journal style guides, and returns a new Word document with copy-edit changes applied as **native Word Track Changes** (`<w:ins>` / `<w:del>`), alongside automated historian advisories for citations, archival references, foreign phrases, and document consistency.
 
-```
-input.docx ──→ GUI / CLI ──→ parse paragraphs ──→ LLM ──→ new_edited.docx
-```
+---
 
-- **Drag-and-drop** a `.docx` onto the tkinter window, or run in headless mode with `--headless input.docx [output.docx]`.
-- The model is asked to fix grammar, spelling, and unclear phrasing — it returns JSON per paragraph.
-- A new `.docx` is written back using `docx-revisions`, so Word shows the changes as tracked insertions/deletions (red/blue marks).
-- Select a journal style guide (Chicago, MLA, APA, or custom) to have edits conform to that journal's conventions.
+## 🏛️ Philosophy
 
-## Requirements
+1. **Scholarly Rigor & Authorship Control**: AI should serve as an editorial assistant, not a ghostwriter. ArtificeDraft preserves original voice, tone, footnotes, citations, bold/italic formatting, and document structure.
+2. **Native Track Changes**: Edits are rendered as native Microsoft Word revisions (red insertions and blue deletions) rather than opaque, destructive text replacements. You retain absolute veto power over every suggestion.
+3. **Flexible Architecture**: Run entirely offline and locally using open-weights models via **Ollama** (e.g., Gemma 4), or leverage cloud power via **OpenAI** and **Anthropic**.
+4. **Domain-Specific Awareness**: Beyond basic grammar and typos, ArtificeDraft understands the nuances of historical writing—validating footnote sequences, archival citations, Latin phrasing, and naming consistency.
 
-- Python 3.10+
-- Ollama running locally with Gemma 4:12b (`ollama pull gemma4:12b`), or an OpenAI/Anthropic API key
+---
 
-## Setup
+## ✨ Key Features
 
-```bash
-pip install -r requirements.txt
-```
+### 1. Multi-Model LLM Pipeline
+- **Providers**: Ollama (local), OpenAI, Anthropic.
+- **Smart Chunking**: Paragraphs are parsed, batched, and reviewed contextually while preserving structural integrity.
+- **Editing Styles**: Academic, Creative, Concise, Business, Journal Style, or Custom Prompts.
 
-## Usage
+### 2. Journal Style Guide System
+Ships with built-in rulesets for major academic standards:
+- **Chicago Manual of Style** (17th ed.) — Notes-Bibliography system, Title Case headings, serial comma, date/abbreviation preferences.
+- **MLA** (9th ed.) — Parenthetical citations, Works Cited formatting, sentence-case titles.
+- **APA** (7th ed.) — Author-date citations, Reference List, DOIs.
+- **Custom Guides**: Create or import custom journal JSON guides into `~/.artifice_draft/style_guides/`.
 
-### GUI mode
+### 3. Specialized Historian Tools & Advisories
+ArtificeDraft scans your manuscript for common scholarly pitfalls:
+- **Citation Checker**: Detects footnote numbering gaps, orphaned footnote markers or bodies, duplicate markers, and deprecation warnings for Latin abbreviations (`ibid.`, `op. cit.`, `loc. cit.`).
+- **Date Standardizer**: Identifies ambiguous M/D/Y dates and normalizes date formatting to match journal preferences.
+- **Foreign Phrase Inspector**: Checks italicization and consistency of Latin and foreign terms (`et al.` vs `and others`, `sic`, etc.).
+- **Archival Reference Validator**: Validates archival citations for missing repositories, box/folder numbers, and date ranges.
+- **Consistency Checker**: Flags inconsistent capitalization of proper nouns and variant spellings of personal names across the document.
 
+### 4. Interactive Review & Change Summaries
+- **Web App Review Mode**: Approve, reject, or type custom replacements for every suggested change card-by-card before saving.
+- **Changelog & Statistics**: Generates detailed change summaries tracking edit rates, word count deltas, estimated page counts, and categorized change breakdowns (grammar, spelling, clarity, style).
+
+---
+
+## 🖥️ Flexible Interfaces
+
+### Desktop GUI (Tkinter)
+Clean desktop application featuring drag-and-drop support, background thread processing, and native Windows desktop shortcuts (`ArtificeDraft.lnk`).
 ```bash
 python scripts/run_edit.py --gui
 ```
 
-Drop a `.docx` file onto the window. The result is saved as `<input>_edited.docx`.
-
-#### Desktop shortcut (Windows)
-
-`PersonaeEdit.lnk` in the project root launches the GUI with no console window
-— drag it onto your Desktop. To recreate it (after moving the project or
-reinstalling Python):
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\make_shortcut.ps1
-powershell -ExecutionPolicy Bypass -File scripts\make_shortcut.ps1 -Desktop   # also place a copy on the Desktop
-```
-
-The shortcut runs [`launch_personae.pyw`](launch_personae.pyw), which is
-equivalent to `python scripts/run_edit.py --gui`. It sets the working
-directory, checks the dependencies, and prefers an interpreter that also has
-`tkinterdnd2` so drag-and-drop works — falling back to one without it (file
-picker only) rather than refusing to start. Startup failures appear in a
-dialog and are logged to `~/.personaeedit/launcher.log` instead of disappearing
-silently, which is otherwise what a windowed Python app does.
-
-Regenerate the icon with `py -3.12 scripts/make_icon.py`.
-
-### Web app
-
-A second frontend — FastAPI + vanilla JS, no build step — lives in `src/web/`
-and shares the same pipeline (`doc_parser`, `llm_client`, `doc_writer`,
-`review`, `changelog`) the tkinter build uses.
-
+### Web Application (FastAPI + Vanilla JS)
+Modern browser/native window UI featuring interactive side-by-side review cards, live diff highlighting, and settings persistence.
 ```bash
 pip install -r requirements.txt -r requirements-web.txt
-python -c "from src.web.server import main; main()"          # native window
-python -c "from src.web.server import main; main()" --browser  # or a browser tab
+python -c "from src.web.server import main; main()" --browser
 ```
 
-Drop a `.docx` in, adjust settings, select a journal style guide, click **Start Editing**. If "Review
-edits before saving" is on, every suggested change appears on its own card —
-approve, reject, or type a replacement — before anything is written to disk.
-Settings persist to `~/.personaeedit/web_settings.json` — provider/style/format/batch/temperature/
-author/prompt/review-toggle only; API keys stay in environment variables and
-are never read from or written to a browser form.
-
-#### Desktop shortcut (Windows)
-
-`PersonaeEdit (Web).lnk` in the project root launches the web build the same
-way `PersonaeEdit.lnk` launches the desktop GUI:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\make_shortcut_web.ps1
-powershell -ExecutionPolicy Bypass -File scripts\make_shortcut_web.ps1 -Desktop
-```
-
-Runs [`launch_personae_web.pyw`](launch_personae_web.pyw) — same self-healing
-interpreter search as the desktop launcher, preferring one with `pywebview`
-for a native window and falling back to your default browser without it.
-Regenerate the icon with `py -3.12 scripts/make_web_icon.py`.
-
-### CLI / headless mode
-
+### CLI / Headless Mode
+Batch process manuscripts directly from the command line:
 ```bash
 python scripts/run_edit.py --headless input.docx [output.docx]
 ```
 
-### Default (no arguments)
+---
+
+## 🚀 Setup & Installation
+
+Requires **Python 3.10+**.
 
 ```bash
-python scripts/run_edit.py
+git clone https://github.com/your-username/ArtificeDraft.git
+cd ArtificeDraft
+pip install -r requirements.txt
 ```
 
-Launches the GUI.
+### Ollama Setup (Default Local LLM)
+Make sure Ollama is running locally with the default model (`gemma4:12b`):
+```bash
+ollama pull gemma4:12b
+ollama serve
+```
 
-## Journal Style Guides
+---
 
-PersonaeEdit ships with built-in style guides for the three major academic citation systems:
+## ⚙️ Configuration
 
-- **Chicago Manual of Style** (17th ed.) — Notes-Bibliography system, Title Case headings, serial comma
-- **MLA** (9th ed.) — Parenthetical citations, Works Cited, sentence-case titles
-- **APA** (7th ed.) — Author-date citations, Reference List, DOIs
-
-Custom guides can be created in-app or imported as JSON files from `~/.personaeedit/style_guides/`.
-
-## Configuration
-
-Set these environment variables to override defaults:
+Configure via environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
 | `OLLAMA_MODEL` | `gemma4:12b` | Model name used by Ollama |
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama API base URL |
-| `LLM_PROVIDER` | `ollama` | LLM provider: ollama, openai, anthropic |
-| `OPENAI_API_KEY` | | API key for OpenAI |
-| `ANTHROPIC_API_KEY` | | API key for Anthropic |
+| `LLM_PROVIDER` | `ollama` | LLM provider: `ollama`, `openai`, `anthropic` |
+| `OPENAI_API_KEY` | — | API key for OpenAI |
+| `ANTHROPIC_API_KEY` | — | API key for Anthropic |
 
-## Project structure
+---
+
+## 📂 Project Structure
 
 ```
 ├── src/
-│   ├── __init__.py
-│   ├── models.py           # Shared type definitions (ParagraphData)
-│   ├── config.py           # Settings (model, batch size, etc.)
-│   ├── doc_parser.py       # Read .docx → paragraphs + metadata
-│   ├── llm_client.py       # Batch LLM calls
-│   ├── doc_writer.py       # Apply edits as track changes
-│   ├── _track_changes.py   # Low-level tracked-changes implementation
-│   ├── write_utils.py      # Shared plain .docx writing utilities
-│   ├── _diff.py            # Word-level diff ranges (web review highlighting)
-│   ├── prompts.py          # Editing style presets and system prompt generation
-│   ├── changelog.py        # Change summary generation
-│   ├── gui.py              # Tkinter GUI with drag-and-drop
-│   ├── citation_checker.py # Footnote/citation validation
+│   ├── models.py           # Shared data structures and enums
+│   ├── config.py           # Configuration and environment loaders
+│   ├── doc_parser.py       # .docx paragraph extraction and metadata
+│   ├── llm_client.py       # Batch LLM interaction and JSON parsing
+│   ├── doc_writer.py       # Track changes document generation
+│   ├── _track_changes.py   # Low-level XML revision element injection
+│   ├── write_utils.py      # Plain .docx writing utilities
+│   ├── _diff.py            # Word-level diff calculation for web review
+│   ├── prompts.py          # Editing style presets and journal system prompts
+│   ├── changelog.py        # Statistical change summary generation
+│   ├── gui.py              # Tkinter desktop interface
+│   ├── citation_checker.py # Footnote & citation validation
 │   ├── date_standardizer.py# Date format normalization
-│   ├── foreign_phrases.py  # Latin/foreign phrase handling
-│   ├── archival_refs.py    # Archival reference formatting
-│   ├── consistency.py      # Cross-document consistency checks
-│   ├── style_guides/       # Journal style guide system
-│   │   ├── __init__.py     # Guide registry and loaders
-│   │   ├── base.py         # StyleGuide dataclass schema
-│   │   ├── chicago.py      # Chicago Manual of Style 17th ed.
-│   │   ├── mla.py          # MLA 9th ed.
-│   │   └── apa.py          # APA 7th ed.
-│   └── web/                # FastAPI + vanilla JS frontend
-│       ├── server.py       # HTTP/SSE routes, native-window bootstrap
-│       ├── runtime.py      # Adapter over the pipeline (upload/run/review)
-│       └── static/         # index.html, css/app.css, js/*.js
-├── tests/
-│   ├── conftest.py         # Shared test fixtures
-│   ├── test_doc_parser.py
-│   ├── test_doc_writer.py
-│   ├── test_llm_client.py
-│   ├── test_revision_xml.py
-│   ├── test_diff.py
-│   ├── test_prompts.py
-│   ├── test_changelog.py
-│   ├── test_review.py
-│   ├── test_exporters.py
-│   ├── test_style_guides.py
-│   ├── test_citation_checker.py
-│   ├── test_date_standardizer.py
-│   ├── test_foreign_phrases.py
-│   ├── test_archival_refs.py
-│   ├── test_consistency.py
-│   └── test_web.py
-├── scripts/
-│   ├── run_edit.py         # Entry point (GUI or CLI)
-│   ├── make_icon.py / make_shortcut.ps1         # Desktop shortcut
-│   └── make_web_icon.py / make_shortcut_web.ps1 # Web shortcut
-├── requirements.txt
-├── requirements-web.txt
-├── launch_personae.pyw
-├── launch_personae_web.pyw
-└── README.md
+│   ├── foreign_phrases.py  # Latin/foreign phrase italicization & consistency
+│   ├── archival_refs.py    # Archival reference validation
+│   ├── consistency.py      # Cross-document proper noun consistency
+│   ├── style_guides/       # Chicago, MLA, APA rules and registry
+│   └── web/                # FastAPI server, runtime adapter, and static assets
+├── tests/                  # Comprehensive pytest test suite
+├── scripts/                # Entry points and shortcut generators
+└── requirements.txt
 ```
 
-## Running tests
+---
+
+## 🧪 Running Tests
 
 ```bash
 python -m pytest tests/

@@ -1,4 +1,4 @@
-"""Centralized logging configuration for the PersonaeEdit tool.
+"""Centralized logging configuration for the ArtificeDraft tool.
 
 Provides structured logging with optional file output, rotation, and
 configurable verbosity levels.
@@ -80,4 +80,4 @@ def get_log_file_path() -> str:
     project_root = Path(__file__).resolve().parent.parent
     log_dir = project_root / "logs"
     log_dir.mkdir(exist_ok=True)
-    return str(log_dir / "personaeedit.log")
+    return str(log_dir / "artifice_draft.log")

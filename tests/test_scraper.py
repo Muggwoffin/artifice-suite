@@ -236,3 +236,41 @@ class TestDeleteCustomGuide:
         from src.style_guides import delete_custom_guide
         monkeypatch.setattr("src.style_guides._CUSTOM_DIR", tmp_path)
         assert delete_custom_guide("no_such_guide") is False
+
+
+# ---------------------------------------------------------------------------
+# preview_guide_from_text and file
+# ---------------------------------------------------------------------------
+
+class TestTextAndFileImport:
+    """Tests for text paste and file import preview functions."""
+
+    @patch("src.style_guides.scraper.parse_guide_with_llm")
+    def test_preview_guide_from_text_valid(self, mock_parse):
+        from src.style_guides.scraper import preview_guide_from_text
+        mock_parse.return_value = StyleGuide(name="Text Guide")
+        long_text = "A" * 60
+        result = preview_guide_from_text(long_text)
+        assert result.name == "Text Guide"
+        mock_parse.assert_called_once()
+
+    def test_preview_guide_from_text_too_short(self):
+        from src.style_guides.scraper import preview_guide_from_text
+        with pytest.raises(ValueError, match="too short"):
+            preview_guide_from_text("Short text")
+
+    @patch("src.style_guides.scraper.parse_guide_with_llm")
+    @patch("src.style_guides.scraper.extract_text_from_docx")
+    def test_preview_guide_from_file_docx(self, mock_extract, mock_parse):
+        from src.style_guides.scraper import preview_guide_from_file
+        mock_extract.return_value = "A" * 60
+        mock_parse.return_value = StyleGuide(name="Docx Guide")
+        result = preview_guide_from_file("guidelines.docx")
+        assert result.name == "Docx Guide"
+        mock_extract.assert_called_once_with("guidelines.docx")
+
+    def test_preview_guide_from_file_unsupported(self):
+        from src.style_guides.scraper import preview_guide_from_file
+        with pytest.raises(ValueError, match="Unsupported file type"):
+            preview_guide_from_file("guidelines.txt")
+

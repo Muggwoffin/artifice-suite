@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PersonaeEdit</title>
+<title>ArtificeDraft</title>
 
 <!-- Same Google Fonts link the public_history site and the OCR Pipeline
      tool's web build use, unmodified — one shared type system. -->
@@ -14,10 +14,12 @@
 <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
-<div class="app">
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<div class="app" id="main-content">
 
   <header class="masthead">
-    <h1>PersonaeEdit</h1>
+    <h1>ArtificeDraft</h1>
     <span class="tag">local-first &middot; tracked changes</span>
   </header>
 
@@ -105,17 +107,42 @@
   <div class="modal-overlay" id="guide-modal" style="display:none;">
     <div class="modal">
       <div class="modal-head">
-        <h2>Import Style Guide from URL</h2>
+        <h2>Import Style Guide</h2>
         <button class="btn" id="modal-close">&times;</button>
       </div>
 
-      <div class="modal-step" id="step-url">
+      <div class="import-tabs" style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin-bottom:0.8rem;">
+        <button class="import-tab active" data-tab="url">URL</button>
+        <button class="import-tab" data-tab="text">Paste Text</button>
+        <button class="import-tab" data-tab="file">Upload File</button>
+      </div>
+
+      <div class="import-panel" id="panel-url">
         <p class="dim">Enter the URL of a journal's author guidelines or style guide page.</p>
         <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
           <input type="url" id="guide-url" placeholder="https://..." style="flex:1;padding:0.45rem 0.6rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
           <button class="btn accent" id="btn-scrape">Scrape &amp; Preview</button>
         </div>
         <div class="log" id="scrape-log" style="display:none;height:8vh;min-height:60px;margin-top:0.7rem;"></div>
+      </div>
+
+      <div class="import-panel" id="panel-text" style="display:none;">
+        <p class="dim">Paste the journal's style guide or author guidelines text below.</p>
+        <textarea id="guide-paste-text" rows="12" style="width:100%;margin-top:0.6rem;padding:0.45rem 0.6rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;box-sizing:border-box;" placeholder="Paste style guide text here..."></textarea>
+        <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+          <span class="spacer"></span>
+          <button class="btn accent" id="btn-parse-text">Parse &amp; Preview</button>
+        </div>
+        <div class="log" id="text-log" style="display:none;height:8vh;min-height:60px;margin-top:0.7rem;"></div>
+      </div>
+
+      <div class="import-panel" id="panel-file" style="display:none;">
+        <p class="dim">Upload a .docx or .pdf file containing the style guide.</p>
+        <div style="display:flex;gap:0.5rem;margin-top:0.6rem;align-items:center;">
+          <input type="file" id="guide-file-input" accept=".docx,.pdf" style="flex:1;">
+          <button class="btn accent" id="btn-parse-file">Parse &amp; Preview</button>
+        </div>
+        <div class="log" id="file-log" style="display:none;height:8vh;min-height:60px;margin-top:0.7rem;"></div>
       </div>
 
       <div class="modal-step" id="step-review" style="display:none;">

@@ -1,4 +1,4 @@
-"""FastAPI backend for the PersonaeEdit web frontend.
+"""FastAPI backend for the ArtificeDraft web frontend.
 
 Additive, not a replacement: `src/gui.py` and the CLI entry point in
 `scripts/run_edit.py` are untouched, and every pipeline module this imports
@@ -41,7 +41,7 @@ from src.style_guides.base import StyleGuide
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
-app = FastAPI(title="PersonaeEdit")
+app = FastAPI(title="ArtificeDraft")
 
 
 # --------------------------------------------------------------------------- #
@@ -58,6 +58,10 @@ class SettingsPatch(BaseModel):
     temperature: float | None = None
     enable_review: bool | None = None
     author_name: str | None = None
+    base_url: str | None = None
+    api_key: str | None = None
+    model_name: str | None = None
+    vision_enabled: bool | None = None
 
 
 class ReviewDecisionIn(BaseModel):
@@ -72,6 +76,10 @@ class ReviewSubmitRequest(BaseModel):
 
 class GuideImportRequest(BaseModel):
     url: str
+
+
+class GuideImportTextRequest(BaseModel):
+    text: str
 
 
 class GuideSaveRequest(BaseModel):
@@ -111,6 +119,52 @@ def preview_guide(req: GuideImportRequest) -> dict:
         guide = preview_guide_from_url(req.url, cfg)
     except (ValueError, ImportError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"guide": guide.to_dict()}
+
+
+@app.post("/api/style-guides/preview-text")
+def preview_guide_text(req: GuideImportTextRequest) -> dict:
+    """Parse pasted text into a StyleGuide without saving."""
+    from src.style_guides.scraper import preview_guide_from_text
+    from src.web.runtime import config_from_settings
+
+    cfg = config_from_settings()
+    try:
+        guide = preview_guide_from_text(req.text, cfg)
+    except (ValueError, ImportError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"guide": guide.to_dict()}
+
+
+@app.post("/api/style-guides/preview-file")
+async def preview_guide_file(file: UploadFile = File(...)) -> dict:
+    """Upload a .docx or .pdf file and parse it into a StyleGuide."""
+    from src.style_guides.scraper import preview_guide_from_file
+    from src.web.runtime import config_from_settings
+
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+
+    lower = file.filename.lower()
+    if not (lower.endswith(".docx") or lower.endswith(".pdf")):
+        raise HTTPException(status_code=400, detail="Only .docx and .pdf files are supported")
+
+    import tempfile
+    data = await file.read()
+    suffix = ".docx" if lower.endswith(".docx") else ".pdf"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(data)
+        tmp_path = tmp.name
+
+    cfg = config_from_settings()
+    try:
+        guide = preview_guide_from_file(tmp_path, cfg)
+    except (ValueError, ImportError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    finally:
+        import os
+        os.unlink(tmp_path)
+
     return {"guide": guide.to_dict()}
 
 
@@ -341,7 +395,7 @@ def main() -> None:
 
     if use_browser:
         webbrowser.open(url)
-        print(f"PersonaeEdit running at {url}  (Ctrl+C to stop)")
+        print(f"ArtificeDraft running at {url}  (Ctrl+C to stop)")
         try:
             server_thread.join()
         except KeyboardInterrupt:
@@ -350,7 +404,7 @@ def main() -> None:
 
     import webview
 
-    window = webview.create_window("PersonaeEdit", url, width=1100, height=800)
+    window = webview.create_window("ArtificeDraft", url, width=1100, height=800)
     webview.start()
 
 

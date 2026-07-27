@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class EditGUI:
-    """Main GUI window for the PersonaeEdit tool."""
+    """Main GUI window for the ArtificeDraft tool."""
 
     def __init__(self):
         self.root = tk.Tk()
@@ -35,7 +35,7 @@ class EditGUI:
         self._paragraphs: list[dict] = []
 
         self._build_ui()
-        self.root.title("PersonaeEdit")
+        self.root.title("ArtificeDraft")
         self.root.minsize(700, 500)
 
     def _build_ui(self):
@@ -123,12 +123,17 @@ class EditGUI:
         ttk.Label(row1, text="Journal Guide:").pack(side="left")
         from src.style_guides import list_guides
         self.guide_var = tk.StringVar(value=self._cfg.style_guide)
-        guide_combo = ttk.Combobox(
+        self.guide_combo = ttk.Combobox(
             row1, textvariable=self.guide_var,
             values=list_guides(),
             state="readonly", width=15,
         )
-        guide_combo.pack(side="left", padx=(5, 20))
+        self.guide_combo.pack(side="left", padx=(5, 5))
+
+        self.import_guide_btn = ttk.Button(
+            row1, text="Import", command=self._import_guide
+        )
+        self.import_guide_btn.pack(side="left", padx=(0, 20))
 
         ttk.Label(row1, text="Export Format:").pack(side="left")
         self.export_var = tk.StringVar(value=self._cfg.export_format.value)
@@ -177,6 +182,143 @@ class EditGUI:
         ttk.Entry(row3, textvariable=self.prompt_var, width=40).pack(
             side="left", padx=(5, 0)
         )
+
+    def _refresh_guides(self):
+        from src.style_guides import list_guides
+        guides = list_guides()
+        self.guide_combo["values"] = guides
+        if guides:
+            self.guide_combo.set(guides[-1])
+            self._cfg.style_guide = guides[-1]
+
+    def _import_guide(self):
+        win = tk.Toplevel(self.root)
+        win.title("Import Style Guide")
+        win.geometry("650x550")
+        win.resizable(True, True)
+
+        notebook = ttk.Notebook(win)
+        notebook.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # --- Tab 1: Paste Text ---
+        text_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(text_frame, text="Paste Text")
+
+        ttk.Label(text_frame, text="Paste the journal's style guide or author guidelines text below:").pack(anchor="w", pady=(0, 5))
+
+        text_entry = tk.Text(text_frame, wrap="word", height=18)
+        text_entry.pack(fill="both", expand=True)
+
+        btn_frame1 = ttk.Frame(text_frame)
+        btn_frame1.pack(fill="x", pady=(10, 0))
+        ttk.Button(btn_frame1, text="Parse & Save", command=lambda: self._run_import_from_text(win, text_entry.get("1.0", "end-1c"))).pack(side="right")
+
+        # --- Tab 2: Upload File ---
+        file_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(file_frame, text="Upload File")
+
+        ttk.Label(file_frame, text="Select a .docx or .pdf file containing the style guide:").pack(anchor="w", pady=(0, 5))
+
+        self._import_file_path = tk.StringVar()
+        ttk.Entry(file_frame, textvariable=self._import_file_path, state="readonly").pack(fill="x", pady=(0, 5))
+
+        btn_frame2 = ttk.Frame(file_frame)
+        btn_frame2.pack(fill="x")
+        ttk.Button(btn_frame2, text="Browse...", command=lambda: self._browse_import_file()).pack(side="left")
+        ttk.Button(btn_frame2, text="Parse & Save", command=lambda: self._run_import_from_file(win)).pack(side="right")
+
+        # Status label at bottom of dialog
+        self._import_status = ttk.Label(win, text="")
+        self._import_status.pack(fill="x", padx=10, pady=(0, 10))
+
+    def _browse_import_file(self):
+        path = filedialog.askopenfilename(
+            title="Select a style guide file",
+            filetypes=[
+                ("Word documents", "*.docx"),
+                ("PDF files", "*.pdf"),
+                ("All files", "*.*"),
+            ],
+        )
+        if path:
+            self._import_file_path.set(path)
+
+    def _run_import_from_text(self, win, text):
+        text = text.strip()
+        if not text:
+            messagebox.showwarning("No text", "Please paste some text first.", parent=win)
+            return
+        self._import_status.config(text="Parsing with LLM...")
+        win.update_idletasks()
+        threading.Thread(target=self._do_import_text, args=(win, text), daemon=True).start()
+
+    def _do_import_text(self, win, text):
+        self._import_guide_impl(
+            win, lambda cfg: (
+                __import__("src.style_guides.scraper", fromlist=["preview_guide_from_text"])
+                .preview_guide_from_text(text, cfg)
+            )
+        )
+
+    def _run_import_from_file(self, win):
+        path = self._import_file_path.get()
+        if not path:
+            messagebox.showwarning("No file", "Please select a file first.", parent=win)
+            return
+        self._import_status.config(text="Parsing with LLM...")
+        win.update_idletasks()
+        threading.Thread(target=self._do_import_file, args=(win, path), daemon=True).start()
+
+    def _do_import_file(self, win, path):
+        self._import_guide_impl(
+            win, lambda cfg: (
+                __import__("src.style_guides.scraper", fromlist=["preview_guide_from_file"])
+                .preview_guide_from_file(path, cfg)
+            )
+        )
+
+    def _import_guide_impl(self, win, fetch_guide):
+        from src.style_guides import save_custom_guide
+        try:
+            guide = fetch_guide(self._cfg)
+            self.root.after(0, lambda: self._import_status.config(text=f"Extracted: {guide.name or '(unnamed)'}"))
+            self.root.after(0, lambda: self._prompt_save_guide(win, guide))
+        except (ValueError, ImportError) as exc:
+            self.root.after(0, lambda: self._import_status.config(text=f""))
+            self.root.after(0, lambda e=exc: messagebox.showerror("Import Error", str(e), parent=win))
+
+    def _prompt_save_guide(self, win, guide):
+        save_win = tk.Toplevel(win)
+        save_win.title("Save Style Guide")
+        save_win.geometry("400x150")
+        save_win.resizable(False, False)
+
+        ttk.Label(save_win, text=f"Guide: {guide.name or '(unnamed)'}").pack(pady=(15, 5), padx=10, anchor="w")
+        ttk.Label(save_win, text="Save as:").pack(pady=(0, 5), padx=10, anchor="w")
+
+        name_var = tk.StringVar(value=guide.name or "")
+        name_entry = ttk.Entry(save_win, textvariable=name_var, width=50)
+        name_entry.pack(pady=(0, 10), padx=10, fill="x")
+
+        def do_save():
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showwarning("No name", "A name is required.", parent=save_win)
+                return
+            guide.name = name
+            try:
+                from src.style_guides import save_custom_guide
+                save_custom_guide(name, guide)
+            except Exception as exc:
+                messagebox.showerror("Save Error", str(exc), parent=save_win)
+                return
+            self._refresh_guides()
+            save_win.destroy()
+            win.destroy()
+            self.status_label.config(text=f"Style guide '{name}' imported and saved.")
+
+        btn_save = ttk.Button(save_win, text="Save", command=do_save)
+        btn_save.pack(pady=(5, 0))
 
     def _setup_dnd(self):
         try:

@@ -3,10 +3,88 @@
 from __future__ import annotations
 
 import logging
+import os
+import zipfile
 
 from docx import Document
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from lxml import etree
 
 logger = logging.getLogger(__name__)
+
+NSMAP = {
+    "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+    "pic": "http://schemas.openxmlformats.org/drawingml/2006/picture",
+}
+
+
+def _extract_images_from_paragraph(paragraph, docx_path: str) -> list[dict]:
+    """Extract inline images from a paragraph's XML.
+
+    Returns a list of dicts with keys: rid, content_type, blob, description.
+    """
+    images: list[dict] = []
+    drawing_elements = paragraph._element.findall(".//w:drawing", NSMAP)
+    if not drawing_elements:
+        return images
+
+    try:
+        zf = zipfile.ZipFile(docx_path)
+    except Exception:
+        return images
+
+    rels_path = "word/_rels/document.xml.rels"
+    rels_xml = None
+    try:
+        rels_xml = zf.read(rels_path)
+    except KeyError:
+        zf.close()
+        return images
+
+    rels_root = etree.fromstring(rels_xml)
+    rid_map: dict[str, str] = {}
+    for rel in rels_root:
+        rid = rel.get("Id")
+        target = rel.get("Target")
+        if rid and target:
+            rid_map[rid] = target
+
+    blip_map: dict[str, str] = {}
+    for drawing in drawing_elements:
+        blip = drawing.find(".//a:blip", NSMAP)
+        if blip is None:
+            continue
+        embed_rid = blip.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+        if not embed_rid or embed_rid in blip_map:
+            continue
+        img_path = rid_map.get(embed_rid, "")
+        if not img_path:
+            continue
+        media_path = "word/" + img_path.lstrip("/")
+        try:
+            blob = zf.read(media_path)
+        except KeyError:
+            continue
+        content_type = ""
+        for rel in rels_root:
+            if rel.get("Id") == embed_rid:
+                content_type = rel.get("Type", "")
+                break
+        ext = os.path.splitext(img_path)[1] or ".png"
+        cid = f"image_{len(images) + 1}{ext}"
+        blip_map[embed_rid] = cid
+        images.append({
+            "rid": embed_rid,
+            "content_type": content_type,
+            "blob": blob,
+            "filename": cid,
+        })
+
+    zf.close()
+    return images
 
 
 def parse_docx(path: str) -> list[dict]:
@@ -26,6 +104,7 @@ def parse_docx(path: str) -> list[dict]:
         - is_list_item: whether the paragraph is a list item
         - list_level: nesting depth of the list item
         - language: language tag if set on any run, else None
+        - images: list of inline image dicts (rid, blob, filename, content_type)
 
     Raises ValueError if the file cannot be read.
     """
@@ -101,6 +180,8 @@ def parse_docx(path: str) -> list[dict]:
                     if language:
                         break
 
+        images = _extract_images_from_paragraph(p, path)
+
         paragraphs.append({
             "paragraph_index": i,
             "text": text,
@@ -118,6 +199,7 @@ def parse_docx(path: str) -> list[dict]:
             "is_list_item": is_list_item,
             "list_level": list_level,
             "language": language,
+            "images": images,
         })
 
     logger.info("Parsed %d paragraphs from '%s'", len(paragraphs), path)

@@ -1,21 +1,21 @@
-# PersonaeEdit — Transformation Plan
+# ArtificeDraft — Transformation Plan
 
 ## Overview
 
-Transform the **Copy Edit** tool into **PersonaeEdit**, an academic editing tool purpose-built for historians and humanities scholars. The rebrand is a full rename (directory, files, code, UI). The core new feature is a **journal style guide system** — JSON config files for Chicago, MLA, and APA that the LLM reads as system prompt context, replacing or supplementing the generic editing presets. Six additional historian-specific modules provide citation validation, date standardization, Latin phrase handling, archival reference formatting, cross-document consistency checking, and word count/page estimation.
+Transform the **Copy Edit** tool into **ArtificeDraft**, an academic editing tool purpose-built for historians and humanities scholars. The rebrand is a full rename (directory, files, code, UI). The core new feature is a **journal style guide system** — JSON config files for Chicago, MLA, and APA that the LLM reads as system prompt context, replacing or supplementing the generic editing presets. Six additional historian-specific modules provide citation validation, date standardization, Latin phrase handling, archival reference formatting, cross-document consistency checking, and word count/page estimation.
 
 Requires Python 3.10+.
 
 ---
 
-## Phase 1: Full Rename — CopyEdit → PersonaeEdit
+## Phase 1: Full Rename — CopyEdit → ArtificeDraft
 
 Rename all references across ~25 files (~73 occurrences).
 
 ### Directory
 
 ```
-CopyEdit Tool/  →  PersonaeEdit/
+CopyEdit Tool/  →  ArtificeDraft/
 ```
 
 ### Files to rename on disk
@@ -24,29 +24,29 @@ CopyEdit Tool/  →  PersonaeEdit/
 |---|---|
 | `launch_copyedit.pyw` | `launch_personae.pyw` |
 | `launch_copyedit_web.pyw` | `launch_personae_web.pyw` |
-| `assets/copyedit.ico` | `assets/personaeedit.ico` |
-| `assets/copyedit_preview.png` | `assets/personaeedit_preview.png` |
-| `assets/copyedit_web.ico` | `assets/personaeedit_web.ico` |
-| `assets/copyedit_web_preview.png` | `assets/personaeedit_web_preview.png` |
-| `Copy Editor.lnk` | `PersonaeEdit.lnk` |
-| `Copy Editor (Web).lnk` | `PersonaeEdit (Web).lnk` |
+| `assets/copyedit.ico` | `assets/artifice_draft.ico` |
+| `assets/copyedit_preview.png` | `assets/artifice_draft_preview.png` |
+| `assets/copyedit_web.ico` | `assets/artifice_draft_web.ico` |
+| `assets/copyedit_web_preview.png` | `assets/artifice_draft_web_preview.png` |
+| `Copy Editor.lnk` | `ArtificeDraft.lnk` |
+| `Copy Editor (Web).lnk` | `ArtificeDraft (Web).lnk` |
 
 ### In-code references by category
 
 | Category | Files affected | Example |
 |---|---|---|
-| Config paths `~/.copyedit/` | `launch_copyedit.pyw`, `launch_copyedit_web.pyw`, `src/web/runtime.py` | → `~/.personaeedit/` |
+| Config paths `~/.copyedit/` | `launch_copyedit.pyw`, `launch_copyedit_web.pyw`, `src/web/runtime.py` | → `~/.artifice_draft/` |
 | Env sentinels `COPYEDIT_*` | `launch_copyedit.pyw`, `launch_copyedit_web.pyw` | → `PERSONAE_*` |
-| UI titles "Copy Editor" | `src/gui.py`, `src/web/server.py`, `src/web/static/index.html` | → "PersonaeEdit" |
-| Default author "AI Copy Editor" | `src/config.py`, `src/doc_writer.py`, `src/_track_changes.py` | → "PersonaeEdit" |
-| JS globals `CopyEditorApp` | `src/web/static/js/app.js`, `src/web/static/js/review.js` | → `PersonaeApp` |
-| Log filename `copyedit.log` | `src/log_setup.py` | → `personaeedit.log` |
+| UI titles "Copy Editor" | `src/gui.py`, `src/web/server.py`, `src/web/static/index.html` | → "ArtificeDraft" |
+| Default author "AI Copy Editor" | `src/config.py`, `src/doc_writer.py`, `src/_track_changes.py` | → "ArtificeDraft" |
+| JS globals `CopyEditorApp` | `src/web/static/js/app.js`, `src/web/static/js/review.js` | → `ArtificeApp` |
+| Log filename `copyedit.log` | `src/log_setup.py` | → `artifice_draft.log` |
 | Changelog header | `src/changelog.py` | "COPY EDIT — CHANGE SUMMARY" → "PERSONAEEDIT — CHANGE SUMMARY" |
 | Prompt identity | `src/prompts.py` | "professional copy editor" → "academic editor specialising in humanities scholarship" |
-| Icon target paths | `scripts/make_icon.py`, `scripts/make_web_icon.py` | `copyedit.ico` → `personaeedit.ico` |
-| Shortcut descriptions | `scripts/make_shortcut.ps1`, `scripts/make_shortcut_web.ps1` | "Copy Editor" → "PersonaeEdit" |
+| Icon target paths | `scripts/make_icon.py`, `scripts/make_web_icon.py` | `copyedit.ico` → `artifice_draft.ico` |
+| Shortcut descriptions | `scripts/make_shortcut.ps1`, `scripts/make_shortcut_web.ps1` | "Copy Editor" → "ArtificeDraft" |
 | README / CLAUDE.md | `README.md`, `CLAUDE.md` | Full text rebrand |
-| Test references | `tests/test_web.py` | `~/.copyedit/` → `~/.personaeedit/` |
+| Test references | `tests/test_web.py` | `~/.copyedit/` → `~/.artifice_draft/` |
 
 ### Verification
 
@@ -100,8 +100,8 @@ Each guide is a Python function returning a populated `StyleGuide`:
 
 Users can create guides via two methods:
 
-1. **In-app structured form** (GUI + web): Labeled fields for each `StyleGuide` property. Saved to `~/.personaeedit/style_guides/<name>.json`.
-2. **JSON file import**: File picker that copies a `.json` file into `~/.personaeedit/style_guides/`. JSON schema matches the `StyleGuide` dataclass fields.
+1. **In-app structured form** (GUI + web): Labeled fields for each `StyleGuide` property. Saved to `~/.artifice_draft/style_guides/<name>.json`.
+2. **JSON file import**: File picker that copies a `.json` file into `~/.artifice_draft/style_guides/`. JSON schema matches the `StyleGuide` dataclass fields.
 
 Custom guides appear alongside built-ins in all UIs.
 
@@ -122,7 +122,7 @@ Custom guides appear alongside built-ins in all UIs.
 ### Config file locations
 
 ```
-~/.personaeedit/
+~/.artifice_draft/
 ├── web_settings.json
 ├── launcher.log
 ├── launcher_web.log
@@ -244,7 +244,7 @@ The existing presets (ACADEMIC, CREATIVE, CONCISE, BUSINESS) remain. When JOURNA
 ### Updated existing tests
 
 - All test files updated for renamed paths, strings, and config locations
-- `tests/test_web.py`: Mock `~/.personaeedit/` instead of `~/.copyedit/`
+- `tests/test_web.py`: Mock `~/.artifice_draft/` instead of `~/.copyedit/`
 - `tests/test_prompts.py`: Tests for new `get_journal_prompt()` and JOURNAL style
 - `tests/test_llm_client.py`: Tests with style guide context in prompts
 
@@ -308,7 +308,7 @@ tests/test_foreign_phrases.py
 tests/test_archival_refs.py
 tests/test_consistency.py
 tests/test_style_guides_api.py
-PLAN_PersonaeEdit.md   (this document)
+PLAN_ArtificeDraft.md   (this document)
 ```
 
 ### Modified files
@@ -353,10 +353,10 @@ tests/test_revision_xml.py
 ```
 launch_copyedit.pyw        →  launch_personae.pyw
 launch_copyedit_web.pyw    →  launch_personae_web.pyw
-assets/copyedit.ico        →  assets/personaeedit.ico
-assets/copyedit_preview.png →  assets/personaeedit_preview.png
-assets/copyedit_web.ico    →  assets/personaeedit_web.ico
-assets/copyedit_web_preview.png →  assets/personaeedit_web_preview.png
-Copy Editor.lnk            →  PersonaeEdit.lnk
-Copy Editor (Web).lnk      →  PersonaeEdit (Web).lnk
+assets/copyedit.ico        →  assets/artifice_draft.ico
+assets/copyedit_preview.png →  assets/artifice_draft_preview.png
+assets/copyedit_web.ico    →  assets/artifice_draft_web.ico
+assets/copyedit_web_preview.png →  assets/artifice_draft_web_preview.png
+Copy Editor.lnk            →  ArtificeDraft.lnk
+Copy Editor (Web).lnk      →  ArtificeDraft (Web).lnk
 ```

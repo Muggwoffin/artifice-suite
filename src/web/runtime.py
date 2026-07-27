@@ -1,4 +1,4 @@
-"""Adapter between the PersonaeEdit pipeline and the FastAPI web layer.
+"""Adapter between the ArtificeDraft pipeline and the FastAPI web layer.
 
 One `RunState` instance per server process — a local tool run by one person on
 their own machine does not need per-session isolation, same rationale the OCR
@@ -41,8 +41,8 @@ from src.review import apply_decisions, create_review_items
 
 logger = logging.getLogger(__name__)
 
-_SETTINGS_PATH = Path.home() / ".personaeedit" / "web_settings.json"
-_WORK_DIR = Path(tempfile.gettempdir()) / "personaeedit_web"
+_SETTINGS_PATH = Path.home() / ".artifice_draft" / "web_settings.json"
+_WORK_DIR = Path(tempfile.gettempdir()) / "artifice_draft_web"
 
 _EXT_MAP = {
     ExportFormat.DOCX_TRACK_CHANGES: "_edited.docx",
@@ -88,6 +88,14 @@ def config_from_settings() -> AppConfig:
     cfg = AppConfig.from_env()
     saved = load_settings()
 
+    if "base_url" in saved:
+        cfg.base_url = saved["base_url"]
+    if "api_key" in saved:
+        cfg.api_key = saved["api_key"]
+    if "model_name" in saved:
+        cfg.model_name = saved["model_name"]
+    if "vision_enabled" in saved:
+        cfg.vision_enabled = bool(saved["vision_enabled"])
     if v := saved.get("llm_provider"):
         try:
             cfg.llm_provider = LLMProvider(v)
@@ -138,6 +146,10 @@ def serialize_settings(cfg: AppConfig) -> dict:
         "enable_review": cfg.enable_review,
         "author_name": cfg.author_name,
         "active_model": cfg.active_model,
+        "base_url": cfg.base_url,
+        "api_key": cfg.api_key,
+        "model_name": cfg.model_name,
+        "vision_enabled": cfg.vision_enabled,
         "providers": [p.value for p in LLMProvider],
         "styles": [s.value for s in EditingStyle],
         "export_formats": [f.value for f in ExportFormat],
@@ -163,6 +175,12 @@ class DocState:
     thread: threading.Thread | None = None
     error: str | None = None
     stage: str = "uploaded"  # uploaded -> running -> awaiting_review -> done -> error
+    session_id: str = ""
+
+    def __post_init__(self):
+        import uuid
+        if not self.session_id:
+            self.session_id = f"{self.doc_id}-{uuid.uuid4().hex[:8]}"
 
 
 def serialize_progress(p: PipelineProgress) -> dict:

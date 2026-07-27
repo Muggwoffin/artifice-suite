@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project: PersonaeEdit
+## Project: ArtificeDraft
 
 A Python tool for academic historians that reads a `.docx` file, sends each paragraph to an LLM (Ollama, OpenAI, or Anthropic), and returns a new Word document with copy-edit changes applied as tracked edits (grammar fixes, typos, unclear phrasing, journal style conformance).
 
@@ -39,7 +39,7 @@ Configuration (`src/config.py`) uses a dataclass with a `from_env()` classmethod
 - `chicago.py`, `mla.py`, `apa.py` — built-in guides for Chicago 17th, MLA 9th, APA 7th
 - `__init__.py` — `list_guides()`, `load_guide(name)`, `load_guide_by_path(path)`
 
-Custom guides are stored as JSON in `~/.personaeedit/style_guides/`.
+Custom guides are stored as JSON in `~/.artifice_draft/style_guides/`.
 
 ### Historian Features
 
