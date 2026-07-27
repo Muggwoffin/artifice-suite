@@ -44,3 +44,8 @@ apps/*/data/cache/
 # Findings are tracked publicly in IMPLEMENTATION_PLAN.md in non-exploitable form.
 # Keep full detail here, local and mode 0600, until the finding is fixed.
 .security/
+
+# Sub-agent task briefs. Working instructions for a single dispatch, superseded
+# as soon as the work lands; the durable record is the commit and
+# IMPLEMENTATION_PLAN.md, not the brief that prompted it.
+.briefs/
