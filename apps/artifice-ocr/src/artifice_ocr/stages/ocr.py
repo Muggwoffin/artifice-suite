@@ -6,10 +6,10 @@ from pathlib import Path
 from typing import Any, Dict
 
 
-from src.artifice_ocr import _guard
-from src.artifice_ocr._logging import get_logger
-from src.artifice_ocr._retry import retry
-from src.artifice_ocr.config import get as cfg
+from artifice_ocr import _guard
+from artifice_ocr._logging import get_logger
+from artifice_ocr._retry import retry
+from artifice_ocr.config import get as cfg
 
 log = get_logger("ocr")
 

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.artifice_ocr.export_ludwiglang import (
+from artifice_ocr.export_ludwiglang import (
     MEDIUM_OPTIONS,
     assemble_collection,
     check_language,

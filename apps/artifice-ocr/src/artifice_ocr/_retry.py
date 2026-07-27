@@ -4,7 +4,7 @@ import time
 import functools
 from typing import Type
 
-from src.artifice_ocr._logging import get_logger
+from artifice_ocr._logging import get_logger
 
 log = get_logger("retry")
 

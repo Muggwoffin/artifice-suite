@@ -2,12 +2,12 @@ from pathlib import Path
 
 import typer
 
-from src.artifice_ocr._logging import get_logger, setup_logging
-from src.artifice_ocr.config import get as cfg
-from src.artifice_ocr.stages import ocr as ocr_stage
-from src.artifice_ocr.stages import cleanup as cleanup_stage
-from src.artifice_ocr.stages import translate as translate_stage
-from src.artifice_ocr.utils import check_lm_studio, check_ollama
+from artifice_ocr._logging import get_logger, setup_logging
+from artifice_ocr.config import get as cfg
+from artifice_ocr.stages import ocr as ocr_stage
+from artifice_ocr.stages import cleanup as cleanup_stage
+from artifice_ocr.stages import translate as translate_stage
+from artifice_ocr.utils import check_lm_studio, check_ollama
 
 log = get_logger("cli")
 
@@ -222,8 +222,8 @@ def pipeline(
     Accepts a single image file or a directory. When given a directory,
     all supported images inside it are processed as a batch.
     """
-    from src.artifice_ocr import config
-    from src.artifice_ocr.pipeline import run_pipeline
+    from artifice_ocr import config
+    from artifice_ocr.pipeline import run_pipeline
 
     # Apply CLI overrides to config
     config.apply_overrides({
@@ -251,7 +251,7 @@ def pipeline(
 
     p = Path(input_path)
     if p.is_dir():
-        from src.artifice_ocr.stages.ocr import SUPPORTED_EXTENSIONS
+        from artifice_ocr.stages.ocr import SUPPORTED_EXTENSIONS
         files = sorted(
             f for f in p.iterdir()
             if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
@@ -308,7 +308,7 @@ def tropy_browse(
 
     Read-only — this never writes to the Tropy database.
     """
-    from src.artifice_ocr.tropy import TropyProject, recent_projects
+    from artifice_ocr.tropy import TropyProject, recent_projects
 
     if project is None:
         found = recent_projects()
@@ -356,7 +356,7 @@ def repair_tropy_notes(
     `state` column of affected rows; text, doc content, and language are
     left exactly as they were. Tropy must be closed first.
     """
-    from src.artifice_ocr.tropy_write import TropyWriter
+    from artifice_ocr.tropy_write import TropyWriter
 
     with TropyWriter(project) as writer:
         try:
@@ -396,9 +396,9 @@ def tropy(
     """
     import queue as _queue
 
-    from src.artifice_ocr import config
-    from src.artifice_ocr.jobs import JobRunner
-    from src.artifice_ocr.tropy import TropyProject, pages_to_job_items, write_manifest
+    from artifice_ocr import config
+    from artifice_ocr.jobs import JobRunner
+    from artifice_ocr.tropy import TropyProject, pages_to_job_items, write_manifest
 
     config.apply_overrides({"document_type": document_type})
 
@@ -514,7 +514,7 @@ def compile_pdf(
 
         artifice_ocr compile-pdf output/ --bilingual --format pdf
     """
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     folder_path = Path(folder)
     if not folder_path.exists():
@@ -571,7 +571,7 @@ def export_ludwiglang(
     and writes a frontmatter .md that can be dropped onto LudwigLang's
     Import Text page at http://localhost:8765/import.
     """
-    from src.artifice_ocr.export_ludwiglang import export_md, _read_manifest
+    from artifice_ocr.export_ludwiglang import export_md, _read_manifest
 
     cleaned_root = Path(output_dir) / "cleaned" / "text" / collection
     if not cleaned_root.exists():

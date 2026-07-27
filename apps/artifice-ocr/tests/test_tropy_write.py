@@ -10,8 +10,8 @@ from unittest.mock import patch
 
 import pytest
 
-from src.artifice_ocr.jobs import JobItem
-from src.artifice_ocr.tropy_write import (
+from artifice_ocr.jobs import JobItem
+from artifice_ocr.tropy_write import (
     TARGET_NOTES,
     TARGET_TRANSCRIPTIONS,
     TropyWriter,

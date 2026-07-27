@@ -110,10 +110,10 @@ def _find_working_interpreter() -> Path | None:
 
 
 def main() -> int:
-    # The package is imported as `src.artifice_ocr`, so the project root has to
-    # be both the working directory and on the path.
+    # The package lives under src/, matching a normal editable install; add it
+    # to the path so `artifice_ocr` resolves without a real `pip install -e .`.
     os.chdir(ROOT)
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
 
     missing = _missing_packages()
     if missing:
@@ -154,7 +154,7 @@ def main() -> int:
             return 1
         return 0
 
-    from src.artifice_ocr.gui import main as gui_main
+    from artifice_ocr.gui import main as gui_main
 
     gui_main()
     return 0

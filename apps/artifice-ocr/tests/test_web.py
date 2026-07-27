@@ -21,11 +21,11 @@ from fastapi.testclient import TestClient
 
 from conftest import TROPY_SCHEMA
 
-from src.artifice_ocr import config
-from src.artifice_ocr.web import server
-from src.artifice_ocr.web import runtime
-from src.artifice_ocr.web.runtime import RunState
-from src.artifice_ocr.web.routers import (
+from artifice_ocr import config
+from artifice_ocr.web import server
+from artifice_ocr.web import runtime
+from artifice_ocr.web.runtime import RunState
+from artifice_ocr.web.routers import (
     analytics as _analytics_router,
     events as _events_router,
     history as _history_router,
@@ -169,7 +169,7 @@ def test_skip_unknown_item_reports_not_ok(client):
 
 
 def test_retry_resets_finished_items(client, tmp_path):
-    from src.artifice_ocr.jobs import State
+    from artifice_ocr.jobs import State
 
     f = tmp_path / "a.png"
     f.write_bytes(b"x")
@@ -337,7 +337,7 @@ def test_image_route_converts_tiff_to_png(client, tmp_path, monkeypatch):
 def test_image_route_renders_only_the_pdf_page_item_points_at(client, tmp_path):
     import fitz
 
-    from src.artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import JobItem
 
     pdf_path = tmp_path / "doc.pdf"
     doc = fitz.open()
@@ -365,8 +365,8 @@ def test_image_route_renders_only_the_pdf_page_item_points_at(client, tmp_path):
 def test_image_route_caps_an_oversized_pdf_page(client, tmp_path):
     import fitz
 
-    from src.artifice_ocr.jobs import JobItem
-    from src.artifice_ocr.web.runtime import IMAGE_MAX_LONG_EDGE
+    from artifice_ocr.jobs import JobItem
+    from artifice_ocr.web.runtime import IMAGE_MAX_LONG_EDGE
 
     pdf_path = tmp_path / "huge.pdf"
     doc = fitz.open()
@@ -691,7 +691,7 @@ def test_health_check_surfaces_unreachable_services(client, monkeypatch):
 # --------------------------------------------------------------------------- #
 
 def _seed_history_run(state, *, failed=0):
-    from src.artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem, State as JobState
 
     run_id = state.history.start_run(stages=["ocr", "cleanup"], output_dir="out", total=1)
     item = JobItem(path="C:/docs/letter.png")
@@ -756,7 +756,7 @@ def test_history_image_route_404_for_unknown_item(client):
 
 
 def test_history_image_route_404_when_source_file_gone(client, tmp_path):
-    from src.artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem, State as JobState
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
     item = JobItem(path=str(tmp_path / "nope.png"))
     item.state = JobState.DONE
@@ -768,7 +768,7 @@ def test_history_image_route_404_when_source_file_gone(client, tmp_path):
 
 
 def test_history_image_route_passes_jpg_through_unchanged(client, tmp_path):
-    from src.artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem, State as JobState
     f = tmp_path / "scan.jpg"
     f.write_bytes(b"\xff\xd8\xff-fake-jpeg")
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
@@ -785,7 +785,7 @@ def test_history_image_route_passes_jpg_through_unchanged(client, tmp_path):
 
 def test_history_image_route_renders_page_parsed_from_name_when_page_col_null(client, tmp_path):
     import fitz
-    from src.artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem, State as JobState
     pdf_path = tmp_path / "doc.pdf"
     doc = fitz.open()
     doc.new_page(width=50, height=200)   # page 0 — tall
@@ -813,7 +813,7 @@ def test_history_image_route_renders_page_parsed_from_name_when_page_col_null(cl
 
 def test_history_image_route_honours_page_column_when_set(client, tmp_path):
     import fitz
-    from src.artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem, State as JobState
     pdf_path = tmp_path / "doc.pdf"
     doc = fitz.open()
     doc.new_page(width=200, height=50)   # page 0
@@ -835,7 +835,7 @@ def test_history_image_route_honours_page_column_when_set(client, tmp_path):
 
 
 def test_history_raw_text_save_updates_text(client):
-    from src.artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem, State as JobState
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
     item = JobItem(path="C:/docs/report.png")
     item.state = JobState.DONE
@@ -869,7 +869,7 @@ def test_history_search_finds_by_filename(client):
 
 
 def test_history_fulltext_search_finds_text(client):
-    from src.artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem, State as JobState
 
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
     item = JobItem(path="C:/docs/report.png")
@@ -927,7 +927,7 @@ def test_analytics_stats_reflects_seeded_run(client):
 # --------------------------------------------------------------------------- #
 
 def _add_tropy_queue_item(client, photo_id: int = 10, text: str = "Sauberer Text"):
-    from src.artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import JobItem
 
     item = JobItem(path="assets/a.pdf", source={"photo_id": photo_id}, label="doc.pdf p.1")
     item.results = {"cleaned": {"cleaned_text": text}}
@@ -1008,7 +1008,7 @@ def test_tropy_send_write_reports_blockers_as_409(client, tropy_project):
 def test_wait_for_server_returns_true_once_something_is_listening():
     import threading
 
-    from src.artifice_ocr.web.server import _wait_for_server
+    from artifice_ocr.web.server import _wait_for_server
 
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.bind(("127.0.0.1", 0))
@@ -1034,7 +1034,7 @@ def test_wait_for_server_returns_true_once_something_is_listening():
 
 
 def test_wait_for_server_gives_up_after_timeout():
-    from src.artifice_ocr.web.server import _wait_for_server
+    from artifice_ocr.web.server import _wait_for_server
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
@@ -1058,7 +1058,7 @@ def test_wait_for_server_gives_up_after_timeout():
 def test_start_server_thread_captures_an_exception_from_uvicorn(monkeypatch):
     import uvicorn
 
-    from src.artifice_ocr.web.server import _start_server_thread
+    from artifice_ocr.web.server import _start_server_thread
 
     monkeypatch.setattr(uvicorn, "run", lambda *a, **k: (_ for _ in ()).throw(
         RuntimeError("port already in use")))
@@ -1071,7 +1071,7 @@ def test_start_server_thread_captures_an_exception_from_uvicorn(monkeypatch):
 
 
 def test_report_startup_failure_prints_the_captured_exception(monkeypatch, capsys):
-    from src.artifice_ocr.web.server import _report_startup_failure
+    from artifice_ocr.web.server import _report_startup_failure
 
     monkeypatch.setattr("tkinter.messagebox.showerror", lambda *a, **k: None)
 
@@ -1087,7 +1087,7 @@ def test_report_startup_failure_prints_the_captured_exception(monkeypatch, capsy
 
 
 def test_report_startup_failure_explains_a_plain_timeout(monkeypatch, capsys):
-    from src.artifice_ocr.web.server import _report_startup_failure
+    from artifice_ocr.web.server import _report_startup_failure
 
     monkeypatch.setattr("tkinter.messagebox.showerror", lambda *a, **k: None)
 
@@ -1113,7 +1113,7 @@ def test_report_startup_failure_explains_a_plain_timeout(monkeypatch, capsys):
 # uvicorn's own LOGGING_CONFIG.
 
 def test_ensure_std_streams_replaces_none_streams(monkeypatch):
-    from src.artifice_ocr.web.server import _ensure_std_streams
+    from artifice_ocr.web.server import _ensure_std_streams
 
     monkeypatch.setattr(sys, "stdout", None)
     monkeypatch.setattr(sys, "stderr", None)
@@ -1127,7 +1127,7 @@ def test_ensure_std_streams_replaces_none_streams(monkeypatch):
 
 
 def test_ensure_std_streams_leaves_real_streams_alone(monkeypatch, capsys):
-    from src.artifice_ocr.web.server import _ensure_std_streams
+    from artifice_ocr.web.server import _ensure_std_streams
 
     _ensure_std_streams()
     print("still visible to capsys")

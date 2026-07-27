@@ -1,7 +1,7 @@
 """Centralized logging for the OCR pipeline.
 
 Usage:
-    from src.artifice_ocr._logging import get_logger
+    from artifice_ocr._logging import get_logger
     log = get_logger("ocr")
     log.info("Starting OCR for %s", filename)
 """

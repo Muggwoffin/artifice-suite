@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Artifice Suite"
+abstract: >-
+  A collection of local-first, bring-your-own-model (BYOM) desktop tools for
+  historians: OCR (artifice-ocr), copy editing (artifice-draft), knowledge
+  graph extraction (artifice-graph), and oral history transcription
+  (artifice-transcribe), built around structured model-interaction harnesses
+  rather than freeform chat interfaces.
+type: software
+authors:
+  - family-names: Casey
+    given-names: Maurice J.
+    affiliation: "Queen's University Belfast"
+    orcid: "https://orcid.org/0000-0001-6019-3578"
+repository-code: "https://github.com/Muggwoffin/artifice-suite"
+license: MIT
+version: 1.0.0
+date-released: "2026-07-27"
+keywords:
+  - digital humanities
+  - optical character recognition
+  - knowledge graph
+  - oral history
+  - transcription
+  - local-first
+  - large language models

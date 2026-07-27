@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
-from src.artifice_ocr.cli import app
+from artifice_ocr.cli import app
 
 runner = CliRunner()
 
@@ -26,7 +26,7 @@ def test_ocr_stage_writes_files(mock_get_client, tmp_path):
     mock_client.chat.completions.create.return_value = _mock_openai_response("Hello from OCR")
     mock_get_client.return_value = mock_client
 
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     test_image = tmp_path / "doc.png"
     test_image.write_bytes(b"\x89PNG fake")
@@ -63,7 +63,7 @@ def test_ocr_stage_writes_files(mock_get_client, tmp_path):
 
 @patch("src.artifice_ocr.stages.ocr._get_client")
 def test_ocr_stage_rejects_unsupported_type(mock_get_client, tmp_path):
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     test_file = tmp_path / "doc.bmp"
     test_file.write_bytes(b"fake")
@@ -104,7 +104,7 @@ def test_raw_output_preserved_fully(mock_get_client, tmp_path):
     mock_client.chat.completions.create.return_value = _mock_openai_response(noisy_text)
     mock_get_client.return_value = mock_client
 
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     test_image = tmp_path / "archival.jpg"
     test_image.write_bytes(b"fake jpg")
@@ -125,7 +125,7 @@ def test_raw_output_preserved_fully(mock_get_client, tmp_path):
 def test_cleanup_stage_writes_files(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="Cleaned output text"))
 
-    from src.artifice_ocr.stages import cleanup
+    from artifice_ocr.stages import cleanup
 
     out_dir = tmp_path / "output"
     result = cleanup.perform(
@@ -160,7 +160,7 @@ def test_cleanup_stage_writes_files(mock_chat, tmp_path):
 def test_cleanup_stage_uses_prompt_file(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="ok"))
 
-    from src.artifice_ocr.stages import cleanup
+    from artifice_ocr.stages import cleanup
 
     cleanup.perform("test text", output_dir=str(tmp_path))
 
@@ -180,7 +180,7 @@ def test_cleanup_cli_wires_through(mock_chat, tmp_path):
     # This test covers CLI plumbing, not guard behaviour. The stub reply is far
     # shorter than its input, which the content-preservation guard would (quite
     # correctly) reject, so the guard is switched off for the duration.
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     config.apply_overrides({"cleanup_guard": False})
 
     try:
@@ -208,7 +208,7 @@ def test_cleanup_preserves_raw_text_in_json(mock_chat, tmp_path):
     raw = "Hon. J. Smith, Dec. 1938 — re: budget"
     mock_chat.return_value = MagicMock(message=MagicMock(content="cleaned version"))
 
-    from src.artifice_ocr.stages import cleanup
+    from artifice_ocr.stages import cleanup
 
     out_dir = tmp_path / "output"
     result = cleanup.perform(raw, source_file="report.tif", output_dir=str(out_dir))
@@ -227,7 +227,7 @@ def test_cleanup_preserves_raw_text_in_json(mock_chat, tmp_path):
 def test_translate_stage_writes_files(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="Translated output text"))
 
-    from src.artifice_ocr.stages import translate
+    from artifice_ocr.stages import translate
 
     out_dir = tmp_path / "output"
     result = translate.perform(
@@ -264,7 +264,7 @@ def test_translate_stage_writes_files(mock_chat, tmp_path):
 def test_translate_stage_uses_prompt_file(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="ok"))
 
-    from src.artifice_ocr.stages import translate
+    from artifice_ocr.stages import translate
 
     translate.perform("Ein Test", output_dir=str(tmp_path))
 
@@ -305,7 +305,7 @@ def test_translate_preserves_cleaned_text_in_json(mock_chat, tmp_path):
     cleaned = "Die Dokumente aus dem Jahr 1938"
     mock_chat.return_value = MagicMock(message=MagicMock(content="The documents from 1938"))
 
-    from src.artifice_ocr.stages import translate
+    from artifice_ocr.stages import translate
 
     out_dir = tmp_path / "output"
     result = translate.perform(cleaned, source_file="report.txt", output_dir=str(out_dir))
@@ -324,7 +324,7 @@ def test_translate_preserves_cleaned_text_in_json(mock_chat, tmp_path):
 def test_detect_language_returns_iso_code(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="de"))
 
-    from src.artifice_ocr.stages.translate import detect_language
+    from artifice_ocr.stages.translate import detect_language
 
     lang = detect_language("Das ist ein Test")
     assert lang == "de"
@@ -338,7 +338,7 @@ def test_detect_language_returns_iso_code(mock_chat, tmp_path):
 def test_detect_language_handles_garbled_response(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="The language is German."))
 
-    from src.artifice_ocr.stages.translate import detect_language
+    from artifice_ocr.stages.translate import detect_language
 
     lang = detect_language("Some text")
     assert lang == "unknown"
@@ -351,7 +351,7 @@ def test_translate_includes_detected_language_in_json(mock_chat, tmp_path):
         MagicMock(message=MagicMock(content="The documents from 1938")),
     ]
 
-    from src.artifice_ocr.stages import translate
+    from artifice_ocr.stages import translate
 
     result = translate.perform(
         "Les documents de 1938",
@@ -368,7 +368,7 @@ def test_translate_includes_detected_language_in_json(mock_chat, tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_config_defaults_are_set():
-    from src.artifice_ocr import config
+    from artifice_ocr import config
 
     config.reset()
     cfg = config.load_config()
@@ -380,7 +380,7 @@ def test_config_defaults_are_set():
 
 
 def test_config_file_override(tmp_path):
-    from src.artifice_ocr import config
+    from artifice_ocr import config
 
     cfg_file = tmp_path / "test.yaml"
     cfg_file.write_text(
@@ -397,7 +397,7 @@ def test_config_file_override(tmp_path):
 
 
 def test_config_env_override(tmp_path, monkeypatch):
-    from src.artifice_ocr import config
+    from artifice_ocr import config
 
     monkeypatch.setenv("OCR_MODEL", "env-model")
 
@@ -408,7 +408,7 @@ def test_config_env_override(tmp_path, monkeypatch):
 
 
 def test_config_get_shorthand():
-    from src.artifice_ocr import config
+    from artifice_ocr import config
 
     config.reset()
     assert config.get("ocr_model") == "allenai/olmocr-2-7b"
@@ -426,7 +426,7 @@ def test_pdf_ocr_concatenates_pages(mock_pages, mock_ocr, tmp_path):
     mock_pages.return_value = [tmp_path / "p1.png", tmp_path / "p2.png"]
     mock_ocr.side_effect = ["Text from page 1", "Text from page 2"]
 
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     pdf_path = tmp_path / "doc.pdf"
     pdf_path.write_bytes(b"fake pdf")
@@ -445,7 +445,7 @@ def test_pdf_ocr_concatenates_pages(mock_pages, mock_ocr, tmp_path):
 def test_single_image_ocr_sets_total_pages_1(mock_ocr, tmp_path):
     mock_ocr.return_value = "Single page text"
 
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     img = tmp_path / "photo.png"
     img.write_bytes(b"\x89PNG fake")
@@ -479,19 +479,19 @@ def _make_test_image(path: Path, width=60, height=90) -> None:
 
 
 def test_exif_orientation_matrix_returns_none_for_normal():
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     assert ocr._exif_orientation_matrix(1, 100, 150) is None
 
 
 def test_exif_orientation_matrix_returns_none_for_unrecognised_value():
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     assert ocr._exif_orientation_matrix(99, 100, 150) is None
 
 
 def test_exif_orientation_matrix_covers_every_valid_exif_value():
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     for orientation in range(2, 9):
         assert ocr._exif_orientation_matrix(orientation, 100, 150) is not None
@@ -503,7 +503,7 @@ def test_ocr_applies_orientation_correction_before_encoding(mock_get_client, tmp
     mock_client.chat.completions.create.return_value = _mock_openai_response("text")
     mock_get_client.return_value = mock_client
 
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     img = tmp_path / "scan.png"
     _make_test_image(img)
@@ -531,7 +531,7 @@ def test_ocr_stage_rejects_a_repetition_loop(mock_get_client, tmp_path):
     mock_client.chat.completions.create.return_value = _mock_openai_response(looped_text)
     mock_get_client.return_value = mock_client
 
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     img = tmp_path / "bad_scan.png"
     img.write_bytes(b"\x89PNG fake")
@@ -552,14 +552,14 @@ def test_ocr_stage_rejects_a_repetition_loop(mock_get_client, tmp_path):
 
 @patch("src.artifice_ocr.stages.ocr._get_client")
 def test_ocr_repetition_guard_can_be_disabled(mock_get_client, tmp_path):
-    from src.artifice_ocr import config
+    from artifice_ocr import config
 
     mock_client = MagicMock()
     looped_text = "\n\n".join(["Same hallucinated sentence over and over."] * 40)
     mock_client.chat.completions.create.return_value = _mock_openai_response(looped_text)
     mock_get_client.return_value = mock_client
 
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     config.apply_overrides({"ocr_repetition_guard": False})
     try:
@@ -578,7 +578,7 @@ def test_ocr_stage_accepts_real_varied_text(mock_get_client, tmp_path):
     mock_client.chat.completions.create.return_value = _mock_openai_response(real_text)
     mock_get_client.return_value = mock_client
 
-    from src.artifice_ocr.stages import ocr
+    from artifice_ocr.stages import ocr
 
     img = tmp_path / "good_scan.png"
     img.write_bytes(b"\x89PNG fake")
@@ -681,7 +681,7 @@ def test_pipeline_force_reprocess(mock_cleanup, mock_get_client, tmp_path):
 
 @patch("src.artifice_ocr.stages.ocr._get_client")
 def test_collect_files_directory(mock_get_client, tmp_path):
-    from src.artifice_ocr.pipeline import _collect_files
+    from artifice_ocr.pipeline import _collect_files
 
     scan_dir = tmp_path / "scans"
     scan_dir.mkdir()
@@ -700,7 +700,7 @@ def test_collect_files_directory(mock_get_client, tmp_path):
 
 @patch("src.artifice_ocr.stages.ocr._get_client")
 def test_collect_files_empty_directory_raises(mock_get_client, tmp_path):
-    from src.artifice_ocr.pipeline import _collect_files
+    from artifice_ocr.pipeline import _collect_files
 
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
@@ -713,14 +713,14 @@ def test_collect_files_empty_directory_raises(mock_get_client, tmp_path):
 
 
 def test_resume_config_default():
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     config.reset()
     assert config.get("resume") is True
     config.reset()
 
 
 def test_max_ocr_workers_config_default():
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     config.reset()
     assert config.get("max_ocr_workers") == 2
     config.reset()
@@ -731,7 +731,7 @@ def test_max_ocr_workers_config_default():
 # ---------------------------------------------------------------------------
 
 def test_retry_succeeds_on_first_attempt():
-    from src.artifice_ocr._retry import retry
+    from artifice_ocr._retry import retry
 
     call_count = 0
 
@@ -747,7 +747,7 @@ def test_retry_succeeds_on_first_attempt():
 
 
 def test_retry_retries_on_failure_then_succeeds():
-    from src.artifice_ocr._retry import retry
+    from artifice_ocr._retry import retry
 
     call_count = 0
 
@@ -765,7 +765,7 @@ def test_retry_retries_on_failure_then_succeeds():
 
 
 def test_retry_raises_after_max_attempts():
-    from src.artifice_ocr._retry import retry
+    from artifice_ocr._retry import retry
 
     @retry(max_attempts=2, base_delay=0.01, label="test")
     def always_fail():
@@ -779,7 +779,7 @@ def test_retry_raises_after_max_attempts():
 
 
 def test_retry_ignores_non_retryable_exceptions():
-    from src.artifice_ocr._retry import retry
+    from artifice_ocr._retry import retry
 
     @retry(max_attempts=3, base_delay=0.01, label="test")
     def value_error():
@@ -866,7 +866,7 @@ def test_pipeline_skip_ocr(mock_cleanup, mock_get_client, tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_config_apply_overrides():
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     config.reset()
     config.apply_overrides({"ocr_model": "custom-model", "resume": False})
     assert config.get("ocr_model") == "custom-model"
@@ -883,7 +883,7 @@ def test_save_user_settings_merges_rather_than_replaces(tmp_path, monkeypatch):
     `save_user_settings` overwrote the whole file, so that single-field save
     silently discarded a previously-saved `cleanup_model` (or anything else).
     """
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
 
     config.save_user_settings({"cleanup_model": "custom-model", "resume": False})
@@ -896,7 +896,7 @@ def test_save_user_settings_merges_rather_than_replaces(tmp_path, monkeypatch):
 
 
 def test_save_user_settings_still_drops_unknown_keys(tmp_path, monkeypatch):
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
 
     config.save_user_settings({"output_dir": "x", "not_a_real_setting": "y"})
@@ -910,7 +910,7 @@ def test_save_user_settings_still_drops_unknown_keys(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_chunk_text_short_text_unchanged():
-    from src.artifice_ocr._chunking import chunk_text
+    from artifice_ocr._chunking import chunk_text
     short = "Hello world. This is a test."
     chunks = chunk_text(short, max_tokens=100)
     assert len(chunks) == 1
@@ -918,7 +918,7 @@ def test_chunk_text_short_text_unchanged():
 
 
 def test_chunk_text_splits_long_text():
-    from src.artifice_ocr._chunking import chunk_text
+    from artifice_ocr._chunking import chunk_text
     # Create text that's ~500 tokens (well over 100-token limit)
     long_text = "This is a sentence. " * 200
     chunks = chunk_text(long_text, max_tokens=100, overlap_tokens=20)
@@ -929,7 +929,7 @@ def test_chunk_text_splits_long_text():
 
 
 def test_chunk_text_respects_paragraph_boundaries():
-    from src.artifice_ocr._chunking import chunk_text
+    from artifice_ocr._chunking import chunk_text
     paragraphs = ["Paragraph one. " * 50, "Paragraph two. " * 50]
     text = "\n\n".join(paragraphs)
     chunks = chunk_text(text, max_tokens=100, overlap_tokens=10)
@@ -938,14 +938,14 @@ def test_chunk_text_respects_paragraph_boundaries():
 
 
 def test_reassemble_joins_chunks():
-    from src.artifice_ocr._chunking import reassemble
+    from artifice_ocr._chunking import reassemble
     chunks = ["Hello world", "Second chunk", "Third chunk"]
     result = reassemble(chunks)
     assert result == "Hello world\n\nSecond chunk\n\nThird chunk"
 
 
 def test_estimate_tokens():
-    from src.artifice_ocr._chunking import estimate_tokens
+    from artifice_ocr._chunking import estimate_tokens
     # ~3.5 chars per token
     tokens = estimate_tokens("a" * 350)
     assert 90 < tokens < 110  # ~100 tokens
@@ -956,7 +956,7 @@ def test_estimate_tokens():
 # ---------------------------------------------------------------------------
 
 def test_heuristic_score_clean_text():
-    from src.artifice_ocr._confidence import _heuristic_score
+    from artifice_ocr._confidence import _heuristic_score
     clean_text = "This is a clear, well-written document with no issues."
     score, markers = _heuristic_score(clean_text)
     assert score >= 90
@@ -964,7 +964,7 @@ def test_heuristic_score_clean_text():
 
 
 def test_heuristic_score_uncertain_text():
-    from src.artifice_ocr._confidence import _heuristic_score
+    from artifice_ocr._confidence import _heuristic_score
     uncertain_text = "I'm not sure about this part, it seems unclear and possibly damaged"
     score, markers = _heuristic_score(uncertain_text)
     assert score < 80
@@ -976,7 +976,7 @@ def test_evaluate_confidence(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(
         message=MagicMock(content='{"score": 85, "reasoning": "Good quality text"}')
     )
-    from src.artifice_ocr._confidence import evaluate_confidence
+    from artifice_ocr._confidence import evaluate_confidence
     result = evaluate_confidence("Clean source text", "Clean translated text", enable_self_assessment=True)
     assert 0 <= result.overall_score <= 100
     assert result.reasoning == "Good quality text"
@@ -984,7 +984,7 @@ def test_evaluate_confidence(mock_chat, tmp_path):
 
 @patch("src.artifice_ocr._confidence.ollama.chat")
 def test_evaluate_confidence_self_assessment_disabled(mock_chat):
-    from src.artifice_ocr._confidence import evaluate_confidence
+    from artifice_ocr._confidence import evaluate_confidence
     result = evaluate_confidence("Clean text", "Clean output", enable_self_assessment=False)
     assert 0 <= result.overall_score <= 100
     mock_chat.assert_not_called()
@@ -995,7 +995,7 @@ def test_evaluate_confidence_self_assessment_disabled(mock_chat):
 # ---------------------------------------------------------------------------
 
 def test_get_cleanup_prompt_default():
-    from src.artifice_ocr._prompts import get_cleanup_prompt
+    from artifice_ocr._prompts import get_cleanup_prompt
     prompts = get_cleanup_prompt("default")
     assert "system" in prompts
     assert "user" in prompts
@@ -1003,31 +1003,31 @@ def test_get_cleanup_prompt_default():
 
 
 def test_get_cleanup_prompt_handwritten():
-    from src.artifice_ocr._prompts import get_cleanup_prompt
+    from artifice_ocr._prompts import get_cleanup_prompt
     prompts = get_cleanup_prompt("handwritten")
     assert "paleographer" in prompts["system"].lower()
 
 
 def test_get_cleanup_prompt_fallback():
-    from src.artifice_ocr._prompts import get_cleanup_prompt
+    from artifice_ocr._prompts import get_cleanup_prompt
     prompts = get_cleanup_prompt("nonexistent_type")
     assert prompts["system"]  # should fall back to default
 
 
 def test_get_translation_prompt_default():
-    from src.artifice_ocr._prompts import get_translation_prompt
+    from artifice_ocr._prompts import get_translation_prompt
     prompts = get_translation_prompt("default")
     assert "translator" in prompts["system"].lower()
 
 
 def test_get_translation_prompt_technical():
-    from src.artifice_ocr._prompts import get_translation_prompt
+    from artifice_ocr._prompts import get_translation_prompt
     prompts = get_translation_prompt("technical")
     assert "technical" in prompts["system"].lower()
 
 
 def test_list_document_types():
-    from src.artifice_ocr._prompts import list_document_types
+    from artifice_ocr._prompts import list_document_types
     types = list_document_types()
     assert "default" in types
     assert "handwritten" in types
@@ -1035,14 +1035,14 @@ def test_list_document_types():
 
 
 def test_config_document_type_default():
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     config.reset()
     assert config.get("document_type") == "default"
     config.reset()
 
 
 def test_config_confidence_enabled_default():
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     config.reset()
     assert config.get("confidence_enabled") is True
     config.reset()
@@ -1074,7 +1074,7 @@ def test_pipeline_doc_type_flag(mock_translate, mock_cleanup, mock_get_client, t
     )
     assert result.exit_code == 0
     # Verify the config was applied
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     config.reset()
 
 
@@ -1099,7 +1099,7 @@ def test_pipeline_no_confidence_flag(mock_translate, mock_cleanup, mock_get_clie
         app, ["pipeline", str(img), "--output-dir", str(out_dir), "--no-confidence", "--skip-translate"]
     )
     assert result.exit_code == 0
-    from src.artifice_ocr import config
+    from artifice_ocr import config
     config.reset()
 
 

@@ -30,8 +30,8 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from src.artifice_ocr._logging import get_logger
-from src.artifice_ocr.config import get as cfg
+from artifice_ocr._logging import get_logger
+from artifice_ocr.config import get as cfg
 
 log = get_logger("pdf_export")
 
@@ -586,7 +586,7 @@ def structure_pages(
     """
     on_progress = on_progress or (lambda msg: None)
     on_rejected = on_rejected or (lambda label: None)
-    from src.artifice_ocr.stages import structure
+    from artifice_ocr.stages import structure
 
     structured: list[PageText] = []
     n = len(pages)
@@ -629,7 +629,7 @@ def _structure_bilingual_pages(
     """
     on_progress = on_progress or (lambda msg: None)
     on_rejected = on_rejected or (lambda label: None)
-    from src.artifice_ocr.stages import structure
+    from artifice_ocr.stages import structure
 
     structured: list[BilingualPageText] = []
     n = len(pages)

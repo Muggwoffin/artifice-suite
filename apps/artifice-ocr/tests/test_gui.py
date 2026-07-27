@@ -11,8 +11,8 @@ from unittest.mock import patch
 
 import pytest
 
-from src.artifice_ocr.history import HistoryStore
-from src.artifice_ocr.jobs import JobItem, JobRunner, State
+from artifice_ocr.history import HistoryStore
+from artifice_ocr.jobs import JobItem, JobRunner, State
 
 
 # --------------------------------------------------------------------------- #
@@ -372,7 +372,7 @@ def test_history_migrates_a_database_missing_the_new_columns(tmp_path):
 # --------------------------------------------------------------------------- #
 
 def test_diff_ranges_flags_changed_words():
-    from src.artifice_ocr.gui.widgets.compare_view import _diff_ranges
+    from artifice_ocr.gui.widgets.compare_view import _diff_ranges
 
     raw = "the quick br0wn fox"
     cleaned = "the quick brown fox"
@@ -385,14 +385,14 @@ def test_diff_ranges_flags_changed_words():
 
 
 def test_diff_ranges_identical_text_has_no_highlights():
-    from src.artifice_ocr.gui.widgets.compare_view import _diff_ranges
+    from artifice_ocr.gui.widgets.compare_view import _diff_ranges
 
     text = "identical in both panes"
     assert _diff_ranges(text, text) == ([], [])
 
 
 def test_marker_ranges_finds_uncertainty_markers():
-    from src.artifice_ocr.gui.widgets.compare_view import _marker_ranges
+    from artifice_ocr.gui.widgets.compare_view import _marker_ranges
 
     text = "The date is [illegible] and the name is unclear."
     ranges = _marker_ranges(text)
@@ -408,19 +408,19 @@ def test_marker_ranges_finds_uncertainty_markers():
 # --------------------------------------------------------------------------- #
 
 def test_dpi_for_zoom_matches_base_dpi_at_zoom_one():
-    from src.artifice_ocr.gui.widgets.image_pane import BASE_DPI, _dpi_for_zoom
+    from artifice_ocr.gui.widgets.image_pane import BASE_DPI, _dpi_for_zoom
 
     assert _dpi_for_zoom(600, 800, 1.0) == BASE_DPI
 
 
 def test_dpi_for_zoom_scales_linearly_below_the_cap():
-    from src.artifice_ocr.gui.widgets.image_pane import _dpi_for_zoom
+    from artifice_ocr.gui.widgets.image_pane import _dpi_for_zoom
 
     assert _dpi_for_zoom(600, 800, 2.0) == pytest.approx(300.0)
 
 
 def test_dpi_for_zoom_caps_the_rendered_long_edge():
-    from src.artifice_ocr.gui.widgets.image_pane import _dpi_for_zoom
+    from artifice_ocr.gui.widgets.image_pane import _dpi_for_zoom
 
     dpi = _dpi_for_zoom(3000, 4000, 4.0, base_dpi=150, max_long_edge=4000)
     long_edge_px = 4000 / 72 * dpi
@@ -448,7 +448,7 @@ def _widget_root():
     except tk_mod.TclError as exc:  # pragma: no cover - headless CI
         pytest.skip(f"no display: {exc}")
 
-    from src.artifice_ocr.gui import theme
+    from artifice_ocr.gui import theme
     theme.apply(root)
 
     yield root
@@ -458,7 +458,7 @@ def _widget_root():
 def test_preview_style_compareview_has_no_image_or_editable_raw(_widget_root):
     """The plain tab (`with_image`/`editable_raw` both default off) must stay
     exactly as it was — this is what the live-queue Preview tab uses."""
-    from src.artifice_ocr.gui.widgets.compare_view import CompareView
+    from artifice_ocr.gui.widgets.compare_view import CompareView
 
     view = CompareView(_widget_root)
 
@@ -469,7 +469,7 @@ def test_preview_style_compareview_has_no_image_or_editable_raw(_widget_root):
 
 
 def test_history_style_compareview_mounts_image_pane_and_editable_raw(_widget_root):
-    from src.artifice_ocr.gui.widgets.compare_view import CompareView
+    from artifice_ocr.gui.widgets.compare_view import CompareView
 
     view = CompareView(_widget_root, with_image=True, editable_raw=True)
 
@@ -482,7 +482,7 @@ def test_history_style_compareview_mounts_image_pane_and_editable_raw(_widget_ro
 
 
 def test_editable_raw_pane_tracks_dirty_state_and_saves(_widget_root):
-    from src.artifice_ocr.gui.widgets.compare_view import CompareView
+    from artifice_ocr.gui.widgets.compare_view import CompareView
 
     saved = []
     view = CompareView(_widget_root, editable_raw=True, on_save_raw=saved.append)
@@ -506,7 +506,7 @@ def test_editable_raw_pane_tracks_dirty_state_and_saves(_widget_root):
 def test_editable_raw_pane_save_does_not_reset_scroll_or_cursor(_widget_root):
     """Re-rendering after a save must not blow away the widget the user was
     just typing in — only panes whose content actually changed get touched."""
-    from src.artifice_ocr.gui.widgets.compare_view import CompareView
+    from artifice_ocr.gui.widgets.compare_view import CompareView
 
     view = CompareView(_widget_root, editable_raw=True, on_save_raw=lambda t: None)
     view.show(title="doc", raw="original", cleaned="cleaned")
@@ -521,7 +521,7 @@ def test_editable_raw_pane_save_does_not_reset_scroll_or_cursor(_widget_root):
 
 
 def test_image_pane_falls_back_to_placeholder_for_a_missing_file(_widget_root, tmp_path):
-    from src.artifice_ocr.gui.widgets.image_pane import ImagePane
+    from artifice_ocr.gui.widgets.image_pane import ImagePane
 
     pane = ImagePane(_widget_root)
     pane.load(str(tmp_path / "does-not-exist.png"))
@@ -540,7 +540,7 @@ def test_image_pane_renders_a_real_pdf_page(_widget_root, tmp_path):
     doc.save(str(pdf_path))
     doc.close()
 
-    from src.artifice_ocr.gui.widgets.image_pane import ImagePane
+    from artifice_ocr.gui.widgets.image_pane import ImagePane
 
     pane = ImagePane(_widget_root)
     pane.load(str(pdf_path), page=1)
@@ -569,8 +569,8 @@ def _gui_root(tmp_path_factory):
     """
     tk = pytest.importorskip("tkinter")
     try:
-        from src.artifice_ocr import config
-        from src.artifice_ocr.gui.app import App
+        from artifice_ocr import config
+        from artifice_ocr.gui.app import App
     except Exception as exc:  # pragma: no cover - missing display/tkinterdnd2
         pytest.skip(f"GUI unavailable: {exc}")
 
@@ -597,7 +597,7 @@ def app(_gui_root, tmp_path):
     """The shared App, reset to a clean state with a throwaway history db."""
     import tkinter as tk
 
-    from src.artifice_ocr.history import HistoryStore
+    from artifice_ocr.history import HistoryStore
 
     instance = _gui_root
     instance.main_view.queue.clear()

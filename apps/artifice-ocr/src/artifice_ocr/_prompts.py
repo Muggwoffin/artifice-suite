@@ -7,7 +7,7 @@ Allows selecting prompt templates based on document characteristics
 from pathlib import Path
 from typing import Any
 
-from src.artifice_ocr._logging import get_logger
+from artifice_ocr._logging import get_logger
 
 log = get_logger("prompts")
 

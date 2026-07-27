@@ -9,9 +9,9 @@ from typing import Any
 
 import ollama
 
-from src.artifice_ocr._logging import get_logger
-from src.artifice_ocr._retry import retry
-from src.artifice_ocr.config import get as cfg
+from artifice_ocr._logging import get_logger
+from artifice_ocr._retry import retry
+from artifice_ocr.config import get as cfg
 
 log = get_logger("confidence")
 
@@ -97,7 +97,7 @@ def _call_self_assessment(source_text: str, output_text: str) -> dict[str, Any]:
         output_text=output_text[:1000],
     )
 
-    from src.artifice_ocr import _llm
+    from artifice_ocr import _llm
 
     response = _llm.chat(
         backend=backend,

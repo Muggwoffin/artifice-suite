@@ -5,13 +5,13 @@ from typing import Any, Dict
 
 import ollama
 
-from src.artifice_ocr import _llm
-from src.artifice_ocr._chunking import chunk_text, reassemble, estimate_tokens
-from src.artifice_ocr._confidence import evaluate_confidence
-from src.artifice_ocr._logging import get_logger
-from src.artifice_ocr._prompts import get_translation_prompt, get_lang_detect_prompt
-from src.artifice_ocr._retry import retry
-from src.artifice_ocr.config import get as cfg
+from artifice_ocr import _llm
+from artifice_ocr._chunking import chunk_text, reassemble, estimate_tokens
+from artifice_ocr._confidence import evaluate_confidence
+from artifice_ocr._logging import get_logger
+from artifice_ocr._prompts import get_translation_prompt, get_lang_detect_prompt
+from artifice_ocr._retry import retry
+from artifice_ocr.config import get as cfg
 
 log = get_logger("translate")
 

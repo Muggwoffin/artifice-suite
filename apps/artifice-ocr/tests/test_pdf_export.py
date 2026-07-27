@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.artifice_ocr import _guard, config
+from artifice_ocr import _guard, config
 
 
 # --------------------------------------------------------------------------- #
@@ -77,7 +77,7 @@ def test_check_structure_only_accepts_identical_text():
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_structure_perform_respects_resume(mock_chat, tmp_path):
     """Second call with existing output should be a no-op."""
-    from src.artifice_ocr.stages import structure
+    from artifice_ocr.stages import structure
 
     raw = "Der Bericht war unvollstaendig.\nEr war unklar."
     structured = "Der Bericht war unvollstaendig.\n\nEr war unklar."
@@ -98,7 +98,7 @@ def test_structure_perform_respects_resume(mock_chat, tmp_path):
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_structure_perform_fallback_on_guard_reject(mock_chat, tmp_path):
     """When guard rejects, original text should be kept."""
-    from src.artifice_ocr.stages import structure
+    from artifice_ocr.stages import structure
 
     raw = "Der Bericht war unvollstaendig."
     corrupted = "Der Bericht war kurz."  # model changed words
@@ -114,7 +114,7 @@ def test_structure_perform_fallback_on_guard_reject(mock_chat, tmp_path):
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_structure_perform_accepts_safe_restructure(mock_chat, tmp_path):
     """When guard accepts, structured text should be used."""
-    from src.artifice_ocr.stages import structure
+    from artifice_ocr.stages import structure
 
     raw = "Der Bericht war unvollstaendig.\nEr war unklar."
     structured = "Der Bericht war unvollstaendig.\n\nEr war unklar."
@@ -133,7 +133,7 @@ def test_structure_perform_accepts_safe_restructure(mock_chat, tmp_path):
 
 def test_collect_folder_natural_sort(tmp_path):
     """Files should be natural-sorted when no manifest is present."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     # Create test files in the expected directory structure
     text_dir = tmp_path / "cleaned" / "text"
@@ -155,7 +155,7 @@ def test_collect_folder_natural_sort(tmp_path):
 
 def test_collect_folder_with_manifest(tmp_path):
     """When manifest exists, pages should be ordered by page_number."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     # Create test files
     text_dir = tmp_path / "cleaned" / "text"
@@ -193,7 +193,7 @@ def test_collect_folder_with_manifest(tmp_path):
 
 def test_collect_folder_stage_fallback(tmp_path):
     """Should fall back through translated > cleaned > raw_ocr."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     # Only raw_ocr exists
     text_dir = tmp_path / "raw_ocr" / "text"
@@ -214,7 +214,7 @@ def test_collect_folder_stage_fallback(tmp_path):
 def test_compile_pdf_end_to_end(mock_chat, tmp_path):
     """Full pipeline: collect -> structure -> render, then verify PDF content."""
     import fitz  # PyMuPDF
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     # Create test files
     text_dir = tmp_path / "cleaned" / "text"
@@ -269,7 +269,7 @@ def test_compile_pdf_end_to_end(mock_chat, tmp_path):
 
 def test_compile_pdf_smoke_no_structure():
     """Smoke test against real data in the repo, no model call."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     real_folder = Path("E:/Claude Sandbox/OCR Pipeline Tool/output/cleaned/text/Fritz Eberhard KV")
     if not real_folder.exists():
@@ -296,8 +296,8 @@ def test_compile_pdf_smoke_no_structure():
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_structure_pages_calls_on_progress_in_order(mock_chat, tmp_path):
     """on_progress should be called once per page, in order, with messages."""
-    from src.artifice_ocr import pdf_export
-    from src.artifice_ocr.pdf_export import PageText
+    from artifice_ocr import pdf_export
+    from artifice_ocr.pdf_export import PageText
 
     def side_effect(*args, **kwargs):
         messages = kwargs.get("messages", [])
@@ -332,10 +332,10 @@ def test_structure_pages_calls_on_progress_in_order(mock_chat, tmp_path):
 def test_structure_pages_calls_on_rejected(mock_chat, tmp_path, monkeypatch):
     """on_rejected should be called when the guard rejects a page."""
     # Disable resume so structure.perform always runs the model call
-    from src.artifice_ocr import config as _cfg
+    from artifice_ocr import config as _cfg
     _cfg.apply_overrides({"resume": False})
-    from src.artifice_ocr import pdf_export
-    from src.artifice_ocr.pdf_export import PageText
+    from artifice_ocr import pdf_export
+    from artifice_ocr.pdf_export import PageText
 
     # Model returns a word-change that the guard will reject
     mock_chat.return_value = MagicMock(
@@ -360,7 +360,7 @@ def test_structure_pages_calls_on_rejected(mock_chat, tmp_path, monkeypatch):
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_compile_function_end_to_end(mock_chat, tmp_path):
     """pdf_export.compile() should collect, structure and render."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     text_dir = tmp_path / "cleaned" / "text"
     text_dir.mkdir(parents=True)
@@ -401,7 +401,7 @@ def test_compile_function_end_to_end(mock_chat, tmp_path):
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_compile_function_no_structure(mock_chat, tmp_path):
     """compile() with structure=False should skip the model call."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     text_dir = tmp_path / "cleaned" / "text"
     text_dir.mkdir(parents=True)
@@ -426,7 +426,7 @@ def test_compile_function_no_structure(mock_chat, tmp_path):
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_render_markdown_creates_file(mock_chat, tmp_path):
     """compile() with format='md' should produce a Markdown file."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     text_dir = tmp_path / "cleaned" / "text"
     text_dir.mkdir(parents=True)
@@ -460,7 +460,7 @@ def test_render_markdown_creates_file(mock_chat, tmp_path):
 def test_compile_with_style_preset(mock_chat, tmp_path):
     """compile() with style='compact' should produce a valid PDF."""
     import fitz
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     text_dir = tmp_path / "cleaned" / "text"
     text_dir.mkdir(parents=True)
@@ -487,7 +487,7 @@ def test_compile_with_style_preset(mock_chat, tmp_path):
 
 def test_compile_function_raises_on_empty_folder(tmp_path):
     """compile() should raise ValueError when no pages are found."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     empty = tmp_path / "empty"
     empty.mkdir()
@@ -502,7 +502,7 @@ def test_compile_function_raises_on_empty_folder(tmp_path):
 
 def test_collect_bilingual_folder_pairs_by_stem(tmp_path):
     """collect_bilingual_folder() should pair cleaned + translated by stem."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     cleaned_dir = tmp_path / "cleaned" / "text"
     cleaned_dir.mkdir(parents=True)
@@ -525,7 +525,7 @@ def test_collect_bilingual_folder_pairs_by_stem(tmp_path):
 
 def test_collect_bilingual_folder_missing_translation(tmp_path):
     """Missing translated files should produce blank right column."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     cleaned_dir = tmp_path / "cleaned" / "text"
     cleaned_dir.mkdir(parents=True)
@@ -545,7 +545,7 @@ def test_collect_bilingual_folder_missing_translation(tmp_path):
 
 def test_collect_bilingual_folder_no_translated_dir(tmp_path):
     """When no translated dir exists, all translated_text should be blank."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     cleaned_dir = tmp_path / "cleaned" / "text"
     cleaned_dir.mkdir(parents=True)
@@ -560,7 +560,7 @@ def test_collect_bilingual_folder_no_translated_dir(tmp_path):
 
 def test_collect_bilingual_folder_with_manifest(tmp_path):
     """Manifest ordering should be respected for bilingual collection."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     cleaned_dir = tmp_path / "cleaned" / "text"
     cleaned_dir.mkdir(parents=True)
@@ -590,7 +590,7 @@ def test_collect_bilingual_folder_with_manifest(tmp_path):
 def test_render_bilingual_pdf_produces_valid_pdf(tmp_path):
     """render_bilingual_pdf() should produce a valid PDF with two-column table."""
     import fitz
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     pages = [
         pdf_export.BilingualPageText(
@@ -622,7 +622,7 @@ def test_render_bilingual_pdf_produces_valid_pdf(tmp_path):
 
 def test_render_bilingual_pdf_missing_translation(tmp_path):
     """Bilingual PDF with missing translations should still produce valid PDF."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     pages = [
         pdf_export.BilingualPageText(
@@ -643,7 +643,7 @@ def test_render_bilingual_pdf_missing_translation(tmp_path):
 
 def test_render_bilingual_markdown_creates_file(tmp_path):
     """render_bilingual_markdown() should produce a pipe-table Markdown file."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     pages = [
         pdf_export.BilingualPageText(
@@ -672,7 +672,7 @@ def test_render_bilingual_markdown_creates_file(tmp_path):
 def test_compile_bilingual_pdf_end_to_end(tmp_path):
     """compile() with bilingual=True should produce a two-column PDF."""
     import fitz
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     cleaned_dir = tmp_path / "cleaned" / "text"
     cleaned_dir.mkdir(parents=True)
@@ -709,7 +709,7 @@ def test_compile_bilingual_pdf_end_to_end(tmp_path):
 
 def test_compile_bilingual_markdown(tmp_path):
     """compile() with bilingual=True and format='md' should produce bilingual Markdown."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     cleaned_dir = tmp_path / "cleaned" / "text"
     cleaned_dir.mkdir(parents=True)
@@ -738,7 +738,7 @@ def test_compile_bilingual_markdown(tmp_path):
 
 def test_compile_bilingual_skips_structure_by_default(tmp_path):
     """compile(bilingual=True, structure=False) should not call the model."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     cleaned_dir = tmp_path / "cleaned" / "text"
     cleaned_dir.mkdir(parents=True)
@@ -766,7 +766,7 @@ def test_compile_bilingual_skips_structure_by_default(tmp_path):
 
 def test_find_manifest_normalises_nested_pages(tmp_path):
     """Real manifests nest entries under a top-level "pages" key."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     manifest = {
         "project": "Archive.tropy",
@@ -787,7 +787,7 @@ def test_find_manifest_normalises_nested_pages(tmp_path):
 
 def test_find_manifest_accepts_flat_schema(tmp_path):
     """A flat stem->entry manifest (older/synthetic) stays as-is."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     manifest = {
         "Item A/page_p0001": {"item_title": "Item A", "page_number": 1},
@@ -806,7 +806,7 @@ def test_find_manifest_accepts_flat_schema(tmp_path):
 
 def test_collect_stems_flat_no_manifest(tmp_path):
     """Flat stems collect from <output_dir>/<stage>/text/ directly."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     text_dir = tmp_path / "cleaned" / "text"
     text_dir.mkdir(parents=True)
@@ -825,7 +825,7 @@ def test_collect_stems_flat_no_manifest(tmp_path):
 
 def test_collect_stems_with_nested_manifest(tmp_path):
     """Manifest supplies item_title/page_number/section; caller order kept."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     item_dir = tmp_path / "cleaned" / "text" / "Item A"
     item_dir.mkdir(parents=True)
@@ -856,7 +856,7 @@ def test_collect_stems_with_nested_manifest(tmp_path):
 
 def test_collect_stems_skips_missing_and_dedupes(tmp_path):
     """Missing outputs are reported as skipped; duplicate stems collapse."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     text_dir = tmp_path / "cleaned" / "text"
     text_dir.mkdir(parents=True)
@@ -871,7 +871,7 @@ def test_collect_stems_skips_missing_and_dedupes(tmp_path):
 
 def test_collect_stems_stage_fallback(tmp_path):
     """A stem with only raw OCR output still collects, via fallback."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     raw_dir = tmp_path / "raw_ocr" / "text"
     raw_dir.mkdir(parents=True)
@@ -890,7 +890,7 @@ def test_collect_stems_stage_fallback(tmp_path):
 
 def test_default_batch_output_single_item_name():
     """A batch entirely inside one item is named after that item."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     p = pdf_export.default_batch_output(
         ["Item A/p1", "Item A/p2"], output_dir="out")
@@ -901,7 +901,7 @@ def test_default_batch_output_single_item_name():
 
 def test_default_batch_output_mixed_or_flat_is_batch():
     """Mixed items and flat stems fall back to the generic 'batch' name."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     mixed = pdf_export.default_batch_output(["A/p1", "B/p1"], output_dir="out")
     flat = pdf_export.default_batch_output(["page1", "page2"], output_dir="out")
@@ -912,7 +912,7 @@ def test_default_batch_output_mixed_or_flat_is_batch():
 
 def test_default_batch_output_md_extension_and_sanitising():
     """Markdown gets .md; Windows-hostile characters are stripped."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     md = pdf_export.default_batch_output(["Item A/p1"], output_dir="out", format="md")
     hostile = pdf_export.default_batch_output(['Item: A?/p1'], output_dir="out")
@@ -929,7 +929,7 @@ def test_default_batch_output_md_extension_and_sanitising():
 def test_compile_batch_end_to_end(mock_chat, tmp_path):
     """Two items combine into one PDF with per-item section headings."""
     import fitz
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     for item, words in (("Item A", "Alpha Absatz"), ("Item B", "Beta Absatz")):
         d = tmp_path / "cleaned" / "text" / item
@@ -964,7 +964,7 @@ def test_compile_batch_end_to_end(mock_chat, tmp_path):
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_compile_batch_reports_skipped(mock_chat, tmp_path):
     """Items without processed text are skipped and reported, not fatal."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     text_dir = tmp_path / "cleaned" / "text"
     text_dir.mkdir(parents=True)
@@ -986,7 +986,7 @@ def test_compile_batch_reports_skipped(mock_chat, tmp_path):
 
 def test_compile_batch_raises_when_nothing_processed(tmp_path):
     """compile_batch raises ValueError when no stem has any output."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     with pytest.raises(ValueError, match="No pages found"):
         pdf_export.compile_batch(["ghost"], output_dir=str(tmp_path))
@@ -995,7 +995,7 @@ def test_compile_batch_raises_when_nothing_processed(tmp_path):
 @patch("src.artifice_ocr.stages.structure.ollama.chat")
 def test_compile_batch_default_output_is_timestamped(mock_chat, tmp_path):
     """With output=None the PDF lands in output_dir with a timestamped name."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     item_dir = tmp_path / "cleaned" / "text" / "Item A"
     item_dir.mkdir(parents=True)
@@ -1014,7 +1014,7 @@ def test_compile_batch_structure_cache_isolated_per_item(mock_chat, tmp_path):
     """Regression: items sharing a page filename must not collide in the
     structured-text resume cache (previously keyed by bare filename stem)."""
     import fitz
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     for item, word in (("Item A", "Alphawort"), ("Item B", "Betawort")):
         d = tmp_path / "cleaned" / "text" / item
@@ -1060,7 +1060,7 @@ def test_compile_batch_structure_cache_isolated_per_item(mock_chat, tmp_path):
 def test_collect_folder_stems_use_manifest_keys(tmp_path):
     """collect_folder populates PageText.stem from the full manifest key, so
     the structure cache is collision-free for folder-mode exports too."""
-    from src.artifice_ocr import pdf_export
+    from artifice_ocr import pdf_export
 
     text_dir = tmp_path / "cleaned" / "text" / "Item A"
     text_dir.mkdir(parents=True)

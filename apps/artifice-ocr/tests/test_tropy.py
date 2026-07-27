@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.artifice_ocr.tropy import (
+from artifice_ocr.tropy import (
     TropyProject,
     _page_stem,
     _safe_name,
@@ -335,7 +335,7 @@ def test_each_pdf_page_writes_its_own_output(mock_ocr, bundle, tmp_path):
     All three pages share one checksum-named PDF. Keyed on the filename stem
     they would overwrite each other; keyed on the page stem they must not.
     """
-    from src.artifice_ocr.jobs import JobRunner, State
+    from artifice_ocr.jobs import JobRunner, State
 
     calls: list[str] = []
 
@@ -373,7 +373,7 @@ def test_each_pdf_page_writes_its_own_output(mock_ocr, bundle, tmp_path):
 
 @patch("src.artifice_ocr.stages.ocr._ocr_single_image", return_value="ocr text")
 def test_page_outputs_resume_independently(mock_ocr, bundle, tmp_path):
-    from src.artifice_ocr.pipeline import run_ocr_step
+    from artifice_ocr.pipeline import run_ocr_step
 
     out = tmp_path / "out"
     with TropyProject(bundle) as proj:
@@ -395,7 +395,7 @@ def test_page_outputs_resume_independently(mock_ocr, bundle, tmp_path):
 
 @patch("src.artifice_ocr.stages.ocr._ocr_single_image", return_value="ocr text")
 def test_out_of_range_page_raises_clearly(mock_ocr, bundle, tmp_path):
-    from src.artifice_ocr.stages import ocr as ocr_stage
+    from artifice_ocr.stages import ocr as ocr_stage
 
     pdf = bundle / "assets" / "aaaa1111.pdf"
     with pytest.raises(ValueError, match="out of range"):

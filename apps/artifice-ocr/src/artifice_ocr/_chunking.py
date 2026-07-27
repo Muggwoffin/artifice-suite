@@ -4,7 +4,7 @@ Splits text into pieces that respect paragraph/sentence boundaries,
 then reassembles after processing.
 """
 
-from src.artifice_ocr._logging import get_logger
+from artifice_ocr._logging import get_logger
 
 log = get_logger("chunking")
 

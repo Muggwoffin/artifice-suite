@@ -13,14 +13,14 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
-from src.artifice_ocr import config
+from artifice_ocr import config
 
 
 @patch("src.artifice_ocr.stages.translate.ollama.chat")
 def test_skips_translation_when_source_confidently_english(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="en"))
 
-    from src.artifice_ocr.stages import translate
+    from artifice_ocr.stages import translate
 
     out_dir = tmp_path / "output"
     result = translate.perform(
@@ -57,7 +57,7 @@ def test_still_translates_when_detection_is_uncertain(mock_chat, tmp_path):
         MagicMock(message=MagicMock(content='{"score": 80, "reasoning": "fine"}')),
     ]
 
-    from src.artifice_ocr.stages import translate
+    from artifice_ocr.stages import translate
 
     result = translate.perform("Some text", output_dir=str(tmp_path))
 
@@ -75,7 +75,7 @@ def test_skip_behavior_can_be_disabled_via_config(mock_chat, tmp_path):
         MagicMock(message=MagicMock(content='{"score": 80, "reasoning": "fine"}')),
     ]
 
-    from src.artifice_ocr.stages import translate
+    from artifice_ocr.stages import translate
 
     config.apply_overrides({"skip_translation_if_english": False})
     try:
@@ -96,7 +96,7 @@ def test_multi_lang_detection_parses_comma_separated_response(mock_chat):
     # always fell back to "unknown".
     mock_chat.return_value = MagicMock(message=MagicMock(content="de,en,fr"))
 
-    from src.artifice_ocr.stages.translate import detect_language
+    from artifice_ocr.stages.translate import detect_language
 
     lang = detect_language("Some multilingual text", doc_type="multi_lang")
     assert lang == "de"
@@ -106,6 +106,6 @@ def test_multi_lang_detection_parses_comma_separated_response(mock_chat):
 def test_multi_lang_single_code_still_works(mock_chat):
     mock_chat.return_value = MagicMock(message=MagicMock(content="en"))
 
-    from src.artifice_ocr.stages.translate import detect_language
+    from artifice_ocr.stages.translate import detect_language
 
     assert detect_language("English text", doc_type="multi_lang") == "en"

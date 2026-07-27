@@ -116,8 +116,10 @@ def _relaunch(exe: Path, extra_args: list[str]) -> int:
 
 
 def main() -> int:
+    # The package lives under src/, matching a normal editable install; add it
+    # to the path so `artifice_ocr` resolves without a real `pip install -e .`.
     os.chdir(ROOT)
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
     extra_args = sys.argv[1:]
 
     already_switched = bool(os.environ.get(SENTINEL))
@@ -148,7 +150,7 @@ def main() -> int:
         _log(f"Re-launching with {replacement} (missing: {', '.join(missing)})")
         return _relaunch(replacement, extra_args)
 
-    from src.artifice_ocr.web.server import main as web_main
+    from artifice_ocr.web.server import main as web_main
 
     sys.argv = [str(Path(__file__)), *extra_args]
     web_main()

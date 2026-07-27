@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.artifice_ocr import _guard, config
+from artifice_ocr import _guard, config
 
 
 @pytest.fixture(autouse=True)
@@ -170,7 +170,7 @@ def test_noun_protection_can_be_disabled():
 
 @patch("src.artifice_ocr.stages.cleanup.ollama.chat")
 def test_stage_keeps_raw_text_when_guard_rejects(mock_chat, tmp_path):
-    from src.artifice_ocr.stages import cleanup
+    from artifice_ocr.stages import cleanup
 
     raw = ("ly safe in Italian occupied zone. Unwilling tzerland as he sees no "
            "useful activity here. to join you but only if he can work.")
@@ -189,7 +189,7 @@ def test_stage_keeps_raw_text_when_guard_rejects(mock_chat, tmp_path):
 
 @patch("src.artifice_ocr.stages.cleanup.ollama.chat")
 def test_stage_accepts_a_safe_repair(mock_chat, tmp_path):
-    from src.artifice_ocr.stages import cleanup
+    from artifice_ocr.stages import cleanup
 
     raw = "Der Be-\nricht war unvollstandig."
     good = "Der Bericht war unvollstandig."
@@ -204,7 +204,7 @@ def test_stage_accepts_a_safe_repair(mock_chat, tmp_path):
 
 @patch("src.artifice_ocr.stages.cleanup.ollama.chat")
 def test_guard_can_be_switched_off_entirely(mock_chat, tmp_path):
-    from src.artifice_ocr.stages import cleanup
+    from artifice_ocr.stages import cleanup
 
     config.apply_overrides({"cleanup_guard": False})
     raw = "A much longer piece of archival text that should have been preserved."

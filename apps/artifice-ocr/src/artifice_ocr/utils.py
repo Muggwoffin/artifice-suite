@@ -1,7 +1,7 @@
 import ollama as _ollama
 from openai import OpenAI
 
-from src.artifice_ocr.config import get as cfg
+from artifice_ocr.config import get as cfg
 
 
 def check_lm_studio(url: str | None = None) -> str | None:
