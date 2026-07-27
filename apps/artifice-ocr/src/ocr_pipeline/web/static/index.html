@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCR Pipeline</title>
+
+<!-- Same Google Fonts link the public_history site uses, unmodified. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Archivo:wght@500;600;700&display=swap">
+
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<a href="#panel-main" class="skip-link">Skip to content</a>
+<div class="app">
+
+  <header class="masthead">
+    <h1>OCR Pipeline</h1>
+    <span class="tag">local-first &middot; LM Studio + Ollama</span>
+    <span class="spacer" style="flex:1;"></span>
+    <button class="theme-toggle" id="btn-theme-toggle" title="Toggle dark mode">🌙</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="main">☰ Main</button>
+    <button class="tab" data-tab="preview">👁 Preview</button>
+    <button class="tab" data-tab="history">🕐 History</button>
+    <button class="tab" data-tab="analytics">📊 Analytics</button>
+    <button class="tab" data-tab="settings">⚙ Settings</button>
+    <div class="spacer" style="flex:1;"></div>
+    <button class="tab" id="btn-palette-hint" title="Command Palette (Ctrl+K)" style="font-size:0.8rem; border-bottom:none; color:var(--ink-faint);">
+      <span class="kbd">Ctrl</span>+<span class="kbd">K</span>
+    </button>
+  </nav>
+
+  <div class="panels">
+
+    <!-- ================================================================ MAIN -->
+    <section class="panel active" id="panel-main">
+
+      <!-- Queue card -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Queue</h2>
+          <span class="dim" id="queue-count">0 files</span>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          Drop files or folders here, or click to browse
+        </div>
+
+        <div class="queue-wrap">
+          <table class="queue">
+            <thead>
+              <tr>
+                <th style="width:2rem;"></th>
+                <th>File</th>
+                <th class="c">OCR</th>
+                <th class="c">Cleanup</th>
+                <th class="c">Translate</th>
+                <th class="c" title="Quality score: how confident the AI is that it read the text correctly (0–100)">Conf</th>
+                <th class="c">Time</th>
+                <th>Status</th>
+                <th class="c" style="width:2.4rem;"></th>
+              </tr>
+            </thead>
+            <tbody id="queue-body"></tbody>
+          </table>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn" id="btn-browse-files">Browse Files</button>
+          <button class="btn" id="btn-add-folder">Add Folder</button>
+          <button class="btn" id="btn-add-tropy">Add from Tropy&hellip;</button>
+          <button class="btn danger" id="btn-remove">Remove Selected</button>
+          <button class="btn danger" id="btn-clear">Clear All</button>
+          <div class="rule-v"></div>
+          <button class="btn" id="btn-skip">Skip</button>
+          <button class="btn" id="btn-retry">Retry</button>
+          <button class="btn" id="btn-batch-correct">Batch Correct&hellip;</button>
+          <div class="spacer"></div>
+          <button class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
+          <button class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
+          <button class="btn" id="btn-send-ludwiglang">Send to LudwigLang&hellip;</button>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="run-row">
+          <strong style="font-size:var(--text-sm);">Stages:</strong>
+          <label class="check"><input type="checkbox" id="stage-ocr" checked> OCR</label>
+          <label class="check"><input type="checkbox" id="stage-cleanup"> Cleanup</label>
+          <label class="check"><input type="checkbox" id="stage-translate"> Translate</label>
+          <label class="check"><input type="checkbox" id="stage-force"> Force re-run</label>
+        </div>
+
+        <div class="output-row">
+          <strong style="font-size:var(--text-sm); white-space:nowrap;">Output:</strong>
+          <input type="text" id="output-dir" value="output">
+          <button class="btn" id="btn-browse-output">&hellip;</button>
+          <button class="btn accent" id="btn-run">&#9654; Run Pipeline</button>
+          <button class="btn" id="btn-pause" disabled>&#9208; Pause</button>
+          <button class="btn danger" id="btn-stop" disabled>&#9209; Stop</button>
+        </div>
+      </div>
+
+      <!-- Monitor card -->
+      <div class="card">
+        <div class="card-head">
+          <h2>Progress</h2>
+        </div>
+        <div class="progress-row">
+          <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+          <span class="progress-text" id="progress-value">0%</span>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================= PREVIEW -->
+    <section class="panel" id="panel-preview">
+      <div class="card compare-card compare-card--with-image">
+        <div class="image-pane" id="preview-image-pane">
+          <div class="image-toolbar">
+            <button class="btn" id="btn-image-reset" type="button" title="Reset zoom (or double-click the image)">Reset</button>
+            <div class="btn-group">
+              <button class="btn" data-fit="width" title="Fit to width">W</button>
+              <button class="btn" data-fit="height" title="Fit to height">H</button>
+              <button class="btn" data-fit="actual" title="Actual size (100%)">1:1</button>
+            </div>
+            <span class="dim" id="image-zoom-readout"></span>
+          </div>
+          <div class="image-viewport" id="image-viewport">
+            <img id="preview-image" class="source-image" alt="Source scan" draggable="false">
+            <p class="image-empty dim" id="image-empty">(no document selected)</p>
+            <div class="image-meta-overlay" id="preview-meta-overlay"></div>
+          </div>
+        </div>
+        <div class="compare-bar">
+          <h2 class="compare-title">No document selected</h2>
+          <select id="preview-item-select" class="select"></select>
+          <span class="compare-conf dim"></span>
+          <button class="btn" id="btn-reprocess" type="button" disabled style="margin-left:0.5rem;" title="Re-run downstream stages after correction">Re-process</button>
+        </div>
+        <div class="compare-panes">
+          <div class="compare-pane" data-pane="raw">
+            <div class="compare-pane-head">
+              <span>RAW OCR</span>
+              <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
+                <button class="btn" id="btn-save-raw" type="button" disabled>Save correction</button>
+                <span class="compare-meta dim"></span>
+              </span>
+            </div>
+            <div class="compare-text"><span class="empty">(not run)</span></div>
+          </div>
+          <div class="compare-pane" data-pane="cleaned">
+            <div class="compare-pane-head">
+              <span>CLEANED</span>
+              <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
+                <button class="btn" id="btn-save-cleaned" type="button" disabled>Save correction</button>
+                <span class="compare-meta dim"></span>
+              </span>
+            </div>
+            <div class="compare-text"><span class="empty">(not run)</span></div>
+          </div>
+          <div class="compare-pane" data-pane="translated">
+            <div class="compare-pane-head">
+              <span>TRANSLATED</span>
+              <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
+                <button class="btn" id="btn-save-translated" type="button" disabled>Save correction</button>
+                <span class="compare-meta dim"></span>
+              </span>
+            </div>
+            <div class="compare-text"><span class="empty">(not run)</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= HISTORY -->
+    <section class="panel" id="panel-history">
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>History</h2>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="text" id="history-search" placeholder="Find file&hellip;" style="padding:0.4rem 0.6rem; border-radius:6px; border:1px solid var(--rule); background:var(--paper-recessed);">
+            <button class="btn" id="btn-history-refresh">Refresh</button>
+            <button class="btn" id="btn-history-send-tropy" title="Send selected document back to Tropy">Send to Tropy</button>
+            <button class="btn danger" id="btn-history-delete">Delete Run</button>
+          </div>
+        </div>
+        <div class="history-grid">
+          <div>
+            <h3 class="dim" style="margin:0 0 0.4rem;">Runs</h3>
+            <div class="queue-wrap" style="max-height:26vh;">
+              <table class="queue">
+                <thead><tr><th>Started</th><th>Stages</th><th class="c">Files</th><th class="c">Failed</th><th class="c">Elapsed</th></tr></thead>
+                <tbody id="history-runs-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h3 class="dim" style="margin:0.8rem 0 0.4rem;">Documents</h3>
+            <div class="queue-wrap" style="max-height:26vh;">
+              <table class="queue">
+                <thead><tr><th>File</th><th>State</th><th>Language</th><th class="c" title="Quality score: how confident the AI is that it read the text correctly (0–100)">Conf</th></tr></thead>
+                <tbody id="history-items-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card compare-card compare-card--with-image">
+        <div class="image-pane" id="history-image-pane">
+          <div class="image-toolbar">
+            <button class="btn" id="btn-history-image-reset" type="button" title="Reset zoom (or double-click the image)">Reset</button>
+            <div class="btn-group">
+              <button class="btn" data-fit="width" title="Fit to width">W</button>
+              <button class="btn" data-fit="height" title="Fit to height">H</button>
+              <button class="btn" data-fit="actual" title="Actual size (100%)">1:1</button>
+            </div>
+            <span class="dim" id="history-image-zoom-readout"></span>
+          </div>
+          <div class="image-viewport" id="history-image-viewport">
+            <img id="history-image" class="source-image" alt="Source scan" draggable="false">
+            <p class="image-empty dim" id="history-image-empty">(no document selected)</p>
+            <div class="image-meta-overlay" id="history-meta-overlay"></div>
+          </div>
+          <div class="thumbnail-strip" id="history-thumbnails"></div>
+        </div>
+        <div class="compare-bar">
+          <h2 class="compare-title">No document selected</h2>
+          <span class="compare-conf dim"></span>
+        </div>
+        <div class="compare-panes">
+          <div class="compare-pane" data-pane="raw">
+            <div class="compare-pane-head">
+              <span>RAW OCR</span>
+              <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
+                <label class="diff-toggle" title="Show diff highlights in editable mode">
+                  <input type="checkbox" id="btn-history-diff-toggle"> Diff
+                </label>
+                <button class="btn" id="btn-history-save-raw" type="button" disabled>Save correction</button>
+                <span class="compare-meta dim"></span>
+              </span>
+            </div>
+            <div class="compare-text"><span class="empty">(not run)</span></div>
+          </div>
+          <div class="compare-pane" data-pane="cleaned">
+            <div class="compare-pane-head">
+              <span>CLEANED</span>
+              <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
+                <button class="btn" id="btn-history-save-cleaned" type="button" disabled>Save correction</button>
+                <span class="compare-meta dim"></span>
+              </span>
+            </div>
+            <div class="compare-text"><span class="empty">(not run)</span></div>
+          </div>
+          <div class="compare-pane" data-pane="translated">
+            <div class="compare-pane-head">
+              <span>TRANSLATED</span>
+              <span class="compare-pane-actions">
+                <button class="btn btn-show-original" type="button" title="Show original text before edits">Original</button>
+                <button class="btn" id="btn-history-save-translated" type="button" disabled>Save correction</button>
+                <span class="compare-meta dim"></span>
+              </span>
+            </div>
+            <div class="compare-text"><span class="empty">(not run)</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================== ANALYTICS -->
+    <section class="panel" id="panel-analytics">
+      <div class="card-head" style="padding:0 0 0.8rem;">
+        <h2 style="font-family:var(--font-display); font-size:var(--text-h3); margin:0;">Analytics</h2>
+        <button class="btn" id="btn-analytics-refresh">Refresh</button>
+      </div>
+      <div class="tiles" id="analytics-tiles"></div>
+      <div class="charts-grid">
+        <div class="card chart-card">
+          <h3>Throughput <span class="dim">(chars / second)</span></h3>
+          <div id="chart-throughput"></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Confidence distribution</h3>
+          <div id="chart-confidence"></div>
+        </div>
+      </div>
+      <div class="card chart-card" style="margin-top:1rem;">
+        <h3>Recent runs <span class="dim">(seconds per document)</span></h3>
+        <div id="chart-recent"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================ SETTINGS -->
+    <section class="panel" id="panel-settings">
+      <div class="settings-grid">
+        <div class="card settings-card">
+          <h3>AI Models &amp; Connections</h3>
+          <p class="dim" style="margin:0 0 0.6rem;">Choose which service runs each step, and which model it uses.</p>
+          <label>OCR backend:
+            <select id="set-ocr_backend">
+              <option value="lm_studio">LM Studio</option>
+              <option value="ollama">Ollama</option>
+              <option value="huggingface">Hugging Face</option>
+              <option value="api_key">API Key (cloud)</option>
+            </select>
+          </label>
+          <label>OCR model: <input type="text" id="set-ocr_model" placeholder="e.g. allenai/olmocr-2-7b"></label>
+          <label>Cleanup backend:
+            <select id="set-cleanup_backend">
+              <option value="ollama">Ollama</option>
+              <option value="lm_studio">LM Studio</option>
+              <option value="huggingface">Hugging Face</option>
+              <option value="api_key">API Key (cloud)</option>
+            </select>
+          </label>
+          <label>Cleanup model: <input type="text" id="set-cleanup_model" placeholder="e.g. gemma4:12b"></label>
+          <label>Translate backend:
+            <select id="set-translate_backend">
+              <option value="ollama">Ollama</option>
+              <option value="lm_studio">LM Studio</option>
+              <option value="huggingface">Hugging Face</option>
+              <option value="api_key">API Key (cloud)</option>
+            </select>
+          </label>
+          <label>Translate model: <input type="text" id="set-translate_model" placeholder="e.g. translategemma:4b"></label>
+          <details style="margin-top:0.6rem;">
+            <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Connection settings</summary>
+            <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.4rem;">
+              <label>LM Studio URL: <input type="text" id="set-lm_studio_url" placeholder="http://localhost:1234/v1" title="Address where LM Studio is running."></label>
+              <label>Ollama URL: <input type="text" id="set-ollama_url" placeholder="http://localhost:11434" title="Base address where Ollama is running."></label>
+              <label>Hugging Face token: <input type="text" id="set-huggingface_token" placeholder="hf_xxx..." title="Your Hugging Face API token (hf_...). Required only when using Hugging Face."></label>
+              <label>API key: <input type="password" id="set-api_key" placeholder="sk-..." title="Your cloud API key. Works with any OpenAI-compatible provider (OpenAI, Together, Groq, etc.)."></label>
+              <label>API base URL: <input type="text" id="set-api_base_url" placeholder="https://api.openai.com/v1" title="The API endpoint URL. Change this for non-OpenAI providers."></label>
+            </div>
+          </details>
+        </div>
+        <div class="card settings-card">
+          <h3>Processing</h3>
+          <label>Document type:
+            <select id="set-document_type"></select>
+          </label>
+          <p class="dim" id="doc-type-hint" style="margin:0.2rem 0 0.6rem;"></p>
+          <label>Parallel OCR readers: <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
+          <label>Resume (skip existing outputs) <input type="checkbox" id="set-resume"></label>
+          <label>Enable confidence scoring <input type="checkbox" id="set-confidence_enabled"></label>
+          <details style="margin-top:0.6rem;">
+            <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>
+            <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.4rem;">
+              <label>Max text chunk size: <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;" title="How much text the AI processes at once. Leave at default unless you have a reason to change it."></label>
+              <label><input type="checkbox" id="set-ollama_think"> Think step-by-step (slow &mdash; not recommended)</label>
+              <p class="dim" style="margin:0;">Much slower with no visible improvement.</p>
+            </div>
+          </details>
+        </div>
+        <div class="card settings-card" style="grid-column: 1 / -1;">
+          <h3>Run Templates</h3>
+          <p class="dim" style="margin:0 0 0.6rem;">Save and load stage/option configurations.</p>
+          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <select id="template-select" class="select" style="flex:1;">
+              <option value="">-- Select a template --</option>
+            </select>
+            <button class="btn" id="btn-template-apply">Apply</button>
+            <button class="btn" id="btn-template-delete">Delete</button>
+          </div>
+          <div style="display:flex; gap:0.5rem; margin-top:0.6rem;">
+            <input type="text" id="template-name" class="input" style="flex:1;" placeholder="Template name">
+            <button class="btn accent" id="btn-template-save">Save Current as Template</button>
+          </div>
+          <span id="template-status" class="dim" style="margin-top:0.4rem; display:inline-block;"></span>
+        </div>
+        <div class="card settings-card" style="grid-column: 1 / -1;">
+          <h3>Connection Status</h3>
+          <div id="health-panel" class="health-panel">
+            <p class="dim">Press "Check Connections" to verify your local AI helpers are running.</p>
+          </div>
+          <button class="btn" id="btn-preflight" style="margin-top:0.7rem;">Check Connections</button>
+        </div>
+        <div class="card settings-card" style="grid-column: 1 / -1;">
+          <h3>Onboarding &amp; Guide</h3>
+          <p class="dim" style="margin:0 0 0.6rem;">Review the first-run orientation tips and feature guide.</p>
+          <button class="btn" id="btn-retrigger-onboarding">Show Onboarding Guide</button>
+        </div>
+      </div>
+      <div class="run-row" style="padding-left:0;">
+        <button class="btn accent" id="btn-settings-save">Save Settings</button>
+        <button class="btn" id="btn-settings-reset">Reset to Defaults</button>
+        <span class="dim" id="settings-saved"></span>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="statusbar">
+    <span id="status-text">Ready</span>
+    <span id="stage-text" class="dim"></span>
+  </div>
+
+</div>
+
+<!-- Tropy: add pages -->
+<div class="modal-backdrop hidden" id="modal-tropy-add">
+  <div class="modal" style="width:min(820px, 94vw);">
+    <h3>Add from Tropy</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
+    <p class="dim">The project is opened read-only &mdash; nothing here can modify it.</p>
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+      <select id="tropy-project" class="select" style="flex:1;"></select>
+      <button class="btn" id="btn-tropy-browse-project">Browse&hellip;</button>
+    </div>
+    <div class="tropy-picker-grid">
+      <div class="tropy-source-pane" id="tropy-sources"></div>
+      <div class="tropy-item-pane" id="tropy-items">
+        <div class="empty-state">Select a list, tag, or "All items" on the left</div>
+      </div>
+    </div>
+    <div class="tropy-summary" id="tropy-summary">
+      <span id="tropy-summary-text" class="dim">No items selected</span>
+      <span class="spacer"></span>
+      <span id="tropy-summary-warning" class="warning"></span>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.6rem;">
+      <button class="btn" id="btn-tropy-cancel">Cancel</button>
+      <button class="btn accent" id="btn-tropy-add-queue" disabled>Add to Queue</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF export modal -->
+<div class="modal-backdrop hidden" id="modal-compile-pdf">
+  <div class="modal" style="width:min(640px, 94vw);">
+    <h3>Compile PDF</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
+    <p class="dim">Compile processed text files from a folder into one continuous reading PDF.</p>
+
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+      <input type="text" id="pdf-folder" class="input" style="flex:1;" placeholder="Folder of .txt files">
+      <button class="btn" id="btn-pdf-browse-folder">Browse&hellip;</button>
+    </div>
+
+    <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+      <label>Stage:
+        <select id="pdf-stage">
+          <option value="cleaned">Cleaned text</option>
+          <option value="raw_ocr">Raw OCR text</option>
+          <option value="translated">Translation</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="pdf-structure" checked> Structure text</label>
+      <label class="check"><input type="checkbox" id="pdf-bilingual"> Bilingual (original + translation)</label>
+      <label>Format:
+        <select id="pdf-format">
+          <option value="pdf">PDF</option>
+          <option value="md">Markdown</option>
+        </select>
+      </label>
+      <label>Style:
+        <select id="pdf-style">
+          <option value="readable">Readable</option>
+          <option value="academic">Academic</option>
+          <option value="compact">Compact</option>
+        </select>
+      </label>
+    </div>
+    <p class="dim" id="pdf-bilingual-hint" style="display:none; margin:-0.3rem 0 0.6rem;">
+      Requires both cleaned/ and translated/ outputs in the folder.  Structure pass is skipped unless you check it below.
+    </p>
+
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+      <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Output path (optional)">
+      <button class="btn" id="btn-pdf-browse-output">Browse&hellip;</button>
+    </div>
+
+    <p class="dim" id="pdf-status"></p>
+    <div id="pdf-log" style="max-height:26vh; overflow:auto; background:var(--paper-recessed); border-radius:var(--radius); padding:0.6rem; font-family:var(--font-mono); font-size:0.82rem; white-space:pre-wrap;"></div>
+
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <button class="btn" id="btn-pdf-close">Close</button>
+      <button class="btn accent" id="btn-pdf-start">Start</button>
+      <button class="btn" id="btn-pdf-download" disabled>Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tropy: send results back -->
+<div class="modal-backdrop hidden" id="modal-tropy-send">
+  <div class="modal" style="width:min(820px, 94vw);">
+    <h3>Send results to Tropy</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
+    <p class="dim">Only documents added via "Add from Tropy&hellip;" can be sent. Nothing is written until you press Write.</p>
+
+    <div id="send-tropy-history-detail" class="hidden" style="margin-bottom:0.6rem; padding:0.5rem; background:var(--paper-recessed); border-radius:6px;">
+      <div class="dim" style="margin-bottom:0.3rem;">Sending from History:</div>
+      <div><strong>Item:</strong> <span id="send-tropy-history-name"></span></div>
+      <div><strong>Photo:</strong> <span id="send-tropy-history-photo"></span></div>
+      <div><strong>Page:</strong> <span id="send-tropy-history-page"></span></div>
+    </div>
+
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+      <select id="send-tropy-project" class="select" style="flex:1;"></select>
+    </div>
+
+    <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+      <label class="check"><input type="checkbox" id="send-tropy-targets-notes" checked> Notes</label>
+      <label class="check"><input type="checkbox" id="send-tropy-targets-transcriptions"> Transcriptions</label>
+      <label>Text:
+        <select id="send-tropy-stage">
+          <option value="cleaned">Cleaned text</option>
+          <option value="raw_ocr">Raw OCR text</option>
+          <option value="translated">Translation</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="send-tropy-backup" checked> Back up first</label>
+    </div>
+
+    <p class="dim" id="send-tropy-status"></p>
+    <div id="send-tropy-plans" style="max-height:34vh; overflow:auto;"></div>
+
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <button class="btn" id="btn-send-tropy-close">Close</button>
+      <button class="btn" id="btn-send-tropy-preview">Preview</button>
+      <button class="btn accent" id="btn-send-tropy-write" disabled>Write to Tropy</button>
+    </div>
+  </div>
+</div>
+
+<!-- LudwigLang: export as .md -->
+<div class="modal-backdrop hidden" id="modal-ludwiglang">
+  <div class="modal" style="width:min(640px, 94vw);">
+    <h3>Send to LudwigLang</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
+    <p class="dim">Export a processed collection for LudwigLang's Import page.</p>
+
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+      <select id="ll-collection" class="select" style="flex:1;">
+        <option value="">-- Select a collection --</option>
+      </select>
+      <button class="btn" id="btn-ll-refresh">Refresh</button>
+    </div>
+
+    <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+      <label>Medium:
+        <select id="ll-medium">
+          <option value="print">Print</option>
+          <option value="typed">Typed</option>
+          <option value="handwritten">Handwritten</option>
+        </select>
+      </label>
+      <label>Author:
+        <input type="text" id="ll-author" class="input" style="width:12rem;" placeholder="(auto-detected if blank)">
+      </label>
+      <label>Date:
+        <input type="text" id="ll-date" class="input" style="width:8rem;" placeholder="(auto-detected if blank)">
+      </label>
+    </div>
+
+    <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+      <label class="check"><input type="checkbox" id="ll-page-markers"> Page markers (-- N --)</label>
+      <label class="check"><input type="checkbox" id="ll-skip-language-gate"> Skip language check</label>
+    </div>
+
+    <div id="ll-preview-area" style="max-height:26vh; overflow:auto; background:var(--paper-recessed); border-radius:var(--radius); padding:0.6rem; margin-bottom:0.6rem;">
+      <p class="dim">Select a collection above to export.</p>
+    </div>
+
+    <p id="ll-status" class="dim"></p>
+
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <button class="btn" id="btn-ll-close">Close</button>
+      <button class="btn accent" id="btn-ll-export" disabled>Export &amp; Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- Batch correct dialog -->
+<div class="modal-backdrop hidden" id="modal-batch-correct">
+  <div class="modal" style="width:min(480px, 94vw);">
+    <h3>Batch Correct</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
+    <p class="dim" style="margin-bottom:0.6rem;">Apply a find/replace correction to all items or selected items in the queue.</p>
+
+    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+      <label>Find:
+        <input type="text" id="batch-find" class="input" style="width:100%;" placeholder="Text to find">
+      </label>
+      <label>Replace with:
+        <input type="text" id="batch-replace" class="input" style="width:100%;" placeholder="Replacement text">
+      </label>
+      <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+        <label class="check"><input type="checkbox" id="batch-stage-raw" checked> Raw OCR</label>
+        <label class="check"><input type="checkbox" id="batch-stage-cleaned" checked> Cleaned</label>
+        <label class="check"><input type="checkbox" id="batch-stage-translated" checked> Translated</label>
+      </div>
+      <label class="check" style="margin-top:0.3rem;">
+        <input type="checkbox" id="batch-apply-selected"> Selected items only
+      </label>
+      <div style="display:flex; gap:0.5rem; align-items:center; margin-top:0.3rem;">
+        <span class="dim">Templates:</span>
+        <select id="batch-template-select" class="select" style="flex:1;">
+          <option value="">-- Load template --</option>
+        </select>
+        <button class="btn" id="btn-batch-template-save">Save</button>
+        <button class="btn danger" id="btn-batch-template-delete">Delete</button>
+      </div>
+    </div>
+
+    <p class="dim" id="batch-status" style="margin-top:0.6rem;"></p>
+
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <button class="btn" id="btn-batch-cancel">Close</button>
+      <button class="btn accent" id="btn-batch-apply">Apply</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/toast.js"></script>
+<script src="/static/js/palette.js"></script>
+<script src="/static/js/onboarding.js"></script>
+<script src="/static/js/tropy.js"></script>
+<script src="/static/js/pdf_export.js"></script>
+<script src="/static/js/find_replace.js"></script>
+<script src="/static/js/preview_image.js"></script>
+<script src="/static/js/preview.js"></script>
+<script src="/static/js/history.js"></script>
+<script src="/static/js/analytics.js"></script>
+<script src="/static/js/ludwiglang.js"></script>
+<script src="/static/js/settings.js"></script>
+
+  
+</body>
+</html>

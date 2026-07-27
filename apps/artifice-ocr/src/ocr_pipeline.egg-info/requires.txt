@@ -1,0 +1,12 @@
+typer
+ollama
+openai
+python-dotenv
+pyyaml
+PyMuPDF
+tkinterdnd2
+
+[web]
+fastapi
+uvicorn[standard]
+pywebview

@@ -1,0 +1,1252 @@
+"""Tests for the web frontend's HTTP surface.
+
+Scope is deliberately the same as the rest of this test suite: no real model
+calls. The SSE stream (`/api/events`) is exercised manually against a live
+server instead of here, since driving an unbounded generator through a
+synchronous TestClient risks a hanging test for no real safety benefit — the
+underlying event plumbing (`JobRunner` -> `queue.Queue`) already has its own
+coverage in `test_gui.py`.
+
+`server.py` binds `state` at import time via `from .runtime import state`, so
+patching `runtime.state` after that import would not reach the endpoints —
+they resolve `state` from `server`'s own module globals. The fixture below
+patches `runtime.state` directly for that reason.
+"""
+
+import socket
+import sys
+
+import pytest
+from fastapi.testclient import TestClient
+
+from conftest import TROPY_SCHEMA
+
+from src.ocr_pipeline import config
+from src.ocr_pipeline.web import server
+from src.ocr_pipeline.web import runtime
+from src.ocr_pipeline.web.runtime import RunState
+from src.ocr_pipeline.web.routers import (
+    analytics as _analytics_router,
+    events as _events_router,
+    history as _history_router,
+    pdf_export as _pdf_export_router,
+    queue as _queue_router,
+    run as _run_router,
+    tropy as _tropy_router,
+)
+
+
+@pytest.fixture
+def client(tmp_path, monkeypatch):
+    # config.save_user_settings() always targets ~/.ocr_pipeline/settings.json
+    # by design (it's a per-user file, not something callers parameterise) —
+    # so any test that reaches it must redirect the module constant itself,
+    # or it will overwrite the developer's real saved settings.
+    monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
+
+    config.reset()
+    config.load_config()
+    config.apply_overrides({"history_db": str(tmp_path / "history.db")})
+
+    fresh = RunState()
+    monkeypatch.setattr(_queue_router, "state", fresh)
+    monkeypatch.setattr(_run_router, "state", fresh)
+    monkeypatch.setattr(_events_router, "state", fresh)
+    monkeypatch.setattr(_history_router, "state", fresh)
+    monkeypatch.setattr(_analytics_router, "state", fresh)
+    monkeypatch.setattr(_tropy_router, "state", fresh)
+    # pdf_export router does NOT import state, only pdf_export_state
+    monkeypatch.setattr("src.ocr_pipeline.web.runtime.state", fresh)
+
+    with TestClient(server.app) as c:
+        yield c
+
+
+# --------------------------------------------------------------------------- #
+# static frontend
+# --------------------------------------------------------------------------- #
+
+def test_index_serves_the_frontend(client):
+    res = client.get("/")
+    assert res.status_code == 200
+    assert "OCR Pipeline" in res.text
+
+
+def test_static_assets_are_mounted(client):
+    res = client.get("/static/css/app.css")
+    assert res.status_code == 200
+    assert "--paper" in res.text  # the actual design tokens, not a stub
+
+
+# --------------------------------------------------------------------------- #
+# queue
+# --------------------------------------------------------------------------- #
+
+def test_empty_queue_on_startup(client):
+    res = client.get("/api/queue")
+    assert res.status_code == 200
+    assert res.json() == {"items": [], "status": {"running": False, "paused": False, "total": 0}}
+
+
+def test_add_paths_resolves_supported_extensions_only(client, tmp_path):
+    (tmp_path / "a.png").write_bytes(b"x")
+    (tmp_path / "b.txt").write_bytes(b"x")  # unsupported, must be ignored
+
+    res = client.post("/api/queue/add-paths", json={
+        "paths": [str(tmp_path / "a.png"), str(tmp_path / "b.txt")],
+    })
+    assert res.status_code == 200
+    body = res.json()
+    assert body["added"] == 1
+    assert body["items"][0]["name"] == "a.png"
+
+
+def test_add_paths_expands_a_folder(client, tmp_path):
+    (tmp_path / "one.png").write_bytes(b"x")
+    (tmp_path / "two.pdf").write_bytes(b"x")
+    (tmp_path / "readme.md").write_bytes(b"x")
+
+    res = client.post("/api/queue/add-paths", json={"paths": [str(tmp_path)]})
+    assert res.json()["added"] == 2
+
+
+def test_add_paths_deduplicates(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+
+    first = client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+    second = client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+
+    assert first.json()["added"] == 1
+    assert second.json()["added"] == 0
+    assert len(second.json()["items"]) == 1
+
+
+def test_remove_items(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    res = client.post("/api/queue/remove", json={"ids": [item_id]})
+    assert res.json()["removed"] == 1
+    assert res.json()["items"] == []
+
+
+def test_clear_queue(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+
+    res = client.post("/api/queue/clear")
+    assert res.json()["items"] == []
+    assert client.get("/api/queue").json()["items"] == []
+
+
+# --------------------------------------------------------------------------- #
+# run control guardrails (no real run is started — no model calls in tests)
+# --------------------------------------------------------------------------- #
+
+def test_start_run_rejects_empty_queue(client):
+    res = client.post("/api/run/start", json={"stages": ["ocr"]})
+    assert res.status_code == 409
+    assert "empty" in res.json()["detail"].lower()
+
+
+def test_start_run_rejects_no_stages(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+
+    res = client.post("/api/run/start", json={"stages": []})
+    assert res.status_code == 409
+    assert "stage" in res.json()["detail"].lower()
+
+
+def test_skip_unknown_item_reports_not_ok(client):
+    res = client.post("/api/run/skip", json={"id": "does-not-exist"})
+    assert res.json() == {"ok": False}
+
+
+def test_retry_resets_finished_items(client, tmp_path):
+    from src.ocr_pipeline.jobs import State
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    runtime.state.get(item_id).state = State.DONE
+
+    res = client.post("/api/run/retry", json=[item_id])
+    assert res.json() == {"ok": True}
+    assert runtime.state.get(item_id).state == State.PENDING
+
+
+def test_pause_resume_cancel_are_no_ops_without_a_run(client):
+    # None of these should raise just because nothing is running yet.
+    for path in ("/api/run/pause", "/api/run/resume", "/api/run/cancel"):
+        assert client.post(path).json() == {"ok": True}
+
+
+# --------------------------------------------------------------------------- #
+# config
+# --------------------------------------------------------------------------- #
+
+def test_get_config_returns_expected_keys(client):
+    res = client.get("/api/config")
+    body = res.json()
+    assert "cleanup_model" in body
+    assert "ollama_think" in body
+
+
+def test_set_config_only_persists_whitelisted_keys(client):
+    res = client.post("/api/config", json={
+        "output_dir": "somewhere",
+        "not_a_real_setting": "should be dropped",
+    })
+    assert res.json() == {"ok": True}
+    assert config.get("output_dir") == "somewhere"
+    assert config.get("not_a_real_setting") is None
+
+
+def test_config_reset_discards_overrides(client):
+    client.post("/api/config", json={"cleanup_model": "a-custom-model"})
+    assert client.get("/api/config").json()["cleanup_model"] == "a-custom-model"
+
+    res = client.post("/api/config/reset")
+    assert res.json()["cleanup_model"] == "gemma4:12b"
+    assert client.get("/api/config").json()["cleanup_model"] == "gemma4:12b"
+
+
+# --------------------------------------------------------------------------- #
+# tropy (read-only endpoints; no real project on disk during tests)
+# --------------------------------------------------------------------------- #
+
+def test_tropy_browse_reports_a_clean_error_for_a_missing_project(client, tmp_path):
+    res = client.post("/api/tropy/browse", json={"project": str(tmp_path / "nope.tropy")})
+    assert res.status_code == 400
+
+
+def test_tropy_add_reports_a_clean_error_for_a_missing_project(client, tmp_path):
+    res = client.post("/api/tropy/add", json={"project": str(tmp_path / "nope.tropy")})
+    assert res.status_code == 400
+
+
+def test_tropy_add_writes_manifest_and_reports_missing(client, tropy_project, tmp_path):
+    out = tmp_path / "out"
+    res = client.post("/api/tropy/add", json={
+        "project": str(tropy_project), "item_ids": [1], "output_dir": str(out),
+    })
+    assert res.status_code == 200
+    body = res.json()
+    assert body["added"] >= 1
+    assert body["missing"] == ["doc.pdf  p.1"]
+    manifest = out / "tropy_manifest.json"
+    assert manifest.exists()
+    import json
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    assert "pages" in data
+    assert "project" in data
+
+
+# --------------------------------------------------------------------------- #
+# preview (in-memory queue item text)
+# --------------------------------------------------------------------------- #
+
+def test_preview_missing_item_is_404(client):
+    res = client.get("/api/queue/does-not-exist/preview")
+    assert res.status_code == 404
+
+
+def test_preview_returns_text_confidence_and_diff(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    item = runtime.state.get(item_id)
+    item.results = {
+        "raw": {"extracted_text": "Der Be-\nricht war unvollstandig."},
+        "cleaned": {"cleaned_text": "Der Bericht war unvollstandig."},
+        "translated": {"translated_text": "The report was incomplete."},
+    }
+    item.confidence = 91
+    item.language = "German"
+
+    res = client.get(f"/api/queue/{item_id}/preview")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["raw"].startswith("Der Be-")
+    assert body["cleaned"] == "Der Bericht war unvollstandig."
+    assert body["confidence"] == 91
+    assert body["confidence_tier"] == "high"
+    # a word actually changed between raw and cleaned, so a range exists
+    assert body["diff"]["raw_ranges"] or body["diff"]["cleaned_ranges"]
+
+
+# --------------------------------------------------------------------------- #
+# preview: source image (zoom/pan pane) + raw-text correction
+# --------------------------------------------------------------------------- #
+
+def test_image_route_404s_for_unknown_item(client):
+    res = client.get("/api/queue/does-not-exist/image")
+    assert res.status_code == 404
+
+
+def test_image_route_passes_jpg_through_unchanged(client, tmp_path):
+    f = tmp_path / "a.jpg"
+    f.write_bytes(b"\xff\xd8\xff-fake-jpeg-bytes")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    res = client.get(f"/api/queue/{item_id}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/jpeg"
+    assert res.content == b"\xff\xd8\xff-fake-jpeg-bytes"
+
+
+def test_image_route_converts_tiff_to_png(client, tmp_path, monkeypatch):
+    # No TIFF writer is available in this environment (Pillow is deliberately
+    # not a dependency), so the conversion call itself is mocked rather than
+    # exercised against a real TIFF file — the same class of trade-off the
+    # rest of this suite makes for real model calls.
+    import fitz
+
+    f = tmp_path / "a.tif"
+    f.write_bytes(b"not-a-real-tiff")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    class FakePixmap:
+        def __init__(self, path):
+            assert path == str(f)
+
+        def tobytes(self, fmt):
+            assert fmt == "png"
+            return b"\x89PNG-fake-bytes"
+
+    monkeypatch.setattr(fitz, "Pixmap", FakePixmap)
+
+    res = client.get(f"/api/queue/{item_id}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/png"
+    assert res.content == b"\x89PNG-fake-bytes"
+
+
+def test_image_route_renders_only_the_pdf_page_item_points_at(client, tmp_path):
+    import fitz
+
+    from src.ocr_pipeline.jobs import JobItem
+
+    pdf_path = tmp_path / "doc.pdf"
+    doc = fitz.open()
+    doc.new_page(width=200, height=100)  # page 0: 2:1 landscape
+    doc.new_page(width=50, height=150)   # page 1: 1:3 portrait — the one requested
+    doc.new_page(width=300, height=100)  # page 2: 3:1 landscape
+    doc.save(str(pdf_path))
+    doc.close()
+
+    item = JobItem(path=str(pdf_path), page=1)
+    runtime.state.add_items([item])
+    item_id = runtime.state.queue_snapshot()[-1]["id"]
+
+    res = client.get(f"/api/queue/{item_id}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/png"
+
+    rendered = fitz.Pixmap(res.content)
+    # Page 1's aspect ratio (tall) is distinct from both its neighbours
+    # (wide) — this would fail if page 0 or page 2 were rendered instead.
+    assert rendered.height > rendered.width
+    assert rendered.width not in (200 * 300 // 72, 300 * 300 // 72)
+
+
+def test_image_route_caps_an_oversized_pdf_page(client, tmp_path):
+    import fitz
+
+    from src.ocr_pipeline.jobs import JobItem
+    from src.ocr_pipeline.web.runtime import IMAGE_MAX_LONG_EDGE
+
+    pdf_path = tmp_path / "huge.pdf"
+    doc = fitz.open()
+    doc.new_page(width=2000, height=1000)  # long edge at 300dpi would be ~8333px
+    doc.save(str(pdf_path))
+    doc.close()
+
+    item = JobItem(path=str(pdf_path), page=0)
+    runtime.state.add_items([item])
+    item_id = runtime.state.queue_snapshot()[-1]["id"]
+
+    res = client.get(f"/api/queue/{item_id}/image")
+    rendered = fitz.Pixmap(res.content)
+    assert max(rendered.width, rendered.height) <= IMAGE_MAX_LONG_EDGE
+
+
+def test_raw_text_route_404s_for_unknown_item(client):
+    res = client.post("/api/queue/does-not-exist/raw-text", json={"text": "x"})
+    assert res.status_code == 404
+
+
+def test_raw_text_save_updates_in_memory_only_when_no_output_exists(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    item = runtime.state.get(item_id)
+    item.results = {"raw": {"extracted_text": "origianl typo"}}
+
+    res = client.post(f"/api/queue/{item_id}/raw-text", json={"text": "original corrected"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["raw"] == "original corrected"
+    assert item.results["raw"]["extracted_text"] == "original corrected"
+    # nothing on disk to touch — no output dir was ever created for this stem
+    assert not (tmp_path / "raw_ocr").exists()
+
+
+def test_raw_text_save_overwrites_disk_output_preserving_other_provenance(client, tmp_path):
+    import json as jsonlib
+
+    output_dir = tmp_path / "output"
+    text_dir = output_dir / "raw_ocr" / "text"
+    json_dir = output_dir / "raw_ocr" / "json"
+    text_dir.mkdir(parents=True)
+    json_dir.mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+    item.results = {"raw": {"extracted_text": "garbld txt"}}
+
+    (text_dir / f"{item.stem}.txt").write_text("garbld txt", encoding="utf-8")
+    original_json = {
+        "source_file": str(f), "stage": "raw_ocr", "extracted_text": "garbld txt",
+        "engine": "lm-studio", "model": "some-vision-model",
+        "ocr_prompt": "OCR: Extract all visible text...",
+        "timestamp": "2026-01-01T00:00:00+00:00", "page": 1, "total_pages": 1,
+    }
+    (json_dir / f"{item.stem}.json").write_text(jsonlib.dumps(original_json), encoding="utf-8")
+
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    res = client.post(f"/api/queue/{item_id}/raw-text", json={"text": "corrected text"})
+    assert res.status_code == 200
+
+    assert (text_dir / f"{item.stem}.txt").read_text(encoding="utf-8") == "corrected text"
+
+    saved = jsonlib.loads((json_dir / f"{item.stem}.json").read_text(encoding="utf-8"))
+    assert saved["extracted_text"] == "corrected text"
+    assert saved["edited"] is True
+    assert "edited_at" in saved
+    # everything about the *original* OCR pass is untouched
+    for key in ("engine", "model", "ocr_prompt", "timestamp", "source_file", "page", "total_pages"):
+        assert saved[key] == original_json[key]
+
+
+def test_raw_text_save_never_touches_cleaned_or_translated_dirs(client, tmp_path):
+    output_dir = tmp_path / "output"
+    (output_dir / "raw_ocr" / "text").mkdir(parents=True)
+    (output_dir / "raw_ocr" / "json").mkdir(parents=True)
+    (output_dir / "cleaned" / "text").mkdir(parents=True)
+    (output_dir / "translated" / "text").mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+
+    (output_dir / "raw_ocr" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
+    (output_dir / "raw_ocr" / "json" / f"{item.stem}.json").write_text(
+        '{"extracted_text": "orig"}', encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    client.post(f"/api/queue/{item_id}/raw-text", json={"text": "edited"})
+
+    assert list((output_dir / "cleaned" / "text").iterdir()) == []
+    assert list((output_dir / "translated" / "text").iterdir()) == []
+
+
+# --------------------------------------------------------------------------- #
+# cleaned-text + translated-text
+# --------------------------------------------------------------------------- #
+
+def test_cleaned_text_404s_for_unknown_queue_item(client):
+    res = client.post("/api/queue/does-not-exist/cleaned-text", json={"text": "x"})
+    assert res.status_code == 404
+
+
+def test_translated_text_404s_for_unknown_queue_item(client):
+    res = client.post("/api/queue/does-not-exist/translated-text", json={"text": "x"})
+    assert res.status_code == 404
+
+
+def test_cleaned_text_save_updates_in_memory_when_no_output_exists(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    item = runtime.state.get(item_id)
+    item.results = {"cleaned": {"cleaned_text": "garbld cln"}}
+
+    res = client.post(f"/api/queue/{item_id}/cleaned-text", json={"text": "corrected clean"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["cleaned"] == "corrected clean"
+    assert item.results["cleaned"]["cleaned_text"] == "corrected clean"
+
+
+def test_translated_text_save_updates_in_memory_when_no_output_exists(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    item = runtime.state.get(item_id)
+    item.results = {"translated": {"translated_text": "garbld trn"}}
+
+    res = client.post(f"/api/queue/{item_id}/translated-text", json={"text": "corrected translation"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["translated"] == "corrected translation"
+    assert item.results["translated"]["translated_text"] == "corrected translation"
+
+
+def test_cleaned_text_save_overwrites_disk_output_preserving_provenance(client, tmp_path):
+    import json as jsonlib
+
+    output_dir = tmp_path / "output"
+    text_dir = output_dir / "cleaned" / "text"
+    json_dir = output_dir / "cleaned" / "json"
+    text_dir.mkdir(parents=True)
+    json_dir.mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+    item.results = {"cleaned": {"cleaned_text": "garbld cln"}}
+
+    (text_dir / f"{item.stem}.txt").write_text("garbld cln", encoding="utf-8")
+    original_json = {
+        "source_file": str(f), "stage": "cleaned", "cleaned_text": "garbld cln",
+        "raw_text": "raw ocr text",
+        "engine": "ollama", "model": "some-cleanup-model",
+        "system_prompt": "Clean up the text...",
+        "document_type": "default",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+    }
+    (json_dir / f"{item.stem}.json").write_text(jsonlib.dumps(original_json), encoding="utf-8")
+
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    res = client.post(f"/api/queue/{item_id}/cleaned-text", json={"text": "corrected clean"})
+    assert res.status_code == 200
+
+    assert (text_dir / f"{item.stem}.txt").read_text(encoding="utf-8") == "corrected clean"
+
+    saved = jsonlib.loads((json_dir / f"{item.stem}.json").read_text(encoding="utf-8"))
+    assert saved["cleaned_text"] == "corrected clean"
+    assert saved["edited"] is True
+    assert "edited_at" in saved
+    for key in ("engine", "model", "system_prompt", "timestamp", "source_file"):
+        assert saved[key] == original_json[key]
+
+
+def test_translated_text_save_overwrites_disk_output_preserving_provenance(client, tmp_path):
+    import json as jsonlib
+
+    output_dir = tmp_path / "output"
+    text_dir = output_dir / "translated" / "text"
+    json_dir = output_dir / "translated" / "json"
+    text_dir.mkdir(parents=True)
+    json_dir.mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+    item.results = {"translated": {"translated_text": "garbld trn"}}
+
+    (text_dir / f"{item.stem}.txt").write_text("garbld trn", encoding="utf-8")
+    original_json = {
+        "source_file": str(f), "stage": "translated", "translated_text": "garbld trn",
+        "cleaned_text": "cleaned text",
+        "source_language": "fr",
+        "source_language_name": "French",
+        "engine": "ollama", "model": "some-translate-model",
+        "system_prompt": "Translate the text...",
+        "document_type": "default",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+    }
+    (json_dir / f"{item.stem}.json").write_text(jsonlib.dumps(original_json), encoding="utf-8")
+
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    res = client.post(f"/api/queue/{item_id}/translated-text", json={"text": "corrected translation"})
+    assert res.status_code == 200
+
+    assert (text_dir / f"{item.stem}.txt").read_text(encoding="utf-8") == "corrected translation"
+
+    saved = jsonlib.loads((json_dir / f"{item.stem}.json").read_text(encoding="utf-8"))
+    assert saved["translated_text"] == "corrected translation"
+    assert saved["edited"] is True
+    assert "edited_at" in saved
+    for key in ("engine", "model", "system_prompt", "timestamp", "source_file"):
+        assert saved[key] == original_json[key]
+
+
+def test_cleaned_text_save_never_touches_raw_or_translated_dirs(client, tmp_path):
+    output_dir = tmp_path / "output"
+    (output_dir / "cleaned" / "text").mkdir(parents=True)
+    (output_dir / "cleaned" / "json").mkdir(parents=True)
+    (output_dir / "raw_ocr" / "text").mkdir(parents=True)
+    (output_dir / "translated" / "text").mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+
+    (output_dir / "cleaned" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
+    (output_dir / "cleaned" / "json" / f"{item.stem}.json").write_text(
+        '{"cleaned_text": "orig"}', encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    client.post(f"/api/queue/{item_id}/cleaned-text", json={"text": "edited"})
+
+    assert list((output_dir / "raw_ocr" / "text").iterdir()) == []
+    assert list((output_dir / "translated" / "text").iterdir()) == []
+
+
+def test_translated_text_save_never_touches_raw_or_cleaned_dirs(client, tmp_path):
+    output_dir = tmp_path / "output"
+    (output_dir / "translated" / "text").mkdir(parents=True)
+    (output_dir / "translated" / "json").mkdir(parents=True)
+    (output_dir / "raw_ocr" / "text").mkdir(parents=True)
+    (output_dir / "cleaned" / "text").mkdir(parents=True)
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+
+    (output_dir / "translated" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
+    (output_dir / "translated" / "json" / f"{item.stem}.json").write_text(
+        '{"translated_text": "orig"}', encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    client.post(f"/api/queue/{item_id}/translated-text", json={"text": "edited"})
+
+    assert list((output_dir / "raw_ocr" / "text").iterdir()) == []
+    assert list((output_dir / "cleaned" / "text").iterdir()) == []
+
+
+# --------------------------------------------------------------------------- #
+# settings: document types + health
+# --------------------------------------------------------------------------- #
+
+def test_document_types_lists_known_types(client):
+    res = client.get("/api/document-types")
+    types = res.json()["types"]
+    assert "default" in types
+    assert "handwritten" in types
+
+
+def test_health_check_reports_service_status(client, monkeypatch):
+    monkeypatch.setattr("src.ocr_pipeline.utils.check_lm_studio", lambda *a, **k: None)
+    monkeypatch.setattr("src.ocr_pipeline.utils.check_ollama", lambda *a, **k: [])
+
+    res = client.get("/api/health")
+    body = res.json()
+    assert body["lm_studio"]["ok"] is True
+    assert body["ollama"]["ok"] is True
+    assert all(m["ok"] for m in body["models"])
+
+
+def test_health_check_surfaces_unreachable_services(client, monkeypatch):
+    monkeypatch.setattr("src.ocr_pipeline.utils.check_lm_studio",
+                        lambda *a, **k: "Cannot reach LM Studio at http://x (ConnectionError)")
+    monkeypatch.setattr("src.ocr_pipeline.utils.check_ollama",
+                        lambda *a, **k: ["Cannot reach Ollama server (ConnectionError)"])
+
+    res = client.get("/api/health")
+    body = res.json()
+    assert body["lm_studio"]["ok"] is False
+    assert body["ollama"]["ok"] is False
+    assert all(not m["ok"] for m in body["models"])
+
+
+# --------------------------------------------------------------------------- #
+# history
+# --------------------------------------------------------------------------- #
+
+def _seed_history_run(state, *, failed=0):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+
+    run_id = state.history.start_run(stages=["ocr", "cleanup"], output_dir="out", total=1)
+    item = JobItem(path="C:/docs/letter.png")
+    item.state = JobState.DONE if not failed else JobState.FAILED
+    item.confidence = 88
+    item.language = "German"
+    item.results = {
+        "raw": {"extracted_text": "raw text"},
+        "cleaned": {"cleaned_text": "cleaned text"},
+    }
+    state.history.record_item(run_id, item)
+    state.history.finish_run(run_id, succeeded=0 if failed else 1, failed=failed, elapsed=4.2)
+    return run_id
+
+
+def test_history_runs_lists_finished_runs(client):
+    _seed_history_run(runtime.state)
+
+    res = client.get("/api/history/runs")
+    runs = res.json()["runs"]
+    assert len(runs) == 1
+    assert runs[0]["total"] == 1
+    assert runs[0]["succeeded"] == 1
+
+
+def test_history_run_items_lists_documents(client):
+    run_id = _seed_history_run(runtime.state)
+
+    res = client.get(f"/api/history/runs/{run_id}/items")
+    items = res.json()["items"]
+    assert items[0]["name"] == "letter.png"
+    assert items[0]["language"] == "German"
+
+
+def test_history_item_detail_includes_text_and_diff(client):
+    run_id = _seed_history_run(runtime.state)
+    item_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+
+    res = client.get(f"/api/history/items/{item_id}")
+    body = res.json()
+    assert body["raw"] == "raw text"
+    assert body["cleaned"] == "cleaned text"
+    assert body["confidence_tier"] == "high"
+    assert "diff" in body
+
+
+def test_history_item_detail_404_for_unknown_id(client):
+    res = client.get("/api/history/items/999999")
+    assert res.status_code == 404
+
+
+def test_history_item_detail_includes_page(client):
+    run_id = _seed_history_run(runtime.state)
+    item_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+    body = client.get(f"/api/history/items/{item_id}").json()
+    assert "page" in body
+
+
+def test_history_image_route_404_for_unknown_item(client):
+    res = client.get("/api/history/items/999999/image")
+    assert res.status_code == 404
+
+
+def test_history_image_route_404_when_source_file_gone(client, tmp_path):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path=str(tmp_path / "nope.png"))
+    item.state = JobState.DONE
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+    hist_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+    res = client.get(f"/api/history/items/{hist_id}/image")
+    assert res.status_code == 404
+
+
+def test_history_image_route_passes_jpg_through_unchanged(client, tmp_path):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    f = tmp_path / "scan.jpg"
+    f.write_bytes(b"\xff\xd8\xff-fake-jpeg")
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path=str(f))
+    item.state = JobState.DONE
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+    hist_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+    res = client.get(f"/api/history/items/{hist_id}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/jpeg"
+    assert res.content == b"\xff\xd8\xff-fake-jpeg"
+
+
+def test_history_image_route_renders_page_parsed_from_name_when_page_col_null(client, tmp_path):
+    import fitz
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    pdf_path = tmp_path / "doc.pdf"
+    doc = fitz.open()
+    doc.new_page(width=50, height=200)   # page 0 — tall
+    doc.new_page(width=200, height=50)   # page 1 — wide
+    doc.save(str(pdf_path))
+    doc.close()
+
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=2)
+    for idx in (0, 1):
+        item = JobItem(path=str(pdf_path))
+        item.state = JobState.DONE
+        item.label = f"Eberhard KV 3.pdf  p.{idx + 1}"
+        runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=2, failed=0, elapsed=1.0)
+
+    items = client.get(f"/api/history/runs/{run_id}/items").json()["items"]
+    img0 = client.get(f"/api/history/items/{items[0]['item_id']}/image").content
+    img1 = client.get(f"/api/history/items/{items[1]['item_id']}/image").content
+    pix0 = fitz.Pixmap(img0)
+    pix1 = fitz.Pixmap(img1)
+    assert pix0.height > pix0.width  # tall (page 0)
+    assert pix1.width > pix1.height  # wide (page 1)
+    assert img0 != img1  # different pages rendered
+
+
+def test_history_image_route_honours_page_column_when_set(client, tmp_path):
+    import fitz
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    pdf_path = tmp_path / "doc.pdf"
+    doc = fitz.open()
+    doc.new_page(width=200, height=50)   # page 0
+    doc.new_page(width=50, height=200)   # page 1
+    doc.save(str(pdf_path))
+    doc.close()
+
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path=str(pdf_path), page=1)  # explicitly page 1
+    item.state = JobState.DONE
+    item.label = "Eberhard KV 3.pdf  p.1"  # name says page 1, but column should win
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+
+    hist_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+    img_bytes = client.get(f"/api/history/items/{hist_id}/image").content
+    pix = fitz.Pixmap(img_bytes)
+    assert pix.height > pix.width  # page 1 is tall — column beats name parse
+
+
+def test_history_raw_text_save_updates_text(client):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path="C:/docs/report.png")
+    item.state = JobState.DONE
+    item.results = {"raw": {"extracted_text": "original text"}}
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+    hist_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+
+    res = client.post(f"/api/history/items/{hist_id}/raw-text", json={"text": "corrected text"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["raw"] == "corrected text"
+
+    re_read = client.get(f"/api/history/items/{hist_id}").json()
+    assert re_read["raw"] == "corrected text"
+
+
+def test_history_raw_text_save_404_for_unknown_item(client):
+    res = client.post("/api/history/items/999999/raw-text", json={"text": "x"})
+    assert res.status_code == 404
+
+
+def test_history_search_finds_by_filename(client):
+    _seed_history_run(runtime.state)
+
+    hit = client.get("/api/history/search", params={"q": "letter"})
+    miss = client.get("/api/history/search", params={"q": "nonexistent"})
+
+    assert len(hit.json()["items"]) == 1
+    assert miss.json()["items"] == []
+
+
+def test_history_fulltext_search_finds_text(client):
+    from src.ocr_pipeline.jobs import JobItem, State as JobState
+
+    run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = JobItem(path="C:/docs/report.png")
+    item.state = JobState.DONE
+    item.results = {
+        "raw": {"extracted_text": "This is a confidential report about quantum computing."},
+        "cleaned": {"cleaned_text": "This is a cleaned confidential report."},
+    }
+    runtime.state.history.record_item(run_id, item)
+    runtime.state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
+
+    res = client.get("/api/history/fulltext", params={"q": "quantum"})
+    results = res.json()["results"]
+    assert len(results) == 1
+    assert results[0]["name"] == "report.png"
+
+
+def test_history_search_with_no_query_returns_nothing(client):
+    _seed_history_run(runtime.state)
+    res = client.get("/api/history/search")
+    assert res.json()["items"] == []
+
+
+def test_delete_run_removes_it_but_not_output_files(client):
+    run_id = _seed_history_run(runtime.state)
+
+    res = client.delete(f"/api/history/runs/{run_id}")
+    assert res.json() == {"ok": True}
+    assert client.get("/api/history/runs").json()["runs"] == []
+
+
+# --------------------------------------------------------------------------- #
+# analytics
+# --------------------------------------------------------------------------- #
+
+def test_analytics_stats_before_any_run(client):
+    res = client.get("/api/analytics/stats")
+    body = res.json()
+    assert body["runs"] == 0
+    assert body["confidences"] == []
+
+
+def test_analytics_stats_reflects_seeded_run(client):
+    _seed_history_run(runtime.state)
+
+    res = client.get("/api/analytics/stats")
+    body = res.json()
+    assert body["runs"] == 1
+    assert body["files"] == 1
+    assert 88 in body["confidences"]
+
+
+# --------------------------------------------------------------------------- #
+# tropy send (write-back), against a synthetic project — never a real archive
+# --------------------------------------------------------------------------- #
+
+def _add_tropy_queue_item(client, photo_id: int = 10, text: str = "Sauberer Text"):
+    from src.ocr_pipeline.jobs import JobItem
+
+    item = JobItem(path="assets/a.pdf", source={"photo_id": photo_id}, label="doc.pdf p.1")
+    item.results = {"cleaned": {"cleaned_text": text}}
+    runtime.state.add_items([item])
+    return item
+
+
+def test_tropy_send_preview_lists_an_insertable_row(client, tropy_project):
+    _add_tropy_queue_item(client)
+
+    res = client.post("/api/tropy/send/preview", json={
+        "project": str(tropy_project), "targets": ["notes"],
+    })
+    body = res.json()
+    assert body["blockers"] == []
+    assert body["insertable"] == 1
+    assert body["plans"][0]["action"] == "insert"
+
+
+def test_tropy_send_preview_ignores_non_tropy_items(client, tmp_path, tropy_project):
+    f = tmp_path / "plain.png"
+    f.write_bytes(b"x")
+    client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+
+    res = client.post("/api/tropy/send/preview", json={
+        "project": str(tropy_project), "targets": ["notes"],
+    })
+    assert res.json()["insertable"] == 0
+
+
+def test_tropy_send_write_creates_a_note_and_backs_up(client, tropy_project):
+    _add_tropy_queue_item(client, text="Der Bericht ist fertig.")
+
+    res = client.post("/api/tropy/send/write", json={
+        "project": str(tropy_project), "targets": ["notes"],
+    })
+    body = res.json()
+    assert body["written"] == 1
+    assert body["backup"] is not None
+
+    con_check = __import__("sqlite3").connect(tropy_project / "project.tpy")
+    row = con_check.execute("SELECT text FROM notes").fetchone()
+    assert row[0] == "Der Bericht ist fertig."
+    con_check.close()
+
+
+def test_tropy_send_write_does_not_duplicate_on_rerun(client, tropy_project):
+    _add_tropy_queue_item(client, text="Einmaliger Text")
+
+    first = client.post("/api/tropy/send/write", json={
+        "project": str(tropy_project), "targets": ["notes"],
+    })
+    second = client.post("/api/tropy/send/write", json={
+        "project": str(tropy_project), "targets": ["notes"],
+    })
+
+    assert first.json()["written"] == 1
+    assert second.json()["written"] == 0
+
+
+def test_tropy_send_write_reports_blockers_as_409(client, tropy_project):
+    res = client.post("/api/tropy/send/write", json={
+        "project": str(tropy_project), "targets": [],
+    })
+    assert res.status_code == 409
+
+
+# --------------------------------------------------------------------------- #
+# bootstrap: waiting for the background uvicorn thread before opening a window
+# --------------------------------------------------------------------------- #
+#
+# `main()` starts uvicorn in a background thread and then immediately opens a
+# window (native or browser) at its URL. Caught live: the window can win that
+# race and load before the socket is bound, showing a connection-refused
+# error on first launch. `_wait_for_server` is the fix; these pin the two
+# outcomes it has to get right.
+
+def test_wait_for_server_returns_true_once_something_is_listening():
+    import threading
+
+    from src.ocr_pipeline.web.server import _wait_for_server
+
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    port = srv.getsockname()[1]
+    accepted = threading.Event()
+
+    # Delay the "server" coming up, the same shape as uvicorn's own startup
+    # lag, to prove this actually polls rather than checking once.
+    def open_late():
+        import time
+        time.sleep(0.3)
+        conn, _ = srv.accept()
+        conn.close()
+        accepted.set()
+
+    threading.Thread(target=open_late, daemon=True).start()
+    try:
+        assert _wait_for_server(port, timeout=3.0) is True
+        accepted.wait(timeout=2.0)  # let accept() finish before srv.close()
+    finally:
+        srv.close()
+
+
+def test_wait_for_server_gives_up_after_timeout():
+    from src.ocr_pipeline.web.server import _wait_for_server
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        never_listening_port = s.getsockname()[1]
+    # The socket is closed again immediately, so nothing is listening on this
+    # port — a short timeout keeps the test itself fast.
+    assert _wait_for_server(never_listening_port, timeout=0.5) is False
+
+
+# --------------------------------------------------------------------------- #
+# bootstrap: reporting it when the server thread never comes up
+# --------------------------------------------------------------------------- #
+#
+# `_wait_for_server` correctly detects the timeout above, but `main()` used to
+# open the browser window anyway with just a print() — invisible in
+# a `.pyw` process, which has no console. That's exactly the "OCR Pipeline"
+# window showing a connection-refused page with zero
+# explanation. These pin the fix: the exception (if any) is captured off the
+# background thread and actually surfaced instead of silently discarded.
+
+def test_start_server_thread_captures_an_exception_from_uvicorn(monkeypatch):
+    import uvicorn
+
+    from src.ocr_pipeline.web.server import _start_server_thread
+
+    monkeypatch.setattr(uvicorn, "run", lambda *a, **k: (_ for _ in ()).throw(
+        RuntimeError("port already in use")))
+
+    thread, errors = _start_server_thread(59999)
+    thread.join(timeout=2.0)
+    assert len(errors) == 1
+    assert isinstance(errors[0], RuntimeError)
+    assert "port already in use" in str(errors[0])
+
+
+def test_report_startup_failure_prints_the_captured_exception(monkeypatch, capsys):
+    from src.ocr_pipeline.web.server import _report_startup_failure
+
+    monkeypatch.setattr("tkinter.messagebox.showerror", lambda *a, **k: None)
+
+    class FakeThread:
+        def is_alive(self):
+            return False
+
+    _report_startup_failure(5099, FakeThread(), [ValueError("bad config")])
+    out = capsys.readouterr().out
+    assert "5099" in out
+    assert "ValueError" in out
+    assert "bad config" in out
+
+
+def test_report_startup_failure_explains_a_plain_timeout(monkeypatch, capsys):
+    from src.ocr_pipeline.web.server import _report_startup_failure
+
+    monkeypatch.setattr("tkinter.messagebox.showerror", lambda *a, **k: None)
+
+    class FakeThread:
+        def is_alive(self):
+            return True
+
+    _report_startup_failure(5099, FakeThread(), [])
+    out = capsys.readouterr().out
+    assert "No response within 10s" in out
+
+
+# --------------------------------------------------------------------------- #
+# bootstrap: sys.stdout/stderr are None in a real (no-terminal) .pyw launch
+# --------------------------------------------------------------------------- #
+#
+# Confirmed live: a genuine double-click of the desktop shortcut (fresh
+# reboot, nothing else holding the port) crashed with
+# "ValueError: Unable to configure formatter 'default'" — uvicorn's logging
+# setup tries to attach a StreamHandler to sys.stderr, which is None (not
+# just quiet) in a truly consoleless process. Reproduced directly by setting
+# sys.stdout/stderr to None and calling logging.config.dictConfig on
+# uvicorn's own LOGGING_CONFIG.
+
+def test_ensure_std_streams_replaces_none_streams(monkeypatch):
+    from src.ocr_pipeline.web.server import _ensure_std_streams
+
+    monkeypatch.setattr(sys, "stdout", None)
+    monkeypatch.setattr(sys, "stderr", None)
+
+    _ensure_std_streams()
+
+    assert sys.stdout is not None
+    assert sys.stderr is not None
+    sys.stdout.write("this must not raise\n")
+    sys.stderr.write("neither must this\n")
+
+
+def test_ensure_std_streams_leaves_real_streams_alone(monkeypatch, capsys):
+    from src.ocr_pipeline.web.server import _ensure_std_streams
+
+    _ensure_std_streams()
+    print("still visible to capsys")
+    assert "still visible to capsys" in capsys.readouterr().out
+
+
+# --------------------------------------------------------------------------- #
+# pdf export
+# --------------------------------------------------------------------------- #
+
+def _make_pdf_text_folder(tmp_path, n=2):
+    """Create a cleaned/text folder with n .txt files."""
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    for i in range(n):
+        (text_dir / f"page{i+1}.txt").write_text(
+            f"Page {i+1} text.\nSome content here.",
+            encoding="utf-8",
+        )
+    return text_dir
+
+
+@pytest.fixture
+def pdf_text_folder(tmp_path):
+    return _make_pdf_text_folder(tmp_path, n=2)
+
+
+def test_pdf_export_start_returns_ok(client, pdf_text_folder):
+    folder = str(pdf_text_folder.parent.parent)
+    res = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+
+    # Wait for the thread to finish
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert status["status"] == "done"
+    assert status["output_path"] is not None
+
+
+def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder):
+    folder = str(pdf_text_folder.parent.parent)
+    first = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert first.status_code == 200
+
+    second = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert second.status_code == 409
+    assert "already running" in second.json()["detail"].lower()
+
+    # Wait for the first to finish so we don't leave state dirty
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+
+
+def test_pdf_export_400_on_missing_folder(client):
+    res = client.post("/api/pdf-export/start", json={
+        "folder": "C:/does/not/exist", "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 200  # start returns ok; error surfaces on thread
+    assert res.json()["ok"] is True
+
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert status["status"] == "error"
+
+
+def test_pdf_export_download_404_before_compilation(client):
+    res = client.get("/api/pdf-export/download")
+    assert res.status_code == 404
+
+
+def test_pdf_export_download_returns_pdf_after_done(client, pdf_text_folder):
+    folder = str(pdf_text_folder.parent.parent)
+    client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] == "done":
+            break
+        time.sleep(0.05)
+
+    res = client.get("/api/pdf-export/download")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/pdf"
+    assert len(res.content) > 0
+
+
+def test_pdf_export_events_sse_streams_log_then_done(client, pdf_text_folder):
+    """SSE stream should emit log events then a done event."""
+    folder = str(pdf_text_folder.parent.parent)
+    res = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 200
+
+    sse_res = client.get("/api/pdf-export/events")
+    assert sse_res.status_code == 200
+    assert sse_res.headers.get("content-type", "").startswith("text/event-stream")
+
+    events_text = sse_res.text
+    assert "log" in events_text or "done" in events_text

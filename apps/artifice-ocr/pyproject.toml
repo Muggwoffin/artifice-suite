@@ -1,0 +1,30 @@
+[project]
+name = "ocr_pipeline"
+version = "0.1.0"
+description = "A pipeline for historical document OCR and translation."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "typer",
+    "ollama",
+    "openai",
+    "python-dotenv",
+    "pyyaml",
+    "PyMuPDF",
+    "tkinterdnd2",
+    "reportlab",
+    "huggingface_hub",
+]
+
+[project.optional-dependencies]
+# The tkinter GUI (ocr_pipeline_gui) needs none of these. Only the web
+# frontend (ocr_pipeline_web) does.
+web = [
+    "fastapi",
+    "uvicorn[standard]",
+]
+
+[project.scripts]
+ocr_pipeline = "ocr_pipeline.cli:app"
+ocr_pipeline_gui = "ocr_pipeline.gui:main"
+ocr_pipeline_web = "ocr_pipeline.web.server:main"
