@@ -13,9 +13,6 @@
 
   // Enhanced Configuration State Management
   var cfg = {
-    inputDir: $("inputDir"),
-    outputDir: $("outputDir"),
-    vaultDir: $("vaultDir"),
     llmUrl: $("llmUrl"),
     llmApiKey: $("llmApiKey"),
     llmModel: $("llmModel"),
@@ -29,6 +26,14 @@
     btnTestConnection: $("btnTestConnection"),
     btnFetchModels:    $("btnFetchModels")
   };
+
+  // Warn on startup if any cached element resolved to null — a missing
+  // id in the template must produce a visible complaint, not a dead page.
+  Object.keys(cfg).forEach(function (key) {
+    if (cfg[key] === null) {
+      console.warn("pipeline.js: cfg." + key + " resolved to null — element #" + key + " not found in the DOM");
+    }
+  });
 
   var modelState = {
     availableModels: [],
@@ -228,19 +233,16 @@
 
   function collectConfig(extra) {
     var o = {
-      input_dir:      cfg.inputDir.value,
-      output_dir:     cfg.outputDir.value,
-      vault_dir:      cfg.vaultDir.value,
-      llm_base_url:   cfg.llmUrl.value,
-      llm_api_key:    cfg.llmApiKey.value,
-      llm_model:       cfg.llmModel.value,
-      vision_mode:    !!cfg.visionMode.checked,
-      chunk_size:     parseInt(cfg.chunkSize.value, 10) || 2000,
-      chunk_overlap:  parseInt(cfg.chunkOverlap.value, 10) || 200,
-      batch_size:     parseInt(cfg.batchSize.value, 10) || 5,
-      graph_formats:  cfg.graphFormats.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean),
-      use_semantic:   !!cfg.useSemantic.checked,
-      incremental:    !!cfg.incremental.checked
+      llm_base_url:   cfg.llmUrl ? cfg.llmUrl.value : "",
+      llm_api_key:    cfg.llmApiKey ? cfg.llmApiKey.value : "",
+      llm_model:      cfg.llmModel ? cfg.llmModel.value : "",
+      vision_mode:    cfg.visionMode ? !!cfg.visionMode.checked : false,
+      chunk_size:     cfg.chunkSize ? (parseInt(cfg.chunkSize.value, 10) || 2000) : 2000,
+      chunk_overlap:  cfg.chunkOverlap ? (parseInt(cfg.chunkOverlap.value, 10) || 200) : 200,
+      batch_size:     cfg.batchSize ? (parseInt(cfg.batchSize.value, 10) || 5) : 5,
+      graph_formats:  cfg.graphFormats ? cfg.graphFormats.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) : [],
+      use_semantic:   cfg.useSemantic ? !!cfg.useSemantic.checked : false,
+      incremental:    cfg.incremental ? !!cfg.incremental.checked : false
     };
     if (extra) { Object.keys(extra).forEach(function (k) { o[k] = extra[k]; }); }
     return o;
@@ -464,6 +466,7 @@
 
   function runStage(stage) {
     if (running) return;
+    try {
 
     var endpoint;
     if (stage === "run-all") {
@@ -545,6 +548,27 @@
       setStatus("idle", "Error");
       updateConnectionStatus("disconnected");
     });
+    } catch (e) {
+      running = false;
+      if (currentEventSource) {
+        currentEventSource.close();
+        currentEventSource = null;
+      }
+      setStatus("idle", "Error: " + (e && e.message ? e.message : e));
+      // Set any running stages to error so the UI reflects the failure
+      for (var i = 0; i < STAGE_ORDER.length; i++) {
+        if (stageCards[STAGE_ORDER[i]] === "running") {
+          setStageState(STAGE_ORDER[i], "error");
+        }
+      }
+      // Also mark the requested stage as error if it's a single-stage run
+      if (stage && stage !== "run-all" && stage !== "demo") {
+        if (stageCards[stage] !== "error") {
+          setStageState(stage, "error");
+        }
+      }
+      console.error("runStage error:", e);
+    }
   }
 
   // ── Breakdown rendering ───────────────────────────────────────────
