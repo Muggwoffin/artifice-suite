@@ -331,6 +331,61 @@ itself.** Neither renders anywhere today — `--success` and `--warning` are sti
 - [ ] Decide whether Google Fonts should be vendored locally — `base.html` currently fetches from
       `fonts.googleapis.com`, which contradicts the local-first, offline guarantee
 
+### Phase 1.5 — Security remediation *(blocks the public release, not the design rollout)*
+
+First full security audit run 2026-07-27 by `security-auditor`. **13 findings.** Most sit in
+`artifice-ocr`, `artifice-draft` and `artifice-transcribe`, so the fixes land in apps otherwise
+frozen behind the design gate — security work is not design work and the gate does not apply, but
+it does mean these touch frozen code.
+
+> **Deliberately non-specific.** This repository is **public**. Full findings, with reproduction
+> steps, are kept locally in `.security/` (gitignored, mode 0600) and must stay there until fixed.
+> Publishing reproduction steps for unpatched vulnerabilities in software people may already be
+> running is publishing an attack guide. Move detail here only after the fix ships.
+
+- [ ] **Settle CORS first — it gates the severity of almost everything else.** No CORS middleware
+      was found in any of the web servers. Without it, any webpage the user visits can issue
+      cross-origin requests to their local servers, which converts several of the findings below
+      from "local tool accepts loose input" into "remote webpage drives the local tool". Confirm
+      whether headers are set anywhere; if not, this is the single highest-leverage fix
+- [ ] **Two HIGH path-traversal findings in `artifice-transcribe`** — audio upload and speaker
+      enrollment both build filesystem paths from user-supplied names without stripping directory
+      components. **The correct pattern already exists in this codebase**:
+      `apps/artifice-draft/src/artifice_draft/web/runtime.py:252` uses `Path(filename).name`. Apply
+      it in transcribe, then audit ocr and graph for the same shape
+- [ ] **Credentials returned in API response bodies** (medium, `artifice-transcribe` and
+      `artifice-ocr`) — config endpoints echo HuggingFace tokens and API keys back to the client.
+      Redact on the way out; the client does not need the value it just set
+- [ ] **SSRF via user-controlled model endpoints** (medium, `artifice-graph` and
+      `artifice-transcribe`) — the base URL for model calls is taken from request bodies and
+      fetched server-side, with responses returned to the caller. Constrain to a scheme/host
+      allowlist consistent with the local-first guarantee: loopback and the WSL host gateway
+- [ ] **User-supplied directories used for reads and writes** (medium/low, `artifice-graph`) —
+      `input_dir`, `output_dir` and `vault_dir` arrive in POST bodies and are used directly.
+      Validate against an allowlist
+- [ ] **Secrets persisted world-readable** (low, `artifice-ocr` and `artifice-transcribe`) —
+      tokens are written to disk with default permissions. Write mode `0600`, and reconsider
+      whether the key needs persisting at all
+- [ ] **`apps/artifice-draft/src/artifice_draft/write_utils.py:36`** hardcodes a Windows temp path
+      containing a specific username. It will fail on macOS, Linux, and any other Windows account.
+      Use `tempfile.gettempdir()`. This one is safe to fix immediately — it is a portability bug
+      with an incidental information leak, not an exploitable vulnerability
+- [ ] Confirm the `pickle.loads()` calls in `artifice-transcribe` deserialize only
+      database-internal, model-generated data and never anything user-supplied
+
+**Resolved during the audit — F1, "GitHub PAT in `.mcp.json`", is contained.** Verified by the
+orchestrator, since the auditor is read-only and could not run `git`: the file was **never
+committed** (zero commits touch it, zero objects in history carry the name), it is correctly
+ignored at `.gitignore:31`, and **no credential-shaped string appears in any tracked file** or in
+the last 60 commits. The live exposure was file permissions only — it sat at `0644`. Remediation is
+`chmod 600 .mcp.json`; no token rotation is required on the evidence, because the credential never
+entered the repository.
+
+**Clean surfaces, recorded so they are not re-audited without cause.** All six `subprocess.run()`
+calls across the suite use list-form arguments — no `shell=True`, no string concatenation, no shell
+injection vector. No secrets in tracked markdown, scripts, TOML or YAML; the `hf_...` strings in
+`HANDOFF.md` are documentation of a placeholder.
+
 ### Phase 2 — Design system rollout
 
 - [ ] **PREREQUISITE: consolidate the responsive breakpoints before copying anything.**

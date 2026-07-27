@@ -37,3 +37,10 @@ Thumbs.db
 # Cached LLM responses. Keyed by prompt hash, regenerated on demand, and specific
 # to whichever model that machine happens to have pulled.
 apps/*/data/cache/
+
+# Security audit output. THIS REPOSITORY IS PUBLIC. Audit reports name unpatched
+# vulnerabilities and include working reproduction steps; publishing them is
+# publishing an attack guide against anyone already running this software.
+# Findings are tracked publicly in IMPLEMENTATION_PLAN.md in non-exploitable form.
+# Keep full detail here, local and mode 0600, until the finding is fixed.
+.security/
