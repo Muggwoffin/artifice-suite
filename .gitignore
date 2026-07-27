@@ -29,3 +29,7 @@ Thumbs.db
 .env
 .env.*
 .mcp.json
+
+# Per-machine tool state. `.claude/agents/` and `.claude/commands/` ARE tracked —
+# they define the shared agent fleet. Only the local permission cache is not.
+.claude/settings.local.json

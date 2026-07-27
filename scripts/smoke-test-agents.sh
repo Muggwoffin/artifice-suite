@@ -26,7 +26,10 @@ bold()  { printf '\033[1m%s\033[0m\n' "$1"; }
 ok()  { green "  PASS  $1"; PASS=$((PASS+1)); }
 bad() { red   "  FAIL  $1"; FAIL=$((FAIL+1)); }
 
-strip_ansi() { sed -e 's/\x1b\[[0-9;]*m//g'; }
+# OpenCode terminates the banner line with a carriage return. Left in place it
+# sits between the model name and end-of-line, so any `${model}$` assertion below
+# fails against a banner that is in fact correct. Strip SGR colour and CR both.
+strip_ansi() { sed -e 's/\x1b\[[0-9;]*m//g' -e 's/\r$//'; }
 
 # --- OpenCode agents -------------------------------------------------------
 # name:expected-model-substring
