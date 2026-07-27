@@ -1,0 +1,31 @@
+# Artifice Suite
+
+A collection of local-first, bring-your-own-model (BYOM) desktop tools designed around rigid software harnesses rather than conversational AI interfaces.
+
+## Anti-ELIZA Philosophy
+
+*(Reserved for authoring)*
+
+## Design System
+
+All user interfaces across the suite adhere to **The New Masses Design System** (`Design_Philosophy.md`), featuring paper-and-ink aesthetics, warm editorial palettes, serif typography, and restrained motion.
+
+## Applications Overview
+
+1. **`apps/artifice-ocr`**: Local-first OCR processing with structured JSON extraction (supports Ollama, LM Studio, or generic API).
+2. **`apps/artifice-draft`**: Local-first copy editing harness for structural transformations (supports Ollama, LM Studio, or generic API).
+3. **`apps/artifice-graph`**: Knowledge graph creator extracting entities and relationships into typed JSON (supports Ollama, LM Studio, or generic API).
+4. **`apps/artifice-transcribe`**: Oral history transcription utilizing Whisper models or NVIDIA NeMo Parakeet, coupled with pyannote diarization via Hugging Face.
+
+## Quick-Start Guide (Bring Your Own Model)
+
+- **Local Execution**: Ensure Ollama is running at `http://localhost:11434` or LM Studio at `http://localhost:1234/v1`.
+- **Cloud Execution**: Configure your preferred provider API key (OpenAI, Anthropic, OpenRouter, etc.) in the environment or app settings.
+- **Docker Compose**: Run `docker-compose up` to start all app containers with local bridging.
+
+## macOS & Apple Silicon Support
+
+The Artifice Suite runs natively on macOS (Apple Silicon M1/M2/M3/M4 and Intel Macs):
+- **Metal GPU Acceleration**: Run model engines (**Ollama** and **LM Studio**) **natively on the macOS host** to leverage Apple Silicon Metal GPU acceleration and Unified Memory.
+- **Docker Networking**: The provided `docker-compose.yml` configures containers to connect to host-bound models via `http://host.docker.internal:11434` (Ollama) or `http://host.docker.internal:1234/v1` (LM Studio).
+- **Device Agnostic Execution**: Python components dynamically target `cuda` $\rightarrow$ `mps` (Apple Metal Performance Shaders) $\rightarrow$ `cpu`. For `artifice-transcribe`, set `PYTORCH_ENABLE_MPS_FALLBACK=1` on macOS if required.

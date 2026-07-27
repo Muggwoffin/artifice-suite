@@ -1,0 +1,15 @@
+{
+  "name": "artifice-draft",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Building artifice-draft'",
+    "test": "echo 'Testing artifice-draft'",
+    "lint": "echo 'Linting artifice-draft'"
+  },
+  "dependencies": {
+    "core-types": "workspace:*",
+    "model-harness": "workspace:*",
+    "shared-ui": "workspace:*"
+  }
+}

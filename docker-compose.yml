@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  artifice-ocr:
+    build:
+      context: .
+      dockerfile: apps/artifice-ocr/Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - MODEL_HARNESS_ENDPOINT=http://host.docker.internal:11434
+    volumes:
+      - ./apps/artifice-ocr:/app
+
+  artifice-draft:
+    build:
+      context: .
+      dockerfile: apps/artifice-draft/Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      - MODEL_HARNESS_ENDPOINT=http://host.docker.internal:11434
+    volumes:
+      - ./apps/artifice-draft:/app
+
+  artifice-graph:
+    build:
+      context: .
+      dockerfile: apps/artifice-graph/Dockerfile
+    ports:
+      - "3003:3000"
+    environment:
+      - MODEL_HARNESS_ENDPOINT=http://host.docker.internal:11434
+    volumes:
+      - ./apps/artifice-graph:/app
+
+  artifice-transcribe:
+    build:
+      context: .
+      dockerfile: apps/artifice-transcribe/Dockerfile
+    ports:
+      - "3004:3000"
+    environment:
+      - WHISPER_BACKEND=faster-whisper
+      - DIARIZATION_PROVIDER=pyannote
+    volumes:
+      - ./apps/artifice-transcribe:/app
