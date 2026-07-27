@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}ArtificeGraph — Pipeline{% endblock %}
+
+{% block content %}
+    <main class="page" id="main-content">
+  <header class="masthead">
+    <span class="label">Local-first GraphRAG &nbsp;·&nbsp; Historical entity extraction</span>
+    <h1>The Pipeline</h1>
+    <hr class="masthead-rule">
+  </header>
+
+  <section class="stat-row" id="statRow" aria-label="Pipeline state summary">
+    <div class="stat"><span class="stat-n" data-stat="documents">—</span><span class="stat-l">Documents</span></div>
+    <div class="stat"><span class="stat-n" data-stat="chunks">—</span><span class="stat-l">Chunks</span></div>
+    <div class="stat"><span class="stat-n" data-stat="entities">—</span><span class="stat-l">Entities</span></div>
+    <div class="stat"><span class="stat-n" data-stat="relationships">—</span><span class="stat-l">Relationships</span></div>
+    <div class="stat"><span class="stat-n" data-stat="raw">—</span><span class="stat-l">Raw Entities</span></div>
+  </section>
+
+  <div class="status-strip" id="statusStrip" data-state="idle">
+    <span class="dot" aria-hidden="true"></span>
+    <span data-status-text>Idle</span>
+    <span class="spacer"></span>
+    <span class="label" id="lastRunLabel">No runs yet</span>
+  </div>
+
+  <div class="pipeline-layout">
+    <!-- ───── LEFT: Configuration ───── -->
+    <section class="panel" aria-label="Configuration">
+      <div class="panel-header">
+        <h2 class="panel-title">Model Configuration (BYOM)</h2>
+        <p class="panel-sub">Bring Your Own Model - Connect any local or cloud LLM</p>
+      </div>
+
+      <div class="configuration-sections">
+        <!-- Section 1: Quick Start & Presets -->
+        <div class="config-section">
+          <h3 class="section-title">Step 1: Quick Start</h3>
+          <p class="section-help">Choose a preset to quickly configure common endpoints</p>
+          
+          <div class="preset-grid">
+<button type="button" class="preset-card" data-url="http://localhost:11434/v1" data-name="gemma2:27b">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                <div class="preset-content">
+                  <div class="preset-title">Ollama</div>
+                  <div class="preset-desc">Local Ollama server (most common)</div>
+                </div>
+              </button>
+<button type="button" class="preset-card" data-url="http://localhost:1234/v1" data-name="">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <div class="preset-content">
+                  <div class="preset-title">LM Studio</div>
+                  <div class="preset-desc">LM Studio desktop app</div>
+                </div>
+              </button>
+<button type="button" class="preset-card" data-url="http://localhost:8080/v1" data-name="">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                <div class="preset-content">
+                  <div class="preset-title">vLLM / LocalAI</div>
+                  <div class="preset-desc">vLLM or LocalAI server</div>
+                </div>
+              </button>
+<button type="button" class="preset-card" data-url="https://api.openai.com/v1" data-name="">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                <div class="preset-content">
+                  <div class="preset-title">Cloud API</div>
+                  <div class="preset-desc">Cloud-hosted endpoint (requires key)</div>
+                </div>
+              </button>
+          </div>
+        </div>
+
+        <!-- Section 2: Connection Testing -->
+        <div class="config-section">
+          <h3 class="section-title">Step 2: Verify Connection</h3>
+          <p class="section-help">Test your connection before running the pipeline</p>
+          
+          <div class="connection-test-container">
+<button type="button" class="app-btn app-btn-primary test-btn" id="btnTestConnection">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Test Connection
+              </button>
+
+              <div id="connectionResult" class="result-container" style="display: none;">
+              <div class="result-loading" style="display: none;">
+                <span>Testing connection...</span>
+              </div>
+              <div class="result-success" style="display: none;">
+                <div class="success-icon">✓</div>
+                <div class="success-content">
+                  <h4>Connection Successful</h4>
+                  <p id="connectionSuccessMessage"></p>
+                </div>
+              </div>
+              <div class="result-error" style="display: none;">
+                <div class="error-icon">✗</div>
+                <div class="error-content">
+                  <h4>Connection Failed</h4>
+                  <p id="connectionErrorMessage"></p>
+                  <ul id="connectionErrorSuggestions"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Model Discovery -->
+        <div class="config-section">
+          <h3 class="section-title">Step 3: Discover Models</h3>
+          <p class="section-help">Fetch available models from your server</p>
+          
+          <div class="model-discovery-container">
+<button type="button" class="app-btn app-btn-ghost discover-btn" id="btnFetchModels">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                Fetch Available Models
+              </button>
+            
+            <div id="modelDiscoveryResult" class="discovery-container" style="display: none;">
+              <div class="discovery-loading" style="display: none;">
+                <span>Loading models...</span>
+              </div>
+              <div class="discovery-success" style="display: none;">
+                <div class="models-list-container">
+                  <h4>Available Models</h4>
+                  <ul id="modelsList" class="models-grid"></ul>
+                </div>
+                <div class="vision-models-container">
+                  <h4>Vision Models</h4>
+                  <ul id="visionModelsList" class="models-grid"></ul>
+                </div>
+              </div>
+              <div class="discovery-error" style="display: none;">
+                <h4>Error Loading Models</h4>
+                <p id="discoveryErrorMessage"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Model Settings -->
+        <div class="config-section">
+          <h3 class="section-title">Step 4: Configure Model</h3>
+          <p class="section-help">Set your model parameters and preferences</p>
+          
+          <form id="configForm" class="field-stack" autocomplete="off" onsubmit="return false;">
+
+          <div class="field">
+            <label for="llmUrl">Base URL</label>
+            <input class="app-input" id="llmUrl" name="llmUrl" value="{{ config.llm.base_url }}" spellcheck="false" placeholder="http://localhost:11434/v1">
+            <span class="field-help">Default: http://localhost:11434/v1</span>
+          </div>
+
+          <div class="field">
+            <label for="llmApiKey">API Key</label>
+            <input class="app-input" id="llmApiKey" name="llmApiKey" type="password" value="{{ config.llm.api_key }}" spellcheck="false" placeholder="not-needed (optional)">
+            <span class="field-help">Leave blank for local models</span>
+          </div>
+
+          <div class="field field-wide">
+            <label for="llmModel">Model Selection</label>
+            <div class="model-selector">
+              <select class="app-input" id="llmModel" name="llmModel" value="{{ config.llm.model }}">
+                <option value="">Select a model...</option>
+              </select>
+              <button type="button" class="btn-fetch-models" id="btnFetchModels">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                Fetch Models
+              </button>
+            </div>
+            <span class="field-help">Click "Fetch Models" to discover available models</span>
+          </div>
+
+          <div class="field">
+            <label for="visionMode">Vision Support</label>
+            <label class="app-checkbox">
+              <input type="checkbox" id="visionMode" name="visionMode" {% if config.llm.supports_vision %}checked{% endif %}>
+              <span>Enable Vision/Multimodal processing (for document images)</span>
+            </label>
+          </div>
+
+          <div class="field field-wide">
+            <button type="button" class="app-btn app-btn-primary" id="btnTestConnection">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Test Connection
+            </button>
+            <span class="connection-help">Tests if the server is reachable and model is available</span>
+          </div>
+
+          <div class="field field-wide" style="margin-top: 1rem;">
+            <button type="button" class="app-btn app-btn-ghost" id="btnSaveConfig">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Configuration
+            </button>
+            <span class="field-help">Saves your settings locally in config.json</span>
+          </div>
+        </form>
+      </div>
+
+      <form id="pipelineForm" class="field-stack" autocomplete="off" onsubmit="return false;" style="margin-top: 2rem;">
+        <h3 style="margin-top: 2rem;">Pipeline Settings</h3>
+
+        <div class="field-grid">
+
+          <div class="field">
+            <label for="chunkSize">Chunk size (chars)</label>
+            <input class="app-input" type="number" min="200" step="100"
+                   id="chunkSize" name="chunkSize" value="{{ config.ingestion.chunk_size }}">
+          </div>
+
+          <div class="field">
+            <label for="chunkOverlap">Chunk overlap</label>
+            <input class="app-input" type="number" min="0" step="100"
+                   id="chunkOverlap" name="chunkOverlap" value="{{ config.ingestion.chunk_overlap }}">
+          </div>
+
+          <div class="field">
+            <label for="batchSize">Extraction batch size</label>
+            <input class="app-input" type="number" min="1" step="1"
+                   id="batchSize" name="batchSize" value="{{ config.extraction.batch_size }}">
+          </div>
+
+          <div class="field field-wide">
+            <label for="graphFormats">Graph export formats</label>
+            <input class="app-input" id="graphFormats" name="graphFormats"
+                   value="{{ ','.join(config.export.graph_formats) }}" spellcheck="false">
+          </div>
+
+          <label class="app-checkbox field-wide">
+            <input type="checkbox" id="useSemantic" {% if config.entity_resolution.use_semantic %}checked{% endif %}>
+            Semantic dedup (bge-m3) for entity resolution
+          </label>
+
+          <label class="app-checkbox field-wide">
+            <input type="checkbox" id="incremental">
+            Incremental ingestion (only new / changed files)
+          </label>
+        </div>
+      </form>
+    </section>
+
+    <!-- ───── RIGHT: Run deck + log ───── -->
+    <section aria-label="Run deck">
+      <div class="panel">
+        <h2 class="panel-title">Stages</h2>
+        <p class="panel-sub">Run individually or all together</p>
+
+        <div class="stage-grid" id="stageGrid">
+          {% set stages = [
+            ('ingest',  '1', 'Ingest',   'Chunk OCR text files'),
+            ('extract', '2', 'Extract',  'Entities & relationships via LLM'),
+            ('resolve', '3', 'Resolve',  'Deduplicate, pick canonical names'),
+            ('vault',   '4', 'Vault',    'Generate Obsidian notes'),
+            ('graph',   '5', 'Graph',    'Export GraphML / GEXF / JSON / CSV')
+          ] %}
+          {% for key, num, name, desc in stages %}
+          <button type="button" class="stage-card" data-stage="{{ key }}" data-state="idle"
+                  id="stage-{{ key }}">
+            <span class="stage-num">Stage {{ num }}</span>
+            <span class="stage-name">{{ name }}</span>
+            <span class="stage-desc">{{ desc }}</span>
+            <span class="stage-btn app-btn">Run</span>
+            <span class="stage-badge" data-stage-badge>{% if num == '1' %}idle{% endif %}</span>
+          </button>
+          {% endfor %}
+        </div>
+
+        <div class="run-bar">
+          <span class="spacer"></span>
+          <button type="button" class="app-btn app-btn-primary" id="btnRunAll" style="flex:1 1 60%;">Run All (1–5)</button>
+          <button type="button" class="app-btn app-btn-accent" id="btnDemo">Demo (no LLM)</button>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:1.25rem;">
+        <h2 class="panel-title">Live log</h2>
+        <p class="panel-sub">Streaming output · server-sent events</p>
+        <div class="log-toolbar" style="margin-top:0; margin-bottom:0.85rem;">
+          <span class="label" id="logConnState" data-state="idle">disconnected</span>
+          <span class="spacer"></span>
+          <label class="app-checkbox" style="margin-bottom:0;">
+            <input type="checkbox" id="autoscroll" checked> Autoscroll
+          </label>
+          <button type="button" class="app-btn app-btn-ghost" id="btnClearLog">Clear</button>
+        </div>
+        <div class="log-panel" id="logPanel" role="log" aria-live="polite" aria-atomic="false"></div>
+      </div>
+    </section>
+  </div>
+
+  <hr class="rule">
+
+  <h2 class="section-head">Breakdown</h2>
+  <div class="breakdown-grid">
+    <div class="panel">
+      <h2 class="panel-title" style="font-size:var(--text-lg);">Entity types</h2>
+      <div class="breakdown" id="typeBreakdown">
+        <p class="stat-empty">No entities yet — run Extract or Demo.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 class="panel-title" style="font-size:var(--text-lg);">Relationship types (top 10)</h2>
+      <div class="breakdown" id="relBreakdown">
+        <p class="stat-empty">No relationships yet — run Extract or Demo.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">
+    ArtificeGraph · an Artifice platform · FastAPI + Jinja2 · vanilla JS · design tokens from LudwigLang.
+  </p>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/pipeline.js?v={{ asset_v }}"></script>
+{% endblock %}

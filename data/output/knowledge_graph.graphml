@@ -1,0 +1,182 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d11" for="edge" attr.name="confidence" attr.type="double"/>
+<key id="d10" for="edge" attr.name="evidence_quote" attr.type="string"/>
+<key id="d9" for="edge" attr.name="time_frame" attr.type="string"/>
+<key id="d8" for="edge" attr.name="relationship_type" attr.type="string"/>
+<key id="d7" for="node" attr.name="viz_size" attr.type="long"/>
+<key id="d6" for="node" attr.name="b" attr.type="long"/>
+<key id="d5" for="node" attr.name="g" attr.type="long"/>
+<key id="d4" for="node" attr.name="r" attr.type="long"/>
+<key id="d3" for="node" attr.name="summary" attr.type="string"/>
+<key id="d2" for="node" attr.name="aliases" attr.type="string"/>
+<key id="d1" for="node" attr.name="entity_type" attr.type="string"/>
+<key id="d0" for="node" attr.name="label" attr.type="string"/>
+<graph edgedefault="directed"><node id="great_britain">
+  <data key="d0">Great Britain</data>
+  <data key="d1">Location</data>
+  <data key="d2"></data>
+  <data key="d3">Major European power represented at the Congress of Vienna.</data>
+  <data key="d4">249</data>
+  <data key="d5">226</data>
+  <data key="d6">175</data>
+  <data key="d7">20</data>
+</node>
+<node id="congress_of_vienna">
+  <data key="d0">Congress of Vienna</data>
+  <data key="d1">Event</data>
+  <data key="d2">The Congress</data>
+  <data key="d3">Diplomatic conference held in 1814 to reorganize Europe after the Napoleonic Wars.</data>
+  <data key="d4">245</data>
+  <data key="d5">194</data>
+  <data key="d6">231</data>
+  <data key="d7">52</data>
+</node>
+<node id="prussia">
+  <data key="d0">Prussia</data>
+  <data key="d1">Location</data>
+  <data key="d2"></data>
+  <data key="d3">German state that participated in the Congress of Vienna.</data>
+  <data key="d4">249</data>
+  <data key="d5">226</data>
+  <data key="d6">175</data>
+  <data key="d7">28</data>
+</node>
+<node id="napoleonic_wars">
+  <data key="d0">Napoleonic Wars</data>
+  <data key="d1">Event</data>
+  <data key="d2"></data>
+  <data key="d3">Series of wars fought between France and various European coalitions.</data>
+  <data key="d4">245</data>
+  <data key="d5">194</data>
+  <data key="d6">231</data>
+  <data key="d7">20</data>
+</node>
+<node id="concert_of_europe">
+  <data key="d0">Concert of Europe</data>
+  <data key="d1">Concept</data>
+  <data key="d2"></data>
+  <data key="d3">System of balance-of-power diplomacy established after the Congress of Vienna.</data>
+  <data key="d4">148</data>
+  <data key="d5">226</data>
+  <data key="d6">213</data>
+  <data key="d7">36</data>
+</node>
+<node id="russia">
+  <data key="d0">Russia</data>
+  <data key="d1">Location</data>
+  <data key="d2"></data>
+  <data key="d3">Major European power represented at the Congress of Vienna.</data>
+  <data key="d4">249</data>
+  <data key="d5">226</data>
+  <data key="d6">175</data>
+  <data key="d7">28</data>
+</node>
+<node id="karl_vom_stein">
+  <data key="d0">Karl vom Stein</data>
+  <data key="d1">Person</data>
+  <data key="d2">Baron Stein|Baron vom Stein</data>
+  <data key="d3">Prussian statesman who participated in early Congress discussions but died before its conclusion.</data>
+  <data key="d4">137</data>
+  <data key="d5">180</data>
+  <data key="d6">250</data>
+  <data key="d7">36</data>
+</node>
+<node id="treaty_of_paris">
+  <data key="d0">Treaty of Paris</data>
+  <data key="d1">Event</data>
+  <data key="d2"></data>
+  <data key="d3">Peace treaty signed on May 30, 1814, preceding the Congress of Vienna.</data>
+  <data key="d4">245</data>
+  <data key="d5">194</data>
+  <data key="d6">231</data>
+  <data key="d7">20</data>
+</node>
+<node id="klemens_von_metternich">
+  <data key="d0">Klemens von Metternich</data>
+  <data key="d1">Person</data>
+  <data key="d2">Metternich|Prince Metternich</data>
+  <data key="d3">Austrian foreign minister and central figure at the Congress of Vienna.</data>
+  <data key="d4">137</data>
+  <data key="d5">180</data>
+  <data key="d6">250</data>
+  <data key="d7">36</data>
+</node>
+<node id="alexander_i">
+  <data key="d0">Alexander I</data>
+  <data key="d1">Person</data>
+  <data key="d2">Tsar Alexander I</data>
+  <data key="d3">Tsar of Russia who sought expanded influence at the Congress of Vienna.</data>
+  <data key="d4">137</data>
+  <data key="d5">180</data>
+  <data key="d6">250</data>
+  <data key="d7">36</data>
+</node>
+<node id="nationalism">
+  <data key="d0">Nationalism</data>
+  <data key="d1">Concept</data>
+  <data key="d2"></data>
+  <data key="d3">Political ideology championed by liberal movements and opposed by Metternich.</data>
+  <data key="d4">148</data>
+  <data key="d5">226</data>
+  <data key="d6">213</data>
+  <data key="d7">28</data>
+</node>
+<node id="austria">
+  <data key="d0">Austria</data>
+  <data key="d1">Location</data>
+  <data key="d2">Austrian Empire</data>
+  <data key="d3">Major European power and host nation of the Congress of Vienna.</data>
+  <data key="d4">249</data>
+  <data key="d5">226</data>
+  <data key="d6">175</data>
+  <data key="d7">28</data>
+</node>
+<edge source="congress_of_vienna" target="concert_of_europe">
+  <data key="d8">established</data>
+  <data key="d9">1815</data>
+  <data key="d10">The resulting Concert of Europe established a balance of power</data>
+  <data key="d11">0.95</data>
+</edge>
+<edge source="concert_of_europe" target="nationalism">
+  <data key="d8">opposed</data>
+  <data key="d9">1815-1914</data>
+  <data key="d10">championing conservatism against nationalist and liberal movements</data>
+  <data key="d11">0.85</data>
+</edge>
+<edge source="karl_vom_stein" target="congress_of_vienna">
+  <data key="d8">participated_in</data>
+  <data key="d9">1814</data>
+  <data key="d10">participated in early discussions but died before the Congress concluded.</data>
+  <data key="d11">0.9</data>
+</edge>
+<edge source="karl_vom_stein" target="prussia">
+  <data key="d8">was_statesman_of</data>
+  <data key="d9"></data>
+  <data key="d10">a Prussian statesman</data>
+  <data key="d11">0.9</data>
+</edge>
+<edge source="klemens_von_metternich" target="congress_of_vienna">
+  <data key="d8">participated_in</data>
+  <data key="d9">1814-1815</data>
+  <data key="d10">Prince Klemens von Metternich played a central role in the negotiations.</data>
+  <data key="d11">0.95</data>
+</edge>
+<edge source="klemens_von_metternich" target="austria">
+  <data key="d8">served_as_foreign_minister_of</data>
+  <data key="d9">1809-1848</data>
+  <data key="d10">the Austrian foreign minister</data>
+  <data key="d11">0.95</data>
+</edge>
+<edge source="alexander_i" target="congress_of_vienna">
+  <data key="d8">participated_in</data>
+  <data key="d9">1814</data>
+  <data key="d10">Tsar Alexander I of Russia sought to expand Russian influence.</data>
+  <data key="d11">0.95</data>
+</edge>
+<edge source="alexander_i" target="russia">
+  <data key="d8">ruled</data>
+  <data key="d9">1801-1825</data>
+  <data key="d10">Tsar Alexander I of Russia</data>
+  <data key="d11">0.95</data>
+</edge>
+</graph></graphml>
