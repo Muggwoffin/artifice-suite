@@ -39,28 +39,28 @@
           <p class="section-help">Choose a preset to quickly configure common endpoints</p>
           
           <div class="preset-grid">
-<button type="button" class="preset-card" data-url="http://localhost:11434/v1" data-name="gemma2:27b">
+<button type="button" class="preset-card" data-url="http://localhost:11434/v1" data-name="gemma2:27b" aria-label="Ollama">
                 <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                 <div class="preset-content">
                   <div class="preset-title">Ollama</div>
                   <div class="preset-desc">Local Ollama server (most common)</div>
                 </div>
               </button>
-<button type="button" class="preset-card" data-url="http://localhost:1234/v1" data-name="">
+<button type="button" class="preset-card" data-url="http://localhost:1234/v1" data-name="" aria-label="LM Studio">
                 <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 <div class="preset-content">
                   <div class="preset-title">LM Studio</div>
                   <div class="preset-desc">LM Studio desktop app</div>
                 </div>
               </button>
-<button type="button" class="preset-card" data-url="http://localhost:8080/v1" data-name="">
+<button type="button" class="preset-card" data-url="http://localhost:8080/v1" data-name="" aria-label="vLLM / LocalAI">
                 <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 <div class="preset-content">
                   <div class="preset-title">vLLM / LocalAI</div>
                   <div class="preset-desc">vLLM or LocalAI server</div>
                 </div>
               </button>
-<button type="button" class="preset-card" data-url="https://api.openai.com/v1" data-name="">
+<button type="button" class="preset-card" data-url="https://api.openai.com/v1" data-name="" aria-label="Cloud API">
                 <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
                 <div class="preset-content">
                   <div class="preset-title">Cloud API</div>
@@ -162,10 +162,6 @@
               <select class="app-input" id="llmModel" name="llmModel" value="{{ config.llm.model }}">
                 <option value="">Select a model...</option>
               </select>
-              <button type="button" class="btn-fetch-models" id="btnFetchModels">
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                Fetch Models
-              </button>
             </div>
             <span class="field-help">Click "Fetch Models" to discover available models</span>
           </div>
@@ -174,16 +170,9 @@
             <label for="visionMode">Vision Support</label>
             <label class="app-checkbox">
               <input type="checkbox" id="visionMode" name="visionMode" {% if config.llm.supports_vision %}checked{% endif %}>
-              <span>Enable Vision/Multimodal processing (for document images)</span>
+              <span>Enable Vision/Multimodal processing</span>
             </label>
-          </div>
-
-          <div class="field field-wide">
-            <button type="button" class="app-btn app-btn-primary" id="btnTestConnection">
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              Test Connection
-            </button>
-            <span class="connection-help">Tests if the server is reachable and model is available</span>
+            <span class="field-help">For document images sent to the model</span>
           </div>
 
           <div class="field field-wide" style="margin-top: 1rem;">
