@@ -20,16 +20,18 @@ design authority.
 
 ### I.1 Agent fleet
 
-The orchestrator drives five sub-agents across two runtimes. `security-auditor` moved from Claude
-Code to Gemini via OpenCode to reduce Claude token consumption; it is a safe candidate because it
-is read-only and its findings route through the orchestrator before any code is written.
+The orchestrator drives five sub-agents across two runtimes. `security-auditor` moved off Claude
+Code to reduce Claude token consumption; it is a safe candidate for a cheaper model because it is
+read-only and its findings route through the orchestrator before any code is written. It went to
+Gemini first, then to `opencode-go/qwen3.7-max` — Gemini worked but was rate-limited into
+uselessness, running **43 minutes at 2.8% CPU** on a real audit without producing anything.
 
 | Agent | Runtime | Model | Status |
 |---|---|---|---|
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | **Verified** |
 | `tester` | OpenCode | `opencode-go/kimi-k3` | **Verified** |
 | `arch-auditor-docs` | OpenCode | `opencode-go/glm-5.2` | **Verified** |
-| `security-auditor` | OpenCode | `google/gemini-3.1-pro-preview` (read-only) | **Verified** on the banner — not yet exercised on a real audit |
+| `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | **Verified** on the banner — audit re-dispatched after the Gemini swap |
 | `ui-ux` | Claude Code | `sonnet` | **Verified** |
 
 `scripts/smoke-test-agents.sh` asserts registration, model identity and read-only tooling.
@@ -222,8 +224,12 @@ Mostly closed out. One manual step remains, and one new blocker was uncovered.
       the truncated briefs — none of which were model or brief problems. **Fix: install Node and
       OpenCode natively inside WSL** so no interop bridge is involved, then re-authenticate the
       providers. Until then treat OpenCode agents as usable only for short prompts
-- [ ] Exercise `security-auditor` on a real audit — blocked on the item above, not on the agent
-      itself. It is correctly registered, read-only, and answers on `gemini-3.1-pro-preview`
+- [ ] Exercise `security-auditor` on a real audit. The transport blocker above is fixed, and the
+      first attempt then failed for a second, unrelated reason: on `google/gemini-3.1-pro-preview`
+      it ran **43 minutes at 2.8% CPU** — alive but rate-limited into uselessness — and produced
+      nothing. Now on `opencode-go/qwen3.7-max`, the same tier as the rest of the fleet.
+      **Diagnostic lesson:** `0.00` CPU means a stalled transport; low-but-nonzero CPU across a long
+      wall time means throttling. Two different faults with the same symptom of a silent log
 - [x] ~~Decide where the engineering conventions from the deleted `DESIGN_LANGUAGE.md` should
       live~~ — done. Each convention was checked against the current code first, because that
       document was demonstrably unreliable (it misstated `--ink-faint`, listed dark values matching

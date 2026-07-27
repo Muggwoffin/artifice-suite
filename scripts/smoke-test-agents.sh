@@ -37,7 +37,7 @@ OPENCODE_AGENTS=(
   "lead-engineer:deepseek-v4-pro"
   "tester:kimi-k3"
   "arch-auditor-docs:glm-5.2"
-  "security-auditor:gemini-3.1-pro-preview"
+  "security-auditor:qwen3.7-max"
 )
 
 bold "OpenCode runtime"

@@ -59,7 +59,7 @@ both, so every cross-runtime handoff routes through it.
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | Feature implementation, core logic, refactors |
 | `tester` | OpenCode | `opencode-go/kimi-k3` | Test execution, log analysis, regression triage |
 | `arch-auditor-docs` | OpenCode | `opencode-go/glm-5.2` | Cross-app parity audits, folder standards, docs |
-| `security-auditor` | OpenCode | `google/gemini-3.1-pro-preview` (read-only) | Static analysis, secret handling, input sanitization |
+| `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | Static analysis, secret handling, input sanitization |
 | `ui-ux` | Claude Code | `sonnet` | Frontend views, design tokens, accessibility |
 
 Definitions live in `.opencode/agents/*.md` and `.claude/agents/*.md`.
@@ -68,12 +68,26 @@ Definitions live in `.opencode/agents/*.md` and `.claude/agents/*.md`.
 OpenRouter, and do not add it to `.opencode/agents/`. It stays on Sonnet because it writes code
 against `Design_Philosophy.md` and must hold that document precisely.
 
-**`security-auditor` runs on Gemini via OpenCode**, on the maintainer's own Google API key (already
-in `opencode auth`; never write the key to a file). It moved off Sonnet to reduce Claude token
-usage. It is a safe candidate because it is read-only and its findings route through the
-orchestrator before any code is written. Its `write`, `edit`, `bash` and `patch` tools are disabled
-in its config — keep them disabled. It must exist in exactly one runtime: a leftover
+**`security-auditor` runs on `opencode-go/qwen3.7-max`.** It moved off Sonnet to reduce Claude token
+usage. It is a safe candidate for a cheaper model because it is read-only and its findings route
+through the orchestrator before any code is written. Its `write`, `edit`, `bash` and `patch` tools
+are disabled in its config — keep them disabled. It must exist in exactly one runtime: a leftover
 `.claude/agents/security-auditor.md` would shadow the OpenCode definition.
+
+It sits on a **different model from `arch-auditor-docs`** (`glm-5.2`) deliberately. The two auditors
+review overlapping files, and two independent readings are worth more than one model agreeing with
+itself.
+
+It was briefly on `google/gemini-3.1-pro-preview`, using the maintainer's own Google key. That
+worked but was rate-limited into uselessness — a real audit ran **43 minutes at 2.8% CPU** and
+produced nothing. If an agent is alive but crawling, check CPU time against wall time before
+assuming the model is thinking.
+
+**Tier note.** The fleet runs on `opencode-go/*`. The `opencode/*` (Zen) tier is a separate account
+with a separate balance, and paid Zen models will fail with `CreditsError` while the Go tier is
+perfectly healthy. `opencode/big-pickle` is free on Zen but currently returns
+`No provider available` — a routing failure, not a billing one. Do not diagnose a model outage from
+one agent without checking which tier it is on.
 
 **Never put agent instructions in `.claude/rules/`.** Files there load as project-wide instructions
 into *every* session rather than scoping to one agent, contaminating the orchestrator's context.
