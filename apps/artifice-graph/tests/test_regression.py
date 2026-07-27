@@ -361,3 +361,287 @@ class TestDemoRegression:
         output = tmp_path / "data" / "output"
         assert (output / "entities.json").exists()
         assert (output / "relationships.json").exists()
+
+
+# ---------------------------------------------------------------------------
+# Bug 1 — Plain function defaults (OptionInfo sentinel regression)
+# ---------------------------------------------------------------------------
+
+class TestBug1PlainFunctionDefaults:
+
+    def test_run_ingest_has_real_defaults(self) -> None:
+        """Plain function params carry real Python defaults, not OptionInfo sentinels."""
+        import inspect
+        from artifice_graph.cli import _run_ingest
+
+        sig = inspect.signature(_run_ingest)
+        assert sig.parameters["chunk_size"].default == 2000
+        assert sig.parameters["chunk_overlap"].default == 200
+        assert sig.parameters["model"].default is None
+        assert sig.parameters["base_url"].default is None
+
+    def test_run_extract_has_real_defaults(self) -> None:
+        """Plain function params carry real Python defaults, not OptionInfo sentinels."""
+        import inspect
+        from artifice_graph.cli import _run_extract
+
+        sig = inspect.signature(_run_extract)
+        assert sig.parameters["batch_size"].default == 5
+        assert sig.parameters["api_key"].default is None
+        assert sig.parameters["force"].default is False
+
+    def test_plain_functions_are_separate_from_commands(self) -> None:
+        """Plain functions exist alongside @app.command() wrappers and are importable."""
+        from artifice_graph.cli import (
+            _run_ingest, _run_extract, _run_resolve_entities,
+            _run_build_vault, _run_build_graph,
+        )
+        import inspect
+
+        for fn in [_run_ingest, _run_extract, _run_resolve_entities,
+                    _run_build_vault, _run_build_graph]:
+            assert inspect.isfunction(fn)
+            assert fn.__name__.startswith("_run_")
+
+
+# ---------------------------------------------------------------------------
+# Bug 2 — Web run-all reaches all stages (stream liveness vs. continuation)
+# ---------------------------------------------------------------------------
+
+class TestBug2WebRunAllContinuation:
+
+    def test_run_all_reaches_all_five_stages(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """_do_run_all calls all 5 stage helpers when none fail."""
+        from web.server import _do_run_all, _run_ok
+        from artifice_graph.config import PipelineConfig
+
+        calls: list[str] = []
+
+        def _record_ingest(cfg, inc, rk, *, close_stream=False):
+            calls.append("ingest")
+
+        def _record_extract(cfg, rk, *, close_stream=False):
+            calls.append("extract")
+
+        def _record_resolve(cfg, rk, *, close_stream=False):
+            calls.append("resolve")
+
+        def _record_vault(cfg, rk, *, close_stream=False):
+            calls.append("vault")
+
+        def _record_graph(cfg, rk, *, close_stream=False):
+            calls.append("graph")
+
+        monkeypatch.setattr("web.server._do_ingest", _record_ingest)
+        monkeypatch.setattr("web.server._do_extract", _record_extract)
+        monkeypatch.setattr("web.server._do_resolve", _record_resolve)
+        monkeypatch.setattr("web.server._do_vault", _record_vault)
+        monkeypatch.setattr("web.server._do_graph", _record_graph)
+
+        cfg = PipelineConfig()
+        _do_run_all(cfg, False, "test-reaches-all")
+
+        assert calls == ["ingest", "extract", "resolve", "vault", "graph"]
+
+    def test_run_all_halt_on_stage_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """_do_run_all stops after a failing stage and does not call later stages."""
+        from web.server import _do_run_all, _run_ok
+        from artifice_graph.config import PipelineConfig
+
+        calls: list[str] = []
+
+        def _failing_ingest(cfg, inc, rk, *, close_stream=False):
+            calls.append("ingest")
+            _run_ok[rk] = False  # simulate stage failure
+
+        def _record_extract(cfg, rk, *, close_stream=False):
+            calls.append("extract")
+
+        def _record_resolve(cfg, rk, *, close_stream=False):
+            calls.append("resolve")
+
+        def _record_vault(cfg, rk, *, close_stream=False):
+            calls.append("vault")
+
+        def _record_graph(cfg, rk, *, close_stream=False):
+            calls.append("graph")
+
+        monkeypatch.setattr("web.server._do_ingest", _failing_ingest)
+        monkeypatch.setattr("web.server._do_extract", _record_extract)
+        monkeypatch.setattr("web.server._do_resolve", _record_resolve)
+        monkeypatch.setattr("web.server._do_vault", _record_vault)
+        monkeypatch.setattr("web.server._do_graph", _record_graph)
+
+        cfg = PipelineConfig()
+        _do_run_all(cfg, False, "test-halt")
+
+        # Only ingest should have been called — stages 2-5 skipped
+        assert calls == ["ingest"]
+
+    def test_mark_run_failed_sets_ok_false(self) -> None:
+        """_mark_run_failed sets _run_ok[run_key] to False."""
+        from web.server import _mark_run_failed, _run_ok
+
+        _run_ok.pop("test-fail", None)
+        _mark_run_failed("test-fail", "simulated error")
+        assert _run_ok["test-fail"] is False
+
+
+# ---------------------------------------------------------------------------
+# Bug 3 — Exit code non-zero on failure
+# ---------------------------------------------------------------------------
+
+class TestBug3ExitCode:
+
+    def test_run_stage_returns_false_on_exception(self) -> None:
+        """_run_stage returns False when the stage function raises."""
+        from artifice_graph.cli import _run_stage
+
+        def _fail():
+            raise RuntimeError("simulated failure")
+
+        result = _run_stage(1, 5, "Test", _fail)
+        assert result is False
+
+    def test_run_stage_returns_false_on_typer_exit(self) -> None:
+        """_run_stage returns False when the stage raises typer.Exit."""
+        import typer
+        from artifice_graph.cli import _run_stage
+
+        def _exit():
+            raise typer.Exit(1)
+
+        result = _run_stage(1, 5, "Test", _exit)
+        assert result is False
+
+    def test_run_stage_returns_true_on_success(self) -> None:
+        """_run_stage returns True when the stage function completes normally."""
+        from artifice_graph.cli import _run_stage
+
+        def _ok():
+            pass
+
+        result = _run_stage(1, 5, "Test", _ok)
+        assert result is True
+
+    def test_run_all_exits_nonzero_on_partial_failure(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """run_all raises typer.Exit(1) when any stage fails."""
+        import typer
+        from artifice_graph.cli import _run_stage, _run_ingest
+        from artifice_graph.config import PipelineConfig, resolve_config_paths
+
+        # Patch _run_stage to simulate: stages 1,3,4,5 succeed; stage 2 fails
+        original_run_stage = _run_stage
+        call_count = [0]
+
+        def _mock_run_stage(stage, total, label, fn):
+            call_count[0] += 1
+            if call_count[0] == 2:  # stage 2 = extract
+                return False
+            # For other stages, just return True (don't actually run work)
+            return True
+
+        monkeypatch.setattr("artifice_graph.cli._run_stage", _mock_run_stage)
+
+        from artifice_graph.cli import run_all
+
+        with pytest.raises(typer.Exit) as exc_info:
+            run_all(input_dir=str(tmp_path))
+
+        assert exc_info.value.exit_code == 1
+
+
+# ---------------------------------------------------------------------------
+# Fix: entities_raw.json saved during resolution
+# ---------------------------------------------------------------------------
+
+class TestFixEntitiesRaw:
+
+    def test_do_resolve_saves_entities_raw(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """_do_resolve writes the pre-resolution entities to entities_raw.json."""
+        import json
+        from artifice_graph.config import PipelineConfig
+        from artifice_graph.models.entity import Entity, EntityType
+        from artifice_graph.models.relationship import Relationship
+
+        cfg = PipelineConfig()
+        cfg.export.output_dir = str(tmp_path)
+
+        # Pre-populate entities.json with two similar entities
+        ents = [
+            Entity(name="Klemens von Metternich", entity_type=EntityType.PERSON,
+                   aliases=["Metternich"]),
+            Entity(name="Metternich", entity_type=EntityType.PERSON,
+                   aliases=["Prince Metternich"]),
+        ]
+        rels: list[Relationship] = []
+
+        import artifice_graph.storage.file_store as fs_mod
+        store = fs_mod.FileStore(str(tmp_path))
+        store.save_models("entities.json", ents)
+        store.save_models("relationships.json", rels)
+
+        monkeypatch.setattr("web.server._load_store", lambda cfg: store)
+        monkeypatch.setattr("web.server._build_resolver", lambda cfg: _NoOpResolver())
+
+        from web.server import _do_resolve
+        _do_resolve(cfg, "test-raw", close_stream=False)
+
+        raw = store.load("entities_raw.json")
+        assert raw is not None
+        assert len(raw) == 2
+
+
+class _NoOpResolver:
+    """Resolver that returns inputs unchanged (no dedup)."""
+    def resolve(self, entities, relationships):
+        return entities, relationships
+
+
+# ---------------------------------------------------------------------------
+# Fix: GraphExporter honours graph_formats list
+# ---------------------------------------------------------------------------
+
+class TestFixGraphFormats:
+
+    def test_exporter_uses_graph_formats_list(self, tmp_path: Path) -> None:
+        """When no explicit formats given, GraphExporter uses config.graph_formats."""
+        from artifice_graph.config import ExportConfig
+        from artifice_graph.exporters.graph_exporter import GraphExporter
+        from artifice_graph.models.entity import Entity, EntityType
+        from artifice_graph.models.relationship import Relationship
+
+        config = ExportConfig(
+            output_dir=str(tmp_path),
+            graph_formats=["graphml", "json", "csv"],
+            graph_format="graphml",  # legacy field — should be ignored
+        )
+        exporter = GraphExporter(config)
+
+        # Create trivial entities
+        e = Entity(name="Test", entity_type=EntityType.CONCEPT)
+        results = exporter.export([e], [], formats=None)
+
+        # Should have output for all three configured formats
+        assert "graphml" in results
+        assert "json" in results
+        assert "nodes_csv" in results  # csv produces nodes.csv + edges.csv
+        assert "edges_csv" in results
+        assert len(results) >= 4
+
+    def test_exporter_explicit_formats_override_config(self, tmp_path: Path) -> None:
+        """Explicit format argument overrides config.graph_formats."""
+        from artifice_graph.config import ExportConfig
+        from artifice_graph.exporters.graph_exporter import GraphExporter
+        from artifice_graph.models.entity import Entity, EntityType
+
+        config = ExportConfig(
+            output_dir=str(tmp_path),
+            graph_formats=["graphml", "json", "csv"],
+        )
+        exporter = GraphExporter(config)
+        e = Entity(name="Test", entity_type=EntityType.CONCEPT)
+        results = exporter.export([e], [], formats=["gexf"])
+
+        assert "gexf" in results
+        assert "graphml" not in results

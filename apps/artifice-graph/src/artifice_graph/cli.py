@@ -106,17 +106,16 @@ def _run_stage(stage: int, total: int, label: str, fn) -> bool:
         return False
 
 
-# ── Commands ─────────────────────────────────────────────────────────────
+# ── Plain functions (real typed defaults, callable without Typer) ──────
 
-@app.command()
-def ingest(
-    input_dir: str = typer.Argument("data/input_ocr", help="Directory containing OCR text files"),
-    chunk_size: int = typer.Option(2000, help="Max characters per chunk"),
-    chunk_overlap: int = typer.Option(200, help="Overlap between chunks"),
-    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
-    incremental: bool = typer.Option(False, "--incremental", help="Only process new/changed files"),
-    model: str = typer.Option(None, "--model", help="LLM model name"),
-    base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
+def _run_ingest(
+    input_dir: str = "data/input_ocr",
+    chunk_size: int = 2000,
+    chunk_overlap: int = 200,
+    output_dir: str | None = None,
+    incremental: bool = False,
+    model: str | None = None,
+    base_url: str | None = None,
 ) -> None:
     """Ingest OCR text files and produce sliding-window chunks."""
     config = load_config()
@@ -161,14 +160,13 @@ def ingest(
     console.print(f"[dim]Saved to {config.export.output_dir}/documents.json, chunks.json[/dim]")
 
 
-@app.command()
-def extract(
-    batch_size: int = typer.Option(5, help="Number of chunks to process"),
-    model: str = typer.Option(None, "--model", help="LLM model name"),
-    base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
-    api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
-    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
-    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
+def _run_extract(
+    batch_size: int = 5,
+    model: str | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    output_dir: str | None = None,
+    force: bool = False,
 ) -> None:
     """Extract entities and relationships from ingested chunks using local LLM."""
     config = load_config()
@@ -218,14 +216,13 @@ def extract(
     console.print(f"[dim]Saved to {config.export.output_dir}/entities.json, relationships.json[/dim]")
 
 
-@app.command("resolve-entities")
-def resolve_entities(
-    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
-    model: str = typer.Option(None, "--model", help="LLM model name"),
-    base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
-    api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
-    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
-    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
+def _run_resolve_entities(
+    semantic: bool | None = None,
+    model: str | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    output_dir: str | None = None,
+    force: bool = False,
 ) -> None:
     """Deduplicate and normalize extracted entities."""
     config = load_config()
@@ -264,13 +261,12 @@ def resolve_entities(
     _safe_save_models(store, "relationships.json", updated_relationships, force=force)
 
 
-@app.command("build-vault")
-def build_vault(
-    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
-    model: str = typer.Option(None, "--model", help="LLM model name"),
-    base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
-    api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
-    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
+def _run_build_vault(
+    semantic: bool | None = None,
+    model: str | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    output_dir: str | None = None,
 ) -> None:
     """Build a hyperlinked Obsidian vault from resolved entities."""
     config = load_config()
@@ -302,11 +298,10 @@ def build_vault(
     )
 
 
-@app.command("build-graph")
-def build_graph(
-    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
-    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
-    format: list[str] = typer.Option(None, "--format", help="Export format(s): graphml, gexf, json, csv, cypher"),
+def _run_build_graph(
+    semantic: bool | None = None,
+    output_dir: str | None = None,
+    format: list[str] | None = None,
 ) -> None:
     """Export the knowledge graph as GraphML, GEXF, JSON, CSV, and/or Cypher."""
     config = load_config()
@@ -335,6 +330,102 @@ def build_graph(
     )
 
 
+# ── Commands (thin wrappers, forward Typer-resolved values) ────────────
+
+@app.command()
+def ingest(
+    input_dir: str = typer.Argument("data/input_ocr", help="Directory containing OCR text files"),
+    chunk_size: int = typer.Option(2000, help="Max characters per chunk"),
+    chunk_overlap: int = typer.Option(200, help="Overlap between chunks"),
+    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
+    incremental: bool = typer.Option(False, "--incremental", help="Only process new/changed files"),
+    model: str = typer.Option(None, "--model", help="LLM model name"),
+    base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
+) -> None:
+    """Ingest OCR text files and produce sliding-window chunks."""
+    _run_ingest(
+        input_dir=input_dir,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        output_dir=output_dir,
+        incremental=incremental,
+        model=model,
+        base_url=base_url,
+    )
+
+
+@app.command()
+def extract(
+    batch_size: int = typer.Option(5, help="Number of chunks to process"),
+    model: str = typer.Option(None, "--model", help="LLM model name"),
+    base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
+    api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
+    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
+) -> None:
+    """Extract entities and relationships from ingested chunks using local LLM."""
+    _run_extract(
+        batch_size=batch_size,
+        model=model,
+        base_url=base_url,
+        api_key=api_key,
+        output_dir=output_dir,
+        force=force,
+    )
+
+
+@app.command("resolve-entities")
+def resolve_entities(
+    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
+    model: str = typer.Option(None, "--model", help="LLM model name"),
+    base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
+    api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
+    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
+) -> None:
+    """Deduplicate and normalize extracted entities."""
+    _run_resolve_entities(
+        semantic=semantic,
+        model=model,
+        base_url=base_url,
+        api_key=api_key,
+        output_dir=output_dir,
+        force=force,
+    )
+
+
+@app.command("build-vault")
+def build_vault(
+    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
+    model: str = typer.Option(None, "--model", help="LLM model name"),
+    base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
+    api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
+    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
+) -> None:
+    """Build a hyperlinked Obsidian vault from resolved entities."""
+    _run_build_vault(
+        semantic=semantic,
+        model=model,
+        base_url=base_url,
+        api_key=api_key,
+        output_dir=output_dir,
+    )
+
+
+@app.command("build-graph")
+def build_graph(
+    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
+    output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
+    format: list[str] = typer.Option(None, "--format", help="Export format(s): graphml, gexf, json, csv, cypher"),
+) -> None:
+    """Export the knowledge graph as GraphML, GEXF, JSON, CSV, and/or Cypher."""
+    _run_build_graph(
+        semantic=semantic,
+        output_dir=output_dir,
+        format=format,
+    )
+
+
 @app.command("run-all")
 def run_all(
     input_dir: str = typer.Argument("data/input_ocr", help="Directory containing OCR text files"),
@@ -352,22 +443,58 @@ def run_all(
     stages_ok = 0
     stages_total = 5
 
-    def _ingest():
-        ingest(input_dir=input_dir, output_dir=output_dir, incremental=incremental)
-    def _extract():
-        extract(model=model, base_url=base_url, output_dir=output_dir, force=force)
-    def _resolve():
-        resolve_entities(semantic=semantic, output_dir=output_dir, force=force)
-    def _vault():
-        build_vault(semantic=semantic, output_dir=output_dir)
-    def _graph():
-        build_graph(semantic=semantic, output_dir=output_dir, format=format)
+    def _stage_ingest():
+        _run_ingest(
+            input_dir=input_dir,
+            chunk_size=2000,
+            chunk_overlap=200,
+            output_dir=output_dir,
+            incremental=incremental,
+            model=model,
+            base_url=base_url,
+        )
 
-    for ok in [_run_stage(1, stages_total, "Ingesting", _ingest),
-               _run_stage(2, stages_total, "Extracting via LLM", _extract),
-               _run_stage(3, stages_total, "Resolving entities", _resolve),
-               _run_stage(4, stages_total, "Building vault", _vault),
-               _run_stage(5, stages_total, "Building graph", _graph)]:
+    def _stage_extract():
+        _run_extract(
+            batch_size=5,
+            model=model,
+            base_url=base_url,
+            api_key=None,
+            output_dir=output_dir,
+            force=force,
+        )
+
+    def _stage_resolve():
+        _run_resolve_entities(
+            semantic=semantic,
+            model=model,
+            base_url=base_url,
+            api_key=None,
+            output_dir=output_dir,
+            force=force,
+        )
+
+    def _stage_vault():
+        _run_build_vault(
+            semantic=semantic,
+            model=model,
+            base_url=base_url,
+            api_key=None,
+            output_dir=output_dir,
+        )
+
+    def _stage_graph():
+        _run_build_graph(
+            semantic=semantic,
+            output_dir=output_dir,
+            format=format,
+        )
+
+    for ok in [_run_stage(1, stages_total, "Ingesting", _stage_ingest),
+               _run_stage(2, stages_total, "Extracting via LLM", _stage_extract),
+               _run_stage(3, stages_total, "Resolving entities", _stage_resolve),
+               _run_stage(4, stages_total, "Building vault", _stage_vault),
+               _run_stage(5, stages_total, "Building graph", _stage_graph)]:
         if ok:
             stages_ok += 1
 
@@ -377,6 +504,7 @@ def run_all(
         console.print(
             Panel(f"[bold yellow]{stages_ok}/{stages_total} stages completed successfully[/bold yellow]")
         )
+        raise typer.Exit(1)
 
 
 @app.command("inspect")

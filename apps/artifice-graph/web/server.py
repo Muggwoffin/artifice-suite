@@ -71,7 +71,8 @@ app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 _run_logs: dict[str, list[dict[str, Any]]] = {}
 _run_locks: dict[str, threading.Lock] = {}
 _run_conds: dict[str, threading.Condition] = {}
-_run_active: dict[str, bool] = {}  # while True; set False when done
+_run_active: dict[str, bool] = {}  # while True; set False when stream closes
+_run_ok: dict[str, bool] = {}  # True while pipeline should continue
 
 
 def _get_run_log(run_key: str) -> tuple[list, threading.Lock, threading.Condition]:
@@ -112,9 +113,17 @@ def _log_head(run_key: str, msg: str) -> None:
     _log_sep(run_key)
 
 
-def _log_done(run_key: str, msg: str, state: str = "done") -> None:
+def _log_done(run_key: str, msg: str, state: str = "done", *, close_stream: bool = True) -> None:
     _append_log_event(run_key, {"gotoState": state, "text": msg})
-    _end_run_log(run_key)
+    if close_stream:
+        _end_run_log(run_key)
+
+
+def _mark_run_failed(run_key: str, msg: str | None = None) -> None:
+    """Mark the run as failed — pipeline should not continue to the next stage."""
+    _run_ok[run_key] = False
+    if msg:
+        _log(run_key, msg, "error")
 
 
 # ── Config from POST body ──────────────────────────────────────────
@@ -161,7 +170,7 @@ def _load_store(cfg: PipelineConfig) -> FileStore:
 
 # ── Pipeline runner helpers (worker thread) ────────────────────────
 
-def _do_ingest(cfg: PipelineConfig, incremental: bool, run_key: str) -> None:
+def _do_ingest(cfg: PipelineConfig, incremental: bool, run_key: str, *, close_stream: bool = True) -> None:
     _log_head(run_key, "▶ STAGE 1: INGEST — scanning input directory…")
     store = _load_store(cfg)
     chunker = TextChunker(cfg.ingestion)
@@ -180,21 +189,23 @@ def _do_ingest(cfg: PipelineConfig, incremental: bool, run_key: str) -> None:
         _log(run_key, f"  Found {len(documents)} documents → {len(chunks)} chunks")
     if not documents:
         _log(run_key, "  No files found. Add text files to input dir.", "dim")
-        _log_done(run_key, "Ingest — no files")
+        _mark_run_failed(run_key, "Ingest — no files found")
+        _log_done(run_key, "Ingest — no files", close_stream=close_stream)
         return
     store.save_models("documents.json", documents)
     store.save_models("chunks.json", chunks)
     _log(run_key, f"  ✓ Saved to {cfg.export.output_dir}/", "success")
-    _log_done(run_key, f"Ingest: {len(documents)} docs, {len(chunks)} chunks")
+    _log_done(run_key, f"Ingest: {len(documents)} docs, {len(chunks)} chunks", close_stream=close_stream)
 
 
-def _do_extract(cfg: PipelineConfig, run_key: str) -> None:
+def _do_extract(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -> None:
     _log_head(run_key, "▶ STAGE 2: EXTRACT — calling local LLM…")
     store = _load_store(cfg)
     raw_chunks = store.load("chunks.json")
     if not raw_chunks:
         _log(run_key, "  No chunks found. Run Ingest first.", "dim")
-        _log_done(run_key, "Extract — skipped (no chunks)")
+        _mark_run_failed(run_key, "Extract — no chunks found")
+        _log_done(run_key, "Extract — skipped (no chunks)", close_stream=close_stream)
         return
     chunks = [TextChunk.model_validate(d) for d in raw_chunks]
     llm = LLMClient(cfg.llm)
@@ -211,7 +222,8 @@ def _do_extract(cfg: PipelineConfig, run_key: str) -> None:
             results = extractor.extract_batch(batch)
         except RuntimeError as exc:
             _log(run_key, f"  Extraction failed: {exc}", "error")
-            _log_done(run_key, "Extract — failed (all chunks errored)")
+            _mark_run_failed(run_key, "Extract — all chunks errored")
+            _log_done(run_key, "Extract — failed (all chunks errored)", close_stream=close_stream)
             return
         for result in results:
             all_entities.extend(result.entities)
@@ -228,20 +240,22 @@ def _do_extract(cfg: PipelineConfig, run_key: str) -> None:
     else:
         store.save_models("relationships.json", all_rels)
     _log(run_key, f"  ✓ Extracted {len(all_entities)} entities, {len(all_rels)} relationships", "success")
-    _log_done(run_key, f"Extract: {len(all_entities)} entities, {len(all_rels)} relationships")
+    _log_done(run_key, f"Extract: {len(all_entities)} entities, {len(all_rels)} relationships", close_stream=close_stream)
 
 
-def _do_resolve(cfg: PipelineConfig, run_key: str) -> None:
+def _do_resolve(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -> None:
     _log_head(run_key, "▶ STAGE 3: RESOLVE — deduplicating entities…")
     store = _load_store(cfg)
     raw_entities = store.load("entities.json")
     raw_rels = store.load("relationships.json")
     if not raw_entities:
         _log(run_key, "  No entities found. Run Extract first.", "dim")
-        _log_done(run_key, "Resolve — skipped (no entities)")
+        _mark_run_failed(run_key, "Resolve — no entities found")
+        _log_done(run_key, "Resolve — skipped (no entities)", close_stream=close_stream)
         return
     entities = [Entity.model_validate(d) for d in raw_entities]
     relationships = [Relationship.model_validate(d) for d in raw_rels]
+    store.save_models("entities_raw.json", entities)
     resolver = _build_resolver(cfg)
     method = "semantic" if isinstance(resolver, SemanticEntityResolver) else "fuzzy"
     _log(run_key, f"  Using {method} resolution")
@@ -255,16 +269,17 @@ def _do_resolve(cfg: PipelineConfig, run_key: str) -> None:
     else:
         store.save_models("relationships.json", updated)
     _log(run_key, f"  ✓ {len(entities)} → {len(merged)} canonical entities ({method})", "success")
-    _log_done(run_key, f"Resolve: {len(entities)} → {len(merged)} canonical")
+    _log_done(run_key, f"Resolve: {len(entities)} → {len(merged)} canonical", close_stream=close_stream)
 
 
-def _do_vault(cfg: PipelineConfig, run_key: str) -> None:
+def _do_vault(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -> None:
     _log_head(run_key, "▶ STAGE 4: VAULT — generating Obsidian notes…")
     store = _load_store(cfg)
     raw_entities = store.load("entities.json")
     if not raw_entities:
         _log(run_key, "  No entities found. Run extraction first.", "dim")
-        _log_done(run_key, "Vault — skipped (no entities)")
+        _mark_run_failed(run_key, "Vault — no entities found")
+        _log_done(run_key, "Vault — skipped (no entities)", close_stream=close_stream)
         return
     entities = [Entity.model_validate(d) for d in raw_entities]
     relationships = [Relationship.model_validate(d) for d in store.load("relationships.json")]
@@ -277,16 +292,17 @@ def _do_vault(cfg: PipelineConfig, run_key: str) -> None:
     note_count = sum(1 for _ in Path(vault_path).rglob("*.md"))
     _log(run_key, f"  ✓ Vault written to {vault_path}", "success")
     _log(run_key, f"    {note_count} notes generated")
-    _log_done(run_key, f"Vault: {vault_path}")
+    _log_done(run_key, f"Vault: {vault_path}", close_stream=close_stream)
 
 
-def _do_graph(cfg: PipelineConfig, run_key: str) -> None:
+def _do_graph(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -> None:
     _log_head(run_key, "▶ STAGE 5: GRAPH — exporting graph…")
     store = _load_store(cfg)
     raw_entities = store.load("entities.json")
     if not raw_entities:
         _log(run_key, "  No entities found. Run extraction first.", "dim")
-        _log_done(run_key, "Graph — skipped (no entities)")
+        _mark_run_failed(run_key, "Graph — no entities found")
+        _log_done(run_key, "Graph — skipped (no entities)", close_stream=close_stream)
         return
     entities = [Entity.model_validate(d) for d in raw_entities]
     relationships = [Relationship.model_validate(d) for d in store.load("relationships.json")]
@@ -297,24 +313,50 @@ def _do_graph(cfg: PipelineConfig, run_key: str) -> None:
     _log(run_key, f"  ✓ {exporter.summary()}", "success")
     for fmt, path in results.items():
         _log(run_key, f"    {fmt}: {path}")
-    _log_done(run_key, f"Graph: {exporter.summary()}")
+    _log_done(run_key, f"Graph: {exporter.summary()}", close_stream=close_stream)
 
 
 def _do_run_all(cfg: PipelineConfig, incremental: bool, run_key: str) -> None:
     _log_head(run_key, "▶ RUN ALL — full pipeline")
-    _do_ingest(cfg, incremental, run_key)
-    if _run_active.get(run_key, True):
-        _do_extract(cfg, run_key)
-    if _run_active.get(run_key, True):
-        _do_resolve(cfg, run_key)
-    if _run_active.get(run_key, True):
-        _do_vault(cfg, run_key)
-    if _run_active.get(run_key, True):
-        _do_graph(cfg, run_key)
-    if _run_active.get(run_key, True):
+    _run_ok[run_key] = True
+
+    def _ok() -> bool:
+        return _run_ok.get(run_key, True)
+
+    _do_ingest(cfg, incremental, run_key, close_stream=False)
+    if not _ok():
         _log_sep(run_key)
-        _log(run_key, "✓ Pipeline complete!", "success")
-        _log_done(run_key, "Run All — complete")
+        _log(run_key, "✗ Pipeline halted — stage 1 failed", "error")
+        _end_run_log(run_key)
+        return
+    _do_extract(cfg, run_key, close_stream=False)
+    if not _ok():
+        _log_sep(run_key)
+        _log(run_key, "✗ Pipeline halted — stage 2 failed", "error")
+        _end_run_log(run_key)
+        return
+    _do_resolve(cfg, run_key, close_stream=False)
+    if not _ok():
+        _log_sep(run_key)
+        _log(run_key, "✗ Pipeline halted — stage 3 failed", "error")
+        _end_run_log(run_key)
+        return
+    _do_vault(cfg, run_key, close_stream=False)
+    if not _ok():
+        _log_sep(run_key)
+        _log(run_key, "✗ Pipeline halted — stage 4 failed", "error")
+        _end_run_log(run_key)
+        return
+    _do_graph(cfg, run_key, close_stream=False)
+    if not _ok():
+        _log_sep(run_key)
+        _log(run_key, "✗ Pipeline halted — stage 5 failed", "error")
+        _end_run_log(run_key)
+        return
+
+    _log_sep(run_key)
+    _log(run_key, "✓ Pipeline complete!", "success")
+    _log_done(run_key, "Run All — complete", close_stream=True)
 
 
 def _do_demo(run_key: str) -> None:
@@ -628,7 +670,7 @@ HISTORICAL_COORDINATES = {
 
 
 @app.get("/api/map-entities")
-async def api_map_entities(mode: str = Query("approx", regex="^(approx|lookup)$")):
+async def api_map_entities(mode: str = Query("approx", pattern="^(approx|lookup)$")):
     cfg = load_config()
     store = _load_store(cfg)
     entities = store.load("entities.json") or []

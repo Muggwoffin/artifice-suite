@@ -57,7 +57,7 @@ class GraphExporter:
         output.mkdir(parents=True, exist_ok=True)
 
         if formats is None:
-            formats = [self.config.graph_format]
+            formats = list(self.config.graph_formats)
 
         results: dict[str, Path] = {}
         for fmt in formats:
