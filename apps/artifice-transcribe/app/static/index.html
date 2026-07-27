@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArtificeTranscribe</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Archivo:wght@500;600;700&display=swap">
+
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to content</a>
+<div class="app" id="main-content">
+
+  <header class="masthead">
+    <h1>ArtificeTranscribe</h1>
+    <span class="tag">speech-to-text &middot; diarization &middot; oral history</span>
+    <div class="masthead-search" id="masthead-search">
+      <input type="text" id="global-search-input" placeholder="Search transcripts (/)" class="search-input">
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="transcribe">Transcribe</button>
+    <button class="tab" data-tab="library">Library</button>
+    <button class="tab" data-tab="dictionary">Dictionary</button>
+    <button class="tab" data-tab="settings">Settings &middot; Models</button>
+  </nav>
+
+  <div class="panels">
+
+    <!-- =========================================================== TRANSCRIBE -->
+    <section class="panel active" id="panel-transcribe">
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>New Transcription</h2>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          <span id="dropzone-text">Drop an audio file here, or click to browse</span>
+        </div>
+        <input type="file" id="file-input" accept="audio/*,video/*" style="display:none;">
+
+  <div class="form-row">
+    <label>Model: 
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <span id="opt-model-size" class="model-badge" style="flex:1;">—</span>
+        <span class="dim" style="font-size:0.8rem;cursor:pointer;color:var(--accent);" title="Show BYOM guide" id="model-guide-toggle">ⓘ</span>
+      </div>
+    </label>
+    <label>Language: <input type="text" id="opt-language" placeholder="auto-detect" style="width:6rem;"></label>
+    <label>Min speakers: <input type="number" id="opt-min-speakers" min="1" placeholder="&ndash;"></label>
+    <label>Max speakers: <input type="number" id="opt-max-speakers" min="1" placeholder="&ndash;"></label>
+    <label>Vocabulary: <input type="text" id="opt-vocabulary" placeholder="names, terms, places..." style="width:14rem;" title="Comma-separated proper nouns to improve accuracy"></label>
+  </div>
+
+  <div class="hidden" id="model-guide-panel" style="margin-top:0.5rem;padding:0.8rem;background:var(--paper-recessed);border-radius:var(--radius-sm);border-left:3px solid var(--accent);">
+    <h4 style="margin:0 0 0.5rem 0;color:var(--accent);">About Speaker Diarisation</h4>
+    <p class="dim" style="margin:0.3rem 0;">
+      <strong>What is Diarisation?</strong> Automatic speaker segmentation and identification.
+      It splits audio into <strong>Speaker-00</strong>, <strong>Speaker-01</strong>, etc., based on voice characteristics.
+    </p>
+    <p class="dim" style="margin:0.3rem 0;">
+      <strong>How to Get Diarisation</strong>:
+    </p>
+    <ul class="dim" style="margin:0.3rem 0;padding-left:1.2rem;font-size:0.85rem;">
+      <li>Open Source: <code>pannous/PyAnnote for speaker diarisation</code> <a href="https://huggingface.co/pyannote/speaker-diarization-3.0" target="_blank" style="color:var(--accent);">https://huggingface.co/pyannote/speaker-diarization-3.0</a></li>
+      <li>Tool to run locally: <code>diarisation-tool</code> (CNNDiarization, pyannote.audio-silero)</li>
+      <li>Cloud SaaS: <code>AssemblyAI Async API</code>, <code>Deepgram Live API</code></li>
+      <li>On-prem: Docker containers with <code>vits-gnu</code> + <code>whisperx</code></li>
+    </ul>
+    <p class="dim" style="margin:0.3rem 0;">
+      <strong>Hugging Face:</strong> Search "diarisation" or "speaker embeddings" — models like <code>pyannote/embedding</code> are lightweight and can process speaker segments.
+    </p>
+    <button class="btn tiny" id="model-guide-close" style="margin-top:0.5rem;">Close Guide</button>
+  </div>
+
+        <div class="toolbar">
+          <button class="btn accent" id="btn-start" disabled>&#9654; Start Transcription</button>
+          <button class="btn" id="btn-clear-file" disabled>Clear</button>
+          <div class="spacer"></div>
+          <span class="dim" id="upload-status"></span>
+          <button class="btn" id="btn-batch-upload">Batch Upload</button>
+          <input type="file" id="batch-file-input" accept="audio/*,video/*" multiple style="display:none;">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Active Jobs</h2>
+          <span class="dim" id="active-count">0 running</span>
+        </div>
+        <div class="queue-wrap">
+          <table class="queue">
+            <thead>
+              <tr><th>File</th><th class="c">Status</th><th class="c">Progress</th><th>Started</th><th class="c" style="width:6rem;"></th></tr>
+            </thead>
+            <tbody id="active-body"><tr><td colspan="5" class="dim" style="text-align:center;">No active jobs yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =============================================================== LIBRARY -->
+    <section class="panel" id="panel-library">
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Library</h2>
+          <div style="display:flex;gap:0.4rem;align-items:center;">
+            <input type="text" id="library-search-input" placeholder="Search current transcript..." class="search-input" style="width:16rem;">
+            <button class="btn" id="btn-library-refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="queue-wrap">
+          <table class="queue">
+            <thead>
+              <tr><th>File</th><th class="c">Status</th><th>Created</th><th>Interviewee</th><th class="c" style="width:6rem;"></th></tr>
+            </thead>
+            <tbody id="library-body"><tr><td colspan="5" class="dim" style="text-align:center;">Loading&hellip;</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-empty" id="transcript-empty">No transcript selected. Choose a completed job from the table above.</div>
+
+      <div class="card transcript-card hidden" id="transcript-card">
+        <div class="audio-pane">
+          <audio controls id="audio-player"></audio>
+          <canvas id="waveform-canvas" height="80" style="width:100%;cursor:pointer;"></canvas>
+          <details class="metadata-form" id="metadata-form" open>
+            <summary>Interview Metadata</summary>
+            <div class="metadata-grid">
+              <label>Interviewee: <input type="text" id="meta-interviewee" placeholder="Full name"></label>
+              <label>Interviewer: <input type="text" id="meta-interviewer" placeholder="Full name"></label>
+              <label>Date: <input type="text" id="meta-date" placeholder="YYYY-MM-DD or circa"></label>
+              <label>Location: <input type="text" id="meta-location" placeholder="City, State"></label>
+              <label>Project: <input type="text" id="meta-project" placeholder="Project name"></label>
+              <label>Collection ID: <input type="text" id="meta-collection" placeholder="e.g. OH-2024-001"></label>
+              <label>Access: <input type="text" id="meta-access" placeholder="Open / restrictions"></label>
+              <label>Vocabulary: <input type="text" id="meta-vocabulary" placeholder="names, terms, places"></label>
+            </div>
+            <button class="btn accent" id="btn-save-metadata">Save Metadata</button>
+          </details>
+          <div class="speaker-form" id="speaker-form">
+            <h3>Speakers</h3>
+            <div id="speaker-rows"></div>
+            <div class="toolbar" style="padding:0.4rem 0 0;">
+              <button class="btn" id="btn-save-speakers">Save Names</button>
+              <button class="btn" id="btn-enroll-from-job">Enroll Selected as Known Speaker</button>
+            </div>
+            <div class="toolbar" style="padding:0.3rem 0 0;">
+              <button class="btn" id="btn-match-speakers">Match Speakers</button>
+              <span class="dim" id="match-status"></span>
+            </div>
+          </div>
+          <div class="export-row">
+            <button class="btn" data-export="json">JSON</button>
+            <button class="btn" data-export="srt">SRT</button>
+            <button class="btn" data-export="vtt">VTT</button>
+            <button class="btn" data-export="txt">TXT</button>
+            <button class="btn" data-export="md">MD</button>
+            <button class="btn" data-export="pdf">PDF</button>
+            <button class="btn" data-export="ohms">OHMS</button>
+            <button class="btn" data-export="tei">TEI</button>
+            <button class="btn danger" id="btn-delete-job" style="margin-left:auto;">Delete</button>
+          </div>
+          <div class="ai-assistant-row" style="padding:0.5rem 0;">
+            <button class="btn accent" id="btn-ai-summarize" type="button" disabled>Summarise</button>
+            <button class="btn accent" id="btn-ai-cleanup" type="button" disabled>Cleanup</button>
+            <span class="dim ai-status" id="ai-status" style="margin-left:0.5rem;"></span>
+          </div>
+        </div>
+        <div class="transcript-bar">
+          <h2 class="transcript-title" id="transcript-title">&nbsp;</h2>
+          <span class="status-pill" id="transcript-status-pill"></span>
+          <span class="meta-badge" id="meta-badge"></span>
+          <span class="dim" id="search-hit-info"></span>
+          <div class="edit-toolbar" id="edit-toolbar">
+            <button class="btn" id="btn-diff-toggle" title="Toggle diff view">Diff</button>
+            <button class="btn" id="btn-history-toggle" title="Show edit history">History</button>
+            <button class="btn accent" id="btn-save-edits" disabled title="Save all edits (Ctrl+S / Ctrl+Enter)">Save</button>
+            <button class="btn" id="btn-revert-edits" disabled title="Revert all edits (Ctrl+Z)">Revert</button>
+          </div>
+        </div>
+        <div class="segments" id="segments"></div>
+        <div class="transcript-stats dim" id="transcript-stats"></div>
+      </div>
+
+      <!-- History panel -->
+      <div class="history-panel hidden" id="history-panel">
+        <div class="card">
+          <div class="card-head">
+            <h2>Edit History</h2>
+            <button class="btn tiny" id="btn-history-close">&times;</button>
+          </div>
+          <div class="history-list" id="history-list">
+            <p class="dim" style="padding:1rem;">Select a segment to view its edit history.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =========================================================== DICTIONARY -->
+    <section class="panel" id="panel-dictionary">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Persistent Dictionary</h2>
+          <span class="dim">Words below are merged into every transcription as hotwords</span>
+        </div>
+        <div style="padding:0.9rem 1.1rem;">
+          <textarea id="dict-textarea" style="width:100%;min-height:120px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:var(--paper-recessed);color:var(--ink);padding:0.6rem;font-family:var(--font-body);font-size:0.9rem;" placeholder="Enter comma-separated terms, names, jargon...&#10;&#10;Example: Smithson, Pleistocene, paleoanthropology, Olduvai"></textarea>
+          <div class="toolbar" style="padding:0.6rem 0 0;">
+            <button class="btn accent" id="btn-save-dictionary">Save Dictionary</button>
+            <span class="dim" id="dict-save-status" style="margin-left:0.5rem;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-head">
+          <h2>Known Speakers</h2>
+          <span class="dim">Enrolled voices are auto-recognised across sessions</span>
+        </div>
+        <div style="padding:0.9rem 1.1rem;">
+          <div id="known-speakers-list"><p class="dim">No enrolled speakers.</p></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-head">
+          <h2>Enroll a New Speaker</h2>
+        </div>
+        <div style="padding:0.9rem 1.1rem;">
+          <div class="form-row" style="padding:0 0 0.6rem;">
+            <label>Name: <input type="text" id="enroll-name" placeholder="e.g. John Smith"></label>
+          </div>
+          <div class="form-row" style="padding:0 0 0.6rem;">
+            <label>Audio clip: <input type="file" id="enroll-file" accept="audio/*"></label>
+          </div>
+          <button class="btn accent" id="btn-enroll-speaker">Enroll Speaker</button>
+          <span class="dim" id="enroll-status" style="margin-left:0.5rem;"></span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =========================================================== SETTINGS / MODELS -->
+    <section class="panel" id="panel-settings">
+
+      <!-- Transcription Model Card -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Transcription Model</h2>
+          <span class="dim">Whisper / WhisperX speech-to-text</span>
+        </div>
+        <div style="padding:1rem 1.2rem;">
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model:</label>
+              <select id="setting-model-size" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+                <option value="tiny">tiny</option>
+                <option value="base" selected>base</option>
+                <option value="small">small</option>
+                <option value="medium">medium</option>
+                <option value="large-v3">large-v3</option>
+              </select>
+            </div>
+            <button class="btn" id="btn-apply-model" type="button" style="height:2.4rem;">Apply</button>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Device:</label>
+              <select id="setting-device" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+                <option value="auto" selected>auto</option>
+                <option value="cuda">cuda</option>
+                <option value="cpu">cpu</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">HuggingFace Token:</label>
+            <input type="password" id="setting-hf-token" value="" placeholder="hf_..." style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div id="model-applied-status" style="display:none; margin-top:0.5rem; padding:0.5rem; border-radius:var(--radius-sm); background:var(--paper-recessed);">
+            <span class="dim" id="model-applied-text"></span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Diarization Card -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Diarization &amp; Alignment</h2>
+          <span class="dim">Speaker segmentation and word-level alignment</span>
+        </div>
+        <div style="padding:1rem 1.2rem;">
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Provider:</label>
+              <select id="setting-diarization-provider" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+                <option value="pyannote" selected>pyannote (recommended)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Model:</label>
+            <input type="text" id="setting-diarization-model" value="pyannote/speaker-diarization-3.0" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; align-items:center; gap:0.6rem;">
+            <input type="checkbox" id="setting-alignment-cache" style="width:1.1rem; height:1.1rem;" checked>
+            <label for="setting-alignment-cache" style="font-weight:600; cursor:pointer;">Cache alignment models across sessions</label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- AI Assistant Card (BYOM) -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>AI Assistant (BYOM)</h2>
+          <span class="dim">Post-processing with OpenAI-compatible endpoints</span>
+        </div>
+        <div style="padding:1rem 1.2rem;">
+
+          <div style="margin-bottom:1rem; background:var(--paper-recessed); padding:0.8rem; border-radius:var(--radius-sm); border-left:3px solid var(--accent);">
+            <p class="dim" style="margin:0; font-size:0.9rem;">
+              <strong>Note:</strong> BYOM connects to any OpenAI-compatible server (Ollama, LM Studio, vLLM, OpenAI API) for post-transcription tasks like summarization or cleanup. It does <strong>not</strong> affect core transcription or diarization.
+            </p>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; flex-direction:column; gap:0.3rem;">
+            <label style="font-weight:600;">Preset Shortcuts:</label>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button class="btn tiny" id="preset-ollama" type="button">Ollama</button>
+              <button class="btn tiny" id="preset-lmstudio" type="button">LM Studio</button>
+              <button class="btn tiny" id="preset-vllm" type="button">vLLM / LocalAI</button>
+              <button class="btn tiny" id="preset-openai" type="button">OpenAI API</button>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Base URL:</label>
+            <input type="text" id="setting-base-url" value="http://localhost:11434/v1" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">API Key:</label>
+            <input type="password" id="setting-api-key" value="not-needed" placeholder="not-needed or sk-..." style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model Name:</label>
+              <select id="setting-model-select" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+                <option value="">— Click Fetch Models —</option>
+              </select>
+            </div>
+            <button class="btn" id="btn-fetch-models" type="button" style="height:2.4rem;">Fetch Models</button>
+          </div>
+
+          <div class="form-row" style="margin-bottom:1rem; display:flex; align-items:center; gap:0.6rem;">
+            <input type="checkbox" id="setting-vision" style="width:1.1rem; height:1.1rem;">
+            <label for="setting-vision" style="font-weight:600; cursor:pointer;">Vision / Multimodal Enabled (e.g. Qwen2.5-VL, Llama-3.2-Vision)</label>
+          </div>
+
+          <div class="toolbar" style="padding-top:0.5rem; border-top:1px solid var(--rule); display:flex; gap:0.6rem; align-items:center;">
+            <button class="btn accent" id="btn-save-settings" type="button">Save Configuration</button>
+            <button class="btn" id="btn-test-connection" type="button">Test Connection</button>
+            <span id="connection-status-dot" class="health-dot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--rule);" title="Connection status"></span>
+            <span class="dim" id="connection-status-text" style="font-size:0.9rem;">Not tested</span>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- Search results modal -->
+  <div class="modal-overlay hidden" id="search-modal">
+    <div class="modal">
+      <div class="card">
+        <div class="card-head">
+          <h2>Search Results</h2>
+          <div style="display:flex;gap:0.4rem;align-items:center;">
+            <span class="dim" id="search-result-count"></span>
+            <button class="btn tiny" id="btn-search-close">&times;</button>
+          </div>
+        </div>
+        <div class="search-results-list" id="search-results-list">
+          <p class="dim" style="padding:1rem;">No results.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Assistant Modal -->
+  <div class="modal-overlay hidden" id="ai-modal">
+    <div class="modal">
+      <div class="card">
+        <div class="card-head">
+          <h2 id="ai-modal-title">AI Assistant</h2>
+          <div style="display:flex;gap:0.4rem;align-items:center;">
+            <span class="dim" id="ai-modal-status"></span>
+            <button class="btn tiny" id="btn-ai-close">&times;</button>
+          </div>
+        </div>
+        <div style="padding:1rem;">
+          <div class="toolbar" style="padding-bottom:0.5rem;">
+            <button class="btn" id="btn-ai-copy" type="button">Copy</button>
+            <button class="btn" id="btn-ai-download" type="button">Download</button>
+          </div>
+          <div id="ai-modal-content" style="max-height:50vh;overflow-y:auto;padding:0.5rem;background:var(--paper-recessed);border-radius:var(--radius-sm);white-space:pre-wrap;font-size:0.9rem;">Waiting for AI response...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span id="status-text">Ready</span>
+    <span class="dim" id="status-detail"></span>
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <button class="btn tiny" id="btn-theme-toggle" title="Toggle dark/light mode">&#127769;</button>
+      <div class="health-indicator" id="health-indicator" title="System health">
+      <span class="health-dot" id="health-db" title="Database"></span>
+      <span class="health-dot" id="health-whisper" title="Whisper model"></span>
+      <span class="health-dot" id="health-diarize" title="Diarization model"></span>
+      <span class="health-dot" id="health-gpu" title="GPU"></span>
+      <button class="btn tiny" id="btn-health-details">Health</button>
+    </div>
+    </div>
+  </div>
+
+  <div class="health-panel hidden" id="health-panel">
+    <div class="card">
+      <div class="card-head">
+        <h2>System Health</h2>
+        <div style="display:flex;gap:0.4rem;align-items:center;">
+          <button class="btn accent" id="btn-load-models">Load Models</button>
+          <button class="btn tiny" id="btn-health-close">&times;</button>
+        </div>
+      </div>
+      <div class="health-error hidden" id="health-error-box">
+        <span class="health-error-icon">!</span>
+        <span class="health-error-text" id="health-error-text"></span>
+      </div>
+      <div class="health-grid" id="health-grid">
+        <div class="health-row">
+          <span class="health-label">Whisper Model</span>
+          <span class="health-value" id="health-whisper-name">—</span>
+          <span class="health-status" id="health-whisper-status"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">Diarization</span>
+          <span class="health-value" id="health-diarize-status">—</span>
+          <span class="health-status" id="health-diarize-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">Alignment Models</span>
+          <span class="health-value" id="health-align-langs">—</span>
+          <span class="health-status" id="health-align-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">Device</span>
+          <span class="health-value" id="health-device">—</span>
+          <span class="health-status" id="health-device-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">GPU</span>
+          <span class="health-value" id="health-gpu-name">—</span>
+          <span class="health-status" id="health-gpu-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">VRAM</span>
+          <span class="health-value" id="health-vram">—</span>
+          <span class="health-status" id="health-vram-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label">HF Token</span>
+          <span class="health-value" id="health-hf-token">—</span>
+          <span class="health-status" id="health-hf-dot"></span>
+        </div>
+        <div class="health-row">
+          <span class="health-label" id="lbl-db">Database</span>
+          <span class="health-value" id="health-db-status">—</span>
+          <span class="health-status" id="health-db-dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
