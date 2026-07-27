@@ -1,0 +1,19 @@
+# Manual alias overrides for entity resolution.
+# Entities listed here will be merged before semantic/fuzzy dedup.
+# Format:
+#   aliases:
+#     "Canonical Name": ["Alias 1", "Alias 2"]
+#
+# Examples (uncomment and customize for your corpus):
+# aliases:
+#   "Alexander I of Russia":
+#     - "Alexander I"
+#     - "Tsar Alexander I"
+#     - "Alexander Pavlovich"
+#   "Russian Empire":
+#     - "Russia"
+#     - "Tsarist Russia"
+#   "World War I":
+#     - "WWI"
+#     - "The Great War"
+#     - "First World War"

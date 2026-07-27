@@ -1,0 +1,44 @@
+llm:
+  base_url: "http://localhost:11434"
+  model: "gemma2:27b"
+  temperature: 0.1
+  timeout: 120
+
+embedding:
+  base_url: "http://localhost:11434"
+  model: "bge-m3"
+  timeout: 60
+  batch_size: 16
+
+ingestion:
+  chunk_size: 2000
+  chunk_overlap: 200
+  input_dir: "data/input_ocr"
+  supported_extensions: [".txt", ".md"]
+  max_file_size_mb: 50
+
+extraction:
+  max_retries: 3
+  retry_delay: 1.0
+  batch_size: 5
+  cache_dir: "data/cache/llm_responses"
+
+entity_resolution:
+  similarity_threshold: 0.93
+  fuzzy_match: true
+  use_semantic: true
+  semantic_threshold: 0.85
+  embedding_model: "bge-m3"
+  aliases_file: "data/aliases.yaml"
+
+export:
+  output_dir: "data/output"
+  graph_format: "graphml"
+  graph_formats: ["graphml", "gexf", "json", "csv"]
+  obsidian_vault_dir: "data/obsidian_vault"
+
+storage:
+  entities_file: "data/output/entities.json"
+  relationships_file: "data/output/relationships.json"
+  documents_file: "data/output/documents.json"
+  chunks_file: "data/output/chunks.json"

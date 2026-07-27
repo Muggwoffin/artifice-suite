@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}ArtificeGraph — About{% endblock %}
+
+{% block content %}
+<main class="page" id="main-content">
+  <header class="masthead">
+    <span class="label">Local-first · offline · print-inflected</span>
+    <h1>About ArtificeGraph</h1>
+    <hr class="masthead-rule">
+  </header>
+
+  <p>
+    ArtificeGraph is a modular, local-first pipeline that transforms historical OCR text
+    into a structured knowledge graph and a hyperlinked Obsidian vault — entirely
+    offline using local LLMs and embedding models. The web interface mirrors the
+    tkinter GUI: configure paths and the LLM endpoint, then run each stage or the
+    whole pipeline at once.
+  </p>
+
+  <h2 class="section-head">Pipeline stages</h2>
+  <ol style="font-family: var(--font-body); line-height: 1.8; padding-left: 1.25rem;">
+    <li><strong>Ingest</strong> — discovers <code>.txt</code>/<code>.md</code> files and produces
+        sliding-window chunks.</li>
+    <li><strong>Extract</strong> — sends batches to a local Ollama or OpenAI-compatible LLM,
+        parsing structured JSON into entities and relationships.</li>
+    <li><strong>Resolve</strong> — fuzzy &amp; (optionally) bge-m3 semantic dedup with
+        YAML alias overrides.</li>
+    <li><strong>Vault</strong> — emits an Obsidian vault with Dataview frontmatter and wikilinks.</li>
+    <li><strong>Graph</strong> — exports GraphML / GEXF / JSON / CSV for Gephi, yEd, and beyond.</li>
+  </ol>
+
+  <h2 class="section-head">Design language</h2>
+  <p>
+    This interface implements the <strong>The New Masses</strong> design system: an
+    offline-first, print-inflected editorial aesthetic with warm paper surfaces,
+    Esperanto-green accent, and fluid serif typography. All design tokens live in
+    <code>web/static/tokens.css</code>; never hardcode colours or spacing.
+  </p>
+
+  <h2 class="section-head">Run it</h2>
+  <p>
+    From the project root:
+  </p>
+  <pre class="mono" style="background:var(--paper-raised); padding:0.9rem; border:1px solid var(--rule); border-radius:var(--radius-sm); overflow-x:auto;">pip install -e ".[web]"
+python -m web.server
+# → http://localhost:8766</pre>
+
+  <p class="foot">
+    Vanilla JS · IIFE-wrapped · no framework · no transpiler.
+  </p>
+</main>
+{% endblock %}

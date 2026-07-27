@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}" data-reduce-motion="{{ 'true' if reduce_motion else 'false' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ArtificeGraph{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,700&display=swap">
+  {% block head %}{% endblock %}
+  <link rel="stylesheet" href="/static/tokens.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/static/app.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/static/pipeline.css?v={{ asset_v }}">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <nav class="topnav">
+    <a class="brand" href="/">Artifice<span class="brand-accent">Graph</span></a>
+    <div class="navlinks">
+      <a href="/" aria-current="{{ 'page' if active_tab == 'pipeline' else ''}}">Pipeline</a>
+      <a href="/library" aria-current="{{ 'page' if active_tab == 'library' else ''}}">Library</a>
+      <a href="/about" aria-current="{{ 'page' if active_tab == 'about' else ''}}">About</a>
+    </div>
+    <button type="button" class="nav-theme" id="themeToggle" aria-label="Toggle colour theme">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="themeGlyph"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span class="sr-only">Theme</span>
+    </button>
+  </nav>
+
+  {% block content %}{% endblock %}
+
+  <script src="/static/app.js?v={{ asset_v }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

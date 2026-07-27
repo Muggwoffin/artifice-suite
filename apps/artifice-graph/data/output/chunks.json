@@ -1,0 +1,402 @@
+[
+  {
+    "id": ".pytest_cache__README__chunk_0000",
+    "document_id": ".pytest_cache__README",
+    "chunk_index": 0,
+    "text": "# pytest cache directory #\n\nThis directory contains data from the pytest's cache plugin,\nwhich provides the `--lf` and `--ff` options, as well as the `cache` fixture.\n\n**Do not** commit this to version control.\n\nSee [the docs](https://docs.pytest.org/en/stable/how-to/cache.html) for more information.\n",
+    "start_char": 0,
+    "end_char": 302,
+    "subfolder": ".pytest_cache",
+    "page_range": ""
+  },
+  {
+    "id": "data__input_ocr__congress_of_vienna__chunk_0000",
+    "document_id": "data__input_ocr__congress_of_vienna",
+    "chunk_index": 0,
+    "text": "The Congress of Vienna was convened in 1814 to reconstruct Europe after the Napoleonic Wars.\nPrince Klemens von Metternich, the Austrian foreign minister, played a central role in the\nnegotiations. The Congress was attended by representatives from Austria, Prussia, Russia,\nand Great Britain.\n\nTsar Alexander I of Russia sought to expand Russian influence across the continent. The\nresulting Concert of Europe established a balance of power that lasted for decades. Baron\nKarl vom Stein, a Prussian statesman, also participated in early discussions but died\nbefore the Congress concluded.\n\nThe Treaty of Paris was signed on May 30, 1814, preceding the Congress. Metternich later\nbecame the dominant figure in European diplomacy, championing conservatism against\nnationalist and liberal movements.\n\nIn 1815, Napoleon escaped from Elba and returned to France, triggering the Hundred Days.\nThe Seventh Coalition, led by the Duke of Wellington and Prussian Field Marshal Gebhard\nLeberecht von Blucher, defeated Napoleon at Waterloo on June 18, 1815. This final defeat\nled to Napoleon's exile on Saint Helena, where he died in 1821.\n\nThe Holy Alliance, proposed by Alexander I in 1815, sought to unite the Christian monarchs\nof Europe. Metternich viewed it as a useful tool for suppressing revolutionary movements\nbut privately considered Alexander's idealism impractical.\n",
+    "start_char": 0,
+    "end_char": 1368,
+    "subfolder": "data/input_ocr",
+    "page_range": ""
+  },
+  {
+    "id": "data__input_ocr__french_revolution__chunk_0000",
+    "document_id": "data__input_ocr__french_revolution",
+    "chunk_index": 0,
+    "text": "The French Revolution, beginning in 1789, fundamentally transformed European political\nthought. King Louis XVI of France convened the Estates-General to address the kingdom's\nfinancial crisis. The Third Estate, led by figures such as Maximilien Robespierre and\nJean-Paul Marat, declared itself the National Assembly.\n\nThe storming of the Bastille on July 14, 1789, became a powerful symbol of the revolution.\nThe Declaration of the Rights of Man and of the Citizen, adopted in August 1789, drew\nheavily on Enlightenment philosophy and the writings of John Locke and Jean-Jacques\nRousseau.\n\nThe Reign of Terror (1793-1794), orchestrated by Robespierre through the Committee of\nPublic Safety, saw the execution of thousands by guillotine, including King Louis XVI\nand Marie Antoinette. The Committee of Public Safety, dominated by Robespierre, wielded\nnear-dictatorial power.\n\nNapoleon Bonaparte, a military genius, rose through the ranks during the Revolutionary\nWars. His coup d'état of 18 Brumaire (November 1799) effectively ended the Revolution\nand established the Consulate. Napoleon later crowned himself Emperor in 1804, marking\nthe transition from the Revolutionary period to the Napoleonic era.\n\nThe Revolution's ideals of liberty, equality, and fraternity influenced subsequent\nmovements across Europe and the Americas. Thomas Paine, the English-born philosopher,\nadvocated for revolutionary ideals in works such as \"Rights of Man\" (1791).\n",
+    "start_char": 0,
+    "end_char": 1449,
+    "subfolder": "data/input_ocr",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__01_Sources__congress_of_vienna_sample.txt__chunk_0000",
+    "document_id": "data__obsidian_vault__01_Sources__congress_of_vienna_sample.txt",
+    "chunk_index": 0,
+    "text": "---\ntype: source-document\nfilename: \"congress_of_vienna_sample.txt\"\ntags: [source, ocr-document]\n---\n\n# Source: congress_of_vienna_sample.txt\n\n## Chunk 0\n\n[[Congress of Vienna|The Congress]] of Vienna was convened in 1814 to reconstruct Europe after the [[Napoleonic Wars]]. Prince [[Klemens von Metternich]], the Austrian foreign minister, played a central role in the negotiations. The Congress was attended by representatives from [[Austria]], [[Prussia]], [[Russia]], and [[Great Britain]]. [[Alexander I|Tsar Alexander I]] of Russia sought to expand Russian influence across the continent. The resulting [[Concert of Europe]] established a balance of power that lasted for decades. Baron [[Karl vom Stein]], a Prussian statesman, also participated in early discussions but died before the Congress concluded. The [[Treaty of Paris]] was signed on May 30, 1814, preceding the Congress. [[Klemens von Metternich|Metternich]] later became the dominant figure in European diplomacy, championing conservatism against nationalist and liberal movements.\n\n---\n",
+    "start_char": 0,
+    "end_char": 1057,
+    "subfolder": "data/obsidian_vault/01_Sources",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__01_Sources__demo.txt__chunk_0000",
+    "document_id": "data__obsidian_vault__01_Sources__demo.txt",
+    "chunk_index": 0,
+    "text": "---\ntype: source-document\nfilename: \"demo.txt\"\ntags: [source, ocr-document]\n---\n\n# Source: demo.txt\n\n## Chunk 0\n\n[[Congress of Vienna|The Congress]] of Vienna was convened in 1814 to reconstruct Europe after the [[Napoleonic Wars]]. Prince [[Klemens von Metternich]], the Austrian foreign minister, played a central role in the negotiations. The Congress was attended by representatives from [[Austria]], [[Prussia]], [[Russia]], and [[Great Britain]]. [[Alexander I|Tsar Alexander I]] of Russia sought to expand Russian influence across the continent. The resulting [[Concert of Europe]] established a balance of power that lasted for decades. Baron [[Karl vom Stein]], a Prussian statesman, also participated in early discussions but died before the Congress concluded. The [[Treaty of Paris]] was signed on May 30, 1814, preceding the Congress. [[Klemens von Metternich|Metternich]] later became the dominant figure in European diplomacy, championing conservatism against nationalist and liberal movements.\n\n---\n",
+    "start_char": 0,
+    "end_char": 1015,
+    "subfolder": "data/obsidian_vault/01_Sources",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Concepts__Concert of Europe__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Concepts__Concert of Europe",
+    "chunk_index": 0,
+    "text": "type: Concept\naliases: []\ntags:\n- concept\n- historical-entity\nrelated_entities:\n- '[[Congress of Vienna]]'\n- '[[Nationalism]]'\n\n---\n\n# Concert of Europe\n\n## Summary\n\nSystem of balance-of-power diplomacy established after the Congress of Vienna.\n\n## Relationships & Evidence\n\n### Outgoing\n\n- **opposed** → [[Nationalism]]\n  - Time: 1815-1914\n  - > \"championing conservatism against nationalist and liberal movements\"\n\n### Incoming\n\n- **established** ← [[Congress of Vienna]]\n  - Time: 1815\n  - > \"The resulting Concert of Europe established a balance of power\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 625,
+    "subfolder": "data/obsidian_vault/02_Entities/Concepts",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Concepts__Nationalism__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Concepts__Nationalism",
+    "chunk_index": 0,
+    "text": "type: Concept\naliases: []\ntags:\n- concept\n- historical-entity\nrelated_entities:\n- '[[Concert of Europe]]'\n\n---\n\n# Nationalism\n\n## Summary\n\nPolitical ideology championed by liberal movements and opposed by Metternich.\n\n## Relationships & Evidence\n\n### Incoming\n\n- **opposed** ← [[Concert of Europe]]\n  - Time: 1815-1914\n  - > \"championing conservatism against nationalist and liberal movements\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 459,
+    "subfolder": "data/obsidian_vault/02_Entities/Concepts",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Events__Congress of Vienna__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Events__Congress of Vienna",
+    "chunk_index": 0,
+    "text": "type: Event\naliases:\n- The Congress\ntags:\n- event\n- historical-entity\nrelated_entities:\n- '[[Klemens von Metternich]]'\n- '[[Alexander I]]'\n- '[[Karl vom Stein]]'\n- '[[Concert of Europe]]'\n\n---\n\n# Congress of Vienna\n\n**Also known as:** `The Congress`\n\n## Summary\n\nDiplomatic conference held in 1814 to reorganize Europe after the Napoleonic Wars.\n\n## Relationships & Evidence\n\n### Outgoing\n\n- **established** → [[Concert of Europe]]\n  - Time: 1815\n  - > \"The resulting Concert of Europe established a balance of power\"\n\n### Incoming\n\n- **participated_in** ← [[Klemens von Metternich]]\n  - Time: 1814-1815\n  - > \"Prince Klemens von Metternich played a central role in the negotiations.\"\n- **participated_in** ← [[Alexander I]]\n  - Time: 1814\n  - > \"Tsar Alexander I of Russia sought to expand Russian influence.\"\n- **participated_in** ← [[Karl vom Stein]]\n  - Time: 1814\n  - > \"participated in early discussions but died before the Congress concluded.\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 1016,
+    "subfolder": "data/obsidian_vault/02_Entities/Events",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Events__Napoleonic Wars__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Events__Napoleonic Wars",
+    "chunk_index": 0,
+    "text": "type: Event\naliases: []\ntags:\n- event\n- historical-entity\nrelated_entities: []\n\n---\n\n# Napoleonic Wars\n\n## Summary\n\nSeries of wars fought between France and various European coalitions.\n\n## Relationships & Evidence\n\n_No relationships extracted._\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 311,
+    "subfolder": "data/obsidian_vault/02_Entities/Events",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Events__Treaty of Paris__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Events__Treaty of Paris",
+    "chunk_index": 0,
+    "text": "type: Event\naliases: []\ntags:\n- event\n- historical-entity\nrelated_entities: []\n\n---\n\n# Treaty of Paris\n\n## Summary\n\nPeace treaty signed on May 30, 1814, preceding the Congress of Vienna.\n\n## Relationships & Evidence\n\n_No relationships extracted._\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 312,
+    "subfolder": "data/obsidian_vault/02_Entities/Events",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Locations__Austria__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Locations__Austria",
+    "chunk_index": 0,
+    "text": "type: Location\naliases:\n- Austrian Empire\ntags:\n- location\n- historical-entity\nrelated_entities:\n- '[[Klemens von Metternich]]'\n\n---\n\n# Austria\n\n**Also known as:** `Austrian Empire`\n\n## Summary\n\nMajor European power and host nation of the Congress of Vienna.\n\n## Relationships & Evidence\n\n### Incoming\n\n- **served_as_foreign_minister_of** ← [[Klemens von Metternich]]\n  - Time: 1809-1848\n  - > \"the Austrian foreign minister\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 491,
+    "subfolder": "data/obsidian_vault/02_Entities/Locations",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Locations__Great Britain__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Locations__Great Britain",
+    "chunk_index": 0,
+    "text": "type: Location\naliases: []\ntags:\n- location\n- historical-entity\nrelated_entities: []\n\n---\n\n# Great Britain\n\n## Summary\n\nMajor European power represented at the Congress of Vienna.\n\n## Relationships & Evidence\n\n_No relationships extracted._\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 305,
+    "subfolder": "data/obsidian_vault/02_Entities/Locations",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Locations__Prussia__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Locations__Prussia",
+    "chunk_index": 0,
+    "text": "type: Location\naliases: []\ntags:\n- location\n- historical-entity\nrelated_entities:\n- '[[Karl vom Stein]]'\n\n---\n\n# Prussia\n\n## Summary\n\nGerman state that participated in the Congress of Vienna.\n\n## Relationships & Evidence\n\n### Incoming\n\n- **was_statesman_of** ← [[Karl vom Stein]]\n  - > \"a Prussian statesman\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 374,
+    "subfolder": "data/obsidian_vault/02_Entities/Locations",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Locations__Russia__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Locations__Russia",
+    "chunk_index": 0,
+    "text": "type: Location\naliases: []\ntags:\n- location\n- historical-entity\nrelated_entities:\n- '[[Alexander I]]'\n\n---\n\n# Russia\n\n## Summary\n\nMajor European power represented at the Congress of Vienna.\n\n## Relationships & Evidence\n\n### Incoming\n\n- **ruled** ← [[Alexander I]]\n  - Time: 1801-1825\n  - > \"Tsar Alexander I of Russia\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 384,
+    "subfolder": "data/obsidian_vault/02_Entities/Locations",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Persons__Alexander I__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Persons__Alexander I",
+    "chunk_index": 0,
+    "text": "type: Person\naliases:\n- Tsar Alexander I\ntags:\n- person\n- historical-entity\nrelated_entities:\n- '[[Congress of Vienna]]'\n- '[[Russia]]'\n\n---\n\n# Alexander I\n\n**Also known as:** `Tsar Alexander I`\n\n## Summary\n\nTsar of Russia who sought expanded influence at the Congress of Vienna.\n\n## Relationships & Evidence\n\n### Outgoing\n\n- **participated_in** → [[Congress of Vienna]]\n  - Time: 1814\n  - > \"Tsar Alexander I of Russia sought to expand Russian influence.\"\n- **ruled** → [[Russia]]\n  - Time: 1801-1825\n  - > \"Tsar Alexander I of Russia\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 602,
+    "subfolder": "data/obsidian_vault/02_Entities/Persons",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Persons__Karl vom Stein__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Persons__Karl vom Stein",
+    "chunk_index": 0,
+    "text": "type: Person\naliases:\n- Baron Stein\n- Baron vom Stein\ntags:\n- person\n- historical-entity\nrelated_entities:\n- '[[Congress of Vienna]]'\n- '[[Prussia]]'\n\n---\n\n# Karl vom Stein\n\n**Also known as:** `Baron Stein`, `Baron vom Stein`\n\n## Summary\n\nPrussian statesman who participated in early Congress discussions but died before its conclusion.\n\n## Relationships & Evidence\n\n### Outgoing\n\n- **participated_in** → [[Congress of Vienna]]\n  - Time: 1814\n  - > \"participated in early discussions but died before the Congress concluded.\"\n- **was_statesman_of** → [[Prussia]]\n  - > \"a Prussian statesman\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 656,
+    "subfolder": "data/obsidian_vault/02_Entities/Persons",
+    "page_range": ""
+  },
+  {
+    "id": "data__obsidian_vault__02_Entities__Persons__Klemens von Metternich__chunk_0000",
+    "document_id": "data__obsidian_vault__02_Entities__Persons__Klemens von Metternich",
+    "chunk_index": 0,
+    "text": "type: Person\naliases:\n- Metternich\n- Prince Metternich\ntags:\n- person\n- historical-entity\nrelated_entities:\n- '[[Congress of Vienna]]'\n- '[[Austria]]'\n\n---\n\n# Klemens von Metternich\n\n**Also known as:** `Metternich`, `Prince Metternich`\n\n## Summary\n\nAustrian foreign minister and central figure at the Congress of Vienna.\n\n## Relationships & Evidence\n\n### Outgoing\n\n- **participated_in** → [[Congress of Vienna]]\n  - Time: 1814-1815\n  - > \"Prince Klemens von Metternich played a central role in the negotiations.\"\n- **served_as_foreign_minister_of** → [[Austria]]\n  - Time: 1809-1848\n  - > \"the Austrian foreign minister\"\n\n## Source Documents\n\n- [[01_Sources/congress_of_vienna_sample]]\n",
+    "start_char": 0,
+    "end_char": 686,
+    "subfolder": "data/obsidian_vault/02_Entities/Persons",
+    "page_range": ""
+  },
+  {
+    "id": "DESIGN_LANGUAGE__chunk_0000",
+    "document_id": "DESIGN_LANGUAGE",
+    "chunk_index": 0,
+    "text": "# LudwigLang Design Language\n\nA design-system guide for building apps that share LudwigLang's visual identity.\nThe reference implementation lives in the same repo — consult `web/static/tokens.css`,\n`web/static/app.css`, and the page-specific CSS files for exact selectors and values.\n\n---\n\n## 1. Design Philosophy\n\n- **Offline-first, print-inflected.** The palette and typography evoke 20th-century\n  editorial print (cream paper, dark ink, serif body text). Every visual choice should\n  feel like it belongs in a physical book or archival document.\n- **Restrained motion.** Animations are brief (0.12–0.6 s) and serve a tactile purpose\n  (ink drying, paper accepting a stamp). The global `[data-reduce-motion]` guard kills\n  all motion.\n- **No icon fonts, no emoji in UI.** All icons are inline SVGs.\n\n---\n\n## 2. CSS Token System\n\nAll design tokens live in `tokens.css` as CSS custom properties on `:root`.\nConsume them exclusively through these variables — never hardcode colour, type,\nor spacing values.\n\n### 2.1 Paper & Ink (Light Theme)\n\n| Token | Value | Usage |\n|---|---|---|\n| `--paper` | `#f6f3ea` | Page background |\n| `--paper-raised` | `#fbf9f3` | Card / panel / modal background |\n| `--paper-recessed` | `#efebdf` | Pressed / inset surface |\n| `--ink` | `#1b1813` | Body text |\n| `--ink-soft` | `#4b463d` | Secondary text, labels |\n| `--ink-faint` | `#716c5e` | Muted metadata (AA on paper) |\n| `--rule` | `#ddd6c6` | Borders, dividers |\n| `--rule-dark` | `#45413a` | Strong borders, button outlines |\n\n### 2.2 Accent & Gold\n\n| Token | Value | Usage |\n|---|---|---|\n| `--accent` | `#2f7d45` | Links, active states, primary actions (Esperanto green) |\n| `--accent-deep` | `#1f5a31` | Hover states, link colour |\n| `--accent-wash` | `rgba(47,125,69,0.07)` | Subtle background tint for active/selected items |\n| `--gold` | `#bf9b30` | Stars, highlights, mid-progress states |\n\n### 2.3 Dark Theme Override\n\nApplied via `@media (prefers-color-scheme: dark)` or explicit `[data-theme=\"dark\"]`.",
+    "start_char": 0,
+    "end_char": 2000,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "DESIGN_LANGUAGE__chunk_0001",
+    "document_id": "DESIGN_LANGUAGE",
+    "chunk_index": 1,
+    "text": "ve/selected items |\n| `--gold` | `#bf9b30` | Stars, highlights, mid-progress states |\n\n### 2.3 Dark Theme Override\n\nApplied via `@media (prefers-color-scheme: dark)` or explicit `[data-theme=\"dark\"]`.\nComponents never need dark-mode rules — they just reference the token variables.\n\n| Token | Dark Value |\n|---|---|\n| `--paper` | `#1c1a16` |\n| `--paper-raised` | `#24211b` |\n| `--paper-recessed` | `#171511` |\n| `--ink` | `#ece7db` |\n| `--accent` | `#4a9e63` |\n\n### 2.4 Typography\n\n| Token | Value / Family |\n|---|---|\n| `--font-display` | `'Playfair Display', 'Georgia', serif` |\n| `--font-body` | `'Libre Baskerville', 'Georgia', serif` |\n| `--font-sans` | `'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif` |\n| `--label-tracking` | `0.16em` — letter-spacing for uppercase labels |\n\nFluid scale (clamp-based):\n\n| Token | Size |\n|---|---|\n| `--text-sm` | `0.875rem` |\n| `--text-base` | `1.0625rem` |\n| `--text-lg` | `clamp(1.15rem, 1.05rem + 0.4vw, 1.3rem)` |\n| `--text-h3` | `clamp(1.35rem, 1.2rem + 0.8vw, 1.8rem)` |\n| `--text-h2` | `clamp(1.9rem, 1.5rem + 2vw, 2.8rem)` |\n| `--text-hero` | `clamp(2.6rem, 1.6rem + 5.5vw, 5.25rem)` |\n\n### 2.5 Shadows\n\n| Token | Value |\n|---|---|\n| `--shadow-paper` | `0 1px 2px rgba(27,24,19,0.05), 0 10px 28px -14px rgba(27,24,19,0.18)` |\n| `--shadow-lifted` | `0 2px 4px rgba(27,24,19,0.07), 0 22px 44px -18px rgba(27,24,19,0.28)` |\n\n### 2.6 Word-Status Colours (Reading View)\n\nFive-rung progression from \"new\" to \"known\". Drawn from the house palette.\n\n| State | Wash | Underline |\n|---|---|---|\n| `--w-new` | `rgba(47,125,69,0.13)` green | `var(--accent)` |\n| `--w-unfamiliar` | `rgba(191,155,48,0.28)` gold | `var(--gold)` |\n| `--w-learning` | `rgba(191,155,48,0.12)` faint gold | `rgba(191,155,48,0.55)` |\n| `--w-familiar` | `transparent` | gold–green blend |\n| `--w-known` | `transparent` | none |\n| `--w-ignored` | `transparent` | none; text in `--ink-faint` |\n\n### 2.7 Register Taxonomy Colours\n\nEight archival-register colours for classif",
+    "start_char": 1800,
+    "end_char": 3800,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "DESIGN_LANGUAGE__chunk_0002",
+    "document_id": "DESIGN_LANGUAGE",
+    "chunk_index": 2,
+    "text": "old–green blend |\n| `--w-known` | `transparent` | none |\n| `--w-ignored` | `transparent` | none; text in `--ink-faint` |\n\n### 2.7 Register Taxonomy Colours\n\nEight archival-register colours for classification badges:\n\n| Token | Colour |\n|---|---|\n| `--reg-bureaucratic` | `#5b6b73` |\n| `--reg-underground` | `var(--accent)` |\n| `--reg-personal` | `#a6733b` |\n| `--reg-scholarly` | `#6a6a86` |\n| `--reg-journalistic` | `#c1652b` |\n| `--reg-epistolary` | `#7d5a8c` |\n| `--reg-legal` | `#3f6f8c` |\n| `--reg-poetic` | `#8c3f5a` |\n\n---\n\n## 3. Base Chrome\n\n### 3.1 Top Navigation (`.topnav`)\n\n- Fixed/sticky `56px` bar with `backdrop-filter: blur(12px)` on wider screens.\n- `.brand` uses `--font-display` in `1.15rem` weight `700`.\n- `.brand-accent` span inside it gets `--accent` colour.\n- `.navlinks a` are `--font-sans`, `0.72rem`, `--label-tracking`, uppercase.\n  Each has a green underline (`::after`) that `scaleX(0 → 1)` on hover.\n  Active page gets `[aria-current]` attribute → underline always visible.\n- `.nav-search` is an inline form with a search input; hidden on narrow screens.\n\n### 3.2 Page Container (`.page`)\n\n```css\n.page { max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }\n```\n\nReading page overrides to `72rem` when `.read-layout` is present.\n\n### 3.3 Masthead (`.masthead`)\n\n- Thick bottom border (`4px solid var(--ink)`).\n- `h1` inside uses `--font-display` at `--text-h2`.\n- `.label` class for the small uppercase label above the title.\n\n### 3.4 Section Heading (`.section-head`)\n\n`--font-sans`, `--text-sm`, `--label-tracking`, uppercase, `--ink-soft` colour,\nwith a bottom rule.\n\n---\n\n## 4. Component Patterns\n\n### 4.1 Text Card (`.text-card`)\n\n```html\n<li class=\"text-card\">\n  <a href=\"...\">\n    <span class=\"text-title\">Card title</span>\n    <span class=\"text-meta\">Metadata line</span>\n  </a>\n</li>\n```\n\n- Background: `--paper-raised`, border: `--rule`, shadow: `--shadow-paper`.\n- Link hover shows a green `outline: 2px solid var(--accent)`.\n- `.text-title`: `--f",
+    "start_char": 3600,
+    "end_char": 5600,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "DESIGN_LANGUAGE__chunk_0003",
+    "document_id": "DESIGN_LANGUAGE",
+    "chunk_index": 3,
+    "text": ">Metadata line</span>\n  </a>\n</li>\n```\n\n- Background: `--paper-raised`, border: `--rule`, shadow: `--shadow-paper`.\n- Link hover shows a green `outline: 2px solid var(--accent)`.\n- `.text-title`: `--font-display`, `--text-lg`, `display: block`.\n- `.text-meta`: `--font-sans`, `--text-sm`, `--ink-faint`, `display: block`.\n- `.text-card` also supports `position: relative` for action menus.\n- Cards in a list are gridded via `.text-list { display: grid; gap: 0.75rem; }`.\n\n### 4.2 Buttons\n\n**Base pattern** (`.modal-btn`, `.lib-action-btn`, `.wp-btn`, `.narr-btn`, `.sort-pill`):\n\n```css\nfont-family: var(--font-sans);\nfont-size: var(--text-sm);\nletter-spacing: var(--label-tracking);\ntext-transform: uppercase;\npadding: 0.5rem 0.9rem;\nborder: 1px solid var(--rule-dark);\nbackground: var(--paper);\ncolor: var(--ink);\ncursor: pointer;\ntransition: background 0.12s, color 0.12s, border-color 0.12s;\n```\n\nHover → `border-color: var(--accent); color: var(--accent-deep);`\n\n**Primary variant** (`.modal-btn-primary`): inverted — `background: var(--ink); color: var(--paper-raised); border-color: var(--ink);`\nHover → `background: var(--accent-deep);`\n\n**Import button** (`.lib-import-btn`): pre-bordered accent — `border-color: var(--accent); color: var(--accent-deep);`\nHover → `background: var(--accent); color: var(--paper-raised);`\n\n### 4.3 Sort Bar (`.sort-bar`)\n\nA `flex; gap: 0.35rem; flex-wrap: wrap` row of `.sort-pill` buttons.\nActive pill gets `[aria-pressed=\"true\"]` → `border-color: var(--accent); background: var(--accent-wash); color: var(--accent-deep);`.\n\n### 4.4 Search Input (`.lib-search-input`)\n\n```css\nwidth: 100%;\nmax-width: 28rem;\nfont-family: var(--font-body);\nfont-size: var(--text-base);\npadding: 0.55rem 0.8rem;\nborder: 1px solid var(--rule-dark);\nbackground: var(--paper);\ncolor: var(--ink);\n```\n\nFocus: `outline: 2px solid var(--accent); outline-offset: 1px;`\n\n### 4.5 Modal\n\n```html\n<div class=\"modal-backdrop\" hidden>\n  <div class=\"modal-card\" role=\"dialog\" aria-modal=\"true",
+    "start_char": 5400,
+    "end_char": 7400,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "DESIGN_LANGUAGE__chunk_0004",
+    "document_id": "DESIGN_LANGUAGE",
+    "chunk_index": 4,
+    "text": "r: var(--ink);\n```\n\nFocus: `outline: 2px solid var(--accent); outline-offset: 1px;`\n\n### 4.5 Modal\n\n```html\n<div class=\"modal-backdrop\" hidden>\n  <div class=\"modal-card\" role=\"dialog\" aria-modal=\"true\">\n    <h3 class=\"modal-title\">Title</h3>\n    <p class=\"modal-body\">Content...</p>\n    <div class=\"modal-actions\">\n      <button class=\"modal-btn\">Cancel</button>\n      <button class=\"modal-btn modal-btn-primary\">Confirm</button>\n    </div>\n  </div>\n</div>\n```\n\n- `.modal-backdrop`: `position: fixed; inset: 0; z-index: 400;` with semi-transparent dark background, flex-centers its child.\n- `.modal-card`: `--paper-raised`, `--shadow-lifted`, `max-width: 26rem`.\n- `.modal-title`: `--font-display`, `--text-h3`.\n- `.modal-actions`: `display: flex; gap: 0.75rem; justify-content: flex-end;`\n\n### 4.6 Stat Row (`.stat-row`)\n\n```html\n<section class=\"stat-row\">\n  <div class=\"stat\"><span class=\"stat-n\">42</span><span class=\"stat-l\">label</span></div>\n  ...\n</section>\n```\n\n- `display: flex; gap: 1rem; flex-wrap: wrap;`\n- Each `.stat`: `--paper-raised`, `border: 1px solid var(--rule); padding: 0.75rem 1.25rem; min-width: 7rem; text-align: center;`\n- `.stat-n`: `--font-display`, `--text-h3`, `display: block`.\n- `.stat-l`: `--font-sans`, `--text-sm`, `--label-tracking`, uppercase, `--ink-faint`.\n\n### 4.7 Folder Section\n\nUsed on the home page for grouped texts. Structure:\n\n```html\n<div class=\"lib-folder\" data-folder-name=\"Name\" data-open=\"true\">\n  <button class=\"lib-folder-header\" aria-expanded=\"true\">\n    <span class=\"lib-folder-icon\"><!-- SVG or emoji --></span>\n    <span class=\"lib-folder-name\">Name</span>\n    <span class=\"lib-folder-count\">(N)</span>\n    <span class=\"lib-folder-chevron\"><!-- chevron SVG --></span>\n  </button>\n  <div class=\"lib-folder-body\">\n    <ul class=\"text-list\">...</ul>\n  </div>\n</div>\n```\n\n- Header has `border-left: 3px solid var(--accent)` and `background: var(--accent-wash)`.\n- Body uses `max-height` transition for accordion open/close.\n- Chevron rotates -90°",
+    "start_char": 7200,
+    "end_char": 9200,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "DESIGN_LANGUAGE__chunk_0005",
+    "document_id": "DESIGN_LANGUAGE",
+    "chunk_index": 5,
+    "text": "/ul>\n  </div>\n</div>\n```\n\n- Header has `border-left: 3px solid var(--accent)` and `background: var(--accent-wash)`.\n- Body uses `max-height` transition for accordion open/close.\n- Chevron rotates -90° when collapsed.\n\n### 4.8 Progress Bar\n\n```html\n<span class=\"text-progress\">\n  <span class=\"text-progress-track\">\n    <span class=\"text-progress-fill\" style=\"width: 42%\"></span>\n  </span>\n  <span class=\"text-progress-pct\">42% known</span>\n</span>\n```\n\n- Track: `height: 3px; background: var(--paper-recessed); max-width: 12rem;`\n- Fill: `background: var(--accent); transition: width 0.6s ease-out;`\n\n### 4.9 Source Badge\n\n```html\n<span class=\"text-source-badge\">Source name</span>\n```\n\n- `padding: 0.1rem 0.45rem; border: 1px solid var(--rule); border-radius: 2px; color: var(--ink-soft);`\n\n---\n\n## 5. Word Panel (Reading View)\n\nThe `.read-layout` uses a two-column grid: `2fr 1fr`.\n\nThe `.read-panel` in the right column shows word details:\n- `.wp-term`: word in `--font-display` at `--text-h3`.\n- `.wp-lemma`: lemma line with `--font-sans`, `--text-sm`, `--ink-faint`.\n- `.wp-meta-label`: uppercase label with `--font-sans`, `--text-sm`, bottom rule.\n- `.wp-gloss`: body font for the gloss.\n- `.wp-etymology`: italic body text in `--ink-soft`.\n- `.wp-register-tag`: small uppercase badge in `--tint-wash`.\n- `.wp-states`: 2-column grid of state buttons.\n\n---\n\n## 6. Animation Conventions\n\n| Animation | Duration | Trigger |\n|---|---|---|\n| `state-pulse-flash` | 0.5s | Word state change |\n| `ink-dry` | 0.4s | Word state change (tactile) |\n| `ink-create` | 0.5s | New word creation (LingQ moment) |\n\nAll motion is disabled when `[data-reduce-motion]` or `prefers-reduced-motion: reduce`\nis active. The guard in `app.css` uses `!important` on `animation-duration: 0.001ms`.\n\n---\n\n## 7. Responsive Breakpoints\n\n| Name | Width | Behaviour |\n|---|---|---|\n| Narrow | `max-width: 48rem` | Read layout stacks single column; panel `position: static` |\n| Narrow | `max-width: 720px` | Nav search hidden |\n|",
+    "start_char": 9000,
+    "end_char": 11000,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "DESIGN_LANGUAGE__chunk_0006",
+    "document_id": "DESIGN_LANGUAGE",
+    "chunk_index": 6,
+    "text": "eakpoints\n\n| Name | Width | Behaviour |\n|---|---|---|\n| Narrow | `max-width: 48rem` | Read layout stacks single column; panel `position: static` |\n| Narrow | `max-width: 720px` | Nav search hidden |\n| Narrow | `max-width: 700px` | `.topnav` backdrop-filter removed, nav-search hidden |\n| Wide | `min-width: 700px` | Topnav gets backdrop-filter blur |\n\n---\n\n## 9. Icons\n\n- Never use icon fonts or emoji in UI chrome. All icons are inline SVGs with\n  `aria-hidden=\"true\"`.\n- SVG attributes: `viewBox=\"0 0 24 24\"`, `width=\"16\" height=\"16\"`,\n  `fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\n  stroke-linejoin=\"round\"`.\n- Exception: the folder icon picker allows emoji as user-chosen folder icons\n  (rendered as `<span class=\"lib-folder-icon-emoji\">`).\n\n---\n\n## 10. HTML / Template Conventions\n\n- FastAPI + Jinja2. Base template: `templates/base.html`.\n- Each page extends base and provides `{% block title %}`, `{% block head %}`,\n  `{% block content %}`, `{% block scripts %}`.\n- Asset cache-busting via `?v={{ asset_v }}` on every CSS/JS link.\n- Theme and reduce-motion state stamped on `<html>` via middleware\n  (`data-theme` / `data-reduce-motion`).\n- All JavaScript is vanilla ES5-compatible (no framework, no transpiler),\n  wrapped in IIFEs. Modules expose themselves on `window`.\n- `[hidden] { display: none !important; }` global — components use `.hidden` attribute.\n\n---\n\n## 11. File & Naming Conventions\n\n| File | Purpose |\n|---|---|\n| `tokens.css` | All CSS custom properties / design tokens |\n| `app.css` | Base chrome, shared components, reset, utilities |\n| `{feature}.css` | Page- or feature-specific styles (e.g. `reading.css`, `library.css`) |\n| `{feature}.js` | Per-page behaviour (IIFE-wrapped) |\n| `templates/{feature}.html` | Jinja2 template per route |\n\n---\n\n## 12. Key Do's and Don'ts\n\n- **Do** reference token variables everywhere. Never hardcode colours.\n- **Do** use `--font-sans` + `--label-tracking` + `text-transform: uppercase` for labels,\n  butt",
+    "start_char": 10800,
+    "end_char": 12800,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "DESIGN_LANGUAGE__chunk_0007",
+    "document_id": "DESIGN_LANGUAGE",
+    "chunk_index": 7,
+    "text": "---\n\n## 12. Key Do's and Don'ts\n\n- **Do** reference token variables everywhere. Never hardcode colours.\n- **Do** use `--font-sans` + `--label-tracking` + `text-transform: uppercase` for labels,\n  buttons, and navigation.\n- **Do** use `--font-display` for headings and card titles.\n- **Do** use `--font-body` for running text and form inputs.\n- **Do** keep animations under 0.6s and motion-reduce-safe.\n- **Don't** use icon fonts or emoji in UI (except the folder-icon picker).\n- **Don't** hardcode dark-mode rules — the token system handles it.\n- **Don't** use a JS framework. Vanilla JS, IIFE-wrapped, no transpiler.\n- **Don't** add new font dependencies. The three font stacks have local fallbacks.\n",
+    "start_char": 12600,
+    "end_char": 13301,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "PLAN__chunk_0000",
+    "document_id": "PLAN",
+    "chunk_index": 0,
+    "text": "# PersonaeGraph — Expansion Plan\n\n> **Legacy name:** CallOsip  \n> **New name:** PersonaeGraph  \n\nThis document outlines a phased expansion plan for PersonaeGraph, transforming it from a general-purpose entity extraction pipeline into a tailored tool for historians building, curating, and exploring knowledge graphs from primary sources.\n\n## Table of Contents\n\n1. Current State\n2. Phase 1: Foundations\n3. Phase 2: Enhanced Research Tools\n4. Phase 3: Advanced Analysis & Automation\n5. Cross-Cutting Concerns\n6. Implementation Roadmap\n7. Success Metrics\n\n---\n\n## 1. Current State\n\n### 1.1 Capabilities\n\n| Area | Description |\n|---|---|\n| Entity types | Person, Location, Event, Organization, Concept |\n| Relationship extraction | Typed, with confidence scores and evidence quotes |\n| Entity resolution | Fuzzy (0.93) + semantic (bge-m3 0.85) with YAML alias overrides |\n| Obsidian export | Dataview frontmatter, wikilinks, source/entity notes |\n| Graph export | GraphML, GEXF, JSON, CSV, Cypher (Neo4j) |\n| Interfaces | CLI (Typer) and GUI (tkinter) |\n| LLM support | Ollama and OpenAI-compatible |\n| Incremental mode | Content-hash tracking for unchanged files |\n| Pipeline isolation | 5 independent stages with error isolation |\n\n### 1.2 Gaps for historian workflows\n\n- No temporal awareness (centuries, periods, reigns)\n- No provenance tracking (OCR source, quality, versions)\n- No importance or significance scoring for entities\n- Single static graph – no versioning or comparison\n- No guided discovery or recommendation\n- No collaboration features\n\n---\n\n## 2. Phase 1 — Foundations\n\n### 2.1 Rename and rebrand\n\nRename the entire project from CallOsip to PersonaeGraph:\n\n| File | Change |\n|---|---|\n| pyproject.toml | name, description, entry point |\n| README.md | headers, tagline, CLI examples |\n| gui.py | window title, log prefix |\n| cli.py | app name and help |\n| src/graph_pipeline/\\*.py | constants, class names, docstrings |\n\n### 2.2 Entity subtypes\n\nAdd an optional `sub_type` field to the",
+    "start_char": 0,
+    "end_char": 2000,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "PLAN__chunk_0001",
+    "document_id": "PLAN",
+    "chunk_index": 1,
+    "text": "| gui.py | window title, log prefix |\n| cli.py | app name and help |\n| src/graph_pipeline/\\*.py | constants, class names, docstrings |\n\n### 2.2 Entity subtypes\n\nAdd an optional `sub_type` field to the Entity model:\n\n- Person: Statesman, Monarch, Military_Leader, Scholar, Clergy, Merchant, Artist, Commoner\n- Organization: Government, Ministry, Military, Church, Guild, Corporation, Political_Faction\n- Location: Country, Region, City, Artefact, Natural_Feature, Border, Territory\n- Event: Battle, War, Treaty, Congress, Coronation, Marriage, Revolution, Expedition\n- Concept: Political, Economic, Legal, Religious, Cultural, Scientific\n\nBackward compatible: default value is \"\".\n\n### 2.3 Temporal awareness\n\nImplement a TimeSpan model:\n\n```yaml\nTimeSpan:\n  start_year: int | null\n  end_year: int | null\n  century: int | null  # e.g. 19 for 19th\n  period_label: str  # e.g. Napoleonic Era\n  precision: str  # year | decade | century | millennium | precise\n  certainty: float  # 0-1\n```\n\nTimeSpan is attached to:\n- Entity – lifespan or period of significance\n- Relationship – parse existing time_frame into structured TimeSpan\n- Document – source date\n\nNew module: `time_parser.py` to normalize strings like \"1809-1848\", \"ca. 450 BC\", \"late 18th c.\".\n\n### 2.4 Provenance tracking\n\nProvenance model tracks the extraction lineage:\n\n```yaml\nProvenance:\n  ocr_engine: str\n  ocr_confidence: float  # 0-1\n  extraction_confidence: float\n  review_status: str  # unreviewed | verified | disputed | rejected\n  reviewer_notes: str\n  version: int\n```\n\nAttach to Entity and Relationship.\n\n### 2.5 Entity importance scoring\n\nimportance_score (float 0-1) computed from:\n- degree centrality in the NetworkX graph\n- source document coverage count\n- relationship diversity\n- optional manual user override\n\nExported as node size in GEXF, sortable in Obsidian, ordering in CLI reports.\n\n---\n\n## 3. Phase 2 — Enhanced Research Tools\n\n### 3.1 Setup wizard\n\n`personaegraph init` interactive wizard:\n\n- historical period and ",
+    "start_char": 1800,
+    "end_char": 3800,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "PLAN__chunk_0002",
+    "document_id": "PLAN",
+    "chunk_index": 2,
+    "text": "ode size in GEXF, sortable in Obsidian, ordering in CLI reports.\n\n---\n\n## 3. Phase 2 — Enhanced Research Tools\n\n### 3.1 Setup wizard\n\n`personaegraph init` interactive wizard:\n\n- historical period and region\n- active entity types to extract\n- LLM backend and model selection\n- dedup threshold tuning\n- research templates: Medieval Genealogies, Revolutionary Figures, Congresses\n\nOutputs a `personaegraph.yaml` with tuned defaults.\n\n### 3.2 Historical timeline\n\nObsidian integration:\n- Generate a Timeline note compatible with the Obsidian Timeline plugin\n- Chronological groups by century, decade, and year\n\nGraph side:\n- GEXF temporal node attributes for Gephi timeline plugin\n- JSON exports with time-bucketed node/edge groups for D3.js\n\n### 3.3 Subgraph extraction\n\n`personaegraph subgraph` command:\n- Extract k-hop neighborhoods around seed entities\n- Filter by: period, entity type, subtype, importance\n- Results as standalone GraphML, Obsidian sub-vault, or Cypher script\n\nPre-built filtering modes: by-period, by-type, by-role, by-importance.\n\n### 3.4 Recommendation engine\n\nGiven a seed entity or set of entities:\n\n- Gap entities: co-occur in sources but not yet linked\n- Bridge nodes: entities that connect disconnected subgraphs\n- Contemporaries: overlapping TimeSpan not yet linked\n\nBackend: common neighbors, Adamic-Adar, Jaccard on the NetworkX graph.\n\n### 3.5 Improved visualisation\n\n- GEXF: node sizing by importance, edge thickness by confidence, color saturation by provenance\n- Obsidian: importance badges, sorted entity lists\n- CLI: top-k importance reports\n- GUI: collapsible entity details and graph preview\n\n---\n\n## 4. Phase 3 — Advanced Analysis & Automation\n\n### 4.1 Context-aware LLM extraction\n\nDynamicPromptBuilder that adapts the extraction prompt:\n- Injects historical period and region\n- Scopes to active entity types\n- Uses graph state as few-shot examples\n- Flags anachronistic language in the output\n\n### 4.2 Graph versioning\n\nSupport for competing hypotheses:\n\n```\nda",
+    "start_char": 3600,
+    "end_char": 5600,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "PLAN__chunk_0003",
+    "document_id": "PLAN",
+    "chunk_index": 3,
+    "text": "iod and region\n- Scopes to active entity types\n- Uses graph state as few-shot examples\n- Flags anachronistic language in the output\n\n### 4.2 Graph versioning\n\nSupport for competing hypotheses:\n\n```\ndata/graphs/\n  main/\n    v1/\n    v2/\n    current -> v1 /\n  experimental /\n    v1 /\n    current -> v1 /\n```\n\npersonaegraph branch and personaegraph merge commands.\n\n### 4.3 Citation export\n\nGenerate citation files from the knowledge graph:\n- Chicago, MLA, and BibTeX formats\n- group by topic, period, or entity\n- export as .bib and .json files\n\n### 4.4 Collaborative curation\n\nWeb-based review interface (FastAPI + htmx):\n\n- Entity and relationship review queue\n- Side-by-side diff across pipeline runs\n- Annotations and comments per entity\n- User roles: viewer, editor, admin\n\n### 4.5 Semi-automated extraction\n\nInteractive mode for the CLI and GUI:\n\n- Pause after each batch of extractions for user review\n- Accept, reject, or modify entities/relationships before proceeding\n- User edits become few-shot examples for subsequent batches\n\n### 4.6 Multi-source merging\n\nMerge knowledge graphs from different source corpuses:\n\n- reconcile entity identity across graphs\n- union-find merging of conflicting relationships\n- weighted importance fusion\n\n### 4.7 Knowledge base augmenter\n\nIntegrate with external historical databases (WikiData, VIAF, DNB):\n\n- entity ID cross-referencing\n- enrich entities with external metadata\n- validate and auto-fill missing information\n\n---\n\n## 5. Cross-Cutting Concerns\n\n### 5.1 Backward compatibility\n\n- Old output files (entities.json, relationships.json) remain loadable\n- Old config.yaml works with PersonaeGraph\n- New fields are optional with sensible defaults\n\n### 5.2 Testing\n\nNew tests for:\n- time_parser.py\n- importance scoring\n- subgraph extraction and filtering\n- recommendation engine\n- each phase milestone\n\n### 5.3 Documentation\n\nNew pages for:\n- Historian quick start guide\n- Research template configurations\n- API reference\n- Glossary of PersonaeGraph conc",
+    "start_char": 5400,
+    "end_char": 7400,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "PLAN__chunk_0004",
+    "document_id": "PLAN",
+    "chunk_index": 4,
+    "text": "\n- recommendation engine\n- each phase milestone\n\n### 5.3 Documentation\n\nNew pages for:\n- Historian quick start guide\n- Research template configurations\n- API reference\n- Glossary of PersonaeGraph concepts\n\n### 5.4 Performance\n\n- TimeSpan queries via numpy masking or sortedcontainers\n- Importance computation parallelized\n- Large graph subgraph extraction with lazy loading\n\n---\n\n## 6. Implementation Roadmap\n\n### 6.1 version 1.0 (current)\nCallOsip baseline: working pipeline with CLI, GUI, Obsidian and Graph exports.\n\n### 6.2 version 2.0 target (Phase 1)\n- rename and rebrand complete\n- Entity subtypes in the core model\n- TimeSpan and time_parser.py\n- Provenance tracking in the data model\n- Importance scoring and export (GEXF, Obsidian, CLI)\n\n### 6.3 version 3.0 target (Phase 1 + 2)\n- 2.0 features stabilized\n- Setup wizard\n- Timeline generator in Obsidian\n- Subgraph extraction and filtering\n- Recommendation engine\n- improved visualisation\n\n### 6.4 version 4.0 target (Phase 1 + 2 + 3)\n- 3.0 features stabilized\n- Dynamic prompt builder\n- Graph versioning and branching\n- Citation export\n- Collaborative curation backend\n- Semi-automated extraction\n- Multi-source merging\n- external knowledge base enrichment\n\n---\n\n## 7. Success Metrics\n\n| Metric | Description | target |\n|---|---|---|\n| Pipeline throughput | Time to extract graph from a 10-page source | <60 seconds |\n| Extraction accuracy | Correct detection of entities and relationships | >80% for entities |\n| Entity resolution precision | Non-deduplication of distinct entities | <5% false merge |\n| User adoption | Historians using PersonaeGraph regularly | >50 active users |\n| Graph size | Max nodes/edges before noticeable slowdown | >5000 nodes |\n| Backward compatibility | Old outputs loadable by newer versions | 100 % |\n",
+    "start_char": 7200,
+    "end_char": 8993,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "README__chunk_0000",
+    "document_id": "README",
+    "chunk_index": 0,
+    "text": "# CallOsip — Historical Entity Extraction & GraphRAG Pipeline\n\nA modular, local-first pipeline that transforms historical OCR text into a structured knowledge graph and hyperlinked Obsidian vault — entirely offline using local LLMs and embedding models.\n\n## Overview\n\n```\nOCR text → chunk → entity/relation extraction (LLM) → semantic dedup (bge-m3) → NetworkX graph (GraphML/JSON) → Obsidian vault (Dataview Markdown)\n```\n\nEach stage is independent and can be run separately via CLI or the tkinter GUI.\n\n## Architecture\n\n```\nsrc/graph_pipeline/\n├── cli.py                      # Typer CLI: 7 commands (ingest, extract, resolve-entities, build-vault, build-graph, run-all, demo, inspect)\n├── config.py                   # Hierarchical Pydantic config (loads from config.yaml)\n├── models/\n│   ├── document.py             # Document & TextChunk (Pydantic v2)\n│   ├── entity.py               # Entity with 5 types: Person, Organization, Location, Event, Concept\n│   └── relationship.py         # Typed relationships with confidence scores & evidence quotes\n├── ingestion/\n│   └── chunker.py              # Sliding-window chunker (plain text, PDF, HTML), content-hash incremental mode, file size guard\n├── extraction/\n│   ├── llm_client.py           # Auto-detects Ollama vs OpenAI-compatible backend\n│   ├── cache.py                # Disk-backed LLM response cache (keyed by model + prompt hash)\n│   ├── extractor.py            # Batch entity/relationship extraction from chunks with JSON retry\n│   └── schemas.py              # Extraction response models\n├── embedding/\n│   └── bge_embedder.py         # bge-m3 via Ollama /api/embeddings, batching, cosine similarity\n├── entity_resolution/\n│   ├── resolver.py             # String-only fuzzy dedup (SequenceMatcher + union-find)\n│   └── semantic_resolver.py    # Two-stage dedup: fuzzy pre-filter (0.93) + bge-m3 cosine (0.85) + union-find, YAML alias overrides\n├── exporters/\n│   ├── graph_exporter.py       # NetworkX → GraphML (.graphml) + JSON (.js",
+    "start_char": 0,
+    "end_char": 2000,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "README__chunk_0001",
+    "document_id": "README",
+    "chunk_index": 1,
+    "text": "er.py    # Two-stage dedup: fuzzy pre-filter (0.93) + bge-m3 cosine (0.85) + union-find, YAML alias overrides\n├── exporters/\n│   ├── graph_exporter.py       # NetworkX → GraphML (.graphml) + JSON (.json)\n│   └── obsidian_exporter.py    # Obsidian vault: 01_Sources/, 02_Entities/{Persons,Organizations,Locations,Events,Concepts}/ with Dataview frontmatter, wikilinks, evidence quotes\n└── storage/\n    ├── file_store.py           # JSON persistence for pipeline artefacts\n    └── graph_store.py          # NetworkX in-memory graph store\n```\n\n## Requirements\n\n- **Python 3.11+**\n- **Ollama** (recommended) running at `http://localhost:11434` with models:\n  - `gemma2:27b` (or any instruction-tuned LLM) for extraction\n  - `bge-m3` for embedding-based entity dedup\n- Or any **OpenAI-compatible endpoint** (LM Studio, etc.) via the `--base-url` flag\n\n## Installation\n\n```bash\npip install -e .\npip install -e \".[dev]\"   # for tests\n```\n\n## Configuration\n\nAll defaults come from `config.yaml` at the project root. Key settings:\n\n| Section | Key | Default | Description |\n|---|---|---|---|\n| `llm` | `base_url` | `http://localhost:11434` | LLM API endpoint |\n| `llm` | `model` | `gemma2:27b` | Extraction model |\n| `embedding` | `model` | `bge-m3` | Embedding model for semantic dedup |\n| `ingestion` | `chunk_size` | `2000` | Characters per sliding-window chunk |\n| `ingestion` | `chunk_overlap` | `200` | Overlap between adjacent chunks |\n| `ingestion` | `max_file_size_mb` | `50` | Skip files larger than this |\n| `extraction` | `batch_size` | `5` | Chunks per LLM call |\n| `extraction` | `cache_dir` | `data/cache/llm_responses` | LLM response cache location |\n| `entity_resolution` | `use_semantic` | `true` | Use bge-m3 semantic dedup |\n| `entity_resolution` | `aliases_file` | `data/aliases.yaml` | Manual merge overrides |\n\n## CLI Usage\n\n```bash\ngraph-pipeline --help\n\n# Run the full pipeline end-to-end:\ngraph-pipeline run-all data/input_ocr/\n\n# Or run stages individually:\ngraph-pipeline ingest da",
+    "start_char": 1800,
+    "end_char": 3800,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "README__chunk_0002",
+    "document_id": "README",
+    "chunk_index": 2,
+    "text": "anual merge overrides |\n\n## CLI Usage\n\n```bash\ngraph-pipeline --help\n\n# Run the full pipeline end-to-end:\ngraph-pipeline run-all data/input_ocr/\n\n# Or run stages individually:\ngraph-pipeline ingest data/input_ocr/\ngraph-pipeline extract --model gemma2:27b\ngraph-pipeline resolve-entities --semantic\ngraph-pipeline build-vault\ngraph-pipeline build-graph\n\n# Inspect current pipeline state:\ngraph-pipeline inspect\n\n# Run a demo with synthetic data (no LLM needed):\ngraph-pipeline demo\n\n# Incremental mode (only new/changed files):\ngraph-pipeline run-all --incremental\n\n# Override output directory:\ngraph-pipeline run-all --output-dir data/custom_output\n```\n\n## Web UI\n\nA FastAPI + Jinja2 web interface implementing the LudwigLang design language (print-inflected, cream-paper palette, serif body text, green accent).\n\n```bash\npip install -e \".[web]\"\npython -m web.server\n# → http://localhost:8766\n```\n\nOr double-click `run_web.bat`.\n\n### Pages\n\n| Route | Description |\n|---|---|\n| `/` | Pipeline control — config fields, stage buttons, live log via SSE |\n| `/library` | Browse canonical entities, relationships, and documents from the last run |\n| `/about` | Project overview and design-language notes |\n\nConfiguration, pipeline execution, and streaming logs all use JSON API endpoints (`/api/*`) so you can drive the pipeline from other tools too.\n\n### Key Flags\n\n| Flag | Applies to | Description |\n|---|---|---|\n| `--semantic/--no-semantic` | `resolve-entities`, `build-vault`, `build-graph`, `run-all` | Enable/disable bge-m3 embedding dedup |\n| `--incremental` | `ingest`, `run-all` | Only process files whose content hash has changed |\n| `--output-dir` | All commands | Override the output directory |\n| `--model` | `extract`, `run-all` | LLM model name |\n| `--base-url` | `extract`, `run-all` | LLM API base URL |\n| `--format` | `build-graph`, `run-all` | Graph export format(s): `graphml`, `gexf`, `json`, `csv`, `cypher` (repeatable) |\n\n## GUI\n\n```bash\npython gui.py\n```\n\nA tkinter interface wi",
+    "start_char": 3600,
+    "end_char": 5600,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "README__chunk_0003",
+    "document_id": "README",
+    "chunk_index": 3,
+    "text": "LM API base URL |\n| `--format` | `build-graph`, `run-all` | Graph export format(s): `graphml`, `gexf`, `json`, `csv`, `cypher` (repeatable) |\n\n## GUI\n\n```bash\npython gui.py\n```\n\nA tkinter interface with config fields for directories, LLM endpoint, model selection, and a semantic dedup checkbox. Commands run in background threads with a live log panel.\n\n## Pipeline Stages\n\n### 1. Ingestion\n- Reads `.txt`, `.md`, `.pdf`, and `.html` files from the input directory\n- Sliding-window chunking with configurable size and overlap\n- Tracks content hashes for incremental mode (skips unchanged files)\n- 50 MB file size limit (configurable)\n\n### 2. Extraction\n- Sends chunks in batches to the local LLM\n- Parses structured JSON responses into entities and relationships\n- Automatically retries on malformed responses\n- Disk-backed response cache avoids redundant LLM calls (keyed by model name + prompt hash)\n- Auto-detects Ollama vs OpenAI-compatible backends\n\n### 3. Entity Resolution\nTwo strategies, controlled by `--semantic/--no-semantic`:\n\n**Fuzzy resolver** (default fallback): SequenceMatcher at 0.93 threshold + union-find clustering.\n\n**Semantic resolver** (recommended):\n1. Applies manual YAML alias overrides from `data/aliases.yaml`\n2. Fast fuzzy pre-filter at 0.93 similarity\n3. Embeds each unique name with bge-m3 via Ollama\n4. Computes pairwise cosine similarity at 0.85 threshold\n5. Union-find clustering to merge duplicates\n6. Picks the entity with the richest metadata (longest summary, most aliases, most sources) as canonical\n\n### 4. Obsidian Vault Export\n- `01_Sources/` — source documents with Dataview frontmatter (`title`, `date`, `type: source`)\n- `02_Entities/{Persons,Organizations,Locations,Events,Concepts}/` — one note per entity with:\n  - Dataview frontmatter (`type`, `aliases`, `tags`)\n  - Summary section\n  - Relationships & Evidence section with `[[wikilinks]]` and direct quotes\n  - Source Documents section with backlinks\n- All entity mentions across notes are `[[wiki",
+    "start_char": 5400,
+    "end_char": 7400,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "README__chunk_0004",
+    "document_id": "README",
+    "chunk_index": 4,
+    "text": "ses`, `tags`)\n  - Summary section\n  - Relationships & Evidence section with `[[wikilinks]]` and direct quotes\n  - Source Documents section with backlinks\n- All entity mentions across notes are `[[wikilinked]]`\n\n### 5. Graph Export\n- NetworkX directed graph with entity nodes and relationship edges\n- **GraphML** (`.graphml`) — for Gephi, yEd, Cytoscape\n- **GEXF** (`.gexf`) — Gephi-native format with visual attributes (entity-type colors, degree-based node sizing, edge confidence thickness)\n- **JSON** (`.json`) — for web apps and programmatic use (node-link format)\n- **CSV** (`.csv`) — node and edge tables for spreadsheets or data tools\n- **Cypher** (`.cypher`) — CREATE statements for Neo4j import\n- Node attributes: `label`, `entity_type`, `summary`, `aliases`\n- Edge attributes: `relationship_type`, `time_frame`, `evidence_quote`, `confidence`\n\n## Output Directory Structure\n\n```\ndata/\n├── input_ocr/          # Place your OCR text files here\n├── output/\n│   ├── entities.json       # Canonical entities after resolution\n│   ├── entities_raw.json   # Pre-resolution snapshot (before dedup)\n│   ├── relationships.json  # Relationships (source/target updated after merge)\n│   ├── documents.json      # Original documents\n│   ├── chunks.json         # Text chunks\n│   ├── content_hashes.json # Content hashes for incremental mode\n│   ├── knowledge_graph.graphml      # NetworkX GraphML (Gephi, yEd)\n│   ├── knowledge_graph.gexf         # GEXF with viz attributes (Gephi native)\n│   ├── knowledge_graph.json         # JSON node-link format\n│   ├── knowledge_graph_nodes.csv    # Node table\n│   ├── knowledge_graph_edges.csv    # Edge table\n│   └── knowledge_graph.cypher       # Neo4j CREATE statements\n├── obsidian_vault/     # Obsidian vault (open as a vault in Obsidian)\n│   ├── 01_Sources/\n│   └── 02_Entities/\n│       ├── Persons/\n│       ├── Organizations/\n│       ├── Locations/\n│       ├── Events/\n│       └── Concepts/\n├── cache/llm_responses/  # Disk cache of LLM responses\n└── aliases",
+    "start_char": 7200,
+    "end_char": 9200,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "README__chunk_0005",
+    "document_id": "README",
+    "chunk_index": 5,
+    "text": "   └── 02_Entities/\n│       ├── Persons/\n│       ├── Organizations/\n│       ├── Locations/\n│       ├── Events/\n│       └── Concepts/\n├── cache/llm_responses/  # Disk cache of LLM responses\n└── aliases.yaml           # Manual entity merge overrides\n```\n\n## Testing\n\n```bash\npytest tests/ -v\n```\n\n13 tests covering chunking, entity dedup (fuzzy & semantic), graph export, Obsidian vault format, file storage, and demo mode. All run offline with no LLM dependency.\n\n## Demo (No LLM Required)\n\n```bash\ngraph-pipeline demo\n```\n\nGenerates a synthetic knowledge graph from a sample text about the Congress of Vienna (12 entities, 8 relationships), runs resolution, and exports both a graph and an Obsidian vault — all without any LLM calls.\n",
+    "start_char": 9000,
+    "end_char": 9734,
+    "subfolder": "",
+    "page_range": ""
+  },
+  {
+    "id": "web__templates__about__chunk_0000",
+    "document_id": "web__templates__about",
+    "chunk_index": 0,
+    "text": "{% extends \"base.html\" %}\n{% block title %}CallOsip — About{% endblock %}\n{% block content %}\nCallOsip is a modular, local-first pipeline that transforms historical OCR text\ninto a structured knowledge graph and a hyperlinked Obsidian vault — entirely\noffline using local LLMs and embedding models. The web interface mirrors the\ntkinter GUI: configure paths and the LLM endpoint, then run each stage or the\nwhole pipeline at once.\nPipeline stages\nIngest\n— discovers\n.txt\n/\n.md\nfiles and produces\nsliding-window chunks.\nExtract\n— sends batches to a local Ollama or OpenAI-compatible LLM,\nparsing structured JSON into entities and relationships.\nResolve\n— fuzzy & (optionally) bge-m3 semantic dedup with\nYAML alias overrides.\nVault\n— emits an Obsidian vault with Dataview frontmatter and wikilinks.\nGraph\n— exports GraphML / GEXF / JSON / CSV for Gephi, yEd, and beyond.\nDesign language\nThis interface implements the\nLudwigLang\ndesign language: an\noffline-first, print-inflected aesthetic with a cream-paper palette, Esperanto-green\naccent, and serif body text. All design tokens live in\nweb/static/tokens.css\n; never hardcode colours or spacing.\nRun it\nFrom the project root:\npip install -e \".[web]\"\npython -m web.server\n# → http://localhost:8766\nVanilla JS · IIFE-wrapped · no framework · no transpiler.\n{% endblock %}",
+    "start_char": 0,
+    "end_char": 1318,
+    "subfolder": "web/templates",
+    "page_range": ""
+  },
+  {
+    "id": "web__templates__base__chunk_0000",
+    "document_id": "web__templates__base",
+    "chunk_index": 0,
+    "text": "{% block title %}CallOsip{% endblock %}\n{% block head %}{% endblock %}\n{% block content %}{% endblock %}\n{% block scripts %}{% endblock %}",
+    "start_char": 0,
+    "end_char": 138,
+    "subfolder": "web/templates",
+    "page_range": ""
+  },
+  {
+    "id": "web__templates__index__chunk_0000",
+    "document_id": "web__templates__index",
+    "chunk_index": 0,
+    "text": "{% extends \"base.html\" %}\n{% block title %}CallOsip — Pipeline{% endblock %}\n{% block content %}\n—\nDocuments\n—\nChunks\n—\nEntities\n—\nRelationships\n—\nRaw Entities\nIdle\nNo runs yet\nConfiguration\nPaths, LLM endpoint, and resolution strategy\nInput directory (OCR text)\nChoose…\nOutput directory\nChoose…\nObsidian vault directory\nChoose…\nLLM base URL\nLLM model\nChunk size (chars)\nChunk overlap\nExtraction batch size\nGraph export formats\nSemantic dedup (bge-m3) for entity resolution\nIncremental ingestion (only new / changed files)\nStages\nRun individually or all together\n{% set stages = [\n('ingest',  '1', 'Ingest',   'Chunk OCR text files'),\n('extract', '2', 'Extract',  'Entities & relationships via LLM'),\n('resolve', '3', 'Resolve',  'Deduplicate, pick canonical names'),\n('vault',   '4', 'Vault',    'Generate Obsidian notes'),\n('graph',   '5', 'Graph',    'Export GraphML / GEXF / JSON / CSV')\n] %}\n{% for key, num, name, desc in stages %}\nStage {{ num }}\n{{ name }}\n{{ desc }}\nRun\n{% if num == '1' %}idle{% endif %}\n{% endfor %}\nRun All (1–5)\nDemo (no LLM)\nLive log\nStreaming output · server-sent events\ndisconnected\nAutoscroll\nClear\nBreakdown\nEntity types\nNo entities yet — run Extract or Demo.\nRelationship types (top 10)\nNo relationships yet — run Extract or Demo.\nCallOsip · a PersonaeGraph platform · FastAPI + Jinja2 · vanilla JS · design tokens from LudwigLang.\n{% endblock %}\n{% block scripts %}\n{% endblock %}",
+    "start_char": 0,
+    "end_char": 1417,
+    "subfolder": "web/templates",
+    "page_range": ""
+  },
+  {
+    "id": "web__templates__library__chunk_0000",
+    "document_id": "web__templates__library",
+    "chunk_index": 0,
+    "text": "{% extends \"base.html\" %}\n{% block title %}CallOsip — Library{% endblock %}\n{% block content %}\n{{ state.documents|length }}\nDocuments\n{{ state.chunks|length }}\nChunks\n{{ state.entities|length }}\nEntities\n{{ state.relationships|length }}\nRelationships\nEntities\nRelationships\nDocuments\n{% if state.entities %}\nName\nType\nAliases\nSummary\nSources\n{% for e in state.entities %}\n{{ e.name }}\n{{ e.entity_type.value }}\n{{ e.aliases | map('escape') | join(', ') or '—' }}\n{{ e.summary or '—' }}\n{{ e.source_doc_ids | length }}\n{% endfor %}\n{% else %}\nNo canonical entities yet.\nRun the pipeline\n{% endif %}\n{% if state.relationships %}\nSource\nRelation\nTarget\nTime\nEvidence\nConf.\n{% for r in state.relationships %}\n{{ r.source_entity }}\n{{ r.relationship_type }}\n{{ r.target_entity }}\n{{ r.time_frame or '—' }}\n“{{ r.evidence_quote or '' }}”\n{{ '%.2f' | format(r.confidence_score) }}\n{% endfor %}\n{% else %}\nNo relationships yet.\n{% endif %}\n{% for d in state.documents %}\n{{ d.filename }}\n{{ d.chunk_ids | length }} chunk{{ '' if d.chunk_ids|length == 1 else 's' }} · {{ d.id }}\n{% else %}\nNo ingested documents.\n{% endfor %}\nLive view of\ndata/output/\n. Re-run the pipeline to refresh.\n{% endblock %}\n{% block scripts %}\n{% endblock %}",
+    "start_char": 0,
+    "end_char": 1227,
+    "subfolder": "web/templates",
+    "page_range": ""
+  }
+]

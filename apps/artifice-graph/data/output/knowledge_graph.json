@@ -1,0 +1,157 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "Klemens von Metternich",
+      "entity_type": "Person",
+      "aliases": "Metternich|Prince Metternich",
+      "summary": "Austrian foreign minister and central figure at the Congress of Vienna.",
+      "id": "klemens_von_metternich"
+    },
+    {
+      "label": "Alexander I",
+      "entity_type": "Person",
+      "aliases": "Tsar Alexander I",
+      "summary": "Tsar of Russia who sought expanded influence at the Congress of Vienna.",
+      "id": "alexander_i"
+    },
+    {
+      "label": "Karl vom Stein",
+      "entity_type": "Person",
+      "aliases": "Baron Stein|Baron vom Stein",
+      "summary": "Prussian statesman who participated in early Congress discussions but died before its conclusion.",
+      "id": "karl_vom_stein"
+    },
+    {
+      "label": "Congress of Vienna",
+      "entity_type": "Event",
+      "aliases": "The Congress",
+      "summary": "Diplomatic conference held in 1814 to reorganize Europe after the Napoleonic Wars.",
+      "id": "congress_of_vienna"
+    },
+    {
+      "label": "Austria",
+      "entity_type": "Location",
+      "aliases": "Austrian Empire",
+      "summary": "Major European power and host nation of the Congress of Vienna.",
+      "id": "austria"
+    },
+    {
+      "label": "Prussia",
+      "entity_type": "Location",
+      "aliases": "",
+      "summary": "German state that participated in the Congress of Vienna.",
+      "id": "prussia"
+    },
+    {
+      "label": "Russia",
+      "entity_type": "Location",
+      "aliases": "",
+      "summary": "Major European power represented at the Congress of Vienna.",
+      "id": "russia"
+    },
+    {
+      "label": "Great Britain",
+      "entity_type": "Location",
+      "aliases": "",
+      "summary": "Major European power represented at the Congress of Vienna.",
+      "id": "great_britain"
+    },
+    {
+      "label": "Napoleonic Wars",
+      "entity_type": "Event",
+      "aliases": "",
+      "summary": "Series of wars fought between France and various European coalitions that preceded the Congress of Vienna.",
+      "id": "napoleonic_wars"
+    },
+    {
+      "label": "Concert of Europe",
+      "entity_type": "Concept",
+      "aliases": "",
+      "summary": "System of balance-of-power diplomacy established after the Congress of Vienna.",
+      "id": "concert_of_europe"
+    },
+    {
+      "label": "Treaty of Paris",
+      "entity_type": "Event",
+      "aliases": "",
+      "summary": "Peace treaty signed on May 30, 1814, preceding the Congress of Vienna.",
+      "id": "treaty_of_paris"
+    },
+    {
+      "label": "Nationalism",
+      "entity_type": "Concept",
+      "aliases": "",
+      "summary": "Political ideology championed by liberal movements and opposed by Metternich.",
+      "id": "nationalism"
+    }
+  ],
+  "edges": [
+    {
+      "relationship_type": "participated_in",
+      "time_frame": "1814-1815",
+      "evidence_quote": "Prince Klemens von Metternich played a central role in the negotiations.",
+      "confidence": 0.95,
+      "source": "klemens_von_metternich",
+      "target": "congress_of_vienna"
+    },
+    {
+      "relationship_type": "served_as_foreign_minister_of",
+      "time_frame": "1809-1848",
+      "evidence_quote": "the Austrian foreign minister",
+      "confidence": 0.95,
+      "source": "klemens_von_metternich",
+      "target": "austria"
+    },
+    {
+      "relationship_type": "participated_in",
+      "time_frame": "1814",
+      "evidence_quote": "Tsar Alexander I of Russia sought to expand Russian influence.",
+      "confidence": 0.95,
+      "source": "alexander_i",
+      "target": "congress_of_vienna"
+    },
+    {
+      "relationship_type": "ruled",
+      "time_frame": "1801-1825",
+      "evidence_quote": "Tsar Alexander I of Russia",
+      "confidence": 0.95,
+      "source": "alexander_i",
+      "target": "russia"
+    },
+    {
+      "relationship_type": "participated_in",
+      "time_frame": "1814",
+      "evidence_quote": "Baron Karl vom Stein participated in early discussions but died before the Congress concluded.",
+      "confidence": 0.9,
+      "source": "karl_vom_stein",
+      "target": "congress_of_vienna"
+    },
+    {
+      "relationship_type": "was_statesman_of",
+      "time_frame": "",
+      "evidence_quote": "a Prussian statesman",
+      "confidence": 0.9,
+      "source": "karl_vom_stein",
+      "target": "prussia"
+    },
+    {
+      "relationship_type": "established",
+      "time_frame": "1815",
+      "evidence_quote": "The resulting Concert of Europe established a balance of power",
+      "confidence": 0.95,
+      "source": "congress_of_vienna",
+      "target": "concert_of_europe"
+    },
+    {
+      "relationship_type": "opposed",
+      "time_frame": "1815-1914",
+      "evidence_quote": "championing conservatism against nationalist and liberal movements",
+      "confidence": 0.85,
+      "source": "concert_of_europe",
+      "target": "nationalism"
+    }
+  ]
+}

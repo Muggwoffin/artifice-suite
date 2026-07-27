@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+{% block title %}ArtificeGraph — Library{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: var(--paper-raised);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    font-family: var(--font-body);
+    border-radius: 2px;
+  }
+  .leaflet-popup-content h4 {
+    margin: 0 0 0.35rem 0;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="page wide" id="main-content">
+  <header class="masthead">
+    <span class="label">Current pipeline state &nbsp;·&nbsp; canonical entities &amp; relationships</span>
+    <h1>The Library</h1>
+    <hr class="masthead-rule">
+  </header>
+
+  <section class="stat-row" id="statRow">
+    <div class="stat"><span class="stat-n">{{ state.documents|length }}</span><span class="stat-l">Documents</span></div>
+    <div class="stat"><span class="stat-n">{{ state.chunks|length }}</span><span class="stat-l">Chunks</span></div>
+    <div class="stat"><span class="stat-n">{{ state.entities|length }}</span><span class="stat-l">Entities</span></div>
+    <div class="stat"><span class="stat-n">{{ state.relationships|length }}</span><span class="stat-l">Relationships</span></div>
+  </section>
+
+  <div class="lib-toolbar" style="margin-top: 1.5rem;">
+    <div class="lib-search-wrap">
+      <input type="text" class="lib-search-input" id="libSearch" placeholder="Search library (names, aliases, evidence)…" aria-label="Search library">
+    </div>
+    <div class="lib-filter-row" id="entityFilterRow" style="display: flex;">
+      <button type="button" class="sort-pill" data-filter="all" aria-pressed="true">All Types</button>
+      <button type="button" class="sort-pill" data-filter="Person" aria-pressed="false">Person</button>
+      <button type="button" class="sort-pill" data-filter="Organization" aria-pressed="false">Organization</button>
+      <button type="button" class="sort-pill" data-filter="Location" aria-pressed="false">Location</button>
+      <button type="button" class="sort-pill" data-filter="Event" aria-pressed="false">Event</button>
+      <button type="button" class="sort-pill" data-filter="Concept" aria-pressed="false">Concept</button>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Library views">
+    <button class="tab" role="tab" aria-selected="true"  data-tab="entities">Entities</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="relationships">Relationships</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="documents">Documents</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="map">Map</button>
+  </div>
+
+  <section id="tab-entities" class="tab-pane">
+    {% if state.entities %}
+    <div class="table-wrap">
+      <table class="entity-table" id="entityTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Aliases</th>
+            <th>Summary</th>
+            <th>Sources</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in state.entities %}
+          <tr class="entity-row" data-name="{{ e.name | lower }}" data-type="{{ e.entity_type.value }}" data-aliases="{{ e.aliases | join(', ') | lower }}" data-summary="{{ (e.summary or '') | lower }}">
+            <td class="name">{{ e.name }}</td>
+            <td class="type-badge"><span class="type-tag" data-t="{{ e.entity_type.value }}">{{ e.entity_type.value }}</span></td>
+            <td class="muted">{{ e.aliases | map('escape') | join(', ') or '—' }}</td>
+            <td>{{ e.summary or '—' }}</td>
+            <td class="muted">{{ e.source_doc_ids | length }}</td>
+          </tr>
+          <tr class="entity-drawer-row" hidden>
+            <td colspan="5" class="entity-drawer-cell">
+              <div class="entity-drawer">
+                <div class="h-stack" style="margin-bottom: 0.5rem;">
+                  <h4>{{ e.name }}</h4>
+                  <span class="type-tag" data-t="{{ e.entity_type.value }}">{{ e.entity_type.value }}</span>
+                  <span class="spacer"></span>
+                  <span class="muted mono" style="font-size: 0.75rem;">ID: {{ e.id }}</span>
+                </div>
+                <p style="font-family: var(--font-body); margin-bottom: 1rem;">{{ e.summary or 'No summary available.' }}</p>
+                <div class="drawer-grid">
+                  <div>
+                    <div class="drawer-section-title">Aliases</div>
+                    {% if e.aliases %}
+                    <div class="h-stack" style="gap: 0.35rem; margin-top: 0.25rem;">
+                      {% for a in e.aliases %}
+                      <span class="text-source-badge">{{ a }}</span>
+                      {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="muted" style="font-size: 0.85rem; margin-top: 0.25rem;">None registered</p>
+                    {% endif %}
+                    <div class="drawer-section-title" style="margin-top: 1rem;">Source Documents</div>
+                    <p class="muted" style="font-size: 0.85rem; margin-top: 0.25rem;">
+                      {% if e.source_doc_ids %}{{ e.source_doc_ids | join(', ') }}{% else %}None{% endif %}
+                    </p>
+                  </div>
+                  <div>
+                    <div class="drawer-section-title">Connected Relationships</div>
+                    <ul class="drawer-list" style="margin-top: 0.25rem;">
+                      {% set rels = namespace(found=false) %}
+                      {% for r in state.relationships %}
+                        {% if r.source_entity == e.name or r.target_entity == e.name %}
+                          {% set rels.found = true %}
+                          <li class="drawer-relation-item">
+                            <strong>{{ r.source_entity }}</strong>
+                            <span class="muted">({{ r.relationship_type }})</span>
+                            <strong>{{ r.target_entity }}</strong>
+                            {% if r.time_frame %}<span class="muted">[{{ r.time_frame }}]</span>{% endif %}
+                          </li>
+                        {% endif %}
+                      {% endfor %}
+                      {% if not rels.found %}
+                      <li class="muted" style="font-size: 0.85rem;">No direct relationships recorded.</li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div id="entityEmptyState" class="empty-state" hidden style="margin-top: 1rem;">
+      No entities match your search or filter.
+    </div>
+    {% else %}
+    <div class="empty-state">
+      No canonical entities yet.
+      <div class="pill-row">
+        <a class="app-btn app-btn-accent" href="/">Run the pipeline</a>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <section id="tab-relationships" class="tab-pane" hidden>
+    {% if state.relationships %}
+    <div class="table-wrap">
+      <table class="entity-table" id="relTable">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Relation</th>
+            <th>Target</th>
+            <th>Time</th>
+            <th>Evidence</th>
+            <th>Conf.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in state.relationships %}
+          <tr class="rel-row" data-search="{{ (r.source_entity ~ ' ' ~ r.relationship_type ~ ' ' ~ r.target_entity ~ ' ' ~ r.time_frame ~ ' ' ~ r.evidence_quote) | lower }}">
+            <td class="name">{{ r.source_entity }}</td>
+            <td class="muted">{{ r.relationship_type }}</td>
+            <td class="name">{{ r.target_entity }}</td>
+            <td class="muted">{{ r.time_frame or '—' }}</td>
+            <td class="evidence">“{{ r.evidence_quote or '' }}”</td>
+            <td><span class="confidence-bar" style="--conf: {{ (r.confidence_score * 100)|round }}%"></span>
+                <span class="confidence">{{ '%.2f' | format(r.confidence_score) }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div id="relEmptyState" class="empty-state" hidden style="margin-top: 1rem;">
+      No relationships match your search.
+    </div>
+    {% else %}
+    <div class="empty-state">No relationships yet.</div>
+    {% endif %}
+  </section>
+
+  <section id="tab-documents" class="tab-pane" hidden>
+    <ul class="text-list" id="docList">
+      {% for d in state.documents %}
+      <li class="text-card doc-card" data-search="{{ (d.filename ~ ' ' ~ d.id) | lower }}">
+        <a>
+          <span class="text-title">{{ d.filename }}</span>
+          <span class="text-meta">{{ d.chunk_ids | length }} chunk{{ '' if d.chunk_ids|length == 1 else 's' }} · {{ d.id }}</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="empty-state">No ingested documents.</li>
+      {% endfor %}
+    </ul>
+    <div id="docEmptyState" class="empty-state" hidden style="margin-top: 1rem;">
+      No documents match your search.
+    </div>
+  </section>
+
+  <section id="tab-map" class="tab-pane" hidden>
+    <div class="h-stack" style="margin-bottom: 1rem; gap: 1rem; align-items: center; flex-wrap: wrap;">
+      <span class="muted" style="font-size: 0.9rem;">Geographic distribution of extracted location entities</span>
+      <span class="spacer"></span>
+      <div class="h-stack" style="gap: 0.5rem; align-items: center;">
+        <label for="mapModeSelect" class="muted" style="font-size: 0.85rem;">Mode:</label>
+        <select id="mapModeSelect" class="app-input" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">
+          <option value="approx" selected>Approximate (Historical Preset)</option>
+          <option value="lookup">Lookup (Nominatim Geocoding)</option>
+        </select>
+        <button type="button" class="app-btn" id="refreshMapBtn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">Load Map</button>
+      </div>
+    </div>
+    <div id="mapContainer" style="height: 520px; width: 100%; border-radius: 2px; border: 1px solid var(--rule); background: var(--paper-raised);"></div>
+    <div id="mapStatus" class="muted" style="margin-top: 0.75rem; font-size: 0.85rem;">Select the Map tab and click Load Map to view locations.</div>
+  </section>
+
+  <p class="foot">
+    Live view of <code>data/output/</code>. Re-run the pipeline to refresh.
+  </p>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function () {
+  "use strict";
+  var tabs = document.querySelectorAll(".tab");
+  var panes = {
+    entities: document.getElementById("tab-entities"),
+    relationships: document.getElementById("tab-relationships"),
+    documents: document.getElementById("tab-documents"),
+    map: document.getElementById("tab-map")
+  };
+  var currentTab = "entities";
+  var mapInstance = null;
+  var markersLayer = null;
+
+  Array.prototype.forEach.call(tabs, function (t) {
+    t.addEventListener("click", function () {
+      var key = t.getAttribute("data-tab");
+      currentTab = key;
+      Array.prototype.forEach.call(tabs, function (x) {
+        x.setAttribute("aria-selected", x === t ? "true" : "false");
+      });
+      Object.keys(panes).forEach(function (k) {
+        panes[k].hidden = (k !== key);
+      });
+      var filterRow = document.getElementById("entityFilterRow");
+      if (filterRow) {
+        filterRow.style.display = (key === "entities") ? "flex" : "none";
+      }
+      filterLibrary();
+
+      if (key === "map") {
+        setTimeout(initOrRefreshMap, 200);
+      }
+    });
+  });
+
+  var refreshMapBtn = document.getElementById("refreshMapBtn");
+  if (refreshMapBtn) {
+    refreshMapBtn.addEventListener("click", initOrRefreshMap);
+  }
+
+  function initOrRefreshMap() {
+    var container = document.getElementById("mapContainer");
+    if (!container) return;
+
+    if (!mapInstance) {
+      mapInstance = L.map("mapContainer").setView([50.0, 10.0], 4);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(mapInstance);
+      markersLayer = L.layerGroup().addTo(mapInstance);
+    } else {
+      mapInstance.invalidateSize();
+    }
+
+    var modeSelect = document.getElementById("mapModeSelect");
+    var mode = modeSelect ? modeSelect.value : "approx";
+    var statusEl = document.getElementById("mapStatus");
+    if (statusEl) statusEl.textContent = "Loading location entities...";
+
+    fetch("/api/map-entities?mode=" + mode)
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        markersLayer.clearLayers();
+        var locations = data.locations || [];
+        if (locations.length === 0) {
+          if (statusEl) statusEl.textContent = "No location entities found in output or coordinates could not be resolved.";
+          return;
+        }
+
+        var bounds = [];
+        locations.forEach(function(loc) {
+          var lat = loc.lat;
+          var lng = loc.lng;
+          bounds.push([lat, lng]);
+
+          var popupHtml = '<div>' +
+            '<h4>' + escapeHtml(loc.name) + '</h4>' +
+            '<p style="margin: 0 0 0.5rem 0; font-size: 0.85rem;">' + escapeHtml(loc.summary || "No summary.") + '</p>' +
+            '<div style="font-size: 0.75rem; color: var(--ink-faint);">Source: ' + escapeHtml(loc.source_method) + '</div>';
+
+          if (loc.relationships && loc.relationships.length > 0) {
+            popupHtml += '<div style="margin-top: 0.5rem; font-size: 0.8rem; border-top: 1px solid var(--rule); padding-top: 0.3rem;"><strong>Relations:</strong><ul style="margin: 0.2rem 0 0 1rem; padding: 0;">';
+            loc.relationships.slice(0, 3).forEach(function(r) {
+              popupHtml += '<li>' + escapeHtml(r.source_entity) + ' ' + escapeHtml(r.relationship_type) + ' ' + escapeHtml(r.target_entity) + '</li>';
+            });
+            popupHtml += '</ul></div>';
+          }
+          popupHtml += '</div>';
+
+          var marker = L.marker([lat, lng]).bindPopup(popupHtml);
+          markersLayer.addLayer(marker);
+        });
+
+        if (bounds.length > 0) {
+          mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 6 });
+        }
+        if (statusEl) {
+          statusEl.textContent = "Successfully mapped " + locations.length + " location entity(ies) using " + mode + " mode.";
+        }
+      })
+      .catch(function(err) {
+        if (statusEl) statusEl.textContent = "Error loading map data: " + err.message;
+      });
+  }
+
+  function escapeHtml(str) {
+    return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // ── Inline Entity Drawer ──
+  var entityRows = document.querySelectorAll(".entity-row");
+  Array.prototype.forEach.call(entityRows, function (row) {
+    row.addEventListener("click", function () {
+      var drawerRow = row.nextElementSibling;
+      if (!drawerRow || !drawerRow.classList.contains("entity-drawer-row")) return;
+      var isHidden = drawerRow.hidden;
+      Array.prototype.forEach.call(document.querySelectorAll(".entity-drawer-row"), function (dr) {
+        dr.hidden = true;
+        if (dr.previousElementSibling) dr.previousElementSibling.setAttribute("aria-expanded", "false");
+      });
+      if (isHidden) {
+        drawerRow.hidden = false;
+        row.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
+
+  // ── Search & Filter ──
+  var searchInput = document.getElementById("libSearch");
+  var filterPills = document.querySelectorAll("#entityFilterRow .sort-pill");
+  var activeTypeFilter = "all";
+
+  Array.prototype.forEach.call(filterPills, function (pill) {
+    pill.addEventListener("click", function () {
+      Array.prototype.forEach.call(filterPills, function (p) {
+        p.setAttribute("aria-pressed", p === pill ? "true" : "false");
+      });
+      activeTypeFilter = pill.getAttribute("data-filter");
+      filterLibrary();
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener("input", filterLibrary);
+  }
+
+  function filterLibrary() {
+    var query = (searchInput ? searchInput.value : "").toLowerCase().trim();
+
+    if (currentTab === "entities") {
+      var visibleCount = 0;
+      var rows = document.querySelectorAll(".entity-row");
+      Array.prototype.forEach.call(rows, function (row) {
+        var name = row.getAttribute("data-name") || "";
+        var type = row.getAttribute("data-type") || "";
+        var aliases = row.getAttribute("data-aliases") || "";
+        var summary = row.getAttribute("data-summary") || "";
+
+        var matchesQuery = !query || name.indexOf(query) !== -1 || aliases.indexOf(query) !== -1 || summary.indexOf(query) !== -1;
+        var matchesType = activeTypeFilter === "all" || type === activeTypeFilter;
+
+        var shouldShow = matchesQuery && matchesType;
+        row.style.display = shouldShow ? "" : "none";
+        var drawerRow = row.nextElementSibling;
+        if (!shouldShow && drawerRow && drawerRow.classList.contains("entity-drawer-row")) {
+          drawerRow.hidden = true;
+          row.setAttribute("aria-expanded", "false");
+        }
+        if (shouldShow) visibleCount++;
+      });
+      var emptyEl = document.getElementById("entityEmptyState");
+      if (emptyEl) emptyEl.hidden = (visibleCount > 0);
+    } else if (currentTab === "relationships") {
+      var relVisible = 0;
+      var relRows = document.querySelectorAll(".rel-row");
+      Array.prototype.forEach.call(relRows, function (row) {
+        var text = row.getAttribute("data-search") || "";
+        var matches = !query || text.indexOf(query) !== -1;
+        row.style.display = matches ? "" : "none";
+        if (matches) relVisible++;
+      });
+      var relEmpty = document.getElementById("relEmptyState");
+      if (relEmpty) relEmpty.hidden = (relVisible > 0);
+    } else if (currentTab === "documents") {
+      var docVisible = 0;
+      var docCards = document.querySelectorAll(".doc-card");
+      Array.prototype.forEach.call(docCards, function (card) {
+        var text = card.getAttribute("data-search") || "";
+        var matches = !query || text.indexOf(query) !== -1;
+        card.style.display = matches ? "" : "none";
+        if (matches) docVisible++;
+      });
+      var docEmpty = document.getElementById("docEmptyState");
+      if (docEmpty) docEmpty.hidden = (docVisible > 0);
+    }
+  }
+})();
+</script>
+{% endblock %}
