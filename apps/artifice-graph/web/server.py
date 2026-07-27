@@ -56,6 +56,15 @@ _jinja = Environment(
 # Static files
 app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
 
+# ── Shared design tokens (canonical source: packages/shared-ui) ────
+_SHARED_UI = _PROJECT.parent.parent / "packages" / "shared-ui"
+if not _SHARED_UI.is_dir():
+    raise RuntimeError(
+        f"Shared UI directory not found at {_SHARED_UI.resolve()}. "
+        "Ensure packages/shared-ui/ exists in the monorepo root."
+    )
+app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
 # ── Run log broker (cross-thread SSE bridging) ─────────────────────
 # In-memory: each active run gets a log buffer + wake condition.
 
