@@ -7,7 +7,7 @@ from pathlib import Path
 from docx import Document
 from docx.shared import Pt
 
-from src.doc_parser import parse_docx, write_docx
+from artifice_draft.doc_parser import parse_docx, write_docx
 
 
 def _make_test_docx(path: str, paragraphs: list[dict]) -> None:

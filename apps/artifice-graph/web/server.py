@@ -24,19 +24,19 @@ _SRC = _PROJECT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from graph_pipeline.config import PipelineConfig, load_config
-from graph_pipeline.embedding.bge_embedder import BGEM3Embedder
-from graph_pipeline.entity_resolution.resolver import EntityResolver
-from graph_pipeline.entity_resolution.semantic_resolver import SemanticEntityResolver
-from graph_pipeline.exporters.graph_exporter import GraphExporter
-from graph_pipeline.exporters.obsidian_exporter import ObsidianExporter
-from graph_pipeline.extraction.extractor import EntityExtractor
-from graph_pipeline.extraction.llm_client import LLMClient
-from graph_pipeline.ingestion.chunker import TextChunker
-from graph_pipeline.models.document import Document, TextChunk
-from graph_pipeline.models.entity import Entity, EntityType
-from graph_pipeline.models.relationship import Relationship
-from graph_pipeline.storage.file_store import FileStore
+from artifice_graph.config import PipelineConfig, load_config
+from artifice_graph.embedding.bge_embedder import BGEM3Embedder
+from artifice_graph.entity_resolution.resolver import EntityResolver
+from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityResolver
+from artifice_graph.exporters.graph_exporter import GraphExporter
+from artifice_graph.exporters.obsidian_exporter import ObsidianExporter
+from artifice_graph.extraction.extractor import EntityExtractor
+from artifice_graph.extraction.llm_client import LLMClient
+from artifice_graph.ingestion.chunker import TextChunker
+from artifice_graph.models.document import Document, TextChunk
+from artifice_graph.models.entity import Entity, EntityType
+from artifice_graph.models.relationship import Relationship
+from artifice_graph.storage.file_store import FileStore
 from web.config_helper import load_saved_config, save_user_config
 
 # ── App setup ──────────────────────────────────────────────────────
@@ -318,7 +318,7 @@ def _do_demo(run_key: str) -> None:
     store.save_models("chunks.json", [chunk])
     _log(run_key, "  Ingested demo text → 1 chunk")
 
-    from graph_pipeline.extraction.schemas import ExtractionResult
+    from artifice_graph.extraction.schemas import ExtractionResult
 
     synthetic = ExtractionResult(
         entities=[

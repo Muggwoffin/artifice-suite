@@ -5,16 +5,16 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
-from src.llm_client import (
+from artifice_draft.llm_client import (
     LLMEdit,
     _send_request_with_retry,
     _compute_dynamic_batch_sizes,
     build_user_prompt,
     call_ollama,
 )
-from src.prompts import get_system_prompt, list_styles
-from src.config import AppConfig
-from src.models import EditingStyle, LLMProvider, PipelineProgress
+from artifice_draft.prompts import get_system_prompt, list_styles
+from artifice_draft.config import AppConfig
+from artifice_draft.models import EditingStyle, LLMProvider, PipelineProgress
 
 
 def test_call_ollama_with_mocked_response():
@@ -23,7 +23,7 @@ def test_call_ollama_with_mocked_response():
         {"paragraph_index": 1, "edited_text": None, "status": "unchanged"},
     ]
 
-    with patch("src.llm_client._send_request_with_retry", return_value=json.dumps(mock_response)):
+    with patch("artifice_draft.llm_client._send_request_with_retry", return_value=json.dumps(mock_response)):
         edits = call_ollama(paragraphs=[
             {"text": "Hello world", "paragraph_index": 0},
             {"text": "Second paragraph", "paragraph_index": 1},
@@ -37,7 +37,7 @@ def test_call_ollama_with_mocked_response():
 
 
 def test_call_ollama_with_invalid_json_falls_back():
-    with patch("src.llm_client._send_request_with_retry", return_value="This is not valid JSON at all!"):
+    with patch("artifice_draft.llm_client._send_request_with_retry", return_value="This is not valid JSON at all!"):
         edits = call_ollama(paragraphs=[
             {"text": "Hello world", "paragraph_index": 0},
             {"text": "Second paragraph", "paragraph_index": 1},
@@ -51,7 +51,7 @@ def test_call_ollama_with_invalid_json_falls_back():
 def test_call_ollama_single_object_fallback():
     mock_response = {"paragraph_index": 0, "edited_text": "Fixed", "status": "edited"}
 
-    with patch("src.llm_client._send_request_with_retry", return_value=json.dumps(mock_response)):
+    with patch("artifice_draft.llm_client._send_request_with_retry", return_value=json.dumps(mock_response)):
         edits = call_ollama(paragraphs=[{"text": "Hello world", "paragraph_index": 0}], batch_size=1)
 
     assert len(edits) == 1
@@ -128,7 +128,7 @@ def test_call_ollama_out_of_range_index_discarded():
         {"paragraph_index": 0, "edited_text": "In range", "status": "edited"},
     ]
 
-    with patch("src.llm_client._send_request_with_retry", return_value=json.dumps(mock_response)):
+    with patch("artifice_draft.llm_client._send_request_with_retry", return_value=json.dumps(mock_response)):
         edits = call_ollama(paragraphs=[
             {"text": "Hello world", "paragraph_index": 0},
         ], batch_size=1)
@@ -143,7 +143,7 @@ def test_retry_raises_on_final_failure():
 
     cfg = AppConfig(max_retries=1, retry_delay_secs=0)
 
-    with patch("src.llm_client.requests.post") as mock_post:
+    with patch("artifice_draft.llm_client.requests.post") as mock_post:
         mock_post.side_effect = requests.ConnectionError("connection refused")
         try:
             _send_request_with_retry("model", "sys", "user", cfg)
@@ -220,7 +220,7 @@ def test_call_ollama_with_progress_callback():
     def on_progress(p):
         progress_updates.append(p.percentage)
 
-    with patch("src.llm_client._send_request_with_retry", return_value=json.dumps(mock_response)):
+    with patch("artifice_draft.llm_client._send_request_with_retry", return_value=json.dumps(mock_response)):
         edits = call_ollama(
             paragraphs=[{"text": "Hello world", "paragraph_index": 0}],
             batch_size=1,

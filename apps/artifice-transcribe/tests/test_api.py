@@ -2,7 +2,7 @@
 """End-to-end verification script for the ArtificeTranscribe API.
 
 Usage:
-    1. Start the server:  python -m app.main
+    1. Start the server:  python -m artifice_transcribe.main
     2. Run this script:   python tests/test_api.py [path_to_audio_file]
 
     If no audio file is provided, the script tests all non-engine endpoints

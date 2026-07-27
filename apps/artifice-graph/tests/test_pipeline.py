@@ -12,20 +12,20 @@ from pathlib import Path
 
 import pytest
 
-from graph_pipeline.config import (
+from artifice_graph.config import (
     ExportConfig,
     IngestionConfig,
     PipelineConfig,
     load_config,
 )
-from graph_pipeline.entity_resolution.resolver import EntityResolver
-from graph_pipeline.exporters.graph_exporter import GraphExporter
-from graph_pipeline.exporters.obsidian_exporter import ObsidianExporter
-from graph_pipeline.ingestion.chunker import TextChunker
-from graph_pipeline.models.document import Document, TextChunk
-from graph_pipeline.models.entity import Entity, EntityType
-from graph_pipeline.models.relationship import Relationship
-from graph_pipeline.storage.file_store import FileStore
+from artifice_graph.entity_resolution.resolver import EntityResolver
+from artifice_graph.exporters.graph_exporter import GraphExporter
+from artifice_graph.exporters.obsidian_exporter import ObsidianExporter
+from artifice_graph.ingestion.chunker import TextChunker
+from artifice_graph.models.document import Document, TextChunk
+from artifice_graph.models.entity import Entity, EntityType
+from artifice_graph.models.relationship import Relationship
+from artifice_graph.storage.file_store import FileStore
 
 
 SAMPLE_TEXT = (
@@ -163,7 +163,7 @@ class TestEntityResolution:
             )
         ]
 
-        from graph_pipeline.config import EntityResolutionConfig
+        from artifice_graph.config import EntityResolutionConfig
         resolver = EntityResolver(EntityResolutionConfig(similarity_threshold=0.85))
         merged, updated_rels = resolver.resolve(entities, relationships)
 
@@ -339,7 +339,7 @@ class TestFileStore:
 class TestDemoCommand:
     def test_demo_runs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
-        from graph_pipeline.cli import demo
+        from artifice_graph.cli import demo
         demo()
         output_dir = tmp_path / "data" / "output"
         assert (output_dir / "entities.json").exists()
@@ -387,8 +387,8 @@ class MockBGEM3Embedder:
 
 class TestSemanticResolver:
     def test_basic_merge(self) -> None:
-        from graph_pipeline.entity_resolution.semantic_resolver import SemanticEntityResolver
-        from graph_pipeline.config import EntityResolutionConfig
+        from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityResolver
+        from artifice_graph.config import EntityResolutionConfig
 
         embedder = MockBGEM3Embedder()
         config = EntityResolutionConfig(
@@ -420,8 +420,8 @@ class TestSemanticResolver:
         assert updated[0].source_entity == "Klemens von Metternich"
 
     def test_no_merge_different_entities(self) -> None:
-        from graph_pipeline.entity_resolution.semantic_resolver import SemanticEntityResolver
-        from graph_pipeline.config import EntityResolutionConfig
+        from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityResolver
+        from artifice_graph.config import EntityResolutionConfig
 
         embedder = MockBGEM3Embedder()
         config = EntityResolutionConfig(similarity_threshold=0.93, semantic_threshold=0.85)

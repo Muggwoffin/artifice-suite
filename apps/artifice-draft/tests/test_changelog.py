@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from src.changelog import ChangeSummary, classify_change, format_change_log, generate_change_summary
-from src.llm_client import LLMEdit
+from artifice_draft.changelog import ChangeSummary, classify_change, format_change_log, generate_change_summary
+from artifice_draft.llm_client import LLMEdit
 
 
 def _sample_paragraphs():

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.abbreviations import check_abbreviations
+from artifice_draft.abbreviations import check_abbreviations
 
 
 def test_abbreviation_without_definition_flagged():

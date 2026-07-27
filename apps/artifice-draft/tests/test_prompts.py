@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from src.models import EditingStyle
-from src.prompts import get_system_prompt, list_styles
+from artifice_draft.models import EditingStyle
+from artifice_draft.prompts import get_system_prompt, list_styles
 
 
 def test_list_styles():

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from src.llm_client import LLMEdit
-from src.review import apply_decisions, create_review_items
-from src.models import ReviewDecision
+from artifice_draft.llm_client import LLMEdit
+from artifice_draft.review import apply_decisions, create_review_items
+from artifice_draft.models import ReviewDecision
 
 
 def _sample_paragraphs():

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.db.models import JobStatus, SpeakerMapping, TranscriptionJob
+from artifice_transcribe.db.models import JobStatus, SpeakerMapping, TranscriptionJob
 
 pytestmark = pytest.mark.asyncio
 

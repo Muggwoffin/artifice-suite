@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.captions import check_captions
+from artifice_draft.captions import check_captions
 
 
 def test_caption_numbering_sequential_ok():

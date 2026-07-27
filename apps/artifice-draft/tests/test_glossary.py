@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.glossary import check_glossary
+from artifice_draft.glossary import check_glossary
 
 
 def test_glossary_enforcement():

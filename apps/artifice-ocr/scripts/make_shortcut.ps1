@@ -25,8 +25,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$launcher = Join-Path $root "launch_ocr_pipeline.pyw"
-$icon = Join-Path $root "assets\ocr_pipeline.ico"
+$launcher = Join-Path $root "launch_artifice_ocr.pyw"
+$icon = Join-Path $root "assets\artifice_ocr.ico"
 
 if (-not (Test-Path $launcher)) {
     throw "Launcher not found: $launcher"
@@ -82,7 +82,7 @@ function New-AppShortcut([string]$Path) {
     $sc = $ws.CreateShortcut($Path)
     $sc.TargetPath = $target
     $sc.Arguments = '"' + $launcher + '"'
-    $sc.WorkingDirectory = $root      # imports resolve as `src.ocr_pipeline`
+    $sc.WorkingDirectory = $root      # imports resolve as `src.artifice_ocr`
     $sc.Description = "OCR Pipeline - Historical Document Processor"
     $sc.WindowStyle = 1
     if (Test-Path $icon) { $sc.IconLocation = "$icon,0" }

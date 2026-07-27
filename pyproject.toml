@@ -1,0 +1,42 @@
+[project]
+name = "artifice-suite"
+version = "1.0.0"
+description = "Local-first, BYOM desktop tool suite designed around harness architecture."
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+all = [
+    "artifice-ocr",
+    "artifice-draft",
+    "artifice-graph",
+    "artifice-transcribe",
+    "model-harness",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# This root package ships no code of its own — it only exists so the "all"
+# extra and the uv workspace below have somewhere to be declared.
+py-modules = []
+
+# Plain `pip` cannot install transitive local-path dependencies in editable
+# mode, so the four apps + model-harness are declared as a uv workspace: uv
+# resolves each member editable and installs the "all" extra as a single
+# operation. Install with either:
+#   uv sync --extra all
+#   uv pip install -e ".[all]"
+# Individual apps remain independently installable the normal way, e.g.
+#   pip install -e apps/artifice-ocr
+[tool.uv.workspace]
+members = ["apps/*", "packages/model-harness"]
+
+[tool.uv.sources]
+artifice-ocr = { workspace = true }
+artifice-draft = { workspace = true }
+artifice-graph = { workspace = true }
+artifice-transcribe = { workspace = true }
+model-harness = { workspace = true }

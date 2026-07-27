@@ -13,8 +13,8 @@ from pathlib import Path
 
 from docx import Document
 
-from src.doc_parser import parse_docx
-from src.doc_writer import apply_edits_to_docx
+from artifice_draft.doc_parser import parse_docx
+from artifice_draft.doc_writer import apply_edits_to_docx
 
 
 def _read_doc_xml(path):

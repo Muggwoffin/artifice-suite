@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.citation_checker import check_citations
+from artifice_draft.citation_checker import check_citations
 
 
 def _make_para(idx: int, text: str, **kwargs) -> dict:

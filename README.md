@@ -19,6 +19,7 @@ All user interfaces across the suite adhere to **The New Masses Design System** 
 
 ## Quick-Start Guide (Bring Your Own Model)
 
+- **Install**: `uv sync --extra all` installs all four apps plus `packages/model-harness` in editable mode. To work on a single app: `pip install -e apps/artifice-ocr` (swap in the app you need).
 - **Local Execution**: Ensure Ollama is running at `http://localhost:11434` or LM Studio at `http://localhost:1234/v1`.
 - **Cloud Execution**: Configure your preferred provider API key (OpenAI, Anthropic, OpenRouter, etc.) in the environment or app settings.
 - **Docker Compose**: Run `docker-compose up` to start all app containers with local bridging.

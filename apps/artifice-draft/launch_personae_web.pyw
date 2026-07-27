@@ -174,7 +174,7 @@ def main() -> int:
         _log("pywebview unavailable — falling back to the browser")
         extra_args = [*extra_args, "--browser"]
 
-    from src.web.server import main as web_main
+    from artifice_draft.web.server import main as web_main
 
     sys.argv = [str(Path(__file__)), *extra_args]
     web_main()

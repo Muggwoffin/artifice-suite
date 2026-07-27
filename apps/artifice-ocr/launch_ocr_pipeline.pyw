@@ -2,7 +2,7 @@
 
 The `.pyw` extension means Windows runs this without a console window. That
 also means an unhandled error would vanish silently, so everything here is
-wrapped: failures are written to ~/.ocr_pipeline/launcher.log and shown in a
+wrapped: failures are written to ~/.artifice_ocr/launcher.log and shown in a
 dialog.
 
 This machine has several Python installations and only one of them carries the
@@ -18,13 +18,13 @@ import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-LOG = Path.home() / ".ocr_pipeline" / "launcher.log"
+LOG = Path.home() / ".artifice_ocr" / "launcher.log"
 
 # Imported by name; `fitz` is PyMuPDF's module name.
 REQUIRED = ("tkinterdnd2", "openai", "ollama", "yaml", "fitz")
 
 # Guard against an interpreter-hunting loop.
-SENTINEL = "OCR_PIPELINE_LAUNCHER_REEXEC"
+SENTINEL = "ARTIFICE_OCR_LAUNCHER_REEXEC"
 
 
 def _log(message: str) -> None:
@@ -110,7 +110,7 @@ def _find_working_interpreter() -> Path | None:
 
 
 def main() -> int:
-    # The package is imported as `src.ocr_pipeline`, so the project root has to
+    # The package is imported as `src.artifice_ocr`, so the project root has to
     # be both the working directory and on the path.
     os.chdir(ROOT)
     sys.path.insert(0, str(ROOT))
@@ -154,7 +154,7 @@ def main() -> int:
             return 1
         return 0
 
-    from src.ocr_pipeline.gui import main as gui_main
+    from src.artifice_ocr.gui import main as gui_main
 
     gui_main()
     return 0

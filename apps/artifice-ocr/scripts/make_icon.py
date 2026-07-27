@@ -11,7 +11,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-# From src/ocr_pipeline/gui/theme.py (which follows the public_history tokens).
+# From src/artifice_ocr/gui/theme.py (which follows the public_history tokens).
 ACCENT = (47, 125, 69)         # --accent  #2f7d45
 ACCENT_DEEP = (31, 90, 49)     # --accent-deep #1f5a31
 PAPER = (246, 243, 234)        # --paper   #f6f3ea
@@ -20,7 +20,7 @@ INK = (75, 70, 61)             # --ink-soft #4b463d
 GOLD = (191, 155, 48)          # --gold    #bf9b30
 
 ROOT = Path(__file__).resolve().parent.parent
-TARGET = ROOT / "assets" / "ocr_pipeline.ico"
+TARGET = ROOT / "assets" / "artifice_ocr.ico"
 SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 SS = 4  # supersample factor
@@ -82,7 +82,7 @@ def main() -> None:
                     append_images=frames[:-1])
     print(f"Wrote {TARGET}  ({', '.join(f'{n}x{n}' for n in SIZES)})")
 
-    preview = ROOT / "assets" / "ocr_pipeline_preview.png"
+    preview = ROOT / "assets" / "artifice_ocr_preview.png"
     draw_icon(256).save(preview)
     print(f"Wrote {preview}")
 

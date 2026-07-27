@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.ocr_pipeline.tropy import (
+from src.artifice_ocr.tropy import (
     TropyProject,
     _page_stem,
     _safe_name,
@@ -328,14 +328,14 @@ def test_manifest_merges_across_runs(bundle, tmp_path):
 # end to end: a real PDF through the real stage code, with the LLM mocked
 # --------------------------------------------------------------------------- #
 
-@patch("src.ocr_pipeline.stages.ocr._ocr_single_image")
+@patch("src.artifice_ocr.stages.ocr._ocr_single_image")
 def test_each_pdf_page_writes_its_own_output(mock_ocr, bundle, tmp_path):
     """The collision hazard, tested directly.
 
     All three pages share one checksum-named PDF. Keyed on the filename stem
     they would overwrite each other; keyed on the page stem they must not.
     """
-    from src.ocr_pipeline.jobs import JobRunner, State
+    from src.artifice_ocr.jobs import JobRunner, State
 
     calls: list[str] = []
 
@@ -371,9 +371,9 @@ def test_each_pdf_page_writes_its_own_output(mock_ocr, bundle, tmp_path):
     assert sorted(calls) == ["page_0001.png", "page_0002.png", "page_0003.png"]
 
 
-@patch("src.ocr_pipeline.stages.ocr._ocr_single_image", return_value="ocr text")
+@patch("src.artifice_ocr.stages.ocr._ocr_single_image", return_value="ocr text")
 def test_page_outputs_resume_independently(mock_ocr, bundle, tmp_path):
-    from src.ocr_pipeline.pipeline import run_ocr_step
+    from src.artifice_ocr.pipeline import run_ocr_step
 
     out = tmp_path / "out"
     with TropyProject(bundle) as proj:
@@ -393,9 +393,9 @@ def test_page_outputs_resume_independently(mock_ocr, bundle, tmp_path):
     assert not other.get("_skipped")
 
 
-@patch("src.ocr_pipeline.stages.ocr._ocr_single_image", return_value="ocr text")
+@patch("src.artifice_ocr.stages.ocr._ocr_single_image", return_value="ocr text")
 def test_out_of_range_page_raises_clearly(mock_ocr, bundle, tmp_path):
-    from src.ocr_pipeline.stages import ocr as ocr_stage
+    from src.artifice_ocr.stages import ocr as ocr_stage
 
     pdf = bundle / "assets" / "aaaa1111.pdf"
     with pytest.raises(ValueError, match="out of range"):

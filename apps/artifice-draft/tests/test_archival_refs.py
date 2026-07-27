@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.archival_refs import check_archival_refs
+from artifice_draft.archival_refs import check_archival_refs
 
 
 def _make_para(idx: int, text: str) -> dict:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src._diff import diff_ranges
+from artifice_draft._diff import diff_ranges
 
 
 def test_identical_text_has_no_ranges():

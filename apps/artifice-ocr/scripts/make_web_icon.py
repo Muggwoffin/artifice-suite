@@ -15,7 +15,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-# Same tokens make_icon.py uses (src/ocr_pipeline/gui/theme.py).
+# Same tokens make_icon.py uses (src/artifice_ocr/gui/theme.py).
 ACCENT = (47, 125, 69)         # --accent  #2f7d45
 ACCENT_DEEP = (31, 90, 49)     # --accent-deep #1f5a31
 PAPER = (246, 243, 234)        # --paper   #f6f3ea
@@ -23,12 +23,12 @@ PAPER_SHADE = (223, 217, 202)  # fold, slightly darker than paper
 INK = (75, 70, 61)             # --ink-soft #4b463d
 GOLD = (191, 155, 48)          # --gold    #bf9b30
 # Badge colour: the same indigo the Analytics charts use for their third
-# series (src/ocr_pipeline/gui/theme.py's INDIGO / web app.css's --indigo) —
+# series (src/artifice_ocr/gui/theme.py's INDIGO / web app.css's --indigo) —
 # reused here rather than invented, so it still reads as part of one palette.
 INDIGO = (61, 90, 128)         # --indigo  #3d5a80
 
 ROOT = Path(__file__).resolve().parent.parent
-TARGET = ROOT / "assets" / "ocr_pipeline_web.ico"
+TARGET = ROOT / "assets" / "artifice_ocr_web.ico"
 SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 SS = 4  # supersample factor
@@ -102,7 +102,7 @@ def main() -> None:
                     append_images=frames[:-1])
     print(f"Wrote {TARGET}  ({', '.join(f'{n}x{n}' for n in SIZES)})")
 
-    preview = ROOT / "assets" / "ocr_pipeline_web_preview.png"
+    preview = ROOT / "assets" / "artifice_ocr_web_preview.png"
     draw_icon(256).save(preview)
     print(f"Wrote {preview}")
 

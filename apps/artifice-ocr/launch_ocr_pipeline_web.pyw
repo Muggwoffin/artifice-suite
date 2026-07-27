@@ -1,6 +1,6 @@
 """Windowed launcher for the OCR Pipeline web frontend.
 
-Mirrors `launch_ocr_pipeline.pyw` — same self-healing interpreter search, same
+Mirrors `launch_artifice_ocr.pyw` — same self-healing interpreter search, same
 "log and show a dialog rather than vanish silently" discipline, because a
 `.pyw` process has no console to reveal a crash on. See that file for why each
 piece exists; only the dependency list and the entry point differ here.
@@ -13,13 +13,13 @@ import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-LOG = Path.home() / ".ocr_pipeline" / "launcher_web.log"
+LOG = Path.home() / ".artifice_ocr" / "launcher_web.log"
 
 # Same core deps the pipeline itself needs, plus the web stack. `tkinterdnd2`
 # is deliberately absent — the web build has no tkinter drop zone to need it.
 REQUIRED = ("fastapi", "uvicorn", "openai", "ollama", "yaml", "fitz")
 
-SENTINEL = "OCR_PIPELINE_WEB_LAUNCHER_REEXEC"
+SENTINEL = "ARTIFICE_OCR_WEB_LAUNCHER_REEXEC"
 
 
 def _log(message: str) -> None:
@@ -148,7 +148,7 @@ def main() -> int:
         _log(f"Re-launching with {replacement} (missing: {', '.join(missing)})")
         return _relaunch(replacement, extra_args)
 
-    from src.ocr_pipeline.web.server import main as web_main
+    from src.artifice_ocr.web.server import main as web_main
 
     sys.argv = [str(Path(__file__)), *extra_args]
     web_main()

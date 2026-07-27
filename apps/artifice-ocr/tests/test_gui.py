@@ -11,8 +11,8 @@ from unittest.mock import patch
 
 import pytest
 
-from src.ocr_pipeline.history import HistoryStore
-from src.ocr_pipeline.jobs import JobItem, JobRunner, State
+from src.artifice_ocr.history import HistoryStore
+from src.artifice_ocr.jobs import JobItem, JobRunner, State
 
 
 # --------------------------------------------------------------------------- #
@@ -67,9 +67,9 @@ def _drain(runner, timeout=10.0):
 # JobRunner
 # --------------------------------------------------------------------------- #
 
-@patch("src.ocr_pipeline.jobs.run_translate_step", return_value=_translated())
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.ocr_pipeline.jobs.run_ocr_step", return_value=_ocr())
+@patch("src.artifice_ocr.jobs.run_translate_step", return_value=_translated())
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_completes_all_stages(mock_ocr, mock_clean, mock_trans, tmp_path):
     items = [JobItem(path="a.png"), JobItem(path="b.png")]
     runner = JobRunner(items, str(tmp_path),
@@ -93,8 +93,8 @@ def test_runner_completes_all_stages(mock_ocr, mock_clean, mock_trans, tmp_path)
     assert events[-1].payload["failed"] == 0
 
 
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.ocr_pipeline.jobs.run_ocr_step", return_value=_ocr())
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_honours_stage_selection(mock_ocr, mock_clean, tmp_path):
     item = JobItem(path="a.png")
     runner = JobRunner([item], str(tmp_path), stages={"ocr", "cleanup"})
@@ -106,8 +106,8 @@ def test_runner_honours_stage_selection(mock_ocr, mock_clean, tmp_path):
     assert "translated" not in item.results
 
 
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.ocr_pipeline.jobs.run_ocr_step",
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("src.artifice_ocr.jobs.run_ocr_step",
        side_effect=RuntimeError("LM Studio unreachable"))
 def test_runner_marks_failure_without_killing_batch(mock_ocr, mock_clean, tmp_path):
     items = [JobItem(path="a.png"), JobItem(path="b.png")]
@@ -122,8 +122,8 @@ def test_runner_marks_failure_without_killing_batch(mock_ocr, mock_clean, tmp_pa
     assert events[-1].kind == "run_finished"
 
 
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.ocr_pipeline.jobs.run_ocr_step", return_value=_ocr())
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_skip_marks_item_skipped(mock_ocr, mock_clean, tmp_path):
     item = JobItem(path="a.png")
     runner = JobRunner([item], str(tmp_path), stages={"ocr", "cleanup"})
@@ -135,8 +135,8 @@ def test_runner_skip_marks_item_skipped(mock_ocr, mock_clean, tmp_path):
     mock_ocr.assert_not_called()
 
 
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.ocr_pipeline.jobs.run_ocr_step", return_value=_ocr())
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_cancel_stops_the_run(mock_ocr, mock_clean, tmp_path):
     items = [JobItem(path=f"{i}.png") for i in range(6)]
     runner = JobRunner(items, str(tmp_path), stages={"ocr", "cleanup"})
@@ -147,8 +147,8 @@ def test_runner_cancel_stops_the_run(mock_ocr, mock_clean, tmp_path):
     assert all(i.state is State.CANCELLED for i in items)
 
 
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned(skipped=True))
-@patch("src.ocr_pipeline.jobs.run_ocr_step", return_value=_ocr(skipped=True))
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned(skipped=True))
+@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr(skipped=True))
 def test_runner_reports_resumed_stages_as_skipped(mock_ocr, mock_clean, tmp_path):
     item = JobItem(path="a.png")
     runner = JobRunner([item], str(tmp_path), stages={"ocr", "cleanup"})
@@ -160,8 +160,8 @@ def test_runner_reports_resumed_stages_as_skipped(mock_ocr, mock_clean, tmp_path
     assert item.stages["cleanup"].state is State.SKIPPED
 
 
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.ocr_pipeline.jobs.run_ocr_step", return_value=_ocr())
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_pause_blocks_then_resumes(mock_ocr, mock_clean, tmp_path):
     items = [JobItem(path=f"{i}.png") for i in range(4)]
     runner = JobRunner(items, str(tmp_path), stages={"ocr", "cleanup"},
@@ -372,7 +372,7 @@ def test_history_migrates_a_database_missing_the_new_columns(tmp_path):
 # --------------------------------------------------------------------------- #
 
 def test_diff_ranges_flags_changed_words():
-    from src.ocr_pipeline.gui.widgets.compare_view import _diff_ranges
+    from src.artifice_ocr.gui.widgets.compare_view import _diff_ranges
 
     raw = "the quick br0wn fox"
     cleaned = "the quick brown fox"
@@ -385,14 +385,14 @@ def test_diff_ranges_flags_changed_words():
 
 
 def test_diff_ranges_identical_text_has_no_highlights():
-    from src.ocr_pipeline.gui.widgets.compare_view import _diff_ranges
+    from src.artifice_ocr.gui.widgets.compare_view import _diff_ranges
 
     text = "identical in both panes"
     assert _diff_ranges(text, text) == ([], [])
 
 
 def test_marker_ranges_finds_uncertainty_markers():
-    from src.ocr_pipeline.gui.widgets.compare_view import _marker_ranges
+    from src.artifice_ocr.gui.widgets.compare_view import _marker_ranges
 
     text = "The date is [illegible] and the name is unclear."
     ranges = _marker_ranges(text)
@@ -408,19 +408,19 @@ def test_marker_ranges_finds_uncertainty_markers():
 # --------------------------------------------------------------------------- #
 
 def test_dpi_for_zoom_matches_base_dpi_at_zoom_one():
-    from src.ocr_pipeline.gui.widgets.image_pane import BASE_DPI, _dpi_for_zoom
+    from src.artifice_ocr.gui.widgets.image_pane import BASE_DPI, _dpi_for_zoom
 
     assert _dpi_for_zoom(600, 800, 1.0) == BASE_DPI
 
 
 def test_dpi_for_zoom_scales_linearly_below_the_cap():
-    from src.ocr_pipeline.gui.widgets.image_pane import _dpi_for_zoom
+    from src.artifice_ocr.gui.widgets.image_pane import _dpi_for_zoom
 
     assert _dpi_for_zoom(600, 800, 2.0) == pytest.approx(300.0)
 
 
 def test_dpi_for_zoom_caps_the_rendered_long_edge():
-    from src.ocr_pipeline.gui.widgets.image_pane import _dpi_for_zoom
+    from src.artifice_ocr.gui.widgets.image_pane import _dpi_for_zoom
 
     dpi = _dpi_for_zoom(3000, 4000, 4.0, base_dpi=150, max_long_edge=4000)
     long_edge_px = 4000 / 72 * dpi
@@ -448,7 +448,7 @@ def _widget_root():
     except tk_mod.TclError as exc:  # pragma: no cover - headless CI
         pytest.skip(f"no display: {exc}")
 
-    from src.ocr_pipeline.gui import theme
+    from src.artifice_ocr.gui import theme
     theme.apply(root)
 
     yield root
@@ -458,7 +458,7 @@ def _widget_root():
 def test_preview_style_compareview_has_no_image_or_editable_raw(_widget_root):
     """The plain tab (`with_image`/`editable_raw` both default off) must stay
     exactly as it was — this is what the live-queue Preview tab uses."""
-    from src.ocr_pipeline.gui.widgets.compare_view import CompareView
+    from src.artifice_ocr.gui.widgets.compare_view import CompareView
 
     view = CompareView(_widget_root)
 
@@ -469,7 +469,7 @@ def test_preview_style_compareview_has_no_image_or_editable_raw(_widget_root):
 
 
 def test_history_style_compareview_mounts_image_pane_and_editable_raw(_widget_root):
-    from src.ocr_pipeline.gui.widgets.compare_view import CompareView
+    from src.artifice_ocr.gui.widgets.compare_view import CompareView
 
     view = CompareView(_widget_root, with_image=True, editable_raw=True)
 
@@ -482,7 +482,7 @@ def test_history_style_compareview_mounts_image_pane_and_editable_raw(_widget_ro
 
 
 def test_editable_raw_pane_tracks_dirty_state_and_saves(_widget_root):
-    from src.ocr_pipeline.gui.widgets.compare_view import CompareView
+    from src.artifice_ocr.gui.widgets.compare_view import CompareView
 
     saved = []
     view = CompareView(_widget_root, editable_raw=True, on_save_raw=saved.append)
@@ -506,7 +506,7 @@ def test_editable_raw_pane_tracks_dirty_state_and_saves(_widget_root):
 def test_editable_raw_pane_save_does_not_reset_scroll_or_cursor(_widget_root):
     """Re-rendering after a save must not blow away the widget the user was
     just typing in — only panes whose content actually changed get touched."""
-    from src.ocr_pipeline.gui.widgets.compare_view import CompareView
+    from src.artifice_ocr.gui.widgets.compare_view import CompareView
 
     view = CompareView(_widget_root, editable_raw=True, on_save_raw=lambda t: None)
     view.show(title="doc", raw="original", cleaned="cleaned")
@@ -521,7 +521,7 @@ def test_editable_raw_pane_save_does_not_reset_scroll_or_cursor(_widget_root):
 
 
 def test_image_pane_falls_back_to_placeholder_for_a_missing_file(_widget_root, tmp_path):
-    from src.ocr_pipeline.gui.widgets.image_pane import ImagePane
+    from src.artifice_ocr.gui.widgets.image_pane import ImagePane
 
     pane = ImagePane(_widget_root)
     pane.load(str(tmp_path / "does-not-exist.png"))
@@ -540,7 +540,7 @@ def test_image_pane_renders_a_real_pdf_page(_widget_root, tmp_path):
     doc.save(str(pdf_path))
     doc.close()
 
-    from src.ocr_pipeline.gui.widgets.image_pane import ImagePane
+    from src.artifice_ocr.gui.widgets.image_pane import ImagePane
 
     pane = ImagePane(_widget_root)
     pane.load(str(pdf_path), page=1)
@@ -569,8 +569,8 @@ def _gui_root(tmp_path_factory):
     """
     tk = pytest.importorskip("tkinter")
     try:
-        from src.ocr_pipeline import config
-        from src.ocr_pipeline.gui.app import App
+        from src.artifice_ocr import config
+        from src.artifice_ocr.gui.app import App
     except Exception as exc:  # pragma: no cover - missing display/tkinterdnd2
         pytest.skip(f"GUI unavailable: {exc}")
 
@@ -597,7 +597,7 @@ def app(_gui_root, tmp_path):
     """The shared App, reset to a clean state with a throwaway history db."""
     import tkinter as tk
 
-    from src.ocr_pipeline.history import HistoryStore
+    from src.artifice_ocr.history import HistoryStore
 
     instance = _gui_root
     instance.main_view.queue.clear()
@@ -634,9 +634,9 @@ def _pump_until_idle(app, timeout=10.0):
     pytest.fail("run did not complete within timeout")
 
 
-@patch("src.ocr_pipeline.jobs.run_translate_step", return_value=_translated())
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.ocr_pipeline.jobs.run_ocr_step", return_value=_ocr())
+@patch("src.artifice_ocr.jobs.run_translate_step", return_value=_translated())
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_end_to_end_run_updates_queue_and_history(mock_o, mock_c, mock_t, app):
     app.main_view.queue.add_paths(["a.png", "b.png"])
     app.var_translate.set(True)
@@ -684,8 +684,8 @@ def test_queue_keeps_pages_sharing_one_pdf_but_drops_true_duplicates(app):
     assert first["values"][0] == "KV-2-1234.pdf  p.1"
 
 
-@patch("src.ocr_pipeline.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.ocr_pipeline.jobs.run_ocr_step", side_effect=RuntimeError("boom"))
+@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("src.artifice_ocr.jobs.run_ocr_step", side_effect=RuntimeError("boom"))
 def test_end_to_end_failure_is_recorded_not_raised(mock_o, mock_c, app):
     app.main_view.queue.add_paths(["a.png"])
 

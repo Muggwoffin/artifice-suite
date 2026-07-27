@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.consistency import check_consistency
+from artifice_draft.consistency import check_consistency
 
 
 def _make_para(idx: int, text: str) -> dict:

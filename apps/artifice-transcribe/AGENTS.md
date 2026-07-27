@@ -8,7 +8,7 @@ FastAPI backend for speech-to-text + speaker diarization. Uses WhisperX (Whisper
 
 ```bash
 pip install -e ".[dev]"        # install with dev extras
-python -m app.main              # run server on :8000, opens web UI at http://127.0.0.1:8000
+python -m artifice_transcribe.main              # run server on :8000, opens web UI at http://127.0.0.1:8000
 start.bat                       # Windows shortcut: starts server + opens browser
 python tests/test_api.py        # e2e verification (needs audio arg for full test)
 ruff check .                    # lint

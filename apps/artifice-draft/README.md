@@ -68,26 +68,28 @@ ArtificeDraft is located at `apps/artifice-draft` within the Artifice Suite mono
 artifice-suite/
 ├── apps/
 │   └── artifice-draft/
+│       ├── pyproject.toml
 │       ├── src/
-│       │   ├── models.py           # Shared data structures and enums
-│       │   ├── doc_parser.py       # .docx paragraph extraction and OpenXML parsing
-│       │   ├── doc_writer.py       # OpenXML track changes injector (<w:ins>/<w:del>)
-│       │   ├── _track_changes.py   # Low-level XML revision element injection
-│       │   ├── _diff.py            # Word-level diff calculation for web review
-│       │   ├── citation_checker.py # Footnote & citation validation
-│       │   ├── date_standardizer.py# Date format normalization
-│       │   ├── foreign_phrases.py  # Latin/foreign phrase italicization & consistency
-│       │   ├── archival_refs.py    # Archival reference validation
-│       │   ├── consistency.py      # Cross-document proper noun consistency
-│       │   ├── changelog.py        # Statistical change summary generation
-│       │   ├── gui.py              # Tkinter desktop fallback interface
-│       │   └── web/                # FastAPI server, runtime adapter, & static assets
+│       │   └── artifice_draft/
+│       │       ├── models.py           # Shared data structures and enums
+│       │       ├── doc_parser.py       # .docx paragraph extraction and OpenXML parsing
+│       │       ├── doc_writer.py       # OpenXML track changes injector (<w:ins>/<w:del>)
+│       │       ├── _track_changes.py   # Low-level XML revision element injection
+│       │       ├── _diff.py            # Word-level diff calculation for web review
+│       │       ├── citation_checker.py # Footnote & citation validation
+│       │       ├── date_standardizer.py# Date format normalization
+│       │       ├── foreign_phrases.py  # Latin/foreign phrase italicization & consistency
+│       │       ├── archival_refs.py    # Archival reference validation
+│       │       ├── consistency.py      # Cross-document proper noun consistency
+│       │       ├── changelog.py        # Statistical change summary generation
+│       │       ├── cli.py              # `artifice-draft` entry point (GUI / headless)
+│       │       ├── gui.py              # Tkinter desktop fallback interface
+│       │       └── web/                # FastAPI server, runtime adapter, & static assets
 │       ├── tests/                  # Pytest suite
 │       └── README.md
 └── packages/
-    ├── shared-ui/                  # The New Masses CSS tokens & web components
-    ├── model-harness/             # BYOM connectors (Ollama/LM Studio/OpenAI)
-    └── core-types/                # Shared TypeScript & Python data interfaces
+    ├── shared-ui/                  # The New Masses CSS design tokens
+    └── model-harness/              # Shared BYOM connector config (Ollama/LM Studio/OpenAI)
 ```
 
 ---
@@ -160,8 +162,8 @@ Configure via environment variables or a local `.env` file:
 We welcome contributions from historians, editors, and software developers!
 
 1. **Custom Style Guides (`packages/model-harness/style_guides/`)**: Add a new `.json` file defining rules for heading cases, citation preferences, date standards, and serial commas for specific academic journals.
-2. **Domain Advisories (`apps/artifice-draft/src/`)**: Implement new deterministic Python validators for historical sub-fields (e.g., medieval date converters, diplomatic transcription checkers).
-3. **OpenXML Writers (`apps/artifice-draft/src/doc_writer.py`)**: Enhance Word XML parsing for complex multi-column tables, figure captions, or margin comment threads.
+2. **Domain Advisories (`apps/artifice-draft/src/artifice_draft/`)**: Implement new deterministic Python validators for historical sub-fields (e.g., medieval date converters, diplomatic transcription checkers).
+3. **OpenXML Writers (`apps/artifice-draft/src/artifice_draft/doc_writer.py`)**: Enhance Word XML parsing for complex multi-column tables, figure captions, or margin comment threads.
 
 ---
 

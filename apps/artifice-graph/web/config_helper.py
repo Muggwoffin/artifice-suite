@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from graph_pipeline.config import (
+from artifice_graph.config import (
     ExtractionConfig,
     EmbeddingConfig,
     IngestionConfig,

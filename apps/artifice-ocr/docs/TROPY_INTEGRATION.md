@@ -17,14 +17,14 @@ Pull documents out of a Tropy archive, OCR them, and write the results to a
 folder. Selection is by list, by tag, by item, or the whole project.
 
     # browse a project (or list recent ones with no argument)
-    ocr_pipeline tropy-browse "E:/Tropy/ISK Project Primary Sources.tropy"
+    artifice_ocr tropy-browse "E:/Tropy/ISK Project Primary Sources.tropy"
 
     # see what a run would do, without doing it
-    ocr_pipeline tropy "E:/Tropy/ISK Project Primary Sources.tropy" \
+    artifice_ocr tropy "E:/Tropy/ISK Project Primary Sources.tropy" \
         --list-id 8 --dry-run
 
     # OCR one list into ./output
-    ocr_pipeline tropy "E:/Tropy/ISK Project Primary Sources.tropy" \
+    artifice_ocr tropy "E:/Tropy/ISK Project Primary Sources.tropy" \
         --list-id 8 --output-dir output --limit 50
 
 In the GUI: **Main → Add from Tropy…** opens a picker (recent projects, the
@@ -151,7 +151,7 @@ Two targets, selectable per run:
   them: plain `text` plus a ProseMirror document in `state`. Appears in the
   normal note pane.
 * **Transcriptions** — rows in Tropy's native `transcriptions` table, tagged
-  `config.generator = "ocr_pipeline"` so they are always identifiable as ours.
+  `config.generator = "artifice_ocr"` so they are always identifiable as ours.
 
 Both tables carry `AFTER INSERT` triggers maintaining the FTS index, so
 inserting is enough to keep Tropy's search working.

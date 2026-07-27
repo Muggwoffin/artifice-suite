@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from src.exporters import export_html, export_markdown, export_plain_text
+from artifice_draft.exporters import export_html, export_markdown, export_plain_text
 
 
 def _sample_paragraphs():

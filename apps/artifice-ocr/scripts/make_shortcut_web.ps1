@@ -25,15 +25,15 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$launcher = Join-Path $root "launch_ocr_pipeline_web.pyw"
-$icon = Join-Path $root "assets\ocr_pipeline_web.ico"
+$launcher = Join-Path $root "launch_artifice_ocr_web.pyw"
+$icon = Join-Path $root "assets\artifice_ocr_web.ico"
 
 if (-not (Test-Path $launcher)) {
     throw "Launcher not found: $launcher"
 }
 
 # Same core deps the pipeline itself needs, plus the web stack — matches
-# launch_ocr_pipeline_web.pyw's REQUIRED tuple. No tkinterdnd2: the web build
+# launch_artifice_ocr_web.pyw's REQUIRED tuple. No tkinterdnd2: the web build
 # has no tkinter drop zone to need it.
 $required = "fastapi, uvicorn, openai, ollama, yaml, fitz"
 

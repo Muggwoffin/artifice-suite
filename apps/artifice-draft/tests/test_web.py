@@ -1,7 +1,7 @@
 """Tests for the FastAPI web frontend (src/web/).
 
 Mocks the LLM call the same way tests/test_llm_client.py does — patching
-`src.llm_client._send_request_with_retry` — so no real Ollama/OpenAI/
+`artifice_draft.llm_client._send_request_with_retry` — so no real Ollama/OpenAI/
 Anthropic request ever leaves the test process.
 """
 
@@ -15,8 +15,8 @@ import pytest
 from docx import Document
 from fastapi.testclient import TestClient
 
-import src.web.runtime as runtime
-from src.web.server import app
+import artifice_draft.web.runtime as runtime
+from artifice_draft.web.server import app
 
 
 @pytest.fixture(autouse=True)
@@ -122,7 +122,7 @@ def test_run_without_review_writes_output_and_is_downloadable(client, docx_bytes
     })
     doc_id = upload.json()["doc_id"]
 
-    with patch("src.llm_client._send_request_with_retry", return_value=_mock_edits_response()):
+    with patch("artifice_draft.llm_client._send_request_with_retry", return_value=_mock_edits_response()):
         start = client.post(f"/api/run/{doc_id}/start")
         assert start.status_code == 200
         _wait_for_thread(doc_id)
@@ -164,7 +164,7 @@ def test_review_flow_reject_keeps_original_text(client, docx_bytes):
     })
     doc_id = upload.json()["doc_id"]
 
-    with patch("src.llm_client._send_request_with_retry", return_value=_mock_edits_response()):
+    with patch("artifice_draft.llm_client._send_request_with_retry", return_value=_mock_edits_response()):
         client.post(f"/api/run/{doc_id}/start")
         _wait_for_thread(doc_id)
 

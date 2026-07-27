@@ -1,0 +1,59 @@
+/* The New Masses — canonical design tokens.
+   Source of truth: Design_Philosophy.md. Keep in sync with any app-local
+   :root block until those are consolidated to import this file directly. */
+
+:root {
+  /* Paper / ink — light mode (default) */
+  --paper: #f6f3ea;
+  --paper-raised: #fbf9f3;
+  --paper-recessed: #efebdf;
+  --ink: #1b1813;
+  --ink-soft: #4b463d;
+  --ink-faint: #635e51;
+  --rule: #ddd6c6;
+  --rule-dark: #45413a;
+  --accent: #2f7d45;
+  --accent-deep: #1f5a31;
+  --accent-wash: rgba(47, 125, 69, 0.07);
+  --gold: #bf9b30;
+
+  /* Semantic (status, not part of core identity) */
+  --success: #28a745;
+  --warning: #ffc107;
+  --error: #dc3545;
+
+  /* Typography */
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Libre Baskerville", Georgia, serif;
+  --font-label: "Archivo", "Franklin Gothic Medium", "Arial Narrow", sans-serif;
+
+  --text-xs: 0.72rem;
+  --text-sm: 0.8rem;
+  --text-base: 1.0625rem;
+  --text-lg: clamp(1.15rem, 1.05rem + 0.4vw, 1.3rem);
+  --text-h3: clamp(1.35rem, 1.2rem + 0.8vw, 1.8rem);
+  --text-h2: clamp(1.9rem, 1.5rem + 2vw, 2.8rem);
+  --text-hero: clamp(2.6rem, 1.6rem + 5.5vw, 5.25rem);
+
+  --label-tracking: 0.16em;
+}
+
+[data-theme="dark"] {
+  /* Dark mode — "Lamplight Archive" */
+  --paper: #161310;
+  --paper-raised: #1f1b16;
+  --paper-recessed: #100e0b;
+  --ink: #e8e2d3;
+  --ink-soft: #beb5a3;
+  --ink-faint: #a39a88;
+  --rule: #38332b;
+  --rule-dark: #5b554a;
+  --accent: #4aa066;
+  --accent-deep: #7cc492;
+  --accent-wash: rgba(74, 160, 102, 0.12);
+  --gold: #bf9b30;
+
+  --success: #4aa066;
+  --warning: #d9b64a;
+  --error: #e06060;
+}

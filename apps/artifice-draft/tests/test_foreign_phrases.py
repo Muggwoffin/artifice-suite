@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.foreign_phrases import check_foreign_phrases
+from artifice_draft.foreign_phrases import check_foreign_phrases
 
 
 def _make_para(idx: int, text: str, is_italic: bool = False) -> dict:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.date_standardizer import standardize_dates
+from artifice_draft.date_standardizer import standardize_dates
 
 
 def _make_para(idx: int, text: str) -> dict:

@@ -10,30 +10,30 @@ Requires Python 3.10+.
 
 ## Entry Point
 
-Run `scripts/run_edit.py`:
+Run the installed `artifice-draft` command (`src/artifice_draft/cli.py`):
 
-- **GUI mode**: `python scripts/run_edit.py --gui`
-- **Headless/CLI mode**: `python scripts/run_edit.py --headless input.docx [output.docx]`
+- **GUI mode**: `artifice-draft --gui`
+- **Headless/CLI mode**: `artifice-draft --headless input.docx [output.docx]`
 
 Environment variables: `OLLAMA_MODEL`, `OLLAMA_URL`, `LLM_PROVIDER`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`. Default model is `gemma4:12b`.
 
 ## Architecture
 
-The pipeline has three stages. Each stage is a separate module in `src/`:
+The pipeline has three stages. Each stage is a separate module in `src/artifice_draft/`:
 
-1. **Parse** (`src/doc_parser.py`) — reads a `.docx` with `python-docx`, extracts paragraphs as dicts (typed as `ParagraphData` in `src/models.py`) containing text, style name, bold/italic flags, and indent level. Empty paragraphs are skipped.
+1. **Parse** (`src/artifice_draft/doc_parser.py`) — reads a `.docx` with `python-docx`, extracts paragraphs as dicts (typed as `ParagraphData` in `src/artifice_draft/models.py`) containing text, style name, bold/italic flags, and indent level. Empty paragraphs are skipped.
 
-2. **LLM call** (`src/llm_client.py`) — batches the paragraph dicts into chunks of N (default 5), sends each chunk to the LLM with a system prompt + user prompt, parses JSON responses, and returns `LLMEdit` dataclasses per paragraph. `LLMEdit.to_edits_dict()` converts results to the edits mapping. Handles invalid JSON by marking all paragraphs as unchanged; handles single-object responses by wrapping in a list.
+2. **LLM call** (`src/artifice_draft/llm_client.py`) — batches the paragraph dicts into chunks of N (default 5), sends each chunk to the LLM with a system prompt + user prompt, parses JSON responses, and returns `LLMEdit` dataclasses per paragraph. `LLMEdit.to_edits_dict()` converts results to the edits mapping. Handles invalid JSON by marking all paragraphs as unchanged; handles single-object responses by wrapping in a list.
 
-3. **Write** (`src/doc_writer.py`) — takes the original paragraphs plus an `edits` mapping (index → edited text or None) and writes either a plain `.docx` (no changes) or one with track changes applied via `src/_track_changes.py`. The `_track_changes.py` module uses `docx_revisions.RevisionDocument.find_and_replace_tracked()` to produce `<w:ins>/<w:del>` revision elements. Plain docx writing is shared via `src/write_utils.py`.
+3. **Write** (`src/artifice_draft/doc_writer.py`) — takes the original paragraphs plus an `edits` mapping (index → edited text or None) and writes either a plain `.docx` (no changes) or one with track changes applied via `src/artifice_draft/_track_changes.py`. The `_track_changes.py` module uses `docx_revisions.RevisionDocument.find_and_replace_tracked()` to produce `<w:ins>/<w:del>` revision elements. Plain docx writing is shared via `src/artifice_draft/write_utils.py`.
 
-The GUI (`src/gui.py`) is a Tkinter window with a file picker button and optional drag-and-drop (if `tkinterdnd2` is installed); processing runs in a background thread.
+The GUI (`src/artifice_draft/gui.py`) is a Tkinter window with a file picker button and optional drag-and-drop (if `tkinterdnd2` is installed); processing runs in a background thread.
 
-Configuration (`src/config.py`) uses a dataclass with a `from_env()` classmethod. The `ollama_generate_url` property appends `/api/generate` to the base URL.
+Configuration (`src/artifice_draft/config.py`) uses a dataclass with a `from_env()` classmethod. The `ollama_generate_url` property appends `/api/generate` to the base URL.
 
 ### Style Guide System
 
-`src/style_guides/` contains the journal style guide system:
+`src/artifice_draft/style_guides/` contains the journal style guide system:
 
 - `base.py` — `StyleGuide` dataclass schema
 - `chicago.py`, `mla.py`, `apa.py` — built-in guides for Chicago 17th, MLA 9th, APA 7th

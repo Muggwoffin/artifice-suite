@@ -1,6 +1,6 @@
 """Windowed launcher for the PersonaeEdit GUI.
 
-Equivalent to ``python scripts/run_edit.py --gui``, but without a console
+Equivalent to ``artifice-draft --gui``, but without a console
 window. Because `.pyw` suppresses the console, an unhandled error would vanish
 silently, so failures are logged to ~/.personaeedit/launcher.log and shown in a
 dialog.
@@ -10,7 +10,7 @@ Two classes of dependency are handled differently:
 * REQUIRED — the tool cannot run without these. If the interpreter that
   started the launcher lacks them, another is found and the launcher
   re-executes itself with it.
-* PREFERRED — `tkinterdnd2` only enables drag-and-drop; ``src/gui.py`` falls
+* PREFERRED — `tkinterdnd2` only enables drag-and-drop; ``src/artifice_draft/gui.py`` falls
   back to a file-picker button without it. A missing preferred package is
   worth switching interpreters for, but never worth refusing to start.
 """
@@ -174,7 +174,7 @@ def main() -> int:
                     f"Entry point not found:\n{SCRIPT}")
         return 1
 
-    # Run the documented entry point rather than reaching into src.gui, so
+    # Run the documented entry point rather than reaching into artifice_draft.gui, so
     # config and logging are set up exactly as they are from the command line.
     sys.argv = [str(SCRIPT), "--gui"]
     spec = importlib.util.spec_from_file_location("run_edit", SCRIPT)

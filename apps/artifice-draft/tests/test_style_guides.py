@@ -6,14 +6,14 @@ import json
 
 import pytest
 
-from src.style_guides import (
+from artifice_draft.style_guides import (
     list_guides,
     list_custom_guides,
     load_guide,
     load_guide_by_path,
     save_custom_guide,
 )
-from src.style_guides.base import StyleGuide
+from artifice_draft.style_guides.base import StyleGuide
 
 
 def test_list_guides_includes_builtins():
@@ -77,7 +77,7 @@ def test_style_guide_to_dict_roundtrip():
 
 
 def test_save_and_load_custom_guide(tmp_path, monkeypatch):
-    monkeypatch.setattr("src.style_guides._CUSTOM_DIR", tmp_path)
+    monkeypatch.setattr("artifice_draft.style_guides._CUSTOM_DIR", tmp_path)
     guide = StyleGuide(name="My Journal", edition="v1")
     save_custom_guide("my_journal", guide)
 
@@ -87,7 +87,7 @@ def test_save_and_load_custom_guide(tmp_path, monkeypatch):
 
 
 def test_list_custom_guides(tmp_path, monkeypatch):
-    monkeypatch.setattr("src.style_guides._CUSTOM_DIR", tmp_path)
+    monkeypatch.setattr("artifice_draft.style_guides._CUSTOM_DIR", tmp_path)
     guide = StyleGuide(name="Custom")
     save_custom_guide("test_guide", guide)
     assert "test_guide" in list_custom_guides()

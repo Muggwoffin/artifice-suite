@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.metrics import calculate_document_metrics
+from artifice_draft.metrics import calculate_document_metrics
 
 
 def test_calculate_metrics():

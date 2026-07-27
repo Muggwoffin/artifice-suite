@@ -1,0 +1,39 @@
+[project]
+name = "artifice-draft"
+version = "0.1.0"
+description = "Local-first copy editing: sends .docx paragraphs to an LLM and returns tracked-change edits."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "python-docx>=0.8.11",
+    "docx-revisions>=0.1.5",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+# The tkinter GUI (artifice-draft-gui) needs none of these. Only the web
+# frontend (artifice-draft-web) does.
+web = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "python-multipart>=0.0.9",
+    "pywebview>=4.4",
+    "beautifulsoup4>=4.12",
+    "readability-lxml>=0.8.1",
+]
+dnd = [
+    "tkinterdnd2",
+]
+
+[project.scripts]
+artifice-draft = "artifice_draft.cli:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

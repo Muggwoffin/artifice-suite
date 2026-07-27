@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.accessibility import check_accessibility
+from artifice_draft.accessibility import check_accessibility
 
 
 def test_heading_hierarchy_skipped_level_flagged():

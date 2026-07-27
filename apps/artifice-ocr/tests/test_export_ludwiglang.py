@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.ocr_pipeline.export_ludwiglang import (
+from src.artifice_ocr.export_ludwiglang import (
     MEDIUM_OPTIONS,
     assemble_collection,
     check_language,
@@ -202,7 +202,7 @@ def test_format_frontmatter():
 # check_language
 # --------------------------------------------------------------------------- #
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_language_gate_blocks_english(mock_detect):
     mock_detect.return_value = "en"
     error = check_language("This is an English text.")
@@ -210,14 +210,14 @@ def test_language_gate_blocks_english(mock_detect):
     assert "English" in error
 
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_language_gate_passes_german(mock_detect):
     mock_detect.return_value = "de"
     error = check_language("Das ist ein deutscher Text.")
     assert error is None
 
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_language_gate_passes_unknown(mock_detect):
     mock_detect.return_value = "unknown"
     error = check_language("Ein bisschen Text.")
@@ -234,7 +234,7 @@ def test_language_gate_empty_body():
 # export_md
 # --------------------------------------------------------------------------- #
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_export_md_writes_file_with_frontmatter(mock_detect, tmp_path):
     mock_detect.return_value = "de"
     json_dir = tmp_path / "collection" / "json"
@@ -261,7 +261,7 @@ def test_export_md_writes_file_with_frontmatter(mock_detect, tmp_path):
     assert "Zweiter Absatz." in content
 
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_export_md_default_output_path(mock_detect, tmp_path):
     mock_detect.return_value = "de"
     json_dir = tmp_path / "mein_dokument" / "json"
@@ -275,7 +275,7 @@ def test_export_md_default_output_path(mock_detect, tmp_path):
     assert result_path.parent.name == "mein_dokument"
 
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_export_md_raises_on_english_without_skip(mock_detect, tmp_path):
     mock_detect.return_value = "en"
     json_dir = tmp_path / "col" / "json"
@@ -286,7 +286,7 @@ def test_export_md_raises_on_english_without_skip(mock_detect, tmp_path):
         export_md(tmp_path / "col")
 
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_export_md_skip_language_gate(mock_detect, tmp_path):
     mock_detect.return_value = "en"
     json_dir = tmp_path / "col" / "json"
@@ -314,7 +314,7 @@ def test_export_md_medium_options_are_correct():
     assert "print" in MEDIUM_OPTIONS
 
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_export_md_with_manifest_lookup(mock_detect, tmp_path):
     mock_detect.return_value = "de"
     json_dir = tmp_path / "Akten" / "json"
@@ -337,7 +337,7 @@ def test_export_md_with_manifest_lookup(mock_detect, tmp_path):
     assert result_path.exists()
 
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_export_md_logs_skipped_pages(mock_detect, tmp_path, caplog):
     mock_detect.return_value = "de"
     json_dir = tmp_path / "col" / "json"
@@ -350,7 +350,7 @@ def test_export_md_logs_skipped_pages(mock_detect, tmp_path, caplog):
     assert "doc_p0002" in caplog.text
 
 
-@patch("src.ocr_pipeline.export_ludwiglang._detect_language")
+@patch("src.artifice_ocr.export_ludwiglang._detect_language")
 def test_export_md_idempotent_overwrite(mock_detect, tmp_path):
     mock_detect.return_value = "de"
     json_dir = tmp_path / "col" / "json"

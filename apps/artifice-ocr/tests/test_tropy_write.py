@@ -10,8 +10,8 @@ from unittest.mock import patch
 
 import pytest
 
-from src.ocr_pipeline.jobs import JobItem
-from src.ocr_pipeline.tropy_write import (
+from src.artifice_ocr.jobs import JobItem
+from src.artifice_ocr.tropy_write import (
     TARGET_NOTES,
     TARGET_TRANSCRIPTIONS,
     TropyWriter,
@@ -79,7 +79,7 @@ def project(tmp_path):
 @pytest.fixture(autouse=True)
 def tropy_closed():
     """Every test assumes Tropy is not running; the check has its own test."""
-    with patch("src.ocr_pipeline.tropy_write._tropy_is_running", return_value=False):
+    with patch("src.artifice_ocr.tropy_write._tropy_is_running", return_value=False):
         yield
 
 
@@ -127,7 +127,7 @@ def test_preview_requires_a_target(project):
 
 
 def test_running_tropy_blocks_the_write(project):
-    with patch("src.ocr_pipeline.tropy_write._tropy_is_running", return_value=True):
+    with patch("src.artifice_ocr.tropy_write._tropy_is_running", return_value=True):
         with TropyWriter(project) as w:
             preview = w.preview([WriteEntry(photo_id=10, text="x")], [TARGET_NOTES])
             report = w.write(preview)
@@ -184,7 +184,7 @@ def test_write_transcriptions_marks_its_own_rows(project):
     row = con.execute("SELECT * FROM transcriptions").fetchone()
     assert row["id"] == 11
     assert row["text"] == "Transkribierter Text"
-    assert json.loads(row["config"])["generator"] == "ocr_pipeline"
+    assert json.loads(row["config"])["generator"] == "artifice_ocr"
     assert con.execute(
         "SELECT COUNT(*) FROM fts_transcriptions WHERE text MATCH 'Transkribierter'"
     ).fetchone()[0] == 1
@@ -240,7 +240,7 @@ def test_failed_write_rolls_back_completely(project):
                 raise sqlite3.OperationalError("disk full")
             return real_state(text)
 
-        with patch("src.ocr_pipeline.tropy_write._prosemirror_state", flaky):
+        with patch("src.artifice_ocr.tropy_write._prosemirror_state", flaky):
             report = w.write(preview)
 
     assert report.written == 0
@@ -323,7 +323,7 @@ def test_repair_reports_nothing_to_do_when_there_are_no_notes(project):
 
 
 def test_repair_refuses_while_tropy_is_running(project):
-    with patch("src.ocr_pipeline.tropy_write._tropy_is_running", return_value=True):
+    with patch("src.artifice_ocr.tropy_write._tropy_is_running", return_value=True):
         with TropyWriter(project) as w:
             with pytest.raises(RuntimeError, match="running"):
                 w.repair_missing_selections()
