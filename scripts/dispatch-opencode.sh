@@ -81,6 +81,21 @@ cmd_status() {
   git -C "$REPO" diff --ignore-cr-at-eol --stat | tail -20
 }
 
+# GUARD 6: refuse to let an agent stop itself. An OpenCode agent that has picked
+# up the orchestrator persona from CLAUDE.md will try to dispatch work, hit the
+# "already running" error below, follow its advice, and SIGTERM its own process
+# tree — surfacing as a mysterious exit=143 with a log that stops mid-sentence.
+# GUARD 4 protects the *orchestrator's* wrapper; this protects the agent itself.
+is_own_ancestor() {
+  local target="$1" p=$$
+  while [ "$p" -gt 1 ]; do
+    [ "$p" = "$target" ] && return 0
+    p="$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')"
+    [ -z "$p" ] && break
+  done
+  return 1
+}
+
 cmd_stop() {
   local agent="$1" pids
   pids="$(agent_pids "$agent")"
@@ -89,6 +104,14 @@ cmd_stop() {
     return 0
   fi
   local pid
+  for pid in $pids; do
+    if is_own_ancestor "$pid"; then
+      echo "REFUSING to stop pid $pid ($agent): that is this process's own agent." >&2
+      echo "  You are '$agent'. You cannot dispatch or stop yourself — implement" >&2
+      echo "  the task directly instead of delegating it." >&2
+      return 1
+    fi
+  done
   for pid in $pids; do
     echo "stopping pid $pid ($agent)"
     kill -TERM "$pid" 2>/dev/null
@@ -117,7 +140,14 @@ WAIT=0
 # Refuse to start a second copy of an agent that is already running.
 if [ -n "$(agent_pids "$AGENT")" ]; then
   echo "ERROR: '$AGENT' is already running (pids: $(agent_pids "$AGENT" | tr '\n' ' '))." >&2
-  echo "       Stop it first:  $0 --stop $AGENT" >&2
+  # Do NOT advise --stop unconditionally. If the caller *is* this agent, that
+  # advice tells it to kill itself, which is exactly what happened once.
+  if is_own_ancestor "$(agent_pids "$AGENT" | head -1)"; then
+    echo "       You are '$AGENT'. This script dispatches sub-agents and is the" >&2
+    echo "       orchestrator's tool, not yours. Implement the task directly." >&2
+  else
+    echo "       Stop it first:  $0 --stop $AGENT" >&2
+  fi
   exit 1
 fi
 
