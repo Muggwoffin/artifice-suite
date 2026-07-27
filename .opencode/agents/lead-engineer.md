@@ -1,7 +1,7 @@
 ---
 description: Lead software developer for core feature implementation and refactoring
-mode: subagent
-model: deepseek/deepseek-v4
+mode: all
+model: opencode-go/deepseek-v4-pro
 tools:
   read: true
   write: true

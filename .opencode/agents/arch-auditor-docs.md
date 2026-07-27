@@ -1,7 +1,7 @@
 ---
 description: Open-source folder standards, cross-app consistency, and documentation
-mode: subagent
-model: zhipu/glm-5.2
+mode: all
+model: opencode-go/glm-5.2
 tools:
   read: true
   write: true
