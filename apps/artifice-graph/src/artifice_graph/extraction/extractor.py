@@ -239,12 +239,25 @@ class EntityExtractor:
 
     def extract_batch(self, chunks: list[TextChunk]) -> list[ExtractionResult]:
         results: list[ExtractionResult] = []
+        failures = 0
         for i, chunk in enumerate(chunks):
             logger.info("Extracting chunk %d/%d (doc: %s)", i + 1, len(chunks), chunk.document_id)
             try:
                 result = asyncio.run(self.extract_from_chunk(chunk))
                 results.append(result)
             except Exception as exc:
+                failures += 1
                 logger.error("Skipping chunk %s: %s", chunk.id, exc)
         logger.info("Cache: %s", self._cache.stats)
+        if chunks and not results:
+            raise RuntimeError(
+                f"All {len(chunks)} chunks failed extraction. "
+                f"Check LLM connectivity and model availability."
+            )
+        if failures:
+            logger.warning(
+                "%d/%d chunks failed extraction; results may be incomplete.",
+                failures,
+                len(chunks),
+            )
         return results

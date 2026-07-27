@@ -14,7 +14,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 from rich import box
 
-from artifice_graph.config import load_config
+from artifice_graph.config import load_config, resolve_config_paths
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
 from artifice_graph.entity_resolution.resolver import EntityResolver
 from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityResolver
@@ -35,12 +35,38 @@ app = typer.Typer(
 )
 console = Console()
 
+_APP_ROOT = Path(__file__).parent.parent.parent.resolve()
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
     handlers=[RichHandler(rich_tracebacks=True, console=console)],
 )
 logger = logging.getLogger(__name__)
+
+
+def _safe_save_models(
+    store: FileStore,
+    filename: str,
+    models: list,
+    *,
+    force: bool = False,
+) -> bool:
+    """Save models, refusing to overwrite non-empty data with empty data.
+
+    Returns True if the save proceeded, False if it was refused.
+    """
+    existing = store.load(filename)
+    if existing and not models and not force:
+        console.print(
+            f"  [yellow]Refusing to overwrite non-empty {filename} with empty data.[/yellow]"
+        )
+        console.print(
+            f"  [dim]Re-run with --force to overwrite anyway.[/dim]"
+        )
+        return False
+    store.save_models(filename, models)
+    return True
 
 
 def _load_pipeline_data(store: FileStore) -> tuple[list[Entity], list[Relationship], list[Document], list[TextChunk]]:
@@ -103,6 +129,7 @@ def ingest(
         config.llm.model = model
     if base_url:
         config.llm.base_url = base_url
+    resolve_config_paths(config, _APP_ROOT)
 
     store = FileStore(config.export.output_dir)
     chunker = TextChunker(config.ingestion)
@@ -141,6 +168,7 @@ def extract(
     base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
     api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
     output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
 ) -> None:
     """Extract entities and relationships from ingested chunks using local LLM."""
     config = load_config()
@@ -153,6 +181,7 @@ def extract(
     config.extraction.batch_size = batch_size
     if output_dir:
         config.export.output_dir = output_dir
+    resolve_config_paths(config, _APP_ROOT)
 
     store = FileStore(config.export.output_dir)
     chunks = [TextChunk.model_validate(d) for d in store.load("chunks.json")]
@@ -184,8 +213,8 @@ def extract(
         )
     )
 
-    store.save_models("entities.json", all_entities)
-    store.save_models("relationships.json", all_relationships)
+    _safe_save_models(store, "entities.json", all_entities, force=force)
+    _safe_save_models(store, "relationships.json", all_relationships, force=force)
     console.print(f"[dim]Saved to {config.export.output_dir}/entities.json, relationships.json[/dim]")
 
 
@@ -196,6 +225,7 @@ def resolve_entities(
     base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
     api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
     output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
 ) -> None:
     """Deduplicate and normalize extracted entities."""
     config = load_config()
@@ -207,6 +237,7 @@ def resolve_entities(
         config.llm.api_key = api_key
     if output_dir:
         config.export.output_dir = output_dir
+    resolve_config_paths(config, _APP_ROOT)
 
     store = FileStore(config.export.output_dir)
     entities, relationships, _, _ = _load_pipeline_data(store)
@@ -229,8 +260,8 @@ def resolve_entities(
         )
     )
 
-    store.save_models("entities.json", merged_entities)
-    store.save_models("relationships.json", updated_relationships)
+    _safe_save_models(store, "entities.json", merged_entities, force=force)
+    _safe_save_models(store, "relationships.json", updated_relationships, force=force)
 
 
 @app.command("build-vault")
@@ -251,6 +282,7 @@ def build_vault(
         config.llm.api_key = api_key
     if output_dir:
         config.export.output_dir = output_dir
+    resolve_config_paths(config, _APP_ROOT)
 
     store = FileStore(config.export.output_dir)
     entities, relationships, documents, chunks = _load_pipeline_data(store)
@@ -280,6 +312,7 @@ def build_graph(
     config = load_config()
     if output_dir:
         config.export.output_dir = output_dir
+    resolve_config_paths(config, _APP_ROOT)
 
     store = FileStore(config.export.output_dir)
     entities, relationships, _, _ = _load_pipeline_data(store)
@@ -310,6 +343,7 @@ def run_all(
     semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
     output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
     incremental: bool = typer.Option(False, "--incremental", help="Only process new/changed files"),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
     format: list[str] = typer.Option(None, "--format", help="Graph export format(s): graphml, gexf, json, csv, cypher"),
 ) -> None:
     """Run the full pipeline: ingest -> extract -> resolve -> build vault + graph."""
@@ -321,9 +355,9 @@ def run_all(
     def _ingest():
         ingest(input_dir=input_dir, output_dir=output_dir, incremental=incremental)
     def _extract():
-        extract(model=model, base_url=base_url, output_dir=output_dir)
+        extract(model=model, base_url=base_url, output_dir=output_dir, force=force)
     def _resolve():
-        resolve_entities(semantic=semantic, output_dir=output_dir)
+        resolve_entities(semantic=semantic, output_dir=output_dir, force=force)
     def _vault():
         build_vault(semantic=semantic, output_dir=output_dir)
     def _graph():
@@ -353,6 +387,7 @@ def inspect(
     config = load_config()
     if output_dir:
         config.export.output_dir = output_dir
+    resolve_config_paths(config, _APP_ROOT)
 
     store = FileStore(config.export.output_dir)
     entities, relationships, documents, chunks = _load_pipeline_data(store)
@@ -522,34 +557,15 @@ def demo() -> None:
         ],
     )
 
-    from artifice_graph.models.entity import Entity as EntityModel, EntityType
-    from artifice_graph.models.relationship import Relationship as RelModel
-
-    entities = []
+    entities: list[Entity] = []
     for e in synthetic_result.entities:
-        entities.append(
-            EntityModel(
-                name=e.name,
-                entity_type=EntityType(e.entity_type),
-                aliases=e.aliases,
-                summary=e.summary,
-                source_doc_ids=["congress_of_vienna_sample"],
-            )
-        )
+        e.source_doc_ids = ["congress_of_vienna_sample"]
+        entities.append(e)
 
-    relationships = []
+    relationships: list[Relationship] = []
     for r in synthetic_result.relationships:
-        relationships.append(
-            RelModel(
-                source_entity=r.source_entity,
-                target_entity=r.target_entity,
-                relationship_type=r.relationship_type,
-                time_frame=r.time_frame,
-                evidence_quote=r.evidence_quote,
-                confidence_score=r.confidence_score,
-                source_doc_id="congress_of_vienna_sample",
-            )
-        )
+        r.source_doc_id = "congress_of_vienna_sample"
+        relationships.append(r)
 
     store.save_models("entities_raw.json", entities)
     store.save_models("entities.json", entities)

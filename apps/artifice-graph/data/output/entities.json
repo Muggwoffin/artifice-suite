@@ -104,7 +104,7 @@
     "name": "Napoleonic Wars",
     "entity_type": "Event",
     "aliases": [],
-    "summary": "Series of wars fought between France and various European coalitions.",
+    "summary": "Series of wars fought between France and various European coalitions that preceded the Congress of Vienna.",
     "source_doc_ids": [
       "congress_of_vienna_sample"
     ],

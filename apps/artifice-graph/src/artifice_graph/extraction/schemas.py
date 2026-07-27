@@ -4,10 +4,14 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from artifice_graph.models.entity import EntityType
+from artifice_graph.models.entity import Entity, EntityType
+from artifice_graph.models.relationship import Relationship
 
 
 class ExtractedEntity(BaseModel):
+    """Lightweight extraction schema for validating raw LLM output.
+    Kept for semantic clarity in the LLM system prompt and for use
+    by callers that prefer to work with the validated dict form directly."""
     name: str
     entity_type: EntityType
     aliases: list[str] = Field(default_factory=list)
@@ -15,6 +19,7 @@ class ExtractedEntity(BaseModel):
 
 
 class ExtractedRelationship(BaseModel):
+    """Lightweight extraction schema for validating raw LLM output."""
     source_entity: str
     target_entity: str
     relationship_type: str
@@ -24,10 +29,16 @@ class ExtractedRelationship(BaseModel):
 
 
 class ExtractionResult(BaseModel):
-    """Schema for a single LLM extraction response."""
+    """Schema for a single LLM extraction response.
 
-    entities: list[ExtractedEntity] = Field(default_factory=list)
-    relationships: list[ExtractedRelationship] = Field(default_factory=list)
+    Carries domain Entity / Relationship objects, which is what the
+    pipeline consumer expects.  The domain types accept raw dicts
+    from the LLM because all extra fields (id, source_doc_ids, etc.)
+    have defaults.
+    """
+
+    entities: list[Entity] = Field(default_factory=list)
+    relationships: list[Relationship] = Field(default_factory=list)
     raw_response: str = ""
 
 

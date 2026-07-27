@@ -207,12 +207,26 @@ def _do_extract(cfg: PipelineConfig, run_key: str) -> None:
         batch = chunks[i:i + batch_size]
         end = min(i + batch_size, total)
         _log(run_key, f"  Processing chunks {i + 1}–{end}/{total}…")
-        results = extractor.extract_batch(batch)
+        try:
+            results = extractor.extract_batch(batch)
+        except RuntimeError as exc:
+            _log(run_key, f"  Extraction failed: {exc}", "error")
+            _log_done(run_key, "Extract — failed (all chunks errored)")
+            return
         for result in results:
             all_entities.extend(result.entities)
             all_rels.extend(result.relationships)
-    store.save_models("entities.json", all_entities)
-    store.save_models("relationships.json", all_rels)
+    existing_entities = store.load("entities.json")
+    if existing_entities and not all_entities:
+        _log(run_key, "  Refusing to overwrite non-empty entities.json with empty data.", "warn")
+        _log(run_key, "  Run with --force from the CLI to overwrite, or fix LLM connectivity.", "dim")
+    else:
+        store.save_models("entities.json", all_entities)
+    existing_rels = store.load("relationships.json")
+    if existing_rels and not all_rels:
+        _log(run_key, "  Refusing to overwrite non-empty relationships.json with empty data.", "warn")
+    else:
+        store.save_models("relationships.json", all_rels)
     _log(run_key, f"  ✓ Extracted {len(all_entities)} entities, {len(all_rels)} relationships", "success")
     _log_done(run_key, f"Extract: {len(all_entities)} entities, {len(all_rels)} relationships")
 
@@ -232,8 +246,14 @@ def _do_resolve(cfg: PipelineConfig, run_key: str) -> None:
     method = "semantic" if isinstance(resolver, SemanticEntityResolver) else "fuzzy"
     _log(run_key, f"  Using {method} resolution")
     merged, updated = resolver.resolve(entities, relationships)
-    store.save_models("entities.json", merged)
-    store.save_models("relationships.json", updated)
+    if not merged:
+        _log(run_key, "  Refusing to overwrite non-empty entities.json with empty resolution result.", "warn")
+    else:
+        store.save_models("entities.json", merged)
+    if not updated:
+        _log(run_key, "  Refusing to overwrite non-empty relationships.json with empty resolution result.", "warn")
+    else:
+        store.save_models("relationships.json", updated)
     _log(run_key, f"  ✓ {len(entities)} → {len(merged)} canonical entities ({method})", "success")
     _log_done(run_key, f"Resolve: {len(entities)} → {len(merged)} canonical")
 
@@ -387,17 +407,14 @@ def _do_demo(run_key: str) -> None:
         ],
     )
 
-    ents_list = []
+    ents_list: list[Entity] = []
     for e in synthetic.entities:
-        ents_list.append(Entity(name=e.name, entity_type=EntityType(e.entity_type),
-                                aliases=e.aliases, summary=e.summary,
-                                source_doc_ids=["congress_of_vienna_sample"]))
-    rels_list = []
+        e.source_doc_ids = ["congress_of_vienna_sample"]
+        ents_list.append(e)
+    rels_list: list[Relationship] = []
     for r in synthetic.relationships:
-        rels_list.append(Relationship(source_entity=r.source_entity, target_entity=r.target_entity,
-                                      relationship_type=r.relationship_type, time_frame=r.time_frame,
-                                      evidence_quote=r.evidence_quote, confidence_score=r.confidence_score,
-                                      source_doc_id="congress_of_vienna_sample"))
+        r.source_doc_id = "congress_of_vienna_sample"
+        rels_list.append(r)
 
     store.save_models("entities_raw.json", ents_list)
     store.save_models("entities.json", ents_list)
