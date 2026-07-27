@@ -286,7 +286,7 @@ class TropyPicker(tk.Toplevel):
                 "Manifest not written",
                 f"Could not write the Tropy manifest: {exc}", parent=self)
 
-        self.result = pages_to_job_items(pages)
+        self.result = pages_to_job_items(pages, project_path=self.project.db_path)
         self._close()
 
     def _cancel(self):

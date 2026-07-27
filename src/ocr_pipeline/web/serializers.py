@@ -130,5 +130,9 @@ def serialize_history_item_detail(row: sqlite3.Row) -> dict[str, Any]:
         "original_cleaned": row["original_cleaned_text"] or "",
         "translated": translated,
         "original_translated": row["original_translated_text"] or "",
+        "photo_id": row["photo_id"],
+        "tropy_item_id": row["tropy_item_id"],
+        "tropy_item_title": row["tropy_item_title"] or "",
+        "tropy_project_path": row["tropy_project_path"] or "",
         "diff": _diff_payload(raw, cleaned, translated),
     }

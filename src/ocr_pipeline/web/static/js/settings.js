@@ -9,8 +9,11 @@
 
 const SettingsTab = (function () {
   const FIELDS = {
-    lm_studio_url: "text", ocr_model: "text", cleanup_model: "text",
-    translate_model: "text", document_type: "select",
+    ocr_backend: "select", cleanup_backend: "select", translate_backend: "select",
+    ocr_model: "text", cleanup_model: "text", translate_model: "text",
+    lm_studio_url: "text", ollama_url: "text", huggingface_token: "text",
+    api_key: "text", api_base_url: "text",
+    document_type: "select",
     max_ocr_workers: "int", chunk_max_tokens: "int",
     resume: "bool", confidence_enabled: "bool", ollama_think: "bool",
   };
@@ -45,6 +48,7 @@ const SettingsTab = (function () {
       else el(key).value = value ?? "";
     }
     updateDocTypeHint();
+    updateConnectionVisibility();
   }
 
   function collect() {
@@ -56,6 +60,28 @@ const SettingsTab = (function () {
       else out[key] = field.value;
     }
     return out;
+  }
+
+  function activeBackends() {
+    return new Set([
+      el("ocr_backend").value,
+      el("cleanup_backend").value,
+      el("translate_backend").value,
+    ]);
+  }
+
+  function updateConnectionVisibility() {
+    const backends = activeBackends();
+    const lmRow = el("lm_studio_url")?.closest("label");
+    const olRow = el("ollama_url")?.closest("label");
+    const hfRow = el("huggingface_token")?.closest("label");
+    const akRow = el("api_key")?.closest("label");
+    const buRow = el("api_base_url")?.closest("label");
+    if (lmRow) lmRow.style.display = backends.has("lm_studio") ? "" : "none";
+    if (olRow) olRow.style.display = backends.has("ollama") ? "" : "none";
+    if (hfRow) hfRow.style.display = backends.has("huggingface") ? "" : "none";
+    if (akRow) akRow.style.display = backends.has("api_key") ? "" : "none";
+    if (buRow) buRow.style.display = backends.has("api_key") ? "" : "none";
   }
 
   async function load() {
@@ -86,18 +112,30 @@ const SettingsTab = (function () {
   }
 
   async function runPreflight() {
-    healthPanel.innerHTML = `<p class="dim">Checking services&hellip;</p>`;
+    healthPanel.innerHTML = `<p class="dim">Checking connections&hellip;</p>`;
     try {
       const health = await api("GET", "/api/health");
-      const lines = [
-        healthLine("LM Studio", health.lm_studio.ok,
-                   health.lm_studio.ok ? health.lm_studio.url : health.lm_studio.detail),
-        healthLine("Ollama", health.ollama.ok, health.ollama.ok ? "" : health.ollama.detail),
-        ...health.models.map(m => healthLine(`Model  ${m.name}`, m.ok)),
-      ];
+      const lines = [];
+      if (health.lm_studio) {
+        lines.push(healthLine("LM Studio", health.lm_studio.ok,
+                   health.lm_studio.ok ? health.lm_studio.url : health.lm_studio.detail));
+      }
+      if (health.ollama) {
+        lines.push(healthLine("Ollama", health.ollama.ok, health.ollama.ok ? "" : health.ollama.detail));
+        if (health.models) {
+          lines.push(...health.models.map(m => healthLine(`  ${m.name}`, m.ok)));
+        }
+      }
+      if (health.huggingface) {
+        lines.push(healthLine("Hugging Face", health.huggingface.ok, health.huggingface.detail));
+      }
+      if (health.api_key) {
+        lines.push(healthLine("API Key", health.api_key.ok,
+                   health.api_key.ok ? health.api_key.url : health.api_key.detail));
+      }
       healthPanel.innerHTML = lines.join("");
     } catch (err) {
-      healthPanel.innerHTML = `<p class="health-fail">Could not run health check: ${escapeHtml(err.message)}</p>`;
+      healthPanel.innerHTML = `<p class="health-fail">Could not check connections &mdash; is the server running?</p>`;
     }
   }
 
@@ -164,6 +202,11 @@ const SettingsTab = (function () {
     setTemplateStatus(`Template "${name}" deleted.`);
   }
 
+  // Wire up backend dropdown change events to update connection visibility
+  ["ocr_backend", "cleanup_backend", "translate_backend"].forEach(key => {
+    el(key).addEventListener("change", updateConnectionVisibility);
+  });
+
   docTypeSelect.addEventListener("change", updateDocTypeHint);
   document.getElementById("btn-settings-save").onclick = save;
   document.getElementById("btn-settings-reset").onclick = resetDefaults;
@@ -171,6 +214,9 @@ const SettingsTab = (function () {
   document.getElementById("btn-template-save").onclick = saveTemplate;
   document.getElementById("btn-template-apply").onclick = applyTemplate;
   document.getElementById("btn-template-delete").onclick = deleteTemplate;
+  document.getElementById("btn-retrigger-onboarding").onclick = () => {
+    if (window.Onboarding) window.Onboarding.retrigger();
+  };
 
   let loaded = false;
   TAB_ACTIVATE.settings = () => {

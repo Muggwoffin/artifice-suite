@@ -99,6 +99,8 @@ class MainView(ttk.Frame):
             side=tk.RIGHT, padx=(0, 6))
         ttk.Button(row, text="Send to Tropy…", command=self.send_to_tropy).pack(
             side=tk.RIGHT)
+        ttk.Button(row, text="Send to LudwigLang…",
+                   command=self.send_to_ludwiglang).pack(side=tk.RIGHT, padx=(0, 6))
 
     # ---------------------------------------------------------- run controls
     def _build_run_controls(self):
@@ -196,18 +198,32 @@ class MainView(ttk.Frame):
         self._add(files, f"folder {Path(folder).name}")
 
     def compile_pdf(self):
-        """Compile processed text files from a folder into a PDF."""
+        """Compile the batch (selection, else whole queue) into one PDF."""
         from .pdf_export_dialog import PdfExportDialog, _derive_output_folder
 
-        selected = self.queue.selected_items()
-        default_folder = None
-        if selected:
-            default_folder = _derive_output_folder(selected[0])
-        if not default_folder:
-            folder = self.app.output_var.get().strip() or "output"
-            default_folder = str(Path(folder) / "cleaned" / "text")
+        output_dir = self.app.output_var.get().strip() or "output"
 
-        dialog = PdfExportDialog(self.winfo_toplevel(), default_folder=default_folder)
+        # The batch is the current selection; with nothing selected it is the
+        # whole queue run.  Stems dedupe in queue order.
+        batch = self.queue.selected_items() or list(self.queue.items)
+        stems: list[str] = []
+        seen: set[str] = set()
+        for item in batch:
+            if item.stem and item.stem not in seen:
+                seen.add(item.stem)
+                stems.append(item.stem)
+
+        if batch:
+            default_folder = _derive_output_folder(batch[0], output_dir)
+        else:
+            default_folder = str(Path(output_dir) / "cleaned" / "text")
+
+        dialog = PdfExportDialog(
+            self.winfo_toplevel(),
+            default_folder=default_folder,
+            batch_stems=stems or None,
+            output_dir=output_dir,
+        )
         self.wait_window(dialog)
 
     def send_to_tropy(self):
@@ -230,6 +246,15 @@ class MainView(ttk.Frame):
         if dialog.written:
             self.log_message(
                 f"Wrote {dialog.written} row(s) back to Tropy", "success")
+
+    def send_to_ludwiglang(self):
+        """Export a cleaned collection as a LudwigLang .md file."""
+        from .ludwiglang_export import LudwigLangExportDialog
+
+        output_dir = self.app.output_var.get().strip() or "output"
+        dialog = LudwigLangExportDialog(
+            self.winfo_toplevel(), output_dir=output_dir)
+        self.wait_window(dialog)
 
     def add_from_tropy(self):
         """Open the Tropy picker and queue whatever it returns."""

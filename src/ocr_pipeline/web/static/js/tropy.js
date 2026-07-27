@@ -15,12 +15,15 @@ const tropyEls = {};
  "send-tropy-targets-notes", "send-tropy-targets-transcriptions",
  "send-tropy-stage", "send-tropy-backup", "send-tropy-status",
  "send-tropy-plans", "btn-send-tropy-preview", "btn-send-tropy-write",
- "btn-send-tropy-close"].forEach(id => {
+ "btn-send-tropy-close",
+ "send-tropy-history-detail", "send-tropy-history-name",
+ "send-tropy-history-photo", "send-tropy-history-page"].forEach(id => {
   tropyEls[id] = document.getElementById(id);
 });
 
 let tropyProjects = [];
 let tropyProjectData = null;
+let historySendContext = null;
 const ALL_ITEMS = "__all__";
 
 // ------------------------------------------------------------- add from tropy
@@ -51,6 +54,9 @@ tropyEls["btn-add-tropy"].onclick = openTropyAdd;
 tropyEls["btn-tropy-cancel"].onclick = () => {
   tropyEls["modal-tropy-add"].classList.add("hidden");
 };
+tropyEls["modal-tropy-add"].querySelector("[data-modal-close]")?.addEventListener("click", () => {
+  tropyEls["modal-tropy-add"].classList.add("hidden");
+});
 tropyEls["tropy-project"].addEventListener("change", loadTropySources);
 tropyEls["btn-tropy-browse-project"].onclick = async () => {
   const dir = await pickFolder("tropy");
@@ -321,7 +327,7 @@ function updateTropySummary(items, pages, missing) {
   tropyEls["tropy-summary-text"].textContent =
     parts.length ? `${parts.join(", ")} to queue` : "No items selected";
   tropyEls["tropy-summary-warning"].textContent =
-    missing.length ? `${missing.length} page(s) missing from disk — will be skipped` : "";
+    missing.length ? `${missing.length} page(s) missing from computer — will be skipped` : "";
 }
 
 tropyEls["btn-tropy-add-queue"].onclick = async () => {
@@ -342,7 +348,7 @@ tropyEls["btn-tropy-add-queue"].onclick = async () => {
 
     let note = `Added ${data.added} page(s) from Tropy`;
     if (data.missing && data.missing.length) {
-      note += `; ${data.missing.length} page(s) missing from disk and skipped`;
+      note += `; ${data.missing.length} page(s) missing from computer and skipped`;
       const names = data.missing.slice(0, 5).map(escapeHtml).join(", ");
       note += data.missing.length > 5 ? ` (e.g. ${names}…)` : ` (${names})`;
     }
@@ -367,14 +373,38 @@ function selectedTargets() {
   return targets;
 }
 
-async function openTropySend() {
+async function openTropySend(historyInfo) {
+  historySendContext = historyInfo || null;
   tropyEls["modal-tropy-send"].classList.remove("hidden");
   tropyEls["send-tropy-plans"].innerHTML = "";
   tropyEls["btn-send-tropy-write"].disabled = true;
-  setTropySendStatus(
-    "Preview before writing — nothing is sent to Tropy until you press Write.",
-    "");
+
+  // Show/hide history item detail section
+  if (historySendContext) {
+    tropyEls["send-tropy-history-detail"].classList.remove("hidden");
+    tropyEls["send-tropy-history-name"].textContent = historySendContext.name || "";
+    tropyEls["send-tropy-history-photo"].textContent = historySendContext.photoTitle || "";
+    tropyEls["send-tropy-history-page"].textContent = historySendContext.page != null ? String(historySendContext.page) : "";
+    setTropySendStatus("Preview before writing — nothing is sent to Tropy until you press Write.", "");
+  } else {
+    tropyEls["send-tropy-history-detail"].classList.add("hidden");
+    setTropySendStatus(
+      "Preview before writing — nothing is sent to Tropy until you press Write.",
+      "");
+  }
+
   await ensureTropyProjectList(tropyEls["send-tropy-project"]);
+
+  // Pre-select project if known from history
+  if (historySendContext && historySendContext.project) {
+    const opts = tropyEls["send-tropy-project"].options;
+    for (let i = 0; i < opts.length; i++) {
+      if (opts[i].value === historySendContext.project) {
+        opts[i].selected = true;
+        break;
+      }
+    }
+  }
 }
 
 function setTropySendStatus(text, cls) {
@@ -393,7 +423,12 @@ async function previewTropySend() {
 
   try {
     const body = { project, targets, stage: tropyEls["send-tropy-stage"].value };
-    lastPreview = await api("POST", "/api/tropy/send/preview", body);
+    if (historySendContext) {
+      body.item_ids = historySendContext.itemIds;
+      lastPreview = await api("POST", "/api/tropy/send/history/preview", body);
+    } else {
+      lastPreview = await api("POST", "/api/tropy/send/preview", body);
+    }
   } catch (err) {
     setTropySendStatus(`Could not read project: ${err.message}`, "error");
     return;
@@ -454,7 +489,11 @@ async function writeTropySend() {
       project, targets, stage: tropyEls["send-tropy-stage"].value,
       make_backup: tropyEls["send-tropy-backup"].checked,
     };
-    const report = await api("POST", "/api/tropy/send/write", body);
+    const endpoint = historySendContext
+      ? "/api/tropy/send/history/write"
+      : "/api/tropy/send/write";
+    if (historySendContext) body.item_ids = historySendContext.itemIds;
+    const report = await api("POST", endpoint, body);
     let note = `Wrote ${report.written} row(s).`;
     if (report.backup) note += `  Backup: ${report.backup.split(/[\\/]/).pop()}`;
     setTropySendStatus(note, "success");
@@ -466,11 +505,16 @@ async function writeTropySend() {
 }
 
 tropyEls["btn-send-tropy"].onclick = openTropySend;
-tropyEls["btn-send-tropy-close"].onclick = () => tropyEls["modal-tropy-send"].classList.add("hidden");
+function closeTropySend() {
+  tropyEls["modal-tropy-send"].classList.add("hidden");
+  historySendContext = null;
+}
+tropyEls["btn-send-tropy-close"].onclick = closeTropySend;
+tropyEls["modal-tropy-send"].querySelector("[data-modal-close]")?.addEventListener("click", closeTropySend);
 tropyEls["btn-send-tropy-preview"].onclick = previewTropySend;
 tropyEls["btn-send-tropy-write"].onclick = writeTropySend;
 tropyEls["modal-tropy-send"].addEventListener("click", (e) => {
-  if (e.target === tropyEls["modal-tropy-send"]) tropyEls["modal-tropy-send"].classList.add("hidden");
+  if (e.target === tropyEls["modal-tropy-send"]) closeTropySend();
 });
 
 // Click-outside-to-close for add modal

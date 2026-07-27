@@ -1,8 +1,8 @@
 """FastAPI backend for the web frontend.
 
 This module owns the FastAPI ``app`` and the bootstrap code (CLI, port
-discovery, native window / browser launch). Individual route groups live
-under ``routers/`` and are included here.
+discovery, browser launch). Individual route groups live under ``routers/``
+and are included here.
 """
 
 import os
@@ -11,7 +11,7 @@ import sys
 import webbrowser
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -23,8 +23,19 @@ from .routers import queue as queue_router
 from .routers import run as run_router
 from .routers import settings as settings_router
 from .routers import tropy as tropy_router
+from .routers import ludwiglang as ludwiglang_router
 
 app = FastAPI(title="OCR Pipeline")
+
+
+@app.middleware("http")
+async def no_cache_static(request: Request, call_next):
+    response: Response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 app.include_router(queue_router.router)
 app.include_router(run_router.router)
@@ -34,6 +45,7 @@ app.include_router(history_router.router)
 app.include_router(analytics_router.router)
 app.include_router(tropy_router.router)
 app.include_router(pdf_export_router.router)
+app.include_router(ludwiglang_router.router)
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -125,12 +137,11 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--browser", action="store_true",
-                        help="Open in the default browser instead of a native window")
-    parser.add_argument("--port", type=int, default=None)
+    parser.add_argument("--port", type=int, default=8765,
+                        help="Port for the local server (default: 8765)")
     args = parser.parse_args()
 
-    port = args.port or _free_port()
+    port = args.port
     url = f"http://127.0.0.1:{port}"
 
     server_thread, server_errors = _start_server_thread(port)
@@ -138,35 +149,12 @@ def main() -> None:
         _report_startup_failure(port, server_thread, server_errors)
         return
 
-    use_browser = args.browser
-    if not use_browser:
-        try:
-            import webview  # noqa: F401
-        except ImportError:
-            use_browser = True
-
-    if use_browser:
-        webbrowser.open(url)
-        print(f"OCR Pipeline running at {url}  (Ctrl+C to stop)")
-        try:
-            server_thread.join()
-        except KeyboardInterrupt:
-            pass
-        return
-
-    _run_native_window(url)
-
-
-def _run_native_window(url: str) -> None:
-    import webview
-
-    from .bridge import Bridge
-
-    window = webview.create_window(
-        "OCR Pipeline", url, width=1180, height=860, min_size=(980, 700),
-        js_api=Bridge(),
-    )
-    webview.start(private_mode=False)
+    webbrowser.open(url)
+    print(f"OCR Pipeline running at {url}  (Ctrl+C to stop)")
+    try:
+        server_thread.join()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

@@ -13,21 +13,24 @@
 <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
+<a href="#panel-main" class="skip-link">Skip to content</a>
 <div class="app">
 
   <header class="masthead">
     <h1>OCR Pipeline</h1>
     <span class="tag">local-first &middot; LM Studio + Ollama</span>
+    <span class="spacer" style="flex:1;"></span>
+    <button class="theme-toggle" id="btn-theme-toggle" title="Toggle dark mode">🌙</button>
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="main">Main</button>
-    <button class="tab" data-tab="preview">Preview</button>
-    <button class="tab" data-tab="history">History</button>
-    <button class="tab" data-tab="analytics">Analytics</button>
-    <button class="tab" data-tab="settings">Settings</button>
+    <button class="tab active" data-tab="main">☰ Main</button>
+    <button class="tab" data-tab="preview">👁 Preview</button>
+    <button class="tab" data-tab="history">🕐 History</button>
+    <button class="tab" data-tab="analytics">📊 Analytics</button>
+    <button class="tab" data-tab="settings">⚙ Settings</button>
     <div class="spacer" style="flex:1;"></div>
-    <button class="tab" id="btn-palette-hint" title="Command Palette (Ctrl+K)" style="font-size:0.8rem; opacity:0.5; border-bottom:none;">
+    <button class="tab" id="btn-palette-hint" title="Command Palette (Ctrl+K)" style="font-size:0.8rem; border-bottom:none; color:var(--ink-faint);">
       <span class="kbd">Ctrl</span>+<span class="kbd">K</span>
     </button>
   </nav>
@@ -37,9 +40,10 @@
     <!-- ================================================================ MAIN -->
     <section class="panel active" id="panel-main">
 
+      <!-- Queue card -->
       <div class="card" style="margin-bottom:1rem;">
         <div class="card-head">
-          <h2>Batch Queue</h2>
+          <h2>Queue</h2>
           <span class="dim" id="queue-count">0 files</span>
         </div>
 
@@ -56,7 +60,7 @@
                 <th class="c">OCR</th>
                 <th class="c">Cleanup</th>
                 <th class="c">Translate</th>
-                <th class="c">Conf</th>
+                <th class="c" title="Quality score: how confident the AI is that it read the text correctly (0–100)">Conf</th>
                 <th class="c">Time</th>
                 <th>Status</th>
                 <th class="c" style="width:2.4rem;"></th>
@@ -79,7 +83,10 @@
           <div class="spacer"></div>
           <button class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
           <button class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
+          <button class="btn" id="btn-send-ludwiglang">Send to LudwigLang&hellip;</button>
         </div>
+
+        <div class="section-divider"></div>
 
         <div class="run-row">
           <strong style="font-size:var(--text-sm);">Stages:</strong>
@@ -97,9 +104,17 @@
           <button class="btn" id="btn-pause" disabled>&#9208; Pause</button>
           <button class="btn danger" id="btn-stop" disabled>&#9209; Stop</button>
         </div>
+      </div>
 
-        <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
-
+      <!-- Monitor card -->
+      <div class="card">
+        <div class="card-head">
+          <h2>Progress</h2>
+        </div>
+        <div class="progress-row">
+          <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+          <span class="progress-text" id="progress-value">0%</span>
+        </div>
         <div class="log" id="log"></div>
       </div>
 
@@ -176,6 +191,7 @@
           <div style="display:flex; gap:0.5rem; align-items:center;">
             <input type="text" id="history-search" placeholder="Find file&hellip;" style="padding:0.4rem 0.6rem; border-radius:6px; border:1px solid var(--rule); background:var(--paper-recessed);">
             <button class="btn" id="btn-history-refresh">Refresh</button>
+            <button class="btn" id="btn-history-send-tropy" title="Send selected document back to Tropy">Send to Tropy</button>
             <button class="btn danger" id="btn-history-delete">Delete Run</button>
           </div>
         </div>
@@ -193,7 +209,7 @@
             <h3 class="dim" style="margin:0.8rem 0 0.4rem;">Documents</h3>
             <div class="queue-wrap" style="max-height:26vh;">
               <table class="queue">
-                <thead><tr><th>File</th><th>State</th><th>Language</th><th class="c">Conf</th></tr></thead>
+                <thead><tr><th>File</th><th>State</th><th>Language</th><th class="c" title="Quality score: how confident the AI is that it read the text correctly (0–100)">Conf</th></tr></thead>
                 <tbody id="history-items-body"></tbody>
               </table>
             </div>
@@ -291,11 +307,45 @@
     <section class="panel" id="panel-settings">
       <div class="settings-grid">
         <div class="card settings-card">
-          <h3>Models &amp; Endpoints</h3>
-          <label>LM Studio URL: <input type="text" id="set-lm_studio_url"></label>
-          <label>OCR model: <input type="text" id="set-ocr_model"></label>
-          <label>Cleanup model: <input type="text" id="set-cleanup_model"></label>
-          <label>Translate model: <input type="text" id="set-translate_model"></label>
+          <h3>AI Models &amp; Connections</h3>
+          <p class="dim" style="margin:0 0 0.6rem;">Choose which service runs each step, and which model it uses.</p>
+          <label>OCR backend:
+            <select id="set-ocr_backend">
+              <option value="lm_studio">LM Studio</option>
+              <option value="ollama">Ollama</option>
+              <option value="huggingface">Hugging Face</option>
+              <option value="api_key">API Key (cloud)</option>
+            </select>
+          </label>
+          <label>OCR model: <input type="text" id="set-ocr_model" placeholder="e.g. allenai/olmocr-2-7b"></label>
+          <label>Cleanup backend:
+            <select id="set-cleanup_backend">
+              <option value="ollama">Ollama</option>
+              <option value="lm_studio">LM Studio</option>
+              <option value="huggingface">Hugging Face</option>
+              <option value="api_key">API Key (cloud)</option>
+            </select>
+          </label>
+          <label>Cleanup model: <input type="text" id="set-cleanup_model" placeholder="e.g. gemma4:12b"></label>
+          <label>Translate backend:
+            <select id="set-translate_backend">
+              <option value="ollama">Ollama</option>
+              <option value="lm_studio">LM Studio</option>
+              <option value="huggingface">Hugging Face</option>
+              <option value="api_key">API Key (cloud)</option>
+            </select>
+          </label>
+          <label>Translate model: <input type="text" id="set-translate_model" placeholder="e.g. translategemma:4b"></label>
+          <details style="margin-top:0.6rem;">
+            <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Connection settings</summary>
+            <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.4rem;">
+              <label>LM Studio URL: <input type="text" id="set-lm_studio_url" placeholder="http://localhost:1234/v1" title="Address where LM Studio is running."></label>
+              <label>Ollama URL: <input type="text" id="set-ollama_url" placeholder="http://localhost:11434" title="Base address where Ollama is running."></label>
+              <label>Hugging Face token: <input type="text" id="set-huggingface_token" placeholder="hf_xxx..." title="Your Hugging Face API token (hf_...). Required only when using Hugging Face."></label>
+              <label>API key: <input type="password" id="set-api_key" placeholder="sk-..." title="Your cloud API key. Works with any OpenAI-compatible provider (OpenAI, Together, Groq, etc.)."></label>
+              <label>API base URL: <input type="text" id="set-api_base_url" placeholder="https://api.openai.com/v1" title="The API endpoint URL. Change this for non-OpenAI providers."></label>
+            </div>
+          </details>
         </div>
         <div class="card settings-card">
           <h3>Processing</h3>
@@ -303,12 +353,17 @@
             <select id="set-document_type"></select>
           </label>
           <p class="dim" id="doc-type-hint" style="margin:0.2rem 0 0.6rem;"></p>
-          <label>Max OCR workers: <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
-          <label>Chunk max tokens: <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;"></label>
-          <label class="check"><input type="checkbox" id="set-resume"> Resume (skip existing outputs)</label>
-          <label class="check"><input type="checkbox" id="set-confidence_enabled"> Enable confidence scoring</label>
-          <label class="check"><input type="checkbox" id="set-ollama_think"> Model reasoning (slow &mdash; see README)</label>
-          <p class="dim" style="margin:0.2rem 0 0;">Reasoning costs ~13x on cleanup for no gain.</p>
+          <label>Parallel OCR readers: <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
+          <label>Resume (skip existing outputs) <input type="checkbox" id="set-resume"></label>
+          <label>Enable confidence scoring <input type="checkbox" id="set-confidence_enabled"></label>
+          <details style="margin-top:0.6rem;">
+            <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>
+            <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.4rem;">
+              <label>Max text chunk size: <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;" title="How much text the AI processes at once. Leave at default unless you have a reason to change it."></label>
+              <label><input type="checkbox" id="set-ollama_think"> Think step-by-step (slow &mdash; not recommended)</label>
+              <p class="dim" style="margin:0;">Much slower with no visible improvement.</p>
+            </div>
+          </details>
         </div>
         <div class="card settings-card" style="grid-column: 1 / -1;">
           <h3>Run Templates</h3>
@@ -327,11 +382,16 @@
           <span id="template-status" class="dim" style="margin-top:0.4rem; display:inline-block;"></span>
         </div>
         <div class="card settings-card" style="grid-column: 1 / -1;">
-          <h3>Service Health</h3>
+          <h3>Connection Status</h3>
           <div id="health-panel" class="health-panel">
-            <p class="dim">Press "Run pre-flight check" to test LM Studio and Ollama.</p>
+            <p class="dim">Press "Check Connections" to verify your local AI helpers are running.</p>
           </div>
-          <button class="btn" id="btn-preflight" style="margin-top:0.7rem;">Run pre-flight check</button>
+          <button class="btn" id="btn-preflight" style="margin-top:0.7rem;">Check Connections</button>
+        </div>
+        <div class="card settings-card" style="grid-column: 1 / -1;">
+          <h3>Onboarding &amp; Guide</h3>
+          <p class="dim" style="margin:0 0 0.6rem;">Review the first-run orientation tips and feature guide.</p>
+          <button class="btn" id="btn-retrigger-onboarding">Show Onboarding Guide</button>
         </div>
       </div>
       <div class="run-row" style="padding-left:0;">
@@ -354,6 +414,7 @@
 <div class="modal-backdrop hidden" id="modal-tropy-add">
   <div class="modal" style="width:min(820px, 94vw);">
     <h3>Add from Tropy</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
     <p class="dim">The project is opened read-only &mdash; nothing here can modify it.</p>
     <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
       <select id="tropy-project" class="select" style="flex:1;"></select>
@@ -381,6 +442,7 @@
 <div class="modal-backdrop hidden" id="modal-compile-pdf">
   <div class="modal" style="width:min(640px, 94vw);">
     <h3>Compile PDF</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
     <p class="dim">Compile processed text files from a folder into one continuous reading PDF.</p>
 
     <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
@@ -436,7 +498,15 @@
 <div class="modal-backdrop hidden" id="modal-tropy-send">
   <div class="modal" style="width:min(820px, 94vw);">
     <h3>Send results to Tropy</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
     <p class="dim">Only documents added via "Add from Tropy&hellip;" can be sent. Nothing is written until you press Write.</p>
+
+    <div id="send-tropy-history-detail" class="hidden" style="margin-bottom:0.6rem; padding:0.5rem; background:var(--paper-recessed); border-radius:6px;">
+      <div class="dim" style="margin-bottom:0.3rem;">Sending from History:</div>
+      <div><strong>Item:</strong> <span id="send-tropy-history-name"></span></div>
+      <div><strong>Photo:</strong> <span id="send-tropy-history-photo"></span></div>
+      <div><strong>Page:</strong> <span id="send-tropy-history-page"></span></div>
+    </div>
 
     <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
       <select id="send-tropy-project" class="select" style="flex:1;"></select>
@@ -466,10 +536,59 @@
   </div>
 </div>
 
+<!-- LudwigLang: export as .md -->
+<div class="modal-backdrop hidden" id="modal-ludwiglang">
+  <div class="modal" style="width:min(640px, 94vw);">
+    <h3>Send to LudwigLang</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
+    <p class="dim">Export a processed collection for LudwigLang's Import page.</p>
+
+    <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+      <select id="ll-collection" class="select" style="flex:1;">
+        <option value="">-- Select a collection --</option>
+      </select>
+      <button class="btn" id="btn-ll-refresh">Refresh</button>
+    </div>
+
+    <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+      <label>Medium:
+        <select id="ll-medium">
+          <option value="print">Print</option>
+          <option value="typed">Typed</option>
+          <option value="handwritten">Handwritten</option>
+        </select>
+      </label>
+      <label>Author:
+        <input type="text" id="ll-author" class="input" style="width:12rem;" placeholder="(auto-detected if blank)">
+      </label>
+      <label>Date:
+        <input type="text" id="ll-date" class="input" style="width:8rem;" placeholder="(auto-detected if blank)">
+      </label>
+    </div>
+
+    <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+      <label class="check"><input type="checkbox" id="ll-page-markers"> Page markers (-- N --)</label>
+      <label class="check"><input type="checkbox" id="ll-skip-language-gate"> Skip language check</label>
+    </div>
+
+    <div id="ll-preview-area" style="max-height:26vh; overflow:auto; background:var(--paper-recessed); border-radius:var(--radius); padding:0.6rem; margin-bottom:0.6rem;">
+      <p class="dim">Select a collection above to export.</p>
+    </div>
+
+    <p id="ll-status" class="dim"></p>
+
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <button class="btn" id="btn-ll-close">Close</button>
+      <button class="btn accent" id="btn-ll-export" disabled>Export &amp; Download</button>
+    </div>
+  </div>
+</div>
+
 <!-- Batch correct dialog -->
 <div class="modal-backdrop hidden" id="modal-batch-correct">
   <div class="modal" style="width:min(480px, 94vw);">
     <h3>Batch Correct</h3>
+    <button class="modal-close" data-modal-close>&times;</button>
     <p class="dim" style="margin-bottom:0.6rem;">Apply a find/replace correction to all items or selected items in the queue.</p>
 
     <div style="display:flex; flex-direction:column; gap:0.5rem;">
@@ -517,9 +636,9 @@
 <script src="/static/js/preview.js"></script>
 <script src="/static/js/history.js"></script>
 <script src="/static/js/analytics.js"></script>
+<script src="/static/js/ludwiglang.js"></script>
 <script src="/static/js/settings.js"></script>
 
-<!-- Theme toggle (bottom-right) -->
-<button class="theme-toggle" id="btn-theme-toggle" title="Toggle dark mode">🌙</button>
+  
 </body>
 </html>

@@ -1,4 +1,9 @@
-"""Compile processed .txt files into a PDF — threaded, with live progress."""
+"""Compile processed text into one PDF — batch-first, threaded, live progress.
+
+The batch source is the queue: the current selection, or the whole run when
+nothing is selected (main_view passes the stems in).  A folder of .txt files
+remains available as an alternative source for ad-hoc exports.
+"""
 
 import os
 import queue
@@ -29,12 +34,12 @@ STYLE_CHOICES = [
 ]
 
 
-def _derive_output_folder(item) -> str | None:
+def _derive_output_folder(item, output_dir: str = "output") -> str | None:
     """Try to guess the output text folder for a queue item.
 
     Matches patterns like:
-      output/cleaned/text/<Item Title>/page.txt  (Tropy item)
-      output/cleaned/text/page.txt               (single file)
+      <output_dir>/cleaned/text/<Item Title>/page.txt  (Tropy item)
+      <output_dir>/cleaned/text/page.txt               (single file)
     Returns the containing folder path or None.
     """
     stem = getattr(item, "stem", None)
@@ -50,7 +55,7 @@ def _derive_output_folder(item) -> str | None:
         item_dir = None
 
     for stage_dir, _ in STAGE_CHOICES:
-        candidate = Path("output") / stage_dir / "text"
+        candidate = Path(output_dir) / stage_dir / "text"
         if item_dir:
             full = candidate / item_dir
         else:
@@ -63,15 +68,17 @@ def _derive_output_folder(item) -> str | None:
 class PdfExportDialog(tk.Toplevel):
     """Modal dialog for compiling processed text into a PDF.
 
-    Threading: runs pdf_export.compile() in a daemon thread, drains progress
-    onto the tk main loop via a queue.Queue + self.after() polling loop —
-    the same pattern App.gui/app.py uses for JobRunner events.
+    Threading: runs pdf_export.compile()/compile_batch() in a daemon thread,
+    drains progress onto the tk main loop via a queue.Queue + self.after()
+    polling loop — the same pattern App.gui/app.py uses for JobRunner events.
     """
 
-    def __init__(self, master, *, default_folder: str | None = None):
+    def __init__(self, master, *, default_folder: str | None = None,
+                 batch_stems: list[str] | None = None,
+                 output_dir: str = "output"):
         super().__init__(master)
         self.title("Compile PDF")
-        self.geometry("720x540")
+        self.geometry("720x560")
         self.minsize(620, 420)
         self.configure(bg=theme.BG)
         self.transient(master)
@@ -79,6 +86,8 @@ class PdfExportDialog(tk.Toplevel):
         self.queue: queue.Queue = queue.Queue()
         self.result_path: str | None = None
         self._thread: threading.Thread | None = None
+        self.batch_stems = batch_stems or []
+        self.output_dir = output_dir
 
         self._build(default_folder)
 
@@ -88,14 +97,36 @@ class PdfExportDialog(tk.Toplevel):
     # ---------------------------------------------------------------- layout
     def _build(self, default_folder: str | None):
         pad = 14
-        row = ttk.Frame(self)
-        row.pack(fill=tk.X, padx=pad, pady=(12, 0))
+        has_batch = bool(self.batch_stems)
 
-        ttk.Label(row, text="Folder:", font=theme.FONT_BOLD).pack(side=tk.LEFT)
+        # Source: queue batch vs folder
+        src = ttk.Frame(self)
+        src.pack(fill=tk.X, padx=pad, pady=(12, 0))
+
+        self.source_var = tk.StringVar(value="batch" if has_batch else "folder")
+        self.batch_radio = ttk.Radiobutton(
+            src, variable=self.source_var, value="batch",
+            text=f"Queue batch ({len(self.batch_stems)} item(s)) → one combined PDF",
+            command=self._on_source_change,
+        )
+        self.batch_radio.pack(anchor=tk.W)
+        if not has_batch:
+            self.batch_radio.configure(state=tk.DISABLED)
+
+        folder_row = ttk.Frame(src)
+        folder_row.pack(fill=tk.X, pady=(6, 0))
+        self.folder_radio = ttk.Radiobutton(
+            folder_row, variable=self.source_var, value="folder",
+            text="Folder:", command=self._on_source_change,
+        )
+        self.folder_radio.pack(side=tk.LEFT)
         self.folder_var = tk.StringVar(value=default_folder or "")
-        self.folder_entry = ttk.Entry(row, textvariable=self.folder_var, width=50)
+        self.folder_entry = ttk.Entry(
+            folder_row, textvariable=self.folder_var, width=46)
         self.folder_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 6))
-        ttk.Button(row, text="Browse…", command=self._browse_folder).pack(side=tk.LEFT)
+        self.folder_browse = ttk.Button(
+            folder_row, text="Browse…", command=self._browse_folder)
+        self.folder_browse.pack(side=tk.LEFT)
 
         # Stage + Structure row
         opts = ttk.Frame(self)
@@ -109,14 +140,22 @@ class PdfExportDialog(tk.Toplevel):
         )
         stage_combo.pack(side=tk.LEFT, padx=(8, 0))
 
-        self.var_structure = tk.BooleanVar(value=True)
+        # Structuring makes one model call per page — opt-in for batches,
+        # default-on only for single-folder exports (previous behaviour).
+        self.var_structure = tk.BooleanVar(value=not has_batch)
         ttk.Checkbutton(
-            opts, text="Structure text", variable=self.var_structure,
+            opts, text="Structure text (one model call per page)",
+            variable=self.var_structure,
         ).pack(side=tk.LEFT, padx=(20, 0))
 
-        # Format + Style row
-        fmt_row = ttk.Frame(self)
-        fmt_row.pack(fill=tk.X, padx=pad, pady=(10, 0))
+        # Advanced (format + style), hidden by default
+        self.advanced_btn = ttk.Button(
+            self, text="Advanced ▸", command=self._toggle_advanced)
+        self.advanced_btn.pack(anchor=tk.W, padx=pad, pady=(8, 0))
+
+        self.advanced = ttk.Frame(self)
+        fmt_row = ttk.Frame(self.advanced)
+        fmt_row.pack(fill=tk.X, pady=(2, 0))
 
         ttk.Label(fmt_row, text="Format:", font=theme.FONT_BOLD).pack(side=tk.LEFT)
         self.format_var = tk.StringVar(value=FORMAT_CHOICES[0][1])
@@ -134,19 +173,25 @@ class PdfExportDialog(tk.Toplevel):
         )
         style_combo.pack(side=tk.LEFT, padx=(8, 0))
 
-        # Output path
+        # Output path — pre-filled for batch exports so the destination is
+        # visible before starting (timestamped: no silent overwrite).
         out_row = ttk.Frame(self)
         out_row.pack(fill=tk.X, padx=pad, pady=(10, 0))
 
-        ttk.Label(out_row, text="Output PDF:", font=theme.FONT_BOLD).pack(side=tk.LEFT)
-        self.output_var = tk.StringVar(value="")
+        ttk.Label(out_row, text="Output:", font=theme.FONT_BOLD).pack(side=tk.LEFT)
+        self.output_var = tk.StringVar(value=self._default_output())
         ttk.Entry(out_row, textvariable=self.output_var, width=50).pack(
             side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 6))
         ttk.Button(out_row, text="Browse…", command=self._browse_output).pack(side=tk.LEFT)
 
         # Status
+        if has_batch:
+            initial = (f"Ready — {len(self.batch_stems)} queue item(s) will be "
+                       "compiled into one PDF.")
+        else:
+            initial = "Choose a folder of processed .txt files, then press Compile."
         self.status = ttk.Label(
-            self, text="Choose a folder of processed .txt files, then press Compile.",
+            self, text=initial,
             style="Dim.TLabel", wraplength=660, justify=tk.LEFT,
         )
         self.status.pack(anchor=tk.W, padx=pad, pady=(10, 0))
@@ -183,6 +228,32 @@ class PdfExportDialog(tk.Toplevel):
             command=self._start_compile,
         )
         self.compile_btn.pack(side=tk.RIGHT)
+
+        self._on_source_change()
+
+    # ------------------------------------------------------- source / layout
+    def _on_source_change(self):
+        folder_mode = self.source_var.get() == "folder"
+        state = tk.NORMAL if folder_mode else tk.DISABLED
+        self.folder_entry.configure(state=state)
+        self.folder_browse.configure(state=state)
+
+    def _toggle_advanced(self):
+        if self.advanced.winfo_ismapped():
+            self.advanced.pack_forget()
+            self.advanced_btn.configure(text="Advanced ▸")
+        else:
+            # Reveal directly under its button, above the output row.
+            self.advanced.pack(fill=tk.X, padx=14, pady=(2, 0),
+                               after=self.advanced_btn)
+            self.advanced_btn.configure(text="Advanced ▾")
+
+    def _default_output(self) -> str:
+        if not self.batch_stems:
+            return ""
+        from ... import pdf_export
+        return str(pdf_export.default_batch_output(
+            self.batch_stems, output_dir=self.output_dir))
 
     # ---------------------------------------------------------- file dialogs
     def _browse_folder(self):
@@ -221,13 +292,14 @@ class PdfExportDialog(tk.Toplevel):
         return next((k for k, v in STYLE_CHOICES if v == label), "readable")
 
     def _start_compile(self):
-        folder = self.folder_var.get().strip()
-        if not folder:
-            messagebox.showwarning("No folder", "Choose a folder of processed .txt files first.")
-            return
-        if not Path(folder).exists():
-            messagebox.showerror("Folder not found", f"Folder does not exist:\n{folder}")
-            return
+        if self.source_var.get() == "folder":
+            folder = self.folder_var.get().strip()
+            if not folder:
+                messagebox.showwarning("No folder", "Choose a folder of processed .txt files first.")
+                return
+            if not Path(folder).exists():
+                messagebox.showerror("Folder not found", f"Folder does not exist:\n{folder}")
+                return
 
         self.compile_btn.configure(state=tk.DISABLED)
         self.open_btn.configure(state=tk.DISABLED)
@@ -240,21 +312,32 @@ class PdfExportDialog(tk.Toplevel):
         self.after(POLL_MS, self._pump)
 
     def _run(self):
-        """Run compile() in the background thread."""
+        """Run compile()/compile_batch() in the background thread."""
         from ... import pdf_export
 
-        folder = self.folder_var.get().strip()
         output = self.output_var.get().strip() or None
         try:
-            result = pdf_export.compile(
-                folder,
-                stage=self._stage(),
-                structure=self.var_structure.get(),
-                output=output,
-                format=self._format(),
-                style=self._style(),
-                on_progress=lambda msg: self.queue.put(("log", msg)),
-            )
+            if self.source_var.get() == "batch":
+                result = pdf_export.compile_batch(
+                    self.batch_stems,
+                    output_dir=self.output_dir,
+                    stage=self._stage(),
+                    structure=self.var_structure.get(),
+                    output=output,
+                    format=self._format(),
+                    style=self._style(),
+                    on_progress=lambda msg: self.queue.put(("log", msg)),
+                )
+            else:
+                result = pdf_export.compile(
+                    self.folder_var.get().strip(),
+                    stage=self._stage(),
+                    structure=self.var_structure.get(),
+                    output=output,
+                    format=self._format(),
+                    style=self._style(),
+                    on_progress=lambda msg: self.queue.put(("log", msg)),
+                )
             self.queue.put(("done", str(result)))
         except Exception as exc:
             self.queue.put(("error", str(exc)))
@@ -265,7 +348,10 @@ class PdfExportDialog(tk.Toplevel):
             while True:
                 kind, payload = self.queue.get_nowait()
                 if kind == "log":
-                    tag = "warning" if "Guard rejected" in payload else ""
+                    tag = "warning" if (
+                        "Guard rejected" in payload
+                        or payload.startswith("Skipped")
+                    ) else ""
                     self._log(payload, tag)
                 elif kind == "done":
                     self.result_path = payload

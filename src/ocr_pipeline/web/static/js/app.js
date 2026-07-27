@@ -3,12 +3,9 @@
  * over plain POSTs, live progress over one persistent EventSource (SSE).
  *
  * File paths: a browser <input type=file> or drag-and-drop never exposes a
- * real filesystem path (that's a deliberate browser security boundary), which
- * is exactly the problem noted when this port was proposed. Inside the
- * pywebview shell, `window.pywebview.api.browse_files()` opens a native
- * dialog and returns real paths. Without pywebview (a plain browser tab, for
- * quick iteration) this falls back to `prompt()` for a typed path — crude,
- * but honest about what a browser can and cannot do on its own.
+ * real filesystem path (that's a deliberate browser security boundary).
+ * The app falls back to `prompt()` for a typed path — crude, but honest
+ * about what a browser can and cannot do on its own.
  */
 
 const STATE_GLYPH = {
@@ -22,8 +19,8 @@ const els = {};
 ["queue-body", "queue-count", "dropzone", "log", "output-dir",
  "btn-browse-files", "btn-add-folder", "btn-remove",
  "btn-clear", "btn-skip", "btn-retry", "btn-browse-output",
- "btn-run", "btn-pause", "btn-stop", "progress-bar", "status-text",
- "stage-text", "stage-ocr", "stage-cleanup", "stage-translate", "stage-force",
+ "btn-run", "btn-pause", "btn-stop", "progress-bar", "progress-value",
+ "status-text", "stage-text", "stage-ocr", "stage-cleanup", "stage-translate", "stage-force",
 ].forEach(id => {
   els[id] = document.getElementById(id);
 });
@@ -32,8 +29,6 @@ let items = new Map();   // id -> item dict, insertion order preserved
 let selected = new Set();
 let running = false;
 let lastClickedId = null;  // for Shift+click range selection
-
-const isNative = () => !!window.pywebview;
 
 // Tabs register a callback here (`TAB_ACTIVATE.history = fn`) to load or
 // refresh their content only when the user actually switches to them.
@@ -55,6 +50,14 @@ async function api(method, path, body) {
 }
 
 // -------------------------------------------------------------------- queue
+
+// Strip Python exception class names and other technical prefixes from error
+// messages so non-technical users see something they can act on.
+function friendlyError(err) {
+  let msg = (err && err.message) || String(err);
+  msg = msg.replace(/^(ConnectionError|TimeoutError|FileNotFoundError|OSError|RuntimeError|ValueError|JSONDecodeError|HTTPError|RequestException):\s*/i, "");
+  return msg;
+}
 
 function setQueue(list) {
   items = new Map(list.map(it => [it.id, it]));
@@ -225,18 +228,14 @@ async function refreshQueue() {
 // -------------------------------------------------------------- adding files
 
 async function pickFiles() {
-  if (isNative()) return (await window.pywebview.api.browse_files()) || [];
-  const raw = prompt("Enter an absolute file path (browser mode has no native file dialog):");
+  const raw = prompt("Enter a full file path (e.g. C:\\Users\\you\\Documents\\scan.jpg):");
   return raw ? [raw] : [];
 }
 
 async function pickFolder(kind) {
-  if (isNative()) {
-    const method = kind === "output" ? "browse_output_dir"
-                 : kind === "tropy" ? "browse_tropy_project" : "browse_folder";
-    return await window.pywebview.api[method]();
-  }
-  return prompt("Enter an absolute folder path (browser mode has no native picker):");
+  const label = kind === "output" ? "output directory"
+             : kind === "tropy" ? "Tropy project" : "folder";
+  return prompt(`Enter a full ${label} path (e.g. C:\\Users\\you\\Documents):`);
 }
 
 async function addPaths(paths) {
@@ -259,10 +258,8 @@ els["dropzone"].addEventListener("click", () => els["btn-browse-files"].click())
   els["dropzone"].addEventListener(evt, e => { e.preventDefault(); els["dropzone"].classList.remove("drag"); }));
 els["dropzone"].addEventListener("drop", () => {
   // A browser drop event carries File objects, never a filesystem path, so
-  // there is nothing usable to send here outside the native shell.
-  if (!isNative()) {
-    log("Drag-and-drop needs the native window (browsers don't expose real file paths) — use Browse Files instead.", "warning");
-  }
+  // there is nothing usable to send here — use Browse Files instead.
+  log("Drag-and-drop isn't supported in the browser — use Browse Files instead.", "warning");
 });
 
 els["btn-remove"].onclick = async () => {
@@ -291,7 +288,10 @@ function setRunning(isRunning) {
   els["btn-run"].disabled = isRunning;
   els["btn-pause"].disabled = !isRunning;
   els["btn-stop"].disabled = !isRunning;
-  if (!isRunning) els["btn-pause"].textContent = "⏸ Pause";
+  if (!isRunning) {
+    els["btn-pause"].textContent = "⏸ Pause";
+    els["progress-bar"].classList.remove("active");
+  }
 }
 
 function applyRunStatus(status) {
@@ -305,7 +305,7 @@ els["btn-run"].onclick = async () => {
   if (els["stage-cleanup"].checked) stages.push("cleanup");
   if (els["stage-translate"].checked) stages.push("translate");
   if (!items.size) { log("Add at least one document first.", "warning"); return; }
-  if (!stages.length) { log("Enable at least one pipeline stage.", "warning"); return; }
+  if (!stages.length) { log("Enable at least one step (OCR, Cleanup, or Translate).", "warning"); return; }
 
   try {
     await api("POST", "/api/run/start", {
@@ -314,8 +314,10 @@ els["btn-run"].onclick = async () => {
     });
     setRunning(true);
     els["progress-bar"].style.width = "0%";
+    const pv = els["progress-value"];
+    if (pv) pv.textContent = "0%";
   } catch (err) {
-    log(`Could not start: ${err.message}`, "error");
+    log(`Could not start: ${friendlyError(err)}`, "error");
   }
 };
 
@@ -326,7 +328,7 @@ els["btn-pause"].onclick = async () => {
 };
 els["btn-stop"].onclick = async () => {
   await api("POST", "/api/run/cancel");
-  els["status-text"].textContent = "Stopping — waiting for in-flight requests…";
+    els["status-text"].textContent = "Stopping — finishing current work…";
 };
 
 // ---------------------------------------------------------------------- log
@@ -352,7 +354,11 @@ function updateProgress() {
   const total = items.size;
   const finished = [...items.values()]
     .filter(i => ["done", "failed", "skipped", "cancelled"].includes(i.state)).length;
-  els["progress-bar"].style.width = total ? `${(finished / total) * 100}%` : "0%";
+  const pct = total ? Math.round((finished / total) * 100) : 0;
+  els["progress-bar"].style.width = `${pct}%`;
+  els["progress-bar"].classList.toggle("active", running && pct < 100 && pct > 0);
+  const pv = els["progress-value"];
+  if (pv) pv.textContent = running && pct < 100 ? `${pct}%` : pct === 100 ? "Done" : "0%";
   if (running) {
     let text = `Running — ${finished}/${total}`;
     if (startTime && finishedCount > 0) {
@@ -365,6 +371,8 @@ function updateProgress() {
       }
     }
     els["status-text"].textContent = text;
+  } else {
+    els["progress-bar"].classList.remove("active");
   }
 }
 
@@ -407,6 +415,8 @@ function connectEvents() {
         els["stage-text"].textContent = "";
         els["status-text"].textContent =
           `Done — ${p.done ?? 0} ok` + (p.failed ? `, ${p.failed} failed` : "");
+        const pv = els["progress-value"];
+        if (pv) pv.textContent = "Done";
         refreshQueue();
         break;
       }
@@ -513,7 +523,7 @@ function wireOriginalToggles(container) {
     if (!originalText) return; // nothing to show
 
     const showingOriginal = btn.classList.toggle("showing-original");
-    btn.textContent = showingOriginal ? "Edited" : "Original";
+    btn.textContent = showingOriginal ? "Back to Edit" : "View Original";
 
     if (textarea) {
       // Editable pane: swap textarea value
@@ -616,6 +626,11 @@ els["btn-browse-output"].onclick = async () => {
   try {
     const cfg = await api("GET", "/api/config");
     if (cfg.output_dir) els["output-dir"].value = cfg.output_dir;
+    // If user previously dismissed onboarding, sync that to localStorage
+    // so the onboarding overlay (loaded next) won't reappear.
+    if (cfg.onboarding_dismissed) {
+      localStorage.setItem("ocr_onboarding_dismissed", "1");
+    }
   } catch { /* config is optional at startup */ }
   await refreshQueue();
   connectEvents();
@@ -659,6 +674,38 @@ window.ThemeToggle = ThemeToggle;
 
 document.getElementById("btn-palette-hint")?.addEventListener("click", () => {
   window.Palette?.open();
+});
+
+// ---------------------------------------------------- keyboard shortcuts
+
+document.addEventListener("keydown", (e) => {
+  const tag = e.target.tagName;
+  const inInput = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+
+  // Escape closes modals
+  if (e.key === "Escape") {
+    document.querySelectorAll(".modal-backdrop:not(.hidden)").forEach(m => m.classList.add("hidden"));
+  }
+
+  // Ctrl+Enter / Cmd+Enter runs pipeline
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    e.preventDefault();
+    if (!els["btn-run"].disabled) els["btn-run"].click();
+  }
+
+  // Delete removes selected items (when not in a text input)
+  if (e.key === "Delete" && !inInput) {
+    if (selected.size && !running) els["btn-remove"].click();
+  }
+
+  // 1-5 switches tabs (when not in an input)
+  if (!inInput && !e.ctrlKey && !e.metaKey) {
+    const num = parseInt(e.key, 10);
+    if (num >= 1 && num <= 5) {
+      const tabs = document.querySelectorAll(".tab[data-tab]");
+      if (tabs[num - 1]) tabs[num - 1].click();
+    }
+  }
 });
 
 // -------------------------------------------------------- column visibility
@@ -823,8 +870,8 @@ const BatchCorrect = (function () {
       statusEl.textContent = `Applied to ${result.updated} text(s) across ${result.items.length} item(s).`;
       log(`Batch correct applied: "${find}" -> "${replace}" (${result.updated} change(s))`, "accent");
     } catch (err) {
-      statusEl.textContent = `Error: ${err.message}`;
-      log(`Batch correct failed: ${err.message}`, "error");
+      statusEl.textContent = `Error: ${friendlyError(err)}`;
+      log(`Batch correct failed: ${friendlyError(err)}`, "error");
     } finally {
       btnApply.textContent = label;
       btnApply.disabled = false;
@@ -878,6 +925,7 @@ const BatchCorrect = (function () {
   btnDelete.addEventListener("click", deleteTemplate);
   btnApply.addEventListener("click", apply);
   btnClose.addEventListener("click", close);
+  modal?.querySelector("[data-modal-close]")?.addEventListener("click", close);
   // Close on backdrop click
   modal?.addEventListener("click", (e) => { if (e.target === modal) close(); });
 

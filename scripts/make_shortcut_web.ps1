@@ -8,11 +8,6 @@
     frontend. Drag the result onto your Desktop, or pass -Desktop to place a
     copy there directly.
 
-    Interpreter choice prefers one that also has pywebview, since that is what
-    gives a native window instead of opening your default browser; the web
-    build still runs without it (add --browser, or let the launcher fall back
-    on its own), same policy as the desktop build's tkinterdnd2 preference.
-
     Re-run this after moving the project or reinstalling Python: the shortcut
     stores an absolute path to the interpreter, which the launcher cannot
     repair by itself once it is gone.
@@ -41,7 +36,6 @@ if (-not (Test-Path $launcher)) {
 # launch_ocr_pipeline_web.pyw's REQUIRED tuple. No tkinterdnd2: the web build
 # has no tkinter drop zone to need it.
 $required = "fastapi, uvicorn, openai, ollama, yaml, fitz"
-$preferred = "$required, webview"
 
 $candidates = @()
 try {
@@ -72,15 +66,9 @@ function Test-Imports([string]$Exe, [string]$Modules) {
 
 $chosen = $null
 foreach ($exe in $candidates) {
-    if (Test-Imports $exe $preferred) { $chosen = $exe; break }
-}
-if (-not $chosen) {
-    foreach ($exe in $candidates) {
-        if (Test-Imports $exe $required) {
-            $chosen = $exe
-            Write-Warning "No interpreter has pywebview - the shortcut will open your default browser instead of a native window (still fully functional)."
-            break
-        }
+    if (Test-Imports $exe $required) {
+        $chosen = $exe
+        break
     }
 }
 if (-not $chosen) {

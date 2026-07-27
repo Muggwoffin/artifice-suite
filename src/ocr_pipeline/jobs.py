@@ -332,7 +332,7 @@ class JobRunner:
             data = fn()
         except Exception as exc:
             status.state = State.FAILED
-            status.error = f"{exc.__class__.__name__}: {exc}"
+            status.error = str(exc)
             item.error = status.error
             log.warning("%s failed for %s: %s", STAGE_LABELS[stage], item.name, exc)
             self._emit(

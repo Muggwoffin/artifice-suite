@@ -1,0 +1,163 @@
+"""Unified backend abstraction for LLMs (Ollama, LM Studio, Hugging Face)."""
+
+import logging
+from typing import Any
+import ollama
+from openai import OpenAI
+from huggingface_hub import InferenceClient
+from . import config
+
+logger = logging.getLogger(__name__)
+
+_THINK_UNSUPPORTED_HINTS = (
+    "does not support thinking",
+    "thinking is not supported",
+    "unknown field",
+    "unexpected keyword argument",
+    "think",
+)
+
+
+def _is_think_unsupported(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return any(hint in msg for hint in _THINK_UNSUPPORTED_HINTS)
+
+
+class _SimpleMessage:
+    def __init__(self, content: str):
+        self.content = content
+
+
+class _SimpleResponse:
+    def __init__(self, content: str):
+        self.message = _SimpleMessage(content)
+
+
+class OllamaBackend:
+    def chat(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float = 0.0,
+        think: bool | None = None,
+        num_predict: int | None = None,
+    ) -> Any:
+        host = config.get("ollama_url") or "http://localhost:11434"
+        ollama.host = host
+        options: dict[str, Any] = {"temperature": temperature}
+        if num_predict is not None:
+            options["num_predict"] = num_predict
+
+        kwargs: dict[str, Any] = {"model": model, "messages": messages, "options": options}
+        if think is not None:
+            kwargs["think"] = think
+
+        if think is None:
+            return ollama.chat(**kwargs)
+
+        try:
+            return ollama.chat(**kwargs)
+        except Exception as exc:
+            if _is_think_unsupported(exc):
+                logger.debug(
+                    "Ollama model '%s' rejected think parameter (%s); retrying without.",
+                    model,
+                    exc,
+                )
+                kwargs.pop("think", None)
+                return ollama.chat(**kwargs)
+            raise
+
+
+class LMStudioBackend:
+    def chat(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float = 0.0,
+        think: bool | None = None,
+        num_predict: int | None = None,
+    ) -> Any:
+        base_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+        client = OpenAI(base_url=base_url, api_key="lm-studio")
+        kwargs: dict[str, Any] = {}
+        if num_predict is not None:
+            kwargs["max_tokens"] = num_predict
+
+        resp = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            **kwargs,
+        )
+        content = resp.choices[0].message.content or ""
+        return _SimpleResponse(content)
+
+
+class HuggingFaceBackend:
+    def chat(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float = 0.0,
+        think: bool | None = None,
+        num_predict: int | None = None,
+    ) -> Any:
+        token = config.get("huggingface_token") or None
+        client = InferenceClient(token=token)
+        kwargs: dict[str, Any] = {}
+        if num_predict is not None:
+            kwargs["max_tokens"] = num_predict
+
+        resp = client.chat_completion(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            **kwargs,
+        )
+        content = resp.choices[0].message.content or ""
+        return _SimpleResponse(content)
+
+
+class ApiKeyBackend:
+    """Any OpenAI-compatible cloud API (OpenAI, Together, Groq, etc.)."""
+
+    def chat(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float = 0.0,
+        think: bool | None = None,
+        num_predict: int | None = None,
+    ) -> Any:
+        base_url = config.get("api_base_url") or "https://api.openai.com/v1"
+        api_key = config.get("api_key") or ""
+        client = OpenAI(base_url=base_url, api_key=api_key)
+        kwargs: dict[str, Any] = {}
+        if num_predict is not None:
+            kwargs["max_tokens"] = num_predict
+
+        resp = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            **kwargs,
+        )
+        content = resp.choices[0].message.content or ""
+        return _SimpleResponse(content)
+
+
+def get_client(backend: str) -> Any:
+    b = (backend or "ollama").lower()
+    if b == "lm_studio":
+        return LMStudioBackend()
+    elif b == "huggingface":
+        return HuggingFaceBackend()
+    elif b == "api_key":
+        return ApiKeyBackend()
+    else:
+        return OllamaBackend()

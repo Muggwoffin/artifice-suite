@@ -69,13 +69,8 @@ async function browsePdfFolder() {
 }
 
 async function browsePdfOutput() {
-  if (isNative()) {
-    const path = await window.pywebview.api.browse_save_file("pdf");
-    if (path) pdfEls["pdf-output"].value = path;
-  } else {
-    const path = prompt("Enter an absolute output PDF path (browser mode):");
-    if (path) pdfEls["pdf-output"].value = path;
-  }
+  const path = prompt("Enter where to save the PDF (e.g. C:\\Users\\you\\Documents\\output.pdf):");
+  if (path) pdfEls["pdf-output"].value = path;
 }
 
 // --------------------------------------------------------- start / download
@@ -141,6 +136,7 @@ async function downloadPdf() {
 
 pdfEls["btn-compile-pdf"].onclick = openPdfExport;
 pdfEls["btn-pdf-close"].onclick = closePdfExport;
+pdfEls["modal-compile-pdf"].querySelector("[data-modal-close]")?.addEventListener("click", closePdfExport);
 pdfEls["btn-pdf-start"].onclick = startPdfExport;
 pdfEls["btn-pdf-download"].onclick = downloadPdf;
 pdfEls["btn-pdf-browse-folder"].onclick = browsePdfFolder;

@@ -305,6 +305,25 @@ const HistoryTab = (function () {
 
   document.getElementById("btn-history-refresh").onclick = refresh;
   document.getElementById("btn-history-delete").onclick = deleteSelectedRun;
+  document.getElementById("btn-history-send-tropy").onclick = async () => {
+    if (!currentItemId) { if (window.Toast) Toast.warning("Select a document first."); return; }
+    try {
+      const data = await api("GET", `/api/history/items/${currentItemId}`);
+      if (!data.photo_id) {
+        if (window.Toast) Toast.warning("This document was not added from Tropy — no photo to send to.");
+        return;
+      }
+      openTropySend({
+        itemIds: [currentItemId],
+        project: data.tropy_project_path || "",
+        name: data.name,
+        photoTitle: data.tropy_item_title || "",
+        page: data.page,
+      });
+    } catch (err) {
+      if (window.Toast) Toast.error(`Could not load item: ${err.message}`);
+    }
+  };
   if (btnSaveRaw) btnSaveRaw.addEventListener("click", () => savePaneText("raw"));
   if (btnSaveCleaned) btnSaveCleaned.addEventListener("click", () => savePaneText("cleaned"));
   if (btnSaveTranslated) btnSaveTranslated.addEventListener("click", () => savePaneText("translated"));

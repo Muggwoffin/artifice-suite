@@ -15,7 +15,7 @@ from src.ocr_pipeline.config import get as cfg
 log = get_logger("cleanup")
 
 
-@retry(max_attempts=4, base_delay=1.0, label="Ollama cleanup")
+@retry(max_attempts=4, base_delay=1.0, label="Cleanup")
 def _call_cleanup_chunk(
     raw_text: str,
     system_prompt: str,
@@ -24,9 +24,10 @@ def _call_cleanup_chunk(
     """Clean up a single chunk of text."""
     user_prompt = user_template.replace("{raw_text}", raw_text)
     model = cfg("cleanup_model")
+    backend = cfg("cleanup_backend") or "ollama"
 
     response = _llm.chat(
-        ollama.chat,
+        backend=backend,
         model=model,
         messages=[
             {"role": "system", "content": system_prompt},
@@ -117,7 +118,7 @@ def perform(
         "stage": "cleaned",
         "raw_text": raw_text,
         "cleaned_text": cleaned_text,
-        "engine": "ollama",
+        "engine": cfg("cleanup_backend") or "ollama",
         "model": model,
         "system_prompt": system_prompt,
         "document_type": doc_type,

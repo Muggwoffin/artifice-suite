@@ -1,15 +1,9 @@
-"""Windowed launcher for the OCR Pipeline web frontend (spike).
+"""Windowed launcher for the OCR Pipeline web frontend.
 
 Mirrors `launch_ocr_pipeline.pyw` — same self-healing interpreter search, same
 "log and show a dialog rather than vanish silently" discipline, because a
 `.pyw` process has no console to reveal a crash on. See that file for why each
 piece exists; only the dependency list and the entry point differ here.
-
-Preference order for how the UI is shown:
-  1. A native pywebview window — native file/folder dialogs, no browser chrome.
-  2. The system's default browser — used automatically if pywebview isn't
-     installed, or forced with --browser. The server works identically either
-     way; only the file/folder pickers change (native dialog vs. typing a path).
 """
 
 import os
@@ -24,7 +18,6 @@ LOG = Path.home() / ".ocr_pipeline" / "launcher_web.log"
 # Same core deps the pipeline itself needs, plus the web stack. `tkinterdnd2`
 # is deliberately absent — the web build has no tkinter drop zone to need it.
 REQUIRED = ("fastapi", "uvicorn", "openai", "ollama", "yaml", "fitz")
-PREFERRED = ("webview",)  # native windowing; falls back to the browser without it
 
 SENTINEL = "OCR_PIPELINE_WEB_LAUNCHER_REEXEC"
 
@@ -154,17 +147,6 @@ def main() -> int:
 
         _log(f"Re-launching with {replacement} (missing: {', '.join(missing)})")
         return _relaunch(replacement, extra_args)
-
-    # pywebview is a nicety (native dialogs); missing it means the browser
-    # fallback, not a hard failure — same policy as tkinterdnd2 in the desktop
-    # launcher.
-    if not already_switched and "--browser" not in extra_args and _missing(PREFERRED):
-        better = _find_interpreter(REQUIRED + PREFERRED)
-        if better is not None:
-            _log(f"Re-launching with {better} for the native window")
-            return _relaunch(better, extra_args)
-        _log("pywebview unavailable — falling back to the browser")
-        extra_args = [*extra_args, "--browser"]
 
     from src.ocr_pipeline.web.server import main as web_main
 

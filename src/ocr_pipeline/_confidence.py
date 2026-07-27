@@ -91,6 +91,7 @@ def _heuristic_score(text: str) -> tuple[int, list[str]]:
 def _call_self_assessment(source_text: str, output_text: str) -> dict[str, Any]:
     """Ask the LLM to rate its own confidence."""
     model = cfg("translate_model")
+    backend = cfg("translate_backend") or "ollama"
     prompt = _SELF_ASSESSMENT_PROMPT.format(
         source_text=source_text[:1000],
         output_text=output_text[:1000],
@@ -99,7 +100,7 @@ def _call_self_assessment(source_text: str, output_text: str) -> dict[str, Any]:
     from src.ocr_pipeline import _llm
 
     response = _llm.chat(
-        ollama.chat,
+        backend=backend,
         model=model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0,

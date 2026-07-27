@@ -50,6 +50,10 @@ CREATE TABLE IF NOT EXISTS run_items (
     page        INTEGER,
     edited      INTEGER NOT NULL DEFAULT 0,
     edited_at   TEXT,
+    photo_id        INTEGER,
+    tropy_item_id   INTEGER,
+    tropy_item_title TEXT,
+    tropy_project_path TEXT,
     created     TEXT NOT NULL
 );
 
@@ -67,6 +71,10 @@ _MIGRATED_COLUMNS = {
     "original_raw_text": "TEXT",
     "original_cleaned_text": "TEXT",
     "original_translated_text": "TEXT",
+    "photo_id": "INTEGER",
+    "tropy_item_id": "INTEGER",
+    "tropy_item_title": "TEXT",
+    "tropy_project_path": "TEXT",
 }
 
 
@@ -141,13 +149,15 @@ class HistoryStore:
             for name, s in item.stages.items()
         })
         results = item.results
+        src = item.source or {}
         with self._lock:
             self._conn.execute(
                 """INSERT INTO run_items
                    (run_id, source_file, name, state, language, confidence,
                     error, stage_json, raw_text, cleaned_text, translated_text,
-                    page, created)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    page, photo_id, tropy_item_id, tropy_item_title,
+                    tropy_project_path, created)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     run_id, item.path, item.name, item.state.value, item.language,
                     item.confidence, item.error, stage_json,
@@ -155,6 +165,10 @@ class HistoryStore:
                     (results.get("cleaned") or {}).get("cleaned_text"),
                     (results.get("translated") or {}).get("translated_text"),
                     item.page,
+                    src.get("photo_id"),
+                    src.get("item_id"),
+                    src.get("item_title"),
+                    src.get("project_path"),
                     _now(),
                 ),
             )

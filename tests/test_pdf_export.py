@@ -5,6 +5,7 @@ end-to-end PDF rendering.
 """
 
 import json
+import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -757,3 +758,324 @@ def test_compile_bilingual_skips_structure_by_default(tmp_path):
         )
         mock_chat.assert_not_called()
     assert result.exists()
+
+
+# --------------------------------------------------------------------------- #
+# _find_manifest normalisation
+# --------------------------------------------------------------------------- #
+
+def test_find_manifest_normalises_nested_pages(tmp_path):
+    """Real manifests nest entries under a top-level "pages" key."""
+    from src.ocr_pipeline import pdf_export
+
+    manifest = {
+        "project": "Archive.tropy",
+        "output_layout": "by-item",
+        "pages": {
+            "Item A/page_p0001": {"item_title": "Item A", "page_number": 1},
+        },
+    }
+    (tmp_path / "tropy_manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8")
+
+    found = pdf_export._find_manifest(tmp_path)
+
+    assert found == {
+        "Item A/page_p0001": {"item_title": "Item A", "page_number": 1},
+    }
+
+
+def test_find_manifest_accepts_flat_schema(tmp_path):
+    """A flat stem->entry manifest (older/synthetic) stays as-is."""
+    from src.ocr_pipeline import pdf_export
+
+    manifest = {
+        "Item A/page_p0001": {"item_title": "Item A", "page_number": 1},
+    }
+    (tmp_path / "tropy_manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8")
+
+    found = pdf_export._find_manifest(tmp_path)
+
+    assert found == manifest
+
+
+# --------------------------------------------------------------------------- #
+# collect_stems (batch export)
+# --------------------------------------------------------------------------- #
+
+def test_collect_stems_flat_no_manifest(tmp_path):
+    """Flat stems collect from <output_dir>/<stage>/text/ directly."""
+    from src.ocr_pipeline import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "page1.txt").write_text("First page text")
+    (text_dir / "page2.txt").write_text("Second page text")
+
+    pages, skipped = pdf_export.collect_stems(
+        ["page1", "page2"], output_dir=str(tmp_path))
+
+    assert skipped == []
+    assert [p.stem for p in pages] == ["page1", "page2"]
+    assert pages[0].text == "First page text"
+    assert pages[0].label == "page1"
+    assert pages[0].section is None
+
+
+def test_collect_stems_with_nested_manifest(tmp_path):
+    """Manifest supplies item_title/page_number/section; caller order kept."""
+    from src.ocr_pipeline import pdf_export
+
+    item_dir = tmp_path / "cleaned" / "text" / "Item A"
+    item_dir.mkdir(parents=True)
+    (item_dir / "page_p0001.txt").write_text("First page")
+    (item_dir / "page_p0002.txt").write_text("Second page")
+
+    manifest = {
+        "project": "x",
+        "pages": {
+            "Item A/page_p0001": {"item_title": "Item A", "page_number": 1},
+            "Item A/page_p0002": {"item_title": "Item A", "page_number": 2},
+        },
+    }
+    (tmp_path / "tropy_manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8")
+
+    pages, skipped = pdf_export.collect_stems(
+        ["Item A/page_p0002", "Item A/page_p0001"], output_dir=str(tmp_path))
+
+    assert skipped == []
+    # Caller (queue) order preserved, not manifest page order
+    assert [p.page_number for p in pages] == [2, 1]
+    assert pages[0].item_title == "Item A"
+    assert pages[0].section == "Item A"
+    assert pages[0].label == "page_p0002"
+    assert pages[0].stem == "Item A/page_p0002"
+
+
+def test_collect_stems_skips_missing_and_dedupes(tmp_path):
+    """Missing outputs are reported as skipped; duplicate stems collapse."""
+    from src.ocr_pipeline import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "one.txt").write_text("First")
+
+    pages, skipped = pdf_export.collect_stems(
+        ["one", "missing", "one"], output_dir=str(tmp_path))
+
+    assert [p.stem for p in pages] == ["one"]
+    assert skipped == ["missing"]
+
+
+def test_collect_stems_stage_fallback(tmp_path):
+    """A stem with only raw OCR output still collects, via fallback."""
+    from src.ocr_pipeline import pdf_export
+
+    raw_dir = tmp_path / "raw_ocr" / "text"
+    raw_dir.mkdir(parents=True)
+    (raw_dir / "page1.txt").write_text("Raw text")
+
+    pages, skipped = pdf_export.collect_stems(
+        ["page1"], output_dir=str(tmp_path), stage="cleaned")
+
+    assert skipped == []
+    assert pages[0].text == "Raw text"
+
+
+# --------------------------------------------------------------------------- #
+# default_batch_output
+# --------------------------------------------------------------------------- #
+
+def test_default_batch_output_single_item_name():
+    """A batch entirely inside one item is named after that item."""
+    from src.ocr_pipeline import pdf_export
+
+    p = pdf_export.default_batch_output(
+        ["Item A/p1", "Item A/p2"], output_dir="out")
+
+    assert p.parent == Path("out")
+    assert re.fullmatch(r"Item A-\d{8}-\d{4}\.pdf", p.name)
+
+
+def test_default_batch_output_mixed_or_flat_is_batch():
+    """Mixed items and flat stems fall back to the generic 'batch' name."""
+    from src.ocr_pipeline import pdf_export
+
+    mixed = pdf_export.default_batch_output(["A/p1", "B/p1"], output_dir="out")
+    flat = pdf_export.default_batch_output(["page1", "page2"], output_dir="out")
+
+    assert re.fullmatch(r"batch-\d{8}-\d{4}\.pdf", mixed.name)
+    assert re.fullmatch(r"batch-\d{8}-\d{4}\.pdf", flat.name)
+
+
+def test_default_batch_output_md_extension_and_sanitising():
+    """Markdown gets .md; Windows-hostile characters are stripped."""
+    from src.ocr_pipeline import pdf_export
+
+    md = pdf_export.default_batch_output(["Item A/p1"], output_dir="out", format="md")
+    hostile = pdf_export.default_batch_output(['Item: A?/p1'], output_dir="out")
+
+    assert md.name.endswith(".md")
+    assert ":" not in hostile.name and "?" not in hostile.name
+
+
+# --------------------------------------------------------------------------- #
+# compile_batch
+# --------------------------------------------------------------------------- #
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_compile_batch_end_to_end(mock_chat, tmp_path):
+    """Two items combine into one PDF with per-item section headings."""
+    import fitz
+    from src.ocr_pipeline import pdf_export
+
+    for item, words in (("Item A", "Alpha Absatz"), ("Item B", "Beta Absatz")):
+        d = tmp_path / "cleaned" / "text" / item
+        d.mkdir(parents=True)
+        (d / "scan.txt").write_text(f"{words} steht hier.")
+
+    output_path = tmp_path / "combined.pdf"
+    progress = []
+    result = pdf_export.compile_batch(
+        ["Item A/scan", "Item B/scan"],
+        output_dir=str(tmp_path),
+        output=str(output_path),
+        on_progress=lambda msg: progress.append(msg),
+    )
+
+    assert result == output_path
+    assert result.exists()
+    mock_chat.assert_not_called()  # structure defaults to off
+
+    doc = fitz.open(str(output_path))
+    full_text = "".join(p.get_text() for p in doc)
+    doc.close()
+
+    assert "Alpha Absatz" in full_text
+    assert "Beta Absatz" in full_text
+    assert "Item A" in full_text  # section headings
+    assert "Item B" in full_text
+    assert any("Skipped" not in m for m in progress)  # nothing to skip here
+    assert any("Done" in m for m in progress)
+
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_compile_batch_reports_skipped(mock_chat, tmp_path):
+    """Items without processed text are skipped and reported, not fatal."""
+    from src.ocr_pipeline import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "done.txt").write_text("Finished text.")
+
+    progress = []
+    result = pdf_export.compile_batch(
+        ["done", "not_processed"],
+        output_dir=str(tmp_path),
+        output=str(tmp_path / "out.pdf"),
+        on_progress=lambda msg: progress.append(msg),
+    )
+
+    assert result.exists()
+    assert any("Skipped 1 item(s)" in m and "not_processed" in m
+               for m in progress)
+    mock_chat.assert_not_called()
+
+
+def test_compile_batch_raises_when_nothing_processed(tmp_path):
+    """compile_batch raises ValueError when no stem has any output."""
+    from src.ocr_pipeline import pdf_export
+
+    with pytest.raises(ValueError, match="No pages found"):
+        pdf_export.compile_batch(["ghost"], output_dir=str(tmp_path))
+
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_compile_batch_default_output_is_timestamped(mock_chat, tmp_path):
+    """With output=None the PDF lands in output_dir with a timestamped name."""
+    from src.ocr_pipeline import pdf_export
+
+    item_dir = tmp_path / "cleaned" / "text" / "Item A"
+    item_dir.mkdir(parents=True)
+    (item_dir / "scan.txt").write_text("Some text.")
+
+    result = pdf_export.compile_batch(["Item A/scan"], output_dir=str(tmp_path))
+
+    assert result.parent == tmp_path
+    assert re.fullmatch(r"Item A-\d{8}-\d{4}\.pdf", result.name)
+    assert result.exists()
+    mock_chat.assert_not_called()
+
+
+@patch("src.ocr_pipeline.stages.structure.ollama.chat")
+def test_compile_batch_structure_cache_isolated_per_item(mock_chat, tmp_path):
+    """Regression: items sharing a page filename must not collide in the
+    structured-text resume cache (previously keyed by bare filename stem)."""
+    import fitz
+    from src.ocr_pipeline import pdf_export
+
+    for item, word in (("Item A", "Alphawort"), ("Item B", "Betawort")):
+        d = tmp_path / "cleaned" / "text" / item
+        d.mkdir(parents=True)
+        (d / "scan.txt").write_text(f"{word} steht hier.")
+
+    def side_effect(*args, **kwargs):
+        for msg in kwargs.get("messages", []):
+            if msg["role"] == "user":
+                # Whitespace-only change so the guard accepts it
+                return MagicMock(
+                    message=MagicMock(
+                        content=msg["content"].replace(" steht", "\n\nsteht")))
+        return MagicMock(message=MagicMock(content=""))
+
+    mock_chat.side_effect = side_effect
+    config.apply_overrides({"resume": True})
+    try:
+        result = pdf_export.compile_batch(
+            ["Item A/scan", "Item B/scan"],
+            output_dir=str(tmp_path),
+            structure=True,
+            output=str(tmp_path / "out.pdf"),
+        )
+    finally:
+        config.reset()
+
+    # Each item gets its own cache entry under its own subfolder
+    cache_a = tmp_path / "structured" / "text" / "Item A" / "scan.txt"
+    cache_b = tmp_path / "structured" / "text" / "Item B" / "scan.txt"
+    assert cache_a.exists() and cache_b.exists()
+    assert "Alphawort" in cache_a.read_text(encoding="utf-8")
+    assert "Betawort" in cache_b.read_text(encoding="utf-8")
+
+    # And the PDF carries each item's own words — no cross-contamination
+    doc = fitz.open(str(result))
+    full_text = "".join(p.get_text() for p in doc)
+    doc.close()
+    assert "Alphawort" in full_text
+    assert "Betawort" in full_text
+
+
+def test_collect_folder_stems_use_manifest_keys(tmp_path):
+    """collect_folder populates PageText.stem from the full manifest key, so
+    the structure cache is collision-free for folder-mode exports too."""
+    from src.ocr_pipeline import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text" / "Item A"
+    text_dir.mkdir(parents=True)
+    (text_dir / "scan.txt").write_text("Page text")
+
+    manifest = {
+        "pages": {
+            "Item A/scan": {"item_title": "Item A", "page_number": 1},
+        },
+    }
+    (tmp_path / "tropy_manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8")
+
+    pages = pdf_export.collect_folder(str(text_dir), stage="cleaned")
+
+    assert len(pages) == 1
+    assert pages[0].stem == "Item A/scan"
+    assert pages[0].page_number == 1

@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException
 from ..models import (
     TropyAddRequest,
     TropyBrowseRequest,
+    TropySendHistoryRequest,
+    TropySendHistoryWriteRequest,
     TropySendRequest,
     TropySendWriteRequest,
 )
@@ -55,7 +57,7 @@ def tropy_add(req: TropyAddRequest) -> dict:
         with TropyProject(req.project) as proj:
             pages = proj.pages(req.item_ids)
             missing = [p.label for p in proj.missing_assets(pages)]
-            items = pages_to_job_items(pages)
+            items = pages_to_job_items(pages, project_path=proj.db_path)
             try:
                 write_manifest(req.output_dir, proj, pages)
             except Exception:
@@ -105,6 +107,92 @@ def tropy_send_write(req: TropySendWriteRequest) -> dict:
 
     try:
         preview = _build_tropy_preview(req)
+        if preview.blockers:
+            raise HTTPException(status_code=409, detail="; ".join(preview.blockers))
+        with TropyWriter(req.project) as writer:
+            report = writer.write(preview, make_backup=req.make_backup)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if report.errors:
+        raise HTTPException(status_code=500, detail="; ".join(report.errors))
+
+    return {
+        "written": report.written,
+        "skipped": report.skipped,
+        "backup": str(report.backup) if report.backup else None,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# History‑based send (items already processed, stored in history DB)
+# --------------------------------------------------------------------------- #
+
+_TEXT_COLUMNS = {
+    "raw_ocr": "raw_text",
+    "cleaned": "cleaned_text",
+    "translated": "translated_text",
+}
+
+
+def _entries_from_history_items(item_ids: list[int], stage: str):
+    """Build WriteEntry list from history DB rows."""
+    from ...tropy_write import WriteEntry
+
+    text_col = _TEXT_COLUMNS.get(stage, "cleaned_text")
+    entries = []
+    for item_id in item_ids:
+        row = state.history.get_item(item_id)
+        if row is None:
+            continue
+        photo_id = row["photo_id"]
+        if photo_id is None:
+            continue
+        entries.append(WriteEntry(
+            photo_id=photo_id,
+            text=row[text_col] or "",
+            label=row["name"] or f"item {row['item_id']}",
+            language=row["language"] or "",
+            stage=stage,
+        ))
+    return entries
+
+
+def _build_tropy_history_preview(req: TropySendHistoryRequest):
+    from ...tropy_write import TropyWriter
+
+    entries = _entries_from_history_items(req.item_ids, stage=req.stage)
+    with TropyWriter(req.project) as writer:
+        return writer.preview(entries, req.targets)
+
+
+@router.post("/api/tropy/send/history/preview")
+def tropy_send_history_preview(req: TropySendHistoryRequest) -> dict:
+    try:
+        preview = _build_tropy_history_preview(req)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "blockers": preview.blockers,
+        "summary": preview.summary(),
+        "insertable": len(preview.insertable),
+        "plans": [
+            {"label": p.entry.label or f"photo {p.entry.photo_id}",
+             "target": p.target, "action": p.action, "reason": p.reason}
+            for p in preview.plans
+        ],
+    }
+
+
+@router.post("/api/tropy/send/history/write")
+def tropy_send_history_write(req: TropySendHistoryWriteRequest) -> dict:
+    from ...tropy_write import TropyWriter
+
+    try:
+        preview = _build_tropy_history_preview(req)
         if preview.blockers:
             raise HTTPException(status_code=409, detail="; ".join(preview.blockers))
         with TropyWriter(req.project) as writer:

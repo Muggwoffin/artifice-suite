@@ -12,6 +12,7 @@ import itertools
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -165,12 +166,21 @@ def _get_styles(style: PDFStyle | None = None):
 
 @dataclass
 class PageText:
-    """One page of processed text destined for the PDF."""
+    """One page of processed text destined for the PDF.
+
+    `stem` is the pipeline stem relative to the stage text dir (forward
+    slashes) — e.g. "Item Title/page_p0002" for Tropy pages, "page" for flat
+    files.  It keys the structured-text resume cache, so it must stay unique
+    per page within an output dir.  `section` groups pages under a heading
+    when several items are combined into one PDF (batch export).
+    """
     label: str
     text: str
     source_path: Path
     page_number: int | None = None
     item_title: str | None = None
+    stem: str | None = None
+    section: str | None = None
 
 
 @dataclass
@@ -199,12 +209,26 @@ def _natural_sort_key(s: str) -> list:
 # Collect pages
 # ---------------------------------------------------------------------------
 
+def _load_manifest(path: Path) -> dict | None:
+    """Load a manifest, normalising to the page-entry mapping.
+
+    Real manifests written by tropy_write.write_manifest() nest the entries
+    under a top-level "pages" key (alongside "project"/"output_layout");
+    older/synthetic manifests are a flat stem->entry mapping.  Both shapes
+    are accepted and returned as the flat mapping.
+    """
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict) and isinstance(data.get("pages"), dict):
+        return data["pages"]
+    return data
+
+
 def _find_manifest(folder: Path, explicit_path: str | None = None) -> dict | None:
     """Find tropy_manifest.json in the folder's parent chain or explicit path."""
     if explicit_path:
         p = Path(explicit_path)
         if p.exists():
-            return json.loads(p.read_text(encoding="utf-8"))
+            return _load_manifest(p)
         log.warning("Explicit manifest path not found: %s", explicit_path)
         return None
 
@@ -213,7 +237,7 @@ def _find_manifest(folder: Path, explicit_path: str | None = None) -> dict | Non
     for _ in range(10):  # safety limit
         manifest_path = current / "tropy_manifest.json"
         if manifest_path.exists():
-            return json.loads(manifest_path.read_text(encoding="utf-8"))
+            return _load_manifest(manifest_path)
         parent = current.parent
         if parent == current:
             break
@@ -296,16 +320,22 @@ def collect_folder(
 
         for txt_path in txt_files:
             file_stem = txt_path.stem
+            rel_stem = txt_path.relative_to(primary_dir).with_suffix("").as_posix()
 
             # Try exact stem match first, then try to find in manifest by filename
             entry = stem_to_entry.get(file_stem)
+            matched_key = None
 
             # If not found, try matching by the last part of any manifest key
             if entry is None:
                 for key, e in manifest.items():
                     if key.endswith(f"/{file_stem}") or Path(key).stem == file_stem:
                         entry = e
+                        matched_key = key
                         break
+            else:
+                matched_key = next(
+                    (k for k, e in manifest.items() if e is entry), None)
 
             if entry:
                 pages.append(PageText(
@@ -314,12 +344,17 @@ def collect_folder(
                     source_path=txt_path,
                     page_number=entry.get("page_number"),
                     item_title=entry.get("item_title"),
+                    # The full manifest key ("Item/page") is the true pipeline
+                    # stem — unique per page, so the structure cache cannot
+                    # collide across items sharing a page filename.
+                    stem=matched_key or rel_stem,
                 ))
             else:
                 pages.append(PageText(
                     label=txt_path.stem,
                     text=txt_path.read_text(encoding="utf-8"),
                     source_path=txt_path,
+                    stem=rel_stem,
                 ))
 
         # Sort by page_number (None goes last)
@@ -343,10 +378,92 @@ def collect_folder(
                 label=txt_path.stem,
                 text=txt_path.read_text(encoding="utf-8"),
                 source_path=txt_path,
+                stem=txt_path.relative_to(primary_dir).with_suffix("").as_posix(),
             ))
 
     log.info("Collected %d page(s) from %s", len(pages), folder)
     return pages
+
+
+# ---------------------------------------------------------------------------
+# Collect pages by stem (batch export)
+# ---------------------------------------------------------------------------
+
+def collect_stems(
+    stems: list[str],
+    *,
+    output_dir: str = "output",
+    stage: str = "cleaned",
+    manifest_path: str | None = None,
+) -> tuple[list[PageText], list[str]]:
+    """Collect specific pages by pipeline stem — the batch the queue knows.
+
+    Each stem maps to ``<output_dir>/<stage>/text/<stem>.txt``; the usual
+    stage fallback order applies per page.  Stems keep caller (queue) order
+    and are deduplicated.  Pages with no processed text in any stage are
+    skipped and returned in the second element of the tuple — never
+    silently dropped.
+
+    Returns ``(pages, skipped_stems)``.
+    """
+    output_path = Path(output_dir)
+    manifest = _find_manifest(output_path, manifest_path)
+
+    stem_to_entry: dict[str, dict] = {}
+    if manifest:
+        for key, entry in manifest.items():
+            stem_to_entry[key] = entry
+            stem_to_entry.setdefault(Path(key).stem, entry)
+
+    stage_dirs = _stage_fallback_order(stage)
+    pages: list[PageText] = []
+    skipped: list[str] = []
+    stage_counts: dict[str, int] = {}
+    seen: set[str] = set()
+
+    for stem in stems:
+        if stem in seen:
+            continue
+        seen.add(stem)
+
+        txt_path = None
+        stage_used = None
+        for s in stage_dirs:
+            candidate = output_path / s / "text" / f"{stem}.txt"
+            if candidate.exists():
+                txt_path = candidate
+                stage_used = s
+                break
+
+        if txt_path is None:
+            skipped.append(stem)
+            continue
+
+        stage_counts[stage_used] = stage_counts.get(stage_used, 0) + 1
+        entry = stem_to_entry.get(stem) or stem_to_entry.get(Path(stem).stem)
+        item_title = entry.get("item_title") if entry else None
+
+        pages.append(PageText(
+            label=Path(stem).name,
+            text=txt_path.read_text(encoding="utf-8"),
+            source_path=txt_path,
+            page_number=entry.get("page_number") if entry else None,
+            item_title=item_title,
+            stem=stem,
+            section=item_title or (stem.split("/")[0] if "/" in stem else None),
+        ))
+
+    if skipped:
+        log.info("Skipped %d stem(s) with no processed text: %s",
+                 len(skipped), ", ".join(skipped[:5]))
+    if len(stage_counts) > 1:
+        # The stage fallback mixed sources — make it visible which stage
+        # the pages actually came from.
+        mix = ", ".join(f"{s}: {n}" for s, n in sorted(stage_counts.items()))
+        log.info("Collected pages from mixed stages (%s)", mix)
+    log.info("Collected %d page(s) from %d stem(s) in %s",
+             len(pages), len(seen), output_dir)
+    return pages, skipped
 
 
 # ---------------------------------------------------------------------------
@@ -454,6 +571,7 @@ def structure_pages(
     pages: list[PageText],
     on_progress: Callable[[str], None] | None = None,
     on_rejected: Callable[[str], None] | None = None,
+    output_dir: str = "output",
 ) -> list[PageText]:
     """Run the structure stage on each page.
 
@@ -461,6 +579,10 @@ def structure_pages(
     `on_progress(message)` is called once per page with a status message.
     `on_rejected(label)` is called once per page whose guard rejected.
     Returns a new list with structured text.
+
+    `output_dir` and each page's `stem` key the structured-text resume
+    cache — passing the full pipeline stem ("Item/page") keeps items whose
+    pages share a filename from colliding in the cache.
     """
     on_progress = on_progress or (lambda msg: None)
     on_rejected = on_rejected or (lambda label: None)
@@ -476,6 +598,8 @@ def structure_pages(
         result = structure.perform(
             page.text,
             source_file=str(page.source_path),
+            output_dir=output_dir,
+            stem=page.stem,
         )
         guard_ok = result.get("guard", {}).get("ok", True)
         if not guard_ok:
@@ -486,6 +610,8 @@ def structure_pages(
             source_path=page.source_path,
             page_number=page.page_number,
             item_title=page.item_title,
+            stem=page.stem,
+            section=page.section,
         ))
 
     return structured
@@ -620,6 +746,100 @@ def compile(
 
 
 # ---------------------------------------------------------------------------
+# Batch compile (queue selection / whole run -> one combined PDF)
+# ---------------------------------------------------------------------------
+
+def _safe_filename(name: str) -> str:
+    """Strip characters Windows forbids in filenames."""
+    return re.sub(r'[<>:"/\\|?*]', "_", name).strip() or "batch"
+
+
+def default_batch_output(
+    stems: list[str],
+    *,
+    output_dir: str = "output",
+    format: str = "pdf",
+) -> Path:
+    """Timestamped default output path for a batch export.
+
+    Named after the single common item folder when every stem shares one,
+    else "batch".  The timestamp keeps repeated exports from silently
+    overwriting each other.
+    """
+    tops = {s.split("/")[0] for s in stems if "/" in s}
+    name = tops.pop() if len(tops) == 1 and all("/" in s for s in stems) else "batch"
+    stamp = datetime.now().strftime("%Y%m%d-%H%M")
+    ext = ".md" if format == "md" else ".pdf"
+    return Path(output_dir) / f"{_safe_filename(name)}-{stamp}{ext}"
+
+
+def compile_batch(
+    stems: list[str],
+    *,
+    output_dir: str = "output",
+    stage: str = "cleaned",
+    structure: bool = False,
+    output: str | Path | None = None,
+    format: str = "pdf",
+    style: str = "readable",
+    manifest_path: str | None = None,
+    on_progress: Callable[[str], None] | None = None,
+) -> Path:
+    """Compile a batch of pages (by pipeline stem) into one combined PDF.
+
+    This is the queue-driven counterpart of ``compile()``: the batch is what
+    the user selected (or the whole run), not a folder on disk.  Pages are
+    grouped under per-item section headings in a single continuous document.
+
+    ``structure`` defaults to False — the structuring pass makes one model
+    call per page, so batch export is verbatim concatenation unless the
+    caller opts in.
+    """
+    on_progress = on_progress or (lambda msg: None)
+
+    on_progress(f"Collecting {len(stems)} item(s) from {output_dir}...")
+    pages, skipped = collect_stems(
+        stems, output_dir=output_dir, stage=stage, manifest_path=manifest_path)
+    if skipped:
+        shown = ", ".join(skipped[:5]) + ("..." if len(skipped) > 5 else "")
+        on_progress(f"Skipped {len(skipped)} item(s) with no processed text: {shown}")
+    if not pages:
+        raise ValueError("No pages found — none of the selected items have processed text")
+    on_progress(f"Found {len(pages)} page(s)")
+
+    rejected: list[str] = []
+    if structure:
+        pages = structure_pages(
+            pages, on_progress=on_progress,
+            on_rejected=lambda l: rejected.append(l),
+            output_dir=output_dir,
+        )
+
+    # A single shared item title makes a good document title; a mixed batch
+    # relies on its section headings instead.
+    titles = {p.item_title for p in pages if p.item_title}
+    title = titles.pop() if len(titles) == 1 else None
+
+    if output is None:
+        output_path = default_batch_output(stems, output_dir=output_dir, format=format)
+    else:
+        output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if format == "md":
+        on_progress("Rendering Markdown...")
+        result_path = render_markdown(pages, output_path, title=title)
+    else:
+        on_progress("Rendering PDF...")
+        result_path = render_pdf(pages, output_path, title=title, style=style)
+
+    if rejected:
+        on_progress(f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept")
+    on_progress(f"Done: {len(pages)} page(s) -> {result_path}")
+    return result_path
+
+
+# ---------------------------------------------------------------------------
 # Render PDF
 # ---------------------------------------------------------------------------
 
@@ -657,7 +877,14 @@ def render_pdf(
         story.append(PageBreak())
 
     # Pages
+    current_section = None
     for i, page in enumerate(pages):
+        # Section heading when a combined batch moves to a new item
+        page_section = getattr(page, "section", None)
+        if page_section and page_section != current_section:
+            current_section = page_section
+            story.append(Paragraph(_escape_html(current_section), heading_style))
+
         # Provenance marker at the top of each page section
         if style_obj.show_provenance:
             provenance = f"[{page.label}]"
@@ -715,8 +942,15 @@ def render_markdown(
         lines.append(f"# {title}")
         lines.append("")
 
+    current_section = None
     for i, page in enumerate(pages):
-        lines.append(f"## Page {i + 1}")
+        page_section = getattr(page, "section", None)
+        if page_section and page_section != current_section:
+            current_section = page_section
+            lines.append(f"## {current_section}")
+            lines.append("")
+
+        lines.append(f"### Page {i + 1}")
         lines.append("")
         lines.append(f"[{page.label}]")
         lines.append("")

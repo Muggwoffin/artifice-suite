@@ -62,11 +62,39 @@ class SettingsView(ttk.Frame):
                         style="Card.TCheckbutton").pack(anchor=tk.W, pady=3)
 
     def _build_models(self, parent):
-        card = self._card(parent, "Models & Endpoints", col=0, row=0)
-        self._entry_row(card, "LM Studio URL:", "lm_studio_url")
+        card = self._card(parent, "Models & Connections", col=0, row=0)
+        ttk.Label(card, text="Choose which service runs each step, and which model it uses.",
+                  style="Card.TLabel", foreground=theme.FG_DIM,
+                  font=theme.FONT_SMALL).pack(anchor=tk.W, pady=(0, 6))
+
+        self._combo_row(card, "OCR backend:", "ocr_backend",
+                        ["lm_studio", "ollama", "huggingface", "api_key"])
         self._entry_row(card, "OCR model:", "ocr_model")
+        self._combo_row(card, "Cleanup backend:", "cleanup_backend",
+                        ["ollama", "lm_studio", "huggingface", "api_key"])
         self._entry_row(card, "Cleanup model:", "cleanup_model")
+        self._combo_row(card, "Translate backend:", "translate_backend",
+                        ["ollama", "lm_studio", "huggingface", "api_key"])
         self._entry_row(card, "Translate model:", "translate_model")
+
+        ttk.Separator(card, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(8, 6))
+        ttk.Label(card, text="Connection settings", style="Card.TLabel",
+                  font=theme.FONT_SMALL, foreground=theme.FG_DIM).pack(anchor=tk.W)
+        self._entry_row(card, "LM Studio URL:", "lm_studio_url")
+        self._entry_row(card, "Ollama URL:", "ollama_url")
+        self._entry_row(card, "HF token:", "huggingface_token")
+        self._entry_row(card, "API key:", "api_key")
+        self._entry_row(card, "API base URL:", "api_base_url")
+
+    def _combo_row(self, parent, label: str, key: str, values: list[str]):
+        row = ttk.Frame(parent, style="Card.TFrame")
+        row.pack(fill=tk.X, pady=3)
+        ttk.Label(row, text=label, style="Card.TLabel", width=17,
+                  anchor=tk.W).pack(side=tk.LEFT)
+        var = tk.StringVar()
+        self.vars[key] = var
+        ttk.Combobox(row, textvariable=var, values=values,
+                     state="readonly", width=20).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
     def _build_processing(self, parent):
         card = self._card(parent, "Processing", col=1, row=0)
@@ -200,26 +228,57 @@ class SettingsView(ttk.Frame):
         from ...utils import check_lm_studio, check_ollama
 
         self.apply_to_config()
+        backends = {
+            cfg("ocr_backend") or "lm_studio",
+            cfg("cleanup_backend") or "ollama",
+            cfg("translate_backend") or "ollama",
+        }
         lines: list[tuple[str, str]] = []
 
-        lm_err = check_lm_studio()
-        lines.append(
-            (f"LM Studio   FAIL  {lm_err}", "fail") if lm_err
-            else (f"LM Studio   OK    {cfg('lm_studio_url')}", "ok")
-        )
+        if "lm_studio" in backends:
+            lm_err = check_lm_studio(cfg("lm_studio_url"))
+            lines.append(
+                (f"LM Studio   FAIL  {lm_err}", "fail") if lm_err
+                else (f"LM Studio   OK    {cfg('lm_studio_url')}", "ok")
+            )
 
-        models = [cfg("cleanup_model"), cfg("translate_model")]
-        errors = check_ollama(models)
-        if any("Cannot reach" in e for e in errors):
-            lines.append((f"Ollama      FAIL  {errors[0]}", "fail"))
-        else:
-            lines.append(("Ollama      OK", "ok"))
-            for model in models:
-                err = next((e for e in errors if model in e), None)
-                lines.append(
-                    (f"Model       FAIL  {model}", "fail") if err
-                    else (f"Model       OK    {model}", "ok")
-                )
+        if "ollama" in backends:
+            models = [cfg("ocr_model"), cfg("cleanup_model"), cfg("translate_model")]
+            ollama_url = cfg("ollama_url")
+            errors = check_ollama(models, url=ollama_url)
+            if any("Cannot reach" in e for e in errors):
+                lines.append((f"Ollama      FAIL  {errors[0]}", "fail"))
+            else:
+                lines.append(("Ollama      OK", "ok"))
+                for model in models:
+                    if not model:
+                        continue
+                    err = next((e for e in errors if model in e), None)
+                    lines.append(
+                        (f"  Model     FAIL  {model}", "fail") if err
+                        else (f"  Model     OK    {model}", "ok")
+                    )
+
+        if "huggingface" in backends:
+            token = cfg("huggingface_token")
+            lines.append(
+                ("Hugging Face   FAIL  No token configured", "fail") if not token
+                else ("Hugging Face   OK", "ok")
+            )
+
+        if "api_key" in backends:
+            api_key = cfg("api_key")
+            base_url = cfg("api_base_url") or "https://api.openai.com/v1"
+            if not api_key:
+                lines.append(("API Key      FAIL  No key configured", "fail"))
+            else:
+                try:
+                    from openai import OpenAI
+                    client = OpenAI(base_url=base_url, api_key=api_key)
+                    client.models.list()
+                    lines.append((f"API Key      OK    {base_url}", "ok"))
+                except Exception as exc:
+                    lines.append((f"API Key      FAIL  {exc}", "fail"))
 
         self.after(0, lambda: self._set_health(lines))
 

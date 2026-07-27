@@ -36,7 +36,7 @@ const Palette = (function () {
       // Settings
       { label: "Save Settings", icon: "💾", action: () => document.getElementById("btn-settings-save")?.click() },
       { label: "Reset Settings", icon: "↺", action: () => document.getElementById("btn-settings-reset")?.click() },
-      { label: "Run Pre-flight Check", icon: "🏥", action: () => document.getElementById("btn-preflight")?.click() },
+      { label: "Check Connections", icon: "🏥", action: () => document.getElementById("btn-preflight")?.click() },
       // Toggle theme
       { label: "Toggle Dark Mode", icon: "🌙", action: () => window.ThemeToggle?.toggle(), shortcut: "D" },
     ];

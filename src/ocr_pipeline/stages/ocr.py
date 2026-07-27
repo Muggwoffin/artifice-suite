@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
-from openai import OpenAI
 
 from src.ocr_pipeline import _guard
 from src.ocr_pipeline._logging import get_logger
@@ -99,17 +98,55 @@ def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
     return base64.standard_b64encode(data).decode("utf-8"), mime
 
 
-def _get_client() -> OpenAI:
-    return OpenAI(base_url=cfg("lm_studio_url"), api_key="lm-studio")
+def _get_client(backend: str) -> Any:
+    if backend == "huggingface":
+        from huggingface_hub import InferenceClient
+        token = cfg("huggingface_token") or None
+        return InferenceClient(token=token)
+
+    if backend == "ollama":
+        base_url = (cfg("ollama_url") or "http://localhost:11434") + "/v1"
+        api_key = "ollama"
+    elif backend == "api_key":
+        base_url = cfg("api_base_url") or "https://api.openai.com/v1"
+        api_key = cfg("api_key") or ""
+    else:
+        base_url = cfg("lm_studio_url") or "http://localhost:1234/v1"
+        api_key = "lm-studio"
+
+    from openai import OpenAI
+    return OpenAI(base_url=base_url, api_key=api_key)
 
 
-@retry(max_attempts=4, base_delay=2.0, label="LM Studio OCR")
+@retry(max_attempts=4, base_delay=2.0, label="OCR")
 def _ocr_single_image(image_path: Path, orientation: int = 1) -> str:
-    """Send a single image to LM Studio and return extracted text."""
-    image_b64, mime = _encode_image(image_path, orientation)
+    """Send a single image to the OCR backend and return extracted text.
 
+    All backends use their OpenAI-compatible endpoint for OCR because
+    images are sent as ``image_url`` content blocks — the format supported
+    by LM Studio, Ollama's ``/v1`` endpoint, and Hugging Face alike.
+    """
+    image_b64, mime = _encode_image(image_path, orientation)
+    backend = cfg("ocr_backend") or "lm_studio"
     model = cfg("ocr_model")
-    client = _get_client()
+    client = _get_client(backend)
+
+    if backend == "huggingface":
+        response = client.chat_completion(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": OCR_PROMPT},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
+                    ],
+                }
+            ],
+            temperature=0,
+        )
+        return response.choices[0].message.content or ""
+
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -126,7 +163,7 @@ def _ocr_single_image(image_path: Path, orientation: int = 1) -> str:
         ],
         temperature=0,
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content or ""
 
 
 def _pdf_to_page_images(pdf_path: Path, orientation: int = 1) -> list[Path]:
@@ -251,7 +288,7 @@ def perform(
                     "source_file": str(path),
                     "stage": "raw_ocr",
                     "rejected_extracted_text": extracted_text,
-                    "engine": "lm-studio",
+                    "engine": cfg("ocr_backend") or "lm_studio",
                     "model": model,
                     "ocr_prompt": OCR_PROMPT,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -283,7 +320,7 @@ def perform(
         "source_file": str(path),
         "stage": "raw_ocr",
         "extracted_text": extracted_text,
-        "engine": "lm-studio",
+        "engine": cfg("ocr_backend") or "lm_studio",
         "model": model,
         "ocr_prompt": OCR_PROMPT,
         "timestamp": datetime.now(timezone.utc).isoformat(),

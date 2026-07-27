@@ -53,6 +53,17 @@ class TropySendWriteRequest(TropySendRequest):
     make_backup: bool = True
 
 
+class TropySendHistoryRequest(BaseModel):
+    item_ids: list[int]
+    project: str
+    targets: list[str]
+    stage: str = "cleaned"
+
+
+class TropySendHistoryWriteRequest(TropySendHistoryRequest):
+    make_backup: bool = True
+
+
 class PdfExportRequest(BaseModel):
     folder: str
     stage: str = "cleaned"
@@ -80,3 +91,13 @@ class BatchReplaceRequest(BaseModel):
     replace: str
     stages: list[str]
     item_ids: list[str] | None = None
+
+
+class LudwigLangExportRequest(BaseModel):
+    collection: str
+    output_dir: str = "output"
+    medium: str = "print"
+    author: str = ""
+    date: str = ""
+    page_markers: bool = False
+    skip_language_gate: bool = False

@@ -664,7 +664,7 @@ def test_document_types_lists_known_types(client):
 
 def test_health_check_reports_service_status(client, monkeypatch):
     monkeypatch.setattr("src.ocr_pipeline.utils.check_lm_studio", lambda *a, **k: None)
-    monkeypatch.setattr("src.ocr_pipeline.utils.check_ollama", lambda models=None: [])
+    monkeypatch.setattr("src.ocr_pipeline.utils.check_ollama", lambda *a, **k: [])
 
     res = client.get("/api/health")
     body = res.json()
@@ -677,7 +677,7 @@ def test_health_check_surfaces_unreachable_services(client, monkeypatch):
     monkeypatch.setattr("src.ocr_pipeline.utils.check_lm_studio",
                         lambda *a, **k: "Cannot reach LM Studio at http://x (ConnectionError)")
     monkeypatch.setattr("src.ocr_pipeline.utils.check_ollama",
-                        lambda models=None: ["Cannot reach Ollama server (ConnectionError)"])
+                        lambda *a, **k: ["Cannot reach Ollama server (ConnectionError)"])
 
     res = client.get("/api/health")
     body = res.json()
@@ -1049,9 +1049,9 @@ def test_wait_for_server_gives_up_after_timeout():
 # --------------------------------------------------------------------------- #
 #
 # `_wait_for_server` correctly detects the timeout above, but `main()` used to
-# open the pywebview/browser window anyway with just a print() — invisible in
+# open the browser window anyway with just a print() — invisible in
 # a `.pyw` process, which has no console. That's exactly the "OCR Pipeline"
-# window showing Edge WebView2's connection-refused page with zero
+# window showing a connection-refused page with zero
 # explanation. These pin the fix: the exception (if any) is captured off the
 # background thread and actually surfaced instead of silently discarded.
 

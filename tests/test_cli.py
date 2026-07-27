@@ -35,7 +35,7 @@ def test_ocr_stage_writes_files(mock_get_client, tmp_path):
     result = ocr.perform(str(test_image), output_dir=str(out_dir))
 
     assert result["extracted_text"] == "Hello from OCR"
-    assert result["engine"] == "lm-studio"
+    assert result["engine"] in ("lm_studio", "lm-studio")
     assert result["model"] == "allenai/olmocr-2-7b"
     assert "timestamp" in result
 

@@ -80,8 +80,7 @@ def ocr(
     """Run the OCR stage on a given input file."""
     err = check_lm_studio()
     if err:
-        typer.echo(f"ERROR: {err}", err=True)
-        raise typer.Exit(code=1)
+        typer.echo(f"WARNING: {err}", err=True)
 
     typer.echo(f"Processing {input_path}...")
     result = ocr_stage.perform(input_path, output_dir=output_dir)
@@ -463,7 +462,7 @@ def tropy(
         if not skip_translate:
             stages.add("translate")
 
-        items = pages_to_job_items(pages)
+        items = pages_to_job_items(pages, project_path=proj.db_path)
         events: _queue.Queue = _queue.Queue()
         runner = JobRunner(items, output_dir, stages=stages, force=force,
                            events=events)
@@ -543,6 +542,65 @@ def compile_pdf(
         raise typer.Exit(code=1) from exc
 
     typer.echo(f"Output: {result_path}")
+
+
+@app.command("export-ludwiglang")
+def export_ludwiglang(
+    collection: str = typer.Argument(
+        help="Collection name (subdirectory under output/cleaned/text/)"
+    ),
+    output_dir: str = typer.Option("output", help="Pipeline output directory"),
+    medium: str = typer.Option(
+        "print", help="Document medium: typed, handwritten, print"
+    ),
+    author: str = typer.Option("", help="Author (overrides tropy manifest)"),
+    date: str = typer.Option("", help="Date (overrides tropy manifest)"),
+    page_markers: bool = typer.Option(
+        False, "--page-markers", help="Insert -- N -- separators between pages"
+    ),
+    skip_language_gate: bool = typer.Option(
+        False, "--skip-language-gate", help="Skip the German-language check"
+    ),
+    output: str = typer.Option(
+        None, "--output", help="Explicit output .md path (default: output/ludwiglang/<collection>/text.md)"
+    ),
+):
+    """Export a cleaned collection as a LudwigLang-importable .md file.
+
+    Assembles per-page cleaned text, runs quality and language gates,
+    and writes a frontmatter .md that can be dropped onto LudwigLang's
+    Import Text page at http://localhost:8765/import.
+    """
+    from src.ocr_pipeline.export_ludwiglang import export_md, _read_manifest
+
+    cleaned_root = Path(output_dir) / "cleaned" / "text" / collection
+    if not cleaned_root.exists():
+        # Also check if the user passed a direct path
+        cleaned_root = Path(collection)
+        if not cleaned_root.exists():
+            raise typer.BadParameter(
+                f"Collection not found at output/cleaned/text/{collection} "
+                f"nor at {collection}"
+            )
+
+    manifest = _read_manifest(Path(output_dir))
+
+    try:
+        result_path = export_md(
+            cleaned_root,
+            output_path=Path(output) if output else None,
+            medium=medium,
+            author=author,
+            date=date,
+            page_markers=page_markers,
+            manifest=manifest,
+            skip_language_gate=skip_language_gate,
+        )
+    except ValueError as exc:
+        typer.echo(f"ERROR: {exc}", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Exported to {result_path}")
 
 
 def _print_batch_summary(result: dict, output_dir: str):

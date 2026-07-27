@@ -10,7 +10,10 @@ from ..._prompts import DOCUMENT_TYPES
 router = APIRouter(tags=["settings"])
 
 _CONFIG_KEYS = (
-    "lm_studio_url", "output_dir", "cleanup_model", "translate_model",
+    "lm_studio_url", "ollama_url", "huggingface_token",
+    "api_key", "api_base_url",
+    "ocr_backend", "cleanup_backend", "translate_backend",
+    "output_dir", "cleanup_model", "translate_model",
     "ocr_model", "document_type", "max_ocr_workers", "chunk_max_tokens",
     "resume", "confidence_enabled", "ollama_think",
 )
@@ -88,18 +91,56 @@ def document_types() -> dict:
 def health_check() -> dict:
     from ...utils import check_lm_studio, check_ollama
 
-    lm_err = check_lm_studio()
-    models = [config.get("cleanup_model"), config.get("translate_model")]
-    ollama_errors = check_ollama(models)
-    ollama_reachable = not any("Cannot reach" in e for e in ollama_errors)
-
-    return {
-        "lm_studio": {"ok": lm_err is None, "detail": lm_err,
-                      "url": config.get("lm_studio_url")},
-        "ollama": {"ok": ollama_reachable,
-                  "detail": None if ollama_reachable else ollama_errors[0]},
-        "models": [
-            {"name": m, "ok": ollama_reachable and not any(m in e for e in ollama_errors)}
-            for m in models
-        ],
+    backends = {
+        config.get("ocr_backend") or "lm_studio",
+        config.get("cleanup_backend") or "ollama",
+        config.get("translate_backend") or "ollama",
     }
+
+    results: dict[str, Any] = {}
+
+    if "lm_studio" in backends:
+        lm_err = check_lm_studio(config.get("lm_studio_url"))
+        results["lm_studio"] = {
+            "ok": lm_err is None,
+            "detail": lm_err,
+            "url": config.get("lm_studio_url"),
+        }
+
+    if "ollama" in backends:
+        models = [config.get("ocr_model"), config.get("cleanup_model"), config.get("translate_model")]
+        ollama_url = config.get("ollama_url")
+        ollama_errors = check_ollama(models, url=ollama_url)
+        ollama_reachable = not any("Cannot reach" in e for e in ollama_errors)
+        results["ollama"] = {
+            "ok": ollama_reachable,
+            "detail": None if ollama_reachable else ollama_errors[0],
+            "url": ollama_url or "http://localhost:11434",
+        }
+        results["models"] = [
+            {"name": m, "ok": ollama_reachable and not any(m in e for e in ollama_errors)}
+            for m in models if m
+        ]
+
+    if "huggingface" in backends:
+        token = config.get("huggingface_token")
+        results["huggingface"] = {
+            "ok": bool(token),
+            "detail": None if token else "No Hugging Face token configured",
+        }
+
+    if "api_key" in backends:
+        api_key = config.get("api_key")
+        base_url = config.get("api_base_url") or "https://api.openai.com/v1"
+        if not api_key:
+            results["api_key"] = {"ok": False, "detail": "No API key configured", "url": base_url}
+        else:
+            try:
+                from openai import OpenAI
+                client = OpenAI(base_url=base_url, api_key=api_key)
+                client.models.list()
+                results["api_key"] = {"ok": True, "detail": None, "url": base_url}
+            except Exception as exc:
+                results["api_key"] = {"ok": False, "detail": str(exc), "url": base_url}
+
+    return results

@@ -13,15 +13,15 @@ dependencies = [
     "PyMuPDF",
     "tkinterdnd2",
     "reportlab",
+    "huggingface_hub",
 ]
 
 [project.optional-dependencies]
 # The tkinter GUI (ocr_pipeline_gui) needs none of these. Only the web
-# frontend spike (ocr_pipeline_web) does.
+# frontend (ocr_pipeline_web) does.
 web = [
     "fastapi",
     "uvicorn[standard]",
-    "pywebview",
 ]
 
 [project.scripts]

@@ -26,7 +26,7 @@ from src.ocr_pipeline.config import get as cfg
 log = get_logger("structure")
 
 
-@retry(max_attempts=4, base_delay=1.0, label="Ollama structure")
+@retry(max_attempts=4, base_delay=1.0, label="Structure")
 def _call_structure_chunk(
     raw_text: str,
     system_prompt: str,
@@ -35,9 +35,10 @@ def _call_structure_chunk(
     """Structure a single chunk of text."""
     user_prompt = user_template.replace("{text}", raw_text)
     model = cfg("cleanup_model")
+    backend = cfg("cleanup_backend") or "ollama"
 
     response = _llm.chat(
-        ollama.chat,
+        backend=backend,
         model=model,
         messages=[
             {"role": "system", "content": system_prompt},
@@ -123,7 +124,7 @@ def perform(
             "stage": "structured",
             "raw_text": text,
             "structured_text": existing,
-            "engine": "ollama",
+            "engine": cfg("cleanup_backend") or "ollama",
             "model": model,
             "system_prompt": system_prompt,
             "document_type": doc_type,
@@ -169,7 +170,7 @@ def perform(
         "stage": "structured",
         "raw_text": text,
         "structured_text": final_text,
-        "engine": "ollama",
+        "engine": cfg("cleanup_backend") or "ollama",
         "model": model,
         "system_prompt": system_prompt,
         "document_type": doc_type,

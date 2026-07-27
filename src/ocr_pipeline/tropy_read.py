@@ -388,7 +388,7 @@ def recent_projects() -> list[Path]:
     return out
 
 
-def pages_to_job_items(pages: list[TropyPage]) -> list:
+def pages_to_job_items(pages: list[TropyPage], project_path: str = "") -> list:
     """Turn Tropy pages into queue items the existing runner understands."""
     from .jobs import JobItem
 
@@ -398,7 +398,7 @@ def pages_to_job_items(pages: list[TropyPage]) -> list:
             page=page.page if page.is_pdf else None,
             output_stem=page.output_stem,
             label=page.label,
-            source=page.provenance(),
+            source=dict(page.provenance(), project_path=str(project_path)),
         )
         for page in pages
     ]

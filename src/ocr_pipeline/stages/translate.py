@@ -35,9 +35,10 @@ COMMON_LANGUAGES = {
 @retry(max_attempts=3, base_delay=1.0, label="Lang detect")
 def _call_lang_detect(text: str, doc_type: str = "default") -> str:
     model = cfg("translate_model")
+    backend = cfg("translate_backend") or "ollama"
     prompt = get_lang_detect_prompt(doc_type)
     response = _llm.chat(
-        ollama.chat,
+        backend=backend,
         model=model,
         messages=[
             {"role": "user", "content": prompt.format(text=text[:2000])},
@@ -67,7 +68,7 @@ def detect_language(text: str, doc_type: str = "default") -> str:
         return "unknown"
 
 
-@retry(max_attempts=4, base_delay=1.0, label="Ollama translate")
+@retry(max_attempts=4, base_delay=1.0, label="Translate")
 def _call_translate_chunk(
     cleaned_text: str,
     system_prompt: str,
@@ -76,9 +77,10 @@ def _call_translate_chunk(
     """Translate a single chunk of text."""
     user_prompt = user_template.replace("{text}", cleaned_text)
     model = cfg("translate_model")
+    backend = cfg("translate_backend") or "ollama"
 
     response = _llm.chat(
-        ollama.chat,
+        backend=backend,
         model=model,
         messages=[
             {"role": "system", "content": system_prompt},
@@ -192,7 +194,7 @@ def perform(
         "source_language_name": lang_name,
         "cleaned_text": cleaned_text,
         "translated_text": translated_text,
-        "engine": "ollama",
+        "engine": cfg("translate_backend") or "ollama",
         "model": cfg("translate_model"),
         "system_prompt": system_prompt,
         "document_type": doc_type,

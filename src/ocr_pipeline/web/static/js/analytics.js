@@ -39,7 +39,7 @@ const AnalyticsTab = (function () {
       tile(files.toLocaleString(), "Documents", "var(--gold)"),
       tile((stats.failed || 0).toLocaleString(), "Failures",
            stats.failed ? "var(--error)" : "var(--accent)"),
-      tile(avgConf == null ? "—" : `${avgConf.toFixed(0)}/100`, "Avg confidence", confColor(avgConf)),
+      tile(avgConf == null ? "—" : `${avgConf.toFixed(0)}/100`, "Avg quality score", confColor(avgConf)),
       tile(!files ? "—" : `${(elapsed / files).toFixed(1)}s`, "Avg per doc", "var(--indigo)"),
     ].join("");
   }
@@ -68,7 +68,7 @@ const AnalyticsTab = (function () {
         <rect x="${labelW}" y="${y}" width="${bw}" height="${barH}" rx="3"
               fill="${colors[r.name] || "var(--accent)"}"></rect>
         <text x="${w - 4}" y="${y + barH * 0.7}" text-anchor="end" class="chart-label dim">
-          ${r.rate.toLocaleString(undefined, { maximumFractionDigits: 0 })} (n=${r.n})
+          ${r.rate.toLocaleString(undefined, { maximumFractionDigits: 0 })} (${r.n} files)
         </text>`;
     }).join("");
 
@@ -78,7 +78,7 @@ const AnalyticsTab = (function () {
 
   function renderConfidenceHistogram(stats) {
     const confidences = stats.confidences || [];
-    if (!confidences.length) return emptyChart(confidenceEl, "Confidence scoring produced no scores yet.");
+    if (!confidences.length) return emptyChart(confidenceEl, "Quality scores will appear after your first run.");
 
     const buckets = [0, 0, 0, 0, 0];
     for (const c of confidences) buckets[Math.min(Math.floor(c / 20), 4)]++;
@@ -135,7 +135,7 @@ const AnalyticsTab = (function () {
     const stats = await api("GET", "/api/analytics/stats");
     renderTiles(stats);
     if (!stats.runs) {
-      emptyChart(throughputEl, "No runs recorded yet — run a batch to populate analytics.");
+      emptyChart(throughputEl, "No runs yet — process some files to see analytics.");
       emptyChart(confidenceEl, "No runs recorded yet.");
       emptyChart(recentEl, "No runs recorded yet.");
       return;

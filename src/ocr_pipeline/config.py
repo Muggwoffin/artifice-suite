@@ -62,6 +62,13 @@ _DEFAULTS: dict[str, Any] = {
     # P6: GUI persistence
     "history_db": None,  # defaults to ~/.ocr_pipeline/history.db
     "gui_theme": "paper",  # "paper" (light) or "night" (dark)
+    "ocr_backend": "lm_studio",
+    "cleanup_backend": "ollama",
+    "translate_backend": "ollama",
+    "ollama_url": "http://localhost:11434",
+    "huggingface_token": "",
+    "api_key": "",
+    "api_base_url": "https://api.openai.com/v1",
 }
 
 _USER_DIR = Path.home() / ".ocr_pipeline"
@@ -82,6 +89,14 @@ PERSISTED_KEYS = (
     "gui_theme",
     "ollama_think",
     "run_templates",
+    "onboarding_dismissed",
+    "ocr_backend",
+    "cleanup_backend",
+    "translate_backend",
+    "ollama_url",
+    "huggingface_token",
+    "api_key",
+    "api_base_url",
 )
 
 _config_cache: dict[str, Any] | None = None

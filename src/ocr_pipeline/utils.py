@@ -13,20 +13,24 @@ def check_lm_studio(url: str | None = None) -> str | None:
         client.models.list()
         return None
     except Exception as exc:
-        return f"Cannot reach LM Studio at {url} ({exc.__class__.__name__})"
+        return f"Cannot reach LM Studio at {url}. Is it running?"
 
 
-def check_ollama(required_models: list[str] | None = None) -> list[str]:
+def check_ollama(required_models: list[str] | None = None, url: str | None = None) -> list[str]:
     """Return list of error messages for Ollama. Empty list = all OK."""
+    import ollama as _ollama_client
+
     errors: list[str] = []
     try:
-        available = {m.model for m in _ollama.list().models}
+        host = url or "http://localhost:11434"
+        client = _ollama_client.Client(host=host)
+        available = {m.model for m in client.list().models}
     except Exception as exc:
-        return [f"Cannot reach Ollama server ({exc.__class__.__name__})"]
+        return [f"Cannot reach Ollama at {url or 'http://localhost:11434'}. Is it running?"]
 
     if required_models:
         for model in required_models:
             if model not in available:
-                errors.append(f"Model not pulled: {model}  (run: ollama pull {model})")
+                errors.append(f'Model "{model}" is not downloaded. Open Ollama and download it first.')
 
     return errors
