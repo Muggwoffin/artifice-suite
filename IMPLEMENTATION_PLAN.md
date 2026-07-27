@@ -243,7 +243,31 @@ parallel with rollout without contaminating the template.
       have been reviewed
 - [ ] Re-check entity badge scanability — hues are now ~34° apart, but at 14% tint all five
       converge toward cream. Consider raising the tint rather than moving hues further
-- [ ] Dark mode has not been reviewed at all. Every measurement in Part I was taken in light mode
+- [x] ~~Dark mode has not been reviewed at all~~ — reviewed by measurement from the live DOM.
+      **Dark mode is in good shape**; three findings, only one of which matters:
+      - Core text passes comfortably: `--ink` 14.32:1, `--ink-soft` 9.1:1, `--ink-faint` 6.64:1,
+        `--error` 5.3:1, `--warning` 9.47:1 against `--paper` `#161310`
+      - Entity badges pass: rendered contrast 5.08–6.65:1 (Concept 5.16, Event 5.08, Location 5.13,
+        Person 6.65). `entity-colors.css` has no dark block and does not need one — the badges are
+        built with `color-mix()` against `--paper`/`--ink`, so they re-derive per theme. Measuring
+        the raw `--type-*` tokens against `--paper` suggests four of five fail AA; that measurement
+        is wrong, because it is not how the badges render. The rendered figure is the real one
+      - The dark palette is declared twice — under `@media (prefers-color-scheme: dark)` and under
+        `[data-theme="dark"]` — and the two agree exactly, 19 declarations each, no drift
+- [ ] **`--success` and `--warning` are still raw Bootstrap in light mode.** `--success` `#28a745`
+      is 2.82:1 and `--warning` `#ffc107` is 1.47:1 against `--paper` — both fail AA badly, and both
+      are the same off-palette Bootstrap family as the `#dc3545` already replaced by `#a8322b`. That
+      job was half-finished. Neither token is referenced anywhere in `artifice-graph`, so nothing
+      renders wrong today — but they live in the canonical shared token file, and
+      `artifice-transcribe` already hardcodes `#dc3545` for its health states, so Phase 2 will wire
+      real UI to them. Warm both before rollout, not after
+- [ ] **`--accent` and `--success` are the identical `#4aa066` in dark mode** (they differ in light:
+      `#2f7d45` vs `#28a745`). A success state is chromatically indistinguishable from a brand
+      accent. Give `--success` its own dark value
+- [ ] `app.css:523` keys its only dark rule to `@media (prefers-color-scheme: dark)` with no
+      `[data-theme="dark"]` twin, so an explicit dark toggle on a light OS silently skips it. The
+      effect today is trivial — one `.photo:hover` brightness — but this file is the template the
+      other three apps are about to copy, so fix the pattern rather than the instance
 - [ ] Accessibility pass: keyboard traversal, focus order, screen-reader labelling on the stage
       cards now that they are `div` containers rather than buttons
 - [ ] Decide whether Google Fonts should be vendored locally — `base.html` currently fetches from
