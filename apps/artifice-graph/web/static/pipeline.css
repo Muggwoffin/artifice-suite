@@ -35,6 +35,46 @@
   margin: 0 0 1rem;
 }
 
+/* ── Config steps (BYOM stepped flow, within .panel) ───────
+   A step is a subsection *inside* the outer .panel — not a nested .panel
+   of its own, so it gets no repeated card border/shadow. Steps are
+   separated by a thin rule and a labelled heading, echoing .section-head's
+   (app.css) labelled-rule device at a scale that fits inside a panel
+   rather than between page-level regions — a sibling of that pattern,
+   not a second dialect. */
+.configuration-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-9);
+  margin-top: var(--space-6);
+}
+.config-section {
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--rule);
+}
+.config-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.section-title {
+  font-family: var(--font-label);
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+.section-help {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0 0 var(--space-5);
+}
+
 /* ── Form grid ────────────────────────────────────────────── */
 .field-grid {
   display: grid;
@@ -47,6 +87,37 @@
 }
 
 .field-stack { display: flex; flex-direction: column; gap: 0.85rem; }
+
+/* ── Field unit (label / control / help) ───────────────────
+   .field is the atomic unit inside .field-grid / .field-stack: one label,
+   one control, one optional .field-help. flex-column forces every child
+   onto its own line regardless of the child's own inline/inline-block
+   display — this is what puts .field-help below its control instead of
+   beside it. The label rule excludes .app-checkbox, which is itself a
+   <label> with its own established look (Components §"Custom checkbox")
+   and must not be overridden by the field-label rule below. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.field > label:not(.app-checkbox) {
+  display: block;
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.model-selector { display: block; width: 100%; }
+.field-help {
+  display: block;
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  line-height: 1.4;
+}
 
 /* Browser button shown next to directory inputs on the same row */
 .dir-row {

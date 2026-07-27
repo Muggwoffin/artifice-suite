@@ -75,6 +75,13 @@ body {
 }
 
 /* ── Top Navigation (.topnav) ───────────────────────── */
+/* background-color derives from --paper-raised rather than a hand-copied
+   light-mode literal, so the bar re-themes in dark mode instead of
+   staying near-white while the page and its ink go dark underneath it.
+   color-mix keeps the same ~0.96 translucency (for the backdrop-filter
+   frosted-glass effect below) that the literal rgba(...,0.96) expressed,
+   using the same color-mix() technique already established for
+   .type-tag (pipeline.css). */
 .topnav {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -84,7 +91,7 @@ body {
   gap: 1.5rem;
   height: var(--nav-height);
   padding: 0 1.25rem;
-  background-color: rgba(251, 249, 243, 0.96);
+  background-color: color-mix(in srgb, var(--paper-raised) 96%, transparent);
   border-bottom: 1px solid var(--rule);
   box-shadow: var(--shadow-nav);
 }
