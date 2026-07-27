@@ -18,7 +18,7 @@
   background: var(--paper-raised);
   border: 1px solid var(--rule);
   box-shadow: var(--shadow-paper);
-  border-radius: 3px;
+  border-radius: var(--radius-lg);
   padding: 1.15rem 1.25rem 1.4rem;
 }
 .panel-title {
@@ -74,11 +74,18 @@
 }
 .stage-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   background: var(--paper);
   border: 1px solid var(--rule);
-  border-radius: 2px;
+  border-radius: var(--radius-lg);
   padding: 0.75rem 0.85rem 0.8rem;
   text-align: left;
+}
+/* .stage-card is a non-interactive container (a card, not a button) — it
+   holds status state via [data-state] and one real control, .stage-btn. */
+.stage-card .stage-info {
+  flex: 1 1 auto;
 }
 .stage-card .stage-num {
   font-family: var(--font-sans);
@@ -101,9 +108,14 @@
   margin-top: 0.2rem;
   line-height: 1.4;
 }
-.stage-card .stage-btn {
+.stage-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0.65rem;
-  width: 100%;
+}
+.stage-actions .stage-btn {
+  flex: 1 1 auto;
 }
 .stage-card[data-state="running"] {
   border-color: var(--accent);
@@ -134,7 +146,7 @@
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
   padding: 0.12rem 0.45rem;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--rule);
   color: var(--ink-faint);
   margin-left: 0.4rem;
@@ -169,7 +181,7 @@
   text-transform: uppercase;
   padding: 0.45rem 0.8rem;
   border: 1px solid var(--rule);
-  border-radius: 2px;
+  border-radius: var(--radius-lg);
   background: var(--paper);
   color: var(--ink-soft);
   margin-bottom: 1rem;
@@ -191,7 +203,7 @@
   right: 1rem;
   padding: 0.5rem 1rem;
   border: 1px solid var(--rule);
-  border-radius: 2px;
+  border-radius: var(--radius-lg);
   background: var(--paper-raised);
   color: var(--ink);
   font-family: var(--font-sans);
@@ -207,7 +219,7 @@
 .log-panel {
   background: var(--paper);
   border: 1px solid var(--rule-dark);
-  border-radius: 2px;
+  border-radius: var(--radius-lg);
   box-shadow: inset 0 0 0 1px var(--rule);
   padding: 0.6rem 0.75rem;
   max-height: 22rem;
@@ -318,21 +330,42 @@
   color: var(--ink-soft);
   max-width: 22rem;
 }
+/* Badges use a muted, desaturated tint with darker text (§8.7) — never a
+   saturated fill with paper-coloured text. The tint and text are both mixed
+   from the same --type-* token so hue identity is preserved at a legible
+   contrast (verified >= 4.5:1 for the brightest hue, --type-event). */
 .type-tag {
   display: inline-block;
   padding: 0.12rem 0.5rem;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--paper-raised);
-  background: var(--ink-soft);
+  color: var(--ink-soft);
+  background: var(--paper-recessed);
 }
-.type-tag[data-t="Person"]        { background: var(--type-person); }
-.type-tag[data-t="Organization"] { background: var(--type-organization); }
-.type-tag[data-t="Location"]      { background: var(--type-location); }
-.type-tag[data-t="Event"]        { background: var(--type-event); }
-.type-tag[data-t="Concept"]      { background: var(--type-concept); }
+.type-tag[data-t="Person"] {
+  background: color-mix(in srgb, var(--type-person) 14%, var(--paper));
+  color: color-mix(in srgb, var(--type-person) 60%, var(--ink));
+}
+.type-tag[data-t="Organization"] {
+  background: color-mix(in srgb, var(--type-organization) 14%, var(--paper));
+  color: color-mix(in srgb, var(--type-organization) 60%, var(--ink));
+}
+.type-tag[data-t="Location"] {
+  background: color-mix(in srgb, var(--type-location) 14%, var(--paper));
+  color: color-mix(in srgb, var(--type-location) 60%, var(--ink));
+}
+.type-tag[data-t="Event"] {
+  background: color-mix(in srgb, var(--type-event) 14%, var(--paper));
+  color: color-mix(in srgb, var(--type-event) 60%, var(--ink));
+}
+.type-tag[data-t="Concept"] {
+  background: color-mix(in srgb, var(--type-concept) 14%, var(--paper));
+  color: color-mix(in srgb, var(--type-concept) 60%, var(--ink));
+}
 
 .confidence {
   font-family: var(--font-mono);
@@ -343,10 +376,11 @@
   display: inline-block;
   width: 4rem; height: 3px;
   background: var(--paper-recessed);
-  border-radius: 2px;
+  border-radius: var(--radius-full);
   position: relative;
   margin-right: 0.4rem;
   vertical-align: 0.18rem;
+  overflow: hidden;
 }
 .confidence-bar::after {
   content: "";
@@ -354,12 +388,12 @@
   inset: 0 auto 0 0;
   width: var(--conf, 80%);
   background: var(--accent);
-  border-radius: 2px;
+  border-radius: var(--radius-full);
 }
 
 .table-wrap {
   border: 1px solid var(--rule);
-  border-radius: 3px;
+  border-radius: var(--radius-lg);
   background: var(--paper-raised);
   overflow-x: auto;
   box-shadow: var(--shadow-paper);
@@ -368,7 +402,7 @@
 /* ── Empty state ──────────────────────────────────────────── */
 .empty-state {
   border: 1px dashed var(--rule-dark);
-  border-radius: 3px;
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   text-align: center;
   color: var(--ink-faint);
@@ -385,6 +419,12 @@
   border-bottom: 1px solid var(--rule);
   margin-bottom: 1rem;
   overflow-x: auto;
+  /* overflow-x: auto alone promotes the visible overflow-y to auto (the
+     "overflow computed value" rule), which paints a permanent vertical
+     scrollbar gutter on Windows/Chrome even though nothing overflows
+     vertically. Pin overflow-y explicitly to keep the horizontal scroll
+     affordance on narrow screens without the phantom scrollbar. */
+  overflow-y: hidden;
 }
 .tab {
   appearance: none;
@@ -408,16 +448,7 @@
   border-bottom-color: var(--accent);
 }
 
-/* ── Footer ───────────────────────────────────────────────── */
-.foot {
-  margin-top: 2.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--rule);
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  color: var(--ink-faint);
-}
+/* .foot is defined once, in app.css (shared chrome) — do not redefine here. */
 
 /* ── Library Toolbar & Search ────────────────────────────── */
 .lib-toolbar {
@@ -506,5 +537,111 @@
   padding: 0.3rem 0.5rem;
   background: var(--paper);
   border: 1px solid var(--rule);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Preset cards (BYOM quick-start) ───────────────────────── */
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-5);
+}
+.preset-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-5);
+  text-align: left;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-paper);
+  cursor: pointer;
+  transition: transform var(--duration-normal) var(--ease-primary),
+              box-shadow var(--duration-normal) var(--ease-primary),
+              border-color var(--duration-normal) ease;
+}
+.preset-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lifted);
+  border-color: var(--rule-dark);
+}
+.preset-card svg {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+  margin-top: 0.1rem;
+}
+.preset-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.preset-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+.preset-desc {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  line-height: 1.4;
+}
+
+/* ── Custom checkbox (.app-checkbox) ───────────────────────── */
+/* Native checkboxes paint Chrome's cold system blue on any platform theme —
+   forbidden by §2. Rebuilt on the warm palette; still a real, focusable
+   input so keyboard and assistive-tech behaviour is unchanged. */
+.app-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+.app-checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  /* --space-7 (24px) — the minimum accessible hit target, and the box is
+     sized to it directly rather than padded up from a smaller glyph. */
+  width: var(--space-7);
+  height: var(--space-7);
+  margin: 0;
+  flex-shrink: 0;
+  position: relative;
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--paper-recessed);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease,
+              border-color var(--duration-fast) ease;
+}
+.app-checkbox input[type="checkbox"]:hover {
+  border-color: var(--rule-dark);
+}
+.app-checkbox input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.app-checkbox input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 7px;
+  height: 12px;
+  border: solid var(--paper-raised);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.app-checkbox input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

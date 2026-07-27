@@ -253,14 +253,18 @@
             ('graph',   '5', 'Graph',    'Export GraphML / GEXF / JSON / CSV')
           ] %}
           {% for key, num, name, desc in stages %}
-          <button type="button" class="stage-card" data-stage="{{ key }}" data-state="idle"
+          <div class="stage-card" data-stage="{{ key }}" data-state="idle"
                   id="stage-{{ key }}">
-            <span class="stage-num">Stage {{ num }}</span>
-            <span class="stage-name">{{ name }}</span>
-            <span class="stage-desc">{{ desc }}</span>
-            <span class="stage-btn app-btn">Run</span>
-            <span class="stage-badge" data-stage-badge>{% if num == '1' %}idle{% endif %}</span>
-          </button>
+            <div class="stage-info">
+              <span class="stage-num">Stage {{ num }}</span>
+              <span class="stage-name">{{ name }}</span>
+              <span class="stage-desc">{{ desc }}</span>
+            </div>
+            <div class="stage-actions">
+              <button type="button" class="stage-btn app-btn" data-run-stage="{{ key }}" aria-label="Run {{ name }}">Run</button>
+              <span class="stage-badge" data-stage-badge>{% if num == '1' %}idle{% endif %}</span>
+            </div>
+          </div>
           {% endfor %}
         </div>
 

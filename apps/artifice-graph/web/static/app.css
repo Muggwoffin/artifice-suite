@@ -158,6 +158,10 @@ body {
 }
 .read-layout .page { max-width: 72rem; }
 
+/* Reading-measure pages (prose, no dashboard grids) — §4 caps content-focused
+   reading at 44rem. Applied only where a page is prose top-to-bottom (About). */
+.page.page-prose { max-width: 44rem; }
+
 /* ── Masthead (.masthead) ──────────────────────────── */
 .masthead {
   border-top: 4px solid var(--ink);
@@ -176,7 +180,7 @@ body {
 }
 .masthead h1 {
   font-family: var(--font-display);
-  font-size: var(--text-h2);
+  font-size: var(--text-hero);
   margin: 0 0 0.5rem;
   line-height: 1.15;
 }
@@ -426,13 +430,17 @@ body {
 }
 
 /* ── Stat Row (.stat-row) ──────────────────────────── */
+/* Flex-wrap with shrink (not CSS Grid auto-fit) so tile count and available
+   width degrade continuously — no last-row orphan stretched to fill a track. */
 .stat-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 .stat {
+  flex: 1 1 140px;
+  max-width: 15rem;
   background: var(--paper-raised);
   border: 1px solid var(--rule);
   border-radius: var(--radius-lg);

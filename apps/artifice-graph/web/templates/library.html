@@ -9,7 +9,7 @@
     color: var(--ink);
     border: 1px solid var(--rule);
     font-family: var(--font-body);
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
   }
   .leaflet-popup-content h4 {
     margin: 0 0 0.35rem 0;
@@ -213,7 +213,7 @@
         <button type="button" class="app-btn" id="refreshMapBtn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">Load Map</button>
       </div>
     </div>
-    <div id="mapContainer" style="height: 520px; width: 100%; border-radius: 2px; border: 1px solid var(--rule); background: var(--paper-raised);"></div>
+    <div id="mapContainer" style="height: 520px; width: 100%; border-radius: var(--radius-lg); border: 1px solid var(--rule); background: var(--paper-raised);"></div>
     <div id="mapStatus" class="muted" style="margin-top: 0.75rem; font-size: 0.85rem;">Select the Map tab and click Load Map to view locations.</div>
   </section>
 

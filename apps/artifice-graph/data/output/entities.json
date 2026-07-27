@@ -1,1 +1,146 @@
-[]
+[
+  {
+    "id": "klemens_von_metternich",
+    "name": "Klemens von Metternich",
+    "entity_type": "Person",
+    "aliases": [
+      "Metternich",
+      "Prince Metternich"
+    ],
+    "summary": "Austrian foreign minister and central figure at the Congress of Vienna.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "alexander_i",
+    "name": "Alexander I",
+    "entity_type": "Person",
+    "aliases": [
+      "Tsar Alexander I"
+    ],
+    "summary": "Tsar of Russia who sought expanded influence at the Congress of Vienna.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "karl_vom_stein",
+    "name": "Karl vom Stein",
+    "entity_type": "Person",
+    "aliases": [
+      "Baron Stein",
+      "Baron vom Stein"
+    ],
+    "summary": "Prussian statesman who participated in early Congress discussions but died before its conclusion.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "congress_of_vienna",
+    "name": "Congress of Vienna",
+    "entity_type": "Event",
+    "aliases": [
+      "The Congress"
+    ],
+    "summary": "Diplomatic conference held in 1814 to reorganize Europe after the Napoleonic Wars.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "austria",
+    "name": "Austria",
+    "entity_type": "Location",
+    "aliases": [
+      "Austrian Empire"
+    ],
+    "summary": "Major European power and host nation of the Congress of Vienna.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "prussia",
+    "name": "Prussia",
+    "entity_type": "Location",
+    "aliases": [],
+    "summary": "German state that participated in the Congress of Vienna.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "russia",
+    "name": "Russia",
+    "entity_type": "Location",
+    "aliases": [],
+    "summary": "Major European power represented at the Congress of Vienna.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "great_britain",
+    "name": "Great Britain",
+    "entity_type": "Location",
+    "aliases": [],
+    "summary": "Major European power represented at the Congress of Vienna.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "napoleonic_wars",
+    "name": "Napoleonic Wars",
+    "entity_type": "Event",
+    "aliases": [],
+    "summary": "Series of wars fought between France and various European coalitions.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "concert_of_europe",
+    "name": "Concert of Europe",
+    "entity_type": "Concept",
+    "aliases": [],
+    "summary": "System of balance-of-power diplomacy established after the Congress of Vienna.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "treaty_of_paris",
+    "name": "Treaty of Paris",
+    "entity_type": "Event",
+    "aliases": [],
+    "summary": "Peace treaty signed on May 30, 1814, preceding the Congress of Vienna.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  },
+  {
+    "id": "nationalism",
+    "name": "Nationalism",
+    "entity_type": "Concept",
+    "aliases": [],
+    "summary": "Political ideology championed by liberal movements and opposed by Metternich.",
+    "source_doc_ids": [
+      "congress_of_vienna_sample"
+    ],
+    "embedding": null
+  }
+]
