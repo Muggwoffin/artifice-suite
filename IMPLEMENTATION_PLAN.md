@@ -165,33 +165,53 @@ a copy-paste.
 
 ### Phase 0 — Settle the current work *(immediate)*
 
-Everything in Part I is uncommitted apart from one branch. Close this out before starting anything
-new, because the line-ending normalisation will touch every file and must not be entangled with
-real changes.
+Mostly closed out. One manual step remains, and one new blocker was uncovered.
 
-- [ ] **Fix the remote default branch — highest priority, user-visible.** GitHub's default is
-      `origin/master` (`238b717`), whose tree is byte-identical to `d6f80ca` — the *pre-conversion*
+- [ ] **Retarget the GitHub default branch to `main` — the one remaining manual step.**
+      `origin/master` (`238b717`) has a tree byte-identical to `d6f80ca`, the *pre-conversion*
       TypeScript/pnpm skeleton (`package.json`, `pnpm-workspace.yaml`, `src/index.ts`; no
-      `pyproject.toml`, no `uv.lock`, no `paper.md`). The ten commits that made this a Python/`uv`
-      monorepo were pushed to `origin/main` instead: local `master` tracks `origin/main`, not
-      `origin/master`. **Anyone cloning this repository today gets the abandoned skeleton** — which
-      also means the Zenodo/JOSS archiving path is currently pointed at the wrong tree. Fix by
-      retargeting the GitHub default branch to `main` and fast-forwarding or retiring `master`;
-      decide which name is canonical and make the local branch, its upstream, and the GitHub
-      default all agree
-- [ ] **Reconcile the local branch state.** Two commits sit on `chore/remove-stray-file`:
-      `27d5981` (stray-artifact cleanup) and `73d8d4d` ("Unifying tokens" — the `/shared` mount,
-      `tokens.css` deletion and `base.html` change). The branch name no longer describes its
-      contents. Either rename it or merge it into the canonical branch and delete it
-- [ ] Commit the remaining uncommitted work: the design pass, `pipeline.js` repair, the design-doc
-      consolidation (one modified file, five deletions), and `IMPLEMENTATION_PLAN.md` (untracked)
-- [ ] **Separately** run the one-time line-ending normalisation documented in `CONTRIBUTING.md`,
-      as its own commit, so history stays readable
+      `pyproject.toml`, no `uv.lock`, no `paper.md`). **Anyone cloning today gets the abandoned
+      skeleton**, and the Zenodo/JOSS path would mint a DOI for a tree containing neither the
+      software nor `paper.md`. This cannot be scripted here: `gh` is installed on neither Windows
+      nor WSL, and the GitHub MCP tools expose no repository-settings operation. Do it in the web
+      UI — *Settings → General → Default branch → switch to `main`* — then delete `origin/master`
+      with `git push origin --delete master`. Verified safe: `git rev-list origin/main..origin/master`
+      returns only `238b717` itself, a merge commit whose tree already exists on `main`, so nothing
+      unique is lost
+- [x] ~~Reconcile the local branch state~~ — done. Local `master` renamed to `main`,
+      fast-forwarded to include both commits from `chore/remove-stray-file`, which was then deleted
+      locally and on the remote after confirming `origin/main..origin/chore/remove-stray-file` was
+      empty. One local branch remains, tracking `origin/main`
+- [x] ~~Commit the remaining uncommitted work~~ — done, in three commits: `4659bdd` (design-doc
+      consolidation), `bb40bc3` (implementation plan, smoke-test fix, `.gitignore` for
+      `.claude/settings.local.json`), `c7cef6e` (stale-path corrections in `ARCHITECTURE.md` and
+      `CONTRIBUTING.md`). WSL git had no `user.name`/`user.email`; set repo-locally to the identity
+      already on every commit here
+- [x] ~~Run the one-time line-ending normalisation as its own commit~~ — done, and it needed **no
+      commit**. `git add --renormalize .` touched zero files: `.gitattributes` had already made the
+      blob store canonical (318 `i/lf`, **zero** `i/crlf`, zero mixed). Only the *working tree* was
+      stale, at 109 CRLF files — the exact condition that caused a live misdiagnosis and got an
+      agent killed. Refreshed via `git rm --cached -r . && git reset --hard`, leaving 313 LF and 5
+      CRLF; those five are `.bat` files, CRLF by policy at `.gitattributes:54`, as Windows batch
+      requires. Working tree and policy now agree exactly
 - [x] ~~Re-run `bash scripts/smoke-test-agents.sh` after the Gemini migration~~ — **13/13**.
       Required a fix first: OpenCode terminates its response banner with a carriage return, which
       sat inside the `${model}$` anchor and failed all four model assertions against banners that
       were in fact correct. `strip_ansi()` now strips CR as well as SGR colour
-- [ ] Exercise `security-auditor` on a real audit to confirm Gemini behaves in the role
+- [ ] **BLOCKER: OpenCode is not installed in WSL at all.** Attempting the first real
+      `security-auditor` audit exposed the root cause of every prior agent stall. `which opencode`
+      resolves to `/mnt/c/Users/mjcas/AppData/Roaming/npm/opencode` — a shim on the *Windows*
+      filesystem that launches `opencode.exe` through WSL's Windows-interop layer (`/init`). There
+      is no Linux-native `opencode` and no `node` in WSL. Every dispatch has therefore crossed the
+      boundary twice, with the whole brief passed as ~4 KB of `argv`. The audit sat for 7 minutes at
+      **0.00 CPU seconds**, `WCHAN=poll_schedule_timeout`, log containing only the banner — it never
+      received a single token. Short prompts succeed (the smoke test gets a `PONG`), long ones never
+      start. This explains the block-buffered logs, the `poll()` stalls, `exit=143`, `exit=1`, and
+      the truncated briefs — none of which were model or brief problems. **Fix: install Node and
+      OpenCode natively inside WSL** so no interop bridge is involved, then re-authenticate the
+      providers. Until then treat OpenCode agents as usable only for short prompts
+- [ ] Exercise `security-auditor` on a real audit — blocked on the item above, not on the agent
+      itself. It is correctly registered, read-only, and answers on `gemini-3.1-pro-preview`
 - [ ] Decide where the engineering conventions from the deleted `DESIGN_LANGUAGE.md` should live —
       `ARCHITECTURE.md` or `CONTRIBUTING.md`. Recover with
       `git show 73d8d4d:apps/artifice-graph/DESIGN_LANGUAGE.md`
@@ -201,6 +221,21 @@ real changes.
 
 The reference implementation. Nothing should roll out to the other three apps until this is signed
 off, because every pattern here becomes the template.
+
+**Gate status: the ten-defect visual list is signed off; the gate stays closed.** Those defects
+were fixed and each re-measured from the live DOM, so that work is settled. But two open items
+below would change the template that Phase 2 copies four times over, and both are cheaper to
+resolve once than to unpick from four apps:
+
+- **Dark mode has never been looked at.** Every measurement in Part I was taken in light mode. The
+  token file declares 19 dark-mode values that no one has seen rendered. Rolling out first would
+  propagate any dark-mode defect ×4.
+- **`base.html` fetches fonts from `fonts.googleapis.com`.** That is an architectural violation of
+  the local-first guarantee, not a cosmetic one, and it sits in the very file every other app is
+  about to copy. It also makes the UI depend on a network the product promises not to need.
+
+Fix those two, then open the gate. The remaining four items are refinements that can proceed in
+parallel with rollout without contaminating the template.
 
 - [ ] Full pipeline run against a live local LLM — the restored `pipeline.js` has been verified for
       wiring and clean console, but not by running all five stages end to end
