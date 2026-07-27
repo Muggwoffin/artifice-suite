@@ -108,6 +108,29 @@ into *every* session rather than scoping to one agent, contaminating the orchest
   session start.
 - Verify the whole fleet with `bash scripts/smoke-test-agents.sh` after any config change.
 
+### Filesystem permissions
+
+`opencode.json` at the repo root is the **single source of truth** for agent filesystem access.
+Do not also add a `permission:` block to `.opencode/agents/*.md` — the two sets are *concatenated,
+not merged*, and the later one wins, which is how a well-meant per-agent rule silently defeats the
+project one.
+
+**Rule order matters: later overrides earlier, not most-specific-wins.** A trailing `"*"` catch-all
+silently defeats every specific rule above it. Order is baseline first, then grants, then denials
+last. This is not obvious and cost a debugging cycle to find.
+
+By default OpenCode denies paths outside the project, and a non-interactive `opencode run` turns
+`ask` into an immediate **auto-reject**. That cost `lead-engineer` two runs — blocked from `/tmp`
+while writing throwaway test scripts, and while running pytest from outside the app directory,
+which is the only way to reproduce a relative-path bug it had been sent to fix. `/tmp/**` is now
+granted.
+
+The home directory stays closed. `lead-engineer` has `write`, `edit` and `bash`; a blanket allow
+hands it the filesystem. `~/.ssh`, `~/.gnupg`, `~/.aws`, `~/.callosip` (holds an LLM API key in
+plain text) and the OpenCode credential store are explicitly denied. Verify after any change —
+`opencode agent list` does **not** display merged config, so the only trustworthy test is asking an
+agent to read a file and observing what happens.
+
 ### What OpenCode agents cannot do
 They have **no browser tool**. Never brief one to "verify in the browser", load a page, or take a
 screenshot — they will not decline, they will stall indefinitely on the instruction. Ask for static
