@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArtificeDraft</title>
+
+<!-- Same Google Fonts link the public_history site and the OCR Pipeline
+     tool's web build use, unmodified — one shared type system. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Archivo:wght@500;600;700&display=swap">
+
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<div class="app" id="main-content">
+
+  <header class="masthead">
+    <h1>ArtificeDraft</h1>
+    <span class="tag">local-first &middot; tracked changes</span>
+  </header>
+
+  <div class="panels">
+    <section class="panel active" id="panel-main">
+
+      <!-- ============================================================ DOCUMENT -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Document</h2>
+          <span class="dim" id="doc-info">No document loaded</span>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          Drop a .docx file here, or click to browse
+        </div>
+        <input type="file" id="file-input" accept=".docx" style="display:none;">
+
+        <div class="toolbar">
+          <button class="btn" id="btn-browse">Browse&hellip;</button>
+          <button class="btn accent" id="btn-start" disabled>&#9654; Start Editing</button>
+          <span class="spacer"></span>
+          <a class="btn" id="btn-download" href="#" download style="display:none;">&#11015; Download Result</a>
+        </div>
+
+        <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        <div class="log" id="log"></div>
+      </div>
+
+      <!-- ============================================================= REVIEW -->
+      <div class="card" id="card-review" style="margin-bottom:1rem; display:none;">
+        <div class="card-head">
+          <h2>Review Changes</h2>
+          <span class="dim" id="review-count"></span>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="btn-approve-all">Approve All</button>
+          <button class="btn" id="btn-reject-all">Reject All</button>
+          <span class="spacer"></span>
+          <button class="btn accent" id="btn-finalize">Apply &amp; Save</button>
+        </div>
+        <div class="review-list" id="review-list"></div>
+      </div>
+
+      <!-- ============================================================= RESULT -->
+      <div class="card" id="card-result" style="margin-bottom:1rem; display:none;">
+        <div class="card-head">
+          <h2>Result</h2>
+        </div>
+        <pre class="changelog" id="changelog-text"></pre>
+      </div>
+
+      <!-- ============================================================ SETTINGS -->
+      <div class="card settings-card">
+        <div class="card-head">
+          <h2>Settings</h2>
+        </div>
+        <div class="settings-grid">
+          <label>Editing Style:
+            <select id="set-editing_style"></select>
+          </label>
+          <label>Journal Guide:
+            <span style="display:flex;gap:0.4rem;align-items:center;">
+              <select id="set-style_guide" style="flex:1;"></select>
+              <button class="btn" id="btn-import-guide" title="Import from URL">&#8635; Import</button>
+            </span>
+          </label>
+          <label>Export Format:
+            <select id="set-export_format"></select>
+          </label>
+          <label class="check">
+            <input type="checkbox" id="set-enable_review">
+            Review edits before saving
+          </label>
+        </div>
+        <div class="card-actions">
+          <button class="btn" id="btn-model-settings">&#9881; Model Settings</button>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ======================================================== GUIDE IMPORT MODAL -->
+  <div class="modal-overlay" id="guide-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Import Style Guide</h2>
+        <button class="btn" id="modal-close">&times;</button>
+      </div>
+
+      <div class="import-tabs" style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin-bottom:0.8rem;">
+        <button class="import-tab active" data-tab="url">URL</button>
+        <button class="import-tab" data-tab="text">Paste Text</button>
+        <button class="import-tab" data-tab="file">Upload File</button>
+      </div>
+
+      <div class="import-panel" id="panel-url">
+        <p class="dim">Enter the URL of a journal's author guidelines or style guide page.</p>
+        <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
+          <input type="url" id="guide-url" placeholder="https://..." style="flex:1;padding:0.45rem 0.6rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          <button class="btn accent" id="btn-scrape">Scrape &amp; Preview</button>
+        </div>
+        <div class="log" id="scrape-log" style="display:none;height:8vh;min-height:60px;margin-top:0.7rem;"></div>
+      </div>
+
+      <div class="import-panel" id="panel-text" style="display:none;">
+        <p class="dim">Paste the journal's style guide or author guidelines text below.</p>
+        <textarea id="guide-paste-text" rows="12" style="width:100%;margin-top:0.6rem;padding:0.45rem 0.6rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;box-sizing:border-box;" placeholder="Paste style guide text here..."></textarea>
+        <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+          <span class="spacer"></span>
+          <button class="btn accent" id="btn-parse-text">Parse &amp; Preview</button>
+        </div>
+        <div class="log" id="text-log" style="display:none;height:8vh;min-height:60px;margin-top:0.7rem;"></div>
+      </div>
+
+      <div class="import-panel" id="panel-file" style="display:none;">
+        <p class="dim">Upload a .docx or .pdf file containing the style guide.</p>
+        <div style="display:flex;gap:0.5rem;margin-top:0.6rem;align-items:center;">
+          <input type="file" id="guide-file-input" accept=".docx,.pdf" style="flex:1;">
+          <button class="btn accent" id="btn-parse-file">Parse &amp; Preview</button>
+        </div>
+        <div class="log" id="file-log" style="display:none;height:8vh;min-height:60px;margin-top:0.7rem;"></div>
+      </div>
+
+      <div class="modal-step" id="step-review" style="display:none;">
+        <p class="dim">Review the extracted guide below. Edit any field before saving.</p>
+        <div class="guide-form" style="margin-top:0.6rem;max-height:50vh;overflow-y:auto;padding-right:0.5rem;">
+          <label>Name:
+            <input type="text" id="gf-name" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Edition:
+            <input type="text" id="gf-edition" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Citation Style:
+            <input type="text" id="gf-citation_style" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Heading Capitalization:
+            <input type="text" id="gf-heading_capitalization" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Footnote Format:
+            <textarea id="gf-footnote_format" rows="3" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Bibliography Format:
+            <textarea id="gf-bibliography_format" rows="3" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Prose Rules <span class="dim">(one per line)</span>:
+            <textarea id="gf-prose_rules" rows="4" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Quotation Rules:
+            <textarea id="gf-quotation_rules" rows="3" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Abbreviation Rules:
+            <textarea id="gf-abbreviation_rules" rows="2" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Date Format:
+            <input type="text" id="gf-date_format" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>Page Reference Format:
+            <input type="text" id="gf-page_reference_format" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);">
+          </label>
+          <label>URL/DOI Format:
+            <textarea id="gf-url_format" rows="2" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>System Prompt Addendum <span class="dim">(key rules the editor LLM will follow)</span>:
+            <textarea id="gf-system_prompt_addendum" rows="6" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+          <label>Custom Rules <span class="dim">(one per line)</span>:
+            <textarea id="gf-custom_rules" rows="3" style="width:100%;padding:0.4rem;border:1px solid var(--rule);border-radius:6px;background:var(--paper-recessed);color:var(--ink);font-family:var(--font-body);resize:vertical;"></textarea>
+          </label>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.7rem;">
+          <button class="btn" id="btn-back-url">&larr; Back</button>
+          <span class="spacer"></span>
+          <button class="btn accent" id="btn-save-guide">Save Guide</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================== MODEL SETTINGS MODAL -->
+  <div class="modal-overlay" id="model-settings-modal" style="display:none;">
+    <div class="modal modal-sm">
+      <div class="modal-head">
+        <h2>Model Settings</h2>
+        <button class="btn" id="btn-model-close">&times;</button>
+      </div>
+      <div class="modal-body model-form">
+        <label title="Which AI service powers the editor. Ollama runs a model on your own computer (free, no API key needed); OpenAI and Anthropic send text to cloud services (require API keys).">
+          Provider:
+          <select id="set-llm_provider"></select>
+        </label>
+        <label title="Number of paragraphs the editor reads at once. Larger batches can improve consistency across the document but use more memory and may hit provider rate limits.">
+          Batch Size:
+          <input type="number" id="set-batch_size" min="1" max="20">
+        </label>
+        <label title="Controls how strictly the editor follows rules versus making creative suggestions. Lower values (0.0–0.3) give predictable, precision edits; higher values (0.5–1.0) produce varied wording. 0.1 is typical for copy-editing.">
+          Temperature:
+          <input type="number" id="set-temperature" min="0" max="2" step="0.1">
+        </label>
+        <label title="Your name as it will appear in the tracked changes (revisions) of the output Word document.">
+          Author Name:
+          <input type="text" id="set-author_name">
+        </label>
+        <label title="Extra instructions for the editor on top of the chosen style. Only used when Editing Style is set to 'custom'.">
+          Custom Prompt <span class="dim">(used when style is "custom")</span>:
+          <input type="text" id="set-custom_system_prompt">
+        </label>
+        <p class="dim" id="model-hint" style="margin:0.6rem 0 0;"></p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/review.js"></script>
+<script src="/static/js/guide-import.js"></script>
+</body>
+</html>
