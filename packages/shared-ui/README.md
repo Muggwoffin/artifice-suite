@@ -10,9 +10,11 @@ instead of redeclaring the literals is the intended next step, not done as
 part of the directory reorganization.
 
 `artifice-graph` was consolidated into this file first (2026-07): its
-app-local `tokens.css` had accumulated 46 tokens (shadows, radius, spacing,
-motion, layout, `--font-mono`) that shared-ui was simply missing, plus one
-naming drift (`--font-sans` → renamed to the already-canonical
+app-local `tokens.css` had accumulated 30 tokens (shadows, radius, spacing,
+motion, layout, `--font-mono`) that shared-ui was simply missing, plus the
+`@media (prefers-color-scheme: dark)` block — without which this file could
+only respond to an explicit `[data-theme]` and never follow the OS. It also
+carried one naming drift (`--font-sans` → renamed to the already-canonical
 `--font-label`) and two dead/out-of-scope token families that were removed
 or relocated rather than promoted:
 
@@ -23,15 +25,24 @@ or relocated rather than promoted:
   in `apps/artifice-graph/web/static/entity-colors.css`, loaded after this
   file.
 
-**Known gap:** `artifice-graph`'s `web/static/tokens.css` still duplicates
-this file's values rather than importing it, because the app's
-`StaticFiles` mount only serves `web/static/` and cannot reach
-`packages/shared-ui/` over HTTP yet. See that file's header comment and the
-app's own notes for the wiring this still needs (an extra static mount or a
-build/sync step) before the duplication can be removed.
+`artifice-graph` no longer keeps a copy at all. Its `web/static/tokens.css`
+was deleted; `web/server.py` mounts this directory directly, so the app
+serves *this* file rather than a mirror of it. There is nothing to keep in
+sync, and no per-app `tokens.css` should be reintroduced.
 
-Usage once an app switches over:
+```python
+# apps/artifice-graph/web/server.py
+_SHARED_UI = _PROJECT.parent.parent / "packages" / "shared-ui"
+if not _SHARED_UI.is_dir():
+    raise RuntimeError(...)          # fail loudly, never serve nothing
+app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+```
 
 ```html
-<link rel="stylesheet" href="/shared-ui/tokens.css" />
+<link rel="stylesheet" href="/shared/tokens.css?v={{ asset_v }}" />
 ```
+
+Load this before any stylesheet that consumes the variables, and before an
+app's own domain colours (e.g. `entity-colors.css`).
+
+Adopt the same mount when consolidating the remaining three apps.

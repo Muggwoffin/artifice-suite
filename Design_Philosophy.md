@@ -66,7 +66,7 @@ text: var(--ink)
 | Token | Light | Dark | Role |
 |---|---|---|---|
 | `success` | `#28a745` | `#4aa066` | Success states |
-| `error` | `#dc3545` | `#e06060` | Error states |
+| `error` | `#a8322b` | `#e06060` | Error states |
 | `warning` | `#ffc107` | `#d9b64a` | Warning states |
 
 ### Color Usage Rules
@@ -633,6 +633,29 @@ The nav bar is **always visible** — pinned to the top of the viewport at all t
 - Active section link gets a 2px green underline via `scaleX(0)` to `scaleX(1)` transition
 - Main content area should account for the 56px nav height (e.g., `padding-top: 56px` or `scroll-margin-top` on anchored sections)
 
+**Implementation reference (`.topnav`, `apps/artifice-graph`):** the shipped class is `.topnav`, not `.nav`, and backdrop blur is gated behind `@media (min-width: 700px)` rather than applied unconditionally — cheaper on narrow viewports where the frosted-glass effect is least visible anyway. The bar also carries `box-shadow: var(--shadow-nav)` in addition to its bottom rule.
+
+```css
+.topnav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: var(--nav-height);
+    padding: 0 1.25rem;
+    background-color: rgba(251, 249, 243, 0.96);
+    border-bottom: 1px solid var(--rule);
+    box-shadow: var(--shadow-nav);
+}
+@media (min-width: 700px) {
+    .topnav { backdrop-filter: blur(12px) saturate(1.1); }
+}
+```
+
+Internally the bar is three parts: `.brand` (wordmark in `--font-display`, `700`, `1.15rem`, with a `.brand-accent` span coloured `--accent`) — `.navlinks` (a flex row of `<a>` in `--font-label`, `--text-xs`, `--label-tracking`, uppercase, where `aria-current="page"` holds the underline permanently visible rather than only on hover) — and, optionally, a ghost-bordered icon button (`.nav-theme`, `--radius-sm`) for a theme toggle.
+
 ### 8.6 Modals
 
 ```css
@@ -702,6 +725,233 @@ Stars are decorative markers, not icons. They appear in subsection headings and 
     padding-left: 1.25rem;
 }
 ```
+
+### 8.9 Page Container
+
+```css
+.page {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: calc(var(--nav-height) + 2rem) 1.25rem 4rem;
+}
+```
+
+Top padding clears the fixed nav bar (`--nav-height` plus breathing room) rather than the page content sitting under it. A `.page-prose` modifier caps width at the content-focused `44rem` measure (§4) for pages that read top-to-bottom as prose rather than as a dashboard.
+
+### 8.10 Masthead
+
+```css
+.masthead {
+    border-top: 4px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+    padding-top: 1rem;
+    margin-bottom: 2rem;
+}
+.masthead .label {
+    font-family: var(--font-label);
+    font-size: var(--text-sm);
+    letter-spacing: var(--label-tracking);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+.masthead h1 {
+    font-family: var(--font-display);
+    font-size: var(--text-hero);
+    margin: 0 0 0.5rem;
+    line-height: 1.15;
+}
+.masthead-rule {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 0.75rem 0 0;
+}
+```
+
+```html
+<header class="masthead">
+  <span class="label">Current pipeline state · canonical entities &amp; relationships</span>
+  <h1>The Library</h1>
+  <hr class="masthead-rule">
+</header>
+```
+
+Kicker label, hero title, thin closing rule — the page-top expression of the "Masthead top" border pattern in §5.
+
+### 8.11 Section Heading
+
+```css
+.section-head {
+    font-family: var(--font-label);
+    font-size: var(--text-sm);
+    letter-spacing: var(--label-tracking);
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.35rem;
+    margin: 2.5rem 0 1.25rem;
+}
+```
+
+Used as the `<h2>` between major regions within a page (e.g. "Pipeline stages", "Breakdown") — a labelled rule, not a display headline.
+
+### 8.12 List Card (`.text-card`)
+
+The list-item variant of the standard card (§8.2): same background, border, radius and shadow, but the padding lives on the inner link rather than the card itself, so the whole row is clickable and the hover lift (§8.2) applies unchanged.
+
+```css
+.text-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-paper);
+}
+.text-card a {
+    display: block;
+    padding: 1.25rem 1.5rem;
+    color: var(--ink);
+    text-decoration: none;
+}
+.text-title { font-family: var(--font-display); font-size: var(--text-lg); display: block; }
+.text-meta  { font-family: var(--font-label); font-size: var(--text-sm); color: var(--ink-faint); display: block; margin-top: 0.3rem; }
+.text-list  { display: grid; gap: 1rem; list-style: none; padding: 0; margin: 0; }
+```
+
+### 8.13 Sort Bar
+
+```css
+.sort-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.sort-pill {
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: var(--label-tracking);
+    text-transform: uppercase;
+    padding: 0.4rem 0.9rem;
+    border: 1.5px solid var(--rule);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink-soft);
+    transition: background-color var(--duration-fast) ease,
+                color var(--duration-fast) ease,
+                border-color var(--duration-fast) ease;
+}
+.sort-pill:hover {
+    background-color: var(--ink);
+    color: var(--paper-raised);
+    border-color: var(--ink);
+}
+.sort-pill[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent-wash);
+    color: var(--accent-deep);
+}
+```
+
+`.sort-pill` shares its ruleset with `.chip` (§8.4) — one component, two names. Active state is carried by `aria-pressed="true"`, not a class, so the accessible state and the visual state cannot drift apart.
+
+### 8.14 List Search Input
+
+The search field above a filterable list is the standard input (§8.3) under the alias `.lib-search-input` — same font, padding, radius and focus ring, with no dedicated width or size override of its own.
+
+```html
+<input type="text" class="lib-search-input" placeholder="Search library…" aria-label="Search library">
+```
+
+### 8.15 Stat Row
+
+A fixed-column-count grid, not an intrinsic `auto-fit`/`auto-fill` reflow — deliberate, so that a row with an incomplete last line leaves an empty track rather than stretching one tile to fill the gap.
+
+```css
+.stat-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+@media (min-width: 520px)  { .stat-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 800px)  { .stat-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 1050px) { .stat-row { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+.stat {
+    max-width: 15rem;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    text-align: center;
+    box-shadow: var(--shadow-paper);
+}
+.stat-n { font-family: var(--font-display); font-size: var(--text-h3); display: block; }
+.stat-l {
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    letter-spacing: var(--label-tracking);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-top: 0.25rem;
+}
+```
+
+```html
+<section class="stat-row">
+  <div class="stat"><span class="stat-n">42</span><span class="stat-l">Documents</span></div>
+</section>
+```
+
+### 8.16 Progress Bar
+
+```css
+.text-progress { display: flex; align-items: center; gap: 0.75rem; }
+.text-progress-track {
+    height: 4px;
+    background: var(--paper-recessed);
+    max-width: 12rem;
+    flex: 1;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+.text-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.6s var(--ease-primary);
+}
+.text-progress-pct {
+    font-family: var(--font-label);
+    font-size: var(--text-sm);
+    color: var(--ink-faint);
+    white-space: nowrap;
+}
+```
+
+```html
+<span class="text-progress">
+  <span class="text-progress-track"><span class="text-progress-fill" style="width: 42%"></span></span>
+  <span class="text-progress-pct">42%</span>
+</span>
+```
+
+### 8.17 Source Badge
+
+```css
+.text-source-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    color: var(--ink-soft);
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    background: var(--paper-recessed);
+}
+```
+
+A small inline provenance tag — attaches a source or evidence label to an entity or claim without competing with the surrounding text.
 
 ---
 
@@ -837,10 +1087,16 @@ On dark backgrounds, place logos on a warm paper plate:
     --accent-wash: rgba(47, 125, 69, 0.07);
     --gold: #bf9b30;
 
+    /* Semantic (status, not part of core identity) */
+    --success: #28a745;
+    --warning: #ffc107;
+    --error: #a8322b;
+
     /* Typography */
     --font-display: 'Playfair Display', Georgia, serif;
     --font-body: 'Libre Baskerville', Georgia, serif;
     --font-label: 'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif;
+    --font-mono: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
 
     /* Fluid Scale */
     --text-xs: 0.72rem;
@@ -908,6 +1164,10 @@ On dark backgrounds, place logos on a warm paper plate:
         --accent: #4aa066;
         --accent-deep: #7cc492;
         --accent-wash: rgba(74, 160, 102, 0.12);
+        --gold: #bf9b30;
+        --success: #4aa066;
+        --warning: #d9b64a;
+        --error: #e06060;
         --shadow-paper: 0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);
         --shadow-lifted: 0 2px 4px rgba(0,0,0,0.5), 0 22px 42px -16px rgba(0,0,0,0.7);
         --shadow-nav: 0 6px 24px -16px rgba(0,0,0,0.5);
@@ -915,6 +1175,14 @@ On dark backgrounds, place logos on a warm paper plate:
     }
 }
 ```
+
+### Token Architecture
+
+`packages/shared-ui/tokens.css` is the canonical source of truth for every design token in this document. There is no app-local copy of the token file any more. ArtificeGraph serves the canonical file over HTTP from a dedicated `/shared` route — mounted from `packages/shared-ui` in `apps/artifice-graph/web/server.py` and linked as `/shared/tokens.css` in `apps/artifice-graph/web/templates/base.html` — so the apps that consume it always read the single file and there is nothing to keep in sync. Do not reintroduce a per-app `tokens.css`; any new token belongs in `packages/shared-ui/tokens.css` and only then. (The canonical file activates dark mode through two independent paths — an explicit `[data-theme="dark"]` attribute and an OS-level `prefers-color-scheme` query, guarded so `[data-theme="light"]` can still override it — producing the same palette either way. The quick-reference block above keeps the simpler single-selector form for legibility; the real file is authoritative on the activation mechanism.)
+
+Domain-specific colours — entity-type accents, the register taxonomy palette — deliberately live app-local (for example `apps/artifice-graph/web/static/entity-colors.css`, served from the ordinary `/static` route). They are *not* suite tokens: the other three apps have no use for an entity taxonomy or a register scheme, so those colours have no place in the canonical token file. Keep them where the domain lives; keep them out of `packages/shared-ui/tokens.css`.
+
+The label/UI-font token is `--font-label`. The earlier `sans`-suffixed name for this token is retired and must not reappear — the canonical file declares only `--font-label`, and any reference to the retired name is drift to be corrected.
 
 ---
 
