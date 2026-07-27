@@ -7,9 +7,16 @@
 #   bash scripts/dispatch-opencode.sh --stop <agent>
 #
 # Why this exists: dispatching across the Windows -> WSL boundary breaks in four
-# ways that are individually silent and collectively expensive. See the header
-# comments on each guard below. Always prefer this script to a hand-rolled
-# invocation.
+# ways that are individually silent and collectively expensive (GUARDS 1-4), and
+# a fifth trap has nothing to do with the boundary: run artefacts from a previous
+# dispatch outlive it and get read as though they describe the current one
+# (GUARD 5). See the header comments on each guard below. Always prefer this
+# script to a hand-rolled invocation.
+#
+# Liveness is judged by CPU time against wall time, never by the log — logs are
+# block-buffered when redirected, so a frozen log proves nothing. 0.00 CPU over a
+# long elapsed time means a stalled transport; low-but-nonzero CPU means the
+# provider is throttling. Two different faults, one identical symptom.
 
 set -uo pipefail
 
@@ -52,10 +59,19 @@ cmd_status() {
 
   echo
   echo "--- run artefacts ---"
-  local f
+  local f name
   for f in "$RUNDIR"/*.status; do
     [ -e "$f" ] || continue
-    printf '%s: %s\n' "$(basename "$f" .status)" "$(cat "$f")"
+    name="$(basename "$f" .status)"
+    # A status file belonging to a currently-running agent describes an EARLIER
+    # run. Saying so is the whole point — an unqualified `exit=143` next to a live
+    # process reads as "this run failed" and has already caused one misdiagnosis.
+    if [ -n "$(agent_pids "$name")" ]; then
+      printf '%s: %s   <-- STALE, from a previous run; %s is running now\n' \
+        "$name" "$(cat "$f")" "$name"
+    else
+      printf '%s: %s\n' "$name" "$(cat "$f")"
+    fi
   done
 
   # NOTE: agent logs are BLOCK-BUFFERED when stdout is a file, so a frozen log
@@ -108,6 +124,14 @@ fi
 BRIEF="$RUNDIR/$AGENT.brief"
 LOG="$RUNDIR/$AGENT.log"
 STATUS="$RUNDIR/$AGENT.status"
+
+# GUARD 5: clear the previous run's artefacts BEFORE launching. The status file is
+# only written when the runner finishes, so a leftover `exit=143` from a killed
+# run sits there looking authoritative while the new agent is still working — and
+# reports a failure that already happened for a process that is perfectly healthy.
+# The log is truncated for the same reason: a stale banner names the model of the
+# *previous* run, which is exactly the check this script exists to make trustworthy.
+rm -f "$STATUS" "$LOG"
 
 # GUARD 1 (part a): normalise CRLF. Briefs written by Windows-side tooling arrive
 # with CRLF. Use sed with an explicit hex escape — `tr -d "\r"` through this

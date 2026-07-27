@@ -96,7 +96,11 @@ into *every* session rather than scoping to one agent, contaminating the orchest
 - OpenCode: use `bash scripts/dispatch-opencode.sh <agent> <brief-file>`. Do **not** hand-roll
   `opencode run` from a Windows-side shell — quoting, `$var` expansion, heredocs and process
   backgrounding all break silently across the Windows/WSL boundary, and `pkill -f <agent>` kills
-  the caller's own wrapper while leaving the agent running. The script guards all four.
+  the caller's own wrapper while leaving the agent running. The script guards all four, and a
+  fifth trap that is not a boundary problem: it clears the previous run's `.status` and `.log`
+  before launching, because a leftover `exit=143` from a killed run sits there looking
+  authoritative while the new agent is perfectly healthy. `--status` also marks any status file
+  belonging to a currently-running agent as **STALE** rather than reporting it as this run's result.
   All four OpenCode agents are `mode: all`; a `mode: subagent` agent will **silently answer as the
   default `build` agent** while looking like it worked. Always confirm the response banner reads
   `> <agent> · <expected-model>`.
