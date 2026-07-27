@@ -2,7 +2,7 @@
 {% block title %}ArtificeGraph — Library{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css?v={{ asset_v }}">
   <style>
   .leaflet-popup-content-wrapper, .leaflet-popup-tip {
     background: var(--paper-raised);
@@ -213,6 +213,7 @@
         <button type="button" class="app-btn" id="refreshMapBtn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">Load Map</button>
       </div>
     </div>
+    <p class="field-help" style="margin-top: var(--space-4);">Loading the map contacts openstreetmap.org to fetch map tiles.</p>
     <div id="mapContainer" style="height: 520px; width: 100%; border-radius: var(--radius-lg); border: 1px solid var(--rule); background: var(--paper-raised);"></div>
     <div id="mapStatus" class="muted" style="margin-top: 0.75rem; font-size: 0.85rem;">Select the Map tab and click Load Map to view locations.</div>
   </section>
@@ -224,10 +225,14 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="/static/vendor/leaflet/leaflet.js?v={{ asset_v }}"></script>
 <script>
 (function () {
   "use strict";
+
+  // Set marker image path for vendored Leaflet
+  if (typeof L !== "undefined") { L.Icon.Default.prototype.options.imagePath = "/static/vendor/leaflet/images/"; }
+
   var tabs = document.querySelectorAll(".tab");
   var panes = {
     entities: document.getElementById("tab-entities"),
