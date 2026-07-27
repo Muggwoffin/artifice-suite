@@ -175,6 +175,20 @@
             <span class="field-help">For document images sent to the model</span>
           </div>
 
+          <hr class="rule">
+
+          <div class="field">
+            <label for="embeddingUrl">Embedding Base URL</label>
+            <input class="app-input" id="embeddingUrl" name="embeddingUrl" value="{{ config.embedding.base_url }}" spellcheck="false" placeholder="http://localhost:11434">
+            <span class="field-help">Separate endpoint for bge-m3 embeddings. Can be different from the LLM server.</span>
+          </div>
+
+          <div class="field">
+            <label for="embeddingModel">Embedding Model</label>
+            <input class="app-input" id="embeddingModel" name="embeddingModel" value="{{ config.embedding.model }}" spellcheck="false" placeholder="bge-m3">
+            <span class="field-help">Default: bge-m3. Must be pulled on the embedding server.</span>
+          </div>
+
           <div class="field field-wide" style="margin-top: 1rem;">
             <button type="button" class="app-btn app-btn-ghost" id="btnSaveConfig">
               <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>

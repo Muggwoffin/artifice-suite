@@ -17,6 +17,7 @@ from artifice_graph.config import (
     IngestionConfig,
     PipelineConfig,
     load_config,
+    resolve_config_paths,
 )
 from artifice_graph.entity_resolution.resolver import EntityResolver
 from artifice_graph.exporters.graph_exporter import GraphExporter
@@ -338,7 +339,30 @@ class TestFileStore:
 
 class TestDemoCommand:
     def test_demo_runs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Demo command produces output at the expected location.
+
+        The demo's use_semantic default would require a live embedder, so we
+        force fuzzy resolution for the test.  Output paths are resolved
+        against the app root by load_config, so we override them to land in
+        tmp_path, matching the pattern in TestDemoRegression.
+        """
+        import artifice_graph.config as cfg_mod
+        import artifice_graph.cli as cli_mod
+
+        orig_load = cfg_mod.load_config
+
+        def _load_config_override(*args: object, **kwargs: object) -> PipelineConfig:
+            c = orig_load(*args, **kwargs)
+            c.export.output_dir = str(tmp_path / "data" / "output")
+            c.export.obsidian_vault_dir = str(tmp_path / "data" / "obsidian_vault")
+            c.entity_resolution.use_semantic = False
+            resolve_config_paths(c, tmp_path)
+            return c
+
+        monkeypatch.setattr(cfg_mod, "load_config", _load_config_override)
+        monkeypatch.setattr(cli_mod, "load_config", _load_config_override)
         monkeypatch.chdir(tmp_path)
+
         from artifice_graph.cli import demo
         demo()
         output_dir = tmp_path / "data" / "output"

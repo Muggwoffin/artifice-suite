@@ -16,6 +16,8 @@
     llmUrl: $("llmUrl"),
     llmApiKey: $("llmApiKey"),
     llmModel: $("llmModel"),
+    embeddingUrl: $("embeddingUrl"),
+    embeddingModel: $("embeddingModel"),
     chunkSize: $("chunkSize"),
     chunkOverlap: $("chunkOverlap"),
     batchSize: $("batchSize"),
@@ -233,16 +235,18 @@
 
   function collectConfig(extra) {
     var o = {
-      llm_base_url:   cfg.llmUrl ? cfg.llmUrl.value : "",
-      llm_api_key:    cfg.llmApiKey ? cfg.llmApiKey.value : "",
-      llm_model:      cfg.llmModel ? cfg.llmModel.value : "",
-      vision_mode:    cfg.visionMode ? !!cfg.visionMode.checked : false,
-      chunk_size:     cfg.chunkSize ? (parseInt(cfg.chunkSize.value, 10) || 2000) : 2000,
-      chunk_overlap:  cfg.chunkOverlap ? (parseInt(cfg.chunkOverlap.value, 10) || 200) : 200,
-      batch_size:     cfg.batchSize ? (parseInt(cfg.batchSize.value, 10) || 5) : 5,
-      graph_formats:  cfg.graphFormats ? cfg.graphFormats.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) : [],
-      use_semantic:   cfg.useSemantic ? !!cfg.useSemantic.checked : false,
-      incremental:    cfg.incremental ? !!cfg.incremental.checked : false
+      llm_base_url:       cfg.llmUrl ? cfg.llmUrl.value : "",
+      llm_api_key:        cfg.llmApiKey ? cfg.llmApiKey.value : "",
+      llm_model:          cfg.llmModel ? cfg.llmModel.value : "",
+      embedding_base_url: cfg.embeddingUrl ? cfg.embeddingUrl.value : "",
+      embedding_model:    cfg.embeddingModel ? cfg.embeddingModel.value : "",
+      vision_mode:        cfg.visionMode ? !!cfg.visionMode.checked : false,
+      chunk_size:         cfg.chunkSize ? (parseInt(cfg.chunkSize.value, 10) || 2000) : 2000,
+      chunk_overlap:      cfg.chunkOverlap ? (parseInt(cfg.chunkOverlap.value, 10) || 200) : 200,
+      batch_size:         cfg.batchSize ? (parseInt(cfg.batchSize.value, 10) || 5) : 5,
+      graph_formats:      cfg.graphFormats ? cfg.graphFormats.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) : [],
+      use_semantic:       cfg.useSemantic ? !!cfg.useSemantic.checked : false,
+      incremental:        cfg.incremental ? !!cfg.incremental.checked : false
     };
     if (extra) { Object.keys(extra).forEach(function (k) { o[k] = extra[k]; }); }
     return o;

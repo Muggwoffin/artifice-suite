@@ -699,8 +699,15 @@ def demo() -> None:
     store.save_models("entities.json", entities)
     store.save_models("relationships.json", relationships)
 
-    resolver = _build_resolver(config)
-    merged_entities, updated_rels = resolver.resolve(entities, relationships)
+    try:
+        resolver = _build_resolver(config)
+        merged_entities, updated_rels = resolver.resolve(entities, relationships)
+    except RuntimeError as exc:
+        logger.warning(
+            "Embedder unreachable (%s) — falling back to fuzzy resolution for demo.", exc
+        )
+        resolver = EntityResolver(config.entity_resolution)
+        merged_entities, updated_rels = resolver.resolve(entities, relationships)
 
     store.save_models("entities.json", merged_entities)
     store.save_models("relationships.json", updated_rels)

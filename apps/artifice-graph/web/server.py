@@ -334,8 +334,20 @@ def _do_graph(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -
         return
     entities = [Entity.model_validate(d) for d in raw_entities]
     relationships = [Relationship.model_validate(d) for d in store.load("relationships.json")]
-    resolver = _build_resolver(cfg)
-    merged, updated = resolver.resolve(entities, relationships)
+    try:
+        resolver = _build_resolver(cfg)
+    except RuntimeError as exc:
+        _log(run_key, f"  Embedder error: {exc}", "error")
+        _mark_run_failed(run_key, f"Graph — embedder unreachable at {cfg.embedding.base_url}")
+        _log_done(run_key, "Graph — failed (embedder unreachable)", close_stream=close_stream)
+        return
+    try:
+        merged, updated = resolver.resolve(entities, relationships)
+    except RuntimeError as exc:
+        _log(run_key, f"  Resolution failed: {exc}", "error")
+        _mark_run_failed(run_key, "Graph — embedder error during resolution")
+        _log_done(run_key, "Graph — failed (embedder error)", close_stream=close_stream)
+        return
     exporter = GraphExporter(cfg.export)
     results = exporter.export(merged, updated)
     _log(run_key, f"  ✓ {exporter.summary()}", "success")
@@ -491,11 +503,17 @@ def _do_demo(run_key: str) -> None:
     store.save_models("relationships.json", rels_list)
     _log(run_key, f"  Created {len(ents_list)} entities, {len(rels_list)} relationships")
 
-    resolver = _build_resolver(cfg)
-    merged, updated = resolver.resolve(ents_list, rels_list)
+    try:
+        resolver = _build_resolver(cfg)
+        merged, updated = resolver.resolve(ents_list, rels_list)
+        method = "semantic" if isinstance(resolver, SemanticEntityResolver) else "fuzzy"
+    except RuntimeError as exc:
+        _log(run_key, f"  Embedder unreachable ({exc}) — falling back to fuzzy resolution", "warn")
+        resolver = EntityResolver(cfg.entity_resolution)
+        merged, updated = resolver.resolve(ents_list, rels_list)
+        method = "fuzzy (semantic unavailable)"
     store.save_models("entities.json", merged)
     store.save_models("relationships.json", updated)
-    method = "semantic" if isinstance(resolver, SemanticEntityResolver) else "fuzzy"
     _log(run_key, f"  Resolved → {len(merged)} canonical entities ({method})")
 
     obsidian = ObsidianExporter(resolver, cfg.export)
