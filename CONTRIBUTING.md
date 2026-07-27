@@ -162,6 +162,62 @@ not currently harmful.
    `README.md`). New apps or major restructuring should preserve that
    parity.
 
+## Frontend conventions
+
+These are process rules for contributors. How the interface should *look* is governed by
+`Design_Philosophy.md`, which is the single source of truth for tokens, typography, spacing and
+component appearance — including the icon rules in its Components section. Nothing below overrides
+it.
+
+### Templates
+
+- FastAPI + Jinja2. Every page extends `templates/base.html` and fills `{% block title %}`,
+  `{% block head %}`, `{% block content %}` and `{% block scripts %}`.
+- Every CSS and JS link carries the `?v={{ asset_v }}` cache-buster. Without it a token change
+  ships to a browser that keeps serving the old stylesheet from cache.
+- Theme and reduced-motion state are stamped on `<html>` by middleware as `data-theme` and
+  `data-reduce-motion`. Read them from the attribute; never re-detect the OS preference in
+  page-level JavaScript, or the explicit toggle and the OS setting will disagree.
+- `[hidden] { display: none !important; }` is declared globally. Hide things with the `hidden`
+  attribute rather than a bespoke `.is-hidden` class per component.
+
+### JavaScript: vanilla, ES5-compatible, no build step
+
+All JavaScript is plain ES5, wrapped in an IIFE, exposing itself on `window`. No framework, no
+bundler, no transpiler, no `let`, no `const`, no arrow functions. As of this writing the rule holds
+exactly: **zero** occurrences of `let`, `const` or `=>` across the apps' JavaScript, and every JS
+file is IIFE-wrapped.
+
+This is not stylistic conservatism, and it is worth understanding before proposing to relax it:
+
+- **It follows from the local-first guarantee.** A build step means a `node_modules` tree, a lockfile
+  and a compile pass standing between the source and the running app. The project's promise is that
+  a researcher can clone the repository, run `uv sync`, and have working software on a machine with
+  no Node toolchain at all.
+- **It keeps the harness auditable.** `security-auditor` reviews the code that actually runs. Once
+  the shipped artefact is compiled output, reading the source no longer tells you what executes.
+- **It suits the problem.** These are harnesses — forms, status, logs, progress. Nothing here needs
+  a virtual DOM, and the four apps have not run into a wall that a framework would remove.
+
+If you believe a change genuinely requires more, raise it as a design question first. Do not
+introduce it incidentally inside a feature PR.
+
+### File and naming conventions
+
+| Path | Purpose |
+|---|---|
+| `packages/shared-ui/tokens.css` | **All** design tokens. Canonical, and the only copy — served over the app's `/shared` mount, never mirrored into an app |
+| `packages/shared-ui/fonts.css` | `@font-face` declarations for the locally vendored fonts |
+| `packages/shared-ui/fonts/` | The font files themselves, with their OFL licences |
+| `<app>/web/static/app.css` | Base chrome, shared components, reset, utilities |
+| `<app>/web/static/{feature}.css` | Page- or feature-specific styles |
+| `<app>/web/static/{feature}.js` | Per-page behaviour, IIFE-wrapped |
+| `<app>/web/templates/{feature}.html` | One Jinja2 template per route |
+
+App-local colours that are genuinely domain vocabulary rather than suite identity — the entity-type
+accents in `artifice-graph`, for example — live in their own app-local stylesheet such as
+`entity-colors.css`, loaded after the shared tokens. **Do not reintroduce a per-app `tokens.css`.**
+
 ## Submitting a pull request
 
 - Keep PRs focused — one app or one concern per PR where practical.

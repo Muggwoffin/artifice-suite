@@ -224,9 +224,29 @@ Mostly closed out. One manual step remains, and one new blocker was uncovered.
       providers. Until then treat OpenCode agents as usable only for short prompts
 - [ ] Exercise `security-auditor` on a real audit — blocked on the item above, not on the agent
       itself. It is correctly registered, read-only, and answers on `gemini-3.1-pro-preview`
-- [ ] Decide where the engineering conventions from the deleted `DESIGN_LANGUAGE.md` should live —
-      `ARCHITECTURE.md` or `CONTRIBUTING.md`. Recover with
-      `git show 73d8d4d:apps/artifice-graph/DESIGN_LANGUAGE.md`
+- [x] ~~Decide where the engineering conventions from the deleted `DESIGN_LANGUAGE.md` should
+      live~~ — done. Each convention was checked against the current code first, because that
+      document was demonstrably unreliable (it misstated `--ink-faint`, listed dark values matching
+      no current palette, and documented a component that exists nowhere). Roughly half survived:
+      - **Kept, in `CONTRIBUTING.md` → "Frontend conventions"**: template structure and blocks,
+        the `?v={{ asset_v }}` cache-buster, `data-theme`/`data-reduce-motion` middleware stamping,
+        the global `[hidden]` rule, and the file/naming table (corrected — `tokens.css` is no
+        longer app-local). All verified present in code
+      - **Kept, with its rationale written down for the first time**: the vanilla, ES5-compatible,
+        IIFE-wrapped, no-build-step JavaScript rule. Verified exactly true — **zero** uses of
+        `let`, `const` or `=>` across the apps' JS, and every JS file IIFE-wrapped. It had read as
+        arbitrary taste; it actually follows from the local-first guarantee (no Node toolchain
+        required to run the software), from auditability (`security-auditor` must review what
+        actually executes, not compiled output), and from the fact that harness UIs have never
+        needed more
+      - **Kept, going to `Design_Philosophy.md` §8**: the icon rules — no icon fonts, no emoji in
+        chrome, inline SVG with `aria-hidden="true"` and a fixed attribute set. Verified followed:
+        10 inline SVGs, 11 `aria-hidden`, **zero** icon-font links
+      - **Discarded — animations (§6)**: `state-pulse-flash`, `ink-dry` and `ink-create` appear in
+        **zero files**. LudwigLang reading-view residue, same category as the `--w-*` tokens
+      - **Discarded — breakpoints (§7)**: the table named three; the code has fourteen. It
+        described a discipline that does not exist. Logged as a Phase 2 prerequisite instead
+      - **Nothing went to `ARCHITECTURE.md`** — that describes system structure, not code style
 - [ ] Delete committed `.idea/` directories and add them to `.gitignore`
 
 ### Phase 1 — Finish artifice-graph
@@ -307,6 +327,15 @@ itself.** Neither renders anywhere today — `--success` and `--warning` are sti
 
 ### Phase 2 — Design system rollout
 
+- [ ] **PREREQUISITE: consolidate the responsive breakpoints before copying anything.**
+      `artifice-graph` declares **fourteen** distinct breakpoints across its stylesheets — 520,
+      580, 600, 700, 720, 800, 960 and 1050px, plus seven more in `rem` (12, 15, 22, 28, 44, 72).
+      Several are within 20px of each other and no two files agree on a scale. The deleted
+      `DESIGN_LANGUAGE.md` documented three, which is how little anyone was tracking this. Left
+      alone it becomes the template three more apps inherit, at which point it is four times the
+      work to undo. Agree a small named scale first, then roll out. Deliberately excluded from the
+      current `ui-ux` change set, because touching media queries would destabilise layout that has
+      already been measured and signed off
 - [ ] Apply the graph patterns to `artifice-ocr`, then `artifice-draft`, then `artifice-transcribe`
 - [ ] Each app serves `packages/shared-ui/tokens.css` via its own `/shared` mount; no app-local
       token copies are recreated
