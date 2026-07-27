@@ -282,6 +282,7 @@
     els.typeBreakdown = $("typeBreakdown");
     els.relBreakdown = $("relBreakdown");
     els.statRow      = $("statRow");
+    els.stageAnnouncer = $("stageAnnouncer");
   }
 
   // ── Stage card helpers ────────────────────────────────────────────
@@ -290,12 +291,35 @@
 
   function setStageState(key, state) {
     var card = document.querySelector(".stage-card[data-stage=\"" + key + "\"]");
+    var stageName = key;
     if (card) {
       card.setAttribute("data-state", state);
       var badge = card.querySelector("[data-stage-badge]");
       if (badge) badge.textContent = state;
+      var nameEl = card.querySelector(".stage-name");
+      if (nameEl) stageName = nameEl.textContent;
     }
     stageCards[key] = state;
+    _announceStageState(stageName, state);
+  }
+
+  // Screen-reader announcement for stage transitions (WCAG 4.1.3). One
+  // shared polite live region for all five stages, not five — five
+  // simultaneous badges updating (e.g. on Run All) would fire five
+  // near-simultaneous announcements and bury the one the user actually
+  // needs. "idle" resets (the silent reset pipeline.js does immediately
+  // before starting a new run) are deliberately not announced: they carry
+  // no new information for the user and, on page load, the region starts
+  // empty and untouched so nothing is read out unprompted.
+  function _announceStageState(stageName, state) {
+    if (!els.stageAnnouncer) return;
+    if (state === "running") {
+      els.stageAnnouncer.textContent = stageName + ": running";
+    } else if (state === "done") {
+      els.stageAnnouncer.textContent = stageName + ": complete";
+    } else if (state === "error") {
+      els.stageAnnouncer.textContent = stageName + ": failed";
+    }
   }
 
   function _allStagesDone() {

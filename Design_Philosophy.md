@@ -65,9 +65,9 @@ text: var(--ink)
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
-| `success` | `#256b39` | `#67a04b` | Success states — warmed off raw Bootstrap green; dark value kept a distinct hue family (~H100 vs `accent`'s ~H139) so it never reads as the brand accent |
-| `error` | `#a8322b` | `#e06060` | Error states |
-| `warning` | `#7c5e1a` | `#d9b64a` | Warning states — warmed/darkened to a desaturated ochre; raw amber (`#ffc107`) cannot reach 4.5:1 on `--paper` at any reasonable saturation |
+| `success` | `#455f2b` | `#67a04b` | Success states — both values kept a distinct hue family (moss/olive, ~H90–100) from `accent`'s forest green (~H137–139) so success never reads as the brand accent. The light value was originally `#256b39` (~H137, same family as `accent`), CIE76 delta-E 7.6 from `accent` — below the ~15 threshold where two colours reliably read as distinct to any viewer. The current value holds delta-E ~20 from `accent` at 6.5:1 on `--paper` |
+| `error` | `#a8322b` | `#dd5555` | Error states |
+| `warning` | `#7c5e1a` | `#e4cb81` | Warning states — warmed/darkened to a desaturated ochre in light mode; raw amber (`#ffc107`) cannot reach 4.5:1 on `--paper` at any reasonable saturation. Dark `warning`/`error` are separated by lightness, not just hue: at the original `#d9b64a`/`#e06060` the two simulated (Vienot 1999 deuteranopia projection) to CIE76 delta-E 8.4 — both read as the same muddy olive under red-green colour blindness. The current values simulate to delta-E ~24 apart while each still holds 4.5:1+ on `--paper` and remains recognisably amber/red to normal vision (delta-E ~62, unchanged) |
 
 ### Color Usage Rules
 
@@ -1088,7 +1088,7 @@ On dark backgrounds, place logos on a warm paper plate:
     --gold: #bf9b30;
 
     /* Semantic (status, not part of core identity) */
-    --success: #256b39;
+    --success: #455f2b;
     --warning: #7c5e1a;
     --error: #a8322b;
 
@@ -1166,8 +1166,8 @@ On dark backgrounds, place logos on a warm paper plate:
         --accent-wash: rgba(74, 160, 102, 0.12);
         --gold: #bf9b30;
         --success: #67a04b;
-        --warning: #d9b64a;
-        --error: #e06060;
+        --warning: #e4cb81;
+        --error: #dd5555;
         --shadow-paper: 0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);
         --shadow-lifted: 0 2px 4px rgba(0,0,0,0.5), 0 22px 42px -16px rgba(0,0,0,0.7);
         --shadow-nav: 0 6px 24px -16px rgba(0,0,0,0.5);

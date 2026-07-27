@@ -18,7 +18,14 @@
   --gold: #bf9b30;
 
   /* Semantic (status, not part of core identity) */
-  --success: #256b39;
+  /* --success is deliberately a different hue family (moss/olive, ~H90)
+     from --accent (forest green, ~H137) — a status colour must not read
+     as the brand accent. At the original #256b39 the two sat only
+     CIE76 delta-E 7.6 apart from --accent #2f7d45 — below the ~15
+     threshold where two colours reliably read as distinct. This value
+     holds delta-E ~20 to --accent while keeping 6.5:1 against --paper
+     #f6f3ea. Do not "harmonize" this back toward --accent. */
+  --success: #455f2b;
   --warning: #7c5e1a;
   --error: #a8322b;
 
@@ -115,8 +122,16 @@
        from --accent (forest green, ~H139) — a status colour must not read
        as the brand accent. Do not "harmonize" this back toward --accent. */
     --success: #67a04b;
-    --warning: #d9b64a;
-    --error: #e06060;
+    /* --warning and --error are separated by LIGHTNESS, not just hue —
+       hue is exactly what deuteranopia removes. At the original #d9b64a /
+       #e06060 the two simulate (Vienot 1999 deuteranopia projection) to
+       #cdcf78 / #bdc560 — CIE76 delta-E 8.4, both read as the same muddy
+       olive. This pair simulates to delta-E ~24 apart while each still
+       holds 4.5:1+ against --paper #161310 and remains recognisably
+       amber / red to normal vision (delta-E ~62, unchanged from before).
+       Do not converge these back toward equal lightness. */
+    --warning: #e4cb81;
+    --error: #dd5555;
 
     --shadow-paper: 0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);
     --shadow-lifted: 0 2px 4px rgba(0,0,0,0.5), 0 22px 42px -16px rgba(0,0,0,0.7);
@@ -146,8 +161,12 @@
      --success is a distinct hue family from --accent, not a rounding
      error. */
   --success: #67a04b;
-  --warning: #d9b64a;
-  --error: #e06060;
+  /* See the matching comment in the prefers-color-scheme block above —
+     --warning and --error are separated by lightness so they stay
+     distinguishable under deuteranopia simulation (delta-E ~24), not
+     just hue. Do not converge these back toward equal lightness. */
+  --warning: #e4cb81;
+  --error: #dd5555;
 
   --shadow-paper: 0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);
   --shadow-lifted: 0 2px 4px rgba(0,0,0,0.5), 0 22px 42px -16px rgba(0,0,0,0.7);
