@@ -1,10 +1,12 @@
 # Artifice Suite
 
+[![DOI](https://zenodo.org/badge/1313540750.svg)](https://doi.org/10.5281/zenodo.21621935)
+
 A collection of local-first, bring-your-own-model (BYOM) desktop tools designed around rigid software harnesses rather than conversational AI interfaces.
 
-## Anti-ELIZA Philosophy
+## AI for Humanities Research beyond the 'ELIZA Effect'
 
-*(Reserved for authoring)*
+This software follows from the insight of Joseph Weizenbaum, creator of the first chatbot ELIZA, that '‘extremely short exposures to a relatively simple computer program could induce powerful delusional thinking in quite normal people". To avoid such negative impacts of AI use while following 'minimal computing' and data privacy best practice, this software defaults to a local-first and open source approach where all interactions with models are deterministic rather than conversation.
 
 ## Design System
 
