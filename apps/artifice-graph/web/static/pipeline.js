@@ -26,7 +26,8 @@
     incremental: $("incremental"),
     visionMode: $("visionMode"),
     btnTestConnection: $("btnTestConnection"),
-    btnFetchModels:    $("btnFetchModels")
+    btnFetchModels:    $("btnFetchModels"),
+    btnSaveConfig:     $("btnSaveConfig")
   };
 
   // Warn on startup if any cached element resolved to null — a missing
@@ -280,6 +281,7 @@
     els.btnRunAll    = $("btnRunAll");
     els.btnDemo      = $("btnDemo");
     els.btnClearLog  = $("btnClearLog");
+    els.btnSaveConfig = $("btnSaveConfig");
     els.logPanel     = $("logPanel");
     els.statusStrip  = $("statusStrip");
     els.lastRunLabel = $("lastRunLabel");
@@ -658,6 +660,35 @@
       cfg.btnFetchModels.addEventListener("click", handleFetchModelsClick);
     }
 
+    // Wiring for save configuration button
+    if (cfg.btnSaveConfig) {
+      cfg.btnSaveConfig.addEventListener("click", function () {
+        var btn = this;
+        btn.disabled = true;
+        var prevText = btn.textContent;
+        btn.textContent = "Saving...";
+
+        window.fetch("/api/save-config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(collectConfig())
+        }).then(function (r) {
+          return r.json();
+        }).then(function (data) {
+          if (data.status === "ok") {
+            showNotification(data.message, "success");
+          } else {
+            showNotification(data.message || "Error saving configuration", "error");
+          }
+        }).catch(function (err) {
+          showNotification("Error saving configuration: " + (err && err.message ? err.message : err), "error");
+        }).finally(function () {
+          btn.disabled = false;
+          btn.textContent = prevText;
+        });
+      });
+    }
+
     // Initial state
     updateSectionStates();
     refreshState();
@@ -676,6 +707,24 @@
     if (els.btnDemo) els.btnDemo.addEventListener("click", function () {
       Object.keys(stageCards).forEach(function (k) { setStageState(k, "idle"); });
       runStage("demo");
+    });
+
+    if (els.btnSaveConfig) els.btnSaveConfig.addEventListener("click", function () {
+      var config = collectConfig();
+
+      window.fetch("/api/save-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config)
+      }).then(function (r) { return r.json(); }).then(function (data) {
+        if (data.status === "ok") {
+          showNotification("Configuration saved", "success");
+        } else {
+          showNotification("Save failed: " + (data.message || "Unknown error"), "error");
+        }
+      }).catch(function (err) {
+        showNotification("Save failed: " + (err && err.message ? err.message : "Network error"), "error");
+      });
     });
 
     if (els.btnClearLog) els.btnClearLog.addEventListener("click", clearLog);
