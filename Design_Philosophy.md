@@ -953,6 +953,36 @@ A fixed-column-count grid, not an intrinsic `auto-fit`/`auto-fill` reflow — de
 
 A small inline provenance tag — attaches a source or evidence label to an entity or claim without competing with the surrounding text.
 
+### 8.18 Icons
+
+Icons are inline SVG. Never an icon font, and never emoji in interface chrome.
+
+```html
+<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+     stroke="currentColor" stroke-width="2" stroke-linecap="round"
+     stroke-linejoin="round" aria-hidden="true"> … </svg>
+```
+
+| Attribute | Value | Why |
+|---|---|---|
+| `viewBox` | `0 0 24 24` | One coordinate system, so every icon scales and aligns identically |
+| `width` / `height` | `16` `16` | Set explicitly; an unsized SVG reflows the line box as it loads |
+| `fill` | `none` | These are line drawings, not filled glyphs |
+| `stroke` | `currentColor` | The icon inherits the text colour, so it follows the theme with no extra rule |
+| `stroke-width` | `2` | Matches the weight of the editorial type at label sizes |
+| `stroke-linecap` / `stroke-linejoin` | `round` | Softens the terminals; a square cap reads mechanical against this palette |
+| `aria-hidden` | `true` | The icon is decorative — its meaning belongs to the adjacent text |
+
+**Why not an icon font.** A font ships a whole glyph set to draw three arrows, renders as a missing-glyph box when it fails, and inherits font smoothing that has nothing to do with the drawing. It also breaks the local-first guarantee unless vendored, which is a lot of weight for line art. Inline SVG costs nothing at rest, takes `currentColor` for free, and can be read in the template.
+
+**Why not emoji.** Emoji render differently on every platform, carry vendor art direction that will never match a warm editorial palette, and are announced by screen readers with names no one chose. They are somebody else's design system.
+
+**`aria-hidden` is not optional.** An icon beside a label is decorative, and announcing it duplicates the label. An icon that is the *only* content of a control — an icon-only button — still gets `aria-hidden="true"`, with the accessible name supplied by `aria-label` on the control itself. Never leave a control named only by its icon.
+
+**The one exception.** Emoji are permitted where the user chooses them as *content* rather than chrome — the folder-icon picker being the case in point. A user-selected emoji is data, and the design system does not govern the user's data.
+
+As of this writing `artifice-graph` holds to this: 10 inline SVGs, 11 `aria-hidden` attributes, and zero icon-font references.
+
 ---
 
 ## 9. Focus & Accessibility
