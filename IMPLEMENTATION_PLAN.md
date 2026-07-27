@@ -198,7 +198,19 @@ Mostly closed out. One manual step remains, and one new blocker was uncovered.
       Required a fix first: OpenCode terminates its response banner with a carriage return, which
       sat inside the `${model}$` anchor and failed all four model assertions against banners that
       were in fact correct. `strip_ansi()` now strips CR as well as SGR colour
-- [ ] **BLOCKER: OpenCode is not installed in WSL at all.** Attempting the first real
+- [x] ~~**BLOCKER: OpenCode is not installed in WSL at all.**~~ **RESOLVED.** Node 22.22.1 and
+      `opencode-ai@1.18.7` installed natively via apt and npm. `command -v opencode` now returns
+      `/usr/local/bin/opencode`, and the binary is a genuine `ELF 64-bit LSB executable, x86-64`
+      — the `bin/opencode.exe` filename is only the package's naming convention, not a Windows PE.
+      `/usr/local/bin` sits at PATH position 2 against `/mnt/c` at position 10, so the shadowing is
+      automatic. Credentials live in the Linux store at `~/.local/share/opencode/auth.json` (mode
+      `600`), separate from the Windows install's.
+      **Verified against the exact failure:** re-dispatching the same 3,958-character brief that
+      previously sat at **0.00 CPU seconds for 7 minutes** in `poll_schedule_timeout` now shows
+      **3.24 CPU seconds within 5 seconds**, `WCHAN=do_epoll_wait` — an active event loop. Smoke
+      test 13/13 on the native install. Long briefs work. The diagnosis below is retained because it
+      explains a long series of failures that were repeatedly misattributed to models and briefs:
+- [ ] ~~Original diagnosis, retained for the record:~~ Attempting the first real
       `security-auditor` audit exposed the root cause of every prior agent stall. `which opencode`
       resolves to `/mnt/c/Users/mjcas/AppData/Roaming/npm/opencode` — a shim on the *Windows*
       filesystem that launches `opencode.exe` through WSL's Windows-interop layer (`/init`). There
