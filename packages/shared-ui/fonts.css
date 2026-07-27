@@ -1,0 +1,67 @@
+/* The New Masses — vendored web fonts.
+   Kept separate from tokens.css: this file performs network/asset loading
+   (@font-face src fetches), while tokens.css only declares custom
+   properties. Different maintenance concern, different file.
+
+   All three families ship under packages/shared-ui/fonts/ so every app
+   inherits the same local copies — no request ever leaves the machine to
+   fonts.googleapis.com or fonts.gstatic.com. Licence: SIL Open Font
+   License 1.1 for all three families; see the OFL-*.txt files alongside
+   the fonts in this directory.
+
+   Weights/styles below match exactly what apps/artifice-graph previously
+   requested from Google Fonts (base.html, formerly line 10):
+     Archivo:wght@400;600;700
+     Libre+Baskerville:ital,wght@0,400;0,700;1,400
+     Playfair+Display:ital,wght@0,600;0,700;0,900;1,700
+
+   Playfair Display and Libre Baskerville ship as variable TTFs (as
+   vendored in apps/artifice-ocr/assets/fonts/) — a single file's `wght`
+   axis covers every weight requested, so one @font-face rule per style
+   with a font-weight range is correct and matches how a variable font is
+   meant to be served. No woff2 conversion tool (fonttools' woff2 support
+   needs the `brotli` Python extension; neither it nor a `woff2_compress`
+   binary is available in this environment) was available for these two
+   TTFs — see packages/shared-ui/README.md for the full note. Archivo was
+   fetched directly from Google's CDN already in woff2 format, so no
+   conversion was needed for it. */
+
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./fonts/Archivo.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Libre Baskerville";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./fonts/LibreBaskerville.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Libre Baskerville";
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./fonts/LibreBaskerville-Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("./fonts/PlayfairDisplay.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  font-style: italic;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("./fonts/PlayfairDisplay-Italic.ttf") format("truetype");
+}

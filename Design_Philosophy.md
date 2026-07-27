@@ -65,9 +65,9 @@ text: var(--ink)
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
-| `success` | `#28a745` | `#4aa066` | Success states |
+| `success` | `#256b39` | `#67a04b` | Success states — warmed off raw Bootstrap green; dark value kept a distinct hue family (~H100 vs `accent`'s ~H139) so it never reads as the brand accent |
 | `error` | `#a8322b` | `#e06060` | Error states |
-| `warning` | `#ffc107` | `#d9b64a` | Warning states |
+| `warning` | `#7c5e1a` | `#d9b64a` | Warning states — warmed/darkened to a desaturated ochre; raw amber (`#ffc107`) cannot reach 4.5:1 on `--paper` at any reasonable saturation |
 
 ### Color Usage Rules
 
@@ -1088,8 +1088,8 @@ On dark backgrounds, place logos on a warm paper plate:
     --gold: #bf9b30;
 
     /* Semantic (status, not part of core identity) */
-    --success: #28a745;
-    --warning: #ffc107;
+    --success: #256b39;
+    --warning: #7c5e1a;
     --error: #a8322b;
 
     /* Typography */
@@ -1165,7 +1165,7 @@ On dark backgrounds, place logos on a warm paper plate:
         --accent-deep: #7cc492;
         --accent-wash: rgba(74, 160, 102, 0.12);
         --gold: #bf9b30;
-        --success: #4aa066;
+        --success: #67a04b;
         --warning: #d9b64a;
         --error: #e06060;
         --shadow-paper: 0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);

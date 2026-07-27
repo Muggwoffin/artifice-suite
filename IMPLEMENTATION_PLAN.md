@@ -254,20 +254,40 @@ parallel with rollout without contaminating the template.
         is wrong, because it is not how the badges render. The rendered figure is the real one
       - The dark palette is declared twice — under `@media (prefers-color-scheme: dark)` and under
         `[data-theme="dark"]` — and the two agree exactly, 19 declarations each, no drift
-- [ ] **`--success` and `--warning` are still raw Bootstrap in light mode.** `--success` `#28a745`
-      is 2.82:1 and `--warning` `#ffc107` is 1.47:1 against `--paper` — both fail AA badly, and both
-      are the same off-palette Bootstrap family as the `#dc3545` already replaced by `#a8322b`. That
-      job was half-finished. Neither token is referenced anywhere in `artifice-graph`, so nothing
-      renders wrong today — but they live in the canonical shared token file, and
-      `artifice-transcribe` already hardcodes `#dc3545` for its health states, so Phase 2 will wire
-      real UI to them. Warm both before rollout, not after
-- [ ] **`--accent` and `--success` are the identical `#4aa066` in dark mode** (they differ in light:
-      `#2f7d45` vs `#28a745`). A success state is chromatically indistinguishable from a brand
-      accent. Give `--success` its own dark value
-- [ ] `app.css:523` keys its only dark rule to `@media (prefers-color-scheme: dark)` with no
-      `[data-theme="dark"]` twin, so an explicit dark toggle on a light OS silently skips it. The
-      effect today is trivial — one `.photo:hover` brightness — but this file is the template the
-      other three apps are about to copy, so fix the pattern rather than the instance
+- [x] ~~`--success` and `--warning` are still raw Bootstrap in light mode~~ — warmed and verified
+      from the live DOM. `--success` `#28a745` → `#256b39` (2.82:1 → **5.84:1**), `--warning`
+      `#ffc107` → `#7c5e1a` (1.47:1 → **5.45:1**). Both now pass AA against `--paper`
+- [x] ~~`--accent` and `--success` are the identical `#4aa066` in dark mode~~ — `--success` given
+      its own dark value `#67a04b`, a moss/olive ~40° off the accent's forest green. Verified
+      distinct: ΔE 16.3 normal vision, 17.1 simulated deuteranopia
+- [x] ~~`app.css:523` keys its only dark rule to `@media (prefers-color-scheme: dark)`~~ — a
+      `[data-theme="dark"]` twin now accompanies it, following the `tokens.css` pattern
+- [x] ~~Vendor the Google Fonts locally~~ — `packages/shared-ui/fonts/` now holds all three
+      families with per-family OFL licence files, declared in a sibling `fonts.css` and served
+      through the existing `/shared` mount; no `server.py` change was needed. `base.html` makes
+      **zero** requests to `googleapis.com`/`gstatic.com`. Verified rendered: `document.fonts.status`
+      is `loaded`, all three families resolve, and the variable-font weight ranges are correct
+      (Archivo 400–700, Libre Baskerville 400–700, Playfair Display 400–900), italics included.
+      Caveat: only Archivo is woff2. The two TTFs could not be converted — `fontTools` is present in
+      `.venv` but its woff2 support needs the `brotli` extension, which is not installed. Total font
+      payload is **940 KB**; `pip install brotli` and re-running the conversion would roughly halve
+      it. Local-first, so this costs page weight rather than network
+
+**Two colour problems remain in the status triad, found by verification rather than by the change
+itself.** Neither renders anywhere today — `--success` and `--warning` are still unreferenced in
+`artifice-graph` — but Phase 2 wires real UI to them, so both should be fixed before rollout:
+
+- [ ] **Dark `--warning` and `--error` collapse together for red–green colour blindness.** They are
+      far apart to normal vision (ΔE 61.7) but converge to ΔE **8.4** under simulated deuteranopia —
+      `#d9b64a` → `#cdcf78` and `#e06060` → `#bdc560`, both muddy olive. Roughly 6% of men could not
+      tell a warning from an error in dark mode. Light mode is fine at ΔE 21.4. Either separate the
+      two by lightness as well as hue, or guarantee status is never carried by colour alone
+      (WCAG 1.4.1) — an icon or text label alongside would also resolve it
+- [ ] **Light `--success` and `--accent` are nearly the same colour.** `#256b39` vs `#2f7d45` is
+      ΔE **7.6** to normal vision and 5.7 under deuteranopia — below the threshold where two colours
+      read as distinct. The dark-mode collision was fixed; light mode was left, and is now the worse
+      of the two. `ui-ux` flagged this itself as a design call it would not make unilaterally, which
+      was the right instinct. Apply the same hue separation used in dark
 - [ ] Accessibility pass: keyboard traversal, focus order, screen-reader labelling on the stage
       cards now that they are `div` containers rather than buttons
 - [ ] Decide whether Google Fonts should be vendored locally — `base.html` currently fetches from

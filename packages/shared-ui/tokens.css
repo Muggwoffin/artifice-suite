@@ -18,8 +18,8 @@
   --gold: #bf9b30;
 
   /* Semantic (status, not part of core identity) */
-  --success: #28a745;
-  --warning: #ffc107;
+  --success: #256b39;
+  --warning: #7c5e1a;
   --error: #a8322b;
 
   /* Typography */
@@ -111,7 +111,10 @@
     --accent-wash: rgba(74, 160, 102, 0.12);
     --gold: #bf9b30;
 
-    --success: #4aa066;
+    /* --success is deliberately a different hue family (moss/olive, ~H100)
+       from --accent (forest green, ~H139) — a status colour must not read
+       as the brand accent. Do not "harmonize" this back toward --accent. */
+    --success: #67a04b;
     --warning: #d9b64a;
     --error: #e06060;
 
@@ -139,7 +142,10 @@
   --accent-wash: rgba(74, 160, 102, 0.12);
   --gold: #bf9b30;
 
-  --success: #4aa066;
+  /* See the matching comment in the prefers-color-scheme block above —
+     --success is a distinct hue family from --accent, not a rounding
+     error. */
+  --success: #67a04b;
   --warning: #d9b64a;
   --error: #e06060;
 

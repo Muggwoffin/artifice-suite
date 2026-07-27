@@ -520,10 +520,17 @@ body {
   transform: scale(1.04);
 }
 
+/* Two independent activation paths, matching packages/shared-ui/tokens.css:
+   OS-level prefers-color-scheme, and an explicit [data-theme="dark"]
+   toggle. A toggle on a light-mode OS must still get this rule. */
 @media (prefers-color-scheme: dark) {
-  .photo:hover {
+  :root:not([data-theme="light"]) .photo:hover {
     filter: brightness(0.88);
   }
+}
+
+[data-theme="dark"] .photo:hover {
+  filter: brightness(0.88);
 }
 
 /* ── Footer ───────────────────────────────────────────────── */
