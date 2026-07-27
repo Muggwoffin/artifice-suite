@@ -2,15 +2,19 @@
 
 ## Monorepo Layout
 
-The Artifice Suite is structured as a pnpm workspace monorepo enforcing strict boundaries between presentation, core logic, and model connectors.
+The Artifice Suite is structured as a `uv` workspace monorepo enforcing strict boundaries between presentation, core logic, and model connectors. Use `uv sync --extra all` and `uv run <command>`; there are no Node or npm scripts.
 
 ```
 artifice-suite/
 ├── apps/                 # Desktop applications (OCR, Draft, Graph, Transcribe)
 ├── packages/             # Shared packages (shared-ui, model-harness, core-types)
 ├── .opencode/agents/     # OpenCode sub-agent definitions
-└── .claude/rules/        # Claude Code runtime rules
+└── .claude/agents/       # Claude Code sub-agent definitions
 ```
+
+Agent definitions live in `agents/` directories in both runtimes. Nothing belongs in
+`.claude/rules/` — files there load as project-wide instructions into every session instead of
+scoping to a single agent.
 
 ## Core Abstraction: `packages/model-harness`
 

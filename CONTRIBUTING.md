@@ -155,7 +155,7 @@ not currently harmful.
 3. **Local-first, no silent network calls.** Contributions must not
    introduce telemetry, analytics, or any transmission of user documents,
    audio, or BYO model API keys off the local machine. See
-   `.claude/rules/security-auditor.md` for the specific checks this
+   `.opencode/agents/security-auditor.md` for the specific checks this
    project holds itself to.
 4. **Directory parity.** Apps share the same internal layout
    (`src/<package>/`, `tests/`, `pyproject.toml`, `Dockerfile`,
