@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end verification script for the PersonaeTranscribe API.
+"""End-to-end verification script for the ArtificeTranscribe API.
 
 Usage:
     1. Start the server:  python -m app.main
@@ -24,7 +24,10 @@ def _get(path: str) -> dict | None:
     req = urllib.request.Request(f"{BASE}{path}")
     try:
         with urllib.request.urlopen(req) as resp:
-            return json.loads(resp.read())
+            try:
+                return json.loads(resp.read())
+            except json.JSONDecodeError:
+                return None
     except urllib.error.HTTPError as exc:
         print(f"  GET {path} -> {exc.code}")
         return None

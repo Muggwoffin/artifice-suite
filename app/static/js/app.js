@@ -245,9 +245,11 @@
     const language = $('opt-language').value.trim();
     const minSpeakers = $('opt-min-speakers').value;
     const maxSpeakers = $('opt-max-speakers').value;
+    const vocabulary = $('opt-vocabulary').value.trim();
     if (language) params.set('language', language);
     if (minSpeakers) params.set('min_speakers', minSpeakers);
     if (maxSpeakers) params.set('max_speakers', maxSpeakers);
+    if (vocabulary) params.set('custom_vocabulary', vocabulary);
 
     const formData = new FormData();
     formData.append('file', selectedFile);
@@ -589,6 +591,11 @@
     $('btn-delete-job').onclick = () => deleteJob(job.id);
     $('btn-save-speakers').onclick = () => saveSpeakers(job.id);
     $('btn-save-metadata').onclick = () => saveMetadata(job.id);
+    const canAI = job.status === 'completed';
+    $('btn-ai-summarize').disabled = !canAI;
+    $('btn-ai-cleanup').disabled = !canAI;
+    $('btn-ai-summarize').onclick = () => summarizeTranscript(job.id);
+    $('btn-ai-cleanup').onclick = () => cleanupTranscript(job.id);
     initEditToolbar();
     updateEditToolbar();
 
@@ -1352,7 +1359,383 @@
     $('btn-load-models').addEventListener('click', preloadModels);
   }
 
-  // ---------------------------------------------------------------- startup
+  // ------------------------------------------------ persistent dictionary
+
+  function saveDictionary() {
+    const words = $('dict-textarea').value.trim() || null;
+    const status = $('dict-save-status');
+    status.textContent = 'Saving...';
+    try {
+      api('/dictionary', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ words }),
+      });
+      status.textContent = 'Saved';
+      setTimeout(() => { status.textContent = ''; }, 2000);
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    }
+  }
+
+  async function loadDictionary() {
+    try {
+      const data = await api('/dictionary');
+      $('dict-textarea').value = (data && data.words) || '';
+    } catch (_) { /* first load - table may be empty */ }
+  }
+
+  // ------------------------------------------------- speaker enrollment
+
+  async function loadKnownSpeakers() {
+    const container = $('known-speakers-list');
+    try {
+      const data = await api('/speakers/known');
+      if (!data.speakers || data.speakers.length === 0) {
+        container.innerHTML = '<p class="dim">No enrolled speakers.</p>';
+        return;
+      }
+      container.innerHTML = data.speakers.map((s) => `
+        <div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;border-bottom:1px solid var(--rule);">
+          <span style="flex:1;font-weight:600;">${escapeHtml(s.name)}</span>
+          <span class="dim">${s.dimension}d (${s.model_name})</span>
+          <span class="dim">${formatDate(s.created_at)}</span>
+          <button class="btn tiny danger" data-delete-known="${escapeHtml(s.id)}">&times;</button>
+        </div>
+      `).join('');
+      container.querySelectorAll('[data-delete-known]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Remove this speaker enrollment?')) return;
+          try {
+            await api(`/speakers/known/${btn.dataset.deleteKnown}`, { method: 'DELETE' });
+            loadKnownSpeakers();
+          } catch (err) { toast(err.message, 'error'); }
+        });
+      });
+    } catch (_) { /* table may be empty */ }
+  }
+
+  async function enrollSpeaker() {
+    const name = $('enroll-name').value.trim();
+    const fileInput = $('enroll-file');
+    const file = fileInput.files[0];
+    const status = $('enroll-status');
+    if (!name || !file) { status.textContent = 'Provide a name and audio file.'; return; }
+    status.textContent = 'Enrolling...';
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('file', file);
+    try {
+      const resp = await fetch(`${API}/speakers/enroll`, { method: 'POST', body: formData });
+      if (!resp.ok) { const b = await resp.json(); throw new Error(b.detail || resp.statusText); }
+      const result = await resp.json();
+      status.textContent = `Enrolled "${result.name}"`;
+      $('enroll-name').value = '';
+      fileInput.value = '';
+      loadKnownSpeakers();
+    } catch (err) { status.textContent = `Error: ${err.message}`; }
+  }
+
+  async function enrollFromJob() {
+    if (!currentJobId) { toast('No job selected.', 'warning'); return; }
+    const inputs = document.querySelectorAll('[data-speaker-label]');
+    const selected = Array.from(inputs).find((inp) => inp.dataset.enrolling) || inputs[0];
+    if (!selected) { toast('No speakers in this job.', 'warning'); return; }
+    const speakerLabel = selected.dataset.speakerLabel;
+    const name = prompt(`Enter a name for speaker "${speakerLabel}":`);
+    if (!name || !name.trim()) return;
+    try {
+      await api('/speakers/enroll-from-job', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: currentJobId, speaker_label: speakerLabel, name: name.trim() }),
+      });
+      toast(`Enrolled "${name.trim()}"`, 'accent');
+      loadKnownSpeakers();
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  async function matchSpeakers() {
+    if (!currentJobId) { toast('No job selected.', 'warning'); return; }
+    const status = $('match-status');
+    status.textContent = 'Matching...';
+    try {
+      const result = await api(`/jobs/${currentJobId}/match-speakers`, { method: 'POST' });
+      const matched = result.matches.filter((m) => m.matched_name);
+      if (matched.length > 0) {
+        toast(`Matched ${matched.length} speaker(s)`, 'accent');
+      } else {
+        toast('No matches found', 'accent');
+      }
+      status.textContent = '';
+      // Reload transcript to reflect new names
+      selectJob(currentJobId);
+    } catch (err) { status.textContent = `Error: ${err.message}`; }
+  }
+
+  // ------------------------------------------------------------------ settings / models
+
+async function loadModelConfig() {
+  try {
+    const cfg = await api('/config');
+    if (cfg) {
+      const modelSize = $('setting-model-size');
+      if (modelSize) modelSize.value = cfg.whisper_model || 'base';
+      const device = $('setting-device');
+      if (device) device.value = cfg.device || 'auto';
+      const hfToken = $('setting-hf-token');
+      if (hfToken) hfToken.value = cfg.hf_token || '';
+      const diarizationProvider = $('setting-diarization-provider');
+      if (diarizationProvider) diarizationProvider.value = cfg.diarization_provider || 'pyannote';
+      const diarizationModel = $('setting-diarization-model');
+      if (diarizationModel) diarizationModel.value = cfg.diarization_model || 'pyannote/speaker-diarization-3.0';
+      const alignmentCache = $('setting-alignment-cache');
+      if (alignmentCache) alignmentCache.checked = cfg.enable_alignment_model_cache !== false;
+    }
+  } catch (err) {
+    console.warn('Failed to load model config:', err);
+  }
+}
+
+async function saveModelConfig() {
+  const body = {
+    whisper_model: $('setting-model-size')?.value || 'base',
+    device: $('setting-device')?.value || 'auto',
+    hf_token: $('setting-hf-token')?.value || '',
+    diarization_provider: $('setting-diarization-provider')?.value || 'pyannote',
+    diarization_model: $('setting-diarization-model')?.value || 'pyannote/speaker-diarization-3.0',
+    enable_alignment_model_cache: $('setting-alignment-cache')?.checked !== false,
+  };
+
+  const status = $('model-applied-status');
+  const text = $('model-applied-text');
+
+  try {
+    await api('/config', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (status) status.style.display = 'block';
+    if (text) text.textContent = 'Model configuration applied successfully.';
+    toast('Model settings saved', 'accent');
+  } catch (err) {
+    if (status) status.style.display = 'block';
+    if (text) text.textContent = `Failed to apply: ${err.message}`;
+    toast(`Failed to save model settings: ${err.message}`, 'error');
+  }
+}
+
+async function saveInferenceConfig() {
+  const base_url = $('setting-base-url').value.trim();
+  const api_key = $('setting-api-key').value.trim() || 'not-needed';
+  const model_name = $('setting-model-select').value;
+  const vision_enabled = $('setting-vision').checked;
+
+  const body = { base_url, api_key, model_name, vision_enabled };
+  try {
+    await api('/inference/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    localStorage.setItem('pt-inference-config', JSON.stringify(body));
+    toast('Inference settings saved successfully', 'accent');
+  } catch (err) {
+    toast(`Failed to save settings: ${err.message}`, 'error');
+  }
+}
+
+async function fetchInferenceModels() {
+  const base_url = $('setting-base-url').value.trim();
+  const api_key = $('setting-api-key').value.trim() || 'not-needed';
+  const select = $('setting-model-select');
+  select.innerHTML = '<option value="">Loading models...</option>';
+  try {
+    const res = await api('/inference/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base_url, api_key }),
+    });
+    select.innerHTML = '';
+    if (res.models && res.models.length > 0) {
+      res.models.forEach((m) => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        select.appendChild(opt);
+      });
+      toast(`Loaded ${res.models.length} model(s)`, 'accent');
+    } else {
+      select.innerHTML = '<option value="">No models found</option>';
+      toast('No models returned by server', 'warning');
+    }
+  } catch (err) {
+    select.innerHTML = '<option value="">Failed to fetch models</option>';
+    toast(`Error fetching models: ${err.message}`, 'error');
+  }
+}
+
+async function testInferenceConnection() {
+  const base_url = $('setting-base-url').value.trim();
+  const api_key = $('setting-api-key').value.trim() || 'not-needed';
+  const dot = $('connection-status-dot');
+  const statusText = $('connection-status-text');
+  dot.style.background = 'var(--rule)';
+  statusText.textContent = 'Testing connection...';
+  try {
+    const res = await api('/inference/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base_url, api_key }),
+    });
+    if (res.success) {
+      dot.style.background = '#22c55e';
+      statusText.textContent = res.message;
+      toast('Connection successful!', 'accent');
+    } else {
+      dot.style.background = '#ef4444';
+      statusText.textContent = res.message;
+      toast(res.message, 'error');
+    }
+  } catch (err) {
+    dot.style.background = '#ef4444';
+    statusText.textContent = `Error: ${err.message}`;
+    toast(`Connection test failed: ${err.message}`, 'error');
+  }
+}
+
+function initSettingsPanel() {
+  $('preset-ollama').addEventListener('click', () => {
+    $('setting-base-url').value = 'http://localhost:11434/v1';
+  });
+  $('preset-lmstudio').addEventListener('click', () => {
+    $('setting-base-url').value = 'http://localhost:1234/v1';
+  });
+  $('preset-vllm').addEventListener('click', () => {
+    $('setting-base-url').value = 'http://localhost:8080/v1';
+  });
+  $('preset-openai').addEventListener('click', () => {
+    $('setting-base-url').value = 'https://api.openai.com/v1';
+  });
+
+  $('btn-fetch-models').addEventListener('click', fetchInferenceModels);
+  $('btn-test-connection').addEventListener('click', testInferenceConnection);
+  $('btn-save-settings').addEventListener('click', saveInferenceConfig);
+  $('btn-apply-model').addEventListener('click', saveModelConfig);
+
+  loadModelConfig();
+  loadInferenceConfig();
+}
+
+function openAIModal(title) {
+  $('ai-modal').classList.remove('hidden');
+  $('ai-modal-title').textContent = title;
+  $('ai-modal-status').textContent = '';
+  $('ai-modal-content').textContent = '';
+}
+
+function closeAIModal() {
+  $('ai-modal').classList.add('hidden');
+}
+
+function setAIStatus(text, type) {
+  const el = $('ai-status');
+  if (el) el.textContent = text;
+  const modalStatus = $('ai-modal-status');
+  if (modalStatus) {
+    modalStatus.textContent = text;
+    modalStatus.style.color = type === 'error' ? 'var(--error)' : type === 'ok' ? 'var(--success)' : '';
+  }
+}
+
+async function streamAIJob(jobId, endpoint) {
+  return new Promise((resolve, reject) => {
+    const es = new EventSource(`${API}/jobs/${jobId}/${endpoint}`);
+    let fullText = '';
+    es.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'chunk') {
+          fullText += data.text;
+          $('ai-modal-content').textContent = fullText;
+        } else if (data.type === 'error') {
+          setAIStatus(`Error: ${data.text}`, 'error');
+          es.close();
+          reject(new Error(data.text));
+        } else if (data.type === 'done') {
+          setAIStatus('Done', 'ok');
+          es.close();
+          resolve(fullText);
+        }
+      } catch (_) {
+        // ignore parse errors
+      }
+    });
+    es.onerror = () => {
+      setAIStatus('Connection error', 'error');
+      es.close();
+      reject(new Error('SSE connection failed'));
+    };
+  });
+}
+
+async function summarizeTranscript(jobId) {
+  if (!jobId) return;
+  openAIModal('Transcript Summary');
+  setAIStatus('Generating summary...', '');
+  $('btn-ai-summarize').disabled = true;
+  $('btn-ai-cleanup').disabled = true;
+  try {
+    const result = await streamAIJob(jobId, 'summarize');
+    setAIStatus(`Summary generated (${result.length} chars)`, 'ok');
+  } catch (err) {
+    setAIStatus(`Failed: ${err.message}`, 'error');
+  } finally {
+    $('btn-ai-summarize').disabled = false;
+    $('btn-ai-cleanup').disabled = false;
+  }
+}
+
+async function cleanupTranscript(jobId) {
+  if (!jobId) return;
+  openAIModal('Transcript Cleanup');
+  setAIStatus('Cleaning up transcript...', '');
+  $('btn-ai-summarize').disabled = true;
+  $('btn-ai-cleanup').disabled = true;
+  try {
+    const result = await streamAIJob(jobId, 'cleanup');
+    setAIStatus(`Cleanup complete (${result.length} chars)`, 'ok');
+  } catch (err) {
+    setAIStatus(`Failed: ${err.message}`, 'error');
+  } finally {
+    $('btn-ai-summarize').disabled = false;
+    $('btn-ai-cleanup').disabled = false;
+  }
+}
+
+function copyAIResult() {
+  const text = $('ai-modal-content').textContent;
+  if (text && text !== 'Waiting for AI response...') {
+    navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard', 'accent'));
+  }
+}
+
+function downloadAIResult() {
+  const text = $('ai-modal-content').textContent;
+  if (!text || text === 'Waiting for AI response...') return;
+  const title = ($('ai-modal-title').textContent || 'ai-result').toLowerCase().replace(/\s+/g, '-');
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title}-${Date.now()}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Downloaded', 'accent');
+}
+
+// ---------------------------------------------------------------- startup
 
   document.addEventListener('DOMContentLoaded', () => {
     initTabs();
@@ -1362,13 +1745,33 @@
     initHealthPanel();
     initGlobalSearch();
     initKeyboardShortcuts();
+    initSettingsPanel();
     loadConfig();
+    loadModelConfig();
     loadHealth();
     $('btn-library-refresh').addEventListener('click', loadLibrary);
     $('btn-search-close').addEventListener('click', closeSearchModal);
-    // Close search on overlay click
-    $('search-modal').addEventListener('click', (e) => {
-      if (e.target === $('search-modal')) closeSearchModal();
+    $('btn-ai-close').addEventListener('click', closeAIModal);
+    $('btn-ai-copy').addEventListener('click', copyAIResult);
+    $('btn-ai-download').addEventListener('click', downloadAIResult);
+    // Close AI modal on overlay click
+    $('ai-modal').addEventListener('click', (e) => {
+      if (e.target === $('ai-modal')) closeAIModal();
     });
+
+    // Dictionary
+    $('btn-save-dictionary').addEventListener('click', saveDictionary);
+    $('btn-enroll-speaker').addEventListener('click', enrollSpeaker);
+    $('btn-enroll-from-job').addEventListener('click', enrollFromJob);
+    $('btn-match-speakers').addEventListener('click', matchSpeakers);
+
+    // Load dictionary when its tab is activated
+    const origTabClick = document.querySelector('.tab[data-tab="dictionary"]');
+    if (origTabClick) {
+      origTabClick.addEventListener('click', () => {
+        loadDictionary();
+        loadKnownSpeakers();
+      });
+    }
   });
 })();

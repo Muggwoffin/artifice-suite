@@ -82,6 +82,46 @@ class SpeakerMapping(Base):
     job: Mapped[TranscriptionJob] = relationship(back_populates="speakers")
 
 
+class PersistentDictionary(Base):
+    """A single-row table holding a comma-separated global vocabulary list
+    that is merged into every transcription job's hotwords."""
+
+    __tablename__ = "persistent_dictionary"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    words: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class KnownSpeaker(Base):
+    """An enrolled speaker whose voice embedding is stored for cross-session
+    recognition."""
+
+    __tablename__ = "known_speakers"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(256))
+    embedding: Mapped[bytes] = mapped_column(Text)  # numpy array pickled
+    model_name: Mapped[str] = mapped_column(String(64), default="pyannote/embedding")
+    dimension: Mapped[int] = mapped_column(default=512)
+    sample_audio_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class SpeakerEmbedding(Base):
+    """Per-speaker centroid embedding for a specific job, used for cross-session
+    speaker matching."""
+
+    __tablename__ = "speaker_embeddings"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    job_id: Mapped[str] = mapped_column(String(32))
+    speaker_label: Mapped[str] = mapped_column(String(32))
+    embedding: Mapped[bytes] = mapped_column(Text)  # numpy array pickled
+    model_name: Mapped[str] = mapped_column(String(64), default="pyannote/embedding")
+    dimension: Mapped[int] = mapped_column(default=512)
+
+
 class SegmentEditVersion(Base):
     __tablename__ = "segment_edit_versions"
 

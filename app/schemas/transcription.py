@@ -162,3 +162,107 @@ class SegmentSplitResponse(BaseModel):
 class SegmentMergeResponse(BaseModel):
     segment: SegmentOut
     deleted_segment_id: str
+
+
+# ── Persistent Dictionary ─────────────────────────────────────────────
+
+
+class DictionaryResponse(BaseModel):
+    id: str
+    words: str | None = None
+    updated_at: datetime
+
+
+class DictionaryUpdate(BaseModel):
+    words: str | None = None
+
+
+# ── Speaker Enrollment & Recognition ──────────────────────────────────
+
+
+class KnownSpeakerOut(BaseModel):
+    id: str
+    name: str
+    model_name: str
+    dimension: int
+    created_at: datetime
+
+
+class KnownSpeakerList(BaseModel):
+    speakers: list[KnownSpeakerOut]
+
+
+class SpeakerEnrollResponse(BaseModel):
+    id: str
+    name: str
+    message: str = "Speaker enrolled"
+
+
+class EnrollFromJobRequest(BaseModel):
+    job_id: str
+    speaker_label: str
+    name: str
+
+
+class SpeakerMatchResult(BaseModel):
+    speaker_label: str
+    matched_name: str | None = None
+    confidence: float | None = None
+
+
+class SpeakerMatchResponse(BaseModel):
+    job_id: str
+    matches: list[SpeakerMatchResult]
+
+
+class SpeakerEmbeddingOut(BaseModel):
+    speaker_label: str
+    dimension: int
+    model_name: str
+
+
+class InferenceConfigRequest(BaseModel):
+    base_url: str = "http://localhost:11434/v1"
+    api_key: str = "not-needed"
+    model_name: str = ""
+    vision_enabled: bool = False
+
+
+class InferenceTestRequest(BaseModel):
+    base_url: str = "http://localhost:11434/v1"
+    api_key: str = "not-needed"
+
+
+class InferenceModelsRequest(BaseModel):
+    base_url: str = "http://localhost:11434/v1"
+    api_key: str = "not-needed"
+
+
+class InferenceGenerateRequest(BaseModel):
+    prompt: str
+    image_base64: str | None = None
+    stream: bool = False
+    temperature: float = 0.2
+    max_tokens: int = 2048
+
+
+class ModelConfigRequest(BaseModel):
+    whisper_model: str | None = None
+    device: str | None = None
+    hf_token: str | None = None
+    diarization_provider: str | None = None
+    diarization_model: str | None = None
+    enable_alignment_model_cache: bool | None = None
+
+
+class ModelConfigResponse(BaseModel):
+    whisper_model: str
+    device: str
+    hf_token: str
+    diarization_provider: str
+    diarization_model: str
+    enable_alignment_model_cache: bool
+    available_whisper_models: list[str] = Field(
+        default_factory=lambda: ["tiny", "base", "small", "medium", "large-v3"]
+    )
+    available_diarization_providers: list[str] = Field(default_factory=lambda: ["pyannote"])

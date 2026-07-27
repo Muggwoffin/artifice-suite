@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PersonaeTranscribe</title>
+<title>ArtificeTranscribe</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,10 +12,11 @@
 <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
-<div class="app">
+<a href="#main-content" class="skip-link">Skip to content</a>
+<div class="app" id="main-content">
 
   <header class="masthead">
-    <h1>PersonaeTranscribe</h1>
+    <h1>ArtificeTranscribe</h1>
     <span class="tag">speech-to-text &middot; diarization &middot; oral history</span>
     <div class="masthead-search" id="masthead-search">
       <input type="text" id="global-search-input" placeholder="Search transcripts (/)" class="search-input">
@@ -25,6 +26,8 @@
   <nav class="tabs">
     <button class="tab active" data-tab="transcribe">Transcribe</button>
     <button class="tab" data-tab="library">Library</button>
+    <button class="tab" data-tab="dictionary">Dictionary</button>
+    <button class="tab" data-tab="settings">Settings &middot; Models</button>
   </nav>
 
   <div class="panels">
@@ -42,13 +45,39 @@
         </div>
         <input type="file" id="file-input" accept="audio/*,video/*" style="display:none;">
 
-        <div class="form-row">
-          <label>Model: <span id="opt-model-size" class="model-badge">—</span></label>
-          <label>Language: <input type="text" id="opt-language" placeholder="auto-detect" style="width:6rem;"></label>
-          <label>Min speakers: <input type="number" id="opt-min-speakers" min="1" placeholder="&ndash;"></label>
-          <label>Max speakers: <input type="number" id="opt-max-speakers" min="1" placeholder="&ndash;"></label>
-          <label>Vocabulary: <input type="text" id="opt-vocabulary" placeholder="names, terms, places..." style="width:14rem;" title="Comma-separated proper nouns to improve accuracy"></label>
-        </div>
+  <div class="form-row">
+    <label>Model: 
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <span id="opt-model-size" class="model-badge" style="flex:1;">—</span>
+        <span class="dim" style="font-size:0.8rem;cursor:pointer;color:var(--accent);" title="Show BYOM guide" id="model-guide-toggle">ⓘ</span>
+      </div>
+    </label>
+    <label>Language: <input type="text" id="opt-language" placeholder="auto-detect" style="width:6rem;"></label>
+    <label>Min speakers: <input type="number" id="opt-min-speakers" min="1" placeholder="&ndash;"></label>
+    <label>Max speakers: <input type="number" id="opt-max-speakers" min="1" placeholder="&ndash;"></label>
+    <label>Vocabulary: <input type="text" id="opt-vocabulary" placeholder="names, terms, places..." style="width:14rem;" title="Comma-separated proper nouns to improve accuracy"></label>
+  </div>
+
+  <div class="hidden" id="model-guide-panel" style="margin-top:0.5rem;padding:0.8rem;background:var(--paper-recessed);border-radius:var(--radius-sm);border-left:3px solid var(--accent);">
+    <h4 style="margin:0 0 0.5rem 0;color:var(--accent);">About Speaker Diarisation</h4>
+    <p class="dim" style="margin:0.3rem 0;">
+      <strong>What is Diarisation?</strong> Automatic speaker segmentation and identification.
+      It splits audio into <strong>Speaker-00</strong>, <strong>Speaker-01</strong>, etc., based on voice characteristics.
+    </p>
+    <p class="dim" style="margin:0.3rem 0;">
+      <strong>How to Get Diarisation</strong>:
+    </p>
+    <ul class="dim" style="margin:0.3rem 0;padding-left:1.2rem;font-size:0.85rem;">
+      <li>Open Source: <code>pannous/PyAnnote for speaker diarisation</code> <a href="https://huggingface.co/pyannote/speaker-diarization-3.0" target="_blank" style="color:var(--accent);">https://huggingface.co/pyannote/speaker-diarization-3.0</a></li>
+      <li>Tool to run locally: <code>diarisation-tool</code> (CNNDiarization, pyannote.audio-silero)</li>
+      <li>Cloud SaaS: <code>AssemblyAI Async API</code>, <code>Deepgram Live API</code></li>
+      <li>On-prem: Docker containers with <code>vits-gnu</code> + <code>whisperx</code></li>
+    </ul>
+    <p class="dim" style="margin:0.3rem 0;">
+      <strong>Hugging Face:</strong> Search "diarisation" or "speaker embeddings" — models like <code>pyannote/embedding</code> are lightweight and can process speaker segments.
+    </p>
+    <button class="btn tiny" id="model-guide-close" style="margin-top:0.5rem;">Close Guide</button>
+  </div>
 
         <div class="toolbar">
           <button class="btn accent" id="btn-start" disabled>&#9654; Start Transcription</button>
@@ -103,7 +132,7 @@
       <div class="card transcript-card hidden" id="transcript-card">
         <div class="audio-pane">
           <audio controls id="audio-player"></audio>
-          <canvas id="waveform-canvas" height="80" style="width:100%;border-radius:6px;background:var(--paper-recessed);cursor:pointer;"></canvas>
+          <canvas id="waveform-canvas" height="80" style="width:100%;cursor:pointer;"></canvas>
           <details class="metadata-form" id="metadata-form" open>
             <summary>Interview Metadata</summary>
             <div class="metadata-grid">
@@ -121,7 +150,14 @@
           <div class="speaker-form" id="speaker-form">
             <h3>Speakers</h3>
             <div id="speaker-rows"></div>
-            <button class="btn" id="btn-save-speakers">Save Names</button>
+            <div class="toolbar" style="padding:0.4rem 0 0;">
+              <button class="btn" id="btn-save-speakers">Save Names</button>
+              <button class="btn" id="btn-enroll-from-job">Enroll Selected as Known Speaker</button>
+            </div>
+            <div class="toolbar" style="padding:0.3rem 0 0;">
+              <button class="btn" id="btn-match-speakers">Match Speakers</button>
+              <span class="dim" id="match-status"></span>
+            </div>
           </div>
           <div class="export-row">
             <button class="btn" data-export="json">JSON</button>
@@ -133,6 +169,11 @@
             <button class="btn" data-export="ohms">OHMS</button>
             <button class="btn" data-export="tei">TEI</button>
             <button class="btn danger" id="btn-delete-job" style="margin-left:auto;">Delete</button>
+          </div>
+          <div class="ai-assistant-row" style="padding:0.5rem 0;">
+            <button class="btn accent" id="btn-ai-summarize" type="button" disabled>Summarise</button>
+            <button class="btn accent" id="btn-ai-cleanup" type="button" disabled>Cleanup</button>
+            <span class="dim ai-status" id="ai-status" style="margin-left:0.5rem;"></span>
           </div>
         </div>
         <div class="transcript-bar">
@@ -166,6 +207,190 @@
 
     </section>
 
+    <!-- =========================================================== DICTIONARY -->
+    <section class="panel" id="panel-dictionary">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Persistent Dictionary</h2>
+          <span class="dim">Words below are merged into every transcription as hotwords</span>
+        </div>
+        <div style="padding:0.9rem 1.1rem;">
+          <textarea id="dict-textarea" style="width:100%;min-height:120px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:var(--paper-recessed);color:var(--ink);padding:0.6rem;font-family:var(--font-body);font-size:0.9rem;" placeholder="Enter comma-separated terms, names, jargon...&#10;&#10;Example: Smithson, Pleistocene, paleoanthropology, Olduvai"></textarea>
+          <div class="toolbar" style="padding:0.6rem 0 0;">
+            <button class="btn accent" id="btn-save-dictionary">Save Dictionary</button>
+            <span class="dim" id="dict-save-status" style="margin-left:0.5rem;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-head">
+          <h2>Known Speakers</h2>
+          <span class="dim">Enrolled voices are auto-recognised across sessions</span>
+        </div>
+        <div style="padding:0.9rem 1.1rem;">
+          <div id="known-speakers-list"><p class="dim">No enrolled speakers.</p></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-head">
+          <h2>Enroll a New Speaker</h2>
+        </div>
+        <div style="padding:0.9rem 1.1rem;">
+          <div class="form-row" style="padding:0 0 0.6rem;">
+            <label>Name: <input type="text" id="enroll-name" placeholder="e.g. John Smith"></label>
+          </div>
+          <div class="form-row" style="padding:0 0 0.6rem;">
+            <label>Audio clip: <input type="file" id="enroll-file" accept="audio/*"></label>
+          </div>
+          <button class="btn accent" id="btn-enroll-speaker">Enroll Speaker</button>
+          <span class="dim" id="enroll-status" style="margin-left:0.5rem;"></span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =========================================================== SETTINGS / MODELS -->
+    <section class="panel" id="panel-settings">
+
+      <!-- Transcription Model Card -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Transcription Model</h2>
+          <span class="dim">Whisper / WhisperX speech-to-text</span>
+        </div>
+        <div style="padding:1rem 1.2rem;">
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model:</label>
+              <select id="setting-model-size" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+                <option value="tiny">tiny</option>
+                <option value="base" selected>base</option>
+                <option value="small">small</option>
+                <option value="medium">medium</option>
+                <option value="large-v3">large-v3</option>
+              </select>
+            </div>
+            <button class="btn" id="btn-apply-model" type="button" style="height:2.4rem;">Apply</button>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Device:</label>
+              <select id="setting-device" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+                <option value="auto" selected>auto</option>
+                <option value="cuda">cuda</option>
+                <option value="cpu">cpu</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">HuggingFace Token:</label>
+            <input type="password" id="setting-hf-token" value="" placeholder="hf_..." style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div id="model-applied-status" style="display:none; margin-top:0.5rem; padding:0.5rem; border-radius:var(--radius-sm); background:var(--paper-recessed);">
+            <span class="dim" id="model-applied-text"></span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Diarization Card -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>Diarization &amp; Alignment</h2>
+          <span class="dim">Speaker segmentation and word-level alignment</span>
+        </div>
+        <div style="padding:1rem 1.2rem;">
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Provider:</label>
+              <select id="setting-diarization-provider" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+                <option value="pyannote" selected>pyannote (recommended)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Model:</label>
+            <input type="text" id="setting-diarization-model" value="pyannote/speaker-diarization-3.0" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; align-items:center; gap:0.6rem;">
+            <input type="checkbox" id="setting-alignment-cache" style="width:1.1rem; height:1.1rem;" checked>
+            <label for="setting-alignment-cache" style="font-weight:600; cursor:pointer;">Cache alignment models across sessions</label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- AI Assistant Card (BYOM) -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-head">
+          <h2>AI Assistant (BYOM)</h2>
+          <span class="dim">Post-processing with OpenAI-compatible endpoints</span>
+        </div>
+        <div style="padding:1rem 1.2rem;">
+
+          <div style="margin-bottom:1rem; background:var(--paper-recessed); padding:0.8rem; border-radius:var(--radius-sm); border-left:3px solid var(--accent);">
+            <p class="dim" style="margin:0; font-size:0.9rem;">
+              <strong>Note:</strong> BYOM connects to any OpenAI-compatible server (Ollama, LM Studio, vLLM, OpenAI API) for post-transcription tasks like summarization or cleanup. It does <strong>not</strong> affect core transcription or diarization.
+            </p>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; flex-direction:column; gap:0.3rem;">
+            <label style="font-weight:600;">Preset Shortcuts:</label>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button class="btn tiny" id="preset-ollama" type="button">Ollama</button>
+              <button class="btn tiny" id="preset-lmstudio" type="button">LM Studio</button>
+              <button class="btn tiny" id="preset-vllm" type="button">vLLM / LocalAI</button>
+              <button class="btn tiny" id="preset-openai" type="button">OpenAI API</button>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Base URL:</label>
+            <input type="text" id="setting-base-url" value="http://localhost:11434/v1" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">API Key:</label>
+            <input type="password" id="setting-api-key" value="not-needed" placeholder="not-needed or sk-..." style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model Name:</label>
+              <select id="setting-model-select" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+                <option value="">— Click Fetch Models —</option>
+              </select>
+            </div>
+            <button class="btn" id="btn-fetch-models" type="button" style="height:2.4rem;">Fetch Models</button>
+          </div>
+
+          <div class="form-row" style="margin-bottom:1rem; display:flex; align-items:center; gap:0.6rem;">
+            <input type="checkbox" id="setting-vision" style="width:1.1rem; height:1.1rem;">
+            <label for="setting-vision" style="font-weight:600; cursor:pointer;">Vision / Multimodal Enabled (e.g. Qwen2.5-VL, Llama-3.2-Vision)</label>
+          </div>
+
+          <div class="toolbar" style="padding-top:0.5rem; border-top:1px solid var(--rule); display:flex; gap:0.6rem; align-items:center;">
+            <button class="btn accent" id="btn-save-settings" type="button">Save Configuration</button>
+            <button class="btn" id="btn-test-connection" type="button">Test Connection</button>
+            <span id="connection-status-dot" class="health-dot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--rule);" title="Connection status"></span>
+            <span class="dim" id="connection-status-text" style="font-size:0.9rem;">Not tested</span>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
   </div>
 
   <!-- Search results modal -->
@@ -181,6 +406,28 @@
         </div>
         <div class="search-results-list" id="search-results-list">
           <p class="dim" style="padding:1rem;">No results.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Assistant Modal -->
+  <div class="modal-overlay hidden" id="ai-modal">
+    <div class="modal">
+      <div class="card">
+        <div class="card-head">
+          <h2 id="ai-modal-title">AI Assistant</h2>
+          <div style="display:flex;gap:0.4rem;align-items:center;">
+            <span class="dim" id="ai-modal-status"></span>
+            <button class="btn tiny" id="btn-ai-close">&times;</button>
+          </div>
+        </div>
+        <div style="padding:1rem;">
+          <div class="toolbar" style="padding-bottom:0.5rem;">
+            <button class="btn" id="btn-ai-copy" type="button">Copy</button>
+            <button class="btn" id="btn-ai-download" type="button">Download</button>
+          </div>
+          <div id="ai-modal-content" style="max-height:50vh;overflow-y:auto;padding:0.5rem;background:var(--paper-recessed);border-radius:var(--radius-sm);white-space:pre-wrap;font-size:0.9rem;">Waiting for AI response...</div>
         </div>
       </div>
     </div>
@@ -251,7 +498,7 @@
           <span class="health-status" id="health-hf-dot"></span>
         </div>
         <div class="health-row">
-          <span class="health-label">Database</span>
+          <span class="health-label" id="lbl-db">Database</span>
           <span class="health-value" id="health-db-status">—</span>
           <span class="health-status" id="health-db-dot"></span>
         </div>

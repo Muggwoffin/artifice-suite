@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     device: str = "auto"
     max_upload_size: int = 524_288_000  # 500 MB
 
+    # Model selection and configuration
+    default_whisper_model: str = "base"
+    default_device: str = "auto"
+    default_hf_token: str = ""
+    diarization_provider: str = "pyannote"
+    diarization_model: str = "pyannote/speaker-diarization-3.0"
+    enable_alignment_model_cache: bool = True
+
     @property
     def upload_path(self) -> Path:
         p = Path(self.upload_dir)

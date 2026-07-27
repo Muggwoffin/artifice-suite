@@ -4,28 +4,43 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.models import (
     JobStatus,
+    KnownSpeaker,
+    PersistentDictionary,
     SegmentEditVersion,
+    SpeakerEmbedding,
     SpeakerMapping,
     TranscriptionJob,
     TranscriptSegment,
 )
 from app.db.session import async_session, get_db
 from app.schemas.transcription import (
+    DictionaryResponse,
+    DictionaryUpdate,
     EditHistoryResponse,
     EditVersionOut,
+    EnrollFromJobRequest,
     ExportFormat,
+    InferenceConfigRequest,
+    InferenceGenerateRequest,
+    InferenceModelsRequest,
+    InferenceTestRequest,
     JobCreated,
     JobMetadataUpdate,
     JobStatusResponse,
+    KnownSpeakerList,
+    KnownSpeakerOut,
+    ModelConfigRequest,
+    ModelConfigResponse,
     SearchMatch,
     SearchResults,
     SegmentMergeResponse,
@@ -35,19 +50,72 @@ from app.schemas.transcription import (
     SegmentTagUpdate,
     SegmentUpdateRequest,
     SegmentUpdateResponse,
+    SpeakerEmbeddingOut,
+    SpeakerEnrollResponse,
     SpeakerMappingOut,
     SpeakerMapResponse,
+    SpeakerMatchResponse,
+    SpeakerMatchResult,
     SpeakerRenameRequest,
     TranscriptionOptions,
     TranscriptResponse,
+)
+from app.services.inference import (
+    InferenceEngine,
+    get_available_models,
+)
+from app.services.inference import (
+    test_connection as test_inf_conn,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["transcription"])
 
+# Inference configuration persistence helper
+CONFIG_FILE = Path("./data/inference_config.json")
+
+
+def _load_inference_config() -> dict:
+    if CONFIG_FILE.exists():
+        try:
+            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {
+        "base_url": "http://localhost:11434/v1",
+        "api_key": "not-needed",
+        "model_name": "",
+        "vision_enabled": False,
+    }
+
+
+def _save_inference_config(cfg: dict) -> None:
+    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+
+
 # Module-level engine singleton (lazy init)
 _engine = None
+
+
+async def _reload_engine_with_new_model(new_model: str):
+    """Reload the transcription engine with a new Whisper model while preserving the settings."""
+    global _engine
+    logger.info("Reloading engine with new Whisper model: %s", new_model)
+
+    old_engine = _engine
+    if old_engine:
+        old_engine.unload()
+
+    from app.services.transcription import TranscriptionEngine
+
+    _engine = TranscriptionEngine(
+        model_size=settings.whisper_model,
+        device=settings.device,
+        hf_token=settings.hf_token,
+    )
+    logger.info("Engine reloaded successfully with model: %s", new_model)
 
 
 def _get_engine():
@@ -85,10 +153,15 @@ async def _run_transcription(
                 logger.debug("Job %s progress: %.0f%%", job_id, pct * 100)
 
             engine = _get_engine()
-            custom_vocab = None
-            if job.custom_vocabulary:
-                custom_vocab = job.custom_vocabulary
-            segments = await asyncio.to_thread(
+
+            # Merge global persistent dictionary with per-job vocabulary
+            hotwords = None
+            dict_row = (await db.execute(select(PersistentDictionary).limit(1))).scalars().first()
+            if dict_row and dict_row.words:
+                hotwords = dict_row.words
+            custom_vocab = job.custom_vocabulary or None
+
+            result = await asyncio.to_thread(
                 engine.transcribe,
                 audio_path,
                 language=options.language,
@@ -96,7 +169,10 @@ async def _run_transcription(
                 max_speakers=options.max_speakers,
                 progress_callback=_progress,
                 custom_vocabulary=custom_vocab,
+                hotwords=hotwords,
             )
+            segments = result.segments
+            speaker_embeddings = result.speaker_embeddings
 
             from app.db.models import TranscriptSegment as TS
 
@@ -131,11 +207,33 @@ async def _run_transcription(
             ]
             db.add_all(new_mappings)
 
+            # Store speaker embeddings for cross-session matching
+            if speaker_embeddings:
+                import pickle
+
+                db_embeddings = [
+                    SpeakerEmbedding(
+                        job_id=job_id,
+                        speaker_label=label,
+                        embedding=pickle.dumps(emb),
+                        model_name="pyannote/embedding",
+                        dimension=len(emb),
+                    )
+                    for label, emb in speaker_embeddings.items()
+                ]
+                db.add_all(db_embeddings)
+
             job.status = JobStatus.completed
             job.progress_percentage = 100.0
             job.completed_at = datetime.now(timezone.utc)
             await db.commit()
             logger.info("Job %s completed with %d segments", job_id, len(segments))
+
+            # Auto-match speakers against known speakers
+            try:
+                await _auto_match_speakers(job_id, db)
+            except Exception:
+                logger.exception("Auto-match failed for job %s", job_id)
 
         except Exception as exc:
             logger.exception("Job %s failed", job_id)
@@ -151,15 +249,299 @@ async def _run_transcription(
             engine.unload()
 
 
+async def _auto_match_speakers(job_id: str, db: AsyncSession) -> None:
+    """Compare this job's speaker embeddings against known speakers and
+    auto-rename mappings when a match exceeds the confidence threshold."""
+    embeddings = (
+        (await db.execute(select(SpeakerEmbedding).where(SpeakerEmbedding.job_id == job_id)))
+        .scalars()
+        .all()
+    )
+    if not embeddings:
+        return
+
+    known = (await db.execute(select(KnownSpeaker))).scalars().all()
+    if not known:
+        return
+
+    import pickle
+
+    import numpy as np
+
+    def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
+        denom = np.linalg.norm(a) * np.linalg.norm(b)
+        if denom == 0:
+            return 0.0
+        return float(np.dot(a, b) / denom)
+
+    THRESHOLD = 0.65
+
+    for emb in embeddings:
+        emb_vec = pickle.loads(emb.embedding)  # noqa: S301
+        emb_vec = np.asarray(emb_vec, dtype=np.float32)
+
+        best_name = None
+        best_score = -1.0
+
+        for known_spk in known:
+            known_vec = pickle.loads(known_spk.embedding)  # noqa: S301
+            known_vec = np.asarray(known_vec, dtype=np.float32)
+            score = _cosine_sim(emb_vec, known_vec)
+            if score > best_score:
+                best_score = score
+                best_name = known_spk.name
+
+        if best_score >= THRESHOLD and best_name:
+            mapping = (
+                (
+                    await db.execute(
+                        select(SpeakerMapping).where(
+                            SpeakerMapping.job_id == job_id,
+                            SpeakerMapping.speaker_label == emb.speaker_label,
+                        )
+                    )
+                )
+                .scalars()
+                .first()
+            )
+            if mapping:
+                mapping.custom_name = best_name
+
+    await db.commit()
+
+
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 
-@router.get("/config")
+@router.get("/config", response_model=ModelConfigResponse)
 async def get_config():
     return {
         "whisper_model": settings.whisper_model,
         "device": settings.device,
+        "hf_token": settings.hf_token,
+        "diarization_provider": settings.diarization_provider,
+        "diarization_model": settings.diarization_model,
+        "enable_alignment_model_cache": settings.enable_alignment_model_cache,
     }
+
+
+@router.patch("/config")
+async def update_config(body: ModelConfigRequest):
+    """Update model configuration dynamically (non-Swagger endpoint)."""
+    updates = body.model_dump(exclude_unset=True)
+
+    if "whisper_model" in updates:
+        settings.whisper_model = updates["whisper_model"]
+    if "device" in updates:
+        settings.device = updates["device"]
+    if "hf_token" in updates:
+        settings.hf_token = updates["hf_token"]
+    if "diarization_provider" in updates:
+        settings.diarization_provider = updates["diarization_provider"]
+    if "diarization_model" in updates:
+        settings.diarization_model = updates["diarization_model"]
+    if "enable_alignment_model_cache" in updates:
+        settings.enable_alignment_model_cache = updates["enable_alignment_model_cache"]
+
+    if "whisper_model" in updates:
+        await _reload_engine_with_new_model(settings.whisper_model)
+
+    return {"status": "updated", "changes": list(updates.keys())}
+
+
+@router.get("/inference/config")
+async def get_inference_config():
+    return _load_inference_config()
+
+
+@router.post("/inference/config")
+async def update_inference_config(body: InferenceConfigRequest):
+    cfg = body.model_dump()
+    _save_inference_config(cfg)
+    return {"status": "saved", "config": cfg}
+
+
+@router.delete("/inference/config")
+async def delete_inference_config():
+    if CONFIG_FILE.exists():
+        CONFIG_FILE.unlink()
+    if Path("./data/pt-inference-config.json").exists():
+        Path("./data/pt-inference-config.json").unlink()
+    return {"status": "deleted"}
+
+
+@router.post("/inference/models")
+async def fetch_inference_models(body: InferenceModelsRequest):
+    try:
+        models = await get_available_models(body.base_url, body.api_key)
+        return {"models": models}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.post("/inference/test")
+async def test_inference_connection(body: InferenceTestRequest):
+    result = await test_inf_conn(body.base_url, body.api_key)
+    return result
+
+
+@router.post("/inference/generate")
+async def inference_generate(body: InferenceGenerateRequest):
+    cfg = _load_inference_config()
+    engine = InferenceEngine(
+        base_url=cfg.get("base_url", "http://localhost:11434/v1"),
+        api_key=cfg.get("api_key", "not-needed"),
+        model_name=cfg.get("model_name", ""),
+        vision_enabled=cfg.get("vision_enabled", False),
+    )
+    if body.stream:
+
+        async def stream_generator():
+            gen = await engine.generate(
+                prompt=body.prompt,
+                image_base64=body.image_base64,
+                stream=True,
+                temperature=body.temperature,
+                max_tokens=body.max_tokens,
+            )
+            async for chunk in gen:
+                yield chunk
+
+        return StreamingResponse(stream_generator(), media_type="text/event-stream")
+    else:
+        res = await engine.generate(
+            prompt=body.prompt,
+            image_base64=body.image_base64,
+            stream=False,
+            temperature=body.temperature,
+            max_tokens=body.max_tokens,
+        )
+        return {"response": res}
+
+
+async def _build_transcript_prompt(job_id: str, db: AsyncSession, action: str) -> str:
+    """Fetch segments for a job and build a prompt for the AI action."""
+    segs = (
+        (await db.execute(
+            select(TranscriptSegment)
+            .where(TranscriptSegment.job_id == job_id)
+            .order_by(TranscriptSegment.start_time)
+        ))
+        .scalars()
+        .all()
+    )
+    if not segs:
+        return ""
+
+    lines = []
+    for s in segs:
+        start = int(s.start_time // 60)
+        end_sec = int(s.end_time % 60)
+        start_sec = int(s.start_time % 60)
+        lines.append(
+            f"[{start}:{start_sec:02d}-{start}:{end_sec:02d}] "
+            f"{s.speaker_label}: {s.text}"
+        )
+
+    transcript = "\n".join(lines)
+
+    if action == "summarize":
+        return (
+            "Provide a clear, structured summary of the following transcript. "
+            "Include: (1) a brief overview paragraph, "
+            "(2) key topics discussed, "
+            "(3) any notable quotes or decisions, "
+            "and (4) a list of action items if any are mentioned. "
+            "Preserve the meaning and speaker context.\n\n"
+            f"TRANSCRIPT:\n{transcript}"
+        )
+    elif action == "cleanup":
+        return (
+            "Clean up the following transcript by removing verbal tics, "
+            "disfluencies (um, ah, uh, like, you know), false starts, "
+            "and stuttering. Preserve the exact speaker attribution, "
+            "core meaning, key names, and proper nouns. "
+            "Fix punctuation and capitalization where needed. "
+            "Output the cleaned transcript in the same format.\n\n"
+            f"TRANSCRIPT:\n{transcript}"
+        )
+    return transcript
+
+
+@router.post("/jobs/{job_id}/summarize")
+async def summarize_job(job_id: str, db: AsyncSession = Depends(get_db)):
+    """Stream a summary of the transcript for the given job."""
+    job = await db.get(TranscriptionJob, job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+    if job.status != JobStatus.completed:
+        raise HTTPException(409, f"Job is {job.status.value}, not completed")
+
+    prompt = await _build_transcript_prompt(job_id, db, "summarize")
+    if not prompt:
+        raise HTTPException(400, "No transcript segments found for this job")
+
+    cfg = _load_inference_config()
+    engine = InferenceEngine(
+        base_url=cfg.get("base_url", "http://localhost:11434/v1"),
+        api_key=cfg.get("api_key", "not-needed"),
+        model_name=cfg.get("model_name", ""),
+        vision_enabled=cfg.get("vision_enabled", False),
+    )
+
+    async def stream_generator():
+        try:
+            gen = await engine.generate(
+                prompt=prompt,
+                stream=True,
+                temperature=0.3,
+                max_tokens=2048,
+            )
+            async for chunk in gen:
+                yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
+        yield "data: {\"type\": \"done\"}\n\n"
+
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")
+
+
+@router.post("/jobs/{job_id}/cleanup")
+async def cleanup_job(job_id: str, db: AsyncSession = Depends(get_db)):
+    """Stream a cleaned-up version of the transcript for the given job."""
+    job = await db.get(TranscriptionJob, job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+    if job.status != JobStatus.completed:
+        raise HTTPException(409, f"Job is {job.status.value}, not completed")
+
+    prompt = await _build_transcript_prompt(job_id, db, "cleanup")
+    if not prompt:
+        raise HTTPException(400, "No transcript segments found for this job")
+
+    cfg = _load_inference_config()
+    engine = InferenceEngine(
+        base_url=cfg.get("base_url", "http://localhost:11434/v1"),
+        api_key=cfg.get("api_key", "not-needed"),
+        model_name=cfg.get("model_name", ""),
+        vision_enabled=cfg.get("vision_enabled", False),
+    )
+
+    async def stream_generator():
+        try:
+            gen = await engine.generate(
+                prompt=prompt,
+                stream=True,
+                temperature=0.2,
+                max_tokens=4096,
+            )
+            async for chunk in gen:
+                yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
+        yield "data: {\"type\": \"done\"}\n\n"
+
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
 @router.get("/health/detailed")
@@ -196,6 +578,7 @@ async def create_transcription(
     language: str | None = None,
     min_speakers: int | None = None,
     max_speakers: int | None = None,
+    custom_vocabulary: str | None = None,
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> JobCreated:
@@ -206,6 +589,7 @@ async def create_transcription(
     job = TranscriptionJob(
         filename=file.filename or "unknown",
         status=JobStatus.queued,
+        custom_vocabulary=custom_vocabulary,
         options=json.dumps(
             {
                 "language": language,
@@ -593,6 +977,25 @@ async def merge_segments(
     )
 
 
+@router.get("/jobs/{job_id}/speakers", response_model=SpeakerMapResponse)
+async def get_speakers(job_id: str, db: AsyncSession = Depends(get_db)) -> SpeakerMapResponse:
+    job = await db.get(TranscriptionJob, job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+    mappings = (
+        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+        .scalars()
+        .all()
+    )
+    return SpeakerMapResponse(
+        job_id=job_id,
+        speakers=[
+            SpeakerMappingOut(speaker_label=m.speaker_label, custom_name=m.custom_name)
+            for m in mappings
+        ],
+    )
+
+
 @router.patch("/jobs/{job_id}/speakers", response_model=SpeakerMapResponse)
 async def rename_speakers(
     job_id: str,
@@ -736,6 +1139,196 @@ async def export_transcript(
             "Content-Disposition": f'attachment; filename="transcript_{job_id}.{format.value}"'
         },
     )
+
+
+# ── Persistent Dictionary ──────────────────────────────────────────────
+
+
+@router.get("/dictionary", response_model=DictionaryResponse | None)
+async def get_dictionary(db: AsyncSession = Depends(get_db)) -> DictionaryResponse | None:
+    row = (await db.execute(select(PersistentDictionary).limit(1))).scalars().first()
+    if row is None:
+        return None
+    return DictionaryResponse(id=row.id, words=row.words, updated_at=row.updated_at)
+
+
+@router.put("/dictionary", response_model=DictionaryResponse)
+async def update_dictionary(
+    body: DictionaryUpdate,
+    db: AsyncSession = Depends(get_db),
+) -> DictionaryResponse:
+    row = (await db.execute(select(PersistentDictionary).limit(1))).scalars().first()
+    if row is None:
+        row = PersistentDictionary(words=body.words)
+        db.add(row)
+    else:
+        row.words = body.words
+        row.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return DictionaryResponse(id=row.id, words=row.words, updated_at=row.updated_at)
+
+
+# ── Speaker Enrollment & Recognition ───────────────────────────────────
+
+
+@router.post("/speakers/enroll", response_model=SpeakerEnrollResponse)
+async def enroll_speaker(
+    name: str = Form(...),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+) -> SpeakerEnrollResponse:
+    """Enroll a known speaker by uploading a short audio clip of their voice."""
+    import pickle
+
+    contents = await file.read()
+    audio_path = settings.upload_path / f"enroll_{name}_{file.filename}"
+    audio_path.write_bytes(contents)
+
+    engine = _get_engine()
+    engine._ensure_models()
+
+    # Extract embedding using the diarization pipeline's internal model
+    embedder = engine._diarize_model.model._embedding
+    from pyannote.audio import Inference  # type: ignore[import-untyped]
+
+    inference = Inference(embedder, window="whole")
+    embedding = inference(str(audio_path))
+
+    emb_bytes = pickle.dumps(embedding)
+    spk = KnownSpeaker(
+        name=name,
+        embedding=emb_bytes,
+        model_name="pyannote/embedding",
+        dimension=len(embedding),
+        sample_audio_path=str(audio_path),
+    )
+    db.add(spk)
+    await db.commit()
+
+    return SpeakerEnrollResponse(id=spk.id, name=spk.name)
+
+
+@router.post("/speakers/enroll-from-job", response_model=SpeakerEnrollResponse)
+async def enroll_speaker_from_job(
+    body: EnrollFromJobRequest,
+    db: AsyncSession = Depends(get_db),
+) -> SpeakerEnrollResponse:
+    """Enroll a known speaker from a completed job's existing embedding."""
+
+    emb = (
+        (
+            await db.execute(
+                select(SpeakerEmbedding).where(
+                    SpeakerEmbedding.job_id == body.job_id,
+                    SpeakerEmbedding.speaker_label == body.speaker_label,
+                )
+            )
+        )
+        .scalars()
+        .first()
+    )
+    if emb is None:
+        raise HTTPException(
+            404, f"No embedding found for {body.speaker_label} in job {body.job_id}"
+        )
+
+    spk = KnownSpeaker(
+        name=body.name,
+        embedding=emb.embedding,
+        model_name=emb.model_name,
+        dimension=emb.dimension,
+    )
+    db.add(spk)
+    await db.commit()
+
+    return SpeakerEnrollResponse(id=spk.id, name=spk.name)
+
+
+@router.get("/speakers/known", response_model=KnownSpeakerList)
+async def list_known_speakers(db: AsyncSession = Depends(get_db)) -> KnownSpeakerList:
+    speakers = (await db.execute(select(KnownSpeaker))).scalars().all()
+    return KnownSpeakerList(
+        speakers=[
+            KnownSpeakerOut(
+                id=s.id,
+                name=s.name,
+                model_name=s.model_name,
+                dimension=s.dimension,
+                created_at=s.created_at,
+            )
+            for s in speakers
+        ]
+    )
+
+
+@router.delete("/speakers/known/{speaker_id}", status_code=204)
+async def delete_known_speaker(
+    speaker_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    spk = await db.get(KnownSpeaker, speaker_id)
+    if spk is None:
+        raise HTTPException(404, "Known speaker not found")
+    await db.delete(spk)
+    await db.commit()
+
+
+@router.post("/jobs/{job_id}/match-speakers", response_model=SpeakerMatchResponse)
+async def match_speakers(
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> SpeakerMatchResponse:
+    """Manually trigger speaker matching for a completed job."""
+    job = await db.get(TranscriptionJob, job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+    if job.status != JobStatus.completed:
+        raise HTTPException(409, f"Job is {job.status.value}, not completed")
+
+    await _auto_match_speakers(job_id, db)
+
+    # Return the match results
+    mappings = (
+        (await db.execute(select(SpeakerMapping).where(SpeakerMapping.job_id == job_id)))
+        .scalars()
+        .all()
+    )
+
+    known_list = (await db.execute(select(KnownSpeaker))).scalars().all()
+    known_names = {s.name for s in known_list}
+
+    matches = []
+    for m in mappings:
+        if m.custom_name in known_names:
+            matches.append(
+                SpeakerMatchResult(
+                    speaker_label=m.speaker_label,
+                    matched_name=m.custom_name,
+                    confidence=None,
+                )
+            )
+        else:
+            matches.append(SpeakerMatchResult(speaker_label=m.speaker_label))
+
+    return SpeakerMatchResponse(job_id=job_id, matches=matches)
+
+
+@router.get("/jobs/{job_id}/speaker-embeddings", response_model=list[SpeakerEmbeddingOut])
+async def get_speaker_embeddings(
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> list[SpeakerEmbeddingOut]:
+    embeddings = (
+        (await db.execute(select(SpeakerEmbedding).where(SpeakerEmbedding.job_id == job_id)))
+        .scalars()
+        .all()
+    )
+    return [
+        SpeakerEmbeddingOut(
+            speaker_label=e.speaker_label, dimension=e.dimension, model_name=e.model_name
+        )
+        for e in embeddings
+    ]
 
 
 @router.delete("/jobs/{job_id}", status_code=204)

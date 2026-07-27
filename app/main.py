@@ -24,8 +24,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Ensure data directory exists, then create tables
     _ = settings.data_path
-    async with engine.begin() as conn:
+    async with engine.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.commit()
+        logger.info("Tables created")
     logger.info("Database tables ensured")
     yield
     # Cleanup on shutdown
@@ -33,7 +35,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="PersonaeTranscribe",
+    title="ArtificeTranscribe",
     version="0.1.0",
     description="Speech-to-Text & Diarization API",
     lifespan=lifespan,
@@ -71,7 +73,15 @@ def cli():
         host="0.0.0.0",
         port=8000,
         reload=True,
-        reload_excludes=["data/*", "uploads/*", "__pycache__/*", "*.db"],
+        reload_excludes=[
+            "data/*",
+            "data\\*",
+            "uploads/*",
+            "uploads\\*",
+            "__pycache__/*",
+            "__pycache__\\*",
+            "*.db",
+        ],
     )
 
 

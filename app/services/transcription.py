@@ -18,6 +18,12 @@ class Segment:
     text: str
 
 
+@dataclass
+class TranscriptionResult:
+    segments: list[Segment]
+    speaker_embeddings: dict[str, list[float]]
+
+
 class TranscriptionEngine:
     """Wraps WhisperX for transcription, alignment, and diarization.
 
@@ -40,6 +46,7 @@ class TranscriptionEngine:
         self._diarize_model = None
         self._models_ready = False
         self._last_error: str | None = None
+        self._model_loader_available = True
 
     @staticmethod
     def _resolve_device(device: str) -> str:
@@ -153,6 +160,13 @@ class TranscriptionEngine:
         else:
             model_state = "untested"
 
+        if self._diarize_model is not None:
+            diarize_state = "loaded"
+        elif self._last_error:
+            diarize_state = "failed"
+        else:
+            diarize_state = "untested"
+
         if self._align_models:
             align_state = "loaded"
         elif self._last_error:
@@ -167,7 +181,7 @@ class TranscriptionEngine:
                 "loaded": self._whisper_model is not None,
             },
             "diarization_model": {
-                "state": model_state,
+                "state": diarize_state,
                 "loaded": self._diarize_model is not None,
             },
             "alignment_models": {
@@ -200,11 +214,17 @@ class TranscriptionEngine:
         max_speakers: int | None = None,
         progress_callback: callable | None = None,
         custom_vocabulary: str | None = None,
-    ) -> list[Segment]:
+        hotwords: str | None = None,
+    ) -> TranscriptionResult:
         """Run full pipeline: transcribe -> align -> diarize.
 
-        Accepts an optional custom_vocabulary string (comma-separated terms)
-        passed as Whisper's initial_prompt to bias toward domain-specific words.
+        Accepts optional vocabulary strings.  *hotwords* is the preferred
+        mechanism for keyword biasing (placed in the model's ``sot_prev``
+        prompt).  *custom_vocabulary* is kept for backward-compatibility and
+        merged with hotwords when both are provided.
+
+        Returns a TranscriptionResult with segments and per-speaker
+        centroid embeddings for cross-session speaker recognition.
         """
         import whisperx
 
@@ -214,11 +234,16 @@ class TranscriptionEngine:
         if progress_callback:
             progress_callback(0.1)
 
-        # 1. Transcribe (with optional custom vocabulary as initial_prompt)
+        # Merge vocabulary sources and set hotwords on the loaded pipeline
+        merged_vocab = " ".join(filter(None, [hotwords, custom_vocabulary])).strip()
+        if merged_vocab:
+            self._whisper_model.options.hotwords = merged_vocab
+        elif self._whisper_model.options.hotwords:
+            self._whisper_model.options.hotwords = None
+
+        # 1. Transcribe
         logger.info("Transcribing %s", audio_path)
         kwargs = {"batch_size": 16, "language": language}
-        if custom_vocabulary:
-            kwargs["initial_prompt"] = custom_vocabulary
         result = self._whisper_model.transcribe(audio_path, **kwargs)
         if progress_callback:
             progress_callback(0.4)
@@ -231,13 +256,15 @@ class TranscriptionEngine:
         if progress_callback:
             progress_callback(0.6)
 
-        # 3. Diarize
+        # 3. Diarize (with speaker embeddings for cross-session recognition)
         logger.info("Running diarization...")
-        diarize_segments = self._diarize_model(
+        diarize_result = self._diarize_model(
             audio_path,
             min_speakers=min_speakers,
             max_speakers=max_speakers,
+            return_embeddings=True,
         )
+        diarize_segments, speaker_embeddings_raw = diarize_result
         result = whisperx.assign_word_speakers(diarize_segments, result)
         if progress_callback:
             progress_callback(0.9)
@@ -256,7 +283,14 @@ class TranscriptionEngine:
 
         segments.sort(key=lambda s: s.start)
 
+        # 5. Normalise speaker embeddings into a label-keyed dict
+        embeddings: dict[str, list[float]] = {}
+        if isinstance(speaker_embeddings_raw, dict):
+            for label, emb in speaker_embeddings_raw.items():
+                if isinstance(emb, (list, tuple)):
+                    embeddings[label] = list(emb)
+
         if progress_callback:
             progress_callback(1.0)
 
-        return segments
+        return TranscriptionResult(segments=segments, speaker_embeddings=embeddings)
