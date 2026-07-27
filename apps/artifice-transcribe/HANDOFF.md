@@ -56,7 +56,7 @@ cp .env.example .env
 ```
 
 **Note:** `.env.example` contains what appears to be a real HuggingFace token
-(`your_hf_token_here`). This is a **security concern** — the example
+(`hf_YOUR_TOKEN_HERE`). This is a **security concern** — the example
 file should use a placeholder like `hf_YOUR_TOKEN_HERE`.
 
 ---
@@ -117,7 +117,7 @@ an environment variable or filtering the warning in `transcription.py`.
 
 **File:** `.env.example:2`
 
-The file contains `your_hf_token_here` — this looks like a real token,
+The file contains `hf_YOUR_TOKEN_HERE` — this looks like a real token,
 not a placeholder. If this is a valid token, it should be rotated immediately and replaced
 with a placeholder.
 
