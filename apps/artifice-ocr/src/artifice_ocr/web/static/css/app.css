@@ -2,7 +2,7 @@
   Canonical design tokens (paper/ink, accent, semantic status colours,
   typography, fluid type scale, shadows, radius scale, spacing, motion,
   layout) are served by packages/shared-ui at /shared/tokens.css and
-  linked in base.html before this file — see Design_Philosophy.md §12
+  linked in index.html before this file — see Design_Philosophy.md §12
   "Token Architecture". Do not re-declare any canonical token here.
 
   What remains below has no canonical counterpart:

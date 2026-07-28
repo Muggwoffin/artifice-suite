@@ -33,21 +33,28 @@ Beyond `uv` and Python, a few command-line tools are assumed by the repo's
 scripts and by day-to-day work. On Debian/Ubuntu (including WSL2):
 
 ```bash
-sudo apt install -y ripgrep jq brotli shellcheck gitleaks ffmpeg
+sudo apt install -y ripgrep jq shellcheck gitleaks ffmpeg
 ```
 
 | Tool | Why |
 |---|---|
 | `ripgrep` | Assumed by tooling and contributors; `grep` works but is slower on this tree |
 | `gitleaks` | Required by the Zero Secrets Policy — run it before opening a PR |
-| `brotli` | Needed to compress vendored web fonts to `.woff2`; without it they ship as `.ttf` at roughly twice the size |
 | `shellcheck` | `scripts/*.sh` are real systems code and should be linted |
 | `jq` | Convenience for the JSON-heavy pipeline output |
 | `ffmpeg` | Audio decoding for `artifice-transcribe` (Whisper / Parakeet / pyannote) |
 
-All six are present in the maintainer's WSL2 environment as of 2026-07-28
-(`rg` 15.1.0, `ffmpeg` 8.0.1, `brotli` 1.2.0, `jq` 1.8.1, `shellcheck` 0.11.0).
+All five are present in the maintainer's WSL2 environment as of 2026-07-28
+(`rg` 15.1.0, `ffmpeg` 8.0.1, `jq` 1.8.1, `shellcheck` 0.11.0).
 Contributors setting up fresh still need the `apt install` line above.
+
+Compressing the vendored web fonts to `.woff2` does **not** need the `brotli`
+apt package — that provides the command-line tool, whereas fontTools needs
+the *Python* Brotli extension. That distinction defeated a previous attempt
+at the conversion, as documented in
+`packages/shared-ui/shared_ui/assets/fonts.css`. The Python binding is
+declared as `fonttools[woff]` in the root `pyproject.toml` dev group, so
+`uv sync` provides it; a plain `apt install brotli` will not help.
 
 If you installed `uv` with the standalone installer it lands in
 `~/.local/bin`, which **is not on the `PATH` of a non-login shell** — so
@@ -319,9 +326,9 @@ not introduce it incidentally inside a feature PR.
 
 | Path | Purpose |
 |---|---|
-| `packages/shared-ui/tokens.css` | **All** design tokens. Canonical, and the only copy — served over the app's `/shared` mount, never mirrored into an app |
-| `packages/shared-ui/fonts.css` | `@font-face` declarations for the locally vendored fonts |
-| `packages/shared-ui/fonts/` | The font files themselves, with their OFL licences |
+| `packages/shared-ui/shared_ui/assets/tokens.css` | **All** design tokens. Canonical, and the only copy — served over the app's `/shared` mount, never mirrored into an app |
+| `packages/shared-ui/shared_ui/assets/fonts.css` | `@font-face` declarations for the locally vendored fonts |
+| `packages/shared-ui/shared_ui/assets/fonts/` | The font files themselves, with their OFL licences |
 | `<app>/web/static/app.css` | Base chrome, shared components, reset, utilities |
 | `<app>/web/static/{feature}.css` | Page- or feature-specific styles |
 | `<app>/web/static/{feature}.js` | Per-page behaviour, IIFE-wrapped |

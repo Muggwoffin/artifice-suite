@@ -42,7 +42,7 @@ uselessness, running **43 minutes at 2.8% CPU** on a real audit without producin
 |---|---|---|---|
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | **Verified** |
 | `tester` | OpenCode | `opencode-go/kimi-k3` | **Verified** |
-| `arch-auditor-docs` | OpenCode | `opencode-go/glm-5.2` | **Verified** |
+| `arch-auditor-docs` | OpenCode | `github-copilot/claude-sonnet-4.6` | **Verified** — moved off `glm-5.2` 2026-07-28 for throttling; banner re-asserted after the swap |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | **Verified** on the banner — audit re-dispatched after the Gemini swap |
 | `ui-ux` | Claude Code | `sonnet` | **Verified** |
 

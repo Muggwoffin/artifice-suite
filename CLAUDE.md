@@ -89,7 +89,7 @@ both, so every cross-runtime handoff routes through it.
 |---|---|---|---|
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | Feature implementation, core logic, refactors |
 | `tester` | OpenCode | `opencode-go/kimi-k3` | Test execution, log analysis, regression triage |
-| `arch-auditor-docs` | OpenCode | `opencode-go/glm-5.2` | Cross-app parity audits, folder standards, docs |
+| `arch-auditor-docs` | OpenCode | `github-copilot/claude-sonnet-4.6` | Cross-app parity audits, folder standards, docs |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | Static analysis, secret handling, input sanitization |
 | `ui-ux` | Claude Code | `sonnet` | Frontend views, design tokens, accessibility |
 
@@ -105,9 +105,19 @@ through the orchestrator before any code is written. Its `write`, `edit`, `bash`
 are disabled in its config — keep them disabled. It must exist in exactly one runtime: a leftover
 `.claude/agents/security-auditor.md` would shadow the OpenCode definition.
 
-It sits on a **different model from `arch-auditor-docs`** (`glm-5.2`) deliberately. The two auditors
-review overlapping files, and two independent readings are worth more than one model agreeing with
-itself.
+It sits on a **different model from `arch-auditor-docs`** (`claude-sonnet-4.6`) deliberately. The two
+auditors review overlapping files, and two independent readings are worth more than one model
+agreeing with itself. Keep them on different families whenever you change either one.
+
+**`arch-auditor-docs` moved from `opencode-go/glm-5.2` to `github-copilot/claude-sonnet-4.6` on
+2026-07-28.** It was not failing — it completed a five-item documentation pass correctly — but it ran
+**17 minutes at ~11% CPU**, which is the throttling signature described below, and the Copilot tier
+has far more headroom on this account. Sonnet was chosen over the faster options because this agent
+*writes prose into* `CONTRIBUTING.md`, the READMEs and this file, all of which are written in full
+reasoned sentences rather than bullet fragments, and matching that voice matters more here than raw
+speed. `github-copilot/gpt-5.4` was the alternative and would have given a more independent reading
+(no other agent is on a GPT model); it remains the fallback if sharing a family with `code-reviewer`
+ever proves to be a problem.
 
 It was briefly on `google/gemini-3.1-pro-preview`, using the maintainer's own Google key. That
 worked but was rate-limited into uselessness — a real audit ran **43 minutes at 2.8% CPU** and
