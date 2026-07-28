@@ -12,9 +12,9 @@
    What remains below has no canonical counterpart: --diff-insert,
    --diff-delete, --diff-replace, --marker-bg are review-highlight colours;
    --radius is a single non-scaled alias distinct from canonical
-   --radius-sm/md/lg/xl/full; --font-sans is this app's UI-font token under
-   a name the canonical file does not use (canonical is --font-label — not
-   renamed here, see PR notes). */
+   --radius-sm/md/lg/xl/full. The app-local --font-sans token has been
+   retired; the app now uses the canonical --font-label declared in
+   shared-ui. */
 
 :root {
   /* Diff / Review Highlights */
@@ -22,8 +22,6 @@
   --diff-delete: #f2ddd9;
   --diff-replace: #f6ead1;
   --marker-bg: #efe0b4;
-
-  --font-sans: 'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif;
 
   --radius: 12px;
 }
@@ -57,7 +55,7 @@ html, body {
 }
 
 button, input, select, textarea {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-sm);
   color: var(--ink);
 }
@@ -76,7 +74,7 @@ button, input, select, textarea {
   padding: 0.6rem 1.1rem;
   background-color: var(--ink);
   color: var(--paper-raised);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: var(--label-tracking);
@@ -129,7 +127,7 @@ button, input, select, textarea {
 }
 
 .masthead .tag {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: var(--text-xs);
   letter-spacing: var(--label-tracking);
@@ -234,7 +232,7 @@ button, input, select, textarea {
 
 button.btn, a.btn {
   appearance: none;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: var(--label-tracking);
@@ -368,7 +366,7 @@ button.btn.danger:hover:not(:disabled) {
 }
 
 .settings-card input, .settings-card select, .settings-card textarea {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-base);
   padding: 0.6rem 0.9rem;
   background-color: var(--paper-recessed);
@@ -567,7 +565,7 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; }
   background: transparent;
   color: var(--ink-soft);
   cursor: pointer;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: var(--text-xs);
   letter-spacing: var(--label-tracking);
@@ -594,7 +592,7 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; }
 }
 
 .model-form select, .model-form input {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-base);
   border: 1px solid var(--rule);
   background: var(--paper-recessed);

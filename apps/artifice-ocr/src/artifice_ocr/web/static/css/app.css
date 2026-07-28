@@ -8,9 +8,9 @@
   What remains below has no canonical counterpart:
   --indigo, --diff-insert, --diff-delete, --diff-replace, --marker-bg are
   OCR-specific diff/highlight colours; --radius is a single non-scaled
-  alias distinct from canonical --radius-sm/md/lg/xl/full; --font-sans is
-  this app's UI-font token under a name the canonical file does not use
-  (canonical is --font-label — not renamed here, see PR notes).
+  alias distinct from canonical --radius-sm/md/lg/xl/full. The app-local
+  --font-sans token has been retired; the app now uses the canonical
+  --font-label declared in shared-ui.
 
   --error used to be kept as #9a3324 to match the tkinter GUI build's
   hand-translated Tk colour string. That build was deleted (commit
@@ -23,8 +23,6 @@
   --diff-delete: #f2ddd9;
   --diff-replace: #f6ead1;
   --marker-bg: #efe0b4;
-
-  --font-sans: 'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif;
 
   --radius: 12px;
 }
@@ -48,7 +46,7 @@ html, body {
   height: 100%;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-base);
 }
 
@@ -80,7 +78,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
 }
 
 .masthead .tag {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: 0.65rem;
   letter-spacing: var(--label-tracking);
@@ -104,7 +102,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
   background: none;
   border: none;
   padding: 0.7rem 1.1rem;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: var(--text-sm);
   color: var(--ink-faint);
@@ -760,7 +758,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   margin: 0 0 0.4rem;
 }
 
-.chart-label { font-family: var(--font-sans); font-size: 12px; fill: var(--ink); }
+.chart-label { font-family: var(--font-label); font-size: 12px; fill: var(--ink); }
 .chart-label.dim { fill: var(--ink-faint); }
 
 /* --------------------------------------------------------------- settings */
@@ -1432,7 +1430,7 @@ table.queue tbody tr.dragging { opacity: 0.4; }
   padding: 0.6rem 1.1rem;
   background-color: var(--ink);
   color: var(--paper-raised);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.16em;

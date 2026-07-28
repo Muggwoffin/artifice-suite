@@ -8,13 +8,9 @@
    layout) are served by packages/shared-ui at /shared/tokens.css and
    linked in base.html before this file — see Design_Philosophy.md §12
    "Token Architecture". Do not re-declare any canonical token here — this
-   app has no domain-specific token of its own except --font-sans, this
-   app's UI-font token under a name the canonical file does not use
-   (canonical is --font-label — not renamed here, see PR notes). */
-
-:root {
-  --font-sans: 'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', sans-serif;
-}
+   app has no domain-specific token of its own. The app-local --font-sans
+   token has been retired; the app now uses the canonical --font-label
+   declared in shared-ui. */
 
 /* ---------------------------------------------------------------- reset */
 
@@ -27,7 +23,7 @@ html, body {
   height: 100%;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--text-base);
   line-height: 1.75;
 }
@@ -60,7 +56,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 
 .masthead .tag {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: var(--text-sm);
   letter-spacing: var(--label-tracking);
@@ -82,7 +78,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   background: none;
   border: none;
   padding: 0.7rem 1.1rem;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: var(--text-sm);
   letter-spacing: var(--label-tracking);
@@ -254,7 +250,7 @@ button.btn, .button-primary {
   color: var(--ink);
   border-radius: var(--radius-md);
   padding: 0.6rem 1.2rem;
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: 0.8rem;
   letter-spacing: var(--label-tracking);
@@ -530,7 +526,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
 .segment .seg-body { flex: 1; min-width: 0; }
 
 .segment .seg-speaker {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-weight: 600;
   font-size: 0.72rem;
   letter-spacing: var(--label-tracking);
@@ -1093,7 +1089,7 @@ table.queue td.meta-cell {
   padding: 0.6rem 1.1rem;
   background-color: var(--ink);
   color: var(--paper-raised);
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: var(--label-tracking);
