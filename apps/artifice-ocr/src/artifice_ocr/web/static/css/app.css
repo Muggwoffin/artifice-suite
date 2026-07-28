@@ -235,7 +235,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
   padding: 0.75rem 1.1rem;
 }
@@ -505,7 +505,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
 
 .modal h3 {
   font-family: var(--font-display);
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--space-4);
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -551,7 +551,7 @@ select.select, .output-row select, .run-row select, label select {
 .compare-bar {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-5);
   padding: 0.9rem 1.1rem 0.6rem;
   border-bottom: 1px solid var(--rule);
 }
@@ -756,7 +756,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.7rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-5);
 }
 
 .tile {
@@ -764,7 +764,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   box-shadow: var(--shadow-paper);
-  padding: 1rem;
+  padding: var(--space-5);
 }
 
 .tile-value {
@@ -786,10 +786,10 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: var(--space-5);
 }
 
-.chart-card { padding: 1rem; }
+.chart-card { padding: var(--space-5); }
 .chart-card h3 {
   font-family: var(--font-display);
   font-size: var(--text-lg);
@@ -946,7 +946,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .tropy-item-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-3);
   padding: 0.3rem 0.6rem;
   border-bottom: 1px solid var(--rule);
   font-size: var(--text-sm);
@@ -986,7 +986,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   color: var(--ink-faint);
   font-style: italic;
   font-size: var(--text-sm);
-  padding: 2rem;
+  padding: var(--space-9);
   text-align: center;
 }
 
@@ -1071,7 +1071,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   z-index: 100;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-3);
   pointer-events: none;
 }
 
@@ -1088,7 +1088,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   animation: toast-in 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-3);
 }
 .toast.toast-out { animation: toast-out 0.2s ease forwards; }
 .toast.accent { border-left: 3px solid var(--accent); }
@@ -1270,7 +1270,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 }
 
 .palette-empty {
-  padding: 1.5rem;
+  padding: var(--space-7);
   text-align: center;
   color: var(--ink-faint);
   font-style: italic;
@@ -1296,19 +1296,19 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lifted);
-  padding: 1.5rem;
+  padding: var(--space-7);
 }
 
 .onboarding-card h2 {
   font-family: var(--font-display);
-  margin: 0 0 1rem;
+  margin: 0 0 var(--space-5);
   font-size: var(--text-h3);
 }
 
 .onboarding-card .tip {
   display: flex;
   gap: 0.7rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-4);
   font-size: var(--text-sm);
 }
 .onboarding-card .tip-icon {
@@ -1322,8 +1322,8 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .onboarding-card .onboarding-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
 /* =================================================== COLUMN VISIBILITY TOGGLE
@@ -1344,7 +1344,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .col-vis-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-3);
   padding: 0.35rem 0.8rem;
   font-size: var(--text-sm);
   cursor: pointer;
@@ -1387,7 +1387,7 @@ table.queue tbody tr.dragging { opacity: 0.4; }
   .image-viewport { min-height: 26vh; }
 
   .settings-grid { grid-template-columns: 1fr; }
-  .history-grid > div { margin-bottom: 0.5rem; }
+  .history-grid > div { margin-bottom: var(--space-3); }
 
   .toolbar { gap: 0.35rem; }
   .toolbar .btn { padding: 0.4rem 0.65rem; font-size: 0.78rem; }
