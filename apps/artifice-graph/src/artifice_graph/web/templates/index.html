@@ -32,6 +32,32 @@
         <p class="panel-sub">Bring Your Own Model - Connect any local or cloud LLM</p>
       </div>
 
+      <!-- ── Input Files ────────────────────────────────────────── -->
+      <div class="config-section" id="upload-section" style="margin-bottom:1.25rem;">
+        <h3 class="section-title">Input Files</h3>
+        <p class="section-help">Drop text files here or browse to add them to the ingest directory. Accepted: .txt, .md, .pdf, .html, .htm</p>
+
+        <div class="upload-dropzone" id="uploadDropzone" role="button" tabindex="0"
+             aria-label="Drop text files or click to browse">
+          <span class="dz-label" id="uploadDropzoneLabel">Drop files here, or click to browse</span>
+        </div>
+
+        <!-- Hidden file input — triggered by dropzone click / keyboard activation -->
+        <input type="file" id="uploadFileInput" multiple
+               accept=".txt,.md,.pdf,.html,.htm"
+               style="display:none;"
+               aria-label="Select text files to upload">
+
+        <ul class="upload-file-list" id="uploadFileList" aria-live="polite" aria-label="Upload status"></ul>
+
+        <div style="display:flex; gap:0.5rem; margin-top:0.5rem; align-items:center;">
+          <button type="button" class="app-btn app-btn-ghost" id="btnBrowseFiles">
+            Browse Files
+          </button>
+          <span class="label" id="uploadSummary" style="color:var(--ink-faint);font-size:var(--text-sm);"></span>
+        </div>
+      </div>
+
       <div class="configuration-sections">
         <!-- Section 1: Quick Start & Presets -->
         <div class="config-section">

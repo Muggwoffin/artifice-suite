@@ -358,6 +358,164 @@
 
   // ── File pickers ──────────────────────────────────────────────────
 
+  // ── File upload dropzone ──────────────────────────────────────────
+  // Mirrors the pattern from artifice-transcribe: real <input type="file">
+  // plus drag-and-drop, both uploading file *contents* to the server rather
+  // than sending a typed filesystem path.
+
+  function wireUploadDropzone() {
+    var dropzone  = $("uploadDropzone");
+    var fileInput = $("uploadFileInput");
+    var fileList  = $("uploadFileList");
+    var summary   = $("uploadSummary");
+    var browseBtn = $("btnBrowseFiles");
+
+    if (!dropzone || !fileInput) return;
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function setStatus(li, state, text) {
+      var span = li.querySelector(".upload-file-status");
+      if (!span) return;
+      span.className = "upload-file-status " + state;
+      span.textContent = text;
+    }
+
+    function uploadFiles(files) {
+      if (!files || files.length === 0) return;
+
+      // Clear previous list
+      while (fileList.firstChild) fileList.removeChild(fileList.firstChild);
+      summary.textContent = "";
+
+      var total   = files.length;
+      var done    = 0;
+      var ok      = 0;
+      var failed  = 0;
+
+      function updateSummary() {
+        if (done < total) {
+          summary.textContent = "Uploading " + done + " / " + total + "…";
+        } else {
+          summary.textContent = ok + " uploaded" + (failed ? ", " + failed + " failed" : "") + ".";
+        }
+      }
+
+      var formData = new FormData();
+      var listItems = [];
+
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        formData.append("files", f);
+
+        var li = document.createElement("li");
+        li.innerHTML =
+          '<span class="upload-file-name">' + escHtml(f.name) + '</span>' +
+          '<span class="upload-file-status wait">Pending…</span>';
+        fileList.appendChild(li);
+        listItems.push(li);
+      }
+
+      updateSummary();
+
+      // Send all files in one multipart request
+      window.fetch("/api/upload-files", {
+        method: "POST",
+        body: formData
+      })
+      .then(function (r) {
+        if (!r.ok) {
+          return r.json().then(function (err) {
+            throw new Error(err.detail || ("HTTP " + r.status));
+          });
+        }
+        return r.json();
+      })
+      .then(function (data) {
+        var results = data.uploaded || [];
+        results.forEach(function (res, idx) {
+          var li = listItems[idx];
+          if (!li) return;
+          if (res.status === "ok") {
+            setStatus(li, "ok", "✓ Saved");
+            ok++;
+          } else {
+            setStatus(li, "err", "✗ " + (res.reason || "Error"));
+            failed++;
+          }
+          done++;
+        });
+        // Mark any remaining (shouldn't happen) as failed
+        for (var j = results.length; j < listItems.length; j++) {
+          setStatus(listItems[j], "err", "✗ No response");
+          failed++;
+          done++;
+        }
+        updateSummary();
+        if (ok > 0) { refreshState(); }
+      })
+      .catch(function (err) {
+        listItems.forEach(function (li) {
+          setStatus(li, "err", "✗ " + (err && err.message ? err.message : "Upload failed"));
+        });
+        done = total;
+        failed = total;
+        updateSummary();
+      });
+    }
+
+    // Click on dropzone or Browse button → trigger file picker
+    dropzone.addEventListener("click", function () { fileInput.click(); });
+    if (browseBtn) {
+      browseBtn.addEventListener("click", function (e) {
+        e.stopPropagation(); // prevent the dropzone click handler from double-firing
+        fileInput.click();
+      });
+    }
+
+    // Keyboard activation for the dropzone (role="button")
+    dropzone.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    // File picker change
+    fileInput.addEventListener("change", function () {
+      if (fileInput.files && fileInput.files.length > 0) {
+        uploadFiles(fileInput.files);
+        fileInput.value = ""; // reset so the same file can be re-picked
+      }
+    });
+
+    // Drag-and-drop
+    dropzone.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      dropzone.classList.add("drag-over");
+    });
+    dropzone.addEventListener("dragleave", function (e) {
+      // Only remove if leaving the dropzone itself, not a child element
+      if (!dropzone.contains(e.relatedTarget)) {
+        dropzone.classList.remove("drag-over");
+      }
+    });
+    dropzone.addEventListener("drop", function (e) {
+      e.preventDefault();
+      dropzone.classList.remove("drag-over");
+      var files = e.dataTransfer ? e.dataTransfer.files : null;
+      if (files && files.length > 0) {
+        uploadFiles(files);
+      }
+    });
+  }
+
   function wireFilePickers() {
     var rows = document.querySelectorAll(".dir-row");
     for (var i = 0; i < rows.length; i++) {
@@ -716,6 +874,7 @@
     // Existing wiring functions
     wireStageButtons();
     wireFilePickers();
+    wireUploadDropzone();
 
     if (els.btnRunAll) els.btnRunAll.addEventListener("click", function () {
       document.querySelectorAll(".stage-card").forEach(function(){});
