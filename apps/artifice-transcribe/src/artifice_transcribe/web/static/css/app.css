@@ -254,6 +254,12 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   transition: border-color var(--duration-instant) ease, outline var(--duration-instant) ease;
 }
 
+/* §8.3 row-alignment: inputs and selects in form-row share rows with buttons.
+   Textareas are excluded — they are multi-line paste targets. */
+.form-row input[type=text]:not([size]), .form-row input[type=password], .form-row input[type=number], .form-row select {
+  min-height: var(--control-height);
+}
+
 .form-row input[type=number] { width: 4.5rem; }
 
 /* Language and Vocabulary options (index.html #opt-language, #opt-vocabulary)
@@ -308,6 +314,9 @@ button.btn, .button-primary {
      the glyph and that font's own line metrics inflate the button's line
      box a few px relative to a glyph-free sibling button. */
   padding: 0.8rem 1.4rem;
+  /* §8.3 row-alignment: buttons that share a row with inputs/selects must
+     resolve to --control-height. .btn.tiny is exempt — see below. */
+  min-height: var(--control-height);
   line-height: 1;
   font-family: var(--font-label);
   font-weight: 600;
@@ -760,6 +769,9 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
   text-transform: uppercase;
   letter-spacing: var(--label-tracking);
   font-weight: 600;
+  /* Exempt from §8.3 row-alignment — dense secondary UI, reviewed and kept
+     compact in an earlier pass. */
+  min-height: unset;
 }
 .btn.tiny:hover { background: var(--accent-wash); border-color: var(--accent); color: var(--accent-deep); }
 

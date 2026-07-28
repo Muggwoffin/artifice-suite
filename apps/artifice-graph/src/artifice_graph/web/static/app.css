@@ -292,6 +292,17 @@ hr.rule {
               transform var(--duration-normal) ease,
               border-color var(--duration-normal) ease;
 }
+
+/* §8.3 row-alignment: action buttons that share a row with inputs must
+   resolve to --control-height. .sort-pill and .chip (§8.4 filter chips)
+   are exempt — they are compact secondary UI, not row-adjacent controls. */
+.modal-btn,
+.lib-action-btn,
+.wp-btn,
+.narr-btn,
+.app-btn {
+  min-height: var(--control-height);
+}
 .modal-btn:hover,
 .lib-action-btn:hover,
 .wp-btn:hover,
@@ -397,6 +408,11 @@ hr.rule {
   color: var(--ink);
   transition: border-color var(--duration-fast) ease, outline var(--duration-fast) ease;
   width: 100%;
+  /* §8.3 row-alignment: inputs and selects that share a row with buttons
+     must resolve to --control-height. lib-search-input is standalone above
+     a list, not row-adjacent, but carries the same token — it can only grow,
+     so this is safe. */
+  min-height: var(--control-height);
 }
 .input:focus,
 .lib-search-input:focus,
@@ -551,6 +567,70 @@ hr.rule {
 [data-theme="dark"] .photo:hover {
   filter: brightness(0.88);
 }
+
+/* ── File Upload Dropzone (.upload-dropzone) ──────────────── */
+/* Mirrors the pattern from artifice-transcribe. Uses tokens already
+   declared in this file. No new values introduced. */
+.upload-dropzone {
+  margin: 0.75rem 0 0;
+  border: 1px dashed var(--rule-dark);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem var(--space-6);
+  text-align: center;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.drag-over {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+
+.upload-dropzone .dz-label {
+  display: block;
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.upload-file-list {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.upload-file-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.upload-file-list li:last-child {
+  border-bottom: none;
+}
+
+.upload-file-status {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  font-family: var(--font-label);
+  letter-spacing: var(--label-tracking);
+}
+
+.upload-file-status.ok   { color: var(--success, green); }
+.upload-file-status.err  { color: var(--danger); }
+.upload-file-status.wait { color: var(--ink-faint); }
 
 /* ── Footer ───────────────────────────────────────────────── */
 .foot {

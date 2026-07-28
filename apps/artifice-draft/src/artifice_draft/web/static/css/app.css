@@ -259,6 +259,10 @@ button.btn, a.btn {
      sibling button — the exact "Browse…"/"Start Editing" height
      mismatch this pass corrects. */
   padding: 0.8rem 1.4rem;
+  /* §8.3 row-alignment: buttons that share a row with inputs/selects must
+     resolve to --control-height (44px). min-height lets the button grow
+     if its label genuinely needs more room; padding yields to the height. */
+  min-height: var(--control-height);
   line-height: 1;
   border: 1.5px solid var(--ink);
   border-radius: var(--radius-md);
@@ -420,6 +424,13 @@ button.btn.danger:hover:not(:disabled) {
   text-transform: none;
   letter-spacing: normal;
   transition: border-color 0.2s var(--ease-primary);
+}
+
+/* §8.3 row-alignment: inputs and selects that share a row with buttons must
+   resolve to --control-height. Textareas are excluded — they are multi-line
+   and deliberately taller than a single control row. */
+.settings-card input:not([type="checkbox"]), .settings-card select {
+  min-height: var(--control-height);
 }
 
 .settings-card input:focus, .settings-card select:focus, .settings-card textarea:focus {
@@ -650,6 +661,8 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; }
   color: var(--ink);
   text-transform: none;
   letter-spacing: normal;
+  /* §8.3 row-alignment */
+  min-height: var(--control-height);
 }
 
 /* Same field-label pattern as .settings-card/.model-form above, for the
@@ -669,6 +682,12 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; }
   font-weight: 400;
   text-transform: none;
   letter-spacing: normal;
+}
+
+/* §8.3 row-alignment: single-line guide-form inputs only; textareas are
+   multi-line (rows ≥ 2) and must not be constrained to one control height. */
+.guide-form label input {
+  min-height: var(--control-height);
 }
 
 .model-form input:focus, .model-form select:focus {

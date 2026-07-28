@@ -93,6 +93,14 @@
   /* Layout (§4, §8.5) */
   --nav-height: 56px;
   --container-max: 1200px;
+
+  /* Row-alignment (§8.3) — any button or input that can share a row
+     must resolve to this height. 2.75rem = 44px at a 16px root, which
+     is the WCAG 2.5.5 (AAA) minimum target size and Apple's HIG minimum.
+     Use min-height (not height) on row-adjacent controls so a control
+     whose content genuinely needs more room can grow rather than clipping.
+     Compact/dense variants (.btn.tiny, find-bar, image-toolbar) are exempt. */
+  --control-height: 2.75rem;
 }
 
 ::selection {
