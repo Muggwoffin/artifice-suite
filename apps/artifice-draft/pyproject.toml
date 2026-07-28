@@ -12,8 +12,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# The tkinter GUI (artifice-draft-gui) needs none of these. Only the web
-# frontend (artifice-draft-web) does.
 web = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",

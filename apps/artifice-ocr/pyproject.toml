@@ -18,8 +18,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# The tkinter GUI (artifice-ocr-gui) needs none of these. Only the web
-# frontend (artifice-ocr-web) does.
 web = [
     "fastapi",
     "uvicorn[standard]",
@@ -27,7 +25,6 @@ web = [
 
 [project.scripts]
 artifice-ocr = "artifice_ocr.cli:app"
-artifice-ocr-gui = "artifice_ocr.gui:main"
 artifice-ocr-web = "artifice_ocr.web.server:main"
 
 [build-system]
