@@ -144,20 +144,30 @@ Uppercase is reserved for: labels, nav items, buttons, meta timestamps, kicker t
 
 The system uses a 4px-base scale derived from actual values in the source CSS. Spacing is editorial — generous at section boundaries, dense within content blocks.
 
-| Token | Value | Common Usage |
-|---|---|---|
-| `space-1` | `2px` | Micro gaps (inline elements) |
-| `space-2` | `4px` | Tight padding (badges, chips) |
-| `space-3` | `8px` (0.5rem) | Small internal gaps |
-| `space-4` | `12px` (0.75rem) | Component internal padding |
-| `space-5` | `16px` (1rem) | Standard padding, card internal |
-| `space-6` | `20px` (1.25rem) | Page wrapper mobile padding |
-| `space-7` | `24px` (1.5rem) | Medium gaps, card padding |
-| `space-8` | `28px` (1.75rem) | Card grid gaps |
-| `space-9` | `32px` (2rem) | Desktop padding, section content gap |
-| `space-10` | `40px` (2.5rem) | Section spacing |
-| `space-11` | `48px` (3rem) | Major section gaps |
-| `space-12` | `88px` (5.5rem) | Footer margin, extreme separation |
+**The scale is expressed in `rem`, and this is deliberate.** A reader who enlarges text in their browser gets proportionally larger spacing. With pixel spacing, the text grows inside gaps that do not, and content collides or overflows its container — which is how a page that passes a contrast audit still fails a real user at 150%. The px column below is what each token resolves to at a 16px root; it is a reference, not the definition.
+
+| Token | Value | At 16px root | Common Usage |
+|---|---|---|---|
+| `space-1` | `0.125rem` | 2px | Micro gaps (inline elements) |
+| `space-2` | `0.25rem` | 4px | Tight padding (badges, chips) |
+| `space-3` | `0.5rem` | 8px | Small internal gaps |
+| `space-4` | `0.75rem` | 12px | Component internal padding |
+| `space-5` | `1rem` | 16px | Standard padding, card internal |
+| `space-6` | `1.25rem` | 20px | Page wrapper mobile padding |
+| `space-7` | `1.5rem` | 24px | Medium gaps, card padding |
+| `space-8` | `1.75rem` | 28px | Card grid gaps |
+| `space-9` | `2rem` | 32px | Desktop padding, section content gap |
+| `space-10` | `2.5rem` | 40px | Section spacing |
+| `space-11` | `3rem` | 48px | Major section gaps |
+| `space-12` | `5.5rem` | 88px | Footer margin, extreme separation |
+
+> **Use `var(--space-N)`, never a bare `rem` literal that happens to match.** They are not
+> interchangeable in practice. This was measured on 2026-07-28: the root font size in the
+> maintainer's browser is **17px**, not 16px, because that is the browser's own setting — so
+> `0.75rem` renders at 12.75px while `var(--space-4)` was 12px, and a stylesheet full of rem
+> literals can never sit on a pixel-defined scale. Converting the scale to rem removes that
+> particular trap, but the rule still holds for a different reason: a literal records a number,
+> a token records an intention, and only the token moves when the scale does.
 
 **Container max-widths:**
 

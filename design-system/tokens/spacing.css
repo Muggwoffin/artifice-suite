@@ -1,18 +1,22 @@
 :root{
-  --space-1:2px;
-  --space-2:4px;
-  --space-3:8px;
-  --space-4:12px;
-  --space-5:16px;
-  --space-6:20px;
-  --space-7:24px;
-  --space-8:28px;
-  --space-9:32px;
-  --space-10:40px;
-  --space-11:48px;
-  --space-12:88px;
+  /* rem, not px — spacing scales with the reader's font size. Same numbers at
+     a 16px root. Must stay in step with
+     packages/shared-ui/shared_ui/assets/tokens.css, which
+     scripts/token-parity-check.py compares this file against. */
+  --space-1:0.125rem;
+  --space-2:0.25rem;
+  --space-3:0.5rem;
+  --space-4:0.75rem;
+  --space-5:1rem;
+  --space-6:1.25rem;
+  --space-7:1.5rem;
+  --space-8:1.75rem;
+  --space-9:2rem;
+  --space-10:2.5rem;
+  --space-11:3rem;
+  --space-12:5.5rem;
   /* back-compat */
-  --space-16:64px;--space-20:80px;--space-24:96px;
+  --space-16:4rem;--space-20:5rem;--space-24:6rem;
 
   --radius-sm:4px;
   --radius-md:8px;
