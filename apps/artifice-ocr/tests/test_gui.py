@@ -67,9 +67,9 @@ def _drain(runner, timeout=10.0):
 # JobRunner
 # --------------------------------------------------------------------------- #
 
-@patch("src.artifice_ocr.jobs.run_translate_step", return_value=_translated())
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
+@patch("artifice_ocr.jobs.run_translate_step", return_value=_translated())
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_completes_all_stages(mock_ocr, mock_clean, mock_trans, tmp_path):
     items = [JobItem(path="a.png"), JobItem(path="b.png")]
     runner = JobRunner(items, str(tmp_path),
@@ -93,8 +93,8 @@ def test_runner_completes_all_stages(mock_ocr, mock_clean, mock_trans, tmp_path)
     assert events[-1].payload["failed"] == 0
 
 
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_honours_stage_selection(mock_ocr, mock_clean, tmp_path):
     item = JobItem(path="a.png")
     runner = JobRunner([item], str(tmp_path), stages={"ocr", "cleanup"})
@@ -106,8 +106,8 @@ def test_runner_honours_stage_selection(mock_ocr, mock_clean, tmp_path):
     assert "translated" not in item.results
 
 
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.artifice_ocr.jobs.run_ocr_step",
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("artifice_ocr.jobs.run_ocr_step",
        side_effect=RuntimeError("LM Studio unreachable"))
 def test_runner_marks_failure_without_killing_batch(mock_ocr, mock_clean, tmp_path):
     items = [JobItem(path="a.png"), JobItem(path="b.png")]
@@ -122,8 +122,8 @@ def test_runner_marks_failure_without_killing_batch(mock_ocr, mock_clean, tmp_pa
     assert events[-1].kind == "run_finished"
 
 
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_skip_marks_item_skipped(mock_ocr, mock_clean, tmp_path):
     item = JobItem(path="a.png")
     runner = JobRunner([item], str(tmp_path), stages={"ocr", "cleanup"})
@@ -135,8 +135,8 @@ def test_runner_skip_marks_item_skipped(mock_ocr, mock_clean, tmp_path):
     mock_ocr.assert_not_called()
 
 
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_cancel_stops_the_run(mock_ocr, mock_clean, tmp_path):
     items = [JobItem(path=f"{i}.png") for i in range(6)]
     runner = JobRunner(items, str(tmp_path), stages={"ocr", "cleanup"})
@@ -147,8 +147,8 @@ def test_runner_cancel_stops_the_run(mock_ocr, mock_clean, tmp_path):
     assert all(i.state is State.CANCELLED for i in items)
 
 
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned(skipped=True))
-@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr(skipped=True))
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned(skipped=True))
+@patch("artifice_ocr.jobs.run_ocr_step", return_value=_ocr(skipped=True))
 def test_runner_reports_resumed_stages_as_skipped(mock_ocr, mock_clean, tmp_path):
     item = JobItem(path="a.png")
     runner = JobRunner([item], str(tmp_path), stages={"ocr", "cleanup"})
@@ -160,8 +160,8 @@ def test_runner_reports_resumed_stages_as_skipped(mock_ocr, mock_clean, tmp_path
     assert item.stages["cleanup"].state is State.SKIPPED
 
 
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_runner_pause_blocks_then_resumes(mock_ocr, mock_clean, tmp_path):
     items = [JobItem(path=f"{i}.png") for i in range(4)]
     runner = JobRunner(items, str(tmp_path), stages={"ocr", "cleanup"},
@@ -634,9 +634,9 @@ def _pump_until_idle(app, timeout=10.0):
     pytest.fail("run did not complete within timeout")
 
 
-@patch("src.artifice_ocr.jobs.run_translate_step", return_value=_translated())
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
+@patch("artifice_ocr.jobs.run_translate_step", return_value=_translated())
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("artifice_ocr.jobs.run_ocr_step", return_value=_ocr())
 def test_end_to_end_run_updates_queue_and_history(mock_o, mock_c, mock_t, app):
     app.main_view.queue.add_paths(["a.png", "b.png"])
     app.var_translate.set(True)
@@ -684,8 +684,8 @@ def test_queue_keeps_pages_sharing_one_pdf_but_drops_true_duplicates(app):
     assert first["values"][0] == "KV-2-1234.pdf  p.1"
 
 
-@patch("src.artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
-@patch("src.artifice_ocr.jobs.run_ocr_step", side_effect=RuntimeError("boom"))
+@patch("artifice_ocr.jobs.run_cleanup_step", return_value=_cleaned())
+@patch("artifice_ocr.jobs.run_ocr_step", side_effect=RuntimeError("boom"))
 def test_end_to_end_failure_is_recorded_not_raised(mock_o, mock_c, app):
     app.main_view.queue.add_paths(["a.png"])
 

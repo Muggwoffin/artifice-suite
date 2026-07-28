@@ -328,7 +328,7 @@ def test_manifest_merges_across_runs(bundle, tmp_path):
 # end to end: a real PDF through the real stage code, with the LLM mocked
 # --------------------------------------------------------------------------- #
 
-@patch("src.artifice_ocr.stages.ocr._ocr_single_image")
+@patch("artifice_ocr.stages.ocr._ocr_single_image")
 def test_each_pdf_page_writes_its_own_output(mock_ocr, bundle, tmp_path):
     """The collision hazard, tested directly.
 
@@ -371,7 +371,7 @@ def test_each_pdf_page_writes_its_own_output(mock_ocr, bundle, tmp_path):
     assert sorted(calls) == ["page_0001.png", "page_0002.png", "page_0003.png"]
 
 
-@patch("src.artifice_ocr.stages.ocr._ocr_single_image", return_value="ocr text")
+@patch("artifice_ocr.stages.ocr._ocr_single_image", return_value="ocr text")
 def test_page_outputs_resume_independently(mock_ocr, bundle, tmp_path):
     from artifice_ocr.pipeline import run_ocr_step
 
@@ -393,7 +393,7 @@ def test_page_outputs_resume_independently(mock_ocr, bundle, tmp_path):
     assert not other.get("_skipped")
 
 
-@patch("src.artifice_ocr.stages.ocr._ocr_single_image", return_value="ocr text")
+@patch("artifice_ocr.stages.ocr._ocr_single_image", return_value="ocr text")
 def test_out_of_range_page_raises_clearly(mock_ocr, bundle, tmp_path):
     from artifice_ocr.stages import ocr as ocr_stage
 

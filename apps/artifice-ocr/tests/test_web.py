@@ -56,7 +56,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(_analytics_router, "state", fresh)
     monkeypatch.setattr(_tropy_router, "state", fresh)
     # pdf_export router does NOT import state, only pdf_export_state
-    monkeypatch.setattr("src.artifice_ocr.web.runtime.state", fresh)
+    monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
 
     with TestClient(server.app) as c:
         yield c
@@ -663,8 +663,8 @@ def test_document_types_lists_known_types(client):
 
 
 def test_health_check_reports_service_status(client, monkeypatch):
-    monkeypatch.setattr("src.artifice_ocr.utils.check_lm_studio", lambda *a, **k: None)
-    monkeypatch.setattr("src.artifice_ocr.utils.check_ollama", lambda *a, **k: [])
+    monkeypatch.setattr("artifice_ocr.utils.check_lm_studio", lambda *a, **k: None)
+    monkeypatch.setattr("artifice_ocr.utils.check_ollama", lambda *a, **k: [])
 
     res = client.get("/api/health")
     body = res.json()
@@ -674,9 +674,9 @@ def test_health_check_reports_service_status(client, monkeypatch):
 
 
 def test_health_check_surfaces_unreachable_services(client, monkeypatch):
-    monkeypatch.setattr("src.artifice_ocr.utils.check_lm_studio",
+    monkeypatch.setattr("artifice_ocr.utils.check_lm_studio",
                         lambda *a, **k: "Cannot reach LM Studio at http://x (ConnectionError)")
-    monkeypatch.setattr("src.artifice_ocr.utils.check_ollama",
+    monkeypatch.setattr("artifice_ocr.utils.check_ollama",
                         lambda *a, **k: ["Cannot reach Ollama server (ConnectionError)"])
 
     res = client.get("/api/health")
