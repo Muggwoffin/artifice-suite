@@ -105,13 +105,39 @@ def _assert_contained(path: Path, container: Path) -> None:
 
 
 # ── Inference configuration persistence helper ───────────────────────────────
-CONFIG_FILE = Path("./data/inference_config.json")
+# Uses platformdirs to resolve a per-user data directory, so the config file
+# survives frozen bundles (.exe/.dmg) where CWD can be anywhere.
+_LEGACY_INFERENCE_CONFIG = Path("./data/inference_config.json").resolve()
+_LEGACY_PT_INFERENCE_CONFIG = Path("./data/pt-inference-config.json").resolve()
+_INFERENCE_CONFIG_FILE = settings.data_path / "inference_config.json"
+
+
+def _migrate_legacy_inference_config() -> None:
+    """Move legacy ``./data/inference_config.json`` to the platform data dir."""
+    if _INFERENCE_CONFIG_FILE.exists():
+        if _LEGACY_INFERENCE_CONFIG.exists():
+            logger.info(
+                "Legacy inference config found at %s but config already exists at %s. "
+                "Using the existing config.",
+                _LEGACY_INFERENCE_CONFIG, _INFERENCE_CONFIG_FILE,
+            )
+        return
+    if _LEGACY_INFERENCE_CONFIG.exists():
+        logger.info(
+            "Migrating legacy inference config from %s to %s",
+            _LEGACY_INFERENCE_CONFIG, _INFERENCE_CONFIG_FILE,
+        )
+        _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        import shutil
+        shutil.move(str(_LEGACY_INFERENCE_CONFIG), str(_INFERENCE_CONFIG_FILE))
+        logger.info("Migration complete — inference config is now at %s", _INFERENCE_CONFIG_FILE)
 
 
 def _load_inference_config() -> dict:
-    if CONFIG_FILE.exists():
+    _migrate_legacy_inference_config()
+    if _INFERENCE_CONFIG_FILE.exists():
         try:
-            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+            return json.loads(_INFERENCE_CONFIG_FILE.read_text(encoding="utf-8"))
         except Exception:
             pass
     return {
@@ -123,8 +149,8 @@ def _load_inference_config() -> dict:
 
 
 def _save_inference_config(cfg: dict) -> None:
-    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _INFERENCE_CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
 
 # Module-level engine singleton (lazy init)
@@ -398,10 +424,12 @@ async def update_inference_config(body: InferenceConfigRequest):
 
 @router.delete("/inference/config")
 async def delete_inference_config():
-    if CONFIG_FILE.exists():
-        CONFIG_FILE.unlink()
-    if Path("./data/pt-inference-config.json").exists():
-        Path("./data/pt-inference-config.json").unlink()
+    if _INFERENCE_CONFIG_FILE.exists():
+        _INFERENCE_CONFIG_FILE.unlink()
+    if _LEGACY_INFERENCE_CONFIG.exists():
+        _LEGACY_INFERENCE_CONFIG.unlink()
+    if _LEGACY_PT_INFERENCE_CONFIG.exists():
+        _LEGACY_PT_INFERENCE_CONFIG.unlink()
     return {"status": "deleted"}
 
 

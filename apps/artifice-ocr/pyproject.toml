@@ -35,3 +35,4 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "artifice_ocr.web" = ["static/**", "fonts/*.ttf"]
+"artifice_ocr.prompts" = ["*.txt"]
