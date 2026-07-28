@@ -64,7 +64,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.5rem 1.1rem;
+  padding: 0.5rem var(--space-6);
   border-bottom: 1px solid var(--rule);
   flex-shrink: 0;
 }
@@ -93,7 +93,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
 .tabs {
   display: flex;
   gap: 0.2rem;
-  padding: 0 1.1rem;
+  padding: 0 var(--space-6);
   border-bottom: 1px solid var(--rule);
 }
 
@@ -101,7 +101,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
   appearance: none;
   background: none;
   border: none;
-  padding: 0.7rem 1.1rem;
+  padding: 0.7rem var(--space-6);
   font-family: var(--font-label);
   font-weight: 600;
   font-size: var(--text-sm);
@@ -199,7 +199,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.1rem 0.5rem;
+  padding: 1rem var(--space-6) 0.5rem;
 }
 
 .card-head h2 {
@@ -214,10 +214,10 @@ button, input, select { font-family: inherit; font-size: inherit; }
 /* -------------------------------------------------------------- drop zone */
 
 .dropzone {
-  margin: 1rem 1.1rem 0;
+  margin: 1rem var(--space-6) 0;
   border: 1px dashed var(--rule-dark);
   border-radius: var(--radius);
-  padding: 1rem 1.1rem;
+  padding: 1rem var(--space-6);
   text-align: center;
   color: var(--ink-faint);
   cursor: pointer;
@@ -237,7 +237,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
-  padding: 0.75rem 1.1rem;
+  padding: 0.75rem var(--space-6);
 }
 
 .toolbar .spacer { flex: 1; }
@@ -302,13 +302,13 @@ button.btn.danger:hover:not(:disabled) { background: var(--error); color: var(--
 .section-divider {
   height: 1px;
   background: var(--rule);
-  margin: 0.25rem 1.1rem;
+  margin: 0.25rem var(--space-6);
 }
 
 /* --------------------------------------------------------------------- table */
 
 .queue-wrap {
-  margin: 0 1.1rem 0.75rem;
+  margin: 0 var(--space-6) 0.75rem;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   overflow: auto;
@@ -371,7 +371,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   display: flex;
   align-items: center;
   gap: 1.2rem;
-  padding: 0.5rem 1.1rem;
+  padding: 0.5rem var(--space-6);
   flex-wrap: wrap;
 }
 
@@ -390,7 +390,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.25rem 1.1rem 0.75rem;
+  padding: 0.25rem var(--space-6) 0.75rem;
 }
 
 .output-row input[type=text] {
@@ -406,7 +406,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  margin: 0 1.1rem 0.5rem;
+  margin: 0 var(--space-6) 0.5rem;
 }
 
 .progress-wrap {
@@ -449,7 +449,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
 /* ------------------------------------------------------------------------ log */
 
 .log {
-  margin: 0 1.1rem 1.25rem;
+  margin: 0 var(--space-6) 1.25rem;
   height: 15vh;
   overflow-y: auto;
   background: var(--paper-recessed);
@@ -472,7 +472,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
 .statusbar {
   display: flex;
   justify-content: space-between;
-  padding: 0.5rem 1.1rem;
+  padding: 0.5rem var(--space-6);
   border-top: 1px solid var(--rule);
   font-size: 0.78rem;
   color: var(--ink-soft);
@@ -552,7 +552,7 @@ select.select, .output-row select, .run-row select, label select {
   display: flex;
   align-items: center;
   gap: var(--space-5);
-  padding: 0.9rem 1.1rem 0.6rem;
+  padding: 0.9rem var(--space-6) 0.6rem;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -743,7 +743,7 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; border-radius: 2p
 
 /* ----------------------------------------------------------------- history */
 
-.history-grid { padding: 0 1.1rem 1rem; }
+.history-grid { padding: 0 var(--space-6) 1rem; }
 
 tr.history-failed td { color: var(--error); }
 tr.history-state-failed td { color: var(--error); }
@@ -1499,7 +1499,7 @@ table.queue tbody tr.dragging { opacity: 0.4; }
   top: 0.75rem;
   left: 0.75rem;
   z-index: 400;
-  padding: 0.6rem 1.1rem;
+  padding: 0.6rem var(--space-6);
   background-color: var(--ink);
   color: var(--paper-raised);
   font-family: var(--font-label);

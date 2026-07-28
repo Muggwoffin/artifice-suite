@@ -38,7 +38,7 @@ body {
   top: 0.75rem;
   left: 0.75rem;
   z-index: 600;
-  padding: 0.6rem 1.1rem;
+  padding: 0.6rem var(--space-6);
   background-color: var(--ink);
   color: var(--paper-raised);
   font-family: var(--font-label);
