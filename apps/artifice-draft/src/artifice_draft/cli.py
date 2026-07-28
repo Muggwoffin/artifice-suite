@@ -1,4 +1,4 @@
-"""Main entry point — launch GUI or run CLI mode."""
+"""Main entry point — CLI mode and web server launcher."""
 
 from __future__ import annotations
 
@@ -22,7 +22,6 @@ def main():
         print("Usage: artifice-draft [options]")
         print()
         print("Options:")
-        print("  --gui                  Launch the drag-and-drop GUI")
         print("  --headless FILE [OUT]  Edit FILE, save to OUT (or _edited.docx)")
         print("  --styles               List available editing styles")
         print("  --style-guides         List available journal style guides")
@@ -158,12 +157,7 @@ def main():
     from artifice_draft.log_setup import setup_logging
     setup_logging(level=cfg.log_level, log_file=cfg.log_file)
 
-    if len(sys.argv) > 1 and sys.argv[1] == "--gui":
-        from artifice_draft.gui import EditGUI
-
-        app = EditGUI()
-        app.root.mainloop()
-    elif len(sys.argv) > 1 and sys.argv[1] == "--headless":
+    if len(sys.argv) > 1 and sys.argv[1] == "--headless":
         from artifice_draft.changelog import format_change_log, generate_change_summary
         from artifice_draft.doc_parser import parse_docx
         from artifice_draft.doc_writer import apply_edits
@@ -226,10 +220,9 @@ def main():
         )
         print(f"Saved to '{actual}'")
     else:
-        from artifice_draft.gui import EditGUI
-
-        app = EditGUI()
-        app.root.mainloop()
+        print("Usage: artifice-draft --headless FILE [OUT]")
+        print("       Try 'artifice-draft --help' for all options.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

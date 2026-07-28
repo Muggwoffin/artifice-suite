@@ -72,7 +72,6 @@ artifice-suite/
 │       │   ├── entity_resolution/         # Fuzzy + semantic resolver & union-find
 │       │   ├── exporters/                 # NetworkX & Obsidian exporters
 │       │   ├── storage/                   # JSON & NetworkX graph persistence
-│       │   ├── gui.py                     # Tkinter desktop interface
 │       │   └── web/                       # FastAPI server & LudwigLang web UI
 │       ├── tests/                         # Pytest suite
 │       └── README.md
@@ -136,12 +135,6 @@ artifice-graph demo
 Launches the FastAPI backend with The New Masses editorial controls, live streaming logs, and entity library browser:
 ```bash
 python -m artifice_graph.web
-```
-
-### 3. Desktop GUI (Tkinter)
-Features direct configuration fields and background process logging:
-```bash
-python -m artifice_graph.gui
 ```
 
 ---

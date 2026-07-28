@@ -87,7 +87,6 @@ artifice-suite/
 │       │   ├── _guard.py              # Content preservation guards
 │       │   ├── _diff.py               # Diff & marker highlighting
 │       │   ├── stages/                # OCR, Cleanup, Structure, Translate modules
-│       │   ├── gui/                   # Tkinter desktop interface
 │       │   └── web/                   # FastAPI server & vanilla JS SPA
 │       ├── tests/                     # Pytest suite
 │       └── README.md
@@ -157,12 +156,6 @@ Launches the FastAPI server with The New Masses editorial layout, real Google Fo
 ```bash
 python -m artifice_ocr.web
 # → Access at http://127.0.0.1:8765
-```
-
-### 3. Desktop GUI (Tkinter)
-Features drag-and-drop file queues, image preview pane, diff compare view, and direct Tropy import/export modals:
-```bash
-python -m artifice_ocr.gui
 ```
 
 ---

@@ -15,12 +15,16 @@ from artifice_transcribe.config import settings
 from artifice_transcribe.db.models import (
     JobStatus,
     KnownSpeaker,
+    LegacyEmbeddingError,
     PersistentDictionary,
     SegmentEditVersion,
     SpeakerEmbedding,
     SpeakerMapping,
     TranscriptionJob,
     TranscriptSegment,
+    _is_legacy_pickle_blob,
+    pack_embedding,
+    unpack_embedding,
 )
 from artifice_transcribe.db.session import async_session, get_db
 from artifice_transcribe.schemas.transcription import (
@@ -72,7 +76,35 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["transcription"])
 
-# Inference configuration persistence helper
+# ── Path safety ──────────────────────────────────────────────────────────────
+
+
+def _sanitise_path_component(raw: str) -> str:
+    """Return a safe single-component filename from *raw*.
+
+    Rejects components that are empty, ``"."``, or ``".."`` after
+    stripping — ``Path("..").name`` returns ``".."``, so ``.name``
+    alone is not sufficient.
+    
+    Backslashes are treated as separators (Windows path support) so that
+    ``..\\\\..\\\\windows\\\\system32`` collapses to ``system32`` even on
+    POSIX where ``Path.name`` would return the whole string.
+    """
+    cleaned = Path(raw.replace("\\", "/")).name
+    if cleaned in ("", ".", ".."):
+        raise HTTPException(400, f"Invalid path component: {raw!r}")
+    return cleaned
+
+
+def _assert_contained(path: Path, container: Path) -> None:
+    """Raise HTTP 400 if *path* resolves outside *container*."""
+    resolved = path.resolve()
+    base = container.resolve()
+    if not (base in resolved.parents or resolved == base):
+        raise HTTPException(400, "Path traversal detected")
+
+
+# ── Inference configuration persistence helper ───────────────────────────────
 CONFIG_FILE = Path("./data/inference_config.json")
 
 
@@ -209,13 +241,11 @@ async def _run_transcription(
 
             # Store speaker embeddings for cross-session matching
             if speaker_embeddings:
-                import pickle
-
                 db_embeddings = [
                     SpeakerEmbedding(
                         job_id=job_id,
                         speaker_label=label,
-                        embedding=pickle.dumps(emb),
+                        embedding=pack_embedding(emb),
                         model_name="pyannote/embedding",
                         dimension=len(emb),
                     )
@@ -264,8 +294,6 @@ async def _auto_match_speakers(job_id: str, db: AsyncSession) -> None:
     if not known:
         return
 
-    import pickle
-
     import numpy as np
 
     def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
@@ -277,15 +305,22 @@ async def _auto_match_speakers(job_id: str, db: AsyncSession) -> None:
     THRESHOLD = 0.65
 
     for emb in embeddings:
-        emb_vec = pickle.loads(emb.embedding)  # noqa: S301
-        emb_vec = np.asarray(emb_vec, dtype=np.float32)
+        emb_vec = unpack_embedding(emb.embedding, emb.dimension)
 
         best_name = None
         best_score = -1.0
 
         for known_spk in known:
-            known_vec = pickle.loads(known_spk.embedding)  # noqa: S301
-            known_vec = np.asarray(known_vec, dtype=np.float32)
+            try:
+                known_vec = unpack_embedding(known_spk.embedding, known_spk.dimension)
+            except LegacyEmbeddingError:
+                logger.warning(
+                    "Skipping known speaker '%s' (id=%s): embedding predates "
+                    "format change, must be re-enrolled",
+                    known_spk.name,
+                    known_spk.id,
+                )
+                continue
             score = _cosine_sim(emb_vec, known_vec)
             if score > best_score:
                 best_score = score
@@ -601,7 +636,9 @@ async def create_transcription(
     db.add(job)
     await db.commit()
 
-    audio_path = settings.upload_path / f"{job.id}_{file.filename}"
+    safe_filename = _sanitise_path_component(file.filename or "unknown")
+    audio_path = settings.upload_path / f"{job.id}_{safe_filename}"
+    _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
 
     opts = TranscriptionOptions(
@@ -1178,10 +1215,15 @@ async def enroll_speaker(
     db: AsyncSession = Depends(get_db),
 ) -> SpeakerEnrollResponse:
     """Enroll a known speaker by uploading a short audio clip of their voice."""
-    import pickle
 
     contents = await file.read()
-    audio_path = settings.upload_path / f"enroll_{name}_{file.filename}"
+    if len(contents) > settings.max_upload_size:
+        raise HTTPException(413, "File too large")
+
+    safe_name = _sanitise_path_component(name)
+    safe_filename = _sanitise_path_component(file.filename or "unknown")
+    audio_path = settings.upload_path / f"enroll_{safe_name}_{safe_filename}"
+    _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
 
     engine = _get_engine()
@@ -1194,7 +1236,7 @@ async def enroll_speaker(
     inference = Inference(embedder, window="whole")
     embedding = inference(str(audio_path))
 
-    emb_bytes = pickle.dumps(embedding)
+    emb_bytes = pack_embedding(embedding)
     spk = KnownSpeaker(
         name=name,
         embedding=emb_bytes,
@@ -1255,6 +1297,7 @@ async def list_known_speakers(db: AsyncSession = Depends(get_db)) -> KnownSpeake
                 model_name=s.model_name,
                 dimension=s.dimension,
                 created_at=s.created_at,
+                legacy_embedding=_is_legacy_pickle_blob(s.embedding),
             )
             for s in speakers
         ]

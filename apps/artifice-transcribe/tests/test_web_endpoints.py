@@ -104,3 +104,140 @@ async def test_get_speakers_reflects_patch(api):
 async def test_get_speakers_404_missing_job(api):
     resp = await api.client.get("/api/v1/jobs/nonexistent/speakers")
     assert resp.status_code == 404
+
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+
+def _leaked_outside(upload_dir: Path) -> bool:
+    """True if any file was written outside the upload directory."""
+    upload = upload_dir.resolve()
+    for entry in upload.parent.rglob("*"):
+        if entry.is_file() and upload not in entry.resolve().parents:
+            # Ignore the test database created by the conftest fixture.
+            if entry.suffix == ".db":
+                continue
+            return True
+    return False
+
+
+# ── Path traversal defences ──────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "malicious_filename,expected_status,description",
+    [
+        ("../../etc/passwd", 202, "dot-dot-slash is stripped to safe name"),
+        ("..", 400, "bare dot-dot is rejected outright"),
+        ("/etc/passwd", 202, "absolute path is stripped to safe name"),
+        ("..\\..\\windows\\system32", 202, "backslash traversal is stripped to safe name"),
+        ("", 422, "empty filename is rejected by FastAPI validation"),
+    ],
+)
+async def test_transcribe_traversal_sanitisation(
+    api, malicious_filename, expected_status, description
+):
+    """Malicious filenames are either rejected or safely stripped to their
+    base name, and the written file stays inside the upload directory."""
+    resp = await api.client.post(
+        "/api/v1/transcribe",
+        files={"file": (malicious_filename, b"fake-audio-data")},
+    )
+    assert resp.status_code == expected_status, (
+        f"Expected {expected_status} for {description}, got {resp.status_code}"
+    )
+    assert not _leaked_outside(api.upload_dir), (
+        f"No files should exist outside upload_dir after {description}"
+    )
+
+
+@pytest.mark.parametrize(
+    "name,fname,expected_status,description",
+    [
+        # Traversal via name is stripped to safe component -> accepted
+        ("../../etc", "harmless.wav", 200, "traversal name stripped, file is safe"),
+        # Traversal via filename with benign name -> accepted
+        ("alice", "../../etc/passwd", 200, "traversal filename stripped, file is safe"),
+        # Both fields bare dot-dot -> rejected
+        ("..", "..", 400, "both fields are bare dot-dot -> rejected"),
+        # Both fields empty -> rejected by FastAPI validation
+        ("", "", 422, "both fields empty -> rejected"),
+    ],
+)
+async def test_enroll_traversal_sanitisation(
+    api, name, fname, expected_status, description
+):
+    # Prevent the diarization model download (needs HF token) from
+    # interfering with the sanitisation test.
+    from unittest.mock import MagicMock, patch
+
+    fake_embedding = MagicMock()
+    fake_inference_cls = MagicMock(return_value=MagicMock(return_value=fake_embedding))
+    fake_engine = MagicMock()
+    fake_engine._diarize_model.model._embedding = MagicMock()
+
+    with (
+        patch("pyannote.audio.Inference", fake_inference_cls),
+        patch(
+            "artifice_transcribe.api.v1.routes._get_engine",
+            return_value=fake_engine,
+        ),
+        patch(
+            "artifice_transcribe.api.v1.routes.pack_embedding",
+            return_value=b"\x00" * 2048,
+        ),
+    ):
+        resp = await api.client.post(
+            "/api/v1/speakers/enroll",
+            data={"name": name},
+            files={"file": (fname, b"fake-audio")},
+        )
+    assert resp.status_code == expected_status, (
+        f"Expected {expected_status} for {description}, got {resp.status_code}"
+    )
+    assert not _leaked_outside(api.upload_dir), (
+        f"No files should exist outside upload_dir after {description}"
+    )
+
+
+async def test_transcribe_sanitised_filename_written_inside_upload_dir(api):
+    """A harmless filename must still round-trip correctly."""
+    resp = await api.client.post(
+        "/api/v1/transcribe",
+        files={"file": ("interview.wav", b"fake-audio-data")},
+    )
+    assert resp.status_code == 202
+    job_id = resp.json()["job_id"]
+    written = api.upload_dir / f"{job_id}_interview.wav"
+    assert written.exists()
+    assert written.read_bytes() == b"fake-audio-data"
+
+
+# ── Size limit ───────────────────────────────────────────────────────────────
+
+
+async def test_enroll_rejects_oversized_upload(api, monkeypatch):
+    """The enrollment endpoint must enforce the same max_upload_size as /transcribe."""
+    monkeypatch.setattr(
+        "artifice_transcribe.api.v1.routes.settings.max_upload_size", 10
+    )
+    resp = await api.client.post(
+        "/api/v1/speakers/enroll",
+        data={"name": "speaker"},
+        files={"file": ("voice.wav", b"x" * 11)},
+    )
+    assert resp.status_code == 413
+    assert "too large" in resp.json()["detail"].lower()
+
+
+async def test_transcribe_rejects_oversized_upload(api, monkeypatch):
+    """The /transcribe endpoint must reject uploads larger than max_upload_size."""
+    monkeypatch.setattr(
+        "artifice_transcribe.api.v1.routes.settings.max_upload_size", 10
+    )
+    resp = await api.client.post(
+        "/api/v1/transcribe",
+        files={"file": ("interview.wav", b"x" * 11)},
+    )
+    assert resp.status_code == 413
+    assert "too large" in resp.json()["detail"].lower()

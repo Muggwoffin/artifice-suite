@@ -26,15 +26,17 @@ or relocated rather than promoted:
   file.
 
 `artifice-graph` no longer keeps a copy at all. Its `web/static/tokens.css`
-was deleted; `web/server.py` mounts this directory directly, so the app
-serves *this* file rather than a mirror of it. There is nothing to keep in
-sync, and no per-app `tokens.css` should be reintroduced.
+was deleted; `web/server.py` resolves assets through the installed package
+via `importlib.resources`, so the app serves *this* file rather than a mirror
+of it. There is nothing to keep in sync, and no per-app `tokens.css` should
+be reintroduced.
 
 ```python
-# apps/artifice-graph/web/server.py
-_SHARED_UI = _PROJECT.parent.parent / "packages" / "shared-ui"
-if not _SHARED_UI.is_dir():
-    raise RuntimeError(...)          # fail loudly, never serve nothing
+# apps/artifice-graph/src/artifice_graph/web/server.py
+import importlib.resources
+import shared_ui
+
+_SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 ```
 
@@ -49,25 +51,26 @@ Adopt the same mount when consolidating the remaining three apps.
 
 ## Fonts (2026-07)
 
-`fonts/` and `fonts.css` vendor the three type families named in
+`shared_ui/assets/fonts/` and `shared_ui/assets/fonts.css` vendor the three type families named in
 `Design_Philosophy.md` §3 (Playfair Display, Libre Baskerville, Archivo) so
 that no app fetches them from `fonts.googleapis.com` / `fonts.gstatic.com`
 at runtime — a hard requirement of the suite's local-first, offline
 guarantee. `fonts.css` declares `@font-face` rules with `url()`s relative
-to `fonts/`; it is a sibling file to `tokens.css` rather than folded into
-it, because it performs asset loading (network/file fetches) while
-`tokens.css` only declares custom properties — different concern, kept in
-a different file so each can be reasoned about (and diffed) independently.
+to `fonts/`; it is a sibling file to `tokens.css` in `shared_ui/assets/`
+rather than folded into it, because it performs asset loading (network/file
+fetches) while `tokens.css` only declares custom properties — different
+concern, kept in a different file so each can be reasoned about (and diffed)
+independently.
 
-`fonts/PlayfairDisplay(.ttf|-Italic.ttf)` and
-`fonts/LibreBaskerville(.ttf|-Italic.ttf)` are copies of the files already
+`shared_ui/assets/fonts/PlayfairDisplay(.ttf|-Italic.ttf)` and
+`shared_ui/assets/fonts/LibreBaskerville(.ttf|-Italic.ttf)` are copies of the files already
 vendored at `apps/artifice-ocr/assets/fonts/` — copied, not moved, since
 that app's own asset pipeline may reference its copy. Both are variable
 fonts (a single file's `wght` axis spans the full weight range each family
 needs), so `fonts.css` uses one `@font-face` rule per style with a
 `font-weight` range rather than one rule per static weight.
 
-`fonts/Archivo.woff2` was fetched fresh (the OCR app does not carry
+`shared_ui/assets/fonts/Archivo.woff2` was fetched fresh (the OCR app does not carry
 Archivo) directly from Google's CDN, already in woff2 format.
 
 **Format note:** woff2 is preferred (roughly half the size of TTF, and
@@ -82,8 +85,9 @@ project dependency for another reason) — conversion is then a single
 `fonttools ttLib.woff2 compress` call per file.
 
 **Licence:** all three families are SIL Open Font License 1.1. The licence
-text is vendored per-family — `fonts/OFL-Archivo.txt`,
-`fonts/OFL-PlayfairDisplay.txt`, `fonts/OFL-LibreBaskerville.txt` — rather
+text is vendored per-family — `shared_ui/assets/fonts/OFL-Archivo.txt`,
+`shared_ui/assets/fonts/OFL-PlayfairDisplay.txt`,
+`shared_ui/assets/fonts/OFL-LibreBaskerville.txt` — rather
 than merged into one file, because each carries a distinct copyright
 holder in its header and this repository is heading toward a Zenodo DOI /
 JOSS review where that attribution needs to stay traceable to its source.

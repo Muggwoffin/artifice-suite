@@ -1,10 +1,13 @@
 """FastAPI backend for the ArtificeDraft web frontend.
 
-Additive, not a replacement: `src/gui.py` and the CLI entry point in
-`the artifice-draft CLI (src/artifice_draft/cli.py)` are untouched, and every pipeline module this imports
-(`doc_parser`, `llm_client`, `doc_writer`, `review`, `changelog`) is exactly
-what the tkinter build already uses. The only new code is the adapter in
-`runtime.py` and this HTTP/SSE layer over it.
+This is the primary interface for ArtificeDraft. The pipeline modules it
+imports (`doc_parser`, `llm_client`, `doc_writer`, `review`, `changelog`)
+are the same ones the headless CLI path in `cli.py`
+(`artifice-draft --headless`) runs; the web layer only adds the adapter in
+`runtime.py` and this HTTP/SSE layer over it. The former tkinter build
+(`gui.py` plus its `--gui` entry point) was removed in commit 5b01338, so
+this server and the headless CLI are now the two ways to drive the same
+pipeline.
 
 Progress reaches the browser as Server-Sent Events, same choice and same
 reasoning as the OCR Pipeline tool's web build: one-directional is all a
@@ -21,8 +24,9 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -41,7 +45,22 @@ from artifice_draft.style_guides.base import StyleGuide
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
+# ── Shared design system (resolved from installed shared-ui package) ───────
+import importlib.resources
+import shared_ui
+_SHARED_UI = importlib.resources.files(shared_ui) / "assets"
+
 app = FastAPI(title="ArtificeDraft")
+
+
+@app.middleware("http")
+async def no_cache_static(request: Request, call_next):
+    response: Response = await call_next(request)
+    if request.url.path.startswith("/static/") or request.url.path.startswith("/shared/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 
 # --------------------------------------------------------------------------- #
@@ -306,9 +325,28 @@ def download(doc_id: str):
 # static frontend
 # --------------------------------------------------------------------------- #
 
+app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
+
+def _asset_version() -> str:
+    """Cache-busting version for the /static and /shared links in index.html.
+
+    Derived from the newest mtime across both asset trees and recomputed on
+    every request to "/", so an asset edited while the server is running is
+    picked up immediately and the version changes only when an asset
+    actually did. The cost is a directory walk (stat only, no file reads)
+    once per page load — negligible for a static tree this size, but it
+    would not scale to a very large one.
+    """
+    roots = (STATIC_DIR, Path(str(_SHARED_UI)))
+    mtimes = [p.stat().st_mtime for root in roots for p in root.rglob("*") if p.is_file()]
+    return str(int(max(mtimes))) if mtimes else "0"
+
+
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+def index() -> HTMLResponse:
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    return HTMLResponse(html.replace("__ASSET_V__", _asset_version()))
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -375,6 +413,19 @@ def main() -> None:
 
     port = args.port or _free_port()
     url = f"http://127.0.0.1:{port}"
+
+    # CORS origins are derived from the actual port so that explicit
+    # localhost origins match even when the port is chosen at runtime.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+        ],
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
 
     server_thread = threading.Thread(
         target=lambda: uvicorn.run(app, host="127.0.0.1", port=port,

@@ -12,7 +12,8 @@ import webbrowser
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from .routers import analytics as analytics_router
@@ -27,11 +28,22 @@ from .routers import ludwiglang as ludwiglang_router
 
 app = FastAPI(title="OCR Pipeline")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8765",
+        "http://127.0.0.1:8765",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+
 
 @app.middleware("http")
 async def no_cache_static(request: Request, call_next):
     response: Response = await call_next(request)
-    if request.url.path.startswith("/static/"):
+    if request.url.path.startswith("/static/") or request.url.path.startswith("/shared/"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -49,10 +61,32 @@ app.include_router(ludwiglang_router.router)
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
+# ── Shared design system (resolved from installed shared-ui package) ───────
+import importlib.resources
+import shared_ui
+_SHARED_UI = importlib.resources.files(shared_ui) / "assets"
+app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
+
+def _asset_version() -> str:
+    """Cache-busting version for the /static and /shared links in index.html.
+
+    Derived from the newest mtime across both asset trees and recomputed on
+    every request to "/", so an asset edited while the server is running is
+    picked up immediately and the version changes only when an asset
+    actually did. The cost is a directory walk (stat only, no file reads)
+    once per page load — negligible for a static tree this size, but it
+    would not scale to a very large one.
+    """
+    roots = (STATIC_DIR, Path(str(_SHARED_UI)))
+    mtimes = [p.stat().st_mtime for root in roots for p in root.rglob("*") if p.is_file()]
+    return str(int(max(mtimes))) if mtimes else "0"
+
 
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+def index() -> HTMLResponse:
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    return HTMLResponse(html.replace("__ASSET_V__", _asset_version()))
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

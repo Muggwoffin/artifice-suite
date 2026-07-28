@@ -186,6 +186,7 @@ class KnownSpeakerOut(BaseModel):
     model_name: str
     dimension: int
     created_at: datetime
+    legacy_embedding: bool = False
 
 
 class KnownSpeakerList(BaseModel):

@@ -16,6 +16,7 @@ dependencies = [
     "torchaudio",
     "fpdf2>=2.8.0",
     "openai>=1.0.0",
+    "shared-ui",
 ]
 
 [project.optional-dependencies]
@@ -35,6 +36,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"artifice_transcribe.web" = ["static/**"]
 
 [tool.ruff]
 line-length = 100

@@ -1,15 +1,21 @@
 # Artifice Suite — Implementation Plan
 
-**Status as of 2026-07-27 (end of session 2).** This document records what has been built and
+**Status as of 2026-07-28 (session 3).** This document records what has been built and
 verified, and stages the remaining work. It is the project to-do list; `ARCHITECTURE.md` describes
 the system as designed, `CLAUDE.md` governs how agents work on it, and `Design_Philosophy.md` is
 the binding design authority.
 
-> **Phase 1 is signed off. `artifice-graph` is the reference implementation and the design gate is
-> open.** The next substantive work is Phase 1.5 (security, CORS first) and the Phase 2 prerequisite
-> (breakpoint consolidation). Read §I.7 for what changed most recently, and Part V before running
-> anything — several operational notes were corrected this session and the old advice is actively
-> wrong.
+> **Phase 1 is signed off. Phase 2 is now unblocked.** Both of its prerequisites dissolved under
+> audit on 2026-07-28: the canonical web-layer layout had already been settled by commit `0979359`
+> and never recorded, and the "fourteen breakpoints in graph" figure was a miscount — there are 7,
+> and the `rem` values it listed were element `max-width` rules, not media queries. CORS and both
+> HIGH path traversals are also closed. Start from **Part IV**, which was re-derived from
+> measurement on that date.
+>
+> **This plan drifted badly from the tree, and that is the standing risk with it.** Three recorded
+> claims were refuted in one audit, two of them gating a phase. Prefer measuring over trusting any
+> figure here that carries no verification date — and when you measure, write the date next to
+> what you found.
 
 **Reading the status marks:**
 
@@ -36,7 +42,7 @@ uselessness, running **43 minutes at 2.8% CPU** on a real audit without producin
 |---|---|---|---|
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | **Verified** |
 | `tester` | OpenCode | `opencode-go/kimi-k3` | **Verified** |
-| `arch-auditor-docs` | OpenCode | `opencode-go/glm-5.2` | **Verified** |
+| `arch-auditor-docs` | OpenCode | `github-copilot/claude-sonnet-4.6` | **Verified** — moved off `glm-5.2` 2026-07-28 for throttling; banner re-asserted after the swap |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | **Verified** on the banner — audit re-dispatched after the Gemini swap |
 | `ui-ux` | Claude Code | `sonnet` | **Verified** |
 
@@ -88,9 +94,27 @@ a `/shared` StaticFiles mount, so there is nothing to keep in sync.
   value already specified in `Design_Philosophy.md`.
 - `@media (prefers-color-scheme: dark)` promoted — shared-ui previously could not follow the OS.
 - 6 dead `--w-*` "word-status" tokens deleted (LudwigLang residue; zero references).
-- `--font-sans` renamed to `--font-label` across all call sites, no alias. `Design_Philosophy.md`
-  updated to match, and §3 now names the token for every font role so the ambiguity cannot recur.
-- `--reg-*` and `--type-*` domain colours moved to `apps/artifice-graph/web/static/entity-colors.css`.
+- `--font-sans` renamed to `--font-label`, no alias. `Design_Philosophy.md` updated to match, and
+  §3 now names the token for every font role so the ambiguity cannot recur.
+
+  > **Scope correction, 2026-07-28.** This originally read "across all call sites", which was not
+  > true. The rename covered `packages/shared-ui` and `artifice-graph`; `artifice-ocr`,
+  > `artifice-draft` and `artifice-transcribe` each kept a local `--font-sans` declaration and
+  > between them 18 `var(--font-sans)` call sites, all still present today. It is true **now** —
+  > the three apps were reconciled on 2026-07-28, verified by
+  > `grep -rnE '(^\s*--font-sans\s*:|var\(\s*--font-sans\s*\))' apps/*/src/*/web/static/css/*.css`
+  > returning nothing.
+  >
+  > The work was real; only its scope was mis-stated. That is the third instance found today of a
+  > narrow result recorded as a suite-wide one — see also the canonical-layout prerequisite and the
+  > breakpoint count under Phase 2. It also caused a concrete error: a token-retirement brief
+  > written on 2026-07-28 instructed an agent to *preserve* `--font-sans` as legitimate app-only
+  > vocabulary, because this document implied the rename was already complete everywhere and the
+  > canonical file therefore had no counterpart by design. **When recording completed work, state
+  > which apps it covered.**
+- `--reg-*` and `--type-*` domain colours moved to
+  `apps/artifice-graph/src/artifice_graph/web/static/entity-colors.css` (path updated after the
+  2026-07-28 layout migration).
   They are deliberately not suite tokens.
 - Error states stopped borrowing `--reg-poetic` (a register-taxonomy colour) and use `--error`.
 
@@ -198,34 +222,49 @@ These were not the task, but they are load-bearing and should be recorded rather
 
 **The model harness does not exist.** `CLAUDE.md` requires that "all model interactions must pass
 through structured schemas in `packages/model-harness`". In fact `model_harness` is a 29-line
-`__init__.py` with **zero imports from any app**, and three apps each carry their own LLM client:
+`__init__.py` with **zero imports from any app**, and **all four** apps carry their own LLM client:
 
 ```
 apps/artifice-ocr/src/artifice_ocr/_llm.py
 apps/artifice-graph/src/artifice_graph/extraction/llm_client.py
 apps/artifice-draft/src/artifice_draft/llm_client.py
+apps/artifice-transcribe/src/artifice_transcribe/services/inference.py
 ```
+
+> **Corrected 2026-07-28.** This list previously named three. Transcribe's
+> `services/inference.py` is a fourth — it defines `InferenceEngine` and constructs its own
+> `AsyncOpenAI` clients; it was missed because it is not named `*_client.py`. OCR is worse
+> still: it constructs an `openai.OpenAI` at **six separate sites** (`_llm.py`, `_backend.py`,
+> `utils.py`, `stages/ocr.py`, `web/routers/settings.py`, `gui/views/settings_view.py`), so
+> there is internal duplication to resolve before any harness migration, not just four clients
+> to port.
+>
+> `uv.lock` installs `model-harness` editable into **every** app's environment. So the package
+> is on the path everywhere and imported nowhere — the gap is not "unused", it is "available
+> and still bypassed".
 
 `packages/core-types` is likewise unimported. The harness architecture is currently aspirational.
 
-**Monorepo parity is broken, and `artifice-graph` is the one breaking it.** This is sharper than
-previously recorded, and it matters because graph is the reference implementation:
+**~~Monorepo parity is broken, and `artifice-graph` is the one breaking it.~~ — RESOLVED
+2026-07-28.** All four apps now use the same web-layer location. Verified: `apps/artifice-graph/web`
+does not exist, and `apps/artifice-transcribe/src/artifice_transcribe/static` does not exist.
 
 | app | UI location | form |
 |---|---|---|
 | `artifice-ocr` | `src/artifice_ocr/web/static/` | one static `index.html`, one `css/app.css` |
 | `artifice-draft` | `src/artifice_draft/web/static/` | one static `index.html`, one `css/app.css` |
-| `artifice-transcribe` | `src/artifice_transcribe/static/` | one static `index.html`, one `css/app.css` |
-| `artifice-graph` | `web/` **at the app root** | Jinja2 templates, 4 HTML, 4 CSS, `web/server.py` |
+| `artifice-transcribe` | `src/artifice_transcribe/web/static/` | one static `index.html`, one `css/app.css` |
+| `artifice-graph` | `src/artifice_graph/web/` | Jinja2 templates, 4 HTML, 3 app CSS + vendored Leaflet |
 
-`CLAUDE.md` mandates parity on `apps/<app>/src/artifice_<slug>/`, so ocr and draft follow the
-standard and **graph violates it**; transcribe is a third variant that drops the `web/` level. The
-other three are also barely-built UIs — a single static page each, not Jinja templates.
+Commit `0979359` ("adopt canonical layout and ship web assets in wheels") migrated graph and
+transcribe onto the `src/artifice_<slug>/web/` pattern `CLAUDE.md` mandates. **This section
+previously described a three-way split that no longer exists, and gated Phase 2 on a decision that
+has already been made.**
 
-Phase 2 is therefore not "copy graph three times". It is first a decision about which layout wins,
-and that decision should be made before any design rollout, not after. Note the trade-off honestly:
-graph's structure is the more capable one (templates, inheritance, a real server) but it is the
-non-conformant one.
+What remains true: the other three apps are **a single static `index.html` each**, not template
+hierarchies. Only graph has a real `templates/` tree (`base.html`, `index.html`, `library.html`,
+`about.html`). So Phase 2 is still not "copy graph three times" — there is little structure in the
+other three to apply graph's patterns *to* — but the obstacle is thinness, not divergence.
 
 **There is no CI.** `.github/workflows/` does not exist, so the 34 test files are never run
 automatically and nothing enforces the parity or security rules on a pull request.
@@ -233,14 +272,22 @@ automatically and nothing enforces the parity or security rules on a pull reques
 **IDE cruft is committed** — `.idea/` directories in the repo root, `artifice-ocr`,
 `artifice-transcribe` and `packages/model-harness`.
 
-**The other three apps do not use the token system.** `packages/shared-ui/README.md` records that
-`artifice-ocr`, `artifice-draft` and `artifice-transcribe` each redeclare an identical copy of the
-token block at the top of their own `static/css/app.css`. A spot check confirms worse than
-redeclaration — `artifice-transcribe/src/artifice_transcribe/static/css/app.css:818,874` hardcodes
-`#dc3545` directly for `.health-dot.error` and `.health-status.error`, bypassing tokens entirely
-and using the Bootstrap red that was just removed from the design system for being off-palette.
-Expect this class of drift throughout Phase 2; it is the reason that phase is a design pass and not
-a copy-paste.
+**The other three apps do not use the token system.** `artifice-ocr`, `artifice-draft` and
+`artifice-transcribe` each redeclare the canonical token block at the top of their own
+`web/static/css/app.css`. **Quantified 2026-07-28** — ocr declares 62 local tokens of which 55
+shadow a canonical name, draft 61/55, transcribe 54/53. `artifice-graph`'s `entity-colors.css` is
+the counter-example and the target state: 13 tokens, **zero** shadowing, pure domain vocabulary.
+
+Worse than redeclaration, and still present:
+`artifice-transcribe/src/artifice_transcribe/web/static/css/app.css:818,874` hardcodes `#dc3545`
+directly for `.health-dot.error` and `.health-status.error`, bypassing tokens entirely and using
+the Bootstrap red removed from the design system for being off-palette. It is not alone — ocr and
+draft both carry stock Bootstrap `--success: #28a745` and `--warning: #ffc107` against canonical
+`#455f2b` and `#7c5e1a`.
+
+`scripts/token-parity-check.py` now enforces this and **currently exits 1**, reporting 10 drifted
+tokens across the three apps. Expect this class of drift throughout Phase 2; it is the reason that
+phase is a design pass and not a copy-paste.
 
 ---
 
@@ -329,8 +376,10 @@ a copy-paste.
         10 inline SVGs, 11 `aria-hidden`, **zero** icon-font links
       - **Discarded — animations (§6)**: `state-pulse-flash`, `ink-dry` and `ink-create` appear in
         **zero files**. LudwigLang reading-view residue, same category as the `--w-*` tokens
-      - **Discarded — breakpoints (§7)**: the table named three; the code has fourteen. It
-        described a discipline that does not exist. Logged as a Phase 2 prerequisite instead
+      - **Discarded — breakpoints (§7)**: the table named three; the code did not match. It
+        described a discipline that does not exist. *(The "fourteen" figure recorded here was
+        itself wrong — remeasured 2026-07-28 as **7**, the rest being element `max-width` rules
+        counted as media queries. See Phase 2.)*
       - **Nothing went to `ARCHITECTURE.md`** — that describes system structure, not code style
 - [ ] Delete committed `.idea/` directories and add them to `.gitignore`
 
@@ -458,16 +507,20 @@ it does mean these touch frozen code.
 > Publishing reproduction steps for unpatched vulnerabilities in software people may already be
 > running is publishing an attack guide. Move detail here only after the fix ships.
 
-- [ ] **Settle CORS first — it gates the severity of almost everything else.** No CORS middleware
-      was found in any of the web servers. Without it, any webpage the user visits can issue
-      cross-origin requests to their local servers, which converts several of the findings below
-      from "local tool accepts loose input" into "remote webpage drives the local tool". Confirm
-      whether headers are set anywhere; if not, this is the single highest-leverage fix
-- [ ] **Two HIGH path-traversal findings in `artifice-transcribe`** — audio upload and speaker
-      enrollment both build filesystem paths from user-supplied names without stripping directory
-      components. **The correct pattern already exists in this codebase**:
-      `apps/artifice-draft/src/artifice_draft/web/runtime.py:252` uses `Path(filename).name`. Apply
-      it in transcribe, then audit ocr and graph for the same shape
+- [x] **CORS — DONE, all four apps.** Verified 2026-07-28. Each server registers `CORSMiddleware`
+      with an explicit loopback origin allowlist, `allow_credentials=False`, an enumerated method
+      list and no wildcard: `artifice-ocr/web/server.py:31`,
+      `artifice-draft/web/server.py:382`, `artifice-graph/web/server.py:49`,
+      `artifice-transcribe/main.py:44`. This was the highest-leverage fix in the backlog and it
+      closed the escalation path that made several findings below worse than they read
+- [x] **Two HIGH path-traversals in `artifice-transcribe` — DONE.** Verified 2026-07-28. Both
+      sites now route through `_sanitise_path_component`: audio upload at
+      `api/v1/routes.py:639` and speaker enrollment at `:1224`. The helper does **not** simply
+      call `.name` — `routes.py:86` documents that `Path("..").name` returns `".."`, so `.name`
+      alone is insufficient, and it normalises separators first (`:93`). That is the correct
+      handling of the trap the original finding pointed at
+- [ ] Audit `ocr` and `graph` for the same path-construction shape, now that the pattern to apply
+      is established in transcribe
 - [ ] **Credentials returned in API response bodies** (medium, `artifice-transcribe` and
       `artifice-ocr`) — config endpoints echo HuggingFace tokens and API keys back to the client.
       Redact on the way out; the client does not need the value it just set
@@ -503,28 +556,66 @@ injection vector. No secrets in tracked markdown, scripts, TOML or YAML; the `hf
 
 ### Phase 2 — Design system rollout
 
-**Two prerequisites now, not one.** The second was found at Phase 1 sign-off and is the more
-fundamental of the two.
+**Both prerequisites have dissolved. Phase 2 is unblocked as of 2026-07-28.** Audited by
+`arch-auditor-docs` and independently re-verified by the orchestrator. Both are kept here, struck
+through rather than deleted, because each was wrong in an instructive way.
 
-- [ ] **PREREQUISITE: settle the canonical web-layer layout first (Phase 4's first item).**
-      "Roll out the reference implementation" is incoherent while the reference implementation is
-      the structurally non-conformant one. `artifice-graph` keeps `web/` at the app root with Jinja2
-      templates; `ocr` and `draft` follow the `src/artifice_<slug>/web/static/` pattern that
-      `CLAUDE.md` actually mandates; `transcribe` is a third variant. The other three are also a
-      single static `index.html` each, not template hierarchies — so there is no structure there to
-      apply graph's patterns *to* until this is decided. See Part II for the full comparison.
-- [ ] **PREREQUISITE: consolidate the responsive breakpoints before copying anything.**
-      `artifice-graph` declares **fourteen** distinct breakpoints across its stylesheets — 520,
-      580, 600, 700, 720, 800, 960 and 1050px, plus seven more in `rem` (12, 15, 22, 28, 44, 72).
-      Several are within 20px of each other and no two files agree on a scale. The deleted
-      `DESIGN_LANGUAGE.md` documented three, which is how little anyone was tracking this. Left
-      alone it becomes the template three more apps inherit, at which point it is four times the
-      work to undo. Agree a small named scale first, then roll out. Deliberately excluded from the
-      current `ui-ux` change set, because touching media queries would destabilise layout that has
-      already been measured and signed off
+- [x] ~~**PREREQUISITE: settle the canonical web-layer layout first.**~~ **Already done.** Commit
+      `0979359` migrated graph and transcribe onto `src/artifice_<slug>/web/`. All four apps now
+      agree. Verified: `apps/artifice-graph/web` does not exist. The plan gated Phase 2 on a
+      decision that had already been made and not recorded — see Part II.
+- [x] ~~**PREREQUISITE: consolidate the responsive breakpoints — graph declares fourteen.**~~
+      **The count was wrong.** `artifice-graph` declares **7 distinct `@media` width breakpoints**,
+      all in `px`, **zero in `rem`**: 520, 600, 700, 720, 800, 960, 1050. Nine declarations, since
+      720 appears three times in `pipeline.css`.
+
+      The "580px plus seven more in `rem`" figures were **element `max-width` / `max-height`
+      declarations miscounted as media queries** — e.g. `44rem` is a prose measure
+      (`.page.page-prose`), `72rem` a layout cap (`.read-layout .page`), `580px` a single
+      element's width. A `max-width` in a rule body is not a breakpoint.
+
+      For comparison, measured the same way: **ocr 3** (1100, 900, 600), **transcribe 4** (900,
+      860, 700, 600), **draft 0** — draft has no width breakpoints at all, only
+      `prefers-color-scheme` and `prefers-reduced-motion`. Graph is not the outlier the plan
+      described, and nothing approaches fourteen.
+
+      **The lesson worth keeping:** a metric quoted in a plan and never re-derived becomes
+      folklore. This one blocked a whole phase for two sessions. Re-measure before treating a
+      recorded number as a constraint.
+
+      Genuinely remaining: the three parallel `720px` blocks in `pipeline.css` could merge. That
+      is a tidy-up, not a prerequisite.
 - [ ] Apply the graph patterns to `artifice-ocr`, then `artifice-draft`, then `artifice-transcribe`
-- [ ] Each app serves `packages/shared-ui/tokens.css` via its own `/shared` mount; no app-local
-      token copies are recreated
+- [ ] **Retire the app-local token blocks that already exist.** This is not a forward-looking
+      constraint — it is remediation. Measured 2026-07-28 against the 56 canonical tokens in
+      `packages/shared-ui/shared_ui/assets/tokens.css`:
+
+      | App | Local tokens | Shadow a canonical name | Of those, value drifts |
+      |---|---|---|---|
+      | `artifice-ocr` | 62 | 55 | 6 (4 real, 2 quoting-only) |
+      | `artifice-draft` | 61 | 55 | 4 |
+      | `artifice-transcribe` | 54 | 53 | 2 |
+      | `artifice-graph` (`entity-colors.css`) | 13 | **0** | 0 |
+
+      All three re-declare essentially the whole canonical set inside their own
+      `web/static/css/app.css`. `CONTRIBUTING.md:238,248` already forbids this; the apps avoided
+      the *filename* `tokens.css`, not the practice. `artifice-graph` is the counter-example and
+      the target state: 13 tokens, zero shadowing, pure domain vocabulary.
+
+      The value drift itself is narrow and specific:
+      - `--success: #28a745` and `--warning: #ffc107` in **ocr** and **draft** are **stock
+        Bootstrap 4/5 defaults, unmodified**, against canonical `#455f2b` olive and `#7c5e1a`
+        ochre. Saturated cold green and amber in a warm paper-and-ink palette — the most
+        visually wrong values in the token layer, and the reason this is a design pass and not
+        a find-and-replace.
+      - `--error: #9a3324` in **all three** apps against canonical `#a8322b`. The apps agree
+        with each other and `tokens.css` is the outlier, so decide by eye which is correct —
+        this one may be a fix to *canonical*, not to the apps.
+      - `--font-mono` differs everywhere: apps lead with Cascadia Mono / Consolas (Windows
+        first), canonical with SFMono-Regular (macOS first). A genuine cross-platform question
+        given the suite targets Windows 11 and Apple Silicon equally, not drift to be flattened.
+      - ocr's `--font-body` / `--font-display` differ **only in quoting** (`'Georgia'` vs
+        `Georgia`). Not drift. Any tooling that reports them is miscalibrated.
 - [ ] Per-app domain colours follow the `entity-colors.css` precedent
 - [ ] Rendered review of every app at desktop, ~900px and ~600px before sign-off
 
@@ -541,9 +632,16 @@ The largest correctness item in the project, and the one the architecture claims
 
 ### Phase 4 — Structural parity
 
-- [ ] Choose one canonical web-layer location and migrate all four apps to it
+- [x] ~~Choose one canonical web-layer location and migrate all four apps to it~~ — **done in
+      commit `0979359`**, verified 2026-07-28. All four apps use `src/artifice_<slug>/web/`
 - [ ] Align `pyproject.toml` definitions and Docker configuration across apps
-- [ ] Commission `arch-auditor-docs` for a full parity audit once the above lands
+- [x] ~~Commission `arch-auditor-docs` for a full parity audit once the above lands~~ — **run
+      2026-07-28.** Findings folded into Part II and Part IV. Two of its six checks refuted a
+      recorded claim; the orchestrator independently re-verified every consequential finding, and
+      corrected two the auditor got wrong (`Zone.Identifier` files and `build/lib/` directories
+      are present on disk but **not tracked in git**, so neither is a repository problem)
+- [ ] Remaining parity gap: only `artifice-graph` has a `templates/` tree. The other three are a
+      single static `index.html` each — thinness, not divergence
 
 ### Phase 5 — Engineering quality gates
 
@@ -565,24 +663,42 @@ The largest correctness item in the project, and the one the architecture claims
 
 ## Part IV — Consolidated to-do list
 
-Phase 1 is closed. In priority order from here:
+Phase 1 is closed. **Re-derived 2026-07-28** — the previous list's top two items were already
+fixed, and its items 4 and 5 were blockers that did not exist. In priority order from here:
 
-1. **CORS** (Phase 1.5) — the single highest-leverage fix in the backlog. No CORS middleware exists
-   in any web server, and its absence is what converts several audit findings from "local tool
-   accepts loose input" into "any webpage the user visits can drive their local tool". Do this
-   before anything else.
-2. **The two HIGH path traversals in `artifice-transcribe`** (Phase 1.5) — the correct pattern
-   already exists in this codebase at `artifice-draft/web/runtime.py:252` (`Path(filename).name`).
-3. **Add CI** (Phase 5) — 34 test files exist and nothing runs them. Now cheap to make meaningful:
-   `scripts/audit-controls.py` and `scripts/smoke-test-agents.sh` both exit non-zero on failure and
-   can gate a PR on day one.
-4. **Decide the canonical web-layer layout** (Phase 4) — this now *blocks* Phase 2 rather than
-   following it, because graph is the non-conformant one and "roll out the reference implementation"
-   is incoherent until it is settled. See Part II.
-5. **Breakpoint consolidation** (Phase 2 prerequisite) — fourteen ad-hoc breakpoints; four times the
-   work to undo once three more apps inherit them.
-6. **Make the model harness real** (Phase 3) — the architecture's central claim is still untrue.
-   Large, and nothing else depends on it, which is why it sits below items that gate other work.
+1. **Repair `artifice-ocr`'s test suite** — 79 failed / 91 errors, and **all 170 are one bug**:
+   every failure is `ModuleNotFoundError: No module named 'src'`, because 27 test files write
+   their `patch()` targets as `src.artifice_ocr.…` while the package installs as `artifice_ocr`
+   (112 occurrences). Measured 2026-07-28: exactly 170 occurrences of that error and **zero**
+   missing-dependency errors of any kind. Highest return in the project — one mechanical change
+   takes the suite from 148/319 to near-green.
+
+   This plan had never recorded a cause for OCR's failures; the working assumption in session 3
+   was that they came from missing optional dependencies (`fpdf2`, tropy). That assumption was
+   wrong, and it is written down here because it is the kind of plausible guess that becomes
+   folklore if the first person to check does not record what they actually found.
+2. **Add CI** (Phase 5) — 34 test files exist and nothing runs them. Now cheap to make meaningful:
+   `scripts/audit-controls.py`, `scripts/token-parity-check.py` and `scripts/smoke-test-agents.sh`
+   all exit non-zero on failure and can gate a PR on day one. Note `token-parity-check.py`
+   **currently exits 1** on the real tree, so landing it as a gate means either fixing the 10 token
+   drifts first or knowingly admitting a failing check.
+3. **Finish Phase 1.5** — remaining: credentials echoed in config response bodies, SSRF via
+   user-supplied model endpoints, user-controlled directories in graph, secrets written at default
+   permissions. CORS and both HIGH path traversals are done.
+4. **Phase 2 design rollout** — genuinely unblocked, both prerequisites having dissolved. The
+   measured work is the 10 token drifts, led by the stock Bootstrap `#28a745` / `#ffc107` in ocr
+   and draft.
+5. **Make the model harness real** (Phase 3) — the architecture's central claim is still untrue,
+   and larger than recorded: four per-app clients rather than three, and six `openai.OpenAI`
+   construction sites inside ocr alone. Nothing else depends on it, which is why it sits below
+   work that gates other work.
+6. **Delete the committed `.idea/` directories** — 8 files still tracked. Trivial, and it has
+   survived several sessions on this list.
+
+> **On the two items removed from this list:** both were true when written. Neither was
+> re-derived before being treated as a constraint, and between them they blocked Phase 2 for two
+> sessions. When an item here gates a phase, re-measure it before acting on it — and when it turns
+> out to be stale, record that in the plan rather than quietly dropping it.
 
 **Do not re-litigate these** — they were settled by measurement this session and the reasoning is
 recorded above: dark mode is sound; entity badges pass AA as rendered (measuring the raw `--type-*`
@@ -660,33 +776,124 @@ alarms — a "stage 3 card is styled differently" that was a JPEG artifact, a "h
 type" assumption that was never true, and five "dead controls" that were bound in an inline
 `<script>` the audit had not scanned.
 
-**OpenCode agents have no browser.** Never brief one to verify anything visually. Rendered
-confirmation is the orchestrator's job, per the design-director loop in `CLAUDE.md`.
+**~~OpenCode agents have no browser.~~ Superseded 2026-07-28 — they can fetch, but still cannot
+see.** A self-hosted Firecrawl instance is wired as an MCP server and granted to `lead-engineer`
+and `tester`. Proven the same day: `tester` scraped a running `artifice-graph` at
+`http://host.docker.internal:8766/` and returned its title, headings and markup, `exit=0`.
+Firecrawl's own container log recorded the scrape and the app logged the request arriving from
+`172.18.0.4` — a container IP on the local bridge, which is what proves the self-hosted route
+rather than a cloud round trip.
+
+Rendered, visual confirmation is **still the orchestrator's job**. Firecrawl returns text and
+markup, never pixels; the design-director loop in `CLAUDE.md` is unchanged. What changed is that
+structural checks — is the control in the DOM, does it carry the right `id`, did the route return
+200 — can now be delegated. That is the exact gap behind the "five dead controls bound in an inline
+`<script>`" miss.
+
+Setup, for reproduction:
+
+```bash
+scripts/firecrawl.sh up        # start; also asserts the loopback binding
+scripts/firecrawl.sh status    # service table + binding check
+scripts/firecrawl.sh prune     # after an audit run — clears stale Chromium
+scripts/firecrawl.sh down
+```
+
+The checkout lives at `~/tools/firecrawl` (outside this repo, deliberately). Three deviations from
+upstream were necessary and will be lost if it is re-cloned:
+
+1. **`extra_hosts` added to `playwright-service`.** Upstream sets it only on the
+   `x-common-service` anchor, which `playwright-service` does not use. Without it the renderer
+   cannot resolve `host.docker.internal`, and **every scrape of a host-served app returns a bare
+   404 while the api container reaches the same URL fine** — a genuinely confusing failure, because
+   the 404 looks like an application bug rather than a DNS one.
+2. **Port republished as `127.0.0.1:3002`,** not `0.0.0.0`. The instance runs unauthenticated
+   (`USE_DB_AUTHENTICATION=false`), so a default bind would expose it to the LAN.
+3. **Prebuilt `ghcr.io/firecrawl/*` images** substituted for the `build:` stanzas, avoiding a long
+   Playwright build.
+
+Three traps worth carrying forward:
+
+- **`firecrawl-mcp` silently falls back to the Firecrawl cloud when `FIRECRAWL_API_URL` is unset.**
+  It logs "running in keyless mode… against the Firecrawl cloud" and continues. Nothing errors. If
+  that variable is ever dropped from `opencode.json`, a local-only tool becomes an egress path with
+  no signal at all.
+- **Firecrawl's URL validator rejects raw IPs** — "URL must have a valid top-level domain or be a
+  valid path". Always brief the hostname, never `172.x.x.x`.
+- **A `127.0.0.1` bind makes an app invisible to the agents.** The Phase 1.5 hardening changed
+  `artifice-graph`'s default host from `0.0.0.0` to `127.0.0.1`, which is correct for a local-first
+  app — and it silently removed the fleet's ability to verify it. Measured directly: host-local
+  `curl` returns 200 while the same URL from inside the Firecrawl container is **unreachable**, and
+  the scrape fails with status 594. Loopback does not include the docker bridge.
+
+  To serve an app *for agent verification*, set the host explicitly:
+
+  ```bash
+  CALLOSIP_HOST=0.0.0.0 uv run python -m web.server
+  ```
+
+  Keep the shipped default at `127.0.0.1`. Widening the bind is a deliberate, temporary act for a
+  verification session, never a committed change. Expect this to recur for every app as the same
+  hardening rolls out to `ocr`, `draft` and `transcribe` — a verification brief that "just stops
+  working" after a security pass is this, not a Firecrawl fault.
+
+**Canonical web layout: `apps/<app>/src/artifice_<slug>/web/static/`.** Decided 2026-07-28 and
+**migration completed the same day** in commit `0979359`. All four apps conform:
+
+| App | Location | Status |
+|---|---|---|
+| `artifice-draft` | `src/artifice_draft/web/static/` | conforms |
+| `artifice-ocr` | `src/artifice_ocr/web/static/` | conforms |
+| `artifice-graph` | `src/artifice_graph/web/` | conforms — migrated |
+| `artifice-transcribe` | `src/artifice_transcribe/web/static/` | conforms — migrated |
+
+Verified 2026-07-28: `apps/artifice-graph/web` and
+`apps/artifice-transcribe/src/artifice_transcribe/static` no longer exist.
+
+The reason it mattered: assets outside the package are dropped from a wheel and are only findable
+by a CWD-relative path, which breaks as soon as the server starts from anywhere but the app root.
+The migration moved `StaticFiles` mounts, Dockerfile `COPY` lines and `pyproject.toml` package-data
+rules together.
+
+**Still outstanding from that migration:** `artifice-graph` carries the signed-off Phase 1 design
+work and has had a green test run (47/47) but **not** a rendered re-check since it moved. A test
+pass does not confirm that stylesheets still resolve in the browser. Do that before Phase 2 treats
+graph as the reference.
 
 **`git status` means different things in different shells** until the line-ending normalisation is
 run. Always `git diff --ignore-cr-at-eol` before concluding anything about what changed.
 
-**Developer tooling the fleet assumes but WSL does not have.** `gitleaks` and `node` are installed;
-these are not, and their absence has already cost time:
+**~~Developer tooling the fleet assumes but WSL does not have.~~ Installed — do not re-install.**
+The gap this note described is closed. Verified present in WSL as of 2026-07-28:
+
+| Tool | Version | Path |
+|---|---|---|
+| `ripgrep` | 15.1.0 | `/usr/bin/rg` |
+| `ffmpeg` | 8.0.1-3ubuntu2 | `/usr/bin/ffmpeg` |
+| `brotli` | 1.2.0 | `/usr/bin/brotli` |
+| `jq` | 1.8.1 | `/usr/bin/jq` |
+| `shellcheck` | 0.11.0 | `/usr/bin/shellcheck` |
+
+`gitleaks` and `node` were already installed. The `uv` symlink still matters and is unrelated to
+the above — it is the fix for the non-login `PATH` problem, and it removes a whole class of
+"command not found" failures from scripts and agents alike:
 
 ```bash
-sudo apt install -y ripgrep jq brotli shellcheck
 sudo ln -s "$HOME/.local/bin/uv" /usr/local/bin/uv     # see the PATH note above
 ```
 
-`ripgrep` because agents reach for `rg` and burn turns falling back to `grep`. `brotli` because it
-is the missing piece that keeps the vendored fonts at 940 KB instead of roughly half that.
-`shellcheck` because `dispatch-opencode.sh` now carries six numbered guards and process-tree walking
-with no linter on it. `jq` is convenience only. The `uv` symlink matters most — it is the fix for
-the non-login `PATH` problem above, and it removes a whole class of "command not found" failures
-from scripts and agents alike.
+Two consequences worth acting on rather than just noting:
 
-`ffmpeg` is **not** on that list deliberately: `apps/artifice-transcribe/HANDOFF.md:100` records it
-as installed, but at a *Windows* path, which Whisper and pyannote under WSL cannot use. Install the
-Linux package when transcribe is actually picked up — it pulls ~500 MB.
+- **`brotli` unblocks the font payload.** §II and `packages/shared-ui/README.md:76` both record the
+  vendored fonts shipping as TTF at **940 KB** because woff2 conversion needed `brotli` and it was
+  absent. That blocker is gone; re-running the conversion should roughly halve the payload. Not yet
+  done — it is a real task, not a footnote.
+- **`ffmpeg` is now the *Linux* build.** `apps/artifice-transcribe/HANDOFF.md:100` records an
+  `ffmpeg.exe` at a Windows path, which Whisper and pyannote under WSL cannot use. That note is now
+  stale for WSL work; the native package at `/usr/bin/ffmpeg` is what transcribe will pick up.
 
-None of these appear in any setup documentation, which is itself a gap: `CONTRIBUTING.md` should
-carry a developer-tooling list.
+`CONTRIBUTING.md` carries the developer-tooling list, which closes the documentation gap this note
+used to flag.
 
 ---
 

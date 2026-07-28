@@ -8,11 +8,10 @@ dependencies = [
     "python-docx>=0.8.11",
     "docx-revisions>=0.1.5",
     "requests>=2.31.0",
+    "shared-ui",
 ]
 
 [project.optional-dependencies]
-# The tkinter GUI (artifice-draft-gui) needs none of these. Only the web
-# frontend (artifice-draft-web) does.
 web = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
@@ -20,9 +19,6 @@ web = [
     "pywebview>=4.4",
     "beautifulsoup4>=4.12",
     "readability-lxml>=0.8.1",
-]
-dnd = [
-    "tkinterdnd2",
 ]
 
 [project.scripts]
@@ -34,6 +30,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"artifice_draft.web" = ["static/**"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

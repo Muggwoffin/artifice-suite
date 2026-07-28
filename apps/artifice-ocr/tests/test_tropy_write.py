@@ -79,7 +79,7 @@ def project(tmp_path):
 @pytest.fixture(autouse=True)
 def tropy_closed():
     """Every test assumes Tropy is not running; the check has its own test."""
-    with patch("src.artifice_ocr.tropy_write._tropy_is_running", return_value=False):
+    with patch("artifice_ocr.tropy_write._tropy_is_running", return_value=False):
         yield
 
 
@@ -127,7 +127,7 @@ def test_preview_requires_a_target(project):
 
 
 def test_running_tropy_blocks_the_write(project):
-    with patch("src.artifice_ocr.tropy_write._tropy_is_running", return_value=True):
+    with patch("artifice_ocr.tropy_write._tropy_is_running", return_value=True):
         with TropyWriter(project) as w:
             preview = w.preview([WriteEntry(photo_id=10, text="x")], [TARGET_NOTES])
             report = w.write(preview)
@@ -240,7 +240,7 @@ def test_failed_write_rolls_back_completely(project):
                 raise sqlite3.OperationalError("disk full")
             return real_state(text)
 
-        with patch("src.artifice_ocr.tropy_write._prosemirror_state", flaky):
+        with patch("artifice_ocr.tropy_write._prosemirror_state", flaky):
             report = w.write(preview)
 
     assert report.written == 0
@@ -323,7 +323,7 @@ def test_repair_reports_nothing_to_do_when_there_are_no_notes(project):
 
 
 def test_repair_refuses_while_tropy_is_running(project):
-    with patch("src.artifice_ocr.tropy_write._tropy_is_running", return_value=True):
+    with patch("artifice_ocr.tropy_write._tropy_is_running", return_value=True):
         with TropyWriter(project) as w:
             with pytest.raises(RuntimeError, match="running"):
                 w.repair_missing_selections()

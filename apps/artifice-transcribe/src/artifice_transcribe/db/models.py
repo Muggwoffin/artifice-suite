@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, LargeBinary, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -25,6 +25,66 @@ def _utcnow() -> datetime:
 
 def _uuid() -> str:
     return uuid.uuid4().hex
+
+
+# ── Embedding serialisation helpers ────────────────────────────────────────
+#
+# Speaker embeddings are stored as raw float32 bytes (ndarray.tobytes())
+# so that no consumer ever deserialises arbitrary objects from the database.
+# Both KnownSpeaker.embedding and SpeakerEmbedding.embedding use these.
+
+
+def pack_embedding(embedding: "np.ndarray") -> bytes:
+    """Cast *embedding* to ``np.float32`` and return its raw bytes."""
+    import numpy as np
+
+    return np.asarray(embedding, dtype=np.float32).tobytes()
+
+
+class LegacyEmbeddingError(ValueError):
+    """Raised when a stored embedding blob is a pickle payload predating
+    the raw-float32 format.  The speaker must be re-enrolled."""
+
+
+def _is_legacy_pickle_blob(blob: bytes) -> bool:
+    """Return *True* if *blob* looks like a pickled Python object.
+
+    Pickle protocol 2+ payloads begin with the opcode ``\\x80`` followed by
+    a protocol byte.  Protocol 0/1 payloads start with a printable ASCII
+    opcode (e.g. ``(``, ``i``) and are harder to detect without a full
+    parse, but in practice every pickle produced by a modern Python has
+    been protocol 2+ since 3.8 raised the default.
+
+    Checking the ``\\x80`` prefix is cheap, safe, and catches all real-world
+    legacy rows without ever calling ``pickle.loads``.
+    """
+    return len(blob) > 0 and blob[0] == 0x80
+
+
+def unpack_embedding(blob: bytes, dimension: int | None = None) -> "np.ndarray":
+    """Return ``np.frombuffer(blob, dtype=np.float32)`` after validating
+    that *blob* is a whole number of float32 values and, when *dimension*
+    is given, that the vector length matches."""
+    if _is_legacy_pickle_blob(blob):
+        raise LegacyEmbeddingError(
+            "This embedding blob predates the raw-float32 format and "
+            "cannot be read. The speaker must be re-enrolled."
+        )
+    if len(blob) == 0:
+        raise ValueError("Embedding blob is empty")
+    if len(blob) % 4 != 0:
+        raise ValueError(
+            f"Embedding blob is {len(blob)} bytes, not a multiple of 4 (float32)"
+        )
+    actual_dim = len(blob) // 4
+    if dimension is not None and actual_dim != dimension:
+        raise ValueError(
+            f"Embedding blob has dimension {actual_dim}, "
+            f"expected {dimension}"
+        )
+    import numpy as np
+
+    return np.frombuffer(blob, dtype=np.float32)
 
 
 class TranscriptionJob(Base):
@@ -101,7 +161,7 @@ class KnownSpeaker(Base):
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
     name: Mapped[str] = mapped_column(String(256))
-    embedding: Mapped[bytes] = mapped_column(Text)  # numpy array pickled
+    embedding: Mapped[bytes] = mapped_column(LargeBinary)  # raw float32 bytes (pack_embedding)
     model_name: Mapped[str] = mapped_column(String(64), default="pyannote/embedding")
     dimension: Mapped[int] = mapped_column(default=512)
     sample_audio_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
@@ -117,7 +177,7 @@ class SpeakerEmbedding(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
     job_id: Mapped[str] = mapped_column(String(32))
     speaker_label: Mapped[str] = mapped_column(String(32))
-    embedding: Mapped[bytes] = mapped_column(Text)  # numpy array pickled
+    embedding: Mapped[bytes] = mapped_column(LargeBinary)  # raw float32 bytes (pack_embedding)
     model_name: Mapped[str] = mapped_column(String(64), default="pyannote/embedding")
     dimension: Mapped[int] = mapped_column(default=512)
 

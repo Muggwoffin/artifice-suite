@@ -10,6 +10,7 @@ dependencies = [
     "rich>=13.0",
     "pyyaml>=6.0",
     "typer[all]>=0.12",
+    "shared-ui",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +27,7 @@ web = [
 
 [project.scripts]
 artifice-graph = "artifice_graph.cli:app"
+artifice-graph-web = "artifice_graph.web.server:main"
 
 [build-system]
 requires = ["hatchling"]

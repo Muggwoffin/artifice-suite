@@ -58,3 +58,7 @@ apps/*/data/cache/
 # configuration, not output.
 apps/*/data/output/
 apps/*/data/obsidian_vault/
+
+# Runtime state. artifice-transcribe defaults its SQLite DB to ./data/
+# (config.py:12), so starting a server from the repo root creates this.
+/data/

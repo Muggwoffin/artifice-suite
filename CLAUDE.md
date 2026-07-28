@@ -19,6 +19,21 @@ You oversee the development of four local-first, BYOM (Bring-Your-Own-Model) aca
 3. **Enforce Design Philosophy.** Ensure all UI components and layout primitives strictly adhere to `Design_Philosophy.md` (The New Masses Design System: paper and ink aesthetics, warm palette, editorial typography, restrained motion).
 4. **Maintain Monorepo Parity.** Ensure all four apps maintain identical modular `src/` directory patterns (`apps/<app>/src/artifice_<app_slug>/`), PEP 621 `pyproject.toml` definitions, and Docker configurations.
 
+### Canonical web layout
+
+Web assets live at **`apps/<app>/src/artifice_<slug>/web/static/`** — inside the installable
+package, never at the app root. Decided 2026-07-28 as a Phase 2/4 prerequisite; `artifice-draft`
+and `artifice-ocr` already conform.
+
+Two apps deviate and are scheduled to move: `artifice-graph` keeps assets at `apps/artifice-graph/web/`,
+and `artifice-transcribe` has `src/artifice_transcribe/static/` with no `web/` level. Treat both as
+known drift, not as precedent.
+
+The rule exists because assets outside the package are excluded from a wheel and can only be
+located by a path relative to the current working directory — which breaks the moment the server is
+started from anywhere but the app root. Resolve static roots with `importlib.resources`, not
+`Path(__file__).parent.parent`.
+
 ## Target Environment & Cross-Platform Support
 - **Supported Platforms:** Windows 11 (Native PowerShell & WSL2 Ubuntu) and macOS (Apple Silicon / Metal).
 - **Cross-Platform Compatibility:**
@@ -49,8 +64,17 @@ Never critique UI from source alone. Read the rendered page:
    rendered page is.
 
 ### Standing design constraints
-- `packages/shared-ui/tokens.css` is the single source of truth. App-local token copies are drift
-  and should be consolidated, not edited in parallel.
+- `design-system/` is the **specification and prototyping source** — tokens, guidelines, component
+  patterns, UI kits, and brand assets. `packages/shared-ui/shared_ui/assets/` is the **runtime** —
+  what the apps load and what ships in a wheel. Neither is a copy of the other; they have different
+  jobs. `scripts/token-parity-check.py` enforces that their values agree.
+- **The design-system components are React (`.jsx`); no app in the suite uses React.** Every app is
+  vanilla JS with Jinja templates or static HTML. The components and `ui_kits/` are reference and
+  prototyping material — read them for structure, spacing and states, never import or port them
+  wholesale. A brief that says "use the design-system components" produces code that cannot ship.
+- **Production typography is fluid.** The runtime's `clamp()` values win. If a fixed `rem` value is
+  copied out of the design-system into an app, responsive typography dies silently — it still looks
+  correct at one viewport width, which is exactly why it would not be caught.
 - Never hardcode a colour, size, or spacing value that a token already expresses.
 - The aesthetic is paper and ink: warm palette, editorial typography, generous margins, restrained
   motion. Polish means precision and restraint, not ornament.
@@ -65,7 +89,7 @@ both, so every cross-runtime handoff routes through it.
 |---|---|---|---|
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | Feature implementation, core logic, refactors |
 | `tester` | OpenCode | `opencode-go/kimi-k3` | Test execution, log analysis, regression triage |
-| `arch-auditor-docs` | OpenCode | `opencode-go/glm-5.2` | Cross-app parity audits, folder standards, docs |
+| `arch-auditor-docs` | OpenCode | `github-copilot/claude-sonnet-4.6` | Cross-app parity audits, folder standards, docs |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | Static analysis, secret handling, input sanitization |
 | `ui-ux` | Claude Code | `sonnet` | Frontend views, design tokens, accessibility |
 
@@ -81,9 +105,19 @@ through the orchestrator before any code is written. Its `write`, `edit`, `bash`
 are disabled in its config — keep them disabled. It must exist in exactly one runtime: a leftover
 `.claude/agents/security-auditor.md` would shadow the OpenCode definition.
 
-It sits on a **different model from `arch-auditor-docs`** (`glm-5.2`) deliberately. The two auditors
-review overlapping files, and two independent readings are worth more than one model agreeing with
-itself.
+It sits on a **different model from `arch-auditor-docs`** (`claude-sonnet-4.6`) deliberately. The two
+auditors review overlapping files, and two independent readings are worth more than one model
+agreeing with itself. Keep them on different families whenever you change either one.
+
+**`arch-auditor-docs` moved from `opencode-go/glm-5.2` to `github-copilot/claude-sonnet-4.6` on
+2026-07-28.** It was not failing — it completed a five-item documentation pass correctly — but it ran
+**17 minutes at ~11% CPU**, which is the throttling signature described below, and the Copilot tier
+has far more headroom on this account. Sonnet was chosen over the faster options because this agent
+*writes prose into* `CONTRIBUTING.md`, the READMEs and this file, all of which are written in full
+reasoned sentences rather than bullet fragments, and matching that voice matters more here than raw
+speed. `github-copilot/gpt-5.4` was the alternative and would have given a more independent reading
+(no other agent is on a GPT model); it remains the fallback if sharing a family with `code-reviewer`
+ever proves to be a problem.
 
 It was briefly on `google/gemini-3.1-pro-preview`, using the maintainer's own Google key. That
 worked but was rate-limited into uselessness — a real audit ran **43 minutes at 2.8% CPU** and
@@ -164,12 +198,51 @@ plain text) and the OpenCode credential store are explicitly denied. Verify afte
 `opencode agent list` does **not** display merged config, so the only trustworthy test is asking an
 agent to read a file and observing what happens.
 
-### What OpenCode agents cannot do
-They have **no browser tool**. Never brief one to "verify in the browser", load a page, or take a
-screenshot — they will not decline, they will stall indefinitely on the instruction. Ask for static
-verification only (greps, counts, test runs, `file:line` citations); rendered confirmation is the
-orchestrator's job. Their logs are also **block-buffered** when redirected to a file, so a frozen
-log says nothing about liveness — judge progress by file mtimes and `git diff`.
+### What OpenCode agents can and cannot see
+
+Agents **can now fetch pages**, via a self-hosted Firecrawl instance wired as an MCP server
+(`lead-engineer` and `tester` only). Wired and proven on 2026-07-28: `tester` scraped a running
+`artifice-graph` and returned its title, headings and markup, `exit=0`.
+
+**They still cannot see.** Firecrawl returns text and markup — never pixels. It cannot tell you
+whether a rule is optically misaligned, whether spacing is even, or whether type sits on the
+baseline. **The design-director loop in this file is unchanged**: rendered confirmation is still the
+orchestrator's job with the Chrome tools. What agents gained is *structural* verification — is the
+control in the DOM, does it carry the right `id`, did the page return 200 — which is precisely the
+class of check that the "five dead controls bound in an inline `<script>`" incident needed.
+
+Briefing rules:
+- Reach host-served apps at **`http://host.docker.internal:<port>/`**. `localhost` resolves to the
+  container. Raw IPs are rejected outright by Firecrawl's URL validator ("must have a valid
+  top-level domain"), so always use the hostname.
+- Ask for `formats: ["markdown","html"]` when the check is structural. The `html` is real,
+  inspectable markup with classes, IDs and ARIA attributes — but `<head>`, `<script>` and `<link>`
+  are stripped, so it is not the byte-for-byte document.
+- Never ask an agent for a visual or aesthetic judgement. It will not decline; it will infer one
+  from markup, which is the same confident-but-unfounded reporting the fleet already has form for.
+- Static-only verification (greps, counts, test runs, `file:line` citations) remains correct for
+  anything not actually served.
+
+Their logs are **block-buffered** when redirected to a file, so a frozen log says nothing about
+liveness — judge progress by file mtimes and `git diff`.
+
+**The instance is local-only and must stay that way.** `scripts/firecrawl.sh {up|down|restart|status|prune|verify|logs}`
+manages it; `status` asserts the loopback binding. Two traps found while wiring it, both worth
+keeping in mind:
+
+- **`firecrawl-mcp` silently falls back to the Firecrawl cloud if `FIRECRAWL_API_URL` is unset** —
+  it prints "running in keyless mode… against the Firecrawl cloud" and carries on. A
+  misconfiguration does not fail loudly, it quietly turns a local tool into an egress path. If that
+  variable ever goes missing from `opencode.json`, the fleet starts shipping URLs to a third party
+  without a single error.
+- The instance runs **unauthenticated** (`USE_DB_AUTHENTICATION=false`), so it is bound to
+  `127.0.0.1` and must never be published on `0.0.0.0`. The `FIRECRAWL_API_KEY: "local"` in
+  `opencode.json` is a required-but-ignored placeholder, not a credential — it is not a Zero Secrets
+  Policy violation.
+
+Both auditors are denied Firecrawl (`firecrawl_*: deny`). `security-auditor` is read-only by
+design and granting it network egress would undercut the guarantee it exists to prove;
+`arch-auditor-docs` has no use for it.
 
 ### Task brief format
 Every delegation states, in order: **objective**, **scope** (explicit file/directory boundaries),

@@ -11,14 +11,12 @@ dependencies = [
     "python-dotenv",
     "pyyaml",
     "PyMuPDF",
-    "tkinterdnd2",
     "reportlab",
     "huggingface_hub",
+    "shared-ui",
 ]
 
 [project.optional-dependencies]
-# The tkinter GUI (artifice-ocr-gui) needs none of these. Only the web
-# frontend (artifice-ocr-web) does.
 web = [
     "fastapi",
     "uvicorn[standard]",
@@ -26,9 +24,14 @@ web = [
 
 [project.scripts]
 artifice-ocr = "artifice_ocr.cli:app"
-artifice-ocr-gui = "artifice_ocr.gui:main"
 artifice-ocr-web = "artifice_ocr.web.server:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"artifice_ocr.web" = ["static/**", "fonts/*.ttf"]

@@ -83,7 +83,6 @@ artifice-suite/
 │       │       ├── consistency.py      # Cross-document proper noun consistency
 │       │       ├── changelog.py        # Statistical change summary generation
 │       │       ├── cli.py              # `artifice-draft` entry point (GUI / headless)
-│       │       ├── gui.py              # Tkinter desktop fallback interface
 │       │       └── web/                # FastAPI server, runtime adapter, & static assets
 │       ├── tests/                  # Pytest suite
 │       └── README.md
@@ -124,13 +123,7 @@ Launches the FastAPI backend with The New Masses interactive review cards:
 python -m artifice_draft.web --browser
 ```
 
-### 2. Desktop GUI (Tkinter Fallback)
-Features drag-and-drop manuscript loading and native background execution:
-```bash
-python -m artifice_draft.gui
-```
-
-### 3. CLI / Headless Mode
+### 2. CLI / Headless Mode
 Batch process manuscripts directly from the command line:
 ```bash
 python -m artifice_draft.cli \

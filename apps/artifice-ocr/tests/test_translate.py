@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 from artifice_ocr import config
 
 
-@patch("src.artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.chat")
 def test_skips_translation_when_source_confidently_english(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="en"))
 
@@ -47,7 +47,7 @@ def test_skips_translation_when_source_confidently_english(mock_chat, tmp_path):
     assert "confidence" not in data
 
 
-@patch("src.artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.chat")
 def test_still_translates_when_detection_is_uncertain(mock_chat, tmp_path):
     # Garbled response -> detect_language() falls back to "unknown", which
     # must NOT skip translation — only a *confident* "en" does.
@@ -67,7 +67,7 @@ def test_still_translates_when_detection_is_uncertain(mock_chat, tmp_path):
     assert mock_chat.call_count == 3
 
 
-@patch("src.artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.chat")
 def test_skip_behavior_can_be_disabled_via_config(mock_chat, tmp_path):
     mock_chat.side_effect = [
         MagicMock(message=MagicMock(content="en")),
@@ -89,7 +89,7 @@ def test_skip_behavior_can_be_disabled_via_config(mock_chat, tmp_path):
     assert mock_chat.call_count == 3
 
 
-@patch("src.artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.chat")
 def test_multi_lang_detection_parses_comma_separated_response(mock_chat):
     # multi_lang's own prompt asks for several comma-separated codes in
     # prevalence order; previously the comma made isalpha() fail and this
@@ -102,7 +102,7 @@ def test_multi_lang_detection_parses_comma_separated_response(mock_chat):
     assert lang == "de"
 
 
-@patch("src.artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.chat")
 def test_multi_lang_single_code_still_works(mock_chat):
     mock_chat.return_value = MagicMock(message=MagicMock(content="en"))
 

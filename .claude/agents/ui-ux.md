@@ -17,6 +17,17 @@ Artifice applications (`artifice-ocr`, `artifice-draft`, `artifice-graph`, `arti
 - Read `Design_Philosophy.md` before introducing any new colour, type scale, spacing value, or
   motion curve. Never invent a token — extend `packages/shared-ui` and cite the section of
   `Design_Philosophy.md` that justifies it.
+- `design-system/` at the repo root is the specification and prototyping source — tokens,
+  guidelines, React component references, and UI kits. Study it for structure, spacing, and
+  component states. `packages/shared-ui/shared_ui/assets/` is the runtime that apps load; it is
+  what ships in a wheel. `scripts/token-parity-check.py` guards against drift between the two.
+- **The design-system components are React (`.jsx`); no app in the suite uses React.** Every app
+  is vanilla JS with Jinja templates or static HTML. Read the components for spacing and states,
+  never import or port them wholesale.
+- **Production typography is fluid.** The runtime uses `clamp()` for `--text-lg`, `--text-h3`,
+  `--text-h2`, and `--text-hero`. The design-system records a static specimen from inside that
+  range. Always use the runtime's `clamp()` value — a fixed `rem` copied from the design-system
+  kills responsive typography.
 
 ## Harness constraint
 - Every UI must read as a *harness*: explicit controls, visible status indicators, and transparent

@@ -412,7 +412,7 @@ class TestBug2WebRunAllContinuation:
 
     def test_run_all_reaches_all_five_stages(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """_do_run_all calls all 5 stage helpers when none fail."""
-        from web.server import _do_run_all, _run_ok
+        from artifice_graph.web.server import _do_run_all, _run_ok
         from artifice_graph.config import PipelineConfig
 
         calls: list[str] = []
@@ -432,11 +432,11 @@ class TestBug2WebRunAllContinuation:
         def _record_graph(cfg, rk, *, close_stream=False):
             calls.append("graph")
 
-        monkeypatch.setattr("web.server._do_ingest", _record_ingest)
-        monkeypatch.setattr("web.server._do_extract", _record_extract)
-        monkeypatch.setattr("web.server._do_resolve", _record_resolve)
-        monkeypatch.setattr("web.server._do_vault", _record_vault)
-        monkeypatch.setattr("web.server._do_graph", _record_graph)
+        monkeypatch.setattr("artifice_graph.web.server._do_ingest", _record_ingest)
+        monkeypatch.setattr("artifice_graph.web.server._do_extract", _record_extract)
+        monkeypatch.setattr("artifice_graph.web.server._do_resolve", _record_resolve)
+        monkeypatch.setattr("artifice_graph.web.server._do_vault", _record_vault)
+        monkeypatch.setattr("artifice_graph.web.server._do_graph", _record_graph)
 
         cfg = PipelineConfig()
         _do_run_all(cfg, False, "test-reaches-all")
@@ -445,7 +445,7 @@ class TestBug2WebRunAllContinuation:
 
     def test_run_all_halt_on_stage_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """_do_run_all stops after a failing stage and does not call later stages."""
-        from web.server import _do_run_all, _run_ok
+        from artifice_graph.web.server import _do_run_all, _run_ok
         from artifice_graph.config import PipelineConfig
 
         calls: list[str] = []
@@ -466,11 +466,11 @@ class TestBug2WebRunAllContinuation:
         def _record_graph(cfg, rk, *, close_stream=False):
             calls.append("graph")
 
-        monkeypatch.setattr("web.server._do_ingest", _failing_ingest)
-        monkeypatch.setattr("web.server._do_extract", _record_extract)
-        monkeypatch.setattr("web.server._do_resolve", _record_resolve)
-        monkeypatch.setattr("web.server._do_vault", _record_vault)
-        monkeypatch.setattr("web.server._do_graph", _record_graph)
+        monkeypatch.setattr("artifice_graph.web.server._do_ingest", _failing_ingest)
+        monkeypatch.setattr("artifice_graph.web.server._do_extract", _record_extract)
+        monkeypatch.setattr("artifice_graph.web.server._do_resolve", _record_resolve)
+        monkeypatch.setattr("artifice_graph.web.server._do_vault", _record_vault)
+        monkeypatch.setattr("artifice_graph.web.server._do_graph", _record_graph)
 
         cfg = PipelineConfig()
         _do_run_all(cfg, False, "test-halt")
@@ -480,7 +480,7 @@ class TestBug2WebRunAllContinuation:
 
     def test_mark_run_failed_sets_ok_false(self) -> None:
         """_mark_run_failed sets _run_ok[run_key] to False."""
-        from web.server import _mark_run_failed, _run_ok
+        from artifice_graph.web.server import _mark_run_failed, _run_ok
 
         _run_ok.pop("test-fail", None)
         _mark_run_failed("test-fail", "simulated error")
@@ -581,10 +581,10 @@ class TestFixEntitiesRaw:
         store.save_models("entities.json", ents)
         store.save_models("relationships.json", rels)
 
-        monkeypatch.setattr("web.server._load_store", lambda cfg: store)
-        monkeypatch.setattr("web.server._build_resolver", lambda cfg: _NoOpResolver())
+        monkeypatch.setattr("artifice_graph.web.server._load_store", lambda cfg: store)
+        monkeypatch.setattr("artifice_graph.web.server._build_resolver", lambda cfg: _NoOpResolver())
 
-        from web.server import _do_resolve
+        from artifice_graph.web.server import _do_resolve
         _do_resolve(cfg, "test-raw", close_stream=False)
 
         raw = store.load("entities_raw.json")

@@ -1,0 +1,29 @@
+:root{
+  --space-1:2px;
+  --space-2:4px;
+  --space-3:8px;
+  --space-4:12px;
+  --space-5:16px;
+  --space-6:20px;
+  --space-7:24px;
+  --space-8:28px;
+  --space-9:32px;
+  --space-10:40px;
+  --space-11:48px;
+  --space-12:88px;
+  /* back-compat */
+  --space-16:64px;--space-20:80px;--space-24:96px;
+
+  --radius-sm:4px;
+  --radius-md:8px;
+  --radius-lg:12px;
+  --radius-xl:16px;
+  --radius-pill:9999px;
+  --radius-full:9999px;
+
+  --container-narrow:44rem;
+  --container-default:920px;
+  --container-wide:1200px;
+  --container-max:1200px;
+  --nav-height:56px;
+}

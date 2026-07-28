@@ -1,0 +1,40 @@
+/* ArtificeGraph domain colours — entity and register taxonomy.
+   These are app-specific vocabulary, not suite-wide identity, so they live
+   here rather than in packages/shared-ui/shared_ui/assets/tokens.css. Loaded after
+   tokens.css (base.html) so --accent, --paper, --ink etc. are available to
+   reference. */
+
+:root {
+  /* ── Register Taxonomy Colours ───────────────────────────────── */
+  /* A coherent, documented taxonomy the app will plausibly grow into.
+     Currently unused: only --reg-poetic was ever referenced (as the error
+     colour in pipeline.css), and that call site now uses --error instead
+     (see pipeline.css). Kept for now rather than deleted. */
+  --reg-bureaucratic:  #5b6b73;
+  --reg-underground:   var(--accent);
+  --reg-personal:      #a6733b;
+  --reg-scholarly:     #6a6a86;
+  --reg-journalistic:  #c1652b;
+  --reg-epistolary:    #7d5a8c;
+  --reg-legal:         #3f6f8c;
+  --reg-poetic:        #8c3f5a;
+
+  /* ── Entity-type accent colours (Library table badges) ───────── */
+  /* Re-spaced 2026-07: the five hues were previously aliased to --reg-*
+     values above, which put --type-person and --type-event ~8-22deg apart
+     in hue — indistinguishable at badge size, the one job this token set
+     has. These five are independent literal values, spaced ~34-38deg apart
+     in hue, chosen to stay inside the warm editorial palette (no cold or
+     neon) while giving each category room. Contrast re-verified for all
+     five against the .type-tag tint/text treatment in pipeline.css
+     (color-mix 14% on --paper for background, 60% on --ink for text);
+     all exceed the 4.5:1 AA floor — see shared-ui and PR notes for the
+     computed ratios (5.15:1 - 7.79:1). */
+  --type-concept:      #824082; /* violet-plum — abstract/scholarly */
+  --type-event:        #a63063; /* wine-rose — occasion/urgency */
+  --type-location:     #a13b2b; /* terracotta/rust — earth, place */
+  --type-person:       #9c7f3a; /* warm gold-tan — individual */
+  --type-organization: #5d6e2b; /* olive-brass — institutional; kept
+                                    >=60deg from --accent's hue so it does
+                                    not read as the interactive green */
+}

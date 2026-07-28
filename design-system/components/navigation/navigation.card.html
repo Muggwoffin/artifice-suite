@@ -1,0 +1,23 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Navigation: Tabs, Sidebar, TitleBar" --><link rel="stylesheet" href="../../styles.css"><div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const {Tabs,Sidebar,TitleBar,IconButton}=window.ArtificeDesignSystem_1fd848;
+function Demo(){
+  const [tab,setTab]=React.useState('Transcript');
+  return (
+    <div style={{fontFamily:'var(--font-body)',background:'var(--surface-page)'}}>
+      <TitleBar product="Transcribe" doc="interview-014.wav" actions={<IconButton label="Export" icon={<span>&#8595;</span>}/>}/>
+      <div style={{display:'flex',height:280}}>
+        <Sidebar items={[{id:'1',label:'interview-014.wav',meta:'42m'},{id:'2',label:'interview-015.wav',meta:'18m'},{id:'3',label:'interview-016.wav',meta:'55m'}]} activeId="1"/>
+        <div style={{flex:1,padding:16}}>
+          <Tabs items={["Transcript","Speakers","Notes"]} active={tab} onChange={setTab}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>

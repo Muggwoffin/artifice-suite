@@ -14,7 +14,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_ROOT"
+cd "$REPO_ROOT" || exit 1
 
 PASS=0
 FAIL=0
@@ -36,8 +36,10 @@ strip_ansi() { sed -e 's/\x1b\[[0-9;]*m//g' -e 's/\r$//'; }
 OPENCODE_AGENTS=(
   "lead-engineer:deepseek-v4-pro"
   "tester:kimi-k3"
-  "arch-auditor-docs:glm-5.2"
+  "arch-auditor-docs:claude-sonnet-4.6"
   "security-auditor:qwen3.7-max"
+  "code-reviewer:claude-sonnet-5"
+  "oss-reviewer:gemma4-32k:12b"
 )
 
 bold "OpenCode runtime"
@@ -51,7 +53,10 @@ else
 
   for entry in "${OPENCODE_AGENTS[@]}"; do
     agent="${entry%%:*}"
-    model="${entry##*:}"
+    # Split on the FIRST colon only. Ollama model IDs carry their own colon
+    # (gemma4-32k:12b), and a greedy ##*: would keep only the tag, which then
+    # fails the end-anchored banner match below.
+    model="${entry#*:}"
 
     # Must be registered as `all` — `subagent` triggers the silent fallback.
     if printf '%s' "$registry" | grep -qE "^${agent} \(all\)"; then
@@ -120,6 +125,14 @@ if [[ -d .claude/rules ]] && compgen -G ".claude/rules/*.md" >/dev/null; then
   bad ".claude/rules/*.md present — these leak into every session's context"
 else
   ok ".claude/rules/ clear (no ambient instruction leakage)"
+fi
+
+# --- Token parity guard ----------------------------------------------------
+bold "Design-system token parity"
+if python3 scripts/token-parity-check.py; then
+  ok "runtime tokens match design-system reference"
+else
+  bad "token drift detected (see above)"
 fi
 
 # --- Summary ---------------------------------------------------------------
