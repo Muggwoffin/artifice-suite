@@ -1,7 +1,7 @@
 ---
 description: Open-source folder standards, cross-app consistency, and documentation
 mode: all
-model: github-copilot/claude-sonnet-4.6
+model: github-copilot/gpt-5.4
 tools:
   read: true
   write: true

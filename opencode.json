@@ -72,6 +72,11 @@
       "permission": {
         "firecrawl_*": "deny"
       }
+    },
+    "ui-ux": {
+      "permission": {
+        "firecrawl_*": "deny"
+      }
     }
   }
 }

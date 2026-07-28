@@ -36,7 +36,8 @@ strip_ansi() { sed -e 's/\x1b\[[0-9;]*m//g' -e 's/\r$//'; }
 OPENCODE_AGENTS=(
   "lead-engineer:deepseek-v4-pro"
   "tester:kimi-k3"
-  "arch-auditor-docs:claude-sonnet-4.6"
+  "arch-auditor-docs:gpt-5.4"
+  "ui-ux:claude-sonnet-4.6"
   "security-auditor:qwen3.7-max"
   "code-reviewer:claude-sonnet-5"
   "oss-reviewer:gemma4-32k:12b"
@@ -82,26 +83,21 @@ else
   done
 fi
 
-# --- Claude Code agents ----------------------------------------------------
-# These run on the user's Claude subscription and are dispatched by the
-# orchestrator, not from this shell. Verified structurally.
+# --- Claude Code runtime ---------------------------------------------------
+# As of 2026-07-28 NO agent runs here. `ui-ux` was the last one and moved to
+# OpenCode/Copilot, so the whole fleet is now off the maintainer's Claude
+# subscription, which the orchestrator alone uses. A stray definition here would
+# SHADOW the OpenCode one when the orchestrator dispatches by name — the same
+# trap the security-auditor check below guards against.
 
 bold "Claude Code runtime"
 
-CLAUDE_AGENTS=(ui-ux)
-
-for agent in "${CLAUDE_AGENTS[@]}"; do
-  f=".claude/agents/${agent}.md"
-  if [[ ! -f "$f" ]]; then
-    bad "$f missing"
-    continue
-  fi
-  if grep -qE '^model:[[:space:]]*sonnet[[:space:]]*$' "$f"; then
-    ok "$agent defined, model: sonnet"
-  else
-    bad "$agent is not pinned to model: sonnet"
-  fi
-done
+if compgen -G ".claude/agents/*.md" >/dev/null; then
+  bad "unexpected agent definitions in .claude/agents/ — the fleet is OpenCode-only"
+  ls -1 .claude/agents/*.md | sed 's/^/        /'
+else
+  ok "no Claude Code agents (fleet is OpenCode-only, Claude budget left to the orchestrator)"
+fi
 
 # security-auditor moved to OpenCode/Gemini to reduce Claude token usage. It must
 # not be defined in both runtimes — a stale Claude Code copy would shadow the
