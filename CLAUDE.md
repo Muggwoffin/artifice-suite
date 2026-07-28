@@ -275,3 +275,87 @@ no padding a report to look thorough.
 ### Escalation
 Findings from `arch-auditor-docs` and `security-auditor` return to the orchestrator, never
 straight to `lead-engineer`. No code is written off an audit until the maintainer has seen it.
+
+---
+
+## Operational learnings — session 3, 2026-07-28
+
+Each of these cost real time. They are here so the next session does not re-derive them.
+
+### The single most expensive failure mode: a narrow result recorded as a general one
+
+Three claims in `IMPLEMENTATION_PLAN.md` were refuted by measurement in one session, and every one
+had the same shape — work that was genuinely done, recorded **without the scope it covered**, then
+read later as suite-wide:
+
+- "the canonical web-layer layout must be settled first" — it already had been, and the note never
+  said so. It blocked a phase for two sessions.
+- "`artifice-graph` declares fourteen breakpoints" — there are **seven**; the `rem` figures were
+  element `max-width` rules counted as media queries.
+- "`--font-sans` renamed across all call sites" — it covered `shared-ui` and `graph`; 18 call sites
+  survived in three apps. **This one propagated into a wrong instruction**: a brief told an agent to
+  *preserve* `--font-sans` precisely because the plan implied the rename was complete.
+
+**When recording completed work, state which apps it covered. Re-measure any figure before treating
+it as a constraint.** An agent will correctly implement a brief built on a false premise.
+
+### Tests cannot see packaging bugs
+
+Four bugs shipped or nearly shipped that **no test could reach**, because tests run against `src/`
+while the bug exists only in the built artifact: PDF-export fonts and OCR prompt templates resolving
+outside their package (shipping in no wheel at all), a stale `build/` resurrecting deleted code into
+new wheels, and CWD-relative data paths.
+
+Each was found by accident until a deliberate sweep found the fourth. **Build a wheel and inspect it
+with `zipfile`** — `unzip` is not installed. CI now asserts on wheel contents; keep that job.
+
+Related: `__file__`-relative paths break in a frozen bundle (temp extraction directory), and
+CWD-relative paths resolve against wherever the user launched from. Use `importlib.resources` for
+packaged assets and `platformdirs` for user data. **A user-supplied input/output path SHOULD stay
+CWD-relative** — that is not the same bug and must not be "fixed".
+
+### Verification traps
+
+- **`$?` is unreliable across the Windows/WSL boundary.** It reported success for a command that
+  failed. Read the tool's own final output line instead. Both an agent and the orchestrator hit this.
+- **A pipe swallows an exit code.** `gitleaks detect ... | tail -3` under `set -e` does not fail the
+  script — a secret scan silently did not gate a push. Check the command's status, not the pipeline's.
+- **The subcommand is `gitleaks detect`**, not `gitleaks git`, which does not exist in this version.
+- **`scripts/build-wheel.sh` exists because `build/` must be cleared first.** Do not build directly.
+
+### Servers and the browser
+
+- **Harness-backgrounded servers get reaped; `setsid nohup` ones survive.** Two transcribe servers
+  were killed this way before the pattern was spotted, while `ocr` and `draft` — started inside a
+  script with `nohup` — ran for hours.
+- **`uvicorn` does not auto-reload most of these apps.** After editing a **server module** the
+  running process serves the old code; CSS, HTML and templates are read per request and update
+  immediately. Know which case you are in before reporting a result as verified.
+- **The browser tooling is Microsoft Edge, not Chrome, and its content-script channel wedges
+  per-tab.** Extension-level calls (`tabs_context`, `navigate`) keep working while screenshots and
+  JS evaluation time out. Retrying never recovers; **a fresh tab in a fresh group does**. Closing
+  tabs can collapse the group, after which calls fail until `createIfEmpty: true` recreates it.
+- **Verify server-side whenever pixels are not required.** `curl` the served bytes, compare
+  `sha256sum` against disk, read headers with `curl -D -`. Reserve the browser for computed layout,
+  font fallback and optical judgement — the things bytes cannot show.
+
+### Design-system specifics worth not rediscovering
+
+- **`min-height` is a floor, not a clamp.** It raises a short control and does nothing to one
+  already taller — which is why buttons hit 44px while `<select>`s stayed at 45.4px. A `<select>`
+  carries intrinsic browser chrome a `<button>` does not.
+- **A `rem` literal cannot sit on a pixel-defined scale**, and three apps inflated every `rem` by
+  6.25% by setting `font-size` on `html` rather than `body`. Style `body`; leave `html` alone.
+- **A browser never exposes a filesystem path** — deliberate security boundary. `ocr`'s "Browse
+  Files" is a `prompt()` asking the user to type one, and its dropzone advertises drops it refuses.
+  `transcribe` uploads file *contents* instead, which is the pattern to copy. Real path pickers
+  arrive with pywebview's native window.
+
+### On the fleet
+
+Agents repeatedly outperformed the orchestrator's own greps. Counts, adjacency claims, label sets
+and a `Design_Philosophy.md` citation were all corrected by agents that checked rather than trusted.
+**Brief them to disagree**, and state figures as "my survey may be wrong — report the discrepancy
+rather than adjusting to match". The most valuable agent output this session was a refusal: one
+declined to half-apply an empty-state pattern because the JS-rendered cases would revert on first
+render, which would have looked complete and been worse than nothing.

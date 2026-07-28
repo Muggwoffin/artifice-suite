@@ -14,7 +14,7 @@ from typing import Any, Optional
 
 import httpx
 import uvicorn
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Query, Request, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -978,6 +978,96 @@ async def api_stream(run: str = Query(...)):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ── Path safety (mirrors artifice-transcribe/api/v1/routes.py) ─────
+# ``Path("..").name`` returns ``".."`` on every platform, so ``.name``
+# alone is not a sufficient guard.  The backslash replacement handles
+# Windows-style paths supplied from a browser on a POSIX server.
+
+_ALLOWED_EXTENSIONS: frozenset[str] = frozenset({".txt", ".md", ".pdf", ".html", ".htm"})
+_MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB, mirrors IngestionConfig.max_file_size_mb
+
+
+def _sanitise_path_component(raw: str) -> str:
+    """Return a safe single-component filename from *raw*.
+
+    Treats backslashes as separators (Windows path support) and rejects
+    components that are empty, ``"."`` or ``".."`` after cleaning.
+    """
+    cleaned = Path(raw.replace("\\", "/")).name
+    if cleaned in ("", ".", ".."):
+        raise HTTPException(status_code=400, detail=f"Invalid filename: {raw!r}")
+    return cleaned
+
+
+def _assert_contained(path: Path, container: Path) -> None:
+    """Raise HTTP 400 if *path* resolves outside *container*."""
+    resolved = path.resolve()
+    base = container.resolve()
+    if not (base in resolved.parents or resolved == base):
+        raise HTTPException(status_code=400, detail="Path traversal detected")
+
+
+@app.post("/api/upload-files")
+async def api_upload_files(files: list[UploadFile] = File(...)):
+    """Upload one or more text/document files into the pipeline's input directory.
+
+    Filenames are sanitised with the same ``_sanitise_path_component`` guard used
+    in artifice-transcribe to prevent path-traversal. Only the extensions the
+    ingest stage accepts (.txt, .md, .pdf, .html, .htm) are stored; oversized
+    files (>50 MB) are refused.
+
+    **This is a batch endpoint and always returns HTTP 200** when the request
+    itself is well-formed. Per-file outcomes are reported in the response body:
+
+        {"uploaded": [{"filename": ..., "status": "ok",       "path": ...},
+                      {"filename": ..., "status": "rejected", "reason": ...}]}
+
+    One unacceptable file must not fail an otherwise good batch — a user
+    dropping twelve files should get the eleven valid ones stored and a specific
+    reason for the twelfth, not a single opaque error. Clients must therefore
+    inspect ``status`` per entry rather than treating 200 as "everything
+    worked".
+
+    A malformed filename (empty, ``"."`` or ``".."`` after cleaning) is the one
+    case that does raise — HTTP 400 — because it indicates a crafted request
+    rather than a user picking the wrong file.
+    """
+    cfg = load_config()
+    input_dir = Path(cfg.ingestion.input_dir)
+    input_dir.mkdir(parents=True, exist_ok=True)
+
+    results = []
+    for upload in files:
+        raw_name = upload.filename or "unknown"
+        safe_name = _sanitise_path_component(raw_name)
+        ext = Path(safe_name).suffix.lower()
+
+        if ext not in _ALLOWED_EXTENSIONS:
+            results.append({
+                "filename": raw_name,
+                "status": "rejected",
+                "reason": f"Extension {ext!r} not accepted. Allowed: {sorted(_ALLOWED_EXTENSIONS)}",
+            })
+            continue
+
+        contents = await upload.read()
+        if len(contents) > _MAX_UPLOAD_BYTES:
+            results.append({
+                "filename": raw_name,
+                "status": "rejected",
+                "reason": f"File exceeds 50 MB limit ({len(contents) // (1024*1024)} MB)",
+            })
+            continue
+
+        dest = input_dir / safe_name
+        _assert_contained(dest, input_dir)
+        dest.write_bytes(contents)
+        logger.info("Uploaded %s → %s", raw_name, dest)
+        results.append({"filename": safe_name, "status": "ok", "path": str(dest)})
+
+    return {"uploaded": results}
 
 
 # ── Page routes ─────────────────────────────────────────────────────

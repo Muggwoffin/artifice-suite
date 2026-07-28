@@ -41,7 +41,12 @@
 
 * { box-sizing: border-box; }
 
-html, body {
+html {
+  margin: 0;
+  height: 100%;
+}
+
+body {
   margin: 0;
   height: 100%;
   background: var(--paper);
@@ -265,6 +270,11 @@ button.btn {
      px relative to a glyph-free sibling button, which is exactly the
      "same class, different height" defect this pass corrects. */
   padding: 0.8rem 1.4rem;
+  /* §8.3 row-alignment: buttons that share a row with inputs/selects must
+     resolve to --control-height. The find-bar and image-toolbar compact
+     variants below override this with their own reduced padding, so they
+     are unaffected. */
+  min-height: var(--control-height);
   line-height: 1;
   font-weight: 600;
   font-size: var(--text-sm);
@@ -400,6 +410,8 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   background: var(--paper-recessed);
   padding: 0.7rem 1rem;
   color: var(--ink);
+  /* §8.3 row-alignment: this input shares a row with a button */
+  min-height: var(--control-height);
 }
 
 .progress-row {
@@ -542,6 +554,8 @@ select.select, .output-row select, .run-row select, label select {
   background: var(--paper-recessed);
   color: var(--ink);
   padding: 0.7rem 1rem;
+  /* §8.3 row-alignment: selects in run-row / output-row share a row with buttons */
+  min-height: var(--control-height);
 }
 
 /* ------------------------------------------------------------- comparison */
@@ -726,6 +740,9 @@ select.select, .output-row select, .run-row select, label select {
   padding: 0.15rem 0.4rem;
   min-width: auto;
   line-height: 1.3;
+  /* Exempt from §8.3 row-alignment — find-bar is a dense secondary UI,
+     reviewed and kept compact in an earlier pass. */
+  min-height: unset;
 }
 .find-replace-row {
   display: flex;
@@ -857,6 +874,8 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   background: var(--paper-recessed);
   padding: 0.7rem 1rem;
   color: var(--ink);
+  /* §8.3 row-alignment */
+  min-height: var(--control-height);
 }
 
 .health-panel {
@@ -1121,6 +1140,9 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   padding: 0.3rem 0.55rem;
   font-size: 0.72rem;
   border-right-width: 0;
+  /* Exempt from §8.3 row-alignment — image toolbar is a dense secondary UI,
+     reviewed and kept compact in an earlier pass. */
+  min-height: unset;
 }
 .image-toolbar .btn-group .btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
 .image-toolbar .btn-group .btn:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; border-right-width: 1px; }

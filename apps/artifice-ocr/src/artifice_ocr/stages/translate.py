@@ -15,8 +15,6 @@ from artifice_ocr.config import get as cfg
 
 log = get_logger("translate")
 
-PROMPT_DIR = Path(__file__).resolve().parent.parent.parent.parent / "prompts"
-
 COMMON_LANGUAGES = {
     "de": "German",
     "fr": "French",

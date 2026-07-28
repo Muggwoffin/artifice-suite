@@ -73,11 +73,3 @@ def setup_logging(
     logging.getLogger("requests").setLevel(logging.WARNING)
 
     logging.debug("Logging initialized: level=%s, file=%s", level, log_file or "(none)")
-
-
-def get_log_file_path() -> str:
-    """Return the default log file path next to the main script."""
-    project_root = Path(__file__).resolve().parent.parent
-    log_dir = project_root / "logs"
-    log_dir.mkdir(exist_ok=True)
-    return str(log_dir / "artifice_draft.log")

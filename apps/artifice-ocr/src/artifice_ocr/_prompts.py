@@ -4,14 +4,24 @@ Allows selecting prompt templates based on document characteristics
 (handwritten, typed, dialect, era, etc.).
 """
 
-from pathlib import Path
+import importlib.resources
 from typing import Any
 
 from artifice_ocr._logging import get_logger
 
 log = get_logger("prompts")
 
-PROMPT_DIR = Path(__file__).resolve().parent.parent.parent / "prompts"
+# Resolved through importlib.resources, NOT a __file__-relative path.  These
+# prompts must survive being packaged: this app is distributed as a frozen
+# .exe/.dmg, where __file__ points inside a temporary extraction directory and
+# any ``.parent.parent.parent`` walk lands outside the package — so prompt
+# files are excluded from the wheel and prompt loading breaks at runtime in
+# every installed copy while working perfectly in a source checkout.
+#
+# The previous form was
+# ``Path(__file__).resolve().parent.parent.parent / "prompts"``, which put
+# the prompts under ``apps/artifice-ocr/prompts/`` — outside the package.
+PROMPT_DIR = importlib.resources.files("artifice_ocr") / "prompts"
 
 # --------------------------------------------------------------------------- #
 # Prompt definitions per document type

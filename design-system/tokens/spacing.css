@@ -30,4 +30,9 @@
   --container-wide:1200px;
   --container-max:1200px;
   --nav-height:56px;
+
+  /* Row-alignment (§8.3) — controls that can share a row resolve to this
+     height. 2.75rem = 44px at a 16px root (WCAG 2.5.5 AAA / Apple HIG).
+     Use min-height, not height, so content-rich controls can grow. */
+  --control-height:2.75rem;
 }

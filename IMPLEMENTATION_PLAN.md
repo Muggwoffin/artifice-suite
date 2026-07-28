@@ -5,17 +5,60 @@ verified, and stages the remaining work. It is the project to-do list; `ARCHITEC
 the system as designed, `CLAUDE.md` governs how agents work on it, and `Design_Philosophy.md` is
 the binding design authority.
 
-> **Phase 1 is signed off. Phase 2 is now unblocked.** Both of its prerequisites dissolved under
-> audit on 2026-07-28: the canonical web-layer layout had already been settled by commit `0979359`
-> and never recorded, and the "fourteen breakpoints in graph" figure was a miscount — there are 7,
-> and the `rem` values it listed were element `max-width` rules, not media queries. CORS and both
-> HIGH path traversals are also closed. Start from **Part IV**, which was re-derived from
-> measurement on that date.
+> **Phase 1 signed off. Phase 2 substantially delivered. Phase 1.5 mostly closed.** Start from
+> **Part IV**, re-derived from measurement on 2026-07-28.
 >
 > **This plan drifted badly from the tree, and that is the standing risk with it.** Three recorded
-> claims were refuted in one audit, two of them gating a phase. Prefer measuring over trusting any
-> figure here that carries no verification date — and when you measure, write the date next to
-> what you found.
+> claims were refuted by measurement in a single session, two of them gating a phase, and one
+> propagated into a wrong instruction given to an agent. Prefer measuring over trusting any figure
+> here that carries no verification date — and when you measure, write the date next to what you
+> found.
+
+### Session 3 close — 2026-07-28
+
+33 commits, 234 files, +7,659 / −7,104. Two PRs merged to `main`. Themes, and where each is
+recorded in full:
+
+**The suite stopped contacting the internet unasked.** `ocr`, `draft` and `transcribe` each loaded
+web fonts from `fonts.googleapis.com` on every page view; `artifice-graph` had already been fixed
+for `unpkg.com` in `477820a`. Verified in a browser afterwards: **zero requests leave localhost**.
+`security-auditor` swept all four independently and found **zero remaining tier-1 violations**.
+`CONTRIBUTING.md` §3 now states the rule as three tiers rather than leaving it implicit in one
+template.
+
+**Two UIs became one.** The tkinter build is gone (~6,000 lines). One deliberate survivor: the
+port-bind error dialog in `ocr/web/server.py`, the only feedback a user gets who double-clicked a
+packaged icon and saw nothing.
+
+**Four bugs that exist only in a built artifact.** PDF-export fonts and OCR's prompt templates both
+resolved *outside* their package and shipped in no wheel — each would have failed at runtime in
+every installed copy while working perfectly in a source checkout. A stale `build/` directory was
+resurrecting the deleted tkinter code into new wheels. And `artifice-transcribe` wrote its database
+and uploads relative to the working directory, so a user opening the app two ways would see two
+different sets of transcripts. **None of these is reachable by any test**, because tests run against
+`src/`. They were found by building a wheel and inspecting it, and by one deliberate audit after
+three had been found by accident.
+
+**`artifice-ocr`'s suite went 148 → 318 passing.** All 170 failures were one mistake repeated across
+27 test files.
+
+**The design system now applies to the apps rather than describing them.** App-local token blocks
+retired; stock Bootstrap `#28a745`/`#ffc107` removed; the retired `--font-sans` reconciled to
+`--font-label`; spacing literals converted to `var(--space-N)`; the scale expressed in `rem` so it
+scales with the reader's font size; three apps stopped inflating that scale by 6.25% through the
+root font size; `--control-height` introduced at 44px, which is both the alignment fix and the
+WCAG 2.5.5 minimum target size.
+
+**Corrections to this document and to `Design_Philosophy.md` are recorded in place rather than
+quietly edited**, with the wrong claim quoted. That is deliberate: a wrong *cause* sends the next
+person looking in the wrong file, and this plan has now demonstrated three times that an unverified
+figure becomes folklore.
+
+**Fleet.** `ui-ux` moved to `github-copilot/claude-sonnet-4.6`; the whole fleet is now off the
+maintainer's Claude subscription, which had been shared with the orchestrator and ran out mid-task.
+`arch-auditor-docs` moved to `gpt-5.4`. `opencode.json` grants the per-user data directories, after
+`lead-engineer` proved structurally unable to verify its own migration and said so rather than
+claiming success.
 
 **Reading the status marks:**
 
