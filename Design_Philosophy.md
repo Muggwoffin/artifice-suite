@@ -161,13 +161,29 @@ The system uses a 4px-base scale derived from actual values in the source CSS. S
 | `space-11` | `3rem` | 48px | Major section gaps |
 | `space-12` | `5.5rem` | 88px | Footer margin, extreme separation |
 
-> **Use `var(--space-N)`, never a bare `rem` literal that happens to match.** They are not
-> interchangeable in practice. This was measured on 2026-07-28: the root font size in the
-> maintainer's browser is **17px**, not 16px, because that is the browser's own setting — so
-> `0.75rem` renders at 12.75px while `var(--space-4)` was 12px, and a stylesheet full of rem
-> literals can never sit on a pixel-defined scale. Converting the scale to rem removes that
-> particular trap, but the rule still holds for a different reason: a literal records a number,
-> a token records an intention, and only the token moves when the scale does.
+> **Use `var(--space-N)`, never a bare `rem` literal that happens to match.** A literal records a
+> number; a token records an intention, and only the token moves when the scale does.
+
+> ### The root font size is not 16px in three of the four apps
+>
+> **`artifice-ocr`, `artifice-draft` and `artifice-transcribe` declare
+> `html, body { font-size: var(--text-base) }`.** Because `--text-base` is `1.0625rem`, setting it
+> on `html` makes **every `rem` in those apps resolve against 17px instead of 16px** — so the whole
+> scale above renders **6.25% larger than declared**. `--space-6` means 20px and renders 21.25px.
+>
+> **`artifice-graph` sets only `body`**, leaves `html` at the browser default, and its tokens
+> therefore resolve as written. Graph is correct. The other three should style `body` and leave
+> `html` alone.
+>
+> Until they do, "the same token" means two different sizes depending on which app you are in, and
+> any measurement taken in one app does not transfer to another.
+>
+> *Correction, recorded deliberately:* when this section was first written on 2026-07-28 it stated
+> that the 17px root was "the browser's own setting". That was wrong and was asserted without
+> checking. The apps set it themselves, in their own stylesheets. The accessibility argument for a
+> rem scale is unaffected — `font-size: 1.0625rem` on `html` multiplies the reader's preference
+> rather than replacing it, so enlarging text still scales spacing. What was wrong was the cause,
+> and a wrong cause sends the next person looking in the wrong file.
 
 **Container max-widths:**
 
