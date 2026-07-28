@@ -38,12 +38,13 @@ SCRIPT = re.compile(r"<script\b[^>]*>(.*?)</script>", re.S | re.I)
 
 
 def audit(app: str) -> list[tuple[str, str, str]]:
-    web = REPO / "apps" / f"artifice-{app}" / "web"
+    slug = app.replace("-", "_")
+    web = REPO / "apps" / f"artifice-{app}" / "src" / f"artifice_{slug}" / "web"
     templates = sorted((web / "templates").glob("*.html")) if (web / "templates").is_dir() else []
     if not templates:
         return []
 
-    sources = [p.read_text(encoding="utf-8") for p in sorted((web / "static").glob("*.js"))]
+    sources = [p.read_text(encoding="utf-8") for p in sorted((web / "static").rglob("*.js"))]
     for tpl in templates:
         sources.extend(SCRIPT.findall(tpl.read_text(encoding="utf-8")))
     js = "\n".join(sources)
@@ -72,9 +73,10 @@ def main() -> int:
     targets = sys.argv[1:] or APPS
     total = 0
     for app in targets:
+        slug = app.replace("-", "_")
         findings = audit(app)
         total += len(findings)
-        if not (REPO / "apps" / f"artifice-{app}" / "web" / "templates").is_dir():
+        if not (REPO / "apps" / f"artifice-{app}" / "src" / f"artifice_{slug}" / "web" / "templates").is_dir():
             print(f"artifice-{app}: no web/templates, skipped")
             continue
         if findings:

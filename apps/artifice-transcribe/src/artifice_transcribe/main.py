@@ -14,7 +14,7 @@ from artifice_transcribe.config import settings
 from artifice_transcribe.db.models import Base
 from artifice_transcribe.db.session import engine
 
-STATIC_DIR = Path(__file__).parent / "static"
+STATIC_DIR = Path(__file__).parent / "web" / "static"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -69,12 +69,13 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 def cli():
+    import os
     import uvicorn
 
     uvicorn.run(
         "artifice_transcribe.main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=os.environ.get("CALLOSIP_HOST", "127.0.0.1"),
+        port=int(os.environ.get("CALLOSIP_PORT", "8000")),
         reload=True,
         reload_excludes=[
             "data/*",

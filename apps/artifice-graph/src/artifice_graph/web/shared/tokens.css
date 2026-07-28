@@ -1,0 +1,175 @@
+/* The New Masses — canonical design tokens.
+   Source of truth: Design_Philosophy.md. Keep in sync with any app-local
+   :root block until those are consolidated to import this file directly. */
+
+:root {
+  /* Paper / ink — light mode (default) */
+  --paper: #f6f3ea;
+  --paper-raised: #fbf9f3;
+  --paper-recessed: #efebdf;
+  --ink: #1b1813;
+  --ink-soft: #4b463d;
+  --ink-faint: #635e51;
+  --rule: #ddd6c6;
+  --rule-dark: #45413a;
+  --accent: #2f7d45;
+  --accent-deep: #1f5a31;
+  --accent-wash: rgba(47, 125, 69, 0.07);
+  --gold: #bf9b30;
+
+  /* Semantic (status, not part of core identity) */
+  /* --success is deliberately a different hue family (moss/olive, ~H90)
+     from --accent (forest green, ~H137) — a status colour must not read
+     as the brand accent. At the original #256b39 the two sat only
+     CIE76 delta-E 7.6 apart from --accent #2f7d45 — below the ~15
+     threshold where two colours reliably read as distinct. This value
+     holds delta-E ~20 to --accent while keeping 6.5:1 against --paper
+     #f6f3ea. Do not "harmonize" this back toward --accent. */
+  --success: #455f2b;
+  --warning: #7c5e1a;
+  --error: #a8322b;
+
+  /* Typography */
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Libre Baskerville", Georgia, serif;
+  --font-label: "Archivo", "Franklin Gothic Medium", "Arial Narrow", sans-serif;
+  /* Not named in Design_Philosophy.md §3, but genuinely needed by apps that
+     display logs, code, or confidence readouts (e.g. artifice-graph's log
+     panel). */
+  --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+
+  --text-xs: 0.72rem;
+  --text-sm: 0.8rem;
+  --text-base: 1.0625rem;
+  --text-lg: clamp(1.15rem, 1.05rem + 0.4vw, 1.3rem);
+  --text-h3: clamp(1.35rem, 1.2rem + 0.8vw, 1.8rem);
+  --text-h2: clamp(1.9rem, 1.5rem + 2vw, 2.8rem);
+  --text-hero: clamp(2.6rem, 1.6rem + 5.5vw, 5.25rem);
+
+  --label-tracking: 0.16em;
+
+  /* Shadows (§6) — paper-like: warm, diffused, never glowy or neon. */
+  --shadow-paper: 0 1px 2px rgba(27,24,19,0.05), 0 10px 28px -14px rgba(27,24,19,0.18);
+  --shadow-lifted: 0 2px 4px rgba(27,24,19,0.07), 0 22px 44px -18px rgba(27,24,19,0.28);
+  --shadow-nav: 0 6px 24px -16px rgba(27,24,19,0.3);
+  --shadow-modal: 0 4px 24px -4px rgba(27,24,19,0.35);
+
+  /* Corner radius (§5) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Spacing (§4) — 4px-derived scale, editorial: generous at section
+     boundaries, dense within content blocks. */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 20px;
+  --space-7: 24px;
+  --space-8: 28px;
+  --space-9: 32px;
+  --space-10: 40px;
+  --space-11: 48px;
+  --space-12: 88px;
+
+  /* Motion (§7) */
+  --ease-primary: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --duration-instant: 100ms;
+  --duration-fast: 250ms;
+  --duration-normal: 300ms;
+  --duration-slow: 450ms;
+  --duration-glacial: 700ms;
+
+  /* Layout (§4, §8.5) */
+  --nav-height: 56px;
+  --container-max: 1200px;
+}
+
+::selection {
+  background: rgba(47, 125, 69, 0.22);
+  color: var(--ink);
+}
+
+/* Dark mode — "Lamplight Archive". Two independent activation paths apply
+   the same palette:
+   1) an explicit [data-theme="dark"] attribute (theme toggle), below; and
+   2) the OS-level prefers-color-scheme, guarded so an explicit
+      [data-theme="light"] can still override it and force light mode. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #161310;
+    --paper-raised: #1f1b16;
+    --paper-recessed: #100e0b;
+    --ink: #e8e2d3;
+    --ink-soft: #beb5a3;
+    --ink-faint: #a39a88;
+    --rule: #38332b;
+    --rule-dark: #5b554a;
+    --accent: #4aa066;
+    /* --accent-deep is lighter than --accent in dark mode — not a bug. Per
+       Design_Philosophy.md §2, --accent-deep "is used as text — must read
+       light" against the dark paper ground. Do not "fix" this to be darker
+       than --accent. */
+    --accent-deep: #7cc492;
+    --accent-wash: rgba(74, 160, 102, 0.12);
+    --gold: #bf9b30;
+
+    /* --success is deliberately a different hue family (moss/olive, ~H100)
+       from --accent (forest green, ~H139) — a status colour must not read
+       as the brand accent. Do not "harmonize" this back toward --accent. */
+    --success: #67a04b;
+    /* --warning and --error are separated by LIGHTNESS, not just hue —
+       hue is exactly what deuteranopia removes. At the original #d9b64a /
+       #e06060 the two simulate (Vienot 1999 deuteranopia projection) to
+       #cdcf78 / #bdc560 — CIE76 delta-E 8.4, both read as the same muddy
+       olive. This pair simulates to delta-E ~24 apart while each still
+       holds 4.5:1+ against --paper #161310 and remains recognisably
+       amber / red to normal vision (delta-E ~62, unchanged from before).
+       Do not converge these back toward equal lightness. */
+    --warning: #e4cb81;
+    --error: #dd5555;
+
+    --shadow-paper: 0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);
+    --shadow-lifted: 0 2px 4px rgba(0,0,0,0.5), 0 22px 42px -16px rgba(0,0,0,0.7);
+    --shadow-nav: 0 6px 24px -16px rgba(0,0,0,0.5);
+    --shadow-modal: 0 4px 24px -4px rgba(0,0,0,0.6);
+  }
+}
+
+[data-theme="dark"] {
+  /* Dark mode — "Lamplight Archive" */
+  --paper: #161310;
+  --paper-raised: #1f1b16;
+  --paper-recessed: #100e0b;
+  --ink: #e8e2d3;
+  --ink-soft: #beb5a3;
+  --ink-faint: #a39a88;
+  --rule: #38332b;
+  --rule-dark: #5b554a;
+  --accent: #4aa066;
+  /* See the matching comment in the prefers-color-scheme block above —
+     lighter-than---accent is intentional here, not a bug. */
+  --accent-deep: #7cc492;
+  --accent-wash: rgba(74, 160, 102, 0.12);
+  --gold: #bf9b30;
+
+  /* See the matching comment in the prefers-color-scheme block above —
+     --success is a distinct hue family from --accent, not a rounding
+     error. */
+  --success: #67a04b;
+  /* See the matching comment in the prefers-color-scheme block above —
+     --warning and --error are separated by lightness so they stay
+     distinguishable under deuteranopia simulation (delta-E ~24), not
+     just hue. Do not converge these back toward equal lightness. */
+  --warning: #e4cb81;
+  --error: #dd5555;
+
+  --shadow-paper: 0 1px 2px rgba(0,0,0,0.4), 0 10px 26px -14px rgba(0,0,0,0.6);
+  --shadow-lifted: 0 2px 4px rgba(0,0,0,0.5), 0 22px 42px -16px rgba(0,0,0,0.7);
+  --shadow-nav: 0 6px 24px -16px rgba(0,0,0,0.5);
+  --shadow-modal: 0 4px 24px -4px rgba(0,0,0,0.6);
+}

@@ -26,6 +26,7 @@ web = [
 
 [project.scripts]
 artifice-graph = "artifice_graph.cli:app"
+artifice-graph-web = "artifice_graph.web.server:main"
 
 [build-system]
 requires = ["hatchling"]

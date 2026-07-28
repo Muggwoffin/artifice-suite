@@ -20,9 +20,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-# ── Ensure src is importable ───────────────────────────────────────
-_PROJECT = Path(__file__).resolve().parent.parent
-_SRC = _PROJECT / "src"
+# ── Ensure src is importable (dev mode without pip install) ──────
+_SRC = Path(__file__).resolve().parent.parent.parent  # src/
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
@@ -39,7 +38,7 @@ from artifice_graph.models.document import Document, TextChunk
 from artifice_graph.models.entity import Entity, EntityType
 from artifice_graph.models.relationship import Relationship
 from artifice_graph.storage.file_store import FileStore
-from web.config_helper import load_saved_config, save_user_config
+from artifice_graph.web.config_helper import load_saved_config, save_user_config
 
 logger = logging.getLogger(__name__)
 
@@ -69,13 +68,8 @@ _jinja = Environment(
 # Static files
 app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
 
-# ── Shared design tokens (canonical source: packages/shared-ui) ────
-_SHARED_UI = _PROJECT.parent.parent / "packages" / "shared-ui"
-if not _SHARED_UI.is_dir():
-    raise RuntimeError(
-        f"Shared UI directory not found at {_SHARED_UI.resolve()}. "
-        "Ensure packages/shared-ui/ exists in the monorepo root."
-    )
+# ── Shared design tokens (vendored from packages/shared-ui) ───────
+_SHARED_UI = HERE / "shared"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
 # ── Run log broker (cross-thread SSE bridging) ─────────────────────
@@ -670,7 +664,7 @@ async def api_save_config(body: dict[str, Any]):
 async def api_load_preferences():
     """Load saved user preferences."""
     try:
-        from web.config_helper import load_saved_config
+        from artifice_graph.web.config_helper import load_saved_config
         saved_cfg = load_saved_config()
         if saved_cfg:
             return {"status": "ok", "config": saved_cfg.model_dump()}
@@ -1026,7 +1020,7 @@ async def about():
 def main() -> None:
     port = int(os.environ.get("CALLOSIP_PORT", "8766"))
     host = os.environ.get("CALLOSIP_HOST", "127.0.0.1")
-    uvicorn.run("web.server:app", host=host, port=port, reload=False)
+    uvicorn.run("artifice_graph.web.server:app", host=host, port=port, reload=False)
 
 
 if __name__ == "__main__":

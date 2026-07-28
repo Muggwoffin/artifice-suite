@@ -225,3 +225,16 @@ async def test_enroll_rejects_oversized_upload(api, monkeypatch):
     )
     assert resp.status_code == 413
     assert "too large" in resp.json()["detail"].lower()
+
+
+async def test_transcribe_rejects_oversized_upload(api, monkeypatch):
+    """The /transcribe endpoint must reject uploads larger than max_upload_size."""
+    monkeypatch.setattr(
+        "artifice_transcribe.api.v1.routes.settings.max_upload_size", 10
+    )
+    resp = await api.client.post(
+        "/api/v1/transcribe",
+        files={"file": ("interview.wav", b"x" * 11)},
+    )
+    assert resp.status_code == 413
+    assert "too large" in resp.json()["detail"].lower()
