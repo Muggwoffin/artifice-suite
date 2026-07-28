@@ -8,6 +8,7 @@ dependencies = [
     "python-docx>=0.8.11",
     "docx-revisions>=0.1.5",
     "requests>=2.31.0",
+    "shared-ui",
 ]
 
 [project.optional-dependencies]

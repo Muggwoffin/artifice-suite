@@ -67,6 +67,12 @@ async def index():
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# ── Shared design system (resolved from installed shared-ui package) ───────
+import importlib.resources
+import shared_ui
+_SHARED_UI = importlib.resources.files(shared_ui) / "assets"
+app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
 
 def cli():
     import os

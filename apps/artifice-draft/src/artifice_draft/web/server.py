@@ -42,6 +42,11 @@ from artifice_draft.style_guides.base import StyleGuide
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
+# ── Shared design system (resolved from installed shared-ui package) ───────
+import importlib.resources
+import shared_ui
+_SHARED_UI = importlib.resources.files(shared_ui) / "assets"
+
 app = FastAPI(title="ArtificeDraft")
 
 
@@ -306,6 +311,9 @@ def download(doc_id: str):
 # --------------------------------------------------------------------------- #
 # static frontend
 # --------------------------------------------------------------------------- #
+
+app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
 
 @app.get("/")
 def index() -> FileResponse:
