@@ -539,7 +539,7 @@ hr.rule {
   transform: scale(1.04);
 }
 
-/* Two independent activation paths, matching packages/shared-ui/tokens.css:
+/* Two independent activation paths, matching packages/shared-ui/shared_ui/assets/tokens.css:
    OS-level prefers-color-scheme, and an explicit [data-theme="dark"]
    toggle. A toggle on a light-mode OS must still get this rule. */
 @media (prefers-color-scheme: dark) {

@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, LargeBinary, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -25,6 +25,41 @@ def _utcnow() -> datetime:
 
 def _uuid() -> str:
     return uuid.uuid4().hex
+
+
+# ── Embedding serialisation helpers ────────────────────────────────────────
+#
+# Speaker embeddings are stored as raw float32 bytes (ndarray.tobytes())
+# so that no consumer ever deserialises arbitrary objects from the database.
+# Both KnownSpeaker.embedding and SpeakerEmbedding.embedding use these.
+
+
+def pack_embedding(embedding: "np.ndarray") -> bytes:
+    """Cast *embedding* to ``np.float32`` and return its raw bytes."""
+    import numpy as np
+
+    return np.asarray(embedding, dtype=np.float32).tobytes()
+
+
+def unpack_embedding(blob: bytes, dimension: int | None = None) -> "np.ndarray":
+    """Return ``np.frombuffer(blob, dtype=np.float32)`` after validating
+    that *blob* is a whole number of float32 values and, when *dimension*
+    is given, that the vector length matches."""
+    if len(blob) == 0:
+        raise ValueError("Embedding blob is empty")
+    if len(blob) % 4 != 0:
+        raise ValueError(
+            f"Embedding blob is {len(blob)} bytes, not a multiple of 4 (float32)"
+        )
+    actual_dim = len(blob) // 4
+    if dimension is not None and actual_dim != dimension:
+        raise ValueError(
+            f"Embedding blob has dimension {actual_dim}, "
+            f"expected {dimension}"
+        )
+    import numpy as np
+
+    return np.frombuffer(blob, dtype=np.float32)
 
 
 class TranscriptionJob(Base):
@@ -101,7 +136,7 @@ class KnownSpeaker(Base):
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
     name: Mapped[str] = mapped_column(String(256))
-    embedding: Mapped[bytes] = mapped_column(Text)  # numpy array pickled
+    embedding: Mapped[bytes] = mapped_column(LargeBinary)  # raw float32 bytes (pack_embedding)
     model_name: Mapped[str] = mapped_column(String(64), default="pyannote/embedding")
     dimension: Mapped[int] = mapped_column(default=512)
     sample_audio_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
@@ -117,7 +152,7 @@ class SpeakerEmbedding(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
     job_id: Mapped[str] = mapped_column(String(32))
     speaker_label: Mapped[str] = mapped_column(String(32))
-    embedding: Mapped[bytes] = mapped_column(Text)  # numpy array pickled
+    embedding: Mapped[bytes] = mapped_column(LargeBinary)  # raw float32 bytes (pack_embedding)
     model_name: Mapped[str] = mapped_column(String(64), default="pyannote/embedding")
     dimension: Mapped[int] = mapped_column(default=512)
 

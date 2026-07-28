@@ -21,6 +21,8 @@ from artifice_transcribe.db.models import (
     SpeakerMapping,
     TranscriptionJob,
     TranscriptSegment,
+    pack_embedding,
+    unpack_embedding,
 )
 from artifice_transcribe.db.session import async_session, get_db
 from artifice_transcribe.schemas.transcription import (
@@ -237,13 +239,11 @@ async def _run_transcription(
 
             # Store speaker embeddings for cross-session matching
             if speaker_embeddings:
-                import pickle
-
                 db_embeddings = [
                     SpeakerEmbedding(
                         job_id=job_id,
                         speaker_label=label,
-                        embedding=pickle.dumps(emb),
+                        embedding=pack_embedding(emb),
                         model_name="pyannote/embedding",
                         dimension=len(emb),
                     )
@@ -292,8 +292,6 @@ async def _auto_match_speakers(job_id: str, db: AsyncSession) -> None:
     if not known:
         return
 
-    import pickle
-
     import numpy as np
 
     def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
@@ -305,15 +303,13 @@ async def _auto_match_speakers(job_id: str, db: AsyncSession) -> None:
     THRESHOLD = 0.65
 
     for emb in embeddings:
-        emb_vec = pickle.loads(emb.embedding)  # noqa: S301
-        emb_vec = np.asarray(emb_vec, dtype=np.float32)
+        emb_vec = unpack_embedding(emb.embedding, emb.dimension)
 
         best_name = None
         best_score = -1.0
 
         for known_spk in known:
-            known_vec = pickle.loads(known_spk.embedding)  # noqa: S301
-            known_vec = np.asarray(known_vec, dtype=np.float32)
+            known_vec = unpack_embedding(known_spk.embedding, known_spk.dimension)
             score = _cosine_sim(emb_vec, known_vec)
             if score > best_score:
                 best_score = score
@@ -1208,7 +1204,6 @@ async def enroll_speaker(
     db: AsyncSession = Depends(get_db),
 ) -> SpeakerEnrollResponse:
     """Enroll a known speaker by uploading a short audio clip of their voice."""
-    import pickle
 
     contents = await file.read()
     if len(contents) > settings.max_upload_size:
@@ -1230,10 +1225,7 @@ async def enroll_speaker(
     inference = Inference(embedder, window="whole")
     embedding = inference(str(audio_path))
 
-    # NOTE: *embedding* is a trusted value returned by a local model; the
-    # pickled blob stored in the database must never be unpickled from an
-    # untrusted source.
-    emb_bytes = pickle.dumps(embedding)
+    emb_bytes = pack_embedding(embedding)
     spk = KnownSpeaker(
         name=name,
         embedding=emb_bytes,

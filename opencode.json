@@ -12,6 +12,24 @@
       "~/.local/share/opencode/auth.json": "deny"
     }
   },
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local, host GPU)",
+      "options": {
+        "baseURL": "http://172.21.176.1:11434/v1"
+      },
+      "models": {
+        "gemma4-32k:12b": {
+          "name": "Gemma 4 12B (32k ctx, local)",
+          "limit": {
+            "context": 32768,
+            "output": 8192
+          }
+        }
+      }
+    }
+  },
   "mcp": {
     "firecrawl": {
       "type": "local",
@@ -41,6 +59,11 @@
       }
     },
     "security-auditor": {
+      "permission": {
+        "firecrawl_*": "deny"
+      }
+    },
+    "oss-reviewer": {
       "permission": {
         "firecrawl_*": "deny"
       }

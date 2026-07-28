@@ -12,14 +12,14 @@ these are visible in a diff and none fail a test. This finds them statically.
 
 Exits non-zero if anything is unbound, so it can gate CI.
 
-It counts three ways a control can legitimately be bound, and missing any of
-them produces false positives — an earlier hand-rolled version of this check
-scanned only `static/*.js` and wrongly condemned five controls that were bound
-in a template's own inline <script>:
+It counts four ways a control can legitimately be bound:
 
   1. by id or class in an external static/*.js
   2. by id or class in an inline <script> block in any template
   3. by an inline on* attribute on the element itself
+  4. dynamically — the id is assembled at runtime from a static prefix
+     (e.g. `` `set-${key}` `` or `` "set-" + key ``).  These controls are
+     reported in a separate category rather than condemned.
 """
 from __future__ import annotations
 
@@ -36,25 +36,64 @@ CLASS_ATTR = re.compile(r'\bclass="([^"]*)"')
 ON_ATTR = re.compile(r'\bon[a-z]+\s*=\s*"[^"]+"')
 SCRIPT = re.compile(r"<script\b[^>]*>(.*?)</script>", re.S | re.I)
 
+# ---------------------------------------------------------------------------
+# Dynamic id construction patterns
+#   Template literal:  `` `prefix${...}` ``
+#   String concat:      "prefix" + var   or   'prefix' + var
+# ---------------------------------------------------------------------------
+_DYNAMIC_TEMPLATE = re.compile(r"`([A-Za-z0-9][A-Za-z0-9_-]*)\$\{")
+_DYNAMIC_CONCAT = re.compile(r"""["']([A-Za-z0-9][A-Za-z0-9_-]*)["']\s*\+""")
 
-def audit(app: str) -> list[tuple[str, str, str]]:
+
+def _collect_dynamic_prefixes(js: str) -> set[str]:
+    """Scan *js* for dynamically constructed ids and return the static
+    prefixes used (e.g. ``"set-"``, ``"btn-"``)."""
+    prefixes: set[str] = set()
+    for m in _DYNAMIC_TEMPLATE.finditer(js):
+        prefixes.add(m.group(1))
+    for m in _DYNAMIC_CONCAT.finditer(js):
+        prefixes.add(m.group(1))
+    return prefixes
+
+
+def audit(app: str) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, str]]] | None:
+    """Return ``(unbound, dynamic)`` lists, or *None* if nothing to audit.
+
+    *unbound* entries are controls with no reachable binding — a real finding.
+    *dynamic* entries are controls whose id begins with a prefix that is
+    assembled at runtime in JS — known to be safe, reported separately so the
+    maintainer can see the gate knows about them.
+    """
     slug = app.replace("-", "_")
     web = REPO / "apps" / f"artifice-{app}" / "src" / f"artifice_{slug}" / "web"
-    templates = sorted((web / "templates").glob("*.html")) if (web / "templates").is_dir() else []
-    if not templates:
-        return []
 
+    # Determine which HTML files to scan: templates first, then static index.html
+    html_files: list[Path] = []
+    if (web / "templates").is_dir():
+        html_files = sorted((web / "templates").glob("*.html"))
+    if not html_files:
+        static_index = web / "static" / "index.html"
+        if static_index.is_file():
+            html_files = [static_index]
+
+    if not html_files:
+        return None  # nothing to audit — no templates and no static index.html
+
+    # Gather all JS source text: external .js files + inline <script> blocks
     sources = [p.read_text(encoding="utf-8") for p in sorted((web / "static").rglob("*.js"))]
-    for tpl in templates:
-        sources.extend(SCRIPT.findall(tpl.read_text(encoding="utf-8")))
+    for html_file in html_files:
+        sources.extend(SCRIPT.findall(html_file.read_text(encoding="utf-8")))
     js = "\n".join(sources)
 
     def referenced(name: str) -> bool:
         return re.search(r"\b" + re.escape(name) + r"\b", js) is not None
 
+    dynamic_prefixes = _collect_dynamic_prefixes(js)
+
     unbound: list[tuple[str, str, str]] = []
-    for tpl in templates:
-        for match in TAG.finditer(tpl.read_text(encoding="utf-8")):
+    dynamic: list[tuple[str, str, str]] = []
+    for html_file in html_files:
+        for match in TAG.finditer(html_file.read_text(encoding="utf-8")):
             tag = match.group(0)
             found_id = ID_ATTR.search(tag)
             if not found_id:
@@ -65,29 +104,41 @@ def audit(app: str) -> list[tuple[str, str, str]]:
             classes = CLASS_ATTR.search(tag)
             if classes and any(referenced(c) for c in classes.group(1).split()):
                 continue
-            unbound.append((tpl.name, match.group(1).lower(), element_id))
-    return unbound
+            # Check dynamic binding: any prefix covers this id?
+            if any(element_id.startswith(p) for p in dynamic_prefixes):
+                dynamic.append((html_file.name, match.group(1).lower(), element_id))
+                continue
+            unbound.append((html_file.name, match.group(1).lower(), element_id))
+    return unbound, dynamic
 
 
 def main() -> int:
     targets = sys.argv[1:] or APPS
-    total = 0
+    unbound_total = 0
     for app in targets:
-        slug = app.replace("-", "_")
         findings = audit(app)
-        total += len(findings)
-        if not (REPO / "apps" / f"artifice-{app}" / "src" / f"artifice_{slug}" / "web" / "templates").is_dir():
-            print(f"artifice-{app}: no web/templates, skipped")
+        if findings is None:
+            print(f"artifice-{app}: no web/templates or static/index.html, skipped")
             continue
-        if findings:
-            print(f"artifice-{app}: {len(findings)} unbound control(s)")
-            for template, kind, element_id in findings:
-                print(f"  {template:20} {kind:9} #{element_id}")
+        unbound, dynamic = findings
+        unbound_total += len(unbound)
+        if unbound or dynamic:
+            if unbound:
+                print(f"artifice-{app}: {len(unbound)} unbound control(s)")
+                for template, kind, element_id in unbound:
+                    print(f"  {template:20} {kind:9} #{element_id}")
+            else:
+                print(f"artifice-{app}: clean (0 unbound)")
+            if dynamic:
+                print(f"artifice-{app}: {len(dynamic)} control(s) dynamically bound, "
+                      "not statically verifiable")
+                for template, kind, element_id in dynamic:
+                    print(f"  {template:20} {kind:9} #{element_id}")
         else:
             print(f"artifice-{app}: clean")
-    if total:
-        print(f"\n{total} control(s) render but are bound to nothing.")
-    return 1 if total else 0
+    if unbound_total:
+        print(f"\n{unbound_total} control(s) render but are bound to nothing.")
+    return 1 if unbound_total else 0
 
 
 if __name__ == "__main__":

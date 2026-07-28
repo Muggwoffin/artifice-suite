@@ -182,7 +182,10 @@ async def test_enroll_traversal_sanitisation(
             "artifice_transcribe.api.v1.routes._get_engine",
             return_value=fake_engine,
         ),
-        patch("pickle.dumps", return_value=b"\x80\x03"),
+        patch(
+            "artifice_transcribe.api.v1.routes.pack_embedding",
+            return_value=b"\x00" * 2048,
+        ),
     ):
         resp = await api.client.post(
             "/api/v1/speakers/enroll",

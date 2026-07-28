@@ -6,10 +6,10 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-ocr = ["artifice-ocr", "model-harness", "core-types"]
-draft = ["artifice-draft", "model-harness", "core-types"]
-graph = ["artifice-graph", "model-harness", "core-types"]
-transcribe = ["artifice-transcribe", "model-harness", "core-types"]
+ocr = ["artifice-ocr", "model-harness", "core-types", "shared-ui"]
+draft = ["artifice-draft", "model-harness", "core-types", "shared-ui"]
+graph = ["artifice-graph", "model-harness", "core-types", "shared-ui"]
+transcribe = ["artifice-transcribe", "model-harness", "core-types", "shared-ui"]
 all = [
     "artifice-ocr",
     "artifice-draft",
@@ -17,6 +17,7 @@ all = [
     "artifice-transcribe",
     "model-harness",
     "core-types",
+    "shared-ui",
 ]
 
 [build-system]
@@ -41,7 +42,7 @@ py-modules = []
 # Plain `pip` (not `uv pip`) only works for a single app installed directly:
 #   pip install -e apps/artifice-ocr
 [tool.uv.workspace]
-members = ["apps/*", "packages/model-harness", "packages/core-types"]
+members = ["apps/*", "packages/model-harness", "packages/core-types", "packages/shared-ui"]
 
 [tool.uv.sources]
 artifice-ocr = { workspace = true }
@@ -50,3 +51,10 @@ artifice-graph = { workspace = true }
 artifice-transcribe = { workspace = true }
 model-harness = { workspace = true }
 core-types = { workspace = true }
+shared-ui = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]

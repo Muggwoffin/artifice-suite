@@ -68,8 +68,10 @@ _jinja = Environment(
 # Static files
 app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
 
-# ── Shared design tokens (vendored from packages/shared-ui) ───────
-_SHARED_UI = HERE / "shared"
+# ── Shared design tokens (resolved from installed shared-ui package) ───────
+import importlib.resources
+import shared_ui
+_SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
 # ── Run log broker (cross-thread SSE bridging) ─────────────────────
