@@ -105,11 +105,17 @@ def cli():
     import os
     import uvicorn
 
+    # Reload is opt-in via ARTIFICE_TRANSCRIBE_RELOAD=1 for development use.
+    # The packaged entry point (artifice-transcribe) defaults to off because the
+    # file-watching reloader spawns a subprocess, which breaks under PyInstaller
+    # and is wasteful in any production run.
+    enable_reload = os.environ.get("ARTIFICE_TRANSCRIBE_RELOAD", "").strip() in ("1", "true", "yes")
+
     uvicorn.run(
         "artifice_transcribe.main:app",
         host=os.environ.get("CALLOSIP_HOST", "127.0.0.1"),
         port=int(os.environ.get("CALLOSIP_PORT", "8000")),
-        reload=True,
+        reload=enable_reload,
         reload_excludes=[
             "data/*",
             "data\\*",

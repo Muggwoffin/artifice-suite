@@ -1,0 +1,195 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  # ── Static gates ──────────────────────────────────────────────────────────
+  # Every gate here exits non-zero on failure.  If any of these are red the
+  # rest of the pipeline is a waste of time, so they run first and the test
+  # and wheel jobs depend on them.
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+
+      - name: shellcheck
+        # SC2012 is a pre-existing INFO in smoke-test-agents.sh (ls vs find).
+        # Excluded so the gate reports genuine problems rather than a permanent
+        # red for a style nit.
+        run: shellcheck --exclude=SC2012 scripts/*.sh
+
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.4/gitleaks_8.24.4_linux_x64.tar.gz \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: gitleaks detect (Zero Secrets Policy)
+        run: gitleaks detect --redact --no-banner
+
+      - name: Token parity check
+        run: python3 scripts/token-parity-check.py
+
+      - name: Audit controls
+        run: python3 scripts/audit-controls.py
+
+      # -------------------------------------------------------------------
+      # DO NOT add smoke-test-agents.sh here.  It dispatches live model
+      # calls to paid provider accounts and would burn credits on every
+      # push.  It belongs in a pre-release manual checklist, not CI.
+      # -------------------------------------------------------------------
+
+  # ── Tests ─────────────────────────────────────────────────────────────────
+  tests:
+    needs: gates
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # artfice-ocr: 306 passed, 1 skipped — clean baseline.
+          # No extra dependencies needed beyond the workspace root.
+          - app: artifice-ocr
+            extra-args: ""
+
+          # artifice-draft: 149 passed after installing the `web` extra.
+          # Two tests in test_scraper.py import `readability-lxml`, which is
+          # declared in [project.optional-dependencies].web.  Without it CI
+          # would record 2 permanent failures — a red CI everyone ignores is
+          # worse than no CI.
+          - app: artifice-draft
+            extra-args: ""
+            install-web-extra: true
+
+          # artifice-graph: 47 passed — clean baseline.  No extras needed.
+          - app: artifice-graph
+            extra-args: ""
+
+          # artifice-transcribe: 52 passed, 1 error.
+          # The error is `fixture 'audio_path' not found` in
+          # tests/test_api.py, which is a standalone end-to-end script (not a
+          # pytest test suite).  pytest collects it because the function is
+          # named `test_*` and its parameter `audio_path` is not a registered
+          # fixture.  Ignoring the file is legitimate — it needs a live
+          # server and an actual audio file, neither of which exists in CI.
+          - app: artifice-transcribe
+            extra-args: "--ignore=tests/test_api.py"
+
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install workspace root dependencies (incl. pytest)
+        run: uv sync --group dev --extra all
+        working-directory: .
+
+      - name: Install web extra (draft only)
+        if: ${{ matrix.install-web-extra }}
+        run: uv sync --extra web
+
+      - name: Run tests
+        run: uv run pytest -q ${{ matrix.extra-args }}
+
+  # ── Wheel-content assertions ──────────────────────────────────────────────
+  # Tests run against `src/` and cannot see bugs that only exist in the built
+  # artifact: missing font files, prompt templates that resolve outside their
+  # package and ship in no wheel, or a stale build/ resurrecting deleted code.
+  wheel:
+    needs: gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build artifact wheel
+        run: bash scripts/build-wheel.sh artifice-ocr
+
+      - name: Assert wheel contents
+        run: |
+          python3 -c "
+          import zipfile, sys, glob
+
+          whl_files = glob.glob('apps/artifice-ocr/dist/*.whl')
+          assert len(whl_files) == 1, f'Expected exactly one .whl, found {len(whl_files)}'
+          whl_path = whl_files[0]
+
+          with zipfile.ZipFile(whl_path) as z:
+              names = z.namelist()
+
+              # ── Fonts: all four .ttf files must be present ──────────
+              font_entries = [n for n in names if n.endswith('.ttf')]
+              assert len(font_entries) == 4, \
+                  f'Expected 4 TTF fonts in wheel, found {len(font_entries)}: {font_entries}'
+              for expected in ('LibreBaskerville.ttf', 'LibreBaskerville-Italic.ttf',
+                               'PlayfairDisplay.ttf', 'PlayfairDisplay-Italic.ttf'):
+                  assert any(expected in f for f in font_entries), \
+                      f'Missing font: {expected}'
+
+              # ── Prompts: all three .txt files must be present ───────
+              prompt_entries = [n for n in names
+                                if 'prompts/' in n and n.endswith('.txt')]
+              assert len(prompt_entries) == 3, \
+                  f'Expected 3 prompt files in wheel, found {len(prompt_entries)}: {prompt_entries}'
+              for expected in ('cleanup_prompt.txt', 'structure_prompt.txt',
+                               'translation_prompt.txt'):
+                  assert any(expected in p for p in prompt_entries), \
+                      f'Missing prompt: {expected}'
+
+              # ── gui/ must be absent (deleted in 5b01338) ────────────
+              gui_entries = [n for n in names if '/gui/' in n]
+              assert len(gui_entries) == 0, \
+                  f'STALE BUILD: {len(gui_entries)} gui/ entries found in wheel. ' \
+                  f'build/ was not cleaned before build. Entries: {gui_entries}'
+
+              print(f'All wheel-content assertions passed ({len(names)} entries).')
+          "
+
+  # ── Multi-platform smoke test ─────────────────────────────────────────────
+  # The suite targets Windows and macOS as well as Linux.  A full matrix
+  # across three OSes × four apps would be 12 jobs.  That is not practical
+  # here: several test suites import platform-specific modules (tkinter on
+  # Linux requires a display server; whisperx pulls PyTorch with CUDA
+  # shims).  Running a single representative app (ocr) across all three
+  # platforms gives us cross-build confidence without tripling the test
+  # runtime.  Expand this when CI bandwidth permits.
+  tests-cross-platform:
+    needs: gates
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    defaults:
+      run:
+        working-directory: apps/artifice-ocr
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install workspace root dependencies
+        run: uv sync --group dev --extra all
+        working-directory: .
+
+      - name: Run tests (OCR)
+        run: uv run pytest -q
