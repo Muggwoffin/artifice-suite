@@ -196,6 +196,13 @@ button, input, select, textarea {
 .dim {
   color: var(--ink-faint);
   font-size: var(--text-sm);
+  /* .dim also appears nested inside uppercase field labels (guide-form,
+     model-form) as a parenthetical qualifier — e.g. "Prose Rules (one per
+     line):". That aside is descriptive, not a field name, so it must not
+     inherit the label's uppercase/tracking (§3: body text is never
+     uppercase). */
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 /* ---------------------------------------------------------------- Dropzone */
@@ -237,7 +244,18 @@ button.btn, a.btn {
   font-weight: 600;
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
-  padding: 0.65rem 1.2rem;
+  /* Design_Philosophy.md §8.1 button padding, applied literally rather
+     than the smaller ad hoc value this rule used to carry — see the
+     app.css header note on control-height parity. line-height is pinned
+     to 1 because some .btn labels mix Latin text with a Unicode dingbat
+     (e.g. "&#9654; Start Editing" next to plain "Browse&hellip;"); with
+     the default `line-height: normal` the browser falls back to a
+     different font for the glyph and that font's own line metrics
+     inflate the button's line box a few px relative to a glyph-free
+     sibling button — the exact "Browse…"/"Start Editing" height
+     mismatch this pass corrects. */
+  padding: 0.8rem 1.4rem;
+  line-height: 1;
   border: 1.5px solid var(--ink);
   border-radius: var(--radius-md);
   background-color: var(--paper-raised);
@@ -357,6 +375,19 @@ button.btn.danger:hover:not(:disabled) {
   color: var(--ink-soft);
 }
 
+/* Field labels (Design_Philosophy.md §3): "Editing Style:", "Journal
+   Guide:" and "Export Format:" name a control and take the label
+   treatment (Archivo, uppercase, --label-tracking) instead of inheriting
+   the body serif at sentence case. label.check is excluded — "Review
+   edits before saving" describes what the toggle does, reads as a
+   sentence, and keeps its existing body-style look (§3: "body text and
+   titles are never uppercase"). */
+.settings-card label:not(.check) {
+  font-family: var(--font-label);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
 .settings-card label.check {
   flex-direction: row;
   align-items: center;
@@ -368,11 +399,15 @@ button.btn.danger:hover:not(:disabled) {
 .settings-card input, .settings-card select, .settings-card textarea {
   font-family: var(--font-label);
   font-size: var(--text-base);
-  padding: 0.6rem 0.9rem;
+  padding: 0.7rem 1rem;
   background-color: var(--paper-recessed);
   border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
   color: var(--ink);
+  /* Reset the label's uppercase/tracking so it doesn't bleed into the
+     select's own rendered option text or an input's typed value. */
+  text-transform: none;
+  letter-spacing: normal;
   transition: border-color 0.2s var(--ease-primary);
 }
 
@@ -586,6 +621,9 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; }
   gap: var(--space-2);
   font-size: var(--text-sm);
   font-weight: 600;
+  font-family: var(--font-label);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
   color: var(--ink-soft);
   margin-bottom: var(--space-5);
   cursor: help;
@@ -597,8 +635,29 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; }
   border: 1px solid var(--rule);
   background: var(--paper-recessed);
   border-radius: var(--radius-sm);
-  padding: 0.6rem 0.9rem;
+  padding: 0.7rem 1rem;
   color: var(--ink);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Same field-label pattern as .settings-card/.model-form above, for the
+   Guide Import modal's extracted-guide review step ("Name:", "Edition:",
+   "Citation Style:", etc.) — this form has no existing selector of its
+   own, so its labels and inline-styled inputs/textareas (index.html) are
+   still rendering in the body serif at sentence case. */
+.guide-form label {
+  font-family: var(--font-label);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.guide-form label input,
+.guide-form label textarea {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .model-form input:focus, .model-form select:focus {

@@ -197,9 +197,22 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   gap: 0.4rem;
   font-size: var(--text-sm);
   font-weight: 600;
-  letter-spacing: 0.04em;
   color: var(--ink-soft);
   white-space: nowrap;
+}
+
+/* Field labels (Design_Philosophy.md §3): a short name for a control
+   ("Min speakers:", "Model:", "Base URL:") takes the label treatment
+   (Archivo, uppercase, --label-tracking) instead of rendering at
+   sentence case. Labels with a `for` attribute are excluded — every
+   .form-row checkbox label in this app ("Cache alignment models across
+   sessions", "Vision / Multimodal Enabled…") uses `for` rather than
+   wrapping its input, and reads as a sentence describing the toggle, not
+   a field name (§3: "body text and titles are never uppercase"). */
+.form-row label:not([for]) {
+  font-family: var(--font-label);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
 }
 
 .form-row input[type=text], .form-row input[type=number], .form-row input[type=password], .form-row select, .form-row textarea {
@@ -207,9 +220,15 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   border-radius: var(--radius-sm);
   background: var(--paper-recessed);
   color: var(--ink);
-  padding: 0.5rem 0.7rem;
+  padding: 0.7rem 1rem;
   font-family: var(--font-body);
   font-size: var(--text-base);
+  /* Reset the label's uppercase/tracking so it doesn't bleed into the
+     select's own rendered option text or an input's typed value — several
+     of these controls (Language, Vocabulary, Interviewee…) hold free text
+     a user types, which must not render shouted. */
+  text-transform: none;
+  letter-spacing: normal;
   transition: border-color var(--duration-instant) ease, outline var(--duration-instant) ease;
 }
 
@@ -249,7 +268,16 @@ button.btn, .button-primary {
   background: var(--paper-raised);
   color: var(--ink);
   border-radius: var(--radius-md);
-  padding: 0.6rem 1.2rem;
+  /* Design_Philosophy.md §8.1 button padding, applied literally rather
+     than the smaller ad hoc value this rule used to carry — see the
+     app.css header note on control-height parity. line-height is pinned
+     to 1 because some .btn labels mix Latin text with a Unicode dingbat
+     (e.g. "&#9654; Start Transcription"); with the default
+     `line-height: normal` the browser falls back to a different font for
+     the glyph and that font's own line metrics inflate the button's line
+     box a few px relative to a glyph-free sibling button. */
+  padding: 0.8rem 1.4rem;
+  line-height: 1;
   font-family: var(--font-label);
   font-weight: 600;
   font-size: 0.8rem;
@@ -877,6 +905,12 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
   padding: 0.3rem 0.5rem;
   font-size: 0.85rem;
   font-family: var(--font-body);
+  /* .metadata-grid label is already uppercase/tracked (existing rule
+     below); without this reset that bled into typed values here, so an
+     interviewee's name rendered shouted while being typed. Pre-existing,
+     found while fixing the same bleed pattern for .form-row above. */
+  text-transform: none;
+  letter-spacing: normal;
 }
 #btn-save-metadata {
   margin-top: 0.5rem;

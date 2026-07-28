@@ -239,7 +239,17 @@ button.btn {
   background: var(--paper-raised);
   color: var(--ink);
   border-radius: var(--radius-md);
-  padding: 0.45rem 0.85rem;
+  /* Design_Philosophy.md §8.1 button padding, applied literally rather than
+     the smaller ad hoc value this rule used to carry — see the app.css
+     header note on control-height parity. line-height is pinned to 1
+     because several .btn labels mix Latin text with a Unicode dingbat
+     (e.g. "&#9654; Run Pipeline"); with the default `line-height: normal`
+     the browser falls back to a different font for the glyph and that
+     font's own line metrics can inflate the button's line box by a few
+     px relative to a glyph-free sibling button, which is exactly the
+     "same class, different height" defect this pass corrects. */
+  padding: 0.8rem 1.4rem;
+  line-height: 1;
   font-weight: 600;
   font-size: var(--text-sm);
   cursor: pointer;
@@ -370,9 +380,9 @@ td.stage-failed { color: var(--error); font-weight: 600; }
 .output-row input[type=text] {
   flex: 1;
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--paper-recessed);
-  padding: 0.45rem 0.6rem;
+  padding: 0.7rem 1rem;
   color: var(--ink);
 }
 
@@ -504,7 +514,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 .modal-close:hover { color: var(--ink); background: var(--accent-wash); }
 
@@ -512,10 +522,10 @@ td.stage-failed { color: var(--error); font-weight: 600; }
 
 select.select, .output-row select, .run-row select, label select {
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--paper-recessed);
   color: var(--ink);
-  padding: 0.4rem 0.5rem;
+  padding: 0.7rem 1rem;
 }
 
 /* ------------------------------------------------------------- comparison */
@@ -778,12 +788,46 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   font-size: var(--text-sm);
 }
 
+/* Field labels (Design_Philosophy.md §3): a short name for a control takes
+   the label treatment (Archivo, uppercase, --label-tracking). Checkbox
+   labels are excluded — ":has(input[type=checkbox])" mirrors
+   apps/artifice-graph's ".field > label:not(.app-checkbox)" exclusion,
+   since a checkbox's label ("Resume (skip existing outputs)", "Think
+   step-by-step (slow — not recommended)") reads as a description of what
+   the toggle does, not a field name, and keeps its existing body-style
+   look. The uppercase/tracking must not bleed into the select/input's own
+   rendered text, so the control itself is reset back to normal case,
+   weight and spacing. */
+.settings-card label:not(:has(input[type="checkbox"])) {
+  font-family: var(--font-label);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+.settings-card label:not(:has(input[type="checkbox"])) select,
+.settings-card label:not(:has(input[type="checkbox"])) input {
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* "Stages:" / "Output:" are the same short field-group label pattern,
+   just marked up as <strong> beside their controls rather than a <label>
+   wrapping them (see .run-row / .output-row in index.html). */
+.run-row > strong,
+.output-row > strong {
+  font-family: var(--font-label);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
 .settings-card input[type=text], .settings-card input[type=number] {
   flex: 1;
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--paper-recessed);
-  padding: 0.35rem 0.5rem;
+  padding: 0.7rem 1rem;
   color: var(--ink);
 }
 
@@ -976,7 +1020,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .theme-toggle {
   width: 2rem;
   height: 2rem;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: 1px solid var(--rule);
   background: transparent;
   cursor: pointer;
@@ -1050,8 +1094,8 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   font-size: 0.72rem;
   border-right-width: 0;
 }
-.image-toolbar .btn-group .btn:first-child { border-radius: 5px 0 0 5px; }
-.image-toolbar .btn-group .btn:last-child { border-radius: 0 5px 5px 0; border-right-width: 1px; }
+.image-toolbar .btn-group .btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.image-toolbar .btn-group .btn:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; border-right-width: 1px; }
 
 .image-toolbar .btn.active {
   background: var(--accent-wash);
