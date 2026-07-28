@@ -26,7 +26,7 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -328,9 +328,25 @@ def download(doc_id: str):
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
 
+def _asset_version() -> str:
+    """Cache-busting version for the /static and /shared links in index.html.
+
+    Derived from the newest mtime across both asset trees and recomputed on
+    every request to "/", so an asset edited while the server is running is
+    picked up immediately and the version changes only when an asset
+    actually did. The cost is a directory walk (stat only, no file reads)
+    once per page load — negligible for a static tree this size, but it
+    would not scale to a very large one.
+    """
+    roots = (STATIC_DIR, Path(str(_SHARED_UI)))
+    mtimes = [p.stat().st_mtime for root in roots for p in root.rglob("*") if p.is_file()]
+    return str(int(max(mtimes))) if mtimes else "0"
+
+
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+def index() -> HTMLResponse:
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    return HTMLResponse(html.replace("__ASSET_V__", _asset_version()))
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
