@@ -15,12 +15,14 @@ from artifice_transcribe.config import settings
 from artifice_transcribe.db.models import (
     JobStatus,
     KnownSpeaker,
+    LegacyEmbeddingError,
     PersistentDictionary,
     SegmentEditVersion,
     SpeakerEmbedding,
     SpeakerMapping,
     TranscriptionJob,
     TranscriptSegment,
+    _is_legacy_pickle_blob,
     pack_embedding,
     unpack_embedding,
 )
@@ -309,7 +311,16 @@ async def _auto_match_speakers(job_id: str, db: AsyncSession) -> None:
         best_score = -1.0
 
         for known_spk in known:
-            known_vec = unpack_embedding(known_spk.embedding, known_spk.dimension)
+            try:
+                known_vec = unpack_embedding(known_spk.embedding, known_spk.dimension)
+            except LegacyEmbeddingError:
+                logger.warning(
+                    "Skipping known speaker '%s' (id=%s): embedding predates "
+                    "format change, must be re-enrolled",
+                    known_spk.name,
+                    known_spk.id,
+                )
+                continue
             score = _cosine_sim(emb_vec, known_vec)
             if score > best_score:
                 best_score = score
@@ -1286,6 +1297,7 @@ async def list_known_speakers(db: AsyncSession = Depends(get_db)) -> KnownSpeake
                 model_name=s.model_name,
                 dimension=s.dimension,
                 created_at=s.created_at,
+                legacy_embedding=_is_legacy_pickle_blob(s.embedding),
             )
             for s in speakers
         ]

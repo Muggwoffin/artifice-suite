@@ -1,0 +1,25 @@
+:root{
+  --text-xs:0.72rem;
+  --text-sm:0.8rem;
+  --text-base:1.0625rem;
+  --text-lg:1.25rem; /* static equivalent of source clamp(1.15rem,1.05rem+0.4vw,1.3rem) */
+  --text-h3:1.6rem; /* static equivalent of source clamp(1.35rem,1.2rem+0.8vw,1.8rem) */
+  --text-h2:2.4rem; /* static equivalent of source clamp(1.9rem,1.5rem+2vw,2.8rem) */
+  --text-hero:4rem; /* static equivalent of source clamp(2.6rem,1.6rem+5.5vw,5.25rem) */
+  --label-tracking:0.16em;
+
+  /* Back-compat shorthand fonts used by earlier components — static sizes (not fluid clamp) so they read cleanly as one-line `font:` shorthands */
+  --text-display-xl:900 64px/1.1 var(--font-display);
+  --text-display-lg:700 44px/1.15 var(--font-display);
+  --text-display-md:700 28px/1.2 var(--font-display);
+  --text-headline:700 22px/1.25 var(--font-display);
+  --text-title:600 13px/1.4 var(--font-label);
+  --text-body-lg:400 18px/1.75 var(--font-body);
+  --text-body:400 17px/1.75 var(--font-body);
+  --text-body-sm:400 13px/1.55 var(--font-body);
+  --text-label:600 12px/1.4 var(--font-label);
+  --text-caption:400 12px/1.4 var(--font-label);
+  --text-mono:400 13px/1.5 var(--font-mono);
+  --tracking-label:var(--label-tracking);
+  --tracking-display:-0.01em;
+}

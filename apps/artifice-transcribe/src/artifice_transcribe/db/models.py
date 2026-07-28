@@ -41,10 +41,35 @@ def pack_embedding(embedding: "np.ndarray") -> bytes:
     return np.asarray(embedding, dtype=np.float32).tobytes()
 
 
+class LegacyEmbeddingError(ValueError):
+    """Raised when a stored embedding blob is a pickle payload predating
+    the raw-float32 format.  The speaker must be re-enrolled."""
+
+
+def _is_legacy_pickle_blob(blob: bytes) -> bool:
+    """Return *True* if *blob* looks like a pickled Python object.
+
+    Pickle protocol 2+ payloads begin with the opcode ``\\x80`` followed by
+    a protocol byte.  Protocol 0/1 payloads start with a printable ASCII
+    opcode (e.g. ``(``, ``i``) and are harder to detect without a full
+    parse, but in practice every pickle produced by a modern Python has
+    been protocol 2+ since 3.8 raised the default.
+
+    Checking the ``\\x80`` prefix is cheap, safe, and catches all real-world
+    legacy rows without ever calling ``pickle.loads``.
+    """
+    return len(blob) > 0 and blob[0] == 0x80
+
+
 def unpack_embedding(blob: bytes, dimension: int | None = None) -> "np.ndarray":
     """Return ``np.frombuffer(blob, dtype=np.float32)`` after validating
     that *blob* is a whole number of float32 values and, when *dimension*
     is given, that the vector length matches."""
+    if _is_legacy_pickle_blob(blob):
+        raise LegacyEmbeddingError(
+            "This embedding blob predates the raw-float32 format and "
+            "cannot be read. The speaker must be re-enrolled."
+        )
     if len(blob) == 0:
         raise ValueError("Embedding blob is empty")
     if len(blob) % 4 != 0:

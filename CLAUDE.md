@@ -64,8 +64,17 @@ Never critique UI from source alone. Read the rendered page:
    rendered page is.
 
 ### Standing design constraints
-- `packages/shared-ui/tokens.css` is the single source of truth. App-local token copies are drift
-  and should be consolidated, not edited in parallel.
+- `design-system/` is the **specification and prototyping source** — tokens, guidelines, component
+  patterns, UI kits, and brand assets. `packages/shared-ui/shared_ui/assets/` is the **runtime** —
+  what the apps load and what ships in a wheel. Neither is a copy of the other; they have different
+  jobs. `scripts/token-parity-check.py` enforces that their values agree.
+- **The design-system components are React (`.jsx`); no app in the suite uses React.** Every app is
+  vanilla JS with Jinja templates or static HTML. The components and `ui_kits/` are reference and
+  prototyping material — read them for structure, spacing and states, never import or port them
+  wholesale. A brief that says "use the design-system components" produces code that cannot ship.
+- **Production typography is fluid.** The runtime's `clamp()` values win. If a fixed `rem` value is
+  copied out of the design-system into an app, responsive typography dies silently — it still looks
+  correct at one viewport width, which is exactly why it would not be caught.
 - Never hardcode a colour, size, or spacing value that a token already expresses.
 - The aesthetic is paper and ink: warm palette, editorial typography, generous margins, restrained
   motion. Polish means precision and restraint, not ornament.

@@ -67,6 +67,11 @@
       "permission": {
         "firecrawl_*": "deny"
       }
+    },
+    "code-reviewer": {
+      "permission": {
+        "firecrawl_*": "deny"
+      }
     }
   }
 }

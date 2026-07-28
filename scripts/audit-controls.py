@@ -40,29 +40,57 @@ SCRIPT = re.compile(r"<script\b[^>]*>(.*?)</script>", re.S | re.I)
 # Dynamic id construction patterns
 #   Template literal:  `` `prefix${...}` ``
 #   String concat:      "prefix" + var   or   'prefix' + var
+#
+# Two tiers of pattern:
+#
+#   _PERMISSIVE_*  –  detect ANY candidate (single char allowed).  Used only
+#                     to compute the “rejected” set; never for exemption.
+#   _STRICT_*      –  the real gate.  Requires ≥ 3 characters AND a trailing
+#                     separator (``-`` or ``_``) so that accidental captures
+#                     like ``"s" + id`` or `` `dot${...}` `` cannot silently
+#                     exempt dozens of unrelated static controls whose ids
+#                     just happen to share an initial letter or two.
 # ---------------------------------------------------------------------------
-_DYNAMIC_TEMPLATE = re.compile(r"`([A-Za-z0-9][A-Za-z0-9_-]*)\$\{")
-_DYNAMIC_CONCAT = re.compile(r"""["']([A-Za-z0-9][A-Za-z0-9_-]*)["']\s*\+""")
+_PERMISSIVE_TEMPLATE = re.compile(r"`([A-Za-z0-9][A-Za-z0-9_-]*)\$\{")
+_PERMISSIVE_CONCAT = re.compile(r"""["']([A-Za-z0-9][A-Za-z0-9_-]*)["']\s*\+""")
+
+_STRICT_TEMPLATE = re.compile(r"`([A-Za-z0-9][A-Za-z0-9_-]+[-_])\$\{")
+_STRICT_CONCAT = re.compile(r"""["']([A-Za-z0-9][A-Za-z0-9_-]+[-_])["']\s*\+""")
 
 
-def _collect_dynamic_prefixes(js: str) -> set[str]:
-    """Scan *js* for dynamically constructed ids and return the static
-    prefixes used (e.g. ``"set-"``, ``"btn-"``)."""
-    prefixes: set[str] = set()
-    for m in _DYNAMIC_TEMPLATE.finditer(js):
-        prefixes.add(m.group(1))
-    for m in _DYNAMIC_CONCAT.finditer(js):
-        prefixes.add(m.group(1))
-    return prefixes
+def _collect_dynamic_prefixes(js: str) -> tuple[set[str], set[str]]:
+    """Return ``(trusted, rejected)`` prefix sets.
+
+    *trusted* — prefixes that pass the strict rule (≥ 3 chars, trailing
+      separator).  These are safe to use for dynamic-binding exemption.
+    *rejected* — prefixes the permissive pattern found but the strict rule
+      rejected.  Reported so a legitimate dynamic convention without a
+      separator is never silently dropped into the “unbound” bucket.
+    """
+    permissive: set[str] = set()
+    for m in _PERMISSIVE_TEMPLATE.finditer(js):
+        permissive.add(m.group(1))
+    for m in _PERMISSIVE_CONCAT.finditer(js):
+        permissive.add(m.group(1))
+
+    strict: set[str] = set()
+    for m in _STRICT_TEMPLATE.finditer(js):
+        strict.add(m.group(1))
+    for m in _STRICT_CONCAT.finditer(js):
+        strict.add(m.group(1))
+
+    return strict, permissive - strict
 
 
-def audit(app: str) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, str]]] | None:
-    """Return ``(unbound, dynamic)`` lists, or *None* if nothing to audit.
+def audit(app: str) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, str]], set[str]] | None:
+    """Return ``(unbound, dynamic, rejected_prefixes)``, or *None* if nothing to audit.
 
     *unbound* entries are controls with no reachable binding — a real finding.
     *dynamic* entries are controls whose id begins with a prefix that is
     assembled at runtime in JS — known to be safe, reported separately so the
     maintainer can see the gate knows about them.
+    *rejected_prefixes* are dynamic-binding candidates that the permissive
+    pattern found but the strict rule refused (too short or no separator).
     """
     slug = app.replace("-", "_")
     web = REPO / "apps" / f"artifice-{app}" / "src" / f"artifice_{slug}" / "web"
@@ -88,7 +116,7 @@ def audit(app: str) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, st
     def referenced(name: str) -> bool:
         return re.search(r"\b" + re.escape(name) + r"\b", js) is not None
 
-    dynamic_prefixes = _collect_dynamic_prefixes(js)
+    dynamic_prefixes, rejected_prefixes = _collect_dynamic_prefixes(js)
 
     unbound: list[tuple[str, str, str]] = []
     dynamic: list[tuple[str, str, str]] = []
@@ -109,7 +137,7 @@ def audit(app: str) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, st
                 dynamic.append((html_file.name, match.group(1).lower(), element_id))
                 continue
             unbound.append((html_file.name, match.group(1).lower(), element_id))
-    return unbound, dynamic
+    return unbound, dynamic, rejected_prefixes
 
 
 def main() -> int:
@@ -120,7 +148,7 @@ def main() -> int:
         if findings is None:
             print(f"artifice-{app}: no web/templates or static/index.html, skipped")
             continue
-        unbound, dynamic = findings
+        unbound, dynamic, rejected = findings
         unbound_total += len(unbound)
         if unbound or dynamic:
             if unbound:
@@ -136,6 +164,9 @@ def main() -> int:
                     print(f"  {template:20} {kind:9} #{element_id}")
         else:
             print(f"artifice-{app}: clean")
+        if rejected:
+            print(f"artifice-{app}: {len(rejected)} dynamic prefix(es) rejected "
+                  f"(too short or no separator): {', '.join(sorted(rejected))}")
     if unbound_total:
         print(f"\n{unbound_total} control(s) render but are bound to nothing.")
     return 1 if unbound_total else 0
