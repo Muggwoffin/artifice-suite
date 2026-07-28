@@ -523,8 +523,36 @@ fundamental of the two.
       current `ui-ux` change set, because touching media queries would destabilise layout that has
       already been measured and signed off
 - [ ] Apply the graph patterns to `artifice-ocr`, then `artifice-draft`, then `artifice-transcribe`
-- [ ] Each app serves `packages/shared-ui/tokens.css` via its own `/shared` mount; no app-local
-      token copies are recreated
+- [ ] **Retire the app-local token blocks that already exist.** This is not a forward-looking
+      constraint — it is remediation. Measured 2026-07-28 against the 56 canonical tokens in
+      `packages/shared-ui/shared_ui/assets/tokens.css`:
+
+      | App | Local tokens | Shadow a canonical name | Of those, value drifts |
+      |---|---|---|---|
+      | `artifice-ocr` | 62 | 55 | 6 (4 real, 2 quoting-only) |
+      | `artifice-draft` | 61 | 55 | 4 |
+      | `artifice-transcribe` | 54 | 53 | 2 |
+      | `artifice-graph` (`entity-colors.css`) | 13 | **0** | 0 |
+
+      All three re-declare essentially the whole canonical set inside their own
+      `web/static/css/app.css`. `CONTRIBUTING.md:238,248` already forbids this; the apps avoided
+      the *filename* `tokens.css`, not the practice. `artifice-graph` is the counter-example and
+      the target state: 13 tokens, zero shadowing, pure domain vocabulary.
+
+      The value drift itself is narrow and specific:
+      - `--success: #28a745` and `--warning: #ffc107` in **ocr** and **draft** are **stock
+        Bootstrap 4/5 defaults, unmodified**, against canonical `#455f2b` olive and `#7c5e1a`
+        ochre. Saturated cold green and amber in a warm paper-and-ink palette — the most
+        visually wrong values in the token layer, and the reason this is a design pass and not
+        a find-and-replace.
+      - `--error: #9a3324` in **all three** apps against canonical `#a8322b`. The apps agree
+        with each other and `tokens.css` is the outlier, so decide by eye which is correct —
+        this one may be a fix to *canonical*, not to the apps.
+      - `--font-mono` differs everywhere: apps lead with Cascadia Mono / Consolas (Windows
+        first), canonical with SFMono-Regular (macOS first). A genuine cross-platform question
+        given the suite targets Windows 11 and Apple Silicon equally, not drift to be flattened.
+      - ocr's `--font-body` / `--font-display` differ **only in quoting** (`'Georgia'` vs
+        `Georgia`). Not drift. Any tooling that reports them is miscalibrated.
 - [ ] Per-app domain colours follow the `entity-colors.css` precedent
 - [ ] Rendered review of every app at desktop, ~900px and ~600px before sign-off
 
