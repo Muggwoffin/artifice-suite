@@ -94,8 +94,24 @@ a `/shared` StaticFiles mount, so there is nothing to keep in sync.
   value already specified in `Design_Philosophy.md`.
 - `@media (prefers-color-scheme: dark)` promoted — shared-ui previously could not follow the OS.
 - 6 dead `--w-*` "word-status" tokens deleted (LudwigLang residue; zero references).
-- `--font-sans` renamed to `--font-label` across all call sites, no alias. `Design_Philosophy.md`
-  updated to match, and §3 now names the token for every font role so the ambiguity cannot recur.
+- `--font-sans` renamed to `--font-label`, no alias. `Design_Philosophy.md` updated to match, and
+  §3 now names the token for every font role so the ambiguity cannot recur.
+
+  > **Scope correction, 2026-07-28.** This originally read "across all call sites", which was not
+  > true. The rename covered `packages/shared-ui` and `artifice-graph`; `artifice-ocr`,
+  > `artifice-draft` and `artifice-transcribe` each kept a local `--font-sans` declaration and
+  > between them 18 `var(--font-sans)` call sites, all still present today. It is true **now** —
+  > the three apps were reconciled on 2026-07-28, verified by
+  > `grep -rnE '(^\s*--font-sans\s*:|var\(\s*--font-sans\s*\))' apps/*/src/*/web/static/css/*.css`
+  > returning nothing.
+  >
+  > The work was real; only its scope was mis-stated. That is the third instance found today of a
+  > narrow result recorded as a suite-wide one — see also the canonical-layout prerequisite and the
+  > breakpoint count under Phase 2. It also caused a concrete error: a token-retirement brief
+  > written on 2026-07-28 instructed an agent to *preserve* `--font-sans` as legitimate app-only
+  > vocabulary, because this document implied the rename was already complete everywhere and the
+  > canonical file therefore had no counterpart by design. **When recording completed work, state
+  > which apps it covered.**
 - `--reg-*` and `--type-*` domain colours moved to
   `apps/artifice-graph/src/artifice_graph/web/static/entity-colors.css` (path updated after the
   2026-07-28 layout migration).
