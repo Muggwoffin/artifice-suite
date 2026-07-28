@@ -41,7 +41,12 @@
 
 * { box-sizing: border-box; }
 
-html, body {
+html {
+  margin: 0;
+  height: 100%;
+}
+
+body {
   margin: 0;
   height: 100%;
   background: var(--paper);
