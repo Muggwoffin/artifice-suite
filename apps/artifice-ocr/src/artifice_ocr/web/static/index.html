@@ -88,7 +88,7 @@
         <div class="section-divider"></div>
 
         <div class="run-row">
-          <strong style="font-size:var(--text-sm);">Stages:</strong>
+          <strong style="font-size:var(--text-sm);">Stages</strong>
           <label class="check"><input type="checkbox" id="stage-ocr" checked> OCR</label>
           <label class="check"><input type="checkbox" id="stage-cleanup"> Cleanup</label>
           <label class="check"><input type="checkbox" id="stage-translate"> Translate</label>
@@ -96,7 +96,7 @@
         </div>
 
         <div class="output-row">
-          <strong style="font-size:var(--text-sm); white-space:nowrap;">Output:</strong>
+          <strong style="font-size:var(--text-sm); white-space:nowrap;">Output</strong>
           <input type="text" id="output-dir" value="output">
           <button class="btn" id="btn-browse-output">&hellip;</button>
           <button class="btn accent" id="btn-run">&#9654; Run Pipeline</button>
@@ -188,7 +188,7 @@
         <div class="card-head">
           <h2>History</h2>
           <div style="display:flex; gap:0.5rem; align-items:center;">
-            <input type="text" id="history-search" placeholder="Find file&hellip;" style="padding:0.4rem 0.6rem; border-radius:6px; border:1px solid var(--rule); background:var(--paper-recessed);">
+            <input type="text" id="history-search" placeholder="Find file&hellip;" style="padding:0.4rem 0.6rem; border-radius:var(--radius-sm); border:1px solid var(--rule); background:var(--paper-recessed);">
             <button class="btn" id="btn-history-refresh">Refresh</button>
             <button class="btn" id="btn-history-send-tropy" title="Send selected document back to Tropy">Send to Tropy</button>
             <button class="btn danger" id="btn-history-delete">Delete Run</button>
@@ -308,7 +308,7 @@
         <div class="card settings-card">
           <h3>AI Models &amp; Connections</h3>
           <p class="dim" style="margin:0 0 0.6rem;">Choose which service runs each step, and which model it uses.</p>
-          <label>OCR backend:
+          <label>OCR backend
             <select id="set-ocr_backend">
               <option value="lm_studio">LM Studio</option>
               <option value="ollama">Ollama</option>
@@ -316,8 +316,8 @@
               <option value="api_key">API Key (cloud)</option>
             </select>
           </label>
-          <label>OCR model: <input type="text" id="set-ocr_model" placeholder="e.g. allenai/olmocr-2-7b"></label>
-          <label>Cleanup backend:
+          <label>OCR model <input type="text" id="set-ocr_model" placeholder="e.g. allenai/olmocr-2-7b"></label>
+          <label>Cleanup backend
             <select id="set-cleanup_backend">
               <option value="ollama">Ollama</option>
               <option value="lm_studio">LM Studio</option>
@@ -325,8 +325,8 @@
               <option value="api_key">API Key (cloud)</option>
             </select>
           </label>
-          <label>Cleanup model: <input type="text" id="set-cleanup_model" placeholder="e.g. gemma4:12b"></label>
-          <label>Translate backend:
+          <label>Cleanup model <input type="text" id="set-cleanup_model" placeholder="e.g. gemma4:12b"></label>
+          <label>Translate backend
             <select id="set-translate_backend">
               <option value="ollama">Ollama</option>
               <option value="lm_studio">LM Studio</option>
@@ -334,31 +334,31 @@
               <option value="api_key">API Key (cloud)</option>
             </select>
           </label>
-          <label>Translate model: <input type="text" id="set-translate_model" placeholder="e.g. translategemma:4b"></label>
+          <label>Translate model <input type="text" id="set-translate_model" placeholder="e.g. translategemma:4b"></label>
           <details style="margin-top:0.6rem;">
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Connection settings</summary>
             <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.4rem;">
-              <label>LM Studio URL: <input type="text" id="set-lm_studio_url" placeholder="http://localhost:1234/v1" title="Address where LM Studio is running."></label>
-              <label>Ollama URL: <input type="text" id="set-ollama_url" placeholder="http://localhost:11434" title="Base address where Ollama is running."></label>
-              <label>Hugging Face token: <input type="text" id="set-huggingface_token" placeholder="hf_xxx..." title="Your Hugging Face API token (hf_...). Required only when using Hugging Face."></label>
-              <label>API key: <input type="password" id="set-api_key" placeholder="sk-..." title="Your cloud API key. Works with any OpenAI-compatible provider (OpenAI, Together, Groq, etc.)."></label>
-              <label>API base URL: <input type="text" id="set-api_base_url" placeholder="https://api.openai.com/v1" title="The API endpoint URL. Change this for non-OpenAI providers."></label>
+              <label>LM Studio URL <input type="text" id="set-lm_studio_url" placeholder="http://localhost:1234/v1" title="Address where LM Studio is running."></label>
+              <label>Ollama URL <input type="text" id="set-ollama_url" placeholder="http://localhost:11434" title="Base address where Ollama is running."></label>
+              <label>Hugging Face token <input type="text" id="set-huggingface_token" placeholder="hf_xxx..." title="Your Hugging Face API token (hf_...). Required only when using Hugging Face."></label>
+              <label>API key <input type="password" id="set-api_key" placeholder="sk-..." title="Your cloud API key. Works with any OpenAI-compatible provider (OpenAI, Together, Groq, etc.)."></label>
+              <label>API base URL <input type="text" id="set-api_base_url" placeholder="https://api.openai.com/v1" title="The API endpoint URL. Change this for non-OpenAI providers."></label>
             </div>
           </details>
         </div>
         <div class="card settings-card">
           <h3>Processing</h3>
-          <label>Document type:
+          <label>Document type
             <select id="set-document_type"></select>
           </label>
           <p class="dim" id="doc-type-hint" style="margin:0.2rem 0 0.6rem;"></p>
-          <label>Parallel OCR readers: <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
+          <label>Parallel OCR readers <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
           <label>Resume (skip existing outputs) <input type="checkbox" id="set-resume"></label>
           <label>Enable confidence scoring <input type="checkbox" id="set-confidence_enabled"></label>
           <details style="margin-top:0.6rem;">
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>
             <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.4rem;">
-              <label>Max text chunk size: <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;" title="How much text the AI processes at once. Leave at default unless you have a reason to change it."></label>
+              <label>Max text chunk size <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;" title="How much text the AI processes at once. Leave at default unless you have a reason to change it."></label>
               <label><input type="checkbox" id="set-ollama_think"> Think step-by-step (slow &mdash; not recommended)</label>
               <p class="dim" style="margin:0;">Much slower with no visible improvement.</p>
             </div>
@@ -500,7 +500,7 @@
     <button class="modal-close" data-modal-close>&times;</button>
     <p class="dim">Only documents added via "Add from Tropy&hellip;" can be sent. Nothing is written until you press Write.</p>
 
-    <div id="send-tropy-history-detail" class="hidden" style="margin-bottom:0.6rem; padding:0.5rem; background:var(--paper-recessed); border-radius:6px;">
+    <div id="send-tropy-history-detail" class="hidden" style="margin-bottom:0.6rem; padding:0.5rem; background:var(--paper-recessed); border-radius:var(--radius-sm);">
       <div class="dim" style="margin-bottom:0.3rem;">Sending from History:</div>
       <div><strong>Item:</strong> <span id="send-tropy-history-name"></span></div>
       <div><strong>Photo:</strong> <span id="send-tropy-history-photo"></span></div>

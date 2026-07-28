@@ -46,16 +46,16 @@
         <input type="file" id="file-input" accept="audio/*,video/*" style="display:none;">
 
   <div class="form-row">
-    <label>Model: 
+    <label>Model
       <div style="display:flex;gap:0.5rem;align-items:center;">
         <span id="opt-model-size" class="model-badge" style="flex:1;">—</span>
         <span class="dim" style="font-size:0.8rem;cursor:pointer;color:var(--accent);" title="Show BYOM guide" id="model-guide-toggle">ⓘ</span>
       </div>
     </label>
-    <label>Language: <input type="text" id="opt-language" placeholder="auto-detect" style="width:6rem;"></label>
-    <label>Min speakers: <input type="number" id="opt-min-speakers" min="1" placeholder="&ndash;"></label>
-    <label>Max speakers: <input type="number" id="opt-max-speakers" min="1" placeholder="&ndash;"></label>
-    <label>Vocabulary: <input type="text" id="opt-vocabulary" placeholder="names, terms, places..." style="width:14rem;" title="Comma-separated proper nouns to improve accuracy"></label>
+    <label>Language <input type="text" id="opt-language" class="opt-input-lang" placeholder="auto-detect"></label>
+    <label>Min speakers <input type="number" id="opt-min-speakers" min="1" placeholder="&ndash;"></label>
+    <label>Max speakers <input type="number" id="opt-max-speakers" min="1" placeholder="&ndash;"></label>
+    <label>Vocabulary <input type="text" id="opt-vocabulary" class="opt-input-vocab" placeholder="names, terms, places..." title="Comma-separated proper nouns to improve accuracy"></label>
   </div>
 
   <div class="hidden" id="model-guide-panel" style="margin-top:0.5rem;padding:0.8rem;background:var(--paper-recessed);border-radius:var(--radius-sm);border-left:3px solid var(--accent);">
@@ -138,14 +138,14 @@
           <details class="metadata-form" id="metadata-form" open>
             <summary>Interview Metadata</summary>
             <div class="metadata-grid">
-              <label>Interviewee: <input type="text" id="meta-interviewee" placeholder="Full name"></label>
-              <label>Interviewer: <input type="text" id="meta-interviewer" placeholder="Full name"></label>
-              <label>Date: <input type="text" id="meta-date" placeholder="YYYY-MM-DD or circa"></label>
-              <label>Location: <input type="text" id="meta-location" placeholder="City, State"></label>
-              <label>Project: <input type="text" id="meta-project" placeholder="Project name"></label>
-              <label>Collection ID: <input type="text" id="meta-collection" placeholder="e.g. OH-2024-001"></label>
-              <label>Access: <input type="text" id="meta-access" placeholder="Open / restrictions"></label>
-              <label>Vocabulary: <input type="text" id="meta-vocabulary" placeholder="names, terms, places"></label>
+              <label>Interviewee <input type="text" id="meta-interviewee" placeholder="Full name"></label>
+              <label>Interviewer <input type="text" id="meta-interviewer" placeholder="Full name"></label>
+              <label>Date <input type="text" id="meta-date" placeholder="YYYY-MM-DD or circa"></label>
+              <label>Location <input type="text" id="meta-location" placeholder="City, State"></label>
+              <label>Project <input type="text" id="meta-project" placeholder="Project name"></label>
+              <label>Collection ID <input type="text" id="meta-collection" placeholder="e.g. OH-2024-001"></label>
+              <label>Access <input type="text" id="meta-access" placeholder="Open / restrictions"></label>
+              <label>Vocabulary <input type="text" id="meta-vocabulary" placeholder="names, terms, places"></label>
             </div>
             <button class="btn accent" id="btn-save-metadata">Save Metadata</button>
           </details>
@@ -242,10 +242,10 @@
         </div>
         <div style="padding:0.9rem 1.1rem;">
           <div class="form-row" style="padding:0 0 0.6rem;">
-            <label>Name: <input type="text" id="enroll-name" placeholder="e.g. John Smith"></label>
+            <label>Name <input type="text" id="enroll-name" placeholder="e.g. John Smith"></label>
           </div>
           <div class="form-row" style="padding:0 0 0.6rem;">
-            <label>Audio clip: <input type="file" id="enroll-file" accept="audio/*"></label>
+            <label>Audio clip <input type="file" id="enroll-file" accept="audio/*"></label>
           </div>
           <button class="btn accent" id="btn-enroll-speaker">Enroll Speaker</button>
           <span class="dim" id="enroll-status" style="margin-left:0.5rem;"></span>
@@ -267,7 +267,7 @@
 
           <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
             <div style="flex:1;">
-              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model:</label>
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model</label>
               <select id="setting-model-size" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
                 <option value="tiny">tiny</option>
                 <option value="base" selected>base</option>
@@ -276,12 +276,12 @@
                 <option value="large-v3">large-v3</option>
               </select>
             </div>
-            <button class="btn" id="btn-apply-model" type="button" style="height:2.4rem;">Apply</button>
+            <button class="btn" id="btn-apply-model" type="button">Apply</button>
           </div>
 
           <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
             <div style="flex:1;">
-              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Device:</label>
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Device</label>
               <select id="setting-device" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
                 <option value="auto" selected>auto</option>
                 <option value="cuda">cuda</option>
@@ -291,7 +291,7 @@
           </div>
 
           <div class="form-row" style="margin-bottom:0.8rem;">
-            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">HuggingFace Token:</label>
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">HuggingFace Token</label>
             <input type="password" id="setting-hf-token" value="" placeholder="hf_..." style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
           </div>
 
@@ -312,7 +312,7 @@
 
           <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
             <div style="flex:1;">
-              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Provider:</label>
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Provider</label>
               <select id="setting-diarization-provider" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
                 <option value="pyannote" selected>pyannote (recommended)</option>
               </select>
@@ -320,7 +320,7 @@
           </div>
 
           <div class="form-row" style="margin-bottom:0.8rem;">
-            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Model:</label>
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Model</label>
             <input type="text" id="setting-diarization-model" value="pyannote/speaker-diarization-3.0" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
           </div>
 
@@ -347,7 +347,7 @@
           </div>
 
           <div class="form-row" style="margin-bottom:0.8rem; display:flex; flex-direction:column; gap:0.3rem;">
-            <label style="font-weight:600;">Preset Shortcuts:</label>
+            <label style="font-weight:600;">Preset Shortcuts</label>
             <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
               <button class="btn tiny" id="preset-ollama" type="button">Ollama</button>
               <button class="btn tiny" id="preset-lmstudio" type="button">LM Studio</button>
@@ -357,23 +357,23 @@
           </div>
 
           <div class="form-row" style="margin-bottom:0.8rem;">
-            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Base URL:</label>
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Base URL</label>
             <input type="text" id="setting-base-url" value="http://localhost:11434/v1" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
           </div>
 
           <div class="form-row" style="margin-bottom:0.8rem;">
-            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">API Key:</label>
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">API Key</label>
             <input type="password" id="setting-api-key" value="not-needed" placeholder="not-needed or sk-..." style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
           </div>
 
           <div class="form-row" style="margin-bottom:0.8rem; display:flex; gap:0.5rem; align-items:flex-end;">
             <div style="flex:1;">
-              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model Name:</label>
+              <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model Name</label>
               <select id="setting-model-select" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
                 <option value="">— Click Fetch Models —</option>
               </select>
             </div>
-            <button class="btn" id="btn-fetch-models" type="button" style="height:2.4rem;">Fetch Models</button>
+            <button class="btn" id="btn-fetch-models" type="button">Fetch Models</button>
           </div>
 
           <div class="form-row" style="margin-bottom:1rem; display:flex; align-items:center; gap:0.6rem;">
@@ -384,7 +384,7 @@
           <div class="toolbar" style="padding-top:0.5rem; border-top:1px solid var(--rule); display:flex; gap:0.6rem; align-items:center;">
             <button class="btn accent" id="btn-save-settings" type="button">Save Configuration</button>
             <button class="btn" id="btn-test-connection" type="button">Test Connection</button>
-            <span id="connection-status-dot" class="health-dot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--rule);" title="Connection status"></span>
+            <span id="connection-status-dot" class="health-dot" style="display:inline-block; width:10px; height:10px; border-radius:var(--radius-full); background:var(--rule);" title="Connection status"></span>
             <span class="dim" id="connection-status-text" style="font-size:0.9rem;">Not tested</span>
           </div>
 

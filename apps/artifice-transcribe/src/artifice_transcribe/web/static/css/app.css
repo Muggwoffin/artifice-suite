@@ -234,6 +234,15 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 
 .form-row input[type=number] { width: 4.5rem; }
 
+/* Language and Vocabulary options (index.html #opt-language, #opt-vocabulary)
+   previously carried a fixed inline `width` short enough to clip their own
+   placeholder text ("auto-detect" -> "auto-de", "names, terms, places..."
+   -> "names, terms, places.."). `min-width` keeps the full placeholder
+   visible while still letting .form-row's flex-wrap reflow the row at
+   narrow viewports, which a fixed `width` would not. */
+.form-row .opt-input-lang { min-width: 9rem; }
+.form-row .opt-input-vocab { min-width: 17rem; }
+
 .input {
   font-family: var(--font-body);
   font-size: var(--text-base);
