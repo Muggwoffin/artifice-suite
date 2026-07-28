@@ -63,18 +63,24 @@
 
   /* Spacing (§4) — 4px-derived scale, editorial: generous at section
      boundaries, dense within content blocks. */
-  --space-1: 2px;
-  --space-2: 4px;
-  --space-3: 8px;
-  --space-4: 12px;
-  --space-5: 16px;
-  --space-6: 20px;
-  --space-7: 24px;
-  --space-8: 28px;
-  --space-9: 32px;
-  --space-10: 40px;
-  --space-11: 48px;
-  --space-12: 88px;
+  /* Expressed in rem, not px, so spacing scales with the reader's own font
+     size. A user who enlarges text in their browser gets proportionally larger
+     spacing; with px spacing the text grows inside gaps that do not, and
+     content collides or overflows its container. Values are the same numbers
+     as before at a 16px root — 0.5rem IS 8px — so nothing changes for a reader
+     on defaults. Do not "simplify" these back to px. */
+  --space-1: 0.125rem;  /*  2px at a 16px root */
+  --space-2: 0.25rem;   /*  4px */
+  --space-3: 0.5rem;    /*  8px */
+  --space-4: 0.75rem;   /* 12px */
+  --space-5: 1rem;      /* 16px */
+  --space-6: 1.25rem;   /* 20px */
+  --space-7: 1.5rem;    /* 24px */
+  --space-8: 1.75rem;   /* 28px */
+  --space-9: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-11: 3rem;     /* 48px */
+  --space-12: 5.5rem;   /* 88px */
 
   /* Motion (§7) */
   --ease-primary: cubic-bezier(0.22, 0.61, 0.36, 1);

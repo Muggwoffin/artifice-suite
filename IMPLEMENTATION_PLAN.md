@@ -663,37 +663,73 @@ The largest correctness item in the project, and the one the architecture claims
 
 ## Part IV — Consolidated to-do list
 
-Phase 1 is closed. **Re-derived 2026-07-28** — the previous list's top two items were already
-fixed, and its items 4 and 5 were blockers that did not exist. In priority order from here:
+Phase 1 is closed. **Re-derived 2026-07-28 (evening).** Everything that was items 1 and 4 on the
+previous version of this list has landed. What follows is what is genuinely left, ordered by *what
+blocks what* rather than by size.
 
-1. **Repair `artifice-ocr`'s test suite** — 79 failed / 91 errors, and **all 170 are one bug**:
-   every failure is `ModuleNotFoundError: No module named 'src'`, because 27 test files write
-   their `patch()` targets as `src.artifice_ocr.…` while the package installs as `artifice_ocr`
-   (112 occurrences). Measured 2026-07-28: exactly 170 occurrences of that error and **zero**
-   missing-dependency errors of any kind. Highest return in the project — one mechanical change
-   takes the suite from 148/319 to near-green.
+Two rules this list has repeatedly failed, kept at the top because they cost real work today:
+**state which apps a completed item covered**, and **re-measure any figure here before treating it
+as a constraint**. Three claims in this document were refuted by measurement in one session, and one
+of them propagated into a wrong instruction given to an agent.
 
-   This plan had never recorded a cause for OCR's failures; the working assumption in session 3
-   was that they came from missing optional dependencies (`fpdf2`, tropy). That assumption was
-   wrong, and it is written down here because it is the kind of plausible guess that becomes
-   folklore if the first person to check does not record what they actually found.
-2. **Add CI** (Phase 5) — 34 test files exist and nothing runs them. Now cheap to make meaningful:
-   `scripts/audit-controls.py`, `scripts/token-parity-check.py` and `scripts/smoke-test-agents.sh`
-   all exit non-zero on failure and can gate a PR on day one. Note `token-parity-check.py`
-   **currently exits 1** on the real tree, so landing it as a gate means either fixing the 10 token
-   drifts first or knowingly admitting a failing check.
-3. **Finish Phase 1.5** — remaining: credentials echoed in config response bodies, SSRF via
-   user-supplied model endpoints, user-controlled directories in graph, secrets written at default
-   permissions. CORS and both HIGH path traversals are done.
-4. **Phase 2 design rollout** — genuinely unblocked, both prerequisites having dissolved. The
-   measured work is the 10 token drifts, led by the stock Bootstrap `#28a745` / `#ffc107` in ocr
-   and draft.
-5. **Make the model harness real** (Phase 3) — the architecture's central claim is still untrue,
-   and larger than recorded: four per-app clients rather than three, and six `openai.OpenAI`
-   construction sites inside ocr alone. Nothing else depends on it, which is why it sits below
-   work that gates other work.
-6. **Delete the committed `.idea/` directories** — 8 files still tracked. Trivial, and it has
-   survived several sessions on this list.
+### A. Shipping correctness — do before any packaging work
+
+1. **`upload_dir` is CWD-relative** (`artifice-transcribe/config.py:24`). Same class as the database
+   path fixed today, higher stakes: the database holds derived transcripts, `uploads/` holds the
+   user's **source recordings**. In a packaged app, launching from a shortcut versus the Start menu
+   gives different working directories, so uploads scatter and the library looks empty.
+   *(In progress at time of writing.)*
+2. **Sweep for the same pattern everywhere else.** `pdf_export.py` (fixed), `database_url` (fixed),
+   `upload_dir` (in progress) were each found one at a time. Grep all four apps for `"./`,
+   `Path(".")`, and `__file__`-relative walks, and settle them together rather than discovering the
+   fourth in a bug report.
+3. **`reload=True` in `artifice-transcribe`'s `cli()`** (`main.py:85`). Fine in development, wrong
+   in a frozen app — the reloader spawns a subprocess and watches files that will not exist.
+
+### B. Design system — finish what is half-done
+
+4. **`html` vs `body` font-size disagreement.** `ocr`, `draft` and `transcribe` set
+   `html, body { font-size: var(--text-base) }`; `artifice-graph` sets only `body`. Because
+   `--text-base` is `1.0625rem`, setting it on `html` makes **every rem in those three apps resolve
+   against 17px instead of 16px** — so their whole spacing scale renders 6.25% larger than declared.
+   `var(--space-6)` means 20px and renders 21.25px in three apps, 20px in graph. Graph is correct;
+   style `body`, leave `html` alone. This is a visible ~6% shift and needs rendered verification.
+5. **The row-alignment rule in `Design_Philosophy.md` §8.3 is marked "not yet applied."** Buttons
+   render 42.8px and selects 47.8px side by side — a mismatch the specs themselves produce. The rule
+   is written; the code is not compliant. Do not let that sit long: a design authority whose rules
+   are aspirational is how this document drifted before.
+6. **JS-rendered empty states.** The static ones are done and the
+   `.panel-empty-title` / `.panel-empty-desc` component exists in both apps' CSS. The rest are
+   rendered from JavaScript and need the same title/description/action treatment at
+   `transcribe/app.js:324,367,1395`, `ocr/history.js:60,93`, `ocr/preview_image.js:85,97`. Editing
+   the static HTML for these is worse than leaving them — the copy reverts on first render.
+
+### C. Make the work self-verifying
+
+7. **Add CI** (Phase 5). Now genuinely cheap: three suites are green and there are two working
+   gates. **`token-parity-check.py` exits 0 as of today**, so it can land as a gate without
+   admitting a known-red check — that was the blocker last time this was listed.
+8. **Finish Phase 1.5 security** — credentials echoed in config response bodies, SSRF via
+   user-supplied model endpoints, user-controlled directories in `artifice-graph`, secrets written
+   at default permissions. CORS and both HIGH path traversals are done. Also still open: audit `ocr`
+   and `graph` for the path-construction shape fixed in transcribe.
+
+### D. The large one, and the tidy-ups
+
+9. **Make the model harness real** (Phase 3) — the architecture's central claim is still untrue, and
+   larger than this document long recorded: **four** per-app clients, not three, and six
+   `openai.OpenAI` construction sites inside `artifice-ocr` alone. Nothing depends on it, which is
+   why it sits below work that gates other work — but `CLAUDE.md` and `ARCHITECTURE.md` both assert
+   it as fact, so every day it stays fictional is a day those documents mislead.
+10. **Packaging** — pywebview wrapping the local server in a native window, a per-user data
+    directory (A1–A2 above are its prerequisites), and a WebView2 bootstrapper for older Windows 10.
+    Bind loopback-only; it avoids the Windows Firewall prompt that would otherwise be a user's first
+    impression of "local-first" software.
+11. **Delete the committed `.idea/` directories** — 8 files still tracked. Trivial, and it has
+    survived several sessions on this list.
+12. **`transcribe/tests/test_api.py` is a standalone script** that pytest collects, so it errors
+    permanently on a missing `audio_path` fixture. Make it a real test or exclude it from
+    collection; a permanently-erroring test trains people to ignore the suite's output.
 
 > **On the two items removed from this list:** both were true when written. Neither was
 > re-derived before being treated as a constraint, and between them they blocked Phase 2 for two

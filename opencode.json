@@ -4,6 +4,11 @@
     "external_directory": {
       "*": "ask",
       "/tmp/**": "allow",
+      "~/.local/share/artifice-transcribe/**": "allow",
+      "~/.local/share/artifice-ocr/**": "allow",
+      "~/.local/share/artifice-draft/**": "allow",
+      "~/.local/share/artifice-graph/**": "allow",
+      "~/.config/artifice-*/**": "allow",
       "~/.ssh/**": "deny",
       "~/.gnupg/**": "deny",
       "~/.aws/**": "deny",
@@ -69,6 +74,11 @@
       }
     },
     "code-reviewer": {
+      "permission": {
+        "firecrawl_*": "deny"
+      }
+    },
+    "ui-ux": {
       "permission": {
         "firecrawl_*": "deny"
       }

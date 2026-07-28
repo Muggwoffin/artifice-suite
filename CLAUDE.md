@@ -95,9 +95,26 @@ both, so every cross-runtime handoff routes through it.
 
 Definitions live in `.opencode/agents/*.md` and `.claude/agents/*.md`.
 
-**`ui-ux` runs on the maintainer's Claude subscription via Claude Code.** Do not route it through
-OpenRouter, and do not add it to `.opencode/agents/`. It stays on Sonnet because it writes code
-against `Design_Philosophy.md` and must hold that document precisely.
+**`ui-ux` moved off the Claude subscription to `github-copilot/claude-sonnet-4.6` on 2026-07-28.**
+It was the last agent in the Claude Code runtime, so **the whole fleet is now on OpenCode** and the
+Claude subscription is the orchestrator's alone. That was the point: a session limit hit mid-task
+stopped design work *and* orchestration, because the two were drawing on the same budget.
+
+It stays on a Sonnet-class model because it writes code against `Design_Philosophy.md` and must
+hold that document precisely — that requirement was always about the **model**, not the runtime,
+which is why the move preserves it. Do not route it through OpenRouter.
+
+**It is on `sonnet-4.6`, not `sonnet-5`, deliberately.** `code-reviewer` is on `sonnet-5` and
+reviews the commits `ui-ux` writes. Putting both on the same model would have the reviewer grading
+its own model's work — the same "one model agreeing with itself" failure the auditor pairing below
+exists to avoid. If you change either, keep them apart.
+
+Its OpenCode definition carries a persona-bleed block and, unusually, a long "you cannot see"
+section. That is not boilerplate: `ui-ux` is the one agent whose work is judged visually and so the
+one most tempted to claim visual verification. `webfetch` is disabled for the same reason, and
+`opencode.json` denies it Firecrawl — a browser-shaped tool invites an agent to believe it can see
+pixels. It can read served bytes; it cannot see a rendered page, and a font silently falling back
+to a system face looks identical in the bytes.
 
 **`security-auditor` runs on `opencode-go/qwen3.7-max`.** It moved off Sonnet to reduce Claude token
 usage. It is a safe candidate for a cheaper model because it is read-only and its findings route

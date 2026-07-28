@@ -358,6 +358,13 @@ button.btn.danger:hover:not(:disabled) {
 .log .warning { color: var(--gold); }
 .log .error { color: var(--error); }
 
+/* Design_Philosophy.md §8 / design-system/components/feedback/EmptyState —
+   plain, marginal-note placeholder for the log before a run. handleFile()
+   and the #btn-start handler both clear #log's innerHTML before appending
+   real lines (app.js), so this paragraph is correctly replaced the moment
+   activity starts and never lingers above real log output. */
+.log-empty { margin: 0; }
+
 /* ---------------------------------------------------------------- Settings */
 .settings-grid {
   display: grid;

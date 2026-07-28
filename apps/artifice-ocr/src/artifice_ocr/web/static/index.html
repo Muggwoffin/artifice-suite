@@ -196,7 +196,7 @@
         </div>
         <div class="history-grid">
           <div>
-            <h3 class="dim" style="margin:0 0 0.4rem;">Runs</h3>
+            <h3 class="dim" style="margin:0 0 0.5rem;">Runs</h3>
             <div class="queue-wrap" style="max-height:26vh;">
               <table class="queue">
                 <thead><tr><th>Started</th><th>Stages</th><th class="c">Files</th><th class="c">Failed</th><th class="c">Elapsed</th></tr></thead>
@@ -205,7 +205,7 @@
             </div>
           </div>
           <div>
-            <h3 class="dim" style="margin:0.8rem 0 0.4rem;">Documents</h3>
+            <h3 class="dim" style="margin:0.75rem 0 0.5rem;">Documents</h3>
             <div class="queue-wrap" style="max-height:26vh;">
               <table class="queue">
                 <thead><tr><th>File</th><th>State</th><th>Language</th><th class="c" title="Quality score: how confident the AI is that it read the text correctly (0–100)">Conf</th></tr></thead>
@@ -281,7 +281,7 @@
 
     <!-- =========================================================== ANALYTICS -->
     <section class="panel" id="panel-analytics">
-      <div class="card-head" style="padding:0 0 0.8rem;">
+      <div class="card-head" style="padding:0 0 0.75rem;">
         <h2 style="font-family:var(--font-display); font-size:var(--text-h3); margin:0;">Analytics</h2>
         <button class="btn" id="btn-analytics-refresh">Refresh</button>
       </div>
@@ -307,7 +307,7 @@
       <div class="settings-grid">
         <div class="card settings-card">
           <h3>AI Models &amp; Connections</h3>
-          <p class="dim" style="margin:0 0 0.6rem;">Choose which service runs each step, and which model it uses.</p>
+          <p class="dim" style="margin:0 0 0.5rem;">Choose which service runs each step, and which model it uses.</p>
           <label>OCR backend
             <select id="set-ocr_backend">
               <option value="lm_studio">LM Studio</option>
@@ -335,9 +335,9 @@
             </select>
           </label>
           <label>Translate model <input type="text" id="set-translate_model" placeholder="e.g. translategemma:4b"></label>
-          <details style="margin-top:0.6rem;">
+          <details style="margin-top:0.5rem;">
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Connection settings</summary>
-            <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.4rem;">
+            <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.4rem;">
               <label>LM Studio URL <input type="text" id="set-lm_studio_url" placeholder="http://localhost:1234/v1" title="Address where LM Studio is running."></label>
               <label>Ollama URL <input type="text" id="set-ollama_url" placeholder="http://localhost:11434" title="Base address where Ollama is running."></label>
               <label>Hugging Face token <input type="text" id="set-huggingface_token" placeholder="hf_xxx..." title="Your Hugging Face API token (hf_...). Required only when using Hugging Face."></label>
@@ -351,13 +351,13 @@
           <label>Document type
             <select id="set-document_type"></select>
           </label>
-          <p class="dim" id="doc-type-hint" style="margin:0.2rem 0 0.6rem;"></p>
+          <p class="dim" id="doc-type-hint" style="margin:0.2rem 0 0.5rem;"></p>
           <label>Parallel OCR readers <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
           <label>Resume (skip existing outputs) <input type="checkbox" id="set-resume"></label>
           <label>Enable confidence scoring <input type="checkbox" id="set-confidence_enabled"></label>
-          <details style="margin-top:0.6rem;">
+          <details style="margin-top:0.5rem;">
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>
-            <div style="margin-top:0.4rem; display:flex; flex-direction:column; gap:0.4rem;">
+            <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.4rem;">
               <label>Max text chunk size <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;" title="How much text the AI processes at once. Leave at default unless you have a reason to change it."></label>
               <label><input type="checkbox" id="set-ollama_think"> Think step-by-step (slow &mdash; not recommended)</label>
               <p class="dim" style="margin:0;">Much slower with no visible improvement.</p>
@@ -366,7 +366,7 @@
         </div>
         <div class="card settings-card" style="grid-column: 1 / -1;">
           <h3>Run Templates</h3>
-          <p class="dim" style="margin:0 0 0.6rem;">Save and load stage/option configurations.</p>
+          <p class="dim" style="margin:0 0 0.5rem;">Save and load stage/option configurations.</p>
           <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
             <select id="template-select" class="select" style="flex:1;">
               <option value="">-- Select a template --</option>
@@ -378,18 +378,18 @@
             <input type="text" id="template-name" class="input" style="flex:1;" placeholder="Template name">
             <button class="btn accent" id="btn-template-save">Save Current as Template</button>
           </div>
-          <span id="template-status" class="dim" style="margin-top:0.4rem; display:inline-block;"></span>
+          <span id="template-status" class="dim" style="margin-top:0.5rem; display:inline-block;"></span>
         </div>
         <div class="card settings-card" style="grid-column: 1 / -1;">
           <h3>Connection Status</h3>
           <div id="health-panel" class="health-panel">
             <p class="dim">Press "Check Connections" to verify your local AI helpers are running.</p>
           </div>
-          <button class="btn" id="btn-preflight" style="margin-top:0.7rem;">Check Connections</button>
+          <button class="btn" id="btn-preflight" style="margin-top:0.75rem;">Check Connections</button>
         </div>
         <div class="card settings-card" style="grid-column: 1 / -1;">
           <h3>Onboarding &amp; Guide</h3>
-          <p class="dim" style="margin:0 0 0.6rem;">Review the first-run orientation tips and feature guide.</p>
+          <p class="dim" style="margin:0 0 0.5rem;">Review the first-run orientation tips and feature guide.</p>
           <button class="btn" id="btn-retrigger-onboarding">Show Onboarding Guide</button>
         </div>
       </div>
@@ -615,7 +615,7 @@
       </div>
     </div>
 
-    <p class="dim" id="batch-status" style="margin-top:0.6rem;"></p>
+    <p class="dim" id="batch-status" style="margin-top:0.5rem;"></p>
 
     <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
       <button class="btn" id="btn-batch-cancel">Close</button>
