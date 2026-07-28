@@ -588,6 +588,47 @@ Add `border-top: 3px solid var(--ink)` or `border-top: 3px solid var(--accent)` 
 }
 ```
 
+#### Row alignment — controls that sit together must resolve to the same height
+
+The button spec above (§8.1) and the input spec here were each written in
+isolation, and applied literally they **do not agree**. Measured 2026-07-28 in
+`artifice-draft`, where an "Import" button sits in the same row as three
+`<select>`s:
+
+| Control | Spec | Rendered height |
+|---|---|---|
+| Button | `padding: 0.8rem 1.4rem`, `font-size: 0.8rem` | **42.8px** |
+| Select | `padding: 0.7rem 1rem`, `font-size: var(--text-base)` | **47.8px** |
+
+A 5px misalignment across a row of four controls. Nobody specified that; it is
+what the two specs produce when both are followed correctly.
+
+**The rule: any button and any input that can appear in the same row must
+resolve to the same height.** When they disagree, this is the governing
+requirement and the padding values above yield to it.
+
+Two things make this harder than adding padding until it matches, and both are
+why the requirement is stated as an outcome rather than a value:
+
+- **The font sizes differ by design and should stay different.** A button label
+  is `0.8rem` uppercase `--font-label`; an input holds user-typed content at
+  `--text-base` (17px). Equalising the *fonts* to equalise the heights would be
+  the wrong repair — it would make inputs shout or button labels swim.
+- **A `<select>` does not size like a `<button>` from identical CSS.** Native
+  form controls carry intrinsic metrics the browser supplies, which is also why
+  the two disagree here despite similar padding arithmetic. Deriving height from
+  padding alone will not hold across control types or platforms — and this
+  project targets Windows, WSL2 and macOS.
+
+So: set the height explicitly for controls that share a row, and let padding
+follow from it. Verify by measuring the rendered result, not by computing it —
+the arithmetic above looked reasonable and was wrong.
+
+> **Not yet applied.** This records the requirement and the measurement; the
+> apps still render the 5px gap. Fixing it touches every control rule in all
+> four apps, so it belongs in its own change set with rendered verification at
+> three widths — not folded into an unrelated pass.
+
 ### 8.4 Filter Chips / Tags
 
 ```css
