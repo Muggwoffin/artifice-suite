@@ -42,7 +42,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   display: flex;
   align-items: baseline;
   gap: 0.9rem;
-  padding: 1.1rem 1.4rem 0.7rem;
+  padding: 1rem 1.4rem 0.75rem;
   border-bottom: 1px solid var(--rule);
   background: var(--paper-raised);
 }
@@ -102,22 +102,39 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   display: none;
   height: 100%;
   overflow: auto;
-  padding: 1.3rem 1.4rem;
+  padding: 1.25rem 1.4rem;
 }
 
 .panel.active { display: block; }
 
 .panel-empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 40%;
-  color: var(--ink-faint);
   font-family: var(--font-body);
-  font-style: italic;
   text-align: center;
   max-width: 30rem;
   margin: 0 auto;
+  gap: var(--space-2);
+}
+
+/* Design_Philosophy.md §8 / design-system/components/feedback/EmptyState —
+   title + description, plain and marginal-note in tone, no illustration.
+   Used for document/detail panels with nothing loaded yet (e.g.
+   #transcript-empty). */
+.panel-empty-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+.panel-empty-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-faint);
 }
 
 /* --------------------------------------------------------------- cards */
@@ -142,7 +159,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.9rem 1.1rem 0.6rem;
+  padding: 1rem 1.1rem 0.5rem;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
@@ -160,10 +177,10 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 /* -------------------------------------------------------------- drop zone */
 
 .dropzone {
-  margin: 0.9rem 1.1rem 0;
+  margin: 1rem 1.1rem 0;
   border: 1px dashed var(--rule-dark);
   border-radius: var(--radius-lg);
-  padding: 1.6rem 1.1rem;
+  padding: 1.5rem 1.1rem;
   text-align: center;
   color: var(--ink-faint);
   cursor: pointer;
@@ -187,7 +204,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   display: flex;
   align-items: center;
   gap: 1.2rem;
-  padding: 0.7rem 1.1rem;
+  padding: 0.75rem 1.1rem;
   flex-wrap: wrap;
 }
 
@@ -266,7 +283,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  padding: 0.7rem 1.1rem;
+  padding: 0.75rem 1.1rem;
 }
 
 .toolbar .spacer { flex: 1; }
@@ -339,7 +356,7 @@ button.btn.danger:hover:not(:disabled) { background: var(--error); color: var(--
 /* --------------------------------------------------------------------- table */
 
 .queue-wrap {
-  margin: 0 1.1rem 0.7rem;
+  margin: 0 1.1rem 0.75rem;
   border: 1px solid var(--rule);
   border-radius: var(--radius-lg);
   overflow: auto;
@@ -397,7 +414,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
 /* --------------------------------------------------------------- progress */
 
 .progress-wrap {
-  margin: 0 1.1rem 0.9rem;
+  margin: 0 1.1rem 1rem;
   height: 6px;
   border-radius: var(--radius-full);
   background: var(--rule);
@@ -432,7 +449,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.45rem 1.1rem;
+  padding: 0.5rem 1.1rem;
   border-top: 1px solid var(--rule);
   background: var(--paper-raised);
   font-size: 0.78rem;
@@ -515,7 +532,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.9rem 1.1rem 0.6rem;
+  padding: 1rem 1.1rem 0.5rem;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -533,7 +550,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
 .segments {
   grid-area: segments;
   overflow: auto;
-  padding: 0.6rem 1.1rem 1rem;
+  padding: 0.5rem 1.1rem 1rem;
   min-height: 0;
 }
 
@@ -689,8 +706,8 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
 }
 
 @media (max-width: 600px) {
-  .panel { padding: 0.8rem; }
-  .masthead { padding: 0.7rem 0.8rem 0.5rem; }
+  .panel { padding: 0.75rem 0.8rem; }
+  .masthead { padding: 0.75rem 0.8rem 0.5rem; }
   .tabs { padding: 0 0.5rem; }
   .tab { padding: 0.6rem 0.7rem; font-size: 0.78rem; }
   .queue-wrap { max-height: 30vh; }
@@ -878,7 +895,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
 .metadata-form {
   border: 1px solid var(--rule);
   border-radius: var(--radius-lg);
-  padding: 0.7rem 0.9rem;
+  padding: 0.75rem 0.9rem;
   background: var(--paper-raised);
   font-size: var(--text-sm);
 }
@@ -894,7 +911,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
 }
 .metadata-grid label {
   display: flex;
@@ -1036,7 +1053,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
 /* ── history panel ──────────────────────────────────────────── */
 
 .history-panel {
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
 }
 .history-panel .card { margin: 0; }
 .history-list {
@@ -1045,7 +1062,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
   overflow: auto;
 }
 .history-version {
-  padding: 0.4rem 0;
+  padding: 0.5rem 0;
   border-bottom: 1px solid var(--rule);
   font-size: 0.82rem;
 }
@@ -1088,7 +1105,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
 
 .transcript-stats {
   grid-area: stats;
-  padding: 0.3rem 1.1rem 0.5rem;
+  padding: 0.25rem 1.1rem 0.5rem;
   font-size: 0.72rem;
   border-top: 1px solid var(--rule);
   color: var(--ink-faint);

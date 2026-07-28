@@ -140,7 +140,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
   display: none;
   height: 100%;
   overflow: auto;
-  padding: 1.3rem 1.4rem;
+  padding: 1.25rem 1.4rem;
 }
 
 .panel.active { display: block; }
@@ -151,17 +151,33 @@ button, input, select { font-family: inherit; font-size: inherit; }
   align-items: center;
   justify-content: center;
   height: 60%;
-  color: var(--ink-faint);
   font-family: var(--font-body);
   text-align: center;
   max-width: 28rem;
   margin: 0 auto;
-  gap: 0.3rem;
+  gap: var(--space-2);
 }
 
-.panel-empty-icon { font-size: 2.8rem; line-height: 1.2; }
-.panel-empty-text { font-style: italic; margin: 0; }
-.panel-empty-hint { font-size: var(--text-sm); color: var(--ink-soft); margin: 0; }
+/* Design_Philosophy.md §8 / design-system/components/feedback/EmptyState —
+   title + description, plain and marginal-note in tone, no illustration
+   (the earlier .panel-empty-icon slot contradicted that and is removed).
+   Not currently used by this app's HTML — its document/queue panels are
+   populated by JS (app.js, history.js, preview_image.js) rather than
+   static markup, which is out of this pass's file scope. Kept here for
+   parity with artifice-transcribe, which uses this exact component for
+   #transcript-empty, so a future JS-side fix has a ready, matching class. */
+.panel-empty-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+.panel-empty-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-faint);
+}
 
 /* --------------------------------------------------------------- cards */
 
@@ -183,7 +199,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.9rem 1.1rem 0.6rem;
+  padding: 1rem 1.1rem 0.5rem;
 }
 
 .card-head h2 {
@@ -198,10 +214,10 @@ button, input, select { font-family: inherit; font-size: inherit; }
 /* -------------------------------------------------------------- drop zone */
 
 .dropzone {
-  margin: 0.9rem 1.1rem 0;
+  margin: 1rem 1.1rem 0;
   border: 1px dashed var(--rule-dark);
   border-radius: var(--radius);
-  padding: 1.1rem;
+  padding: 1rem 1.1rem;
   text-align: center;
   color: var(--ink-faint);
   cursor: pointer;
@@ -221,7 +237,7 @@ button, input, select { font-family: inherit; font-size: inherit; }
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  padding: 0.7rem 1.1rem;
+  padding: 0.75rem 1.1rem;
 }
 
 .toolbar .spacer { flex: 1; }
@@ -286,13 +302,13 @@ button.btn.danger:hover:not(:disabled) { background: var(--error); color: var(--
 .section-divider {
   height: 1px;
   background: var(--rule);
-  margin: 0.35rem 1.1rem;
+  margin: 0.25rem 1.1rem;
 }
 
 /* --------------------------------------------------------------------- table */
 
 .queue-wrap {
-  margin: 0 1.1rem 0.7rem;
+  margin: 0 1.1rem 0.75rem;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   overflow: auto;
@@ -355,7 +371,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   display: flex;
   align-items: center;
   gap: 1.2rem;
-  padding: 0.6rem 1.1rem;
+  padding: 0.5rem 1.1rem;
   flex-wrap: wrap;
 }
 
@@ -374,7 +390,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.3rem 1.1rem 0.8rem;
+  padding: 0.25rem 1.1rem 0.75rem;
 }
 
 .output-row input[type=text] {
@@ -390,7 +406,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  margin: 0 1.1rem 0.4rem;
+  margin: 0 1.1rem 0.5rem;
 }
 
 .progress-wrap {
@@ -433,13 +449,13 @@ td.stage-failed { color: var(--error); font-weight: 600; }
 /* ------------------------------------------------------------------------ log */
 
 .log {
-  margin: 0 1.1rem 1.2rem;
+  margin: 0 1.1rem 1.25rem;
   height: 15vh;
   overflow-y: auto;
   background: var(--paper-recessed);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  padding: 0.6rem 0.8rem;
+  padding: 0.5rem 0.8rem;
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--ink-soft);
@@ -456,7 +472,7 @@ td.stage-failed { color: var(--error); font-weight: 600; }
 .statusbar {
   display: flex;
   justify-content: space-between;
-  padding: 0.45rem 1.1rem;
+  padding: 0.5rem 1.1rem;
   border-top: 1px solid var(--rule);
   font-size: 0.78rem;
   color: var(--ink-soft);
@@ -484,12 +500,12 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lifted);
-  padding: 1.2rem;
+  padding: 1.25rem 1.2rem;
 }
 
 .modal h3 {
   font-family: var(--font-display);
-  margin: 0 0 0.8rem;
+  margin: 0 0 0.75rem;
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -574,7 +590,7 @@ select.select, .output-row select, .run-row select, label select {
 .compare-pane-head {
   display: flex;
   justify-content: space-between;
-  padding: 0.6rem 0.9rem 0.3rem;
+  padding: 0.5rem 0.9rem 0.25rem;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -585,7 +601,7 @@ select.select, .output-row select, .run-row select, label select {
 .compare-text {
   height: 46vh;
   overflow: auto;
-  padding: 0.4rem 0.9rem 1rem;
+  padding: 0.5rem 0.9rem 1rem;
   font-family: var(--font-body);
   font-size: 0.95rem;
   line-height: 1.55;
@@ -594,6 +610,18 @@ select.select, .output-row select, .run-row select, label select {
 }
 
 .compare-text .empty { color: var(--ink-faint); font-style: italic; }
+
+/* The "(not run)" span is the only content of an otherwise-empty 46vh
+   column (renderCompare()/clearCompare() in app.js); left at the top it
+   reads as a mostly-dead pane. Centring it doesn't require touching the
+   JS-owned copy or markup shape — :has() only matches this exact
+   single-empty-span case, so a populated pane (highlighted text, or the
+   Preview tab's editable textarea) is unaffected. */
+.compare-text:has(> .empty:only-child) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* Source-image pane beside the Raw/Cleaned/Translated panes — shared by
    the Preview and History tabs. */
@@ -659,7 +687,7 @@ select.select, .output-row select, .run-row select, label select {
   height: 46vh;
   resize: none;
   border: none;
-  padding: 0.4rem 0.9rem 1rem;
+  padding: 0.5rem 0.9rem 1rem;
   background: transparent;
   color: var(--ink);
   font-family: var(--font-body);
@@ -673,7 +701,7 @@ select.select, .output-row select, .run-row select, label select {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.3rem 0.6rem;
+  padding: 0.25rem 0.6rem;
   background: var(--paper-recessed);
   border-bottom: 1px solid var(--rule);
   font-size: 0.8rem;
@@ -736,7 +764,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   box-shadow: var(--shadow-paper);
-  padding: 0.9rem 1rem;
+  padding: 1rem;
 }
 
 .tile-value {
@@ -761,7 +789,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   gap: 1rem;
 }
 
-.chart-card { padding: 0.9rem 1rem 1rem; }
+.chart-card { padding: 1rem; }
 .chart-card h3 {
   font-family: var(--font-display);
   font-size: var(--text-lg);
@@ -784,7 +812,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 0.35rem 0;
+  margin: 0.25rem 0;
   font-size: var(--text-sm);
 }
 
@@ -837,7 +865,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   background: var(--paper-recessed);
   border: 1px solid var(--rule);
   border-radius: 8px;
-  padding: 0.7rem 0.9rem;
+  padding: 0.75rem 0.9rem;
   min-height: 3rem;
 }
 
@@ -1127,7 +1155,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .thumbnail-strip {
   display: flex;
   gap: 0.3rem;
-  padding: 0.4rem 0.7rem;
+  padding: 0.5rem 0.7rem;
   border-bottom: 1px solid var(--rule);
   overflow-x: auto;
   overflow-y: hidden;
@@ -1280,7 +1308,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .onboarding-card .tip {
   display: flex;
   gap: 0.7rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.75rem;
   font-size: var(--text-sm);
 }
 .onboarding-card .tip-icon {
@@ -1295,7 +1323,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
-  margin-top: 1.2rem;
+  margin-top: 1.25rem;
 }
 
 /* =================================================== COLUMN VISIBILITY TOGGLE
@@ -1370,8 +1398,8 @@ table.queue tbody tr.dragging { opacity: 0.4; }
 }
 
 @media (max-width: 600px) {
-  .panel { padding: 0.8rem; }
-  .masthead { padding: 0.7rem 0.8rem 0.5rem; }
+  .panel { padding: 0.75rem 0.8rem; }
+  .masthead { padding: 0.75rem 0.8rem 0.5rem; }
   .masthead .tag { display: none; }
   .tabs { overflow-x: auto; padding: 0 0.5rem; }
   .tab { padding: 0.6rem 0.7rem; font-size: 0.78rem; }
