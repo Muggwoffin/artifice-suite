@@ -11,7 +11,6 @@ dependencies = [
     "python-dotenv",
     "pyyaml",
     "PyMuPDF",
-    "tkinterdnd2",
     "reportlab",
     "huggingface_hub",
     "shared-ui",
@@ -35,4 +34,4 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"artifice_ocr.web" = ["static/**"]
+"artifice_ocr.web" = ["static/**", "fonts/*.ttf"]

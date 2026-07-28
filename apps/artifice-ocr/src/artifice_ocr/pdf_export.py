@@ -8,6 +8,7 @@ The structuring pass is optional (--no-structure) and guarded: if the model
 alters any word, the original text is kept instead.
 """
 
+import importlib.resources
 import itertools
 import json
 import re
@@ -64,7 +65,22 @@ PDF_STYLES = {
 # Fonts
 # ---------------------------------------------------------------------------
 
-_FONTS_DIR = Path(__file__).resolve().parent.parent.parent / "assets" / "fonts"
+# Resolved through importlib.resources, NOT a __file__-relative path. These fonts
+# must survive being packaged: this app is distributed as a frozen .exe/.dmg, where
+# __file__ points inside a temporary extraction directory and any `.parent.parent`
+# walk lands somewhere meaningless. The previous form was
+# `Path(__file__).resolve().parent.parent.parent / "assets" / "fonts"`, which
+# resolved outside src/ — so the fonts were excluded from the wheel entirely and
+# PDF export raised at runtime in every installed copy while working perfectly in
+# a source checkout.
+#
+# They live under `web/` only because that package already carries a package-data
+# rule (pyproject.toml). They are NOT web assets and are deliberately NOT mounted —
+# `/static` and `/shared` are the only mounts, and neither exposes this directory.
+# If the web layer is ever restructured, move these with it and update the rule;
+# ReportLab needs real TTFs and cannot read the woff2 files in packages/shared-ui,
+# which is why this is a separate copy rather than a duplicate to be consolidated.
+_FONTS_DIR = importlib.resources.files("artifice_ocr.web") / "fonts"
 _FONTS_REGISTERED = False
 
 

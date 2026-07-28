@@ -20,9 +20,6 @@ web = [
     "beautifulsoup4>=4.12",
     "readability-lxml>=0.8.1",
 ]
-dnd = [
-    "tkinterdnd2",
-]
 
 [project.scripts]
 artifice-draft = "artifice_draft.cli:main"
