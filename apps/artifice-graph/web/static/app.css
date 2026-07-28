@@ -197,6 +197,18 @@ body {
   margin: 0.75rem 0 0;
 }
 
+/* Generic section-divider rule, distinct from .masthead-rule: a plain
+   in-content <hr> separating field groups within a panel or between
+   page-level regions, so it carries symmetric margin on both sides rather
+   than the masthead's asymmetric "flush against the heading above" margin.
+   var(--space-7) matches the divider rhythm .config-section already uses
+   for the same "step separated by a thin rule" idea (pipeline.css). */
+hr.rule {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: var(--space-7) 0;
+}
+
 /* ── Section Heading (.section-head) ───────────────── */
 .section-head {
   font-family: var(--font-label);

@@ -33,7 +33,7 @@ Beyond `uv` and Python, a few command-line tools are assumed by the repo's
 scripts and by day-to-day work. On Debian/Ubuntu (including WSL2):
 
 ```bash
-sudo apt install -y ripgrep jq brotli shellcheck gitleaks
+sudo apt install -y ripgrep jq brotli shellcheck gitleaks ffmpeg
 ```
 
 | Tool | Why |
@@ -43,6 +43,11 @@ sudo apt install -y ripgrep jq brotli shellcheck gitleaks
 | `brotli` | Needed to compress vendored web fonts to `.woff2`; without it they ship as `.ttf` at roughly twice the size |
 | `shellcheck` | `scripts/*.sh` are real systems code and should be linted |
 | `jq` | Convenience for the JSON-heavy pipeline output |
+| `ffmpeg` | Audio decoding for `artifice-transcribe` (Whisper / Parakeet / pyannote) |
+
+All six are present in the maintainer's WSL2 environment as of 2026-07-28
+(`rg` 15.1.0, `ffmpeg` 8.0.1, `brotli` 1.2.0, `jq` 1.8.1, `shellcheck` 0.11.0).
+Contributors setting up fresh still need the `apt install` line above.
 
 If you installed `uv` with the standalone installer it lands in
 `~/.local/bin`, which **is not on the `PATH` of a non-login shell** — so
@@ -53,8 +58,33 @@ interactive terminal is fine. Symlink it once:
 sudo ln -s "$HOME/.local/bin/uv" /usr/local/bin/uv
 ```
 
-`ffmpeg` is required only by `artifice-transcribe`. Install the Linux package
-if you are working on that app; a Windows `ffmpeg.exe` is not usable from WSL.
+`ffmpeg` is required only by `artifice-transcribe`, and it pulls ~500 MB — drop
+it from the `apt` line if you are not working on that app. Note that it must be
+the **Linux** package: a Windows `ffmpeg.exe` on the `PATH` is not usable from
+WSL, which `apps/artifice-transcribe/HANDOFF.md` records as a past stumble.
+
+### Docker, and the Firecrawl verification instance
+
+Install Docker **natively inside WSL**, not via Docker Desktop's WSL
+integration:
+
+```bash
+sudo apt install -y docker.io docker-compose-v2
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"   # then start a new session
+```
+
+A `docker` that resolves under `/mnt/c/...` is Docker Desktop's Windows shim
+reached across the interop boundary — the same class of trap that made the
+`opencode` npm shim block forever. `scripts/firecrawl.sh` refuses to run against
+it for that reason.
+
+Docker is only needed if you are working on agent tooling. It backs a
+self-hosted [Firecrawl](https://github.com/firecrawl/firecrawl) instance that
+lets OpenCode sub-agents fetch locally-served app pages for structural
+verification. Manage it with `scripts/firecrawl.sh {up|down|status|prune}`. The
+instance is unauthenticated and therefore bound to `127.0.0.1` only — never
+publish it on `0.0.0.0`.
 
 ## Running tests
 

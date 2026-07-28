@@ -15,6 +15,7 @@ from typing import Any, Optional
 import httpx
 import uvicorn
 from fastapi import FastAPI, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -45,6 +46,18 @@ logger = logging.getLogger(__name__)
 # ── App setup ──────────────────────────────────────────────────────
 
 app = FastAPI(title="ArtificeGraph", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        f"http://localhost:{os.environ.get('CALLOSIP_PORT', '8766')}",
+        f"http://127.0.0.1:{os.environ.get('CALLOSIP_PORT', '8766')}",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+
 HERE = Path(__file__).resolve().parent
 
 # Jinja2
@@ -1012,7 +1025,8 @@ async def about():
 
 def main() -> None:
     port = int(os.environ.get("CALLOSIP_PORT", "8766"))
-    uvicorn.run("web.server:app", host="0.0.0.0", port=port, reload=False)
+    host = os.environ.get("CALLOSIP_HOST", "127.0.0.1")
+    uvicorn.run("web.server:app", host=host, port=port, reload=False)
 
 
 if __name__ == "__main__":

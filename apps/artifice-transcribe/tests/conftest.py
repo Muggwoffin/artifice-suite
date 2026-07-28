@@ -25,8 +25,9 @@ async def api(tmp_path, monkeypatch):
     """An AsyncClient + DB session factory wired to an isolated sqlite file
     and upload dir per test.
 
-    Overrides `get_db` directly rather than touching `settings.database_url`,
-    since the real engine is already bound to that URL at import time.
+    Overrides both ``get_db`` (the FastAPI dependency) and the module-level
+    ``async_session`` factory so that background tasks also use the test
+    database instead of the real one.
     """
     db_path = tmp_path / "test.db"
     test_engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
@@ -40,6 +41,14 @@ async def api(tmp_path, monkeypatch):
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
+
+    # Also override the module-level session factory so background tasks
+    # (which open their own sessions via ``async_session()``) use the
+    # isolated test database.
+    monkeypatch.setattr(
+        "artifice_transcribe.api.v1.routes.async_session",
+        test_session,
+    )
 
     upload_dir = tmp_path / "uploads"
     upload_dir.mkdir()

@@ -660,33 +660,118 @@ alarms — a "stage 3 card is styled differently" that was a JPEG artifact, a "h
 type" assumption that was never true, and five "dead controls" that were bound in an inline
 `<script>` the audit had not scanned.
 
-**OpenCode agents have no browser.** Never brief one to verify anything visually. Rendered
-confirmation is the orchestrator's job, per the design-director loop in `CLAUDE.md`.
+**~~OpenCode agents have no browser.~~ Superseded 2026-07-28 — they can fetch, but still cannot
+see.** A self-hosted Firecrawl instance is wired as an MCP server and granted to `lead-engineer`
+and `tester`. Proven the same day: `tester` scraped a running `artifice-graph` at
+`http://host.docker.internal:8766/` and returned its title, headings and markup, `exit=0`.
+Firecrawl's own container log recorded the scrape and the app logged the request arriving from
+`172.18.0.4` — a container IP on the local bridge, which is what proves the self-hosted route
+rather than a cloud round trip.
+
+Rendered, visual confirmation is **still the orchestrator's job**. Firecrawl returns text and
+markup, never pixels; the design-director loop in `CLAUDE.md` is unchanged. What changed is that
+structural checks — is the control in the DOM, does it carry the right `id`, did the route return
+200 — can now be delegated. That is the exact gap behind the "five dead controls bound in an inline
+`<script>`" miss.
+
+Setup, for reproduction:
+
+```bash
+scripts/firecrawl.sh up        # start; also asserts the loopback binding
+scripts/firecrawl.sh status    # service table + binding check
+scripts/firecrawl.sh prune     # after an audit run — clears stale Chromium
+scripts/firecrawl.sh down
+```
+
+The checkout lives at `~/tools/firecrawl` (outside this repo, deliberately). Three deviations from
+upstream were necessary and will be lost if it is re-cloned:
+
+1. **`extra_hosts` added to `playwright-service`.** Upstream sets it only on the
+   `x-common-service` anchor, which `playwright-service` does not use. Without it the renderer
+   cannot resolve `host.docker.internal`, and **every scrape of a host-served app returns a bare
+   404 while the api container reaches the same URL fine** — a genuinely confusing failure, because
+   the 404 looks like an application bug rather than a DNS one.
+2. **Port republished as `127.0.0.1:3002`,** not `0.0.0.0`. The instance runs unauthenticated
+   (`USE_DB_AUTHENTICATION=false`), so a default bind would expose it to the LAN.
+3. **Prebuilt `ghcr.io/firecrawl/*` images** substituted for the `build:` stanzas, avoiding a long
+   Playwright build.
+
+Three traps worth carrying forward:
+
+- **`firecrawl-mcp` silently falls back to the Firecrawl cloud when `FIRECRAWL_API_URL` is unset.**
+  It logs "running in keyless mode… against the Firecrawl cloud" and continues. Nothing errors. If
+  that variable is ever dropped from `opencode.json`, a local-only tool becomes an egress path with
+  no signal at all.
+- **Firecrawl's URL validator rejects raw IPs** — "URL must have a valid top-level domain or be a
+  valid path". Always brief the hostname, never `172.x.x.x`.
+- **A `127.0.0.1` bind makes an app invisible to the agents.** The Phase 1.5 hardening changed
+  `artifice-graph`'s default host from `0.0.0.0` to `127.0.0.1`, which is correct for a local-first
+  app — and it silently removed the fleet's ability to verify it. Measured directly: host-local
+  `curl` returns 200 while the same URL from inside the Firecrawl container is **unreachable**, and
+  the scrape fails with status 594. Loopback does not include the docker bridge.
+
+  To serve an app *for agent verification*, set the host explicitly:
+
+  ```bash
+  CALLOSIP_HOST=0.0.0.0 uv run python -m web.server
+  ```
+
+  Keep the shipped default at `127.0.0.1`. Widening the bind is a deliberate, temporary act for a
+  verification session, never a committed change. Expect this to recur for every app as the same
+  hardening rolls out to `ocr`, `draft` and `transcribe` — a verification brief that "just stops
+  working" after a security pass is this, not a Firecrawl fault.
+
+**Canonical web layout: `apps/<app>/src/artifice_<slug>/web/static/`.** Decided 2026-07-28 as a
+Phase 2/4 prerequisite, before design passes roll out to the remaining apps. `artifice-draft` and
+`artifice-ocr` already conform. Two must move:
+
+| App | Current | Status |
+|---|---|---|
+| `artifice-draft` | `src/artifice_draft/web/static/` | conforms |
+| `artifice-ocr` | `src/artifice_ocr/web/static/` | conforms |
+| `artifice-graph` | `web/static/` | **migrate** — assets sit outside the package |
+| `artifice-transcribe` | `src/artifice_transcribe/static/` | **migrate** — missing the `web/` level |
+
+Assets outside the package are dropped from a wheel and are only findable by a CWD-relative path,
+which breaks as soon as the server starts from anywhere but the app root. Migration must move
+`StaticFiles` mounts, Dockerfile `COPY` lines, and any `pyproject.toml` package-data rules
+together — and `artifice-graph` carries the signed-off Phase 1 design work, so it needs a rendered
+re-check afterwards, not just a green test run.
 
 **`git status` means different things in different shells** until the line-ending normalisation is
 run. Always `git diff --ignore-cr-at-eol` before concluding anything about what changed.
 
-**Developer tooling the fleet assumes but WSL does not have.** `gitleaks` and `node` are installed;
-these are not, and their absence has already cost time:
+**~~Developer tooling the fleet assumes but WSL does not have.~~ Installed — do not re-install.**
+The gap this note described is closed. Verified present in WSL as of 2026-07-28:
+
+| Tool | Version | Path |
+|---|---|---|
+| `ripgrep` | 15.1.0 | `/usr/bin/rg` |
+| `ffmpeg` | 8.0.1-3ubuntu2 | `/usr/bin/ffmpeg` |
+| `brotli` | 1.2.0 | `/usr/bin/brotli` |
+| `jq` | 1.8.1 | `/usr/bin/jq` |
+| `shellcheck` | 0.11.0 | `/usr/bin/shellcheck` |
+
+`gitleaks` and `node` were already installed. The `uv` symlink still matters and is unrelated to
+the above — it is the fix for the non-login `PATH` problem, and it removes a whole class of
+"command not found" failures from scripts and agents alike:
 
 ```bash
-sudo apt install -y ripgrep jq brotli shellcheck
 sudo ln -s "$HOME/.local/bin/uv" /usr/local/bin/uv     # see the PATH note above
 ```
 
-`ripgrep` because agents reach for `rg` and burn turns falling back to `grep`. `brotli` because it
-is the missing piece that keeps the vendored fonts at 940 KB instead of roughly half that.
-`shellcheck` because `dispatch-opencode.sh` now carries six numbered guards and process-tree walking
-with no linter on it. `jq` is convenience only. The `uv` symlink matters most — it is the fix for
-the non-login `PATH` problem above, and it removes a whole class of "command not found" failures
-from scripts and agents alike.
+Two consequences worth acting on rather than just noting:
 
-`ffmpeg` is **not** on that list deliberately: `apps/artifice-transcribe/HANDOFF.md:100` records it
-as installed, but at a *Windows* path, which Whisper and pyannote under WSL cannot use. Install the
-Linux package when transcribe is actually picked up — it pulls ~500 MB.
+- **`brotli` unblocks the font payload.** §II and `packages/shared-ui/README.md:76` both record the
+  vendored fonts shipping as TTF at **940 KB** because woff2 conversion needed `brotli` and it was
+  absent. That blocker is gone; re-running the conversion should roughly halve the payload. Not yet
+  done — it is a real task, not a footnote.
+- **`ffmpeg` is now the *Linux* build.** `apps/artifice-transcribe/HANDOFF.md:100` records an
+  `ffmpeg.exe` at a Windows path, which Whisper and pyannote under WSL cannot use. That note is now
+  stale for WSL work; the native package at `/usr/bin/ffmpeg` is what transcribe will pick up.
 
-None of these appear in any setup documentation, which is itself a gap: `CONTRIBUTING.md` should
-carry a developer-tooling list.
+`CONTRIBUTING.md` carries the developer-tooling list, which closes the documentation gap this note
+used to flag.
 
 ---
 

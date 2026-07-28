@@ -72,7 +72,35 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["transcription"])
 
-# Inference configuration persistence helper
+# ── Path safety ──────────────────────────────────────────────────────────────
+
+
+def _sanitise_path_component(raw: str) -> str:
+    """Return a safe single-component filename from *raw*.
+
+    Rejects components that are empty, ``"."``, or ``".."`` after
+    stripping — ``Path("..").name`` returns ``".."``, so ``.name``
+    alone is not sufficient.
+    
+    Backslashes are treated as separators (Windows path support) so that
+    ``..\\\\..\\\\windows\\\\system32`` collapses to ``system32`` even on
+    POSIX where ``Path.name`` would return the whole string.
+    """
+    cleaned = Path(raw.replace("\\", "/")).name
+    if cleaned in ("", ".", ".."):
+        raise HTTPException(400, f"Invalid path component: {raw!r}")
+    return cleaned
+
+
+def _assert_contained(path: Path, container: Path) -> None:
+    """Raise HTTP 400 if *path* resolves outside *container*."""
+    resolved = path.resolve()
+    base = container.resolve()
+    if not (base in resolved.parents or resolved == base):
+        raise HTTPException(400, "Path traversal detected")
+
+
+# ── Inference configuration persistence helper ───────────────────────────────
 CONFIG_FILE = Path("./data/inference_config.json")
 
 
@@ -601,7 +629,9 @@ async def create_transcription(
     db.add(job)
     await db.commit()
 
-    audio_path = settings.upload_path / f"{job.id}_{file.filename}"
+    safe_filename = _sanitise_path_component(file.filename or "unknown")
+    audio_path = settings.upload_path / f"{job.id}_{safe_filename}"
+    _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
 
     opts = TranscriptionOptions(
@@ -1181,7 +1211,13 @@ async def enroll_speaker(
     import pickle
 
     contents = await file.read()
-    audio_path = settings.upload_path / f"enroll_{name}_{file.filename}"
+    if len(contents) > settings.max_upload_size:
+        raise HTTPException(413, "File too large")
+
+    safe_name = _sanitise_path_component(name)
+    safe_filename = _sanitise_path_component(file.filename or "unknown")
+    audio_path = settings.upload_path / f"enroll_{safe_name}_{safe_filename}"
+    _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
 
     engine = _get_engine()
@@ -1194,6 +1230,9 @@ async def enroll_speaker(
     inference = Inference(embedder, window="whole")
     embedding = inference(str(audio_path))
 
+    # NOTE: *embedding* is a trusted value returned by a local model; the
+    # pickled blob stored in the database must never be unpickled from an
+    # untrusted source.
     emb_bytes = pickle.dumps(embedding)
     spk = KnownSpeaker(
         name=name,

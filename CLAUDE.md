@@ -19,6 +19,21 @@ You oversee the development of four local-first, BYOM (Bring-Your-Own-Model) aca
 3. **Enforce Design Philosophy.** Ensure all UI components and layout primitives strictly adhere to `Design_Philosophy.md` (The New Masses Design System: paper and ink aesthetics, warm palette, editorial typography, restrained motion).
 4. **Maintain Monorepo Parity.** Ensure all four apps maintain identical modular `src/` directory patterns (`apps/<app>/src/artifice_<app_slug>/`), PEP 621 `pyproject.toml` definitions, and Docker configurations.
 
+### Canonical web layout
+
+Web assets live at **`apps/<app>/src/artifice_<slug>/web/static/`** — inside the installable
+package, never at the app root. Decided 2026-07-28 as a Phase 2/4 prerequisite; `artifice-draft`
+and `artifice-ocr` already conform.
+
+Two apps deviate and are scheduled to move: `artifice-graph` keeps assets at `apps/artifice-graph/web/`,
+and `artifice-transcribe` has `src/artifice_transcribe/static/` with no `web/` level. Treat both as
+known drift, not as precedent.
+
+The rule exists because assets outside the package are excluded from a wheel and can only be
+located by a path relative to the current working directory — which breaks the moment the server is
+started from anywhere but the app root. Resolve static roots with `importlib.resources`, not
+`Path(__file__).parent.parent`.
+
 ## Target Environment & Cross-Platform Support
 - **Supported Platforms:** Windows 11 (Native PowerShell & WSL2 Ubuntu) and macOS (Apple Silicon / Metal).
 - **Cross-Platform Compatibility:**
@@ -164,12 +179,51 @@ plain text) and the OpenCode credential store are explicitly denied. Verify afte
 `opencode agent list` does **not** display merged config, so the only trustworthy test is asking an
 agent to read a file and observing what happens.
 
-### What OpenCode agents cannot do
-They have **no browser tool**. Never brief one to "verify in the browser", load a page, or take a
-screenshot — they will not decline, they will stall indefinitely on the instruction. Ask for static
-verification only (greps, counts, test runs, `file:line` citations); rendered confirmation is the
-orchestrator's job. Their logs are also **block-buffered** when redirected to a file, so a frozen
-log says nothing about liveness — judge progress by file mtimes and `git diff`.
+### What OpenCode agents can and cannot see
+
+Agents **can now fetch pages**, via a self-hosted Firecrawl instance wired as an MCP server
+(`lead-engineer` and `tester` only). Wired and proven on 2026-07-28: `tester` scraped a running
+`artifice-graph` and returned its title, headings and markup, `exit=0`.
+
+**They still cannot see.** Firecrawl returns text and markup — never pixels. It cannot tell you
+whether a rule is optically misaligned, whether spacing is even, or whether type sits on the
+baseline. **The design-director loop in this file is unchanged**: rendered confirmation is still the
+orchestrator's job with the Chrome tools. What agents gained is *structural* verification — is the
+control in the DOM, does it carry the right `id`, did the page return 200 — which is precisely the
+class of check that the "five dead controls bound in an inline `<script>`" incident needed.
+
+Briefing rules:
+- Reach host-served apps at **`http://host.docker.internal:<port>/`**. `localhost` resolves to the
+  container. Raw IPs are rejected outright by Firecrawl's URL validator ("must have a valid
+  top-level domain"), so always use the hostname.
+- Ask for `formats: ["markdown","html"]` when the check is structural. The `html` is real,
+  inspectable markup with classes, IDs and ARIA attributes — but `<head>`, `<script>` and `<link>`
+  are stripped, so it is not the byte-for-byte document.
+- Never ask an agent for a visual or aesthetic judgement. It will not decline; it will infer one
+  from markup, which is the same confident-but-unfounded reporting the fleet already has form for.
+- Static-only verification (greps, counts, test runs, `file:line` citations) remains correct for
+  anything not actually served.
+
+Their logs are **block-buffered** when redirected to a file, so a frozen log says nothing about
+liveness — judge progress by file mtimes and `git diff`.
+
+**The instance is local-only and must stay that way.** `scripts/firecrawl.sh {up|down|restart|status|prune|verify|logs}`
+manages it; `status` asserts the loopback binding. Two traps found while wiring it, both worth
+keeping in mind:
+
+- **`firecrawl-mcp` silently falls back to the Firecrawl cloud if `FIRECRAWL_API_URL` is unset** —
+  it prints "running in keyless mode… against the Firecrawl cloud" and carries on. A
+  misconfiguration does not fail loudly, it quietly turns a local tool into an egress path. If that
+  variable ever goes missing from `opencode.json`, the fleet starts shipping URLs to a third party
+  without a single error.
+- The instance runs **unauthenticated** (`USE_DB_AUTHENTICATION=false`), so it is bound to
+  `127.0.0.1` and must never be published on `0.0.0.0`. The `FIRECRAWL_API_KEY: "local"` in
+  `opencode.json` is a required-but-ignored placeholder, not a credential — it is not a Zero Secrets
+  Policy violation.
+
+Both auditors are denied Firecrawl (`firecrawl_*: deny`). `security-auditor` is read-only by
+design and granting it network egress would undercut the guarantee it exists to prove;
+`arch-auditor-docs` has no use for it.
 
 ### Task brief format
 Every delegation states, in order: **objective**, **scope** (explicit file/directory boundaries),

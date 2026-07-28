@@ -12,6 +12,7 @@ import webbrowser
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -26,6 +27,17 @@ from .routers import tropy as tropy_router
 from .routers import ludwiglang as ludwiglang_router
 
 app = FastAPI(title="OCR Pipeline")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8765",
+        "http://127.0.0.1:8765",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
 
 
 @app.middleware("http")

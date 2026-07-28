@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -375,6 +376,19 @@ def main() -> None:
 
     port = args.port or _free_port()
     url = f"http://127.0.0.1:{port}"
+
+    # CORS origins are derived from the actual port so that explicit
+    # localhost origins match even when the port is chosen at runtime.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+        ],
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
 
     server_thread = threading.Thread(
         target=lambda: uvicorn.run(app, host="127.0.0.1", port=port,

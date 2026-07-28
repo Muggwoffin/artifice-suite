@@ -11,5 +11,39 @@
       "~/.config/opencode/**": "deny",
       "~/.local/share/opencode/auth.json": "deny"
     }
+  },
+  "mcp": {
+    "firecrawl": {
+      "type": "local",
+      "command": ["npx", "-y", "firecrawl-mcp"],
+      "environment": {
+        "FIRECRAWL_API_URL": "http://localhost:3002",
+        "FIRECRAWL_API_KEY": "local"
+      },
+      "timeout": 60000,
+      "enabled": true
+    }
+  },
+  "agent": {
+    "lead-engineer": {
+      "permission": {
+        "firecrawl_*": "allow"
+      }
+    },
+    "tester": {
+      "permission": {
+        "firecrawl_*": "allow"
+      }
+    },
+    "arch-auditor-docs": {
+      "permission": {
+        "firecrawl_*": "deny"
+      }
+    },
+    "security-auditor": {
+      "permission": {
+        "firecrawl_*": "deny"
+      }
+    }
   }
 }

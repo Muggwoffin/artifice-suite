@@ -270,9 +270,28 @@
     }).catch(function() {});
   }
 
+  // Singular / plural label pairs for each stat tile, keyed by the same
+  // data-stat name pipeline.js already looks up. Index 0 is singular
+  // (count === 1), index 1 is plural (every other count, including the
+  // "—" placeholder before any run has produced a count).
+  var STAT_LABELS = {
+    documents: ["Document", "Documents"],
+    chunks: ["Chunk", "Chunks"],
+    entities: ["Entity", "Entities"],
+    relationships: ["Relationship", "Relationships"],
+    raw: ["Raw Entity", "Raw Entities"]
+  };
+
   function setStat(name, n) {
     var el = els.statRow.querySelector("[data-stat=\"" + name + "\"]");
-    if (el) el.textContent = (n == null ? "—" : n);
+    if (!el) return;
+    el.textContent = (n == null ? "—" : n);
+
+    var labels = STAT_LABELS[name];
+    var labelEl = el.parentElement ? el.parentElement.querySelector(".stat-l") : null;
+    if (labels && labelEl) {
+      labelEl.textContent = (n === 1) ? labels[0] : labels[1];
+    }
   }
 
   // ── Pipeline execution ─────────────────────────────────────────────
