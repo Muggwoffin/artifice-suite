@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Token parity guard: compare design-system reference tokens against runtime tokens.
+"""Token parity guard: compare design-system reference tokens against runtime tokens,
+and app-local token re-declarations against the canonical runtime tokens.
 
 Compares only light-mode values to avoid false drift against dark-mode overrides.
 Exempts the four fluid-typography tokens (--text-lg, --text-h3, --text-h2, --text-hero)
@@ -7,7 +8,13 @@ because the runtime uses clamp() while the reference records a static specimen f
 that range.  For those four, the script validates that the reference's fixed rem value
 falls inside the runtime's clamp range — it does not simply skip them.
 
-Exit: 0 if tokens agree, 1 if drift or missing tokens are found.
+The app-local check scans every ``apps/*/src/*/web/static/**/*.css``, extracts light-mode
+custom-property declarations, and compares each one that shadows a canonical token name
+against the canonical value in ``packages/shared-ui/shared_ui/assets/tokens.css``.
+App-only tokens (names with no canonical counterpart) are not flagged — adding new
+tokens is fine; redefining a canonical token to a different value is the defect.
+
+Exit: 0 if all tokens agree, 1 if drift or missing tokens are found anywhere.
 """
 
 import re
@@ -95,6 +102,9 @@ def normalise(value: str) -> str:
     Also collapses whitespace around commas so that e.g. ``rgba(47, 125, 69, 0.07)``
     and ``rgba(47,125,69,0.07)``, or multi-value shadow lists separated by commas,
     compare equal.
+
+    Strips all remaining quotes as the final step so that ``'Georgia'``,
+    ``\"Georgia\"`` and bare ``Georgia`` inside a font stack compare equal.
     """
     value = _COMMENT_RE.sub("", value)
     value = " ".join(value.split())
@@ -102,6 +112,9 @@ def normalise(value: str) -> str:
     value = value.replace("'", '"')
     # Collapse all whitespace around commas to a single comma (no spaces).
     value = re.sub(r"\s*,\s*", ",", value)
+    # Strip remaining quotes — font-family name quoting (single, double, or
+    # bare) must not cause false drift.
+    value = value.replace('"', "")
     return value
 
 
@@ -145,6 +158,80 @@ def check_clamp_range(name: str, runtime_val: str, ref_val: str) -> tuple[bool, 
     )
 
 
+# ---- app-local token check ---------------------------------------------------
+
+APP_CSS_GLOB = "apps/*/src/*/web/static/**/*.css"
+
+
+def _find_app_css_files() -> list[Path]:
+    """Return every CSS file under an app's web static directory.
+
+    The glob is ``apps/*/src/*/web/static/**/*.css`` — a fifth app, or a
+    second stylesheet inside an existing app, is picked up without editing
+    the script.
+    """
+    return sorted(REPO_ROOT.glob(APP_CSS_GLOB))
+
+
+def _check_app_tokens(canonical: dict[str, str]) -> int:
+    """Compare app-local CSS tokens against the canonical runtime tokens.
+
+    For each CSS file found, extracts light-mode tokens, then compares every
+    local token that shadows a canonical name.  Tokens with no canonical
+    counterpart are left alone — they are app-specific domain vocabulary,
+    not suite-wide design tokens.
+
+    Returns the number of drifted tokens (0 = clean).
+    """
+    total_errors = 0
+
+    for css_path in _find_app_css_files():
+        css = css_path.read_text()
+        css = strip_dark_blocks(css)
+        local_tokens = extract_tokens(css)
+
+        if not local_tokens:
+            continue
+
+        # Only compare tokens that shadow a canonical name.
+        shadowed = {n for n in local_tokens if n in canonical}
+        if not shadowed:
+            continue
+
+        file_errors: list[str] = []
+        matched = 0
+
+        for name in sorted(shadowed):
+            canon_val = canonical[name]
+            local_val = local_tokens[name]
+
+            n_canon = normalise(canon_val)
+            n_local = normalise(local_val)
+
+            if n_canon != n_local:
+                file_errors.append(
+                    f"DRIFT: {name}\n"
+                    f"  canonical:  {canon_val}\n"
+                    f"  app-local:  {local_val}"
+                )
+            else:
+                matched += 1
+
+        relative = css_path.relative_to(REPO_ROOT)
+        print(f"\n  {relative} — {len(shadowed)} canonical tokens declared")
+
+        if file_errors:
+            print(f"    {matched} agree, {len(file_errors)} DRIFTED:")
+            for e in file_errors:
+                for line in e.split("\n"):
+                    print(f"      {line}")
+            total_errors += len(file_errors)
+        else:
+            print(f"    {matched} agree — clean")
+
+    return total_errors
+
+
 # ---- main -------------------------------------------------------------------
 
 def _load_runtime_tokens() -> dict[str, str]:
@@ -166,6 +253,7 @@ def main() -> int:
     runtime = _load_runtime_tokens()
     reference = _load_ref_tokens()
 
+    # ── Check 1: design-system reference vs runtime tokens ─────────
     errors: list[str] = []
     matched = 0
     exempt_ok = 0
@@ -216,10 +304,23 @@ def main() -> int:
         print(f"\n{len(errors)} ERROR(S):")
         for e in errors:
             print(f"  {e}")
-        return 1
+        exit_code = 1
+    else:
+        print("  No drift detected.")
+        exit_code = 0
 
-    print("  No drift detected.")
-    return 0
+    # ── Check 2: app-local tokens vs canonical runtime tokens ─────
+    print("\n--- App-local token check ---")
+    print(f"  canonical source: {RUNTIME_TOKENS_FILE}")
+    app_errors = _check_app_tokens(runtime)
+
+    if app_errors:
+        print(f"\n{app_errors} ERROR(S) total across apps")
+        exit_code = 1
+    else:
+        print("\n  All apps clean — no canonical tokens redefined to a different value.")
+
+    return exit_code
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 #
 # Usage:
 #   bash scripts/dispatch-opencode.sh <agent> <brief-file> [--wait SECONDS]
+#   bash scripts/dispatch-opencode.sh <agent> <brief-file> --foreground
 #   bash scripts/dispatch-opencode.sh --status
 #   bash scripts/dispatch-opencode.sh --stop <agent>
 #
@@ -118,6 +119,8 @@ cmd_stop() {
   done
   sleep 3
   pids="$(agent_pids "$agent")"
+  # shellcheck disable=SC2086  # $pids is a newline-separated PID list and MUST
+  # word-split — quoting it would pass "123 456" to kill as a single argument.
   [ -n "$pids" ] && { echo "still alive, sending KILL: $pids"; kill -KILL $pids 2>/dev/null; }
   echo "stopped."
 }
@@ -130,9 +133,15 @@ case "${1:-}" in
             cmd_stop "$2"; exit 0 ;;
 esac
 
-[ $# -ge 2 ] || { echo "usage: $0 <agent> <brief-file> [--wait SECONDS]" >&2; exit 2; }
+[ $# -ge 2 ] || { echo "usage: $0 <agent> <brief-file> [--wait SECONDS] [--foreground]" >&2; exit 2; }
 AGENT="$1"; BRIEF_SRC="$2"; shift 2
 WAIT=0
+FOREGROUND=0
+for arg in "$@"; do
+  case "$arg" in
+    --foreground) FOREGROUND=1 ;;
+  esac
+done
 [ "${1:-}" = "--wait" ] && WAIT="${2:-25}"
 
 [ -f "$BRIEF_SRC" ] || { echo "brief file not found: $BRIEF_SRC" >&2; exit 1; }
@@ -176,7 +185,14 @@ if [ "$CHARS" -lt 200 ]; then
   exit 1
 fi
 
-cat > "$RUNDIR/$AGENT.runner" <<'RUNNER'
+# Resolve the runner path here, not inside the env-prefixed command below. Written
+# inline there it reads as `AGENT=... bash "$RUNDIR/$AGENT.runner"`, where the
+# argument is expanded by THIS shell while the prefix targets the forked one
+# (shellcheck SC2097/SC2098). Same value either way, but the line lies about which
+# shell resolves it.
+RUNNER_PATH="$RUNDIR/$AGENT.runner"
+
+cat > "$RUNNER_PATH" <<'RUNNER'
 #!/usr/bin/env bash
 # GUARD 1 (part b): the brief is read from a file INSIDE this script, so no
 # quoted multi-line text ever crosses the Windows->WSL argument boundary.
@@ -187,13 +203,69 @@ opencode run --agent "$AGENT" "$(cat "$BRIEF")" > "$LOG" 2>&1
 echo "exit=$?" > "$STATUS"
 RUNNER
 
-# GUARD 3: setsid + nohup + disown + stdin from /dev/null. A plain `cmd &` inside
-# `wsl.exe -- bash -c` is reaped when that invocation returns.
+# GUARD 3: setsid + nohup + disown + stdin from /dev/null, THEN block until the
+# child proves it is alive. A plain `cmd &` inside `wsl.exe -- bash -c` is reaped
+# when that invocation returns, and setsid alone does not reliably prevent it:
+# there is a startup race. If the launching `bash -c` exits before setsid's fork
+# is established, the child dies having produced nothing.
+#
+# On 2026-07-28 that race cost a whole dispatch. The signature is precise and
+# worth recognising: **`.runner` written, `.log` absent**. The runner redirects
+# with `> "$LOG"`, and a redirect creates its file before the command runs — even
+# a missing `opencode` binary would leave an empty log plus `exit=127`. So a
+# missing log means the runner never executed a single line. That is a launch
+# failure, not a slow start, and no amount of waiting will produce output.
+#
+# Blocking here until the log appears closes the race (the parent stays alive
+# through the vulnerable window) and verifies the launch instead of asserting it.
+# --foreground sidesteps the race entirely: the caller owns the process lifetime.
+# This is the reliable path when the orchestrator can background the *invocation*
+# itself (Claude Code's `run_in_background`), because the harness then holds the
+# process open and reports completion. Prefer it over trusting detachment.
+if [ "$FOREGROUND" -eq 1 ]; then
+  echo "running $AGENT in the FOREGROUND (brief ${CHARS} chars)"
+  echo "  log: $LOG"
+  REPO="$REPO" AGENT="$AGENT" BRIEF="$BRIEF" LOG="$LOG" STATUS="$STATUS" \
+    bash "$RUNNER_PATH" < /dev/null
+  echo "finished: $(cat "$STATUS" 2>/dev/null || echo 'no status written')"
+  echo "--- banner ---"
+  head -3 "$LOG" 2>/dev/null
+  exit 0
+fi
+
 REPO="$REPO" AGENT="$AGENT" BRIEF="$BRIEF" LOG="$LOG" STATUS="$STATUS" \
-  setsid nohup bash "$RUNDIR/$AGENT.runner" > /dev/null 2>&1 < /dev/null &
+  setsid nohup bash "$RUNNER_PATH" > /dev/null 2>&1 < /dev/null &
 disown 2>/dev/null || true
 
-echo "dispatched: $AGENT  (brief ${CHARS} chars)"
+LAUNCH_TIMEOUT=15
+waited=0
+while [ "$waited" -lt "$((LAUNCH_TIMEOUT * 10))" ]; do
+  [ -f "$LOG" ] && break
+  sleep 0.1
+  waited=$((waited + 1))
+done
+
+if [ ! -f "$LOG" ]; then
+  echo "ERROR: '$AGENT' failed to launch — no log after ${LAUNCH_TIMEOUT}s." >&2
+  echo "       The runner never executed. This is the setsid startup race, not a" >&2
+  echo "       slow model: a redirect creates its log before the command runs, so" >&2
+  echo "       an absent log means no line of the runner ran at all." >&2
+  echo "       Fall back to foreground and let the caller background it:" >&2
+  echo "         $0 $AGENT <brief> --foreground" >&2
+  rm -f "$RUNDIR/$AGENT.runner"
+  exit 1
+fi
+
+# The log exists, but the process must also still be alive — a runner that died
+# immediately (bad agent name, missing binary) also leaves a log behind.
+sleep 1
+if [ -z "$(agent_pids "$AGENT")" ] && [ ! -s "$STATUS" ]; then
+  echo "ERROR: '$AGENT' started but died immediately. Log follows:" >&2
+  head -20 "$LOG" >&2
+  exit 1
+fi
+
+echo "dispatched: $AGENT  (brief ${CHARS} chars) — launch confirmed"
 echo "  log:    $LOG"
 echo "  status: $STATUS   (contains 'exit=N' once finished)"
 
