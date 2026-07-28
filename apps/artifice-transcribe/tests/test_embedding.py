@@ -196,6 +196,7 @@ class TestAutoMatchResilience:
                     job_id=job_id,
                     speaker_label="SPEAKER_00",
                     embedding=emb_blob,
+                    dimension=4,
                 )
             )
             db.add(
