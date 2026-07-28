@@ -1,10 +1,13 @@
 """FastAPI backend for the ArtificeDraft web frontend.
 
-Additive, not a replacement: `src/gui.py` and the CLI entry point in
-`the artifice-draft CLI (src/artifice_draft/cli.py)` are untouched, and every pipeline module this imports
-(`doc_parser`, `llm_client`, `doc_writer`, `review`, `changelog`) is exactly
-what the tkinter build already uses. The only new code is the adapter in
-`runtime.py` and this HTTP/SSE layer over it.
+This is the primary interface for ArtificeDraft. The pipeline modules it
+imports (`doc_parser`, `llm_client`, `doc_writer`, `review`, `changelog`)
+are the same ones the headless CLI path in `cli.py`
+(`artifice-draft --headless`) runs; the web layer only adds the adapter in
+`runtime.py` and this HTTP/SSE layer over it. The former tkinter build
+(`gui.py` plus its `--gui` entry point) was removed in commit 5b01338, so
+this server and the headless CLI are now the two ways to drive the same
+pipeline.
 
 Progress reaches the browser as Server-Sent Events, same choice and same
 reasoning as the OCR Pipeline tool's web build: one-directional is all a
@@ -21,7 +24,7 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -48,6 +51,16 @@ import shared_ui
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 
 app = FastAPI(title="ArtificeDraft")
+
+
+@app.middleware("http")
+async def no_cache_static(request: Request, call_next):
+    response: Response = await call_next(request)
+    if request.url.path.startswith("/static/") or request.url.path.startswith("/shared/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 
 # --------------------------------------------------------------------------- #

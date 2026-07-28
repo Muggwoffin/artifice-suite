@@ -79,6 +79,8 @@
     <button class="btn tiny" id="model-guide-close" style="margin-top:0.5rem;">Close Guide</button>
   </div>
 
+  <p class="dim" style="margin:0.5rem 0 0 0;">Starting a transcription downloads the selected Whisper, diarization and alignment models from Hugging Face on first use &mdash; roughly 140&nbsp;MB&ndash;3&nbsp;GB depending on model size. Later runs reuse the cached copy.</p>
+
         <div class="toolbar">
           <button class="btn accent" id="btn-start" disabled>&#9654; Start Transcription</button>
           <button class="btn" id="btn-clear-file" disabled>Clear</button>
@@ -457,6 +459,7 @@
           <button class="btn tiny" id="btn-health-close">&times;</button>
         </div>
       </div>
+      <p class="dim" style="margin:0 0 0.6rem 0;">Loading models downloads them from Hugging Face on first use &mdash; roughly 140&nbsp;MB&ndash;3&nbsp;GB depending on model size. Later runs reuse the cached copy.</p>
       <div class="health-error hidden" id="health-error-box">
         <span class="health-error-icon">!</span>
         <span class="health-error-text" id="health-error-text"></span>
