@@ -15,16 +15,26 @@
      Libre+Baskerville:ital,wght@0,400;0,700;1,400
      Playfair+Display:ital,wght@0,600;0,700;0,900;1,700
 
-   Playfair Display and Libre Baskerville ship as variable TTFs (as
-   vendored in apps/artifice-ocr/assets/fonts/) — a single file's `wght`
-   axis covers every weight requested, so one @font-face rule per style
-   with a font-weight range is correct and matches how a variable font is
-   meant to be served. No woff2 conversion tool (fonttools' woff2 support
-   needs the `brotli` Python extension; neither it nor a `woff2_compress`
-   binary is available in this environment) was available for these two
-   TTFs — see packages/shared-ui/README.md for the full note. Archivo was
-   fetched directly from Google's CDN already in woff2 format, so no
-   conversion was needed for it. */
+   All five faces are variable fonts — a single file's `wght` axis covers
+   every weight requested, so one @font-face rule per style with a
+   font-weight *range* is correct and matches how a variable font is meant
+   to be served. Do not replace these with per-weight static files.
+
+   All five now ship as woff2. Playfair Display and Libre Baskerville were
+   converted from TTF on 2026-07-28 (897K -> 328K, a 63% saving); the
+   `wght` axis was verified present after conversion, since a conversion
+   that dropped it would silently break every bold weight while still
+   rendering something plausible.
+
+   The conversion needs fontTools' *Python* Brotli extension — NOT the
+   `brotli` CLI that `apt install brotli` provides. That distinction cost a
+   previous attempt: the CLI was installed, fontTools still refused, and
+   the fonts shipped as TTF. It is declared as `fonttools[woff]` in the
+   root pyproject's dev group, so `uv sync` provides it. To reconvert:
+
+     uv run python -c "from fontTools.ttLib import TTFont; \
+       f=TTFont('<in>.ttf'); f.flavor='woff2'; f.save('<out>.woff2')"
+*/
 
 @font-face {
   font-family: "Archivo";
@@ -39,7 +49,7 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("./fonts/LibreBaskerville.ttf") format("truetype");
+  src: url("./fonts/LibreBaskerville.woff2") format("woff2");
 }
 
 @font-face {
@@ -47,7 +57,7 @@
   font-style: italic;
   font-weight: 400 700;
   font-display: swap;
-  src: url("./fonts/LibreBaskerville-Italic.ttf") format("truetype");
+  src: url("./fonts/LibreBaskerville-Italic.woff2") format("woff2");
 }
 
 @font-face {
@@ -55,7 +65,7 @@
   font-style: normal;
   font-weight: 400 900;
   font-display: swap;
-  src: url("./fonts/PlayfairDisplay.ttf") format("truetype");
+  src: url("./fonts/PlayfairDisplay.woff2") format("woff2");
 }
 
 @font-face {
@@ -63,5 +73,5 @@
   font-style: italic;
   font-weight: 400 900;
   font-display: swap;
-  src: url("./fonts/PlayfairDisplay-Italic.ttf") format("truetype");
+  src: url("./fonts/PlayfairDisplay-Italic.woff2") format("woff2");
 }

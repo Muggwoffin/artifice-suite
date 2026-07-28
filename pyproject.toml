@@ -55,6 +55,7 @@ shared-ui = { workspace = true }
 
 [dependency-groups]
 dev = [
+    "fonttools[woff]>=4.63.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
 ]

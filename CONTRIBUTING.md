@@ -211,11 +211,39 @@ not currently harmful.
 2. **Design system compliance.** Frontend/UI contributions must follow
    `Design_Philosophy.md` (The New Masses design system) — its color
    tokens, typography, and stated anti-patterns apply to every app.
-3. **Local-first, no silent network calls.** Contributions must not
-   introduce telemetry, analytics, or any transmission of user documents,
-   audio, or BYO model API keys off the local machine. See
-   `.opencode/agents/security-auditor.md` for the specific checks this
-   project holds itself to.
+3. **Local-first, no _silent_ network calls.** The rule is not "never touch the
+   network" — the apps talk to cloud models and map servers when the user asks
+   them to. The rule is that the user is never surprised. Every outbound request
+   falls into exactly one of three tiers:
+
+   | Tier | Rule | Examples |
+   |---|---|---|
+   | **Never** | Application assets and anything the user did not ask for | Web fonts, JS libraries, telemetry, analytics, update checks, crash reporting |
+   | **Only on explicit user action, disclosed before the action** | The user clicks something, having been told what it will contact | OpenStreetMap tiles, Nominatim geocoding |
+   | **User's own credentials, user's own endpoint** | BYOM — the user supplied the key and chose the host | OpenAI/Anthropic/any cloud model API |
+
+   **Tier 1 is the one that gets violated by accident**, because it looks like a
+   styling or convenience decision rather than a network one. Two real cases, both
+   fixed: `artifice-graph` loaded Leaflet from `unpkg.com` on every Library page
+   view whether or not the map was opened (commit `477820a`), and `ocr`, `draft`
+   and `transcribe` all loaded fonts from `fonts.googleapis.com` on every page
+   load. SRI hashes do not help here — they protect integrity, not privacy; the
+   CDN still saw the user's IP and the timing of every view. **Vendor the asset.**
+
+   **Tier 2 is the pattern to copy.** `artifice-graph`'s Library page is the
+   reference implementation: the map does not load on page view, there is a
+   "Load Map" button, and the text beside it reads *"Loading the map contacts
+   openstreetmap.org to fetch map tiles"* — disclosed **before** the click, not
+   in a privacy policy. See `web/templates/library.html:213-218`.
+
+   Never transmit user documents, audio, transcripts, or API keys anywhere the
+   user did not explicitly direct. See `.opencode/agents/security-auditor.md` for
+   the specific checks this project holds itself to.
+
+   This matters more than it would for most software: the apps are being packaged
+   as desktop `.exe` / `.dmg` builds wrapping a local server in a native webview.
+   A user who sees a firewall prompt, or who discovers an unexpected outbound
+   connection, reasonably concludes the local-first promise was never true.
 4. **Directory parity.** Apps share the same internal layout
    (`src/<package>/`, `tests/`, `pyproject.toml`, `Dockerfile`,
    `README.md`). New apps or major restructuring should preserve that
@@ -240,26 +268,52 @@ it.
 - `[hidden] { display: none !important; }` is declared globally. Hide things with the `hidden`
   attribute rather than a bespoke `.is-hidden` class per component.
 
-### JavaScript: vanilla, ES5-compatible, no build step
+### JavaScript: vanilla, no build step
 
-All JavaScript is plain ES5, wrapped in an IIFE, exposing itself on `window`. No framework, no
-bundler, no transpiler, no `let`, no `const`, no arrow functions. As of this writing the rule holds
-exactly: **zero** occurrences of `let`, `const` or `=>` across the apps' JavaScript, and every JS
-file is IIFE-wrapped.
+**The rule is no build step and no framework.** Modern JavaScript syntax is fine — `let`, `const`,
+arrow functions, template literals and classes all run natively in every browser this project
+targets, and require no tooling whatsoever. Write JavaScript that a browser can execute as-is.
 
-This is not stylistic conservatism, and it is worth understanding before proposing to relax it:
+> **Corrected 2026-07-28.** This section previously required ES5 and claimed the rule held
+> "exactly: **zero** occurrences of `let`, `const` or `=>`". That was measurably false.
+> Actual counts across the apps' own JavaScript:
+>
+> | App | `let` | `const` | `=>` |
+> |---|---|---|---|
+> | `artifice-ocr` | 54 | 445 | 213 |
+> | `artifice-transcribe` | 29 | 276 | 106 |
+> | `artifice-draft` | 6 | 65 | 44 |
+> | `artifice-graph` | 0 | 0 | 0 |
+>
+> 17 of 19 app JavaScript files already used modern syntax. The document described a discipline
+> that existed in one app out of four, and forbidding `const` while 786 of them shipped made the
+> whole section easy to dismiss — including the part that actually matters.
 
-- **It follows from the local-first guarantee.** A build step means a `node_modules` tree, a lockfile
-  and a compile pass standing between the source and the running app. The project's promise is that
-  a researcher can clone the repository, run `uv sync`, and have working software on a machine with
-  no Node toolchain at all.
-- **It keeps the harness auditable.** `security-auditor` reviews the code that actually runs. Once
-  the shipped artefact is compiled output, reading the source no longer tells you what executes.
-- **It suits the problem.** These are harnesses — forms, status, logs, progress. Nothing here needs
-  a virtual DOM, and the four apps have not run into a wall that a framework would remove.
+What the rule protects, and why it is worth keeping:
 
-If you believe a change genuinely requires more, raise it as a design question first. Do not
-introduce it incidentally inside a feature PR.
+- **The install promise.** A build step means a `node_modules` tree, a lockfile and a compile pass
+  standing between the source and the running app. A researcher must be able to clone the
+  repository, run `uv sync`, and have working software on a machine with no Node toolchain at all.
+  This gets *more* important, not less, as the apps are packaged into `.exe` / `.dmg` builds —
+  bundling a Python runtime and a Node build pipeline into one cross-platform artefact is
+  substantially harder than bundling Python alone.
+- **Auditability.** `security-auditor` reviews the code that actually runs. Once the shipped
+  artefact is compiled output, reading the source no longer tells you what executes. For software
+  handling sensitive archival material — and for a JOSS submission where reviewers read the
+  source — that is not a small loss.
+- **Fit.** These are harnesses: forms, status, logs, progress. Nothing here needs a virtual DOM,
+  and `artifice-graph` implements the most sophisticated UI in the suite in zero-dependency
+  vanilla JavaScript.
+
+**On `design-system/components/`.** Those 18 components ship as `.jsx` with React imports. They
+**cannot be imported** — JSX is not JavaScript, and a browser cannot execute it without a compile
+step. Treat them as what they are: a **specification**. Each component ships a `.prompt.md`
+describing its purpose, variants and states in prose, with the `.jsx` as an unambiguous reference
+for exact spacing, colour and hover behaviour. Read them; implement the equivalent in plain
+JavaScript. Do not add React, and do not add a bundler to consume them.
+
+If you believe a change genuinely requires a build step, raise it as a design question first. Do
+not introduce it incidentally inside a feature PR.
 
 ### File and naming conventions
 
