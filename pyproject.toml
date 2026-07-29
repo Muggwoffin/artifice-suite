@@ -3,6 +3,8 @@ name = "artifice-suite"
 version = "1.0.0"
 description = "Local-first, BYOM desktop tool suite designed around harness architecture."
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]

@@ -159,6 +159,58 @@ jobs:
               print(f'All wheel-content assertions passed ({len(names)} entries).')
           "
 
+      - name: Assert wheel METADATA declares MIT licence
+        run: |
+          python3 -c "
+          import zipfile, glob
+
+          whl_files = glob.glob('apps/artifice-ocr/dist/*.whl')
+          assert len(whl_files) == 1, f'Expected exactly one .whl, found {len(whl_files)}'
+          whl_path = whl_files[0]
+
+          with zipfile.ZipFile(whl_path) as z:
+              meta_entries = [n for n in z.namelist() if n.endswith('.dist-info/METADATA')]
+              assert len(meta_entries) == 1, \
+                  f'Expected exactly one METADATA, found {meta_entries}'
+              meta = z.read(meta_entries[0]).decode('utf-8')
+              lic_lines = [l for l in meta.split('\n')
+                           if l.lower().startswith('license-expression:')]
+              assert lic_lines, 'No License field found in wheel METADATA'
+              assert any('MIT' in l for l in lic_lines), \
+                  f'License field does not declare MIT: {lic_lines}'
+              print(f'METADATA licence field: {lic_lines[0].strip()}')
+          "
+
+      - name: Assert every .ttf font has accompanying licence text
+        run: |
+          python3 -c "
+          import zipfile, glob, os
+
+          whl_files = glob.glob('apps/artifice-ocr/dist/*.whl')
+          whl_path = whl_files[0]
+
+          with zipfile.ZipFile(whl_path) as z:
+              names = z.namelist()
+              ttf_entries = [n for n in names if n.endswith('.ttf')]
+              for font_path in ttf_entries:
+                  font_dir = os.path.dirname(font_path)
+                  font_base = os.path.splitext(os.path.basename(font_path))[0]
+                  # Derive the family name: strip -Italic / -Regular suffix
+                  family = font_base.replace('-Italic', '').replace('-Regular', '')
+                  expected_txt = f'{font_dir}/OFL-{family}.txt'
+                  txt_in_dir = [
+                      n for n in names
+                      if n.startswith(font_dir + '/') and n.endswith('.txt')
+                  ]
+                  assert expected_txt in txt_in_dir, (
+                      f'Font {font_path}: no accompanying licence text; '
+                      f'expected {expected_txt}, found .txt: {txt_in_dir}'
+                  )
+                  print(f'  {font_path}  ->  {expected_txt}  (present)')
+
+          print(f'Font-licence assertions passed for all {len(ttf_entries)} font(s).')
+          "
+
   # ── Multi-platform smoke test ─────────────────────────────────────────────
   # The suite targets Windows and macOS as well as Linux.  A full matrix
   # across three OSes × four apps would be 12 jobs.  That is not practical
