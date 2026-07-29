@@ -39,6 +39,34 @@ class TestValidateDirectory:
         assert exc_info.value.status_code == 400
         assert "outside allowed roots" in exc_info.value.detail
 
+    @pytest.mark.parametrize(
+        "hidden",
+        [".ssh", ".gnupg", ".aws", ".config", ".local/share/secrets"],
+    )
+    def test_rejects_hidden_directories_under_an_allowed_root(self, hidden):
+        """Home is an allowed root, which would otherwise expose ~/.ssh.
+
+        The whole home directory is permitted deliberately — a user's corpus
+        lives there — so the dotfile rule is what stops "allowed root" from
+        meaning "including everywhere credentials are kept".
+        """
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_directory(str(Path.home() / hidden), "vault_dir")
+        assert exc_info.value.status_code == 400
+        assert "hidden directory" in exc_info.value.detail
+
+    def test_hidden_check_applies_below_the_root_not_across_it(self, tmp_path):
+        """A visible directory is accepted even if a *parent of the root* is
+        dotted.
+
+        Checked below the matched root rather than across the absolute path, so
+        a checkout living under something like ~/.local/projects is not made
+        unusable by its own parent.
+        """
+        visible = tmp_path / "corpus" / "1923"
+        visible.mkdir(parents=True)
+        assert _validate_directory(str(visible), "input_dir") == str(visible)
+
     def test_rejects_var(self):
         """Arbitrary system paths are rejected."""
         with pytest.raises(HTTPException) as exc_info:
@@ -85,12 +113,46 @@ class TestValidateBaseUrl:
         """HTTPS on localhost is allowed."""
         assert _validate_base_url("https://localhost:443/v1", "llm_base_url")
 
-    def test_rejects_external(self):
-        """External hosts must be rejected with HTTP 400."""
+    def test_accepts_private_network_address(self):
+        """A model served on the local network is a first-class case.
+
+        Academics reach centrally-hosted university models from a personal
+        machine; refusing RFC1918 would make the software unusable there.
+        """
+        assert _validate_base_url("http://192.168.1.50:11434/v1", "llm_base_url")
+        assert _validate_base_url("http://10.20.30.40:8000/v1", "llm_base_url")
+
+    def test_rejects_public_address_without_opt_in(self):
+        """A public address requires an explicit opt-in.
+
+        Uses an IP literal rather than a hostname so the test does not depend
+        on DNS — a machine with a wildcard resolver would otherwise change the
+        outcome.
+        """
         with pytest.raises(HTTPException) as exc_info:
-            _validate_base_url("http://evil.example.com:11434/v1", "llm_base_url")
+            _validate_base_url("http://8.8.8.8:11434/v1", "llm_base_url")
         assert exc_info.value.status_code == 400
-        assert "not in the local-first allowlist" in exc_info.value.detail
+        assert "ARTIFICE_ALLOW_PUBLIC_MODELS" in exc_info.value.detail
+
+    def test_rejects_link_local_even_though_it_is_not_public(self):
+        """169.254.169.254 is the cloud metadata endpoint.
+
+        It is neither loopback nor private, but the interesting thing is that
+        it must stay refused even if public addresses are later opted into —
+        link-local is checked before the opt-in.
+        """
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_base_url("http://169.254.169.254/latest/meta-data/", "llm_base_url")
+        assert exc_info.value.status_code == 400
+        assert "link-local" in exc_info.value.detail
+
+    def test_unresolvable_host_is_rejected(self):
+        """A name that does not resolve fails closed rather than passing."""
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_base_url(
+                "http://nonexistent.invalid:11434/v1", "llm_base_url"
+            )
+        assert exc_info.value.status_code == 400
 
     def test_rejects_ftp_scheme(self):
         """Non-HTTP schemes are rejected even on allowed hosts."""

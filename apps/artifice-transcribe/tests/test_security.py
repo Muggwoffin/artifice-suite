@@ -12,15 +12,42 @@ import pytest
 class TestSSRFValidation:
     """SSRF host allowlist for inference endpoints — finding #2."""
 
-    async def test_models_endpoint_rejects_external_url(self, api):
-        """POST /inference/models with an external base_url is rejected."""
+    async def test_models_endpoint_rejects_public_address(self, api):
+        """A public address is rejected without an explicit opt-in.
+
+        An IP literal is used rather than a hostname so the assertion does not
+        depend on DNS: a resolver that answers for made-up names would
+        otherwise change which branch rejects the request.
+        """
         resp = await api.client.post(
             "/api/v1/inference/models",
-            json={"base_url": "http://evil.example.com/v1", "api_key": "not-needed"},
+            json={"base_url": "http://8.8.8.8/v1", "api_key": "not-needed"},
         )
         assert resp.status_code == 400
-        detail = resp.json()["detail"]
-        assert "not in the local-first allowlist" in detail
+        assert "ARTIFICE_ALLOW_PUBLIC_MODELS" in resp.json()["detail"]
+
+    async def test_models_endpoint_rejects_cloud_metadata_address(self, api):
+        """169.254.169.254 stays refused — it is checked before the opt-in."""
+        resp = await api.client.post(
+            "/api/v1/inference/models",
+            json={"base_url": "http://169.254.169.254/v1", "api_key": "not-needed"},
+        )
+        assert resp.status_code == 400
+        assert "link-local" in resp.json()["detail"]
+
+    async def test_models_endpoint_accepts_private_network_address(self, api):
+        """A model on the local network must pass validation.
+
+        The connection itself will fail in a test environment; what matters is
+        that it is not rejected *as a URL*.
+        """
+        resp = await api.client.post(
+            "/api/v1/inference/models",
+            json={"base_url": "http://192.168.1.50:11434/v1", "api_key": "not-needed"},
+        )
+        if resp.status_code == 400:
+            assert "ARTIFICE_ALLOW_PUBLIC_MODELS" not in resp.json().get("detail", "")
+            assert "link-local" not in resp.json().get("detail", "")
 
     async def test_models_endpoint_accepts_localhost(self, api):
         """POST /inference/models with a localhost base_url is accepted
