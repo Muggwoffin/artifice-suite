@@ -1,12 +1,12 @@
 # Artifice Suite — Implementation Plan
 
-**Status as of 2026-07-28 (session 3).** This document records what has been built and
+**Status as of 2026-07-29 (session 4).** This document records what has been built and
 verified, and stages the remaining work. It is the project to-do list; `ARCHITECTURE.md` describes
 the system as designed, `CLAUDE.md` governs how agents work on it, and `Design_Philosophy.md` is
 the binding design authority.
 
 > **Phase 1 signed off. Phase 2 substantially delivered. Phase 1.5 mostly closed.** Start from
-> **Part IV**, re-derived from measurement on 2026-07-28.
+> **Part IV**, re-derived from measurement on 2026-07-29.
 >
 > **This plan drifted badly from the tree, and that is the standing risk with it.** Three recorded
 > claims were refuted by measurement in a single session, two of them gating a phase, and one
@@ -54,11 +54,27 @@ quietly edited**, with the wrong claim quoted. That is deliberate: a wrong *caus
 person looking in the wrong file, and this plan has now demonstrated three times that an unverified
 figure becomes folklore.
 
-**Fleet.** `ui-ux` moved to `github-copilot/claude-sonnet-4.6`; the whole fleet is now off the
-maintainer's Claude subscription, which had been shared with the orchestrator and ran out mid-task.
-`arch-auditor-docs` moved to `gpt-5.4`. `opencode.json` grants the per-user data directories, after
-`lead-engineer` proved structurally unable to verify its own migration and said so rather than
-claiming success.
+**Fleet.** `ui-ux` moved to `github-copilot/claude-sonnet-4.6`, and `arch-auditor-docs` now runs on
+`github-copilot/gpt-5.4` — both measured from `.opencode/agents/*.md` on 2026-07-29. The whole
+fleet is now off the maintainer's Claude subscription, `.opencode/agents/` contains **7** agent
+definitions measured 2026-07-29, and `.claude/agents/` is empty measured the same day.
+`opencode.json` grants the per-user data directories, after `lead-engineer` proved structurally
+unable to verify its own migration and said so rather than claiming success.
+
+### Session 4 reconciliation — 2026-07-29
+
+Re-measurement closed **six** stale Part IV items without code changes: `artifice-transcribe`
+defaults its data paths through `platformdirs`; its reloader is now opt-in via
+`ARTIFICE_TRANSCRIBE_RELOAD`; no app stylesheet sets `font-size` on `html`; CI exists at
+`.github/workflows/ci.yml`; the shared-ui web-font payload is now **371,124 bytes** across **5**
+`.woff2` files measured 2026-07-29; and `scripts/token-parity-check.py` now exits **0** with **53**
+agreeing tokens and **4** clamp-range exemptions measured the same day.
+
+**A seventh was closed and then reopened within the hour.** `--control-height` does exist in
+shared-ui and is used in all four apps — but a rendered measurement showed the rule it serves is
+still violated, because `min-height` does not clamp a control that is already taller. See Part IV
+item 5. **The static check and the rendered check disagreed, and the rendered one was right**;
+that is the whole reason the design-director loop in `CLAUDE.md` requires a browser.
 
 **Reading the status marks:**
 
@@ -75,19 +91,26 @@ claiming success.
 
 ### I.1 Agent fleet
 
-The orchestrator drives five sub-agents across two runtimes. `security-auditor` moved off Claude
-Code to reduce Claude token consumption; it is a safe candidate for a cheaper model because it is
-read-only and its findings route through the orchestrator before any code is written. It went to
-Gemini first, then to `opencode-go/qwen3.7-max` — Gemini worked but was rate-limited into
-uselessness, running **43 minutes at 2.8% CPU** on a real audit without producing anything.
+The orchestrator currently drives **7** sub-agents on **1** runtime, measured 2026-07-29 against
+`.opencode/agents/*.md`; `.claude/agents/` is empty measured the same day. `security-auditor`
+moved off Claude to reduce Claude token consumption; it is a safe candidate for a cheaper model
+because it is read-only and its findings route through the orchestrator before any code is written.
+It went to Gemini first, then to `opencode-go/qwen3.7-max` — Gemini worked but was rate-limited
+into uselessness, running **43 minutes at 2.8% CPU** on a real audit without producing anything.
 
-| Agent | Runtime | Model | Status |
+| Agent | Runtime | Model | Measured 2026-07-29 |
 |---|---|---|---|
-| `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | **Verified** |
-| `tester` | OpenCode | `opencode-go/kimi-k3` | **Verified** |
-| `arch-auditor-docs` | OpenCode | `github-copilot/claude-sonnet-4.6` | **Verified** — moved off `glm-5.2` 2026-07-28 for throttling; banner re-asserted after the swap |
-| `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | **Verified** on the banner — audit re-dispatched after the Gemini swap |
-| `ui-ux` | Claude Code | `sonnet` | **Verified** |
+| `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | `.opencode/agents/lead-engineer.md` |
+| `tester` | OpenCode | `opencode-go/kimi-k3` | `.opencode/agents/tester.md` |
+| `arch-auditor-docs` | OpenCode | `github-copilot/gpt-5.4` | `.opencode/agents/arch-auditor-docs.md` |
+| `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | `.opencode/agents/security-auditor.md` |
+| `ui-ux` | OpenCode | `github-copilot/claude-sonnet-4.6` | `.opencode/agents/ui-ux.md` |
+| `code-reviewer` | OpenCode | `github-copilot/claude-sonnet-5` | `.opencode/agents/code-reviewer.md` |
+| `oss-reviewer` | OpenCode | `ollama/gemma4-32k:12b` | `.opencode/agents/oss-reviewer.md` |
+
+This section previously said "five sub-agents across two runtimes". That was stale by 2026-07-29:
+`ui-ux` is now on OpenCode, `arch-auditor-docs` is on `gpt-5.4`, and `code-reviewer` plus
+`oss-reviewer` were missing from the table entirely.
 
 `scripts/smoke-test-agents.sh` asserts registration, model identity and read-only tooling.
 Re-run after the Gemini migration: **13 passed, 0 failed** — every agent confirmed answering on its
@@ -309,28 +332,32 @@ hierarchies. Only graph has a real `templates/` tree (`base.html`, `index.html`,
 `about.html`). So Phase 2 is still not "copy graph three times" — there is little structure in the
 other three to apply graph's patterns *to* — but the obstacle is thinness, not divergence.
 
-**There is no CI.** `.github/workflows/` does not exist, so the 34 test files are never run
-automatically and nothing enforces the parity or security rules on a pull request.
+**~~There is no CI.~~ — stale by measurement on 2026-07-29.** `.github/workflows/ci.yml` exists and
+defines **4** jobs measured 2026-07-29: `gates`, `tests`, `wheel` and `tests-cross-platform`.
+`gates` runs `shellcheck`, `gitleaks detect --redact --no-banner`, `scripts/token-parity-check.py`
+and `scripts/audit-controls.py`; `wheel` builds `artifice-ocr` and asserts packaged fonts, prompt
+templates and absence of stale `gui/` payload. Local suite results re-measured 2026-07-29 by test
+execution: OCR **306 passed, 1 skipped**, Draft **149 passed**, Graph **48 passed**, Transcribe
+**54 passed**.
 
 **IDE cruft is committed** — `.idea/` directories in the repo root, `artifice-ocr`,
 `artifice-transcribe` and `packages/model-harness`.
 
-**The other three apps do not use the token system.** `artifice-ocr`, `artifice-draft` and
-`artifice-transcribe` each redeclare the canonical token block at the top of their own
-`web/static/css/app.css`. **Quantified 2026-07-28** — ocr declares 62 local tokens of which 55
-shadow a canonical name, draft 61/55, transcribe 54/53. `artifice-graph`'s `entity-colors.css` is
-the counter-example and the target state: 13 tokens, **zero** shadowing, pure domain vocabulary.
+**~~The other three apps do not use the token system.~~ — overstated on 2026-07-28 and re-measured
+2026-07-29.** The canonical shadow blocks are gone from the main app stylesheets. Measured
+2026-07-29 against each app's primary `app.css`: OCR carries **6** local tokens
+(`--indigo`, `--diff-insert`, `--diff-delete`, `--diff-replace`, `--marker-bg`, `--radius`), Draft
+carries **5** (`--diff-insert`, `--diff-delete`, `--diff-replace`, `--marker-bg`, `--radius`),
+Transcribe carries **0**, and Graph carries **0** in its main app stylesheet. These remaining OCR
+and Draft tokens are app-specific vocabulary rather than canonical re-declarations.
 
-Worse than redeclaration, and still present:
-`artifice-transcribe/src/artifice_transcribe/web/static/css/app.css:818,874` hardcodes `#dc3545`
-directly for `.health-dot.error` and `.health-status.error`, bypassing tokens entirely and using
-the Bootstrap red removed from the design system for being off-palette. It is not alone — ocr and
-draft both carry stock Bootstrap `--success: #28a745` and `--warning: #ffc107` against canonical
-`#455f2b` and `#7c5e1a`.
+Still open, but now a separate issue rather than token-shadow retirement:
+`artifice-transcribe/src/artifice_transcribe/web/static/css/app.css:757-759,816-818` hardcodes
+Bootstrap status colours (`#28a745`, `#ffc107`, `#dc3545`) for health badges instead of consuming
+tokens.
 
-`scripts/token-parity-check.py` now enforces this and **currently exits 1**, reporting 10 drifted
-tokens across the three apps. Expect this class of drift throughout Phase 2; it is the reason that
-phase is a design pass and not a copy-paste.
+`scripts/token-parity-check.py` now enforces this and **exits 0 measured 2026-07-29**, reporting
+**53** agreeing canonical tokens and **4** exempted clamp-range checks.
 
 ---
 
@@ -481,10 +508,13 @@ Leaflet from unpkg). **The gate is now open — see the sign-off below.**
       **zero** requests to `googleapis.com`/`gstatic.com`. Verified rendered: `document.fonts.status`
       is `loaded`, all three families resolve, and the variable-font weight ranges are correct
       (Archivo 400–700, Libre Baskerville 400–700, Playfair Display 400–900), italics included.
-      Caveat: only Archivo is woff2. The two TTFs could not be converted — `fontTools` is present in
-      `.venv` but its woff2 support needs the `brotli` extension, which is not installed. Total font
-      payload is **940 KB**; `pip install brotli` and re-running the conversion would roughly halve
-      it. Local-first, so this costs page weight rather than network
+      **Correction measured 2026-07-29:** all **5** shared-ui web fonts now ship as `.woff2`, not
+      just Archivo. Total shared-ui web-font payload is **371,124 bytes** measured 2026-07-29
+      across `Archivo`, `LibreBaskerville`, `LibreBaskerville-Italic`, `PlayfairDisplay` and
+      `PlayfairDisplay-Italic`. The earlier **940 KB** figure was true before the 2026-07-28
+      reconversion and is retained elsewhere only as history of that failed first pass. Separate and
+      still intentional: `artifice-ocr` keeps **4** app-local `.ttf` files for ReportLab PDF export,
+      which are not part of the shared web-font payload
 
 **Two colour problems remain in the status triad, found by verification rather than by the change
 itself.** Neither renders anywhere today — `--success` and `--warning` are still unreferenced in
@@ -512,7 +542,7 @@ Verified at sign-off, all against the running system:
 
 | Check | Result |
 |---|---|
-| Test suite | 47 passed, 0 failed |
+| Test suite | 47 passed, 0 failed at sign-off on 2026-07-27; 48 passed measured 2026-07-29 |
 | Control bindings (`scripts/audit-controls.py`) | `artifice-graph` clean |
 | External network refs in templates | openstreetmap only, and only behind the Load Map click |
 | `node --check` on both JS files | pass |
@@ -533,10 +563,13 @@ Verified at sign-off, all against the running system:
 - The Vision Support field nests two `<label>` elements pointing at the same checkbox; a screen
   reader may announce it twice.
 - `pipeline.js:49` uses an ES6 default parameter against the vanilla-ES5 rule in `CONTRIBUTING.md`.
-- Font payload is 940 KB because only Archivo is woff2 — `brotli` is now installable (see Part V)
-  and would roughly halve it.
-- [ ] Decide whether Google Fonts should be vendored locally — `base.html` currently fetches from
-      `fonts.googleapis.com`, which contradicts the local-first, offline guarantee
+- ~~Font payload is 940 KB because only Archivo is woff2 — `brotli` is now installable (see Part
+  V) and would roughly halve it.~~ **Stale by measurement on 2026-07-29.** Shared-ui web fonts now
+  ship as **5** `.woff2` files totalling **371,124 bytes** measured 2026-07-29. OCR still keeps
+  **4** local `.ttf` files for PDF export by design.
+- [x] ~~Decide whether Google Fonts should be vendored locally~~ — **done earlier, stale here by
+      2026-07-29.** `base.html` no longer fetches `fonts.googleapis.com`; the decision and migration
+      are already recorded above.
 
 ### Phase 1.5 — Security remediation *(blocks the public release, not the design rollout)*
 
@@ -629,36 +662,13 @@ through rather than deleted, because each was wrong in an instructive way.
       Genuinely remaining: the three parallel `720px` blocks in `pipeline.css` could merge. That
       is a tidy-up, not a prerequisite.
 - [ ] Apply the graph patterns to `artifice-ocr`, then `artifice-draft`, then `artifice-transcribe`
-- [ ] **Retire the app-local token blocks that already exist.** This is not a forward-looking
-      constraint — it is remediation. Measured 2026-07-28 against the 56 canonical tokens in
-      `packages/shared-ui/shared_ui/assets/tokens.css`:
-
-      | App | Local tokens | Shadow a canonical name | Of those, value drifts |
-      |---|---|---|---|
-      | `artifice-ocr` | 62 | 55 | 6 (4 real, 2 quoting-only) |
-      | `artifice-draft` | 61 | 55 | 4 |
-      | `artifice-transcribe` | 54 | 53 | 2 |
-      | `artifice-graph` (`entity-colors.css`) | 13 | **0** | 0 |
-
-      All three re-declare essentially the whole canonical set inside their own
-      `web/static/css/app.css`. `CONTRIBUTING.md:238,248` already forbids this; the apps avoided
-      the *filename* `tokens.css`, not the practice. `artifice-graph` is the counter-example and
-      the target state: 13 tokens, zero shadowing, pure domain vocabulary.
-
-      The value drift itself is narrow and specific:
-      - `--success: #28a745` and `--warning: #ffc107` in **ocr** and **draft** are **stock
-        Bootstrap 4/5 defaults, unmodified**, against canonical `#455f2b` olive and `#7c5e1a`
-        ochre. Saturated cold green and amber in a warm paper-and-ink palette — the most
-        visually wrong values in the token layer, and the reason this is a design pass and not
-        a find-and-replace.
-      - `--error: #9a3324` in **all three** apps against canonical `#a8322b`. The apps agree
-        with each other and `tokens.css` is the outlier, so decide by eye which is correct —
-        this one may be a fix to *canonical*, not to the apps.
-      - `--font-mono` differs everywhere: apps lead with Cascadia Mono / Consolas (Windows
-        first), canonical with SFMono-Regular (macOS first). A genuine cross-platform question
-        given the suite targets Windows 11 and Apple Silicon equally, not drift to be flattened.
-      - ocr's `--font-body` / `--font-display` differ **only in quoting** (`'Georgia'` vs
-        `Georgia`). Not drift. Any tooling that reports them is miscalibrated.
+- [x] ~~Retire the app-local token blocks that already exist.~~ **Landed, re-measured 2026-07-29.**
+      Against the main app stylesheets measured 2026-07-29, OCR now carries **6** app-local tokens,
+      Draft **5**, Transcribe **0**, and Graph **0** in its main stylesheet; none of those remaining
+      OCR/Draft tokens shadow the canonical suite block. `scripts/token-parity-check.py` exits **0**
+      measured 2026-07-29 (`53` agree, `4` clamp-range checks exempted). Still separate from this
+      closure: `artifice-transcribe` hardcodes Bootstrap health-status literals at
+      `web/static/css/app.css:757-759,816-818`.
 - [ ] Per-app domain colours follow the `entity-colors.css` precedent
 - [ ] Rendered review of every app at desktop, ~900px and ~600px before sign-off
 
@@ -688,9 +698,16 @@ The largest correctness item in the project, and the one the architecture claims
 
 ### Phase 5 — Engineering quality gates
 
-- [ ] CI on pull request: `uv sync --extra all`, run all 34 test suites, lint
-- [ ] `gitleaks` in CI, per the Zero Secrets Policy
-- [ ] Cross-platform CI matrix — Windows, WSL2 and macOS are all supported targets
+- [x] ~~CI on pull request: `uv sync --extra all`, run all 34 test suites, lint~~ — **Landed,
+      measured 2026-07-29.** `.github/workflows/ci.yml` runs on `push` and `pull_request` to
+      `main` and defines `gates`, `tests`, `wheel` and `tests-cross-platform`. The recorded "34"
+      figure was stale: the tree holds **4** app suites across **40** test files measured
+      2026-07-29.
+- [x] ~~`gitleaks` in CI, per the Zero Secrets Policy~~ — **Landed, measured 2026-07-29.** The
+      `gates` job runs `gitleaks detect --redact --no-banner`.
+- [ ] Cross-platform CI matrix — **partly landed, re-measured 2026-07-29.** OCR runs on Windows,
+      macOS and Linux in `tests-cross-platform`; WSL2 remains represented indirectly by Linux rather
+      than by a hosted runner, and the other three apps are not yet in the cross-platform matrix.
 - [ ] Full `security-auditor` sweep of every ingestion surface (OCR upload, audio upload, graph
       import, document ingest) for path traversal, zip-slip and decompression bombs
 - [ ] Test coverage for the restored `pipeline.js` and the SSE log broker, which have none
@@ -706,73 +723,94 @@ The largest correctness item in the project, and the one the architecture claims
 
 ## Part IV — Consolidated to-do list
 
-Phase 1 is closed. **Re-derived 2026-07-28 (evening).** Everything that was items 1 and 4 on the
-previous version of this list has landed. What follows is what is genuinely left, ordered by *what
-blocks what* rather than by size.
+Phase 1 is closed. **Re-derived 2026-07-29.** Re-measurement closed seven stale items from the
+previous version of this list without further code changes. They are kept here struck through rather
+than deleted because several had already misdirected later work once.
 
 Two rules this list has repeatedly failed, kept at the top because they cost real work today:
 **state which apps a completed item covered**, and **re-measure any figure here before treating it
 as a constraint**. Three claims in this document were refuted by measurement in one session, and one
 of them propagated into a wrong instruction given to an agent.
 
-### A. Shipping correctness — do before any packaging work
+### Closed by re-measurement on 2026-07-29
 
-1. **`upload_dir` is CWD-relative** (`artifice-transcribe/config.py:24`). Same class as the database
-   path fixed today, higher stakes: the database holds derived transcripts, `uploads/` holds the
-   user's **source recordings**. In a packaged app, launching from a shortcut versus the Start menu
-   gives different working directories, so uploads scatter and the library looks empty.
-   *(In progress at time of writing.)*
-2. **Sweep for the same pattern everywhere else.** `pdf_export.py` (fixed), `database_url` (fixed),
-   `upload_dir` (in progress) were each found one at a time. Grep all four apps for `"./`,
-   `Path(".")`, and `__file__`-relative walks, and settle them together rather than discovering the
-   fourth in a bug report.
-3. **`reload=True` in `artifice-transcribe`'s `cli()`** (`main.py:85`). Fine in development, wrong
-   in a frozen app — the reloader spawns a subprocess and watches files that will not exist.
+1. [x] ~~`upload_dir` is CWD-relative.~~ **Landed, measured 2026-07-29.**
+   `artifice-transcribe` now defaults to `platformdirs` paths at `config.py:13-19,26-27`; the old
+   `./uploads` path remains only as a legacy migration source.
+2. [x] ~~Sweep for the same pattern everywhere else.~~ **Landed, measured 2026-07-29.** The
+   suite-wide sweep found no remaining active CWD-relative app-internal persistence paths. The
+   surviving `./data/...` and `./uploads` sites in transcribe are migration inputs, not active
+   destinations, and user-supplied input/output paths remain deliberately user-controlled.
+3. [x] ~~`reload=True` in `artifice-transcribe`'s `cli()`.~~ **Landed, measured 2026-07-29.**
+   Reload is opt-in via `ARTIFICE_TRANSCRIBE_RELOAD` at `main.py:108-118`.
+4. [x] ~~`html` vs `body` font-size disagreement.~~ **Landed, measured 2026-07-29.** No app
+   stylesheet now sets `font-size` on `html`; all four set it on `body`.
+5. [ ] **The row-alignment rule in `Design_Philosophy.md` §8.3 is still not satisfied.**
 
-### B. Design system — finish what is half-done
+   > **Recorded and then refuted the same day, 2026-07-29.** This was first written as
+   > *"Landed, measured from source — `--control-height` is declared in
+   > `packages/shared-ui/shared_ui/assets/tokens.css` and used in all four apps. That closes the
+   > code gap, though not a rendered re-measurement."* The source measurement was correct and the
+   > conclusion was wrong, which is why the auditor's own caveat — *not a rendered
+   > re-measurement* — was the load-bearing part of that sentence.
 
-4. **`html` vs `body` font-size disagreement.** `ocr`, `draft` and `transcribe` set
-   `html, body { font-size: var(--text-base) }`; `artifice-graph` sets only `body`. Because
-   `--text-base` is `1.0625rem`, setting it on `html` makes **every rem in those three apps resolve
-   against 17px instead of 16px** — so their whole spacing scale renders 6.25% larger than declared.
-   `var(--space-6)` means 20px and renders 21.25px in three apps, 20px in graph. Graph is correct;
-   style `body`, leave `html` alone. This is a visible ~6% shift and needs rendered verification.
-5. **The row-alignment rule in `Design_Philosophy.md` §8.3 is marked "not yet applied."** Buttons
-   render 42.8px and selects 47.8px side by side — a mismatch the specs themselves produce. The rule
-   is written; the code is not compliant. Do not let that sit long: a design authority whose rules
-   are aspirational is how this document drifted before.
-6. **JS-rendered empty states.** The static ones are done and the
-   `.panel-empty-title` / `.panel-empty-desc` component exists in both apps' CSS. The rest are
-   rendered from JavaScript and need the same title/description/action treatment at
-   `transcribe/app.js:324,367,1395`, `ocr/history.js:60,93`, `ocr/preview_image.js:85,97`. Editing
-   the static HTML for these is worse than leaving them — the copy reverts on first render.
+   Measured from the live DOM of `artifice-graph` at `http://127.0.0.1:8766/`:
 
-### C. Make the work self-verifying
+   | Control | Declared | Rendered |
+   |---|---|---|
+   | `--control-height` token | — | `2.75rem` = 44px |
+   | `button.app-btn` | `min-height: 44px` | **44px** ✓ |
+   | `select#llmModel` | `min-height: 44px` | **46.4px** ✗ |
 
-7. **Add CI** (Phase 5). Now genuinely cheap: three suites are green and there are two working
-   gates. **`token-parity-check.py` exits 0 as of today**, so it can land as a gate without
-   admitting a known-red check — that was the blocker last time this was listed.
-8. **Finish Phase 1.5 security** — credentials echoed in config response bodies, SSRF via
+   The select carries `padding: 11.2px` top and bottom plus a `0.67px` border on top of its line
+   box, which overflows the floor. **This is the trap already documented in Part V of this
+   document — `min-height` is a floor, not a clamp** — and the fix applied the right token via the
+   wrong property. `height` with `box-sizing: border-box`, or a padding reduction on `<select>`
+   specifically, is what actually clamps it.
+
+   Not currently *visible*: no button sits beside that select on the page today, so the mismatch is
+   latent. It matters anyway, because `artifice-graph` is the template Phase 2 copies three times.
+
+   Two further findings from the same rendered pass, same component family:
+   - **The theme toggle is 33.3 × 27.5px** (`.nav-theme`, `min-height: auto`), against the 44px
+     WCAG 2.5.5 minimum target size that `--control-height` exists to guarantee. It simply does not
+     use the token.
+   - **`.label` is applied to two elements that do not receive label typography.** The live-log
+     status renders Libre Baskerville 17px with no transform, while the identical-purpose run
+     status above it correctly renders Archivo 12.8px uppercase. Same class, two treatments.
+6. [x] ~~Add CI.~~ **Landed, measured 2026-07-29.** `.github/workflows/ci.yml` defines `gates`,
+   `tests`, `wheel` and `tests-cross-platform`.
+7. [x] ~~`transcribe/tests/test_api.py` is a standalone script that pytest collects.~~ **Stale by
+   measurement on 2026-07-29.** `tests/conftest.py` already `collect_ignore`s `test_api.py`, so the
+   file no longer makes routine pytest runs error. It remains a live-server script rather than a
+   normal CI test.
+
+### Open
+
+1. **JS-rendered empty states.** The static ones are done and the `.panel-empty-title` /
+   `.panel-empty-desc` component exists in both apps' CSS. The rest are rendered from JavaScript and
+   need the same title/description/action treatment at `transcribe/app.js:324,367,1395`,
+   `ocr/history.js:60,93`, `ocr/preview_image.js:85,97`. Editing the static HTML for these is worse
+   than leaving them — the copy reverts on first render.
+2. **Finish Phase 1.5 security** — credentials echoed in config response bodies, SSRF via
    user-supplied model endpoints, user-controlled directories in `artifice-graph`, secrets written
    at default permissions. CORS and both HIGH path traversals are done. Also still open: audit `ocr`
    and `graph` for the path-construction shape fixed in transcribe.
-
-### D. The large one, and the tidy-ups
-
-9. **Make the model harness real** (Phase 3) — the architecture's central claim is still untrue, and
-   larger than this document long recorded: **four** per-app clients, not three, and six
-   `openai.OpenAI` construction sites inside `artifice-ocr` alone. Nothing depends on it, which is
-   why it sits below work that gates other work — but `CLAUDE.md` and `ARCHITECTURE.md` both assert
-   it as fact, so every day it stays fictional is a day those documents mislead.
-10. **Packaging** — pywebview wrapping the local server in a native window, a per-user data
-    directory (A1–A2 above are its prerequisites), and a WebView2 bootstrapper for older Windows 10.
-    Bind loopback-only; it avoids the Windows Firewall prompt that would otherwise be a user's first
-    impression of "local-first" software.
-11. **Delete the committed `.idea/` directories** — 8 files still tracked. Trivial, and it has
-    survived several sessions on this list.
-12. **`transcribe/tests/test_api.py` is a standalone script** that pytest collects, so it errors
-    permanently on a missing `audio_path` fixture. Make it a real test or exclude it from
-    collection; a permanently-erroring test trains people to ignore the suite's output.
+3. **Make the model harness real** (Phase 3) — the architecture's central claim is still untrue, and
+   larger than this document long recorded: **4** per-app clients, not 3, and **6**
+   `openai.OpenAI` construction sites inside `artifice-ocr` alone, all measured 2026-07-28.
+   Nothing depends on it, which is why it sits below work that gates other work — but `CLAUDE.md`
+   and `ARCHITECTURE.md` both assert it as fact, so every day it stays fictional is a day those
+   documents mislead.
+4. **Packaging** — pywebview wrapping the local server in a native window, a per-user data
+   directory (the old A1–A2 prerequisites are now closed as of 2026-07-29), and a WebView2
+   bootstrapper for older Windows 10. Bind loopback-only; it avoids the Windows Firewall prompt
+   that would otherwise be a user's first impression of "local-first" software.
+5. **Delete the committed `.idea/` directories** — **8** files still tracked, measured 2026-07-28.
+   Trivial, and it has survived several sessions on this list.
+6. **Cross-platform CI scope.** CI now exists, but only OCR runs in the Windows/macOS/Linux matrix;
+   WSL2 remains represented indirectly by Linux rather than by a hosted runner, and the other three
+   apps are not yet in that matrix.
 
 > **On the two items removed from this list:** both were true when written. Neither was
 > re-derived before being treated as a constraint, and between them they blocked Phase 2 for two
@@ -963,10 +1001,10 @@ sudo ln -s "$HOME/.local/bin/uv" /usr/local/bin/uv     # see the PATH note above
 
 Two consequences worth acting on rather than just noting:
 
-- **`brotli` unblocks the font payload.** §II and `packages/shared-ui/README.md:76` both record the
-  vendored fonts shipping as TTF at **940 KB** because woff2 conversion needed `brotli` and it was
-  absent. That blocker is gone; re-running the conversion should roughly halve the payload. Not yet
-  done — it is a real task, not a footnote.
+- **~~`brotli` unblocks the font payload.~~ Completed by 2026-07-29.** The shared-ui web-font set
+  now ships as **5** `.woff2` files totalling **371,124 bytes** measured 2026-07-29. The old
+  **940 KB** note is retained elsewhere only as history of the first failed conversion. Separate and
+  still intentional: OCR keeps **4** local `.ttf` files for PDF export.
 - **`ffmpeg` is now the *Linux* build.** `apps/artifice-transcribe/HANDOFF.md:100` records an
   `ffmpeg.exe` at a Windows path, which Whisper and pyannote under WSL cannot use. That note is now
   stale for WSL work; the native package at `/usr/bin/ffmpeg` is what transcribe will pick up.
@@ -989,7 +1027,7 @@ wsl.exe -d Ubuntu -- bash -lc "cd ~/projects/artifice-suite && \
   (cd apps/artifice-graph && uv run pytest tests/ -q | tail -2)"
 ```
 
-Expected: `artifice-graph: clean`, `13 passed, 0 failed`, `47 passed`. Anything else means the
+Expected: `artifice-graph: clean`, `13 passed, 0 failed`, `48 passed`. Anything else means the
 environment has drifted, not that the code has regressed — check Part V first.
 
 **To serve `artifice-graph`** (port 8766), write a wrapper script and launch it detached per Part V;

@@ -82,32 +82,54 @@ Never critique UI from source alone. Read the rendered page:
 
 ## Sub-Agent Fleet
 
-Two runtimes. They cannot invoke each other — the orchestrator is the only process spanning
-both, so every cross-runtime handoff routes through it.
+**Measured 2026-07-29:** the fleet is currently all on OpenCode. The older two-runtime wording is
+retained below only where it still explains historical decisions.
 
 | Agent | Runtime | Model | Owns |
 |---|---|---|---|
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | Feature implementation, core logic, refactors |
 | `tester` | OpenCode | `opencode-go/kimi-k3` | Test execution, log analysis, regression triage |
-| `arch-auditor-docs` | OpenCode | `github-copilot/claude-sonnet-4.6` | Cross-app parity audits, folder standards, docs |
+| `arch-auditor-docs` | OpenCode | `opencode-go/kimi-k3` | Cross-app parity audits, folder standards, docs |
+| `code-reviewer` | OpenCode | `opencode-go/minimax-m3` | Read-only correctness and architecture-conformance review of changes before they land |
+| `oss-reviewer` | OpenCode | `ollama/gemma4-32k:12b` | Read-only open-source maintainability review |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | Static analysis, secret handling, input sanitization |
-| `ui-ux` | Claude Code | `sonnet` | Frontend views, design tokens, accessibility |
+| `ui-ux` | OpenCode | `opencode-go/qwen3.7-max` | Frontend views, design tokens, accessibility |
 
-Definitions live in `.opencode/agents/*.md` and `.claude/agents/*.md`.
+Definitions live in `.opencode/agents/*.md`; `.claude/agents/` is empty measured 2026-07-29.
 
-**`ui-ux` moved off the Claude subscription to `github-copilot/claude-sonnet-4.6` on 2026-07-28.**
-It was the last agent in the Claude Code runtime, so **the whole fleet is now on OpenCode** and the
-Claude subscription is the orchestrator's alone. That was the point: a session limit hit mid-task
-stopped design work *and* orchestration, because the two were drawing on the same budget.
+### The whole fleet left GitHub Copilot on 2026-07-29
 
-It stays on a Sonnet-class model because it writes code against `Design_Philosophy.md` and must
-hold that document precisely — that requirement was always about the **model**, not the runtime,
-which is why the move preserves it. Do not route it through OpenRouter.
+The maintainer hit the Copilot Pro limit mid-session. Three agents were on that tier —
+`ui-ux` (`claude-sonnet-4.6`), `code-reviewer` (`claude-sonnet-5`) and `arch-auditor-docs`
+(`gpt-5.4`) — and all three moved to `opencode-go/*`, which is where the rest of the fleet already
+was. **xAI models are excluded by the maintainer's instruction**; `grok-4.5` was briefly assigned to
+`ui-ux` and withdrawn the same day. Do not reintroduce it.
 
-**It is on `sonnet-4.6`, not `sonnet-5`, deliberately.** `code-reviewer` is on `sonnet-5` and
-reviews the commits `ui-ux` writes. Putting both on the same model would have the reviewer grading
-its own model's work — the same "one model agreeing with itself" failure the auditor pairing below
-exists to avoid. If you change either, keep them apart.
+The three placements were chosen to preserve the independence rules below, which survive the move
+even though the specific models did not:
+
+| Agent | Now | Chosen because |
+|---|---|---|
+| `ui-ux` | `opencode-go/qwen3.7-max` | Top-tier generalist — the requirement was always precision against a long specification, not a particular vendor |
+| `code-reviewer` | `opencode-go/minimax-m3` | Must differ from **both** agents it reviews: `ui-ux` (qwen) and `lead-engineer` (deepseek) |
+| `arch-auditor-docs` | `opencode-go/kimi-k3` | Long-context prose, and a different family from `security-auditor` (qwen). Deliberately **not** `glm-5.2` — the model it was throttled on |
+
+`ui-ux` and `security-auditor` now share `qwen3.7-max`. That is allowed: neither reviews the other,
+and the rule is about **reviewer and reviewee**, not about uniqueness across the fleet.
+
+**Do not route any agent through OpenRouter** — that account is out of credits.
+
+**Historical, retained because it explains the shape of the rules above.** `ui-ux` was the last
+agent in the Claude Code runtime and moved off the maintainer's Claude subscription on 2026-07-28,
+which is when the whole fleet became OpenCode-only and the subscription became the orchestrator's
+alone. That mattered because a session limit hit mid-task had been stopping design work *and*
+orchestration out of the same budget — the identical failure that then recurred on Copilot,
+one tier later. **A fleet concentrated on any single billing tier fails this way; spread it.**
+
+It was on `sonnet-4.6` rather than `sonnet-5` for exactly the reason `code-reviewer` is on a
+different model today: the reviewer must not grade its own model's work — the same "one model
+agreeing with itself" failure the auditor pairing below exists to avoid. **If you change either,
+keep them apart.**
 
 Its OpenCode definition carries a persona-bleed block and, unusually, a long "you cannot see"
 section. That is not boilerplate: `ui-ux` is the one agent whose work is judged visually and so the
@@ -122,19 +144,22 @@ through the orchestrator before any code is written. Its `write`, `edit`, `bash`
 are disabled in its config — keep them disabled. It must exist in exactly one runtime: a leftover
 `.claude/agents/security-auditor.md` would shadow the OpenCode definition.
 
-It sits on a **different model from `arch-auditor-docs`** (`claude-sonnet-4.6`) deliberately. The two
+It sits on a **different model from `arch-auditor-docs`** (`kimi-k3`) deliberately. The two
 auditors review overlapping files, and two independent readings are worth more than one model
 agreeing with itself. Keep them on different families whenever you change either one.
 
-**`arch-auditor-docs` moved from `opencode-go/glm-5.2` to `github-copilot/claude-sonnet-4.6` on
-2026-07-28.** It was not failing — it completed a five-item documentation pass correctly — but it ran
-**17 minutes at ~11% CPU**, which is the throttling signature described below, and the Copilot tier
-has far more headroom on this account. Sonnet was chosen over the faster options because this agent
-*writes prose into* `CONTRIBUTING.md`, the READMEs and this file, all of which are written in full
-reasoned sentences rather than bullet fragments, and matching that voice matters more here than raw
-speed. `github-copilot/gpt-5.4` was the alternative and would have given a more independent reading
-(no other agent is on a GPT model); it remains the fallback if sharing a family with `code-reviewer`
-ever proves to be a problem.
+**`arch-auditor-docs` has moved four times: `opencode-go/glm-5.2` → `github-copilot/claude-sonnet-4.6`
+(2026-07-28) → `github-copilot/gpt-5.4` → `opencode-go/kimi-k3` (2026-07-29).** The glm move
+addressed throttling — it was not failing, but a five-item documentation pass took **17 minutes at
+~11% CPU**, the signature described below. The two Copilot placements bought headroom and family
+independence from `code-reviewer`; both ended when the Copilot tier ran out. `kimi-k3` was chosen
+for long-context prose and because it is not a qwen, which keeps it independent of
+`security-auditor`.
+
+**It has now been throttled or cut off on three separate tiers.** That is the pattern worth acting
+on, not any one model's quality: this agent does long, read-heavy passes over the whole repo, which
+is precisely the workload a rate limit catches first. Judge it by CPU time against wall time before
+concluding the model is at fault.
 
 It was briefly on `google/gemini-3.1-pro-preview`, using the maintainer's own Google key. That
 worked but was rate-limited into uselessness — a real audit ran **43 minutes at 2.8% CPU** and
@@ -188,7 +213,7 @@ whatever else is in context.
   All four OpenCode agents are `mode: all`; a `mode: subagent` agent will **silently answer as the
   default `build` agent** while looking like it worked. Always confirm the response banner reads
   `> <agent> · <expected-model>`.
-- Claude Code: dispatch `ui-ux` as a subagent. New or edited agent files are only picked up on
+- `ui-ux` is now an OpenCode agent too. New or edited agent files are still only picked up on
   session start.
 - Verify the whole fleet with `bash scripts/smoke-test-agents.sh` after any config change.
 
