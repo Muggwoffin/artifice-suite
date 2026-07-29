@@ -10,6 +10,8 @@ dependencies = [
     "python-docx>=0.8.11",
     "docx-revisions>=0.1.5",
     "requests>=2.31.0",
+    "httpx>=0.27",
+    "model-harness",
     "shared-ui",
 ]
 

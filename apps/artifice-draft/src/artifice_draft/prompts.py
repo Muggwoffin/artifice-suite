@@ -8,7 +8,8 @@ from artifice_draft.style_guides import load_guide
 
 _BASE_PROMPT_SUFFIX = (
     "\n\nOutput Format:\n"
-    "Return a JSON array of objects with these fields:\n"
+    "Return a single JSON object with an \"edits\" array.  Each entry in the "
+    "array has these fields:\n"
     "  { \"paragraph_index\": <int>, \"edited_text\": \"<string or null>\", "
     "\"status\": \"edited\" | \"unchanged\" }"
 )
