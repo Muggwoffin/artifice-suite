@@ -8,6 +8,7 @@ import ollama
 from artifice_ocr import _guard, _llm
 from artifice_ocr._chunking import chunk_text, reassemble, estimate_tokens
 from artifice_ocr._logging import get_logger
+from artifice_ocr._normalise import normalise
 from artifice_ocr._prompts import get_cleanup_prompt
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
@@ -90,12 +91,26 @@ def perform(
     model = cfg("cleanup_model")
     log.info("Cleaning with %s (doc_type=%s)", model, doc_type)
 
-    model_text = _cleanup_with_chunking(raw_text, system_prompt, user_template)
+    # Deterministic pre-pass: repair hyphenation, em-dash breaks, whitespace
+    # artifacts before the text reaches the model.  Must run on the full text
+    # before chunking so a hyphenated word split across a chunk boundary is
+    # still repaired.
+    normalised_text, normalise_counts = normalise(raw_text)
+    if any(normalise_counts.values()):
+        log.info("Pre-pass repairs: %s",
+                 ", ".join(f"{k}={v}" for k, v in normalise_counts.items() if v))
 
-    # The guard may reject the model's output and keep the raw text. The
-    # rejected version is preserved in the JSON rather than discarded, so a
-    # borderline page can be reviewed in the GUI instead of silently lost.
-    cleaned_text, guard_result = _guard.apply(raw_text, model_text)
+    model_text = _cleanup_with_chunking(normalised_text, system_prompt, user_template)
+
+    # The guard compares model output against the text the model *received*
+    # (the normalised text), not the original raw text.  Comparing against
+    # raw would see pre-pass repairs (hyphen joins, em-dash joins, space
+    # collapse) as model changes and falsely reject clean output.
+    #
+    # When the guard rejects, we keep the normalised text rather than the
+    # raw text — the pre-pass repairs are deterministic and safe, so the
+    # user still sees a better page than if they were discarded.
+    cleaned_text, guard_result = _guard.apply(normalised_text, model_text)
 
     base_output_dir = Path(output_dir)
     text_dir = base_output_dir / "cleaned" / "text"
@@ -124,6 +139,7 @@ def perform(
         "document_type": doc_type,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "guard": guard_result.to_dict(),
+        "pre_pass": normalise_counts,
     }
     if not guard_result.ok:
         data["rejected_cleaned_text"] = model_text

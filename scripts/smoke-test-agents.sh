@@ -35,13 +35,15 @@ strip_ansi() { sed -e 's/\x1b\[[0-9;]*m//g' -e 's/\r$//'; }
 # name:expected-model-substring
 OPENCODE_AGENTS=(
   "lead-engineer:deepseek-v4-pro"
-  "tester:kimi-k3"
-  "arch-auditor-docs:kimi-k3"
-  "ui-ux:qwen3.7-max"
+  "tester:kimi-k2.7-code"
+  "arch-auditor-docs:minimax-m2.7"
   "security-auditor:qwen3.7-max"
   "code-reviewer:minimax-m3"
   "oss-reviewer:gemma4-32k:12b"
 )
+
+# `ui-ux` is deliberately absent from this list — it moved to the Claude Code
+# runtime on 2026-07-29 and is asserted separately below.
 
 bold "OpenCode runtime"
 
@@ -92,11 +94,46 @@ fi
 
 bold "Claude Code runtime"
 
-if compgen -G ".claude/agents/*.md" >/dev/null; then
-  bad "unexpected agent definitions in .claude/agents/ — the fleet is OpenCode-only"
-  ls -1 .claude/agents/*.md | sed 's/^/        /'
+# `ui-ux` returned to the Claude subscription on 2026-07-29, after the Copilot
+# and OpenCode Go tiers were each exhausted in a single day. It is the ONLY agent
+# that belongs here: it writes code against `Design_Philosophy.md` and has to hold
+# that document precisely, which has always been a requirement about the model
+# rather than the runtime.
+#
+# The trade-off is recorded rather than forgotten: it now shares a budget with the
+# orchestrator again, which is exactly the coupling that caused a session limit to
+# stop design work *and* orchestration once before. If that recurs, moving it back
+# to a paid tier is the fix, not reducing its model.
+if [[ -f .claude/agents/ui-ux.md ]]; then
+  if grep -qE '^model:\s*sonnet' .claude/agents/ui-ux.md; then
+    ok "ui-ux defined in Claude Code runtime on sonnet"
+  else
+    bad "ui-ux is in .claude/agents/ but not on sonnet — it must stay Sonnet-class"
+  fi
 else
-  ok "no Claude Code agents (fleet is OpenCode-only, Claude budget left to the orchestrator)"
+  bad "ui-ux missing from .claude/agents/ — it moved there on 2026-07-29"
+fi
+
+# Every *other* agent must stay out of this runtime. A stray definition here would
+# SHADOW the OpenCode one when the orchestrator dispatches by name.
+_stray=()
+for _f in .claude/agents/*.md; do
+  [[ -e "$_f" ]] || continue
+  [[ "$(basename "$_f")" == "ui-ux.md" ]] && continue
+  _stray+=("$_f")
+done
+if (( ${#_stray[@]} > 0 )); then
+  bad "unexpected agent definitions in .claude/agents/ — only ui-ux belongs there"
+  printf '        %s\n' "${_stray[@]}"
+else
+  ok "no stray Claude Code agents (only ui-ux, rest are OpenCode)"
+fi
+
+# ui-ux must not be defined in both runtimes.
+if [[ -f .opencode/agents/ui-ux.md ]]; then
+  bad "ui-ux still defined in .opencode/agents/ — it now lives in .claude/agents/"
+else
+  ok "ui-ux not duplicated in OpenCode runtime"
 fi
 
 # security-auditor moved to OpenCode/Gemini to reduce Claude token usage. It must

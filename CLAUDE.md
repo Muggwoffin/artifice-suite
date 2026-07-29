@@ -15,7 +15,12 @@ You oversee the development of four local-first, BYOM (Bring-Your-Own-Model) aca
 
 ## Core Instructions
 1. **Do not write bulk code directly.** Delegate code writing, testing, layout, and auditing to specialized sub-agents via OpenCode tools or Claude Code commands.
-2. **Enforce Harness Architecture.** Verify that no feature relies on freeform chat. All model interactions must pass through structured schemas in `packages/model-harness`.
+2. **Enforce Harness Architecture.** Verify that no feature relies on freeform chat. All model
+   interactions must pass through structured schemas in `packages/model-harness`.
+
+   > **Corrected 2026-07-29.** `contract.py` now defines the call shape with a required response
+   > schema and a degradation ladder. 15 tests pass. **Zero apps import it.** The mandate is real;
+   > the implementation is half-real — correct definition, no consumers yet.
 3. **Enforce Design Philosophy.** Ensure all UI components and layout primitives strictly adhere to `Design_Philosophy.md` (The New Masses Design System: paper and ink aesthetics, warm palette, editorial typography, restrained motion).
 4. **Maintain Monorepo Parity.** Ensure all four apps maintain identical modular `src/` directory patterns (`apps/<app>/src/artifice_<app_slug>/`), PEP 621 `pyproject.toml` definitions, and Docker configurations.
 
@@ -88,14 +93,48 @@ retained below only where it still explains historical decisions.
 | Agent | Runtime | Model | Owns |
 |---|---|---|---|
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | Feature implementation, core logic, refactors |
-| `tester` | OpenCode | `opencode-go/kimi-k3` | Test execution, log analysis, regression triage |
-| `arch-auditor-docs` | OpenCode | `opencode-go/kimi-k3` | Cross-app parity audits, folder standards, docs |
+| `tester` | OpenCode | `opencode-go/kimi-k2.7-code` | Test execution, log analysis, regression triage |
+| `arch-auditor-docs` | OpenCode | `opencode-go/minimax-m2.7` | Cross-app parity audits, folder standards, docs |
 | `code-reviewer` | OpenCode | `opencode-go/minimax-m3` | Read-only correctness and architecture-conformance review of changes before they land |
 | `oss-reviewer` | OpenCode | `ollama/gemma4-32k:12b` | Read-only open-source maintainability review |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | Static analysis, secret handling, input sanitization |
-| `ui-ux` | OpenCode | `opencode-go/qwen3.7-max` | Frontend views, design tokens, accessibility |
+| `ui-ux` | **Claude Code** | `sonnet` | Frontend views, design tokens, accessibility |
 
-Definitions live in `.opencode/agents/*.md`; `.claude/agents/` is empty measured 2026-07-29.
+Definitions live in `.opencode/agents/*.md`, except `ui-ux`, which lives in `.claude/agents/ui-ux.md`.
+**No agent may be defined in both runtimes** — a duplicate shadows the other when the orchestrator
+dispatches by name. `scripts/smoke-test-agents.sh` asserts this in both directions.
+
+### Two billing tiers were exhausted in one day — 2026-07-29
+
+The GitHub Copilot Pro limit was reached mid-session, and the `opencode-go` monthly allowance ran out
+a few hours later. **Both failures were silent.** No error string reached any log: an agent simply
+printed its banner and received nothing, or stalled mid-task at ~7% CPU with the log frozen
+mid-sentence. Two agents were lost this way before the cause was identified, and the orchestrator
+initially misattributed one of them to an oversized brief.
+
+**Diagnosing a quiet agent: check CPU time against wall time first.** Near-zero CPU with a
+banner-only log means it never received a token. Low-but-nonzero CPU over many minutes means
+throttling. Neither will tell you so in words. `scripts/smoke-test-agents.sh` is the cheap probe —
+short prompts, every agent, and it reports which model actually answered.
+
+The resulting placements, and the reasoning that constrains any future change:
+
+| Agent | Model | Chosen because |
+|---|---|---|
+| `ui-ux` | `sonnet`, Claude Code | Writes code against `Design_Philosophy.md` and must hold it precisely — always a requirement about the **model**, not the runtime |
+| `code-reviewer` | `opencode-go/minimax-m3` | Must differ from **both** agents it reviews: `ui-ux` and `lead-engineer` |
+| `arch-auditor-docs` | `opencode-go/minimax-m2.7` | Long-context prose, cheaper than `m3`, and a different family from `security-auditor` (qwen) |
+| `tester` | `opencode-go/kimi-k2.7-code` | Code-specialised and cheaper than the `k3` it replaced |
+
+**`xAI models are excluded by maintainer instruction.** `grok-4.5` was briefly assigned to `ui-ux`
+and withdrawn the same day. Do not reintroduce it. **Do not route any agent through OpenRouter** —
+that account is out of credits.
+
+`ui-ux` returning to the Claude subscription **re-couples it to the orchestrator's budget**, which is
+the exact condition that once caused a session limit to stop design work *and* orchestration at the
+same time. That was the reason it left in the first place. It is back because two paid tiers failed
+in one day, and it is the one agent whose model quality is load-bearing. **If the shared budget bites
+again, move it to a paid tier — do not downgrade its model.**
 
 ### The whole fleet left GitHub Copilot on 2026-07-29
 

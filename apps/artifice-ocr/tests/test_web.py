@@ -1235,18 +1235,50 @@ def test_pdf_export_start_returns_ok(client, pdf_text_folder):
     assert status["output_path"] is not None
 
 
-def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder):
+def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder, monkeypatch):
+    """A second start is refused with 409 while the first is still running.
+
+    The first export must be *provably* in flight when the second request
+    arrives. The guard lives exactly as long as the worker thread, and the
+    two-file fixture compiles in milliseconds — on a fast machine the first
+    export can finish in the gap between the two POSTs, in which case the
+    second start is correctly accepted with 200 (this failed intermittently
+    on the macOS CI runners, the fastest in the matrix). Gate the worker
+    inside compile() on events this test controls instead of assuming speed.
+    """
+    import threading
+
+    from artifice_ocr import pdf_export as pdf_export_module
+
     folder = str(pdf_text_folder.parent.parent)
+
+    entered = threading.Event()
+    release = threading.Event()
+    real_compile = pdf_export_module.compile
+
+    def gated_compile(*args, **kwargs):
+        entered.set()
+        release.wait(timeout=10)
+        return real_compile(*args, **kwargs)
+
+    monkeypatch.setattr(pdf_export_module, "compile", gated_compile)
+
     first = client.post("/api/pdf-export/start", json={
         "folder": folder, "stage": "cleaned", "structure": False,
     })
     assert first.status_code == 200
 
-    second = client.post("/api/pdf-export/start", json={
-        "folder": folder, "stage": "cleaned", "structure": False,
-    })
-    assert second.status_code == 409
-    assert "already running" in second.json()["detail"].lower()
+    # The worker is now blocked inside compile(); the export is in flight.
+    assert entered.wait(timeout=5), "export worker never entered compile()"
+
+    try:
+        second = client.post("/api/pdf-export/start", json={
+            "folder": folder, "stage": "cleaned", "structure": False,
+        })
+        assert second.status_code == 409
+        assert "already running" in second.json()["detail"].lower()
+    finally:
+        release.set()
 
     # Wait for the first to finish so we don't leave state dirty
     import time
@@ -1255,6 +1287,7 @@ def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder):
         if status["status"] in ("done", "error"):
             break
         time.sleep(0.05)
+    assert status["status"] == "done"
 
 
 def test_pdf_export_400_on_missing_folder(client):
