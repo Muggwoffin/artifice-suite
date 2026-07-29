@@ -26,13 +26,23 @@ caused in this codebase:
    it raises :class:`StructuredOutputUnsupported`. It never silently returns
    prose to a caller that asked for a schema.
 
-That third point is the one worth defending. The suite currently carries three
-separate "recover JSON from whatever the model said" helpers —
-``parse_llm_json_response``, ``_parse_llm_response`` and ``parse_json_robust``
-— and none of them can tell a caller whether it received a guaranteed-schema
-response or a lucky parse. Those two things have very different reliability and
-the code treats them identically. :attr:`HarnessResult.mode_used` and
-:attr:`HarnessResult.repaired` exist so that distinction survives the call.
+That third point is the one worth defending. The suite carried **five** separate
+"recover JSON from whatever the model said" helpers when this was written — not
+the three first recorded — and none of them could tell a caller whether it
+received a guaranteed-schema response or a lucky parse. Those two things have
+very different reliability and the code treated them identically.
+:attr:`HarnessResult.mode_used` and :attr:`HarnessResult.repaired` exist so that
+distinction survives the call.
+
+Three are now gone: both of ``artifice-graph``'s when its extraction path was
+ported, and ``parse_json_robust`` in ``artifice-transcribe``, which turned out to
+have no callers at all. **Two remain, both in ``artifice-draft``** —
+``parse_llm_json_response`` and ``_parse_llm_response`` — and retiring them is
+the acceptance criterion for this phase.
+
+``driver._extract_json`` is not a sixth. It runs only on the ``PROMPTED`` rung and
+its result carries ``mode_used=PROMPTED``, so a caller can tell a scrape from a
+guarantee. Do not delete it to satisfy the criterion above.
 """
 
 from __future__ import annotations

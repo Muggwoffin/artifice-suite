@@ -508,6 +508,7 @@ async def test_inference_connection(body: InferenceTestRequest):
 @router.post("/inference/generate")
 async def inference_generate(body: InferenceGenerateRequest):
     cfg = _load_inference_config()
+    _validate_base_url(cfg.get("base_url", "http://localhost:11434/v1"), "base_url")
     engine = InferenceEngine(
         base_url=cfg.get("base_url", "http://localhost:11434/v1"),
         api_key=cfg.get("api_key", "not-needed"),
@@ -602,6 +603,7 @@ async def summarize_job(job_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(400, "No transcript segments found for this job")
 
     cfg = _load_inference_config()
+    _validate_base_url(cfg.get("base_url", "http://localhost:11434/v1"), "base_url")
     engine = InferenceEngine(
         base_url=cfg.get("base_url", "http://localhost:11434/v1"),
         api_key=cfg.get("api_key", "not-needed"),
@@ -640,6 +642,7 @@ async def cleanup_job(job_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(400, "No transcript segments found for this job")
 
     cfg = _load_inference_config()
+    _validate_base_url(cfg.get("base_url", "http://localhost:11434/v1"), "base_url")
     engine = InferenceEngine(
         base_url=cfg.get("base_url", "http://localhost:11434/v1"),
         api_key=cfg.get("api_key", "not-needed"),
