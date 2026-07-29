@@ -1,4 +1,5 @@
-<img width="960" height="540" alt="Readme Logo (2)" src="https://github.com/user-attachments/assets/54090678-ae12-45c1-a3f9-eec56dd5eb82" />
+<img width="1280" height="640" alt="Readme Logo (4)" src="https://github.com/user-attachments/assets/cdb5162a-b860-44e9-b295-b96d0a80de61" />
+
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg)](https://doi.org/10.5281/zenodo.21621935)
 
