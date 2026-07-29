@@ -1,4 +1,4 @@
-<img width="1920" height="1080" alt="Readme Logo" src="https://github.com/user-attachments/assets/b814b7ae-802c-40ee-9fd1-3778033b74a1" />
+<img width="1920" height="1080" alt="Readme Logo (1)" src="https://github.com/user-attachments/assets/3c307a53-a757-4191-b873-486fd922261f" />
 
 [![DOI](https://zenodo.org/badge/1313540750.svg)](https://doi.org/10.5281/zenodo.21621935)
 
