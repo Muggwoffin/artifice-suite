@@ -44,6 +44,7 @@ from model_harness.openai_adapter import OpenAIProvider
 
 logger = logging.getLogger(__name__)
 
+_endpoint_policy = ConcreteEndpointPolicy()
 
 # ---------------------------------------------------------------------------
 # Provider adapter construction
@@ -352,11 +353,18 @@ def call_ollama(
 
 
 # ---------------------------------------------------------------------------
-# Model discovery (unchanged — uses plain requests, not the harness)
+# Model discovery (validated through the endpoint policy)
 # ---------------------------------------------------------------------------
 
 def get_available_models(base_url: str, api_key: str = "not-needed") -> list[dict]:
-    """Query {base_url}/models (or /v1/models) to auto-discover available models and capabilities."""
+    """Query {base_url}/models (or /v1/models) to auto-discover available models and capabilities.
+
+    The *base_url* is validated through
+    :class:`~model_harness.endpoint_policy.EndpointPolicy` before any
+    request is made — the same rule that governs every other model endpoint
+    in this suite.
+    """
+    _endpoint_policy.validate_url(base_url)
     base = base_url.rstrip("/")
     urls_to_try = [f"{base}/models", f"{base}/v1/models"]
     if base.endswith("/v1"):
@@ -395,6 +403,7 @@ def get_available_models(base_url: str, api_key: str = "not-needed") -> list[dic
 
 
 def test_connection(base_url: str, api_key: str = "not-needed") -> dict:
+    _endpoint_policy.validate_url(base_url)
     try:
         models = get_available_models(base_url, api_key)
         return {"success": True, "models": models, "message": f"Connected successfully! Found {len(models)} models."}

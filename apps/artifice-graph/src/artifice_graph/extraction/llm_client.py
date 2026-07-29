@@ -6,6 +6,7 @@ from typing import AsyncGenerator
 
 from artifice_graph.config import LLMConfig
 from artifice_graph.extraction.inference_engine import InferenceEngine, ModelInfo
+from model_harness.endpoint_policy import EndpointPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class LLMClient:
         self,
         config: LLMConfig | None = None,
         inference_engine: InferenceEngine | None = None,
+        endpoint_policy: EndpointPolicy | None = None,
     ) -> None:
         if config is None:
             from artifice_graph.config import load_config
@@ -36,6 +38,7 @@ class LLMClient:
                 model=config.model,
                 timeout=config.timeout,
                 enable_streaming=True,
+                endpoint_policy=endpoint_policy,
             )
         )
 

@@ -5,6 +5,8 @@ from typing import AsyncGenerator, Any, Dict, List, Optional
 
 import httpx
 
+from model_harness.endpoint_policy import EndpointPolicy
+
 logger = logging.getLogger(__name__)
 
 
@@ -98,7 +100,8 @@ class InferenceEngine:
         timeout: int = 30,
         enable_streaming: bool = True,
         parser: Optional[Any] = None,
-        vision_mode: bool = False
+        vision_mode: bool = False,
+        endpoint_policy: EndpointPolicy | None = None,
     ):
         self.base_url = base_url.rstrip("/") + "/v1"
         self.api_key = api_key
@@ -107,6 +110,13 @@ class InferenceEngine:
         self.enable_streaming = enable_streaming
         self.parser = parser
         self.vision_mode = vision_mode
+
+        # Validate the endpoint before any connection is made.  An engine
+        # that cannot be constructed with an invalid URL is harder to
+        # misuse than one that trusts its callers to validate first.
+        policy = endpoint_policy or EndpointPolicy()
+        policy.validate_url(self.base_url)
+
         self.client = httpx.AsyncClient(timeout=timeout)
         self.last_status = "disconnected"
         self.vision_checker = VisionCapabilityChecker()
@@ -117,7 +127,7 @@ class InferenceEngine:
     async def health_check(self) -> bool:
         """Check if the server is reachable."""
         try:
-            async with httpx.AsyncClient(timeout=5, follow_redirects=True) as test_client:
+            async with httpx.AsyncClient(timeout=5) as test_client:
                 response = await test_client.get(
                     self.base_url.replace("/v1", ""),
                     timeout=5
@@ -143,7 +153,7 @@ class InferenceEngine:
         openai_models = []
 
         try:
-            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=10) as client:
                 ollama_base = self.base_url.replace("/v1", "")
 
                 resp = await client.get(f"{ollama_base}/api/tags", timeout=10)
