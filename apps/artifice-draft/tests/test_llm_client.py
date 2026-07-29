@@ -5,13 +5,17 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
+import artifice_draft.llm_edit as llm_edit_module
 from artifice_draft.llm_client import (
     LLMEdit,
+    _parse_llm_response,
+    _recover_json_from_response,
     _send_request_with_retry,
     _compute_dynamic_batch_sizes,
     build_user_prompt,
     call_ollama,
 )
+from artifice_draft.llm_utils import _estimate_tokens
 from artifice_draft.prompts import get_system_prompt, list_styles
 from artifice_draft.config import AppConfig
 from artifice_draft.models import EditingStyle, LLMProvider, PipelineProgress
@@ -229,3 +233,68 @@ def test_call_ollama_with_progress_callback():
 
     assert len(edits) == 1
     assert len(progress_updates) > 0
+
+
+def test_parse_llm_response_positional_fallback():
+    """If an entry's paragraph_index is in range but does not match any batch
+    paragraph's stored index, _parse_llm_response falls back to positional lookup.
+    """
+    batch = [{"text": "Original text", "paragraph_index": 10}]
+    raw_response = json.dumps([{"paragraph_index": 5, "edited_text": "Edited", "status": "edited"}])
+
+    edits = _parse_llm_response(raw_response, batch, batch_start=5)
+
+    assert len(edits) == 1
+    assert edits[0].paragraph_index == 5
+    assert edits[0].original_text == "Original text"
+    assert edits[0].edited_text == "Edited"
+
+
+def test_parse_llm_response_missing_index_uses_batch_start():
+    """An entry with no paragraph_index defaults to batch_start and matches positionally."""
+    batch = [{"text": "Original text", "paragraph_index": 2}]
+    raw_response = json.dumps([{"edited_text": "Edited", "status": "edited"}])
+
+    edits = _parse_llm_response(raw_response, batch, batch_start=0)
+
+    assert len(edits) == 1
+    assert edits[0].paragraph_index == 0
+    assert edits[0].original_text == "Original text"
+
+
+def test_recover_json_from_response_wraps_single_object():
+    raw = json.dumps({"paragraph_index": 0, "edited_text": "Fixed", "status": "edited"})
+    result = _recover_json_from_response(raw)
+    assert result == [{"paragraph_index": 0, "edited_text": "Fixed", "status": "edited"}]
+
+
+def test_recover_json_from_response_preserves_list():
+    raw = json.dumps([{"paragraph_index": 0, "edited_text": "Fixed", "status": "edited"}])
+    result = _recover_json_from_response(raw)
+    assert result == [{"paragraph_index": 0, "edited_text": "Fixed", "status": "edited"}]
+
+
+def test_llm_edit_reexport_identity():
+    """LLMEdit imported from llm_client must be the exact class object defined in llm_edit."""
+    import artifice_draft.llm_client as llm_client_module
+
+    assert llm_client_module.LLMEdit is llm_edit_module.LLMEdit
+    edit = LLMEdit(paragraph_index=0, original_text="Hello", edited_text="Hi", status="edited")
+    assert isinstance(edit, llm_edit_module.LLMEdit)
+
+
+def test_estimate_tokens():
+    """Token estimation is plain ceiling division by _CHARS_PER_TOKEN."""
+    from artifice_draft.llm_utils import _CHARS_PER_TOKEN
+
+    assert _estimate_tokens("") == 0
+    assert _estimate_tokens("a" * _CHARS_PER_TOKEN) == 1
+    assert _estimate_tokens("a" * (_CHARS_PER_TOKEN + 1)) == 2
+    assert _estimate_tokens("a" * (_CHARS_PER_TOKEN * 3)) == 3
+
+
+def test_dynamic_batch_sizes_respects_max_batch_size():
+    paragraphs = [{"text": "x", "paragraph_index": i} for i in range(5)]
+    batches = _compute_dynamic_batch_sizes(paragraphs, max_batch_size=2, max_tokens=8192)
+    assert len(batches) == 3
+    assert [len(b) for b in batches] == [2, 2, 1]

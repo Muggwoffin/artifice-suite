@@ -8,17 +8,22 @@ track edits later.
 
 import json
 import logging
-import math
 import re
 import time
 from typing import Callable, Any
-from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, TypedDict
 
 import requests
 
 from artifice_draft.config import AppConfig
+from artifice_draft.llm_edit import LLMEdit
+from artifice_draft.llm_utils import (
+    _CHARS_PER_TOKEN,
+    _compute_dynamic_batch_sizes,
+    _estimate_tokens,
+    build_user_prompt,
+)
 from artifice_draft.models import LLMProvider, PipelineProgress, ProgressCallback
 from artifice_draft.prompts import get_system_prompt
 
@@ -167,95 +172,6 @@ def test_connection(base_url: str, api_key: str = "not-needed") -> dict:
         return {"success": False, "models": [], "error": str(e)}
 
 
-# Rough estimate: 1 token ~ 4 characters for English text
-_CHARS_PER_TOKEN = 4
-
-
-@dataclass
-class LLMEdit:
-    """A single edit result from the model."""
-
-    paragraph_index: int = 0
-    original_text: str = ""
-    edited_text: str | None = None  # None means "no change"
-    status: str = "unchanged"  # or "edited", "error"
-
-    def is_changed(self) -> bool:
-        return self.edited_text is not None and self.edited_text != self.original_text
-
-    @staticmethod
-    def to_edits_dict(edits: list["LLMEdit"]) -> dict[int, str | None]:
-        """Convert a list of LLMEdit objects to a dict mapping index → edited text."""
-        return {e.paragraph_index: e.edited_text for e in edits}
-
-
-def _estimate_tokens(text: str) -> int:
-    """Rough token count estimate for a text string."""
-    return math.ceil(len(text) / _CHARS_PER_TOKEN)
-
-
-def build_user_prompt(paragraphs: list[dict]) -> str:
-    """Build the user prompt from a chunk of paragraphs."""
-    if not paragraphs:
-        return "[]"
-
-    text_block = "\n\n".join(p["text"] for p in paragraphs)
-    metadata = json.dumps([
-        {
-            "index": i,
-            "style": p.get("style_name", "Normal"),
-            "bold": p.get("is_bold", False),
-            "italic": p.get("is_italic", False),
-        }
-        for i, p in enumerate(paragraphs)
-    ])
-
-    return (
-        f"Below are {len(paragraphs)} paragraphs from a document.\n"
-        f"Contextual metadata: {metadata}\n\n"
-        f"Original text:\n{text_block}"
-    )
-
-
-def _compute_dynamic_batch_sizes(
-    paragraphs: list[dict],
-    max_batch_size: int,
-    max_tokens: int,
-) -> list[list[dict]]:
-    """Split paragraphs into batches that respect token limits.
-
-    Uses a greedy bin-packing approach: keeps adding paragraphs to the current
-    batch until adding the next one would exceed the token budget, then starts
-    a new batch.
-    """
-    if not paragraphs:
-        return []
-
-    batches: list[list[dict]] = []
-    current_batch: list[dict] = []
-    current_tokens = 0
-    overhead_tokens = 200  # prompt template overhead
-
-    for para in paragraphs:
-        para_tokens = _estimate_tokens(para["text"])
-
-        if current_batch and (
-            len(current_batch) >= max_batch_size
-            or (current_tokens + para_tokens + overhead_tokens) > max_tokens
-        ):
-            batches.append(current_batch)
-            current_batch = []
-            current_tokens = 0
-
-        current_batch.append(para)
-        current_tokens += para_tokens
-
-    if current_batch:
-        batches.append(current_batch)
-
-    return batches
-
-
 def call_ollama(
     paragraphs: list[dict] | None = None,
     batch_size: int = 5,
@@ -329,30 +245,32 @@ def call_ollama(
     return edits
 
 
-def _parse_llm_response(
-    raw_response: str, batch: list[dict], batch_start: int
-) -> list[LLMEdit]:
-    """Parse the raw LLM JSON response into LLMEdit objects."""
-    edits: list[LLMEdit] = []
+def _recover_json_from_response(raw_response: str) -> list[dict]:
+    """Extract structured entry dicts from the raw LLM response string.
 
-    try:
-        result = parse_llm_json_response(raw_response)
-    except (json.JSONDecodeError, ValueError):
-        logger.warning(
-            "Malformed JSON response for batch starting at %d; marking all unchanged",
-            batch_start,
-        )
-        for p in batch:
-            edits.append(LLMEdit(
-                paragraph_index=p["paragraph_index"],
-                original_text=p["text"],
-                edited_text=None,
-                status="unchanged",
-            ))
-        return edits
-
+    Returns a list of entry dicts.  Wraps a single-object response in a list.
+    Raises :exc:`json.JSONDecodeError` or :exc:`ValueError` on failure —
+    caller is responsible for the recovery path.
+    """
+    result = parse_llm_json_response(raw_response)
     if not isinstance(result, list):
         result = [result]
+    return result
+
+
+def _map_response_to_batch_edits(
+    result: list[dict], batch: list[dict], batch_start: int
+) -> list[LLMEdit]:
+    """Map parsed LLM response entries to LLMEdit objects using batch offsets.
+
+    Each entry in *result* is expected to have ``paragraph_index``,
+    ``edited_text`` and ``status`` keys.  The function matches entries to
+    paragraphs in *batch* by index, falling back to positional lookup when the
+    index does not appear in the batch but still falls within its range.
+    Entries whose index is entirely outside the batch are discarded with a
+    warning.
+    """
+    edits: list[LLMEdit] = []
 
     for entry in result:
         idx = entry.get("paragraph_index", batch_start)
@@ -386,6 +304,35 @@ def _parse_llm_response(
             )
 
     return edits
+
+
+def _parse_llm_response(
+    raw_response: str, batch: list[dict], batch_start: int
+) -> list[LLMEdit]:
+    """Parse the raw LLM JSON response into LLMEdit objects.
+
+    Tries structured extraction first; falls back to marking every paragraph
+    unchanged on parse failure.
+    """
+    edits: list[LLMEdit] = []
+
+    try:
+        result = _recover_json_from_response(raw_response)
+    except (json.JSONDecodeError, ValueError):
+        logger.warning(
+            "Malformed JSON response for batch starting at %d; marking all unchanged",
+            batch_start,
+        )
+        for p in batch:
+            edits.append(LLMEdit(
+                paragraph_index=p["paragraph_index"],
+                original_text=p["text"],
+                edited_text=None,
+                status="unchanged",
+            ))
+        return edits
+
+    return _map_response_to_batch_edits(result, batch, batch_start)
 
 
 def _send_request_with_retry(

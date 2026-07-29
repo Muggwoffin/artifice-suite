@@ -18,6 +18,24 @@ posix_permissions_only = pytest.mark.skipif(
 )
 
 
+# Module-level endpoint rejection markers carried in HTTP 400 detail strings.
+# None are secrets — they describe which rule rejected the endpoint.
+_ENDPOINT_REJECTION_MARKERS = frozenset(
+    {"link-local", "ARTIFICE_ALLOW_PUBLIC_MODELS", "public address"}
+)
+
+
+def _assert_not_endpoint_rejection(resp) -> None:
+    """Fail if *resp* is an HTTP 400 triggered by the endpoint allowlist."""
+    if resp.status_code != 400:
+        return
+    detail = resp.json().get("detail", "")
+    for marker in _ENDPOINT_REJECTION_MARKERS:
+        assert marker not in detail, (
+            f"endpoint rejection leaked: {detail!r}"
+        )
+
+
 @pytest.mark.asyncio
 class TestSSRFValidation:
     """SSRF host allowlist for inference endpoints — finding #2."""
@@ -90,6 +108,122 @@ class TestSSRFValidation:
             },
         )
         assert resp.status_code == 400
+
+    # ── Config-read validation: endpoints that load base_url from disk ────
+
+    async def test_generate_rejects_link_local_from_config(
+        self, api, tmp_path, monkeypatch
+    ):
+        """A link-local base_url saved in the persisted config is refused
+        when the generate endpoint reads it."""
+        self._save_test_config(tmp_path, monkeypatch, "http://169.254.169.254/v1")
+        resp = await api.client.post(
+            "/api/v1/inference/generate",
+            json={"prompt": "Hello"},
+        )
+        assert resp.status_code == 400
+        assert "link-local" in resp.json()["detail"]
+
+    async def test_generate_accepts_loopback_from_config(
+        self, api, tmp_path, monkeypatch
+    ):
+        """A loopback base_url in the persisted config passes validation.
+        The downstream connection will fail (no server is running in the
+        test environment), but the URL itself must not be rejected."""
+        self._save_test_config(tmp_path, monkeypatch, "http://127.0.0.1:11434/v1")
+        try:
+            resp = await api.client.post(
+                "/api/v1/inference/generate",
+                json={"prompt": "Hello"},
+            )
+            _assert_not_endpoint_rejection(resp)
+        except Exception:
+            # The request failed downstream (connection refused / timeout)
+            # because no model server is running.  That proves validation
+            # passed — an endpoint-rejection 400 would have been a clean
+            # response, not an unhandled exception.
+            pass
+
+    async def test_summarize_rejects_link_local_from_config(
+        self, api, tmp_path, monkeypatch
+    ):
+        """The summarise endpoint must re-validate the base_url it reads from
+        the persisted config."""
+        self._save_test_config(tmp_path, monkeypatch, "http://169.254.169.254/v1")
+        await self._create_completed_job_with_segment(api, "job-ssrf-sum")
+        resp = await api.client.post("/api/v1/jobs/job-ssrf-sum/summarize")
+        assert resp.status_code == 400
+        assert "link-local" in resp.json()["detail"]
+
+    async def test_cleanup_rejects_link_local_from_config(
+        self, api, tmp_path, monkeypatch
+    ):
+        """The cleanup endpoint must re-validate the base_url it reads from
+        the persisted config."""
+        self._save_test_config(tmp_path, monkeypatch, "http://169.254.169.254/v1")
+        await self._create_completed_job_with_segment(api, "job-ssrf-cln")
+        resp = await api.client.post("/api/v1/jobs/job-ssrf-cln/cleanup")
+        assert resp.status_code == 400
+        assert "link-local" in resp.json()["detail"]
+
+    async def test_summarize_accepts_loopback_from_config(
+        self, api, tmp_path, monkeypatch
+    ):
+        """Loopback base_url in config passes summarise validation."""
+        self._save_test_config(tmp_path, monkeypatch, "http://localhost:11434/v1")
+        await self._create_completed_job_with_segment(api, "job-ssrf-sum-ok")
+        resp = await api.client.post("/api/v1/jobs/job-ssrf-sum-ok/summarize")
+        _assert_not_endpoint_rejection(resp)
+
+    async def test_cleanup_accepts_loopback_from_config(
+        self, api, tmp_path, monkeypatch
+    ):
+        """Loopback base_url in config passes cleanup validation."""
+        self._save_test_config(tmp_path, monkeypatch, "http://127.0.0.1:11434/v1")
+        await self._create_completed_job_with_segment(api, "job-ssrf-cln-ok")
+        resp = await api.client.post("/api/v1/jobs/job-ssrf-cln-ok/cleanup")
+        _assert_not_endpoint_rejection(resp)
+
+    # ── Helpers ──────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _save_test_config(
+        tmp_path, monkeypatch, base_url: str
+    ) -> None:
+        """Save an inference config to an isolated temp file."""
+        config_file = tmp_path / "inference_config.json"
+        monkeypatch.setattr(
+            "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
+            config_file,
+        )
+        from artifice_transcribe.api.v1.routes import _save_inference_config
+
+        _save_inference_config({
+            "base_url": base_url,
+            "api_key": "not-needed",
+            "model_name": "",
+            "vision_enabled": False,
+        })
+
+    @staticmethod
+    async def _create_completed_job_with_segment(api, job_id: str) -> None:
+        """Insert a completed transcription job with one segment."""
+        from artifice_transcribe.db.models import (
+            JobStatus,
+            TranscriptionJob,
+            TranscriptSegment,
+        )
+
+        async with api.session_factory() as db:
+            db.add(TranscriptionJob(
+                id=job_id, filename="test.wav",
+                status=JobStatus.completed, progress_percentage=100.0,
+            ))
+            db.add(TranscriptSegment(
+                job_id=job_id, speaker_label="SPEAKER_00",
+                start_time=0.0, end_time=1.0, text="Hello world.",
+            ))
+            await db.commit()
 
 
 @pytest.mark.asyncio

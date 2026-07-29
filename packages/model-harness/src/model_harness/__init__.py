@@ -32,8 +32,10 @@ from model_harness.contract import (
 )
 from model_harness.driver import run_structured
 from model_harness.openai_adapter import OpenAIProvider
+from model_harness.anthropic_adapter import AnthropicProvider
 
 __all__ = [
+    "AnthropicProvider",
     "EndpointPolicy",
     "EndpointRejected",
     "HarnessError",

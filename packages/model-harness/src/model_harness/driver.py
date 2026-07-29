@@ -86,15 +86,19 @@ async def run_structured(
     # ── Mode selection ─────────────────────────────────────────────────────
     caps = provider.capabilities(request.config.model)
     current_mode = select_mode(caps, minimum=floor)
+    supported = caps.modes()
 
     # ── Degradation ladder ─────────────────────────────────────────────────
     # Walk from strongest to weakest.  Each rung: call complete, parse JSON,
     # validate against schema.  If validation fails, drop one rung and retry.
+    # Modes the provider does not implement (gaps in the ``supported_modes``
+    # set) are skipped — the driver never asks an adapter for a mode it
+    # cannot handle.
     repaired = False
     last_raw: str | None = None
     last_mode: StructuredOutputMode | None = None
 
-    for mode in _rungs_from(current_mode):
+    for mode in _rungs_from(current_mode, supported=supported):
         last_mode = mode
 
         # Build a request whose mode field reflects the rung we are actually
@@ -158,13 +162,24 @@ async def run_structured(
 # -- Helpers -------------------------------------------------------------------
 
 
-def _rungs_from(start: StructuredOutputMode):
-    """Yield *start* and every weaker rung in the ladder."""
+def _rungs_from(
+    start: StructuredOutputMode,
+    *,
+    supported: frozenset[StructuredOutputMode] | None = None,
+):
+    """Yield *start* and every weaker rung in the ladder, skipping any mode
+    not in *supported*.
+
+    When *supported* is ``None`` every rung is yielded — the default for
+    providers that implement every mode in the strength ordering.
+    """
     try:
         idx = _MODE_STRENGTH.index(start)
     except ValueError:
         return
-    yield from _MODE_STRENGTH[idx:]
+    for mode in _MODE_STRENGTH[idx:]:
+        if supported is None or mode in supported:
+            yield mode
 
 
 def _extract_json(text: str) -> object | None:

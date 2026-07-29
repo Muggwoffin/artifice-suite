@@ -26,13 +26,23 @@ caused in this codebase:
    it raises :class:`StructuredOutputUnsupported`. It never silently returns
    prose to a caller that asked for a schema.
 
-That third point is the one worth defending. The suite currently carries three
-separate "recover JSON from whatever the model said" helpers —
-``parse_llm_json_response``, ``_parse_llm_response`` and ``parse_json_robust``
-— and none of them can tell a caller whether it received a guaranteed-schema
-response or a lucky parse. Those two things have very different reliability and
-the code treats them identically. :attr:`HarnessResult.mode_used` and
-:attr:`HarnessResult.repaired` exist so that distinction survives the call.
+That third point is the one worth defending. The suite carried **five** separate
+"recover JSON from whatever the model said" helpers when this was written — not
+the three first recorded — and none of them could tell a caller whether it
+received a guaranteed-schema response or a lucky parse. Those two things have
+very different reliability and the code treated them identically.
+:attr:`HarnessResult.mode_used` and :attr:`HarnessResult.repaired` exist so that
+distinction survives the call.
+
+Three are now gone: both of ``artifice-graph``'s when its extraction path was
+ported, and ``parse_json_robust`` in ``artifice-transcribe``, which turned out to
+have no callers at all. **Two remain, both in ``artifice-draft``** —
+``parse_llm_json_response`` and ``_parse_llm_response`` — and retiring them is
+the acceptance criterion for this phase.
+
+``driver._extract_json`` is not a sixth. It runs only on the ``PROMPTED`` rung and
+its result carries ``mode_used=PROMPTED``, so a caller can tell a scrape from a
+guarantee. Do not delete it to satisfy the criterion above.
 """
 
 from __future__ import annotations
@@ -43,7 +53,7 @@ from typing import Generic, Literal, Protocol, TypeVar, runtime_checkable
 
 from pydantic import BaseModel
 
-Provider = Literal["ollama", "lm-studio", "generic-api", "whisper", "parakeet"]
+Provider = Literal["ollama", "lm-studio", "generic-api", "whisper", "parakeet", "anthropic"]
 
 SchemaT = TypeVar("SchemaT", bound=BaseModel)
 
@@ -98,11 +108,35 @@ class ProviderCapabilities(BaseModel):
     adapter is unsure about should be declared *low* — an over-claim produces a
     confusing validation failure at call time, an under-claim only costs a
     weaker mode.
+
+    ``structured_output`` names the **strongest** mode this provider supports.
+    The ladder degrades downward from that mode, but only through modes the
+    provider actually implements — a gap in ``supported_modes`` is skipped
+    rather than attempted.
+
+    A provider that supports ``NATIVE_SCHEMA`` via tool-use but has no
+    ``json_object`` API declares ``supported_modes={NATIVE_SCHEMA, PROMPTED}``.
+    When ``supported_modes`` is ``None`` (the default), every mode from
+    ``structured_output`` downward is assumed supported — correct for
+    OpenAI-shaped providers but not for Anthropic.
     """
 
     structured_output: StructuredOutputMode
+    supported_modes: frozenset[StructuredOutputMode] | None = None
     streaming: bool = False
     vision: bool = False
+
+    def modes(self) -> frozenset[StructuredOutputMode]:
+        """Return every mode this provider actually supports.
+
+        ``structured_output`` is guaranteed to be in the returned set. When
+        ``supported_modes`` is ``None`` the set is every mode from the best
+        downward through ``_MODE_STRENGTH``.
+        """
+        if self.supported_modes is not None:
+            return self.supported_modes
+        idx = _MODE_STRENGTH.index(self.structured_output)
+        return frozenset(_MODE_STRENGTH[idx:])
 
 
 # ── Requests and results ─────────────────────────────────────────────────────

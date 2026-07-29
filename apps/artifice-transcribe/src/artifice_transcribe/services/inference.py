@@ -1,18 +1,21 @@
 from __future__ import annotations
 
-import json
 import logging
-import re
 from collections.abc import AsyncGenerator
 from typing import Any
 
+from model_harness.contract import EndpointRejected
+from model_harness.endpoint_policy import EndpointPolicy
 from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
+_inference_endpoint_policy = EndpointPolicy()
+
 
 async def get_available_models(base_url: str, api_key: str | None = None) -> list[str]:
     """Query {base_url}/models and return list of model IDs."""
+    _inference_endpoint_policy.validate_url(base_url)
     key = api_key if api_key and api_key.strip() else "not-needed"
     try:
         client = AsyncOpenAI(base_url=base_url, api_key=key)
@@ -26,6 +29,7 @@ async def get_available_models(base_url: str, api_key: str | None = None) -> lis
 
 async def test_connection(base_url: str, api_key: str | None = None) -> dict:
     """Test connectivity to the endpoint and return status with details."""
+    _inference_endpoint_policy.validate_url(base_url)
     key = api_key if api_key and api_key.strip() else "not-needed"
     try:
         client = AsyncOpenAI(base_url=base_url, api_key=key)
@@ -53,34 +57,6 @@ async def test_connection(base_url: str, api_key: str | None = None) -> dict:
         }
 
 
-def parse_json_robust(raw_output: str) -> Any:
-    """Robust JSON parser for local models that might include markdown blocks or extra text."""
-    if not raw_output:
-        return None
-    try:
-        return json.loads(raw_output)
-    except json.JSONDecodeError:
-        pass
-
-    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", raw_output)
-    if match:
-        block = match.group(1)
-        try:
-            return json.loads(block)
-        except json.JSONDecodeError:
-            pass
-
-    match_obj = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", raw_output)
-    if match_obj:
-        snippet = match_obj.group(1)
-        try:
-            return json.loads(snippet)
-        except json.JSONDecodeError:
-            pass
-
-    return None
-
-
 class InferenceEngine:
     """Unified inference adapter using OpenAI-compatible SDK for BYOM support."""
 
@@ -91,6 +67,7 @@ class InferenceEngine:
         model_name: str = "",
         vision_enabled: bool = False,
     ):
+        _inference_endpoint_policy.validate_url(base_url)
         self.base_url = base_url
         self.api_key = api_key if api_key and api_key.strip() else "not-needed"
         self.model_name = model_name
