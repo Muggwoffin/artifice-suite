@@ -1,29 +1,50 @@
 """Shared BYOM connector contract for the Artifice Suite.
 
-Provider-specific transport lives in each app today (e.g.
-``ocr_pipeline._llm``, ``graph_pipeline.extraction.llm_client``); this module
-defines the common configuration and schema-validated call shape they are
-meant to converge on.
+`CLAUDE.md` requires that every model interaction pass through structured
+schemas in this package. Until 2026-07-29 this module was 29 lines defining a
+config object and a ``SchemaT`` TypeVar that nothing used — the "schema-validated
+call shape" its docstring promised did not exist, and all four apps carried
+their own client.
+
+:mod:`model_harness.contract` now defines that call shape. Transport is still
+per-app; adapters implement :class:`~model_harness.contract.ModelProvider`.
+Porting is tracked as Phase 3 in ``IMPLEMENTATION_PLAN.md``.
 """
 
 from __future__ import annotations
 
-from typing import Literal, TypeVar
+from model_harness.contract import (
+    EndpointPolicy,
+    EndpointRejected,
+    HarnessError,
+    HarnessResult,
+    ModelConnectorConfig,
+    ModelProvider,
+    Provider,
+    ProviderCapabilities,
+    RawCompletion,
+    SchemaT,
+    SchemaValidationFailed,
+    StructuredOutputMode,
+    StructuredOutputUnsupported,
+    StructuredRequest,
+    select_mode,
+)
 
-from pydantic import BaseModel
-
-Provider = Literal["ollama", "lm-studio", "generic-api", "whisper", "parakeet"]
-
-SchemaT = TypeVar("SchemaT", bound=BaseModel)
-
-
-class ModelConnectorConfig(BaseModel):
-    """Endpoint and credentials for a single BYOM connection."""
-
-    provider: Provider
-    endpoint: str
-    model: str
-    api_key: str | None = None
-
-
-__all__ = ["ModelConnectorConfig", "Provider", "SchemaT"]
+__all__ = [
+    "EndpointPolicy",
+    "EndpointRejected",
+    "HarnessError",
+    "HarnessResult",
+    "ModelConnectorConfig",
+    "ModelProvider",
+    "Provider",
+    "ProviderCapabilities",
+    "RawCompletion",
+    "SchemaT",
+    "SchemaValidationFailed",
+    "StructuredOutputMode",
+    "StructuredOutputUnsupported",
+    "StructuredRequest",
+    "select_mode",
+]
