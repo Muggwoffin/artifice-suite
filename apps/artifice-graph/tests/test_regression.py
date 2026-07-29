@@ -7,6 +7,7 @@ Bug 3 – Relative paths resolve against the working directory instead of the ap
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -327,6 +328,50 @@ class TestBug3RelativePathResolution:
         assert output == app_root / "data" / "output"
         # Sanity check: the output is NOT under tmp_path
         assert not str(output).startswith(str(tmp_path))
+
+
+# ---------------------------------------------------------------------------
+# Bug 4 – Upload validation follows ingestion config
+# ---------------------------------------------------------------------------
+
+class TestBug4UploadValidation:
+
+    class _FakeUpload:
+        def __init__(self, filename: str, payload: bytes) -> None:
+            self.filename = filename
+            self._payload = payload
+
+        async def read(self) -> bytes:
+            return self._payload
+
+    def test_upload_accepts_configured_extensions_and_builtin_handlers(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """api_upload_files accepts configured extensions plus PDF/HTML handlers."""
+        from artifice_graph.config import PipelineConfig
+        from artifice_graph.web import server as server_mod
+
+        cfg = PipelineConfig()
+        cfg.ingestion.input_dir = str(tmp_path / "input")
+        cfg.ingestion.supported_extensions = [".txt", ".csv"]
+        monkeypatch.setattr(server_mod, "load_config", lambda: cfg)
+
+        response = asyncio.run(
+            server_mod.api_upload_files(
+                [
+                    self._FakeUpload("notes.csv", b"csv payload"),
+                    self._FakeUpload("scan.pdf", b"pdf payload"),
+                    self._FakeUpload("draft.docx", b"docx payload"),
+                ]
+            )
+        )
+
+        uploaded = response["uploaded"]
+        assert uploaded[0]["status"] == "ok"
+        assert uploaded[0]["filename"] == "notes.csv"
+        assert uploaded[1]["status"] == "ok"
+        assert uploaded[1]["filename"] == "scan.pdf"
+        assert uploaded[2]["status"] == "rejected"
+        assert ".csv" in uploaded[2]["reason"]
+        assert ".pdf" in uploaded[2]["reason"]
 
 
 # ---------------------------------------------------------------------------

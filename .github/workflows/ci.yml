@@ -188,7 +188,7 @@ jobs:
           enable-cache: true
 
       - name: Install workspace root dependencies
-        run: uv sync --group dev --extra all
+        run: uv sync --group dev --extra ocr
         working-directory: .
 
       - name: Run tests (OCR)
