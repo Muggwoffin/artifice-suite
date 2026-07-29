@@ -1,13 +1,13 @@
-<img width="960" height="540" alt="Readme Logo (2)" src="https://github.com/user-attachments/assets/54090678-ae12-45c1-a3f9-eec56dd5eb82" />
+<img width="960" height="540" alt="Artifice Logo" src="https://github.com/user-attachments/assets/54090678-ae12-45c1-a3f9-eec56dd5eb82" />
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg)](https://doi.org/10.5281/zenodo.21621935)
 
-A collection of local-first, bring-your-own-model (BYOM) desktop tools designed around rigid software harnesses rather than conversational AI interfaces.
+A collection of local-first, bring-your-own-model (BYOM) tools that place a user-friendly interface on top of AI models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed from the ground up for digital humanities workflows.
+## AI for Humanities Research:
 
-## AI for Humanities Research beyond the 'ELIZA Effect'
+This software follows from the insight of Joseph Weizenbaum, creator of the first chatbot ELIZA, that "extremely short exposures to a relatively simple computer program could induce powerful delusional thinking in quite normal people".
 
-This software follows from the insight of Joseph Weizenbaum, creator of the first chatbot ELIZA, that '‘extremely short exposures to a relatively simple computer program could induce powerful delusional thinking in quite normal people". To avoid such negative impacts of AI use while following 'minimal computing' and data privacy best practice, this software defaults to a local-first and open source approach where all interactions with models are deterministic rather than conversation.
-
+Artifice does not want to sell you anything
 ## Design System
 
 All user interfaces across the suite adhere to **The New Masses Design System** (`Design_Philosophy.md`), featuring paper-and-ink aesthetics, warm editorial palettes, serif typography, and restrained motion.

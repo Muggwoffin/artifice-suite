@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-import ipaddress
 import json
 import logging
 import os
-import socket
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
+from model_harness.contract import EndpointRejected
+from model_harness.endpoint_policy import EndpointPolicy
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -110,106 +109,29 @@ def _assert_contained(path: Path, container: Path) -> None:
 
 # ── Model endpoints ──────────────────────────────────────────────────────────
 #
-# Deliberately NOT loopback-only.  Academics on a university network reach
-# centrally-served models from a personal machine, so a private-network address
-# is a first-class case rather than an escape hatch.  "Local-first" means the
-# software never *requires* a remote service, not that it refuses one the user
-# chose.
+# The allowlist policy lives in ``model_harness.endpoint_policy`` — this app
+# only wraps it with FastAPI's exception type.  This is the rule the harness
+# exists to own; the duplicate that lived here before Phase 3 has been
+# collapsed into the harness.
 #
-# Still enforced: http/https only; link-local refused outright, which is what
-# keeps cloud metadata endpoints (169.254.169.254) unreachable; and public
-# addresses gated behind an explicit opt-in so a mistyped or injected hostname
-# cannot quietly ship prompts to the open internet.
-#
-# Kept deliberately identical to artifice-graph's copy.  Both should collapse
-# into model_harness.EndpointPolicy in Phase 3 — this is the rule the harness
-# exists to own, and duplicating it twice is the interim cost of the harness
-# not being real yet.
-_ALWAYS_ALLOWED_HOSTS: frozenset[str] = frozenset(
-    h.lower()
-    for h in [
-        "localhost",
-        "host.docker.internal",
-        os.environ.get("WSL_HOST_IP", "172.21.176.1"),
-    ]
-    if h
-)
+# See :class:`model_harness.endpoint_policy.EndpointPolicy` for the full
+# rationale and constraint set.
 
-_ALLOW_PUBLIC_MODELS = os.environ.get("ARTIFICE_ALLOW_PUBLIC_MODELS", "").strip().lower() in (
-    "1",
-    "true",
-    "yes",
-)
+_endpoint_policy = EndpointPolicy()
 
 
 def _classify_host(host: str) -> tuple[bool, str]:
     """Return ``(permitted, reason)`` for a URL host.
-
-    Every address a name resolves to is checked, because a name resolving to
-    one permitted and one public address is not permitted.  Resolution here and
-    connection later is a time-of-check gap; closing it needs the connection
-    pinned to the validated address, which belongs in the harness.
-    """
-    if host in _ALWAYS_ALLOWED_HOSTS:
-        return True, "explicitly allowed host"
-
-    try:
-        infos = socket.getaddrinfo(host, None)
-    except OSError:
-        return False, f"host {host!r} could not be resolved"
-
-    addresses = {ipaddress.ip_address(info[4][0]) for info in infos}
-    if not addresses:
-        return False, f"host {host!r} resolved to no addresses"
-
-    for addr in sorted(addresses, key=str):
-        if addr.is_link_local:
-            return False, (
-                f"host {host!r} resolves to the link-local address {addr}, "
-                f"which is never permitted"
-            )
-
-    if all(addr.is_loopback or addr.is_private for addr in addresses):
-        return True, "loopback or private-network address"
-
-    if _ALLOW_PUBLIC_MODELS:
-        return True, "public address, permitted by ARTIFICE_ALLOW_PUBLIC_MODELS"
-
-    public = sorted(str(a) for a in addresses if not (a.is_loopback or a.is_private))
-    return False, (
-        f"host {host!r} resolves to the public address(es) {public}. "
-        f"Set ARTIFICE_ALLOW_PUBLIC_MODELS=1 to permit endpoints outside your "
-        f"own network."
-    )
+    Delegates to the harness policy."""
+    return _endpoint_policy.classify_host(host)
 
 
 def _validate_base_url(raw: str, field_name: str) -> str:
     """Return *raw* after checking its scheme and host. Fails closed, loudly."""
     try:
-        parsed = urlparse(raw)
-    except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name}: {raw!r} is not a valid URL",
-        ) from None
-
-    if parsed.scheme not in ("http", "https"):
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name}: scheme must be http or https, got {parsed.scheme!r}",
-        )
-
-    host = (parsed.hostname or "").lower()
-    if not host:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name}: {raw!r} has no host",
-        )
-
-    permitted, reason = _classify_host(host)
-    if not permitted:
-        raise HTTPException(status_code=400, detail=f"{field_name}: {reason}")
-    return raw
+        return _endpoint_policy.validate_url(raw)
+    except EndpointRejected as e:
+        raise HTTPException(status_code=400, detail=f"{field_name}: {e}") from e
 
 
 # ── Inference configuration persistence helper ───────────────────────────────

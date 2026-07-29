@@ -279,6 +279,7 @@ version = "0.1.0"
 source = { editable = "apps/artifice-graph" }
 dependencies = [
     { name = "httpx" },
+    { name = "model-harness" },
     { name = "networkx" },
     { name = "pydantic" },
     { name = "pyyaml" },
@@ -305,6 +306,7 @@ requires-dist = [
     { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.100" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "jinja2", marker = "extra == 'web'", specifier = ">=3.1" },
+    { name = "model-harness", editable = "packages/model-harness" },
     { name = "networkx", specifier = ">=3.0" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
@@ -455,6 +457,7 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "fastapi" },
     { name = "fpdf2" },
+    { name = "model-harness" },
     { name = "openai" },
     { name = "platformdirs" },
     { name = "pydantic" },
@@ -482,6 +485,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "fpdf2", specifier = ">=2.8.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
+    { name = "model-harness", editable = "packages/model-harness" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "platformdirs", specifier = ">=4.0.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
