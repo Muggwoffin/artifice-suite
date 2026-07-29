@@ -1,8 +1,4 @@
-<img width="960" height="540" alt="Artifice Logo copy" src="https://github.com/user-attachments/assets/6f7262b1-a9e5-4c2d-bacd-1546b3eba557" />
-
-
-
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg)](https://doi.org/10.5281/zenodo.21621935)
+<p align="center"><img width="960" height="540" alt="Artifice Logo copy" src="https://github.com/user-attachments/assets/6f7262b1-a9e5-4c2d-bacd-1546b3eba557" /></p>
 
 # OCR + Copy Editing + Transcription + Data Visualisation
 
@@ -50,3 +46,12 @@ The Artifice Suite runs natively on macOS (Apple Silicon M1/M2/M3/M4 and Intel M
 - **Metal GPU Acceleration**: Run model engines (**Ollama** and **LM Studio**) **natively on the macOS host** to leverage Apple Silicon Metal GPU acceleration and Unified Memory.
 - **Docker Networking**: The provided `docker-compose.yml` configures containers to connect to host-bound models via `http://host.docker.internal:11434` (Ollama) or `http://host.docker.internal:1234/v1` (LM Studio).
 - **Device Agnostic Execution**: Python components dynamically target `cuda` $\rightarrow$ `mps` (Apple Metal Performance Shaders) $\rightarrow$ `cpu`. For `artifice-transcribe`, set `PYTORCH_ENABLE_MPS_FALLBACK=1` on macOS if required.
+
+
+<p align="center">
+  <a href="https://doi.org/10.5281/zenodo.21621935">
+    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg" alt="DOI">
+  </a>
+</p>
+
+
