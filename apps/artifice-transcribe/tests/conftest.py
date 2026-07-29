@@ -12,6 +12,13 @@ from artifice_transcribe.db.models import Base
 from artifice_transcribe.db.session import get_db
 from artifice_transcribe.main import app
 
+# test_api.py is a standalone live-server verification script, not a pytest
+# module: it expects a running server on 127.0.0.1:8000 and takes the audio
+# path as sys.argv[1]. Collected as a test module it can only fail with
+# "Connection refused". It stays runnable as `python tests/test_api.py
+# [audio]`; its no-live-engine coverage lives in tests/test_api_e2e.py.
+collect_ignore = ["test_api.py"]
+
 
 @dataclass
 class ApiFixture:
