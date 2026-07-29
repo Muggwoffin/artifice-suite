@@ -53,7 +53,7 @@ from typing import Generic, Literal, Protocol, TypeVar, runtime_checkable
 
 from pydantic import BaseModel
 
-Provider = Literal["ollama", "lm-studio", "generic-api", "whisper", "parakeet"]
+Provider = Literal["ollama", "lm-studio", "generic-api", "whisper", "parakeet", "anthropic"]
 
 SchemaT = TypeVar("SchemaT", bound=BaseModel)
 
@@ -108,11 +108,35 @@ class ProviderCapabilities(BaseModel):
     adapter is unsure about should be declared *low* — an over-claim produces a
     confusing validation failure at call time, an under-claim only costs a
     weaker mode.
+
+    ``structured_output`` names the **strongest** mode this provider supports.
+    The ladder degrades downward from that mode, but only through modes the
+    provider actually implements — a gap in ``supported_modes`` is skipped
+    rather than attempted.
+
+    A provider that supports ``NATIVE_SCHEMA`` via tool-use but has no
+    ``json_object`` API declares ``supported_modes={NATIVE_SCHEMA, PROMPTED}``.
+    When ``supported_modes`` is ``None`` (the default), every mode from
+    ``structured_output`` downward is assumed supported — correct for
+    OpenAI-shaped providers but not for Anthropic.
     """
 
     structured_output: StructuredOutputMode
+    supported_modes: frozenset[StructuredOutputMode] | None = None
     streaming: bool = False
     vision: bool = False
+
+    def modes(self) -> frozenset[StructuredOutputMode]:
+        """Return every mode this provider actually supports.
+
+        ``structured_output`` is guaranteed to be in the returned set. When
+        ``supported_modes`` is ``None`` the set is every mode from the best
+        downward through ``_MODE_STRENGTH``.
+        """
+        if self.supported_modes is not None:
+            return self.supported_modes
+        idx = _MODE_STRENGTH.index(self.structured_output)
+        return frozenset(_MODE_STRENGTH[idx:])
 
 
 # ── Requests and results ─────────────────────────────────────────────────────

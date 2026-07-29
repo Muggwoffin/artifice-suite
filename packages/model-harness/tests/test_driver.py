@@ -7,7 +7,7 @@ No HTTP, no running model.
 from __future__ import annotations
 
 import json
-from typing import cast
+from typing import Optional, cast
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -75,13 +75,23 @@ def _request(mode: M = M.JSON_OBJECT, **kw) -> StructuredRequest:
 class _StaticProvider:
     """A provider that returns the same text for every call."""
 
-    def __init__(self, text: str, mode: StructuredOutputMode = M.JSON_OBJECT):
+    def __init__(
+        self,
+        text: str,
+        mode: StructuredOutputMode = M.JSON_OBJECT,
+        *,
+        supported_modes: frozenset[StructuredOutputMode] | None = None,
+    ):
         self._text = text
         self._mode = mode
+        self._supported_modes = supported_modes
         self.calls: list[StructuredRequest] = []
 
     def capabilities(self, model: str) -> ProviderCapabilities:
-        return ProviderCapabilities(structured_output=self._mode)
+        return ProviderCapabilities(
+            structured_output=self._mode,
+            supported_modes=self._supported_modes,
+        )
 
     async def complete(self, request: StructuredRequest) -> RawCompletion:
         self.calls.append(request)
@@ -95,13 +105,19 @@ class _SequenceProvider:
         self,
         texts: list[str],
         mode: StructuredOutputMode = M.NATIVE_SCHEMA,
+        *,
+        supported_modes: frozenset[StructuredOutputMode] | None = None,
     ):
         self._texts = texts
         self._mode = mode
+        self._supported_modes = supported_modes
         self.calls: list[StructuredRequest] = []
 
     def capabilities(self, model: str) -> ProviderCapabilities:
-        return ProviderCapabilities(structured_output=self._mode)
+        return ProviderCapabilities(
+            structured_output=self._mode,
+            supported_modes=self._supported_modes,
+        )
 
     async def complete(self, request: StructuredRequest) -> RawCompletion:
         self.calls.append(request)
@@ -453,3 +469,113 @@ class TestModeRecording:
         )
         assert len(provider.calls) == 1
         assert provider.calls[0].mode is M.JSON_OBJECT
+
+
+# ── Mode gaps (supported_modes) ───────────────────────────────────────────────
+
+
+ANTHROPIC_LIKE = frozenset({M.NATIVE_SCHEMA, M.PROMPTED})
+"""A provider with a gap: supports NATIVE_SCHEMA and PROMPTED but not JSON_OBJECT."""
+
+
+class TestModeGaps:
+    """When a provider declares a gap in ``supported_modes``, the degradation
+    ladder must skip unsupported modes rather than asking the adapter for a
+    mode it cannot implement."""
+
+    @pytest.mark.asyncio
+    async def test_gap_skipped_on_degradation(self):
+        """NATIVE_SCHEMA fails → skip JSON_OBJECT → PROMPTED succeeds."""
+        provider = _SequenceProvider(
+            [
+                "garbage (native schema failed)",          # rung 1: NATIVE_SCHEMA
+                json.dumps({"name": "Zara", "age": 90}),   # rung 2: PROMPTED (JSON_OBJECT skipped)
+            ],
+            mode=M.NATIVE_SCHEMA,
+            supported_modes=ANTHROPIC_LIKE,
+        )
+        result = await run_structured(
+            _request(mode=M.PROMPTED),
+            provider,
+            Person,
+        )
+        assert result.data == Person(name="Zara", age=90)
+        assert result.mode_used is M.PROMPTED  # JSON_OBJECT was never attempted
+        assert result.repaired is True
+        # Exactly two calls: NATIVE_SCHEMA then PROMPTED.  No JSON_OBJECT.
+        assert len(provider.calls) == 2
+        assert provider.calls[0].mode is M.NATIVE_SCHEMA
+        assert provider.calls[1].mode is M.PROMPTED
+
+    @pytest.mark.asyncio
+    async def test_success_on_first_rung_no_gap_traversal(self):
+        """NATIVE_SCHEMA succeeds → no degradation needed."""
+        provider = _StaticProvider(
+            json.dumps({"name": "Yara", "age": 95}),
+            mode=M.NATIVE_SCHEMA,
+            supported_modes=ANTHROPIC_LIKE,
+        )
+        result = await run_structured(
+            _request(mode=M.PROMPTED),
+            provider,
+            Person,
+        )
+        assert result.data == Person(name="Yara", age=95)
+        assert result.mode_used is M.NATIVE_SCHEMA
+        assert result.repaired is False
+        assert len(provider.calls) == 1
+        assert provider.calls[0].mode is M.NATIVE_SCHEMA
+
+    @pytest.mark.asyncio
+    async def test_both_rungs_fail_raises(self):
+        """When both NATIVE_SCHEMA and PROMPTED fail, ladder bottoms out."""
+        provider = _SequenceProvider(
+            [
+                "garbage 1",
+                "garbage 2",
+            ],
+            mode=M.NATIVE_SCHEMA,
+            supported_modes=ANTHROPIC_LIKE,
+        )
+        with pytest.raises(StructuredOutputUnsupported):
+            await run_structured(
+                _request(mode=M.PROMPTED),
+                provider,
+                Person,
+            )
+
+    @pytest.mark.asyncio
+    async def test_schema_mismatch_then_prompted_succeeds(self):
+        """NATIVE_SCHEMA returns valid JSON but wrong shape → skip JSON_OBJECT → PROMPTED."""
+        provider = _SequenceProvider(
+            [
+                json.dumps({"name": "Xen"}),                # missing "age" → schema fails
+                json.dumps({"name": "Xen", "age": 100}),    # PROMPTED works
+            ],
+            mode=M.NATIVE_SCHEMA,
+            supported_modes=ANTHROPIC_LIKE,
+        )
+        result = await run_structured(
+            _request(mode=M.PROMPTED),
+            provider,
+            Person,
+        )
+        assert result.data == Person(name="Xen", age=100)
+        assert result.mode_used is M.PROMPTED
+        assert result.repaired is True
+        assert len(provider.calls) == 2
+        assert provider.calls[0].mode is M.NATIVE_SCHEMA
+        assert provider.calls[1].mode is M.PROMPTED
+
+    @pytest.mark.asyncio
+    async def test_select_mode_returns_native_schema_even_with_gap(self):
+        """select_mode returns the strongest supported mode, regardless of gaps
+        below it.  The gap only affects degradation."""
+        caps_with_gap = ProviderCapabilities(
+            structured_output=M.NATIVE_SCHEMA,
+            supported_modes=ANTHROPIC_LIKE,
+        )
+        from model_harness.contract import select_mode
+
+        chosen = select_mode(caps_with_gap, minimum=M.PROMPTED)
+        assert chosen is M.NATIVE_SCHEMA
