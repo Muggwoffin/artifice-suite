@@ -787,6 +787,22 @@ of them propagated into a wrong instruction given to an agent.
 
 ### Open
 
+0. **Secret files are unprotected on Windows.** `artifice-ocr/config.py` and
+   `artifice-transcribe`'s inference config are both created with `os.open(..., 0o600)` so they are
+   never briefly world-readable. **Windows does not implement POSIX mode bits** — the argument is
+   effectively ignored and `st_mode` reports `0o666` — so on Windows both files, each holding an API
+   key, are written unprotected. Restricting them needs an explicit ACL via `icacls` or `pywin32`.
+
+   Windows is a first-class supported platform per `CLAUDE.md`, so this is a real gap rather than a
+   portability footnote, and the fix is platform-specific work rather than a parameter change.
+
+   > **Found 2026-07-29 by the cross-platform CI leg, on the first run it was ever allowed to
+   > complete.** Nothing else could have found it: all four suites were green on Linux, and the
+   > assertion that failed (`st_mode & 0o777 == 0o600`) passes everywhere the maintainer develops.
+   > The matrix had previously been cancelled by `fail-fast` before Windows ever ran. This is the
+   > clearest evidence to date for the "tests cannot see packaging bugs" theme in Part V — except
+   > here the invisible axis was the *platform*, not the build artefact.
+
 1. **JS-rendered empty states.** The static ones are done and the `.panel-empty-title` /
    `.panel-empty-desc` component exists in both apps' CSS. The rest are rendered from JavaScript and
    need the same title/description/action treatment at `transcribe/app.js:324,367,1395`,

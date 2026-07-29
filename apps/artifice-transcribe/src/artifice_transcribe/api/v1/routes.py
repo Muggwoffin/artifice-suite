@@ -258,6 +258,13 @@ def _load_inference_config() -> dict:
 
 def _save_inference_config(cfg: dict) -> None:
     _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    # Created 0600 rather than chmod'ed afterwards, so the file is never
+    # world-readable even briefly.
+    #
+    # POSIX only. Windows ignores the mode argument and reports st_mode 0o666,
+    # so on Windows this file — which holds an API key — is NOT protected.
+    # Restricting it there needs an explicit ACL (icacls or pywin32). Recorded
+    # in IMPLEMENTATION_PLAN.md; found by the cross-platform CI leg.
     fd = os.open(_INFERENCE_CONFIG_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)
