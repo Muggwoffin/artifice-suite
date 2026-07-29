@@ -30,6 +30,8 @@ from model_harness.contract import (
     StructuredRequest,
     select_mode,
 )
+from model_harness.driver import run_structured
+from model_harness.openai_adapter import OpenAIProvider
 
 __all__ = [
     "EndpointPolicy",
@@ -38,6 +40,7 @@ __all__ = [
     "HarnessResult",
     "ModelConnectorConfig",
     "ModelProvider",
+    "OpenAIProvider",
     "Provider",
     "ProviderCapabilities",
     "RawCompletion",
@@ -46,5 +49,6 @@ __all__ = [
     "StructuredOutputMode",
     "StructuredOutputUnsupported",
     "StructuredRequest",
+    "run_structured",
     "select_mode",
 ]
