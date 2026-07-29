@@ -954,7 +954,76 @@ has `test_llm_client.py` — the largest client is the tested one, which is fort
       import, document ingest) for path traversal, zip-slip and decompression bombs
 - [ ] Test coverage for the restored `pipeline.js` and the SSE log broker, which have none
 
-### Phase 6 — Academic release
+### Phase 6 — Packaging for ordinary users
+
+> The preceding phases produce software that works for the people who built it. Phase 6 is about
+> making it easy for people who did not build it to download and run it. The maintainer's
+> position: *packaging is the real test before academic release — months of real users, issues
+> and PRs, only then does academic submission follow.* This phase names the open questions rather
+> than pretending they are settled.
+
+**What already exists:**
+
+- **Four `Dockerfile`s** (one per app) and a root `docker-compose.yml`. Their currency relative
+  to the `0979359` web-layer migration has not been verified — the Dockerfiles may need updating
+  to reflect the `src/artifice_<slug>/web/` layout that replaced the previous `web/` and
+  `static/` locations.
+- **Console entry points** in `[project.scripts]` for all six commands: `artifice-ocr`,
+  `artifice-ocr-web`, `artifice-graph`, `artifice-graph-web`, `artifice-draft`,
+  `artifice-transcribe`. Confirmed by reading each `pyproject.toml` on 2026-07-29.
+- **`platformdirs`** is already used for user data in `artifice-transcribe`; CI builds and
+  asserts on a wheel.
+- **`pywebview`** is a declared dependency of `artifice-draft` (`pyproject.toml:23`) and
+  already has a launch script (`launch_personae_web.pyw`) that prefers a native window and
+  falls back to the browser. A native window gives real filesystem path pickers, which a
+  browser never exposes (see `CLAUDE.md`).
+- **`importlib.resources`** is already used for prompt templates and PDF fonts in
+  `artifice-ocr`, specifically to survive frozen distribution — but **no frozen-distribution
+  configuration exists anywhere**. `grep` for `PyInstaller`, `.spec`, `briefcase`, `nuitka`
+  returns one comment only: `main.py:110` notes the reloader breaks under PyInstaller. The
+  two "frozen `.exe`/`.dmg`" comments at `_prompts.py:15` and `pdf_export.py:69` document
+  *intent* with no supporting tooling. This gap is a finding, not a task.
+
+**Open questions, in the order that matters for a first-run experience:**
+
+1. **Distribution format.** Wheel, frozen bundle (PyInstaller / Nuitka), Docker, or an
+   installer — and whether the answer differs by app. `artifice-transcribe` pulls large ASR
+   models (Whisper + pyannote); the other three do not. A Docker user on Windows needs
+   WSL2 or Docker Desktop; a frozen bundle does not. The tradeoffs are open and the answer
+   may differ per app.
+
+2. **How a user obtains a model.** The suite is BYOM, and the first-run experience cannot
+   assume a working Ollama install. Options include: detecting Ollama on the host,
+   downloading a default model automatically, surfacing the model selection UI before the
+   first run, or documenting the requirement clearly and failing gracefully. "Easy to
+   download and experiment with" is not compatible with a blank screen when no model
+   server is found.
+
+3. **Where API keys live on Windows.** Open item 0 (Part IV): `os.open(..., 0o600)` protects
+   files on POSIX but Windows does not implement POSIX mode bits, so on Windows the same call
+   reports `0o666`. Both ocr's `settings.json` and transcribe's inference config hold an
+   API key. The fix is platform-specific (`icacls` or `pywin32`), not a parameter change.
+   **Any packaging work that precedes this fix ships an API-key exposure on Windows.**
+
+4. **What "uninstall" means.** `platformdirs` creates a user data directory. Does the
+   uninstaller remove it, prompt for it, or leave it? None of the three is obviously
+   correct for a researcher who wants to reinstall cleanly without losing their settings.
+
+5. **Signing and notarisation on macOS.** A macOS user cannot open an app without
+   notarisation unless they explicitly bypass Gatekeeper (`xattr -r -d
+   com.apple.quarantine`). This is a requirement for ordinary users, not a polish item.
+
+6. **The Dockerfiles may be stale.** The web-layer migration (`0979359`) moved assets from
+   `apps/<app>/web/` and `apps/<app>/src/<pkg>/static/` to
+   `apps/<app>/src/artifice_<slug>/web/static/`. The `COPY` commands in each Dockerfile
+   need verification against this structure.
+
+See also: **ROADMAP.md** — the development roadmap for the community period between Phases 6
+and 7.
+
+---
+
+### Phase 7 — Academic release *(follows community uptake, not Phase 5)*
 
 - [ ] Verify `CITATION.cff` is current
 - [ ] Confirm the Zenodo integration mints a DOI on a `v*.*.*` tag
