@@ -7,25 +7,65 @@ The result is returned (not saved) so the caller can show a review step.
 
 from __future__ import annotations
 
-import json
+import asyncio
+import ipaddress
 import logging
 import re
-from urllib.parse import urlparse
+import socket
+from urllib.parse import urljoin, urlparse
 
 import requests
+from pydantic import BaseModel, Field
 
 from artifice_draft.config import AppConfig
+from artifice_draft.models import LLMProvider
 from artifice_draft.style_guides.base import StyleGuide
+
+from model_harness.anthropic_adapter import AnthropicProvider
+from model_harness.contract import (
+    HarnessResult,
+    ModelConnectorConfig,
+    SchemaValidationFailed,
+    StructuredOutputMode,
+    StructuredOutputUnsupported,
+    StructuredRequest,
+)
+from model_harness.driver import run_structured
+from model_harness.endpoint_policy import EndpointPolicy as ConcreteEndpointPolicy
+from model_harness.openai_adapter import OpenAIProvider
 
 logger = logging.getLogger(__name__)
 
 # --- rate-limit / safety constants ----------------------------------------- #
 _MAX_RESPONSE_BYTES = 5 * 1024 * 1024  # 5 MB — journal guidelines are small
 _REQUEST_TIMEOUT = 30  # seconds
+_MAX_REDIRECTS = 5  # prevent redirect loops
 _USER_AGENT = (
     "ArtificeDraft/1.0 (+https://github.com/anomalyco/opencode) "
     "style-guide-scraper"
 )
+
+# --- Wire schema for harness extraction ------------------------------------ #
+
+class _GuideExtractionShape(BaseModel):
+    """Pydantic model mirroring :class:`StyleGuide` for harness validation.
+
+    Every field has a default so the harness can validate partial responses.
+    """
+    name: str = ""
+    edition: str = ""
+    citation_style: str = ""
+    footnote_format: str = ""
+    bibliography_format: str = ""
+    heading_capitalization: str = ""
+    prose_rules: list[str] = Field(default_factory=list)
+    quotation_rules: str = ""
+    abbreviation_rules: str = ""
+    date_format: str = ""
+    page_reference_format: str = ""
+    url_format: str = ""
+    system_prompt_addendum: str = ""
+    custom_rules: list[str] = Field(default_factory=list)
 
 # The LLM prompt that asks it to parse extracted text into StyleGuide JSON.
 _EXTRACTION_SYSTEM_PROMPT = """\
@@ -63,32 +103,99 @@ LLM will read. Include as many concrete rules as the source text supports.
 """
 
 
-def fetch_and_extract(url: str) -> str:
-    """Fetch *url* and return the readable text content.
+# ---------------------------------------------------------------------------
+# URL validation for user-supplied style-guide URLs
+# ---------------------------------------------------------------------------
 
-    Uses readability-lxml to strip navigation, ads, and boilerplate.
-    Raises ``ValueError`` for bad URLs or network failures.
+
+def _validate_public_url(url: str) -> str:
+    """Validate that *url* points to a public (non-internal) host.
+
+    This is the opposite of ``EndpointPolicy`` — it denies loopback,
+    private-network, and link-local addresses, and permits public ones.
+    ``EndpointPolicy`` governs model-endpoint connections; this governs
+    user-supplied web pages, where a loopback address would be an SSRF
+    rather than a legitimate local model.
+
+    Returns *url* unchanged on success; raises ``ValueError`` otherwise.
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError(f"URL must use http or https, got: {parsed.scheme or '(none)'}")
 
+    host = (parsed.hostname or "").lower()
+    if not host:
+        raise ValueError(f"URL has no host: {url!r}")
+
     try:
-        resp = requests.get(
-            url,
-            timeout=_REQUEST_TIMEOUT,
-            headers={"User-Agent": _USER_AGENT},
-            allow_redirects=True,
-        )
-        resp.raise_for_status()
-    except requests.ConnectionError as exc:
-        raise ValueError(f"Could not connect to {url}: {exc}") from exc
-    except requests.Timeout as exc:
-        raise ValueError(f"Request timed out after {_REQUEST_TIMEOUT}s: {url}") from exc
-    except requests.HTTPError as exc:
-        raise ValueError(f"HTTP error fetching {url}: {exc}") from exc
-    except requests.RequestException as exc:
-        raise ValueError(f"Failed to fetch {url}: {exc}") from exc
+        infos = socket.getaddrinfo(host, None)
+    except OSError as exc:
+        raise ValueError(f"Could not resolve host {host!r}: {exc}") from exc
+
+    addresses = {ipaddress.ip_address(info[4][0]) for info in infos}
+    if not addresses:
+        raise ValueError(f"Host {host!r} resolved to no addresses")
+
+    for addr in addresses:
+        if not addr.is_global:
+            raise ValueError(
+                f"Host {host!r} resolves to non-public address {addr}. "
+                f"Only public web pages are supported."
+            )
+
+    return url
+
+
+def fetch_and_extract(url: str) -> str:
+    """Fetch *url* and return the readable text content.
+
+    Uses readability-lxml to strip navigation, ads, and boilerplate.
+    Raises ``ValueError`` for bad URLs, non-public hosts, or network
+    failures.
+
+    Redirects are followed manually — each hop is validated through
+    :func:`_validate_public_url` so a public host that redirects to an
+    internal address is refused.
+    """
+    _validate_public_url(url)
+
+    session = requests.Session()
+    session.headers.update({"User-Agent": _USER_AGENT})
+
+    current_url: str = url
+
+    for hop in range(_MAX_REDIRECTS + 1):
+        try:
+            resp = session.get(
+                current_url,
+                timeout=_REQUEST_TIMEOUT,
+                allow_redirects=False,
+            )
+        except requests.ConnectionError as exc:
+            raise ValueError(f"Could not connect to {current_url}: {exc}") from exc
+        except requests.Timeout as exc:
+            raise ValueError(f"Request timed out after {_REQUEST_TIMEOUT}s: {current_url}") from exc
+        except requests.RequestException as exc:
+            raise ValueError(f"Failed to fetch {current_url}: {exc}") from exc
+
+        if resp.is_redirect:
+            if hop >= _MAX_REDIRECTS:
+                raise ValueError(f"Too many redirects (max {_MAX_REDIRECTS}) from {url}")
+            location = resp.headers.get("Location")
+            if not location:
+                raise ValueError(f"Redirect from {current_url} with no Location header")
+            current_url = urljoin(current_url, location)
+            _validate_public_url(current_url)
+            continue
+
+        try:
+            resp.raise_for_status()
+        except requests.HTTPError as exc:
+            raise ValueError(f"HTTP error fetching {current_url}: {exc}") from exc
+
+        break
+    else:
+        raise ValueError(f"Too many redirects (max {_MAX_REDIRECTS}) from {url}")
 
     content_type = resp.headers.get("Content-Type", "")
     if "pdf" in content_type.lower():
@@ -99,7 +206,8 @@ def fetch_and_extract(url: str) -> str:
     raw = resp.content[:_MAX_RESPONSE_BYTES]
     if len(resp.content) > _MAX_RESPONSE_BYTES:
         logger.warning(
-            "Response from %s exceeded %d bytes; truncated", url, _MAX_RESPONSE_BYTES
+            "Response from %s exceeded %d bytes; truncated",
+            current_url, _MAX_RESPONSE_BYTES,
         )
 
     try:
@@ -114,7 +222,7 @@ def fetch_and_extract(url: str) -> str:
         doc = ReadabilityDocument(raw.decode("utf-8", errors="replace"))
         html_content = doc.summary()
     except Exception as exc:
-        raise ValueError(f"Could not extract readable content from {url}: {exc}") from exc
+        raise ValueError(f"Could not extract readable content from {current_url}: {exc}") from exc
 
     try:
         from bs4 import BeautifulSoup
@@ -143,6 +251,10 @@ def parse_guide_with_llm(
 ) -> StyleGuide:
     """Send extracted text to the LLM and parse the response into a StyleGuide.
 
+    Routes through :func:`model_harness.driver.run_structured` so the
+    response is schema-validated and the endpoint is checked against
+    ``EndpointPolicy``.
+
     Raises ``ValueError`` if the LLM returns unparseable output.
     """
     if config is None:
@@ -154,28 +266,11 @@ def parse_guide_with_llm(
         f"--- BEGIN EXTRACTED TEXT ---\n{extracted_text}\n--- END EXTRACTED TEXT ---"
     )
 
-    raw_response = _send_llm_request(
+    return _parse_guide_via_harness(
         system_prompt=_EXTRACTION_SYSTEM_PROMPT,
         user_prompt=user_prompt,
         config=config,
     )
-
-    cleaned = raw_response.strip()
-    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-    cleaned = re.sub(r"\s*```$", "", cleaned)
-
-    try:
-        data = json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        raise ValueError(
-            "The LLM returned invalid JSON. "
-            "Try again, or check that your LLM provider is reachable."
-        ) from exc
-
-    if not isinstance(data, dict):
-        raise ValueError("The LLM returned a JSON array instead of an object.")
-
-    return StyleGuide.from_dict(data)
 
 
 def preview_guide_from_url(
@@ -297,81 +392,136 @@ def preview_guide_from_file(
 
 
 # ---------------------------------------------------------------------------
-# internal: raw LLM call
+# internal: harness-based LLM call
 # ---------------------------------------------------------------------------
 
-def _send_llm_request(
-    system_prompt: str, user_prompt: str, config: AppConfig
-) -> str:
-    """Route a single LLM request to the configured provider."""
-    if config.llm_provider.value == "ollama":
-        return _send_ollama(system_prompt, user_prompt, config)
-    elif config.llm_provider.value == "openai":
-        return _send_openai(system_prompt, user_prompt, config)
-    elif config.llm_provider.value == "anthropic":
-        return _send_anthropic(system_prompt, user_prompt, config)
-    raise ValueError(f"Unsupported provider: {config.llm_provider}")
 
-
-def _send_ollama(
+def _parse_guide_via_harness(
     system_prompt: str, user_prompt: str, config: AppConfig
-) -> str:
-    payload = {
-        "model": config.active_model,
-        "system": system_prompt,
-        "prompt": user_prompt,
-        "stream": False,
-        "format": "json",
-        "temperature": 0.2,
-        "num_ctx": config.num_ctx,
-    }
-    resp = requests.post(
-        config.ollama_generate_url, json=payload, timeout=120,
+) -> StyleGuide:
+    """Send a structured extraction request through the model harness.
+
+    Replaces the old :func:`_send_llm_request` / :func:`_send_ollama` /
+    :func:`_send_openai` / :func:`_send_anthropic` quartet, which each
+    issued a raw HTTP request without endpoint validation.  The harness
+    validates the endpoint through ``EndpointPolicy`` before any network
+    call, and the response is schema-validated against
+    :class:`_GuideExtractionShape`.
+    """
+    policy = ConcreteEndpointPolicy()
+    adapter = _build_harness_adapter(config, policy=policy)
+    schema_json = _GuideExtractionShape.model_json_schema()
+
+    provider_str = _provider_string(config)
+    endpoint = _harness_endpoint(config)
+    api_key = _harness_api_key(config)
+    model = config.active_model
+
+    model_config = ModelConnectorConfig(
+        provider=provider_str,  # type: ignore[arg-type]
+        endpoint=endpoint,
+        model=model,
+        api_key=api_key,
+        timeout_s=120.0,
     )
-    resp.raise_for_status()
-    return resp.json().get("response", "")
+
+    request = StructuredRequest(
+        instructions=system_prompt,
+        input=user_prompt,
+        schema_json=schema_json,
+        mode=StructuredOutputMode.PROMPTED,
+        config=model_config,
+    )
+
+    async def _run() -> StyleGuide:
+        try:
+            result: HarnessResult[_GuideExtractionShape] = await run_structured(
+                request,
+                adapter,
+                _GuideExtractionShape,
+                endpoint_policy=policy,
+            )
+        except (StructuredOutputUnsupported, SchemaValidationFailed) as exc:
+            raise ValueError(
+                f"The LLM could not produce a valid style guide: {exc}"
+            ) from exc
+        except Exception as exc:
+            raise ValueError(
+                f"Unexpected error during style guide extraction: {exc}"
+            ) from exc
+
+        logger.info(
+            "Style guide extraction: mode_used=%s repaired=%s",
+            result.mode_used.value,
+            result.repaired,
+        )
+
+        # Convert the validated Pydantic model back to a StyleGuide dataclass.
+        return StyleGuide.from_dict(result.data.model_dump())
+
+    # ── Sync / async boundary ────────────────────────────────────────────
+    try:
+        return asyncio.run(_run())
+    except RuntimeError as exc:
+        if "cannot be called from a running event loop" in str(exc):
+            raise RuntimeError(
+                "parse_guide_with_llm was invoked from within a running "
+                "asyncio event loop.  This function is a synchronous wrapper; "
+                "use the async harness path directly instead."
+            ) from exc
+        raise
 
 
-def _send_openai(
-    system_prompt: str, user_prompt: str, config: AppConfig
-) -> str:
-    url = f"{config.openai_base_url.rstrip('/')}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {config.openai_api_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": config.active_model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": 0.2,
-        "max_tokens": config.num_ctx,
-        "response_format": {"type": "json_object"},
-    }
-    resp = requests.post(url, json=payload, headers=headers, timeout=120)
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"]
+# -- Harness adapter / config helpers ------------------------------------------
 
 
-def _send_anthropic(
-    system_prompt: str, user_prompt: str, config: AppConfig
-) -> str:
-    url = "https://api.anthropic.com/v1/messages"
-    headers = {
-        "x-api-key": config.anthropic_api_key,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": config.active_model,
-        "max_tokens": config.num_ctx,
-        "system": system_prompt,
-        "messages": [{"role": "user", "content": user_prompt}],
-        "temperature": 0.2,
-    }
-    resp = requests.post(url, json=payload, headers=headers, timeout=120)
-    resp.raise_for_status()
-    blocks = resp.json().get("content", [])
-    return " ".join(b["text"] for b in blocks if b.get("type") == "text")
+def _provider_string(config: AppConfig) -> str:
+    """Map draft's :class:`LLMProvider` enum to a harness ``Provider`` literal."""
+    if config.llm_provider == LLMProvider.ANTHROPIC:
+        return "anthropic"
+    if config.llm_provider == LLMProvider.OPENAI:
+        return "generic-api"
+    return "ollama"
+
+
+def _harness_endpoint(config: AppConfig) -> str:
+    """Return the base endpoint URL for the active provider.
+
+    The adapter appends ``/chat/completions`` (OpenAI) or ``/v1/messages``
+    (Anthropic), so the endpoint here is the base before those path segments.
+    """
+    if config.llm_provider == LLMProvider.ANTHROPIC:
+        return "https://api.anthropic.com"
+    if config.llm_provider == LLMProvider.OPENAI:
+        return config.openai_base_url.rstrip("/")
+    return config.base_url.rstrip("/")
+
+
+def _harness_api_key(config: AppConfig) -> str | None:
+    """Return the API key for the active provider, or None."""
+    if config.llm_provider == LLMProvider.ANTHROPIC:
+        return config.anthropic_api_key or None
+    if config.llm_provider == LLMProvider.OPENAI:
+        return config.openai_api_key or None
+    return None
+
+
+def _build_harness_adapter(
+    config: AppConfig,
+    policy: ConcreteEndpointPolicy | None = None,
+) -> OpenAIProvider | AnthropicProvider:
+    """Build the correct harness provider adapter for *config*.
+
+    Both Ollama and OpenAI use an OpenAI-compatible chat-completions
+    protocol, so they share :class:`OpenAIProvider`.  Anthropic uses
+    :class:`AnthropicProvider`.
+    """
+    if config.llm_provider == LLMProvider.ANTHROPIC:
+        return AnthropicProvider(
+            endpoint_policy=policy,
+            max_tokens=config.num_ctx,
+        )
+    return OpenAIProvider(
+        provider_type="ollama",  # both Ollama and OpenAI support json_object
+        endpoint_policy=policy,
+    )
