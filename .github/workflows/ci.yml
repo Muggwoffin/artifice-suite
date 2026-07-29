@@ -51,6 +51,10 @@ jobs:
     needs: gates
     runs-on: ubuntu-latest
     strategy:
+      # One app's failure must not cancel the other three.  With the default
+      # fail-fast, a single red suite hid every other result and each CI round
+      # reported one problem instead of all of them.
+      fail-fast: false
       matrix:
         include:
           # artfice-ocr: 306 passed, 1 skipped — clean baseline.
@@ -58,20 +62,18 @@ jobs:
           - app: artifice-ocr
             extra-args: ""
 
-          # artifice-draft: 149 passed after installing the `web` extra.
-          # Two tests in test_scraper.py import `readability-lxml`, which is
-          # declared in [project.optional-dependencies].web.  Without it CI
-          # would record 2 permanent failures — a red CI everyone ignores is
-          # worse than no CI.
+          # artifice-draft: 149 passed.
+          # The root `all` extra declares `artifice-draft[web]`, which pulls
+          # in readability-lxml, fastapi, uvicorn, etc. — everything the
+          # test suite needs.  No separate per-app install step is required.
           - app: artifice-draft
             extra-args: ""
-            install-web-extra: true
 
           # artifice-graph: 47 passed — clean baseline.  No extras needed.
           - app: artifice-graph
             extra-args: ""
 
-          # artifice-transcribe: 52 passed, 1 error.
+          # artifice-transcribe: 50 passed, 3 failed (being fixed separately).
           # The error is `fixture 'audio_path' not found` in
           # tests/test_api.py, which is a standalone end-to-end script (not a
           # pytest test suite).  pytest collects it because the function is
@@ -96,10 +98,6 @@ jobs:
       - name: Install workspace root dependencies (incl. pytest)
         run: uv sync --group dev --extra all
         working-directory: .
-
-      - name: Install web extra (draft only)
-        if: ${{ matrix.install-web-extra }}
-        run: uv sync --extra web
 
       - name: Run tests
         run: uv run pytest -q ${{ matrix.extra-args }}
@@ -173,6 +171,10 @@ jobs:
     needs: gates
     runs-on: ${{ matrix.os }}
     strategy:
+      # The whole point of this job is comparing platforms.  Cancelling the
+      # other two the moment one fails destroys exactly the signal it exists
+      # to produce.
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     defaults:
@@ -188,7 +190,7 @@ jobs:
           enable-cache: true
 
       - name: Install workspace root dependencies
-        run: uv sync --group dev --extra ocr
+        run: uv sync --group dev --extra ocr-web
         working-directory: .
 
       - name: Run tests (OCR)

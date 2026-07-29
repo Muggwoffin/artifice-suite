@@ -1,7 +1,7 @@
 ---
 description: Frontend UI components, design tokens, and accessibility for the Artifice Suite. Use for any view, layout primitive, or design-system work that must conform to The New Masses Design System.
 mode: all
-model: github-copilot/claude-sonnet-4.6
+model: opencode-go/qwen3.7-max
 tools:
   read: true
   glob: true

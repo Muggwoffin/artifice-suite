@@ -191,7 +191,17 @@ def save_user_settings(settings: dict[str, Any]) -> None:
     _USER_DIR.mkdir(parents=True, exist_ok=True)
     merged = load_user_settings()
     merged.update({k: v for k, v in settings.items() if k in PERSISTED_KEYS})
-    with open(_SETTINGS_PATH, "w", encoding="utf-8") as f:
+    # Created 0600 rather than chmod'ed afterwards, so there is no window in
+    # which the file exists world-readable.
+    #
+    # POSIX only. Windows does not implement these bits: the mode argument is
+    # effectively ignored and st_mode reports 0o666, so on Windows this file —
+    # which holds an API key — is NOT protected. Restricting it there needs an
+    # explicit ACL (icacls or pywin32). Recorded in IMPLEMENTATION_PLAN.md;
+    # found by the cross-platform CI leg, which is the only thing that could
+    # have found it.
+    fd = os.open(_SETTINGS_PATH, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(merged, f, indent=2)
 
 

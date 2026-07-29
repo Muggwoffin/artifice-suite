@@ -1,7 +1,7 @@
 ---
 description: Read-only correctness and architecture-conformance review of changes before they land. Enforces the harness architecture. Never writes code.
 mode: all
-model: github-copilot/claude-sonnet-5
+model: opencode-go/minimax-m3
 tools:
   read: true
   glob: true

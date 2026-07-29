@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import logging
+import os
+import socket
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
@@ -104,6 +108,110 @@ def _assert_contained(path: Path, container: Path) -> None:
         raise HTTPException(400, "Path traversal detected")
 
 
+# ── Model endpoints ──────────────────────────────────────────────────────────
+#
+# Deliberately NOT loopback-only.  Academics on a university network reach
+# centrally-served models from a personal machine, so a private-network address
+# is a first-class case rather than an escape hatch.  "Local-first" means the
+# software never *requires* a remote service, not that it refuses one the user
+# chose.
+#
+# Still enforced: http/https only; link-local refused outright, which is what
+# keeps cloud metadata endpoints (169.254.169.254) unreachable; and public
+# addresses gated behind an explicit opt-in so a mistyped or injected hostname
+# cannot quietly ship prompts to the open internet.
+#
+# Kept deliberately identical to artifice-graph's copy.  Both should collapse
+# into model_harness.EndpointPolicy in Phase 3 — this is the rule the harness
+# exists to own, and duplicating it twice is the interim cost of the harness
+# not being real yet.
+_ALWAYS_ALLOWED_HOSTS: frozenset[str] = frozenset(
+    h.lower()
+    for h in [
+        "localhost",
+        "host.docker.internal",
+        os.environ.get("WSL_HOST_IP", "172.21.176.1"),
+    ]
+    if h
+)
+
+_ALLOW_PUBLIC_MODELS = os.environ.get("ARTIFICE_ALLOW_PUBLIC_MODELS", "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
+
+def _classify_host(host: str) -> tuple[bool, str]:
+    """Return ``(permitted, reason)`` for a URL host.
+
+    Every address a name resolves to is checked, because a name resolving to
+    one permitted and one public address is not permitted.  Resolution here and
+    connection later is a time-of-check gap; closing it needs the connection
+    pinned to the validated address, which belongs in the harness.
+    """
+    if host in _ALWAYS_ALLOWED_HOSTS:
+        return True, "explicitly allowed host"
+
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError:
+        return False, f"host {host!r} could not be resolved"
+
+    addresses = {ipaddress.ip_address(info[4][0]) for info in infos}
+    if not addresses:
+        return False, f"host {host!r} resolved to no addresses"
+
+    for addr in sorted(addresses, key=str):
+        if addr.is_link_local:
+            return False, (
+                f"host {host!r} resolves to the link-local address {addr}, "
+                f"which is never permitted"
+            )
+
+    if all(addr.is_loopback or addr.is_private for addr in addresses):
+        return True, "loopback or private-network address"
+
+    if _ALLOW_PUBLIC_MODELS:
+        return True, "public address, permitted by ARTIFICE_ALLOW_PUBLIC_MODELS"
+
+    public = sorted(str(a) for a in addresses if not (a.is_loopback or a.is_private))
+    return False, (
+        f"host {host!r} resolves to the public address(es) {public}. "
+        f"Set ARTIFICE_ALLOW_PUBLIC_MODELS=1 to permit endpoints outside your "
+        f"own network."
+    )
+
+
+def _validate_base_url(raw: str, field_name: str) -> str:
+    """Return *raw* after checking its scheme and host. Fails closed, loudly."""
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: {raw!r} is not a valid URL",
+        ) from None
+
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: scheme must be http or https, got {parsed.scheme!r}",
+        )
+
+    host = (parsed.hostname or "").lower()
+    if not host:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: {raw!r} has no host",
+        )
+
+    permitted, reason = _classify_host(host)
+    if not permitted:
+        raise HTTPException(status_code=400, detail=f"{field_name}: {reason}")
+    return raw
+
+
 # ── Inference configuration persistence helper ───────────────────────────────
 # Uses platformdirs to resolve a per-user data directory, so the config file
 # survives frozen bundles (.exe/.dmg) where CWD can be anywhere.
@@ -150,7 +258,16 @@ def _load_inference_config() -> dict:
 
 def _save_inference_config(cfg: dict) -> None:
     _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _INFERENCE_CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    # Created 0600 rather than chmod'ed afterwards, so the file is never
+    # world-readable even briefly.
+    #
+    # POSIX only. Windows ignores the mode argument and reports st_mode 0o666,
+    # so on Windows this file — which holds an API key — is NOT protected.
+    # Restricting it there needs an explicit ACL (icacls or pywin32). Recorded
+    # in IMPLEMENTATION_PLAN.md; found by the cross-platform CI leg.
+    fd = os.open(_INFERENCE_CONFIG_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2)
 
 
 # Module-level engine singleton (lazy init)
@@ -410,16 +527,32 @@ async def update_config(body: ModelConfigRequest):
     return {"status": "updated", "changes": list(updates.keys())}
 
 
+# Keys whose values must not be returned verbatim in API responses.
+_REDACTED_INFERENCE_KEYS = frozenset({"api_key"})
+_REDACTED_PLACEHOLDER = "*" * 12
+
+
+def _redact_inference_config(cfg: dict) -> dict:
+    """Return *cfg* with secret values replaced by a placeholder."""
+    out = dict(cfg)
+    for key in _REDACTED_INFERENCE_KEYS:
+        if out.get(key):
+            out[key] = _REDACTED_PLACEHOLDER
+    return out
+
+
 @router.get("/inference/config")
 async def get_inference_config():
-    return _load_inference_config()
+    return _redact_inference_config(_load_inference_config())
 
 
 @router.post("/inference/config")
 async def update_inference_config(body: InferenceConfigRequest):
     cfg = body.model_dump()
+    if url := cfg.get("base_url"):
+        _validate_base_url(url, "base_url")
     _save_inference_config(cfg)
-    return {"status": "saved", "config": cfg}
+    return {"status": "saved", "config": _redact_inference_config(cfg)}
 
 
 @router.delete("/inference/config")
@@ -435,6 +568,7 @@ async def delete_inference_config():
 
 @router.post("/inference/models")
 async def fetch_inference_models(body: InferenceModelsRequest):
+    _validate_base_url(body.base_url, "base_url")
     try:
         models = await get_available_models(body.base_url, body.api_key)
         return {"models": models}
@@ -444,6 +578,7 @@ async def fetch_inference_models(body: InferenceModelsRequest):
 
 @router.post("/inference/test")
 async def test_inference_connection(body: InferenceTestRequest):
+    _validate_base_url(body.base_url, "base_url")
     result = await test_inf_conn(body.base_url, body.api_key)
     return result
 

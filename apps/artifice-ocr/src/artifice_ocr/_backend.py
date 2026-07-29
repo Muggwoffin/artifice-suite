@@ -70,7 +70,19 @@ class OllamaBackend:
             raise
 
 
-class LMStudioBackend:
+class OllamaOpenAIBackend:
+    """Ollama via its OpenAI-compatible ``/v1`` endpoint.
+
+    The native Ollama API carries images in an ``images`` field while
+    multimodal vision models are sent ``image_url`` content blocks.  This
+    backend hits the ``/v1`` endpoint so OCR can use the same message format
+    across every backend without a format conversion in the middle.
+    """
+
+    def _client(self) -> OpenAI:
+        base_url = (config.get("ollama_url") or "http://localhost:11434") + "/v1"
+        return OpenAI(base_url=base_url, api_key="ollama")
+
     def chat(
         self,
         *,
@@ -80,8 +92,45 @@ class LMStudioBackend:
         think: bool | None = None,
         num_predict: int | None = None,
     ) -> Any:
+        client = self._client()
+        kwargs: dict[str, Any] = {}
+        if num_predict is not None:
+            kwargs["max_tokens"] = num_predict
+
+        resp = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            **kwargs,
+        )
+        content = resp.choices[0].message.content or ""
+        return _SimpleResponse(content)
+
+
+class LMStudioBackend:
+    def _client(self) -> OpenAI:
         base_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
-        client = OpenAI(base_url=base_url, api_key="lm-studio")
+        return OpenAI(base_url=base_url, api_key="lm-studio")
+
+    def health_check(self) -> tuple[bool, str | None]:
+        """Return (ok, error_detail)."""
+        url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+        try:
+            self._client().models.list()
+            return True, None
+        except Exception as exc:
+            return False, f"Cannot reach LM Studio at {url}. Is it running?"
+
+    def chat(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float = 0.0,
+        think: bool | None = None,
+        num_predict: int | None = None,
+    ) -> Any:
+        client = self._client()
         kwargs: dict[str, Any] = {}
         if num_predict is not None:
             kwargs["max_tokens"] = num_predict
@@ -125,6 +174,22 @@ class HuggingFaceBackend:
 class ApiKeyBackend:
     """Any OpenAI-compatible cloud API (OpenAI, Together, Groq, etc.)."""
 
+    def _client(self) -> OpenAI:
+        base_url = config.get("api_base_url") or "https://api.openai.com/v1"
+        api_key = config.get("api_key") or ""
+        return OpenAI(base_url=base_url, api_key=api_key)
+
+    def health_check(self) -> tuple[bool, str | None]:
+        """Return (ok, error_detail)."""
+        api_key = config.get("api_key")
+        if not api_key:
+            return False, "No API key configured"
+        try:
+            self._client().models.list()
+            return True, None
+        except Exception as exc:
+            return False, str(exc)
+
     def chat(
         self,
         *,
@@ -134,9 +199,7 @@ class ApiKeyBackend:
         think: bool | None = None,
         num_predict: int | None = None,
     ) -> Any:
-        base_url = config.get("api_base_url") or "https://api.openai.com/v1"
-        api_key = config.get("api_key") or ""
-        client = OpenAI(base_url=base_url, api_key=api_key)
+        client = self._client()
         kwargs: dict[str, Any] = {}
         if num_predict is not None:
             kwargs["max_tokens"] = num_predict
@@ -155,6 +218,8 @@ def get_client(backend: str) -> Any:
     b = (backend or "ollama").lower()
     if b == "lm_studio":
         return LMStudioBackend()
+    elif b == "ollama_openai":
+        return OllamaOpenAIBackend()
     elif b == "huggingface":
         return HuggingFaceBackend()
     elif b == "api_key":

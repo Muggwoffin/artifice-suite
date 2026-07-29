@@ -143,11 +143,19 @@ body {
 .navlinks a[aria-current="page"] { color: var(--accent-deep); }
 .navlinks a[aria-current="page"]::after { transform: scaleX(1); }
 
+/* §8.3 + WCAG 2.5.5: the theme toggle is an interactive control and must
+   meet the 44px minimum target size (--control-height). height + min-width
+   produce a square hit target; inline-flex centres the glyph. */
 .nav-theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height);
+  min-width: var(--control-height);
   background: none;
   border: 1px solid var(--rule-dark);
   border-radius: var(--radius-sm);
-  padding: 0.25rem 0.5rem;
+  padding: var(--space-2);
   cursor: pointer;
   color: var(--ink);
   font-family: var(--font-label);
@@ -219,6 +227,24 @@ hr.rule {
   border-bottom: 1px solid var(--rule);
   padding-bottom: 0.35rem;
   margin: 2.5rem 0 1.25rem;
+}
+
+/* ── Label (.label) ────────────────────────────────── */
+/* Standalone label class: small-caps Archivo for status indicators,
+   secondary metadata, and inline annotations. Defined here so every
+   <span class="label"> renders identically regardless of its parent
+   container — previously, .label inside .status-strip inherited the
+   strip's own Archivo/uppercase rule (correct), while .label inside
+   .log-toolbar inherited body's Libre Baskerville at --text-base
+   (wrong). A class must mean the same thing everywhere.
+   .masthead .label (below) adds display: block + margin-bottom for
+   the masthead context; the typographic values agree. */
+.label {
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--ink-faint);
 }
 
 /* ── Cards (.card, .text-card, .panel) ─────────────── */
@@ -294,14 +320,22 @@ hr.rule {
 }
 
 /* §8.3 row-alignment: action buttons that share a row with inputs must
-   resolve to --control-height. .sort-pill and .chip (§8.4 filter chips)
-   are exempt — they are compact secondary UI, not row-adjacent controls. */
+   resolve to --control-height. height (not min-height) clamps the element
+   to exactly 44px — min-height is a floor that a <select>'s intrinsic
+   chrome can overshoot, which is why the original min-height rule failed
+   to align buttons and selects (IMPLEMENTATION_PLAN.md Part V).
+   display: inline-flex + align-items: center ensures text and any inline
+   SVG icons are vertically centred within the clamped height.
+   .sort-pill and .chip (§8.4 filter chips) are exempt — they are compact
+   secondary UI, not row-adjacent controls. */
 .modal-btn,
 .lib-action-btn,
 .wp-btn,
 .narr-btn,
 .app-btn {
-  min-height: var(--control-height);
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
 }
 .modal-btn:hover,
 .lib-action-btn:hover,
@@ -409,10 +443,13 @@ hr.rule {
   transition: border-color var(--duration-fast) ease, outline var(--duration-fast) ease;
   width: 100%;
   /* §8.3 row-alignment: inputs and selects that share a row with buttons
-     must resolve to --control-height. lib-search-input is standalone above
-     a list, not row-adjacent, but carries the same token — it can only grow,
-     so this is safe. */
-  min-height: var(--control-height);
+     must resolve to --control-height. height (not min-height) clamps the
+     element to exactly 44px — a <select> carries intrinsic browser chrome
+     that pushes its natural height above a <button>'s, and min-height is
+     a floor that does nothing to an element already taller than 44px.
+     lib-search-input is standalone above a list, not row-adjacent, but
+     carries the same token — it can only grow, so this is safe. */
+  height: var(--control-height);
 }
 .input:focus,
 .lib-search-input:focus,

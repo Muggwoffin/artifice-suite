@@ -18,10 +18,22 @@ _CONFIG_KEYS = (
     "resume", "confidence_enabled", "ollama_think",
 )
 
+# Keys whose values must not be returned verbatim in API responses.
+_REDACTED_KEYS = frozenset({"api_key", "huggingface_token"})
+
+REDACTED_PLACEHOLDER = "*" * 12
+
+
+def _redact_config(key: str, value: str) -> str:
+    """Return a placeholder if *key* holds a secret that is configured."""
+    if key in _REDACTED_KEYS and value:
+        return REDACTED_PLACEHOLDER
+    return value
+
 
 @router.get("/api/config")
 def get_config() -> dict:
-    return {k: config.get(k) for k in _CONFIG_KEYS}
+    return {k: _redact_config(k, config.get(k)) for k in _CONFIG_KEYS}
 
 
 @router.post("/api/config")
@@ -130,17 +142,9 @@ def health_check() -> dict:
         }
 
     if "api_key" in backends:
-        api_key = config.get("api_key")
         base_url = config.get("api_base_url") or "https://api.openai.com/v1"
-        if not api_key:
-            results["api_key"] = {"ok": False, "detail": "No API key configured", "url": base_url}
-        else:
-            try:
-                from openai import OpenAI
-                client = OpenAI(base_url=base_url, api_key=api_key)
-                client.models.list()
-                results["api_key"] = {"ok": True, "detail": None, "url": base_url}
-            except Exception as exc:
-                results["api_key"] = {"ok": False, "detail": str(exc), "url": base_url}
+        from ..._backend import get_client
+        ok, detail = get_client("api_key").health_check()
+        results["api_key"] = {"ok": ok, "detail": detail, "url": base_url}
 
     return results

@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """End-to-end verification script for the ArtificeTranscribe API.
 
+This file is deliberately excluded from pytest collection (see
+``collect_ignore`` in ``conftest.py``): it needs a live server, and the
+transcription step needs real model weights. The no-live-server coverage
+of this same path lives in ``tests/test_api_e2e.py`` and runs in the
+normal suite. This script remains the manual check against a real engine.
+
 Usage:
     1. Start the server:  python -m artifice_transcribe.main
     2. Run this script:   python tests/test_api.py [path_to_audio_file]

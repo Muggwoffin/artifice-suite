@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import logging
 import os
+import socket
 import sys
 import threading
 import time
 from pathlib import Path
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 import httpx
 import uvicorn
@@ -135,18 +138,191 @@ def _mark_run_failed(run_key: str, msg: str | None = None) -> None:
         _log(run_key, msg, "error")
 
 
+# ── Input validation — directory and URL allowlists ─────────────────
+
+# Directories: only accept paths within these roots.
+# Additional roots can be added via the ARTIFICE_GRAPH_ALLOWED_ROOTS
+# env var (colon-separated).  The current working directory is always
+# permitted so that relative paths resolve as the user expects.
+_ALLOWED_ROOT_DIRS: list[Path] = [
+    Path.home(),
+    Path("/tmp"),
+    Path.cwd(),
+]
+
+_extra_roots = os.environ.get("ARTIFICE_GRAPH_ALLOWED_ROOTS", "")
+for _r in _extra_roots.split(os.pathsep):
+    _r = _r.strip()
+    if _r:
+        _ALLOWED_ROOT_DIRS.append(Path(_r).expanduser().resolve())
+
+
+def _validate_directory(raw: str, field_name: str) -> str:
+    """Return *raw* as a normalised path string after checking it resides
+    within an allowed root directory.  Raises HTTP 400 on rejection."""
+    if not raw or not raw.strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: path must not be empty",
+        )
+    try:
+        p = Path(raw).expanduser().resolve(strict=False)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: cannot resolve path {raw!r}",
+        ) from None
+    for root in _ALLOWED_ROOT_DIRS:
+        resolved_root = root.resolve()
+        try:
+            relative = p.relative_to(resolved_root)
+            break
+        except ValueError:
+            continue
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_name}: path {str(p)!r} is outside allowed roots. "
+                f"Allowed: {[str(r) for r in _ALLOWED_ROOT_DIRS]}"
+            ),
+        )
+
+    # Home is an allowed root, which would otherwise make ~/.ssh, ~/.gnupg and
+    # ~/.config nameable as an output or vault directory.  Hidden components
+    # are checked *below* the matched root rather than across the whole path,
+    # so a project that happens to live under a dotted directory is not
+    # rendered unusable by its own parent.
+    hidden = [part for part in relative.parts if part.startswith(".") and part not in (".", "..")]
+    if hidden:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_name}: path {str(p)!r} descends into a hidden "
+                f"directory ({hidden[0]!r}). Configuration and key material "
+                f"live in these; choose a visible directory."
+            ),
+        )
+    return str(p)
+
+
+# ── Model endpoints ────────────────────────────────────────────────
+#
+# This is deliberately NOT loopback-only.  The suite's users include academics
+# on a university network where models are served centrally and reached from a
+# personal machine, so a private-network address is a first-class case, not an
+# escape hatch.  "Local-first" here means the software never *requires* a
+# remote service, not that it refuses to speak to one the user chose.
+#
+# What is still enforced:
+#   - the scheme must be http or https
+#   - link-local addresses are refused outright, which is what keeps cloud
+#     metadata endpoints (169.254.169.254) out of reach
+#   - public addresses require an explicit opt-in, so a mistyped or injected
+#     hostname cannot quietly send prompts to the open internet
+#
+# Hostnames are resolved and *every* returned address is checked, because a
+# name that resolves to one permitted and one public address is not permitted.
+# Resolution here and connection later is a time-of-check gap; closing it needs
+# the connection pinned to the validated address, which belongs in the model
+# harness rather than in each app.  Recorded, not solved.
+_ALWAYS_ALLOWED_HOSTS: frozenset[str] = frozenset(
+    h.lower()
+    for h in [
+        "localhost",
+        "host.docker.internal",
+        os.environ.get("WSL_HOST_IP", "172.21.176.1"),
+    ]
+    if h
+)
+
+_ALLOW_PUBLIC_MODELS = os.environ.get("ARTIFICE_ALLOW_PUBLIC_MODELS", "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
+
+def _classify_host(host: str) -> tuple[bool, str]:
+    """Return ``(permitted, reason)`` for a URL host.
+
+    Split out from :func:`_validate_base_url` so it can be tested directly
+    without constructing requests.
+    """
+    if host in _ALWAYS_ALLOWED_HOSTS:
+        return True, "explicitly allowed host"
+
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError:
+        return False, f"host {host!r} could not be resolved"
+
+    addresses = {ipaddress.ip_address(info[4][0]) for info in infos}
+    if not addresses:
+        return False, f"host {host!r} resolved to no addresses"
+
+    for addr in sorted(addresses, key=str):
+        if addr.is_link_local:
+            return False, (
+                f"host {host!r} resolves to the link-local address {addr}, "
+                f"which is never permitted"
+            )
+
+    if all(addr.is_loopback or addr.is_private for addr in addresses):
+        return True, "loopback or private-network address"
+
+    if _ALLOW_PUBLIC_MODELS:
+        return True, "public address, permitted by ARTIFICE_ALLOW_PUBLIC_MODELS"
+
+    public = sorted(str(a) for a in addresses if not (a.is_loopback or a.is_private))
+    return False, (
+        f"host {host!r} resolves to the public address(es) {public}. "
+        f"Set ARTIFICE_ALLOW_PUBLIC_MODELS=1 to permit endpoints outside your "
+        f"own network."
+    )
+
+
+def _validate_base_url(raw: str, field_name: str) -> str:
+    """Return *raw* after checking its scheme and host. Fails closed, loudly."""
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: {raw!r} is not a valid URL",
+        ) from None
+
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: scheme must be http or https, got {parsed.scheme!r}",
+        )
+
+    host = (parsed.hostname or "").lower()
+    if not host:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: {raw!r} has no host",
+        )
+
+    permitted, reason = _classify_host(host)
+    if not permitted:
+        raise HTTPException(status_code=400, detail=f"{field_name}: {reason}")
+    return raw
+
+
 # ── Config from POST body ──────────────────────────────────────────
 
 def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
     cfg = load_config()
     if i := body.get("input_dir"):
-        cfg.ingestion.input_dir = i
+        cfg.ingestion.input_dir = _validate_directory(i, "input_dir")
     if o := body.get("output_dir"):
-        cfg.export.output_dir = o
+        cfg.export.output_dir = _validate_directory(o, "output_dir")
     if v := body.get("vault_dir"):
-        cfg.export.obsidian_vault_dir = v
+        cfg.export.obsidian_vault_dir = _validate_directory(v, "vault_dir")
     if u := body.get("llm_base_url"):
-        cfg.llm.base_url = u
+        cfg.llm.base_url = _validate_base_url(u, "llm_base_url")
     if k := body.get("llm_api_key"):
         cfg.llm.api_key = k
     if m := body.get("llm_model"):
@@ -164,7 +340,7 @@ def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
     if "use_semantic" in body:
         cfg.entity_resolution.use_semantic = bool(body["use_semantic"])
     if ebu := body.get("embedding_base_url"):
-        cfg.embedding.base_url = ebu
+        cfg.embedding.base_url = _validate_base_url(ebu, "embedding_base_url")
     if em := body.get("embedding_model"):
         cfg.embedding.model = em
     return cfg, bool(body.get("incremental", False))
@@ -626,13 +802,13 @@ async def api_save_config(body: dict[str, Any]):
         cfg = load_config()
 
         if i := body.get("input_dir"):
-            cfg.ingestion.input_dir = i
+            cfg.ingestion.input_dir = _validate_directory(i, "input_dir")
         if o := body.get("output_dir"):
-            cfg.export.output_dir = o
+            cfg.export.output_dir = _validate_directory(o, "output_dir")
         if v := body.get("vault_dir"):
-            cfg.export.obsidian_vault_dir = v
+            cfg.export.obsidian_vault_dir = _validate_directory(v, "vault_dir")
         if u := body.get("llm_base_url"):
-            cfg.llm.base_url = u
+            cfg.llm.base_url = _validate_base_url(u, "llm_base_url")
         if k := body.get("llm_api_key"):
             cfg.llm.api_key = k
         if m := body.get("llm_model"):
@@ -650,13 +826,15 @@ async def api_save_config(body: dict[str, Any]):
         if "use_semantic" in body:
             cfg.entity_resolution.use_semantic = bool(body["use_semantic"])
         if ebu := body.get("embedding_base_url"):
-            cfg.embedding.base_url = ebu
+            cfg.embedding.base_url = _validate_base_url(ebu, "embedding_base_url")
         if em := body.get("embedding_model"):
             cfg.embedding.model = em
 
         save_user_config(cfg)
 
         return {"status": "ok", "message": "Configuration saved successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error saving config: {e}")
         return {"status": "error", "message": f"Error saving configuration: {str(e)}"}

@@ -7,12 +7,17 @@ dependencies = []
 
 [project.optional-dependencies]
 ocr = ["artifice-ocr", "model-harness", "core-types", "shared-ui"]
+ocr-web = ["artifice-ocr[web]", "model-harness", "core-types", "shared-ui"]
 draft = ["artifice-draft", "model-harness", "core-types", "shared-ui"]
 graph = ["artifice-graph", "model-harness", "core-types", "shared-ui"]
 transcribe = ["artifice-transcribe", "model-harness", "core-types", "shared-ui"]
 all = [
     "artifice-ocr",
-    "artifice-draft",
+    # web extra included so that --extra all carries the packages
+    # draft's test suite needs (readability-lxml, fastapi, uvicorn).
+    # The per-app extras for the other three apps are not needed for
+    # testing at the time of writing.
+    "artifice-draft[web]",
     "artifice-graph",
     "artifice-transcribe",
     "model-harness",

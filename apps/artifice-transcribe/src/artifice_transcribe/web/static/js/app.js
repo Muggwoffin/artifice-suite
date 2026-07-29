@@ -321,7 +321,7 @@
     $('active-count').textContent = `${running.length} running`;
 
     if (jobs.length === 0) {
-      body.innerHTML = '<tr><td colspan="5" class="dim" style="text-align:center;">No active jobs yet.</td></tr>';
+      body.innerHTML = '<tr><td colspan="5" class="table-empty-cell"><span class="panel-empty-title">No active jobs yet.</span><span class="panel-empty-desc">Upload an audio file above to begin.</span></td></tr>';
       return;
     }
 
@@ -364,7 +364,7 @@
   function renderLibrary() {
     const body = $('library-body');
     if (libraryJobs.length === 0) {
-      body.innerHTML = '<tr><td colspan="5" class="dim" style="text-align:center;">No transcriptions yet.</td></tr>';
+      body.innerHTML = '<tr><td colspan="5" class="table-empty-cell"><span class="panel-empty-title">No transcriptions yet.</span><span class="panel-empty-desc">Completed jobs will appear here.</span></td></tr>';
       return;
     }
     body.innerHTML = libraryJobs.map((j) => {
@@ -1392,7 +1392,7 @@
     try {
       const data = await api('/speakers/known');
       if (!data.speakers || data.speakers.length === 0) {
-        container.innerHTML = '<p class="dim">No enrolled speakers.</p>';
+        container.innerHTML = '<p class="panel-empty-title">No enrolled speakers.</p><p class="panel-empty-desc">Use the form below to enroll a voice.</p>';
         return;
       }
       container.innerHTML = data.speakers.map((s) => `

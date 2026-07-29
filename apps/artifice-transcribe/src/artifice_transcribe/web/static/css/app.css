@@ -142,6 +142,20 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   color: var(--ink-faint);
 }
 
+/* Table-context empty state — wraps panel-empty-title / panel-empty-desc inside
+   a <td> without breaking table semantics. The panel-empty component is built
+   for div/section context; these declarations adapt its two sub-elements to
+   display as block inside a cell and add the centering that was previously
+   achieved with a disallowed inline style="text-align:center;". */
+.table-empty-cell {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+}
+.table-empty-cell .panel-empty-title,
+.table-empty-cell .panel-empty-desc {
+  display: block;
+}
+
 /* --------------------------------------------------------------- cards */
 
 .card {

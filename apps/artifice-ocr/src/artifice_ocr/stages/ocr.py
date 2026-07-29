@@ -7,6 +7,7 @@ from typing import Any, Dict
 
 
 from artifice_ocr import _guard
+from artifice_ocr._backend import get_client as _get_backend_client
 from artifice_ocr._logging import get_logger
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
@@ -98,26 +99,6 @@ def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
     return base64.standard_b64encode(data).decode("utf-8"), mime
 
 
-def _get_client(backend: str) -> Any:
-    if backend == "huggingface":
-        from huggingface_hub import InferenceClient
-        token = cfg("huggingface_token") or None
-        return InferenceClient(token=token)
-
-    if backend == "ollama":
-        base_url = (cfg("ollama_url") or "http://localhost:11434") + "/v1"
-        api_key = "ollama"
-    elif backend == "api_key":
-        base_url = cfg("api_base_url") or "https://api.openai.com/v1"
-        api_key = cfg("api_key") or ""
-    else:
-        base_url = cfg("lm_studio_url") or "http://localhost:1234/v1"
-        api_key = "lm-studio"
-
-    from openai import OpenAI
-    return OpenAI(base_url=base_url, api_key=api_key)
-
-
 @retry(max_attempts=4, base_delay=2.0, label="OCR")
 def _ocr_single_image(image_path: Path, orientation: int = 1) -> str:
     """Send a single image to the OCR backend and return extracted text.
@@ -129,41 +110,28 @@ def _ocr_single_image(image_path: Path, orientation: int = 1) -> str:
     image_b64, mime = _encode_image(image_path, orientation)
     backend = cfg("ocr_backend") or "lm_studio"
     model = cfg("ocr_model")
-    client = _get_client(backend)
 
-    if backend == "huggingface":
-        response = client.chat_completion(
-            model=model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": OCR_PROMPT},
-                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
-                    ],
-                }
-            ],
-            temperature=0,
-        )
-        return response.choices[0].message.content or ""
+    # Ollama's native API carries images in an ``images`` field, not as
+    # ``image_url`` content blocks.  Route through the ``ollama_openai``
+    # backend which hits the OpenAI-compatible ``/v1`` endpoint so the
+    # message format is the same for every backend.
+    be_name = "ollama_openai" if backend == "ollama" else backend
+    client = _get_backend_client(be_name)
 
-    response = client.chat.completions.create(
+    response = client.chat(
         model=model,
         messages=[
             {
                 "role": "user",
                 "content": [
                     {"type": "text", "text": OCR_PROMPT},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:{mime};base64,{image_b64}"},
-                    },
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
                 ],
             }
         ],
-        temperature=0,
+        temperature=0.0,
     )
-    return response.choices[0].message.content or ""
+    return response.message.content or ""
 
 
 def _pdf_to_page_images(pdf_path: Path, orientation: int = 1) -> list[Path]:
