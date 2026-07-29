@@ -38,9 +38,19 @@ scoping to a single agent.
 `run_structured`.
 
 The contract specifies that all model interactions must pass through `packages/model-harness` to
-prevent the ELIZA effect and ensure deterministic outputs. 
-- **OCR, Draft, Graph**: Accept Ollama, LM Studio, or generic API endpoints, enforcing strict JSON Schema validation.
+prevent the ELIZA effect and ensure deterministic outputs.
+
+- **OCR**: Accepts Ollama, LM Studio, or generic API endpoints via `_backend.py`. No structured output
+  stage exists — every LLM stage returns `str`. Receives the endpoint policy via
+  `model_harness.endpoint_policy`, but `run_structured` is not called.
+- **Draft**: Accepts Ollama, LM Studio, generic API **and Anthropic** endpoints. Both LLM paths route
+  through `run_structured` — the editing path (`a4f51d4`) and the style-guide scraper (`a26d1bf`) —
+  and both resolve endpoints through the policy. Draft is the only app using the Anthropic adapter,
+  and so the only one exercising the ladder's mode-gap skipping.
+- **Graph**: Accepts Ollama, LM Studio, or generic API endpoints. The extraction path routes through
+  `run_structured` (`5aa8619`). Both web and extraction paths import the endpoint policy.
 - **Transcribe**: Integrates Whisper / Parakeet speech-to-text with pyannote speaker diarization pipelines.
+  Both web and inference paths import the endpoint policy; the inference path is not yet ported.
 
 ## Cross-Platform & Hardware Architecture
 

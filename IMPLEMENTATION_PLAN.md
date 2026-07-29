@@ -98,6 +98,14 @@ policy (**six** sites), `0600` secret files, credential redaction, and a hardcod
 were confirmed rather than fixed: ocr has no upload surface, graph already sanitises upload
 filenames, no `pickle.loads` survives.
 
+**The scraper was ported in `a26d1bf`.** `style_guides/scraper.py` now routes through the harness
+adapters — the suite's last raw `response_format: json_object` call site is gone. The same commit
+fixed an SSRF: the scraper had taken a URL from the browser and fetched it with redirects enabled.
+It now validates that the target address is globally routable, deliberately inverting the logic of
+`EndpointPolicy` — which permits loopback and private addresses because those are legitimate model
+endpoints. The suite now has two endpoint rules with opposite intents; record both or someone will
+consolidate them and break one of the two use cases.
+
 **One finding the orchestrator wrongly called stale was real.** `GET /api/config` and
 `GET /inference/config` were returning the **raw** API key. Caught only because the brief told
 the agent to verify rather than accept the orchestrator's reading. The brief's instruction to
@@ -168,16 +176,17 @@ is in flight, marked **in flight** below, not done. `artifice-graph`'s entity re
 counter-example and the model to follow: manual aliases, then `difflib` fuzzy matching, then
 embeddings only if configured.
 
-**Test counts, measured 2026-07-29 by the orchestrator and recorded here, not verified against the
-running system (those are marked Landed, not Verified):**
+**Test counts, measured 2026-07-29 by the orchestrator under a clean `uv sync --group dev
+--extra all` then `uv run --no-sync pytest` per package. Replaces the stale table from the
+previous session.**
 
-| Suite | Passed | Skipped | Status |
-|---|---|---|---|
-| `artifice-ocr` | 329 | 1 | Landed 2026-07-29 |
-| `artifice-draft` | 152 | — | Landed 2026-07-29 |
-| `artifice-graph` | 74 | — | Landed 2026-07-29 |
-| `artifice-transcribe` | 64 | — | Landed 2026-07-29 |
-| `model-harness` | 90 | — | Landed 2026-07-29 |
+| Suite | Passed | Status |
+|---|---|---|
+| `packages/model-harness` | 128 | Landed 2026-07-29 |
+| `apps/artifice-ocr` | 405 | Landed 2026-07-29 |
+| `apps/artifice-draft` | 183 | Landed 2026-07-29 |
+| `apps/artifice-graph` | 76 | Landed 2026-07-29 |
+| `apps/artifice-transcribe` | 70 | Landed 2026-07-29 |
 
 **Reading the status marks:**
 
@@ -800,6 +809,12 @@ through rather than deleted, because each was wrong in an instructive way.
 > migration is the mechanical part. Lead with the capability gap, because a fresh session that reads
 > the recorded description will plan the wrong thing.
 
+**Phase 3 is closed, measured 2026-07-29.** Grep across the entire suite confirmed zero remaining
+definitions of `parse_llm_json_response`, `_parse_llm_response`, `parse_json_robust`,
+`_extract_json_from_text`, `_parse_json_response`, or `_recover_json_from_response`. The acceptance
+criterion is met. `driver._extract_json` (`driver.py:170`) is not a survivor — it runs only on the
+`PROMPTED` rung and labels its result, and must not be deleted to satisfy this criterion.
+
 - [x] ~~Design the schema contract in `packages/model-harness`~~ — **Landed 2026-07-29.**
       `StructuredRequest` (required `schema_json`), `HarnessResult` (records `mode_used`), bottom
       rung raises `StructuredOutputUnsupported` rather than returning prose. Zero apps import it.
@@ -815,6 +830,7 @@ app that goes first.
 
 **`packages/core-types` is 34 lines** (`ProcessingStatus`, `PipelineProgress`) with zero
 importers confirmed by grep across the suite. Adopt or delete — a decision, not an obstacle.
+**Deleted `966d551`**: see Step 9.
 
 **Recommended sequence, with the reasoning that a fresh session needs:**
 
@@ -891,10 +907,19 @@ must not be deleted to satisfy this criterion. It runs only on the `PROMPTED` ru
 result carries `mode_used=PROMPTED`, so a caller can tell a scrape from a guarantee. The
 five above scrape and report nothing, which is the entire defect.
 
-**Step 9 — Settle `core-types`.**
-Zero importers, 34 lines. Either adopt `ProcessingStatus` / `PipelineProgress` into the
-harness or the package, or remove it. A decision is required; it cannot stay in limbo
-indefinitely.
+**Step 9 — Settle `core-types`. — Closed, `966d551`.**
+Deleted: 34 lines, zero importers, and its types contradicted both apps that had equivalents.
+The suite's real duplication was transcribe's doubled `JobStatus`, now one definition. An unused
+shared package is a published artefact and a false signal to contributors — `model-harness` is the
+counter-example: it also began with zero importers but had measured duplication behind it.
+
+**The unit of work was wrong, and only measuring each app before briefing revealed it.** The plan
+said "port app X" four times. Only two were ports: ocr needed an endpoint policy and no schemas;
+transcribe's port target was already dead code (`parse_json_robust`). The helper count was wrong
+by two for the same reason. Building a second provider adapter first proved that `ModelProvider`
+had been fitted to its first OpenAI-shaped implementation — the ladder assumed a provider supporting
+a stronger mode supports every weaker one, which is false for Anthropic. That is why the adapter
+came before the ports.
 
 **Standing risk.** `artifice-ocr` and `artifice-transcribe` have no LLM-specific test coverage
 beyond `test_backend.py` added this session. A port there breaks silently. `artifice-draft`
@@ -1020,6 +1045,19 @@ of them propagated into a wrong instruction given to an agent.
    scriptable exactly; **work in flight**, not done. The counter-example and model to follow:
    `artifice-graph`'s entity resolution — manual aliases, then `difflib` fuzzy matching, then
    embeddings only if configured.
+
+**Phase 3 left open, not Phase 3 regressions (all pre-existing):**
+
+7. **Phase 1.5 security — four findings, no Phase 3 regressions.** Graph's diagnostic paths and
+   embedder; OCR's HuggingFace backend; draft's model-discovery path. Neutral terms only; no
+   reproduction steps published.
+8. **Two `httpx` clients in graph set `follow_redirects=True`.** The scraper fix (`a26d1bf`)
+   built the per-hop mechanism graph can adopt for these. Scraper fix (`a26d1bf`) already closed the SSRF vector
+   that makes this urgent; the clients are still present.
+9. **TOCTOU in `EndpointPolicy`.** Resolving the endpoint address and connecting to it are
+   separate operations; the address could change between them. Open by design — the alternative
+   is blocking all redirects, which would break every model provider that uses them. No fix
+   without a breaking change to the API.
 
 > **On the two items removed from this list:** both were true when written. Neither was
 > re-derived before being treated as a constraint, and between them they blocked Phase 2 for two
