@@ -18,7 +18,13 @@ scoping to a single agent.
 
 ## Core Abstraction: `packages/model-harness`
 
-To prevent the ELIZA effect and ensure deterministic outputs, all model interactions must pass through `packages/model-harness`. 
+> **Corrected 2026-07-29.** The contract in `packages/model-harness/contract.py` now defines the
+> call shape (response schema required, not optional; degradation ladder; bottom rung raises). 15
+> tests pass. **Zero apps import it.** The architecture claims this is real; it is currently
+> **half** real — a correct definition with no consumers.
+
+The contract specifies that all model interactions must pass through `packages/model-harness` to
+prevent the ELIZA effect and ensure deterministic outputs. 
 - **OCR, Draft, Graph**: Accept Ollama, LM Studio, or generic API endpoints, enforcing strict JSON Schema validation.
 - **Transcribe**: Integrates Whisper / Parakeet speech-to-text with pyannote speaker diarization pipelines.
 

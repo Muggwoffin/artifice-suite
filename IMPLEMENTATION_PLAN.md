@@ -5,8 +5,8 @@ verified, and stages the remaining work. It is the project to-do list; `ARCHITEC
 the system as designed, `CLAUDE.md` governs how agents work on it, and `Design_Philosophy.md` is
 the binding design authority.
 
-> **Phase 1 signed off. Phase 2 substantially delivered. Phase 1.5 mostly closed.** Start from
-> **Part IV**, re-derived from measurement on 2026-07-29.
+> **Phase 1 signed off. Phase 2 substantially delivered. Phase 1.5 mostly closed. Phase 3
+> contract done, zero consumers.** Start from **Part IV**, re-derived from measurement on 2026-07-29.
 >
 > **This plan drifted badly from the tree, and that is the standing risk with it.** Three recorded
 > claims were refuted by measurement in a single session, two of them gating a phase, and one
@@ -76,6 +76,109 @@ still violated, because `min-height` does not clamp a control that is already ta
 item 5. **The static check and the rendered check disagreed, and the rendered one was right**;
 that is the whole reason the design-director loop in `CLAUDE.md` requires a browser.
 
+### Session 4 — 2026-07-29
+
+**CI had never run.** It died at step 4 of 9 installing gitleaks from a dead URL, so the secret
+scan, token parity, control audit, wheel job and every test job had never executed once.
+Unblocking it exposed that the root `all` extra did not carry the per-app web extras; fixed by
+declaring `artifice-draft[web]` in `all` and adding an `ocr-web` extra. Two further faults
+surfaced only because each previous fix let CI get further: two ocr tests assumed `tkinter` was
+importable (the *product* was already correct — it prints before touching tkinter and catches
+`ImportError` — so only the tests were at fault), and `fail-fast` was cancelling three apps and
+two platforms whenever one job failed. Now **9 of 9 green**, measured 2026-07-29.
+
+**A Windows security gap only the cross-platform leg could find.** `os.open(..., 0o600)` protects
+ocr's `settings.json` and transcribe's inference config **on POSIX only**; Windows ignores the mode
+and reports `0o666`. Both files hold an API key and Windows is a first-class platform. Recorded as
+**Open item 0**; removing `fail-fast` exposed it on the very next run.
+
+**Phase 1.5 closed.** Directory allowlist (**two** sites in graph, not the one recorded), SSRF host
+policy (**six** sites), `0600` secret files, credential redaction, and a hardcoded
+`C:/Users/mjcas/…/Temp/opencode` path in draft. Three recorded findings were already resolved and
+were confirmed rather than fixed: ocr has no upload surface, graph already sanitises upload
+filenames, no `pickle.loads` survives.
+
+**One finding the orchestrator wrongly called stale was real.** `GET /api/config` and
+`GET /inference/config` were returning the **raw** API key. Caught only because the brief told
+the agent to verify rather than accept the orchestrator's reading. The brief's instruction to
+disagree caught something real for the second time in one day.
+
+**The endpoint policy was rewritten on maintainer instruction.** Loopback-only was the wrong
+*shape*: academics reach centrally-hosted university models from a personal machine, so a
+private-network address is a first-class case. Local-first means the software never *requires* a
+remote service, not that it refuses one the user chose. Now: http/https only; every resolved
+address checked; link-local refused outright and checked *before* any opt-in; loopback and private
+allowed; public gated behind `ARTIFICE_ALLOW_PUBLIC_MODELS`. Directory validation additionally
+refuses paths descending into a hidden directory, because home stays an allowed root deliberately
+and without that rule it also meant `~/.ssh` and `~/.gnupg`.
+
+**The harness contract is now defined; nothing uses it.** `packages/model-harness` was 29 lines —
+a config object and a `SchemaT` TypeVar nothing referenced. `contract.py` now defines the call
+shape, with no transport in it: a response schema is a *required* argument, providers declare
+their strongest `StructuredOutputMode`, degradation walks a ladder and records which rung produced
+the result, and the bottom rung raises rather than returning prose. 15 tests, measured
+2026-07-29. **Zero apps import it.**
+
+> **State that precisely.** `ARCHITECTURE.md` and `CLAUDE.md` both assert the harness is real. It
+> is now **half** real. Recording "the harness exists" would be exactly the narrow-result-recorded-
+> as-general failure this document has committed four times.
+
+**OCR consolidation — a Phase 3 prerequisite, done.** Recorded as "six sites constructing an
+`openai.OpenAI`"; re-measuring found `_backend.py` already *is* the abstraction, with three call
+sites bypassing it. Those now route through the backend and `OpenAI(` appears only in `_backend.py`.
+OCR test count moved from **306 passed** (session 3) to **329 passed, 1 skipped**, measured
+2026-07-29. OCR previously had no LLM-specific test file.
+
+**A macOS-only flake, fixed.** `test_pdf_export_409_on_concurrent_start` posts twice with no
+synchronisation and needs the first export still running; on fast runners it has already finished.
+The product was correct — the guard is set under the lock before the thread starts. Demonstrated
+2000/2000, fixed with an event gate, 60/60 repeats. **Issue #11** was opened for a genuine latent
+race the same agent found and declined to fix: terminal state and the SSE terminal event are
+published outside the lock that `start_pdf_export` uses when swapping the event queue.
+
+**Fleet — two billing tiers were exhausted in one day.** The **GitHub Copilot Pro** limit was
+reached mid-session, and the **`opencode-go` monthly allowance** ran out a few hours later. Both
+failed *silently*: no error reached any log, an agent either printed its banner and received
+nothing or stalled at ~7% CPU with the log frozen mid-sentence. Three agents were lost this way,
+and the orchestrator misattributed one of them to an oversized brief before the pattern was clear.
+
+Final placements after the maintainer topped up and requested cheaper models: `ui-ux` → **`sonnet`
+in the Claude Code runtime**, `code-reviewer` → `minimax-m3`, `arch-auditor-docs` → `minimax-m2.7`
+(**this agent**), `tester` → `kimi-k2.7-code`, `security-auditor` unchanged on `qwen3.7-max`.
+**xAI models are excluded by maintainer instruction.** Reviewer-independence rules preserved
+throughout.
+
+Two lessons worth recording: **a quiet agent is diagnosed by CPU time against wall time**, never
+by its log, which says nothing in either failure mode; and `ui-ux` back on the Claude subscription
+re-couples it to the orchestrator's budget, which is the exact coupling it was moved away from.
+If that bites again the fix is a paid tier, not a weaker model.
+
+Smoke test **20/20** measured 2026-07-29 after every swap. Note it had itself gone stale twice
+today — asserting old model names and reporting false failures against a healthy fleet — so it is
+not a source of truth unless it has been updated alongside the agent definitions.
+
+**Housekeeping.** Eight tracked `.idea/` files untracked — they survived because `.gitignore`
+does not affect already-tracked files. `/output/` gitignored because ocr's PDF-export tests write
+CWD-relative. A real ground-truth fixture pair added at
+`apps/artifice-ocr/tests/fixtures/proceedings_usnm_173.*`.
+
+**A minimal-computing audit.** The suite's OCR cleanup stage sends raw text straight to a model
+with no deterministic pre-pass; three of its four requested repairs are scriptable exactly. Work
+is in flight, marked **in flight** below, not done. `artifice-graph`'s entity resolution is the
+counter-example and the model to follow: manual aliases, then `difflib` fuzzy matching, then
+embeddings only if configured.
+
+**Test counts, measured 2026-07-29 by the orchestrator and recorded here, not verified against the
+running system (those are marked Landed, not Verified):**
+
+| Suite | Passed | Skipped | Status |
+|---|---|---|---|
+| `artifice-ocr` | 329 | 1 | Landed 2026-07-29 |
+| `artifice-draft` | 152 | — | Landed 2026-07-29 |
+| `artifice-graph` | 74 | — | Landed 2026-07-29 |
+| `artifice-transcribe` | 64 | — | Landed 2026-07-29 |
+| `model-harness` | 15 | — | Landed 2026-07-29 |
+
 **Reading the status marks:**
 
 | Mark | Meaning |
@@ -91,30 +194,25 @@ that is the whole reason the design-director loop in `CLAUDE.md` requires a brow
 
 ### I.1 Agent fleet
 
-The orchestrator currently drives **7** sub-agents on **1** runtime, measured 2026-07-29 against
-`.opencode/agents/*.md`; `.claude/agents/` is empty measured the same day. `security-auditor`
-moved off Claude to reduce Claude token consumption; it is a safe candidate for a cheaper model
-because it is read-only and its findings route through the orchestrator before any code is written.
-It went to Gemini first, then to `opencode-go/qwen3.7-max` — Gemini worked but was rate-limited
-into uselessness, running **43 minutes at 2.8% CPU** on a real audit without producing anything.
+The orchestrator drives **7** sub-agents across **two** runtimes as of 2026-07-29. Fleet changes
+from session 4: `ui-ux` returned to the Claude Code runtime on `sonnet`, `code-reviewer` moved to
+`minimax-m3`, `arch-auditor-docs` to `minimax-m2.7`, and `tester` to `kimi-k2.7-code`.
+`security-auditor` remains on `qwen3.7-max`. All seven confirmed answering on their intended
+models by `scripts/smoke-test-agents.sh` **20/20** measured 2026-07-29.
 
 | Agent | Runtime | Model | Measured 2026-07-29 |
 |---|---|---|---|
 | `lead-engineer` | OpenCode | `opencode-go/deepseek-v4-pro` | `.opencode/agents/lead-engineer.md` |
-| `tester` | OpenCode | `opencode-go/kimi-k3` | `.opencode/agents/tester.md` |
-| `arch-auditor-docs` | OpenCode | `github-copilot/gpt-5.4` | `.opencode/agents/arch-auditor-docs.md` |
+| `tester` | OpenCode | `opencode-go/kimi-k2.7-code` | `.opencode/agents/tester.md` |
+| `arch-auditor-docs` | OpenCode | `opencode-go/minimax-m2.7` | `.opencode/agents/arch-auditor-docs.md` |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | `.opencode/agents/security-auditor.md` |
-| `ui-ux` | OpenCode | `github-copilot/claude-sonnet-4.6` | `.opencode/agents/ui-ux.md` |
-| `code-reviewer` | OpenCode | `github-copilot/claude-sonnet-5` | `.opencode/agents/code-reviewer.md` |
+| `ui-ux` | Claude Code | `claude-sonnet-4.6` | `.claude/agents/ui-ux.md` |
+| `code-reviewer` | OpenCode | `opencode-go/minimax-m3` | `.opencode/agents/code-reviewer.md` |
 | `oss-reviewer` | OpenCode | `ollama/gemma4-32k:12b` | `.opencode/agents/oss-reviewer.md` |
 
-This section previously said "five sub-agents across two runtimes". That was stale by 2026-07-29:
-`ui-ux` is now on OpenCode, `arch-auditor-docs` is on `gpt-5.4`, and `code-reviewer` plus
-`oss-reviewer` were missing from the table entirely.
-
 `scripts/smoke-test-agents.sh` asserts registration, model identity and read-only tooling.
-Re-run after the Gemini migration: **13 passed, 0 failed** — every agent confirmed answering on its
-intended model, so none is silently falling back to the default `build` agent.
+Smoke test **20/20** measured 2026-07-29 — every agent confirmed answering on its intended model,
+so none is silently falling back to the default `build` agent.
 
 ### I.2 artifice-graph design pass — **Verified**
 
@@ -277,8 +375,8 @@ itself, took the resulting error message's advice and SIGTERMed its own process 
 see Part V.
 
 **End-to-end, from the browser button:** 2 documents → 2 chunks → 42 entities / 28 relationships →
-41 canonical → 54 vault notes → 41-node graph, all five export formats. Test suite **47 passed, 0
-failed**. Fleet smoke test **13 passed, 0 failed**.
+41 canonical → 54 vault notes → 41-node graph, all five export formats. Test suite **74 passed, 0
+failed** measured 2026-07-29. Fleet smoke test **20/20** measured 2026-07-29.
 
 ---
 
@@ -286,9 +384,13 @@ failed**. Fleet smoke test **13 passed, 0 failed**.
 
 These were not the task, but they are load-bearing and should be recorded rather than rediscovered.
 
-**The model harness does not exist.** `CLAUDE.md` requires that "all model interactions must pass
-through structured schemas in `packages/model-harness`". In fact `model_harness` is a 29-line
-`__init__.py` with **zero imports from any app**, and **all four** apps carry their own LLM client:
+**The model harness is half real.** `contract.py` now defines the call shape — response schema
+required (not optional), `StructuredOutputMode` ladder, bottom rung raises — with 15 tests passing
+measured 2026-07-29. **Zero apps import it.** `ARCHITECTURE.md` and `CLAUDE.md` both assert the
+harness is real; recording that as settled would be this document's fifth narrow-result-as-general
+failure.
+
+The four apps still carry their own LLM client objects:
 
 ```
 apps/artifice-ocr/src/artifice_ocr/_llm.py
@@ -297,19 +399,11 @@ apps/artifice-draft/src/artifice_draft/llm_client.py
 apps/artifice-transcribe/src/artifice_transcribe/services/inference.py
 ```
 
-> **Corrected 2026-07-28.** This list previously named three. Transcribe's
-> `services/inference.py` is a fourth — it defines `InferenceEngine` and constructs its own
-> `AsyncOpenAI` clients; it was missed because it is not named `*_client.py`. OCR is worse
-> still: it constructs an `openai.OpenAI` at **six separate sites** (`_llm.py`, `_backend.py`,
-> `utils.py`, `stages/ocr.py`, `web/routers/settings.py`, `gui/views/settings_view.py`), so
-> there is internal duplication to resolve before any harness migration, not just four clients
-> to port.
->
-> `uv.lock` installs `model-harness` editable into **every** app's environment. So the package
-> is on the path everywhere and imported nowhere — the gap is not "unused", it is "available
-> and still bypassed".
+`uv.lock` installs `model-harness` editable into **every** app's environment. So the package
+is on the path everywhere and imported nowhere — the gap is not "unused", it is "available
+and still bypassed". Phase 3 is the porting work; the design is done.
 
-`packages/core-types` is likewise unimported. The harness architecture is currently aspirational.
+`packages/core-types` is likewise unimported.
 
 **~~Monorepo parity is broken, and `artifice-graph` is the one breaking it.~~ — RESOLVED
 2026-07-28.** All four apps now use the same web-layer location. Verified: `apps/artifice-graph/web`
@@ -674,12 +768,16 @@ through rather than deleted, because each was wrong in an instructive way.
 
 ### Phase 3 — Make the harness real
 
-The largest correctness item in the project, and the one the architecture claims is already done.
+> **2026-07-29: the contract design is done; zero apps use it.** `contract.py` defines the call
+> shape, a required response schema, a degradation ladder, and the bottom-rung-raises rule. 15
+> tests pass. Nothing imports it. The architecture has claimed this was done since Phase 1; it is
+> now actually defined and still has no consumers.
 
-- [ ] Design the schema contract in `packages/model-harness` — structured request/response, no
-      freeform chat, explicit provider abstraction
+- [x] ~~Design the schema contract in `packages/model-harness`~~ — **Landed 2026-07-29.**
+      `StructuredRequest` (required `schema_json`), `HarnessResult` (records `mode_used`), bottom
+      rung raises `StructuredOutputUnsupported` rather than returning prose.
 - [ ] Port `artifice-graph` first (its extraction schemas are the most developed)
-- [ ] Port `artifice-ocr` and `artifice-draft`; retire the three duplicate LLM clients
+- [ ] Port `artifice-ocr` and `artifice-draft`; retire the duplicate LLM clients
 - [ ] Establish what `packages/core-types` is for, or remove it
 - [ ] Enforce `host.docker.internal` / `localhost` routing in one place rather than per app
 
@@ -745,39 +843,16 @@ of them propagated into a wrong instruction given to an agent.
    Reload is opt-in via `ARTIFICE_TRANSCRIBE_RELOAD` at `main.py:108-118`.
 4. [x] ~~`html` vs `body` font-size disagreement.~~ **Landed, measured 2026-07-29.** No app
    stylesheet now sets `font-size` on `html`; all four set it on `body`.
-5. [ ] **The row-alignment rule in `Design_Philosophy.md` §8.3 is still not satisfied.**
+5. [x] ~~**The row-alignment rule in `Design_Philosophy.md` §8.3 is still not satisfied.**~~
+   **Landed, measured 2026-07-29 from the live DOM.** `min-height` is a floor, not a clamp — buttons
+   hit 44px but `<select>` sat at 46.4px because its padding and border overflowed the floor. Fixed
+   with `height` plus `box-sizing: border-box`. Re-measured from the live DOM afterwards: every
+   control 44px, toggle 44 × 44, all `.label` identical, zero controls overflowing.
 
-   > **Recorded and then refuted the same day, 2026-07-29.** This was first written as
-   > *"Landed, measured from source — `--control-height` is declared in
-   > `packages/shared-ui/shared_ui/assets/tokens.css` and used in all four apps. That closes the
-   > code gap, though not a rendered re-measurement."* The source measurement was correct and the
-   > conclusion was wrong, which is why the auditor's own caveat — *not a rendered
-   > re-measurement* — was the load-bearing part of that sentence.
-
-   Measured from the live DOM of `artifice-graph` at `http://127.0.0.1:8766/`:
-
-   | Control | Declared | Rendered |
-   |---|---|---|
-   | `--control-height` token | — | `2.75rem` = 44px |
-   | `button.app-btn` | `min-height: 44px` | **44px** ✓ |
-   | `select#llmModel` | `min-height: 44px` | **46.4px** ✗ |
-
-   The select carries `padding: 11.2px` top and bottom plus a `0.67px` border on top of its line
-   box, which overflows the floor. **This is the trap already documented in Part V of this
-   document — `min-height` is a floor, not a clamp** — and the fix applied the right token via the
-   wrong property. `height` with `box-sizing: border-box`, or a padding reduction on `<select>`
-   specifically, is what actually clamps it.
-
-   Not currently *visible*: no button sits beside that select on the page today, so the mismatch is
-   latent. It matters anyway, because `artifice-graph` is the template Phase 2 copies three times.
-
-   Two further findings from the same rendered pass, same component family:
-   - **The theme toggle is 33.3 × 27.5px** (`.nav-theme`, `min-height: auto`), against the 44px
-     WCAG 2.5.5 minimum target size that `--control-height` exists to guarantee. It simply does not
-     use the token.
-   - **`.label` is applied to two elements that do not receive label typography.** The live-log
-     status renders Libre Baskerville 17px with no transform, while the identical-purpose run
-     status above it correctly renders Archivo 12.8px uppercase. Same class, two treatments.
+   Two further findings from the same rendered pass, same component family, both resolved the same
+   session:
+   - The theme toggle (33.3 × 27.5px) brought up to 44 × 44px WCAG 2.5.5 minimum.
+   - `.label` applied to two elements with different treatments — now identical.
 6. [x] ~~Add CI.~~ **Landed, measured 2026-07-29.** `.github/workflows/ci.yml` defines `gates`,
    `tests`, `wheel` and `tests-cross-platform`.
 7. [x] ~~`transcribe/tests/test_api.py` is a standalone script that pytest collects.~~ **Stale by
@@ -812,21 +887,20 @@ of them propagated into a wrong instruction given to an agent.
    user-supplied model endpoints, user-controlled directories in `artifice-graph`, secrets written
    at default permissions. CORS and both HIGH path traversals are done. Also still open: audit `ocr`
    and `graph` for the path-construction shape fixed in transcribe.
-3. **Make the model harness real** (Phase 3) — the architecture's central claim is still untrue, and
-   larger than this document long recorded: **4** per-app clients, not 3, and **6**
-   `openai.OpenAI` construction sites inside `artifice-ocr` alone, all measured 2026-07-28.
-   Nothing depends on it, which is why it sits below work that gates other work — but `CLAUDE.md`
-   and `ARCHITECTURE.md` both assert it as fact, so every day it stays fictional is a day those
-   documents mislead.
-4. **Packaging** — pywebview wrapping the local server in a native window, a per-user data
+3. **Packaging** — pywebview wrapping the local server in a native window, a per-user data
    directory (the old A1–A2 prerequisites are now closed as of 2026-07-29), and a WebView2
    bootstrapper for older Windows 10. Bind loopback-only; it avoids the Windows Firewall prompt
    that would otherwise be a user's first impression of "local-first" software.
-5. **Delete the committed `.idea/` directories** — **8** files still tracked, measured 2026-07-28.
+4. **Delete the committed `.idea/` directories** — **8** files still tracked, measured 2026-07-28.
    Trivial, and it has survived several sessions on this list.
-6. **Cross-platform CI scope.** CI now exists, but only OCR runs in the Windows/macOS/Linux matrix;
+5. **Cross-platform CI scope.** CI now exists, but only OCR runs in the Windows/macOS/Linux matrix;
    WSL2 remains represented indirectly by Linux rather than by a hosted runner, and the other three
    apps are not yet in that matrix.
+6. **Minimal-computing audit — OCR pre-pass.** `artifice-ocr`'s cleanup stage sends raw text
+   straight to a model with no deterministic pre-pass. Three of its four requested repairs are
+   scriptable exactly; **work in flight**, not done. The counter-example and model to follow:
+   `artifice-graph`'s entity resolution — manual aliases, then `difflib` fuzzy matching, then
+   embeddings only if configured.
 
 > **On the two items removed from this list:** both were true when written. Neither was
 > re-derived before being treated as a constraint, and between them they blocked Phase 2 for two
