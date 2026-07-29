@@ -1,12 +1,15 @@
 """Tests that pin the seam: all OpenAI client construction flows through _backend."""
 
 import ast
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from artifice_ocr import _backend, config
+from model_harness.contract import EndpointRejected
+from model_harness.endpoint_policy import EndpointPolicy
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +92,7 @@ def test_get_client_case_insensitive():
 def test_lm_studio_health_check_ok(monkeypatch):
     monkeypatch.setattr(config, "_config_cache", None)
     monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
-        "lm_studio_url": "http://test:1234/v1",
+        "lm_studio_url": "http://localhost:1234/v1",
     })
     config.load_config()
 
@@ -98,13 +101,13 @@ def test_lm_studio_health_check_ok(monkeypatch):
         ok, detail = _backend.LMStudioBackend().health_check()
     assert ok is True
     assert detail is None
-    mock_openai_cls.assert_called_once_with(base_url="http://test:1234/v1", api_key="lm-studio")
+    mock_openai_cls.assert_called_once_with(base_url="http://localhost:1234/v1", api_key="lm-studio")
 
 
 def test_lm_studio_health_check_unreachable(monkeypatch):
     monkeypatch.setattr(config, "_config_cache", None)
     monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
-        "lm_studio_url": "http://test:1234/v1",
+        "lm_studio_url": "http://localhost:1234/v1",
     })
     config.load_config()
 
@@ -136,7 +139,7 @@ def test_api_key_health_check_ok(monkeypatch):
     monkeypatch.setattr(config, "_config_cache", None)
     monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
         "api_key": "sk-test",
-        "api_base_url": "https://test.example.com/v1",
+        "api_base_url": "http://10.0.0.1/v1",
     })
     config.load_config()
 
@@ -146,7 +149,7 @@ def test_api_key_health_check_ok(monkeypatch):
     assert ok is True
     assert detail is None
     mock_openai_cls.assert_called_once_with(
-        base_url="https://test.example.com/v1", api_key="sk-test"
+        base_url="http://10.0.0.1/v1", api_key="sk-test"
     )
 
 
@@ -246,7 +249,7 @@ def test_lm_studio_client_reads_config_fresh(monkeypatch):
     """Each ._client() call honours the current config, not a cached value."""
     monkeypatch.setattr(config, "_config_cache", None)
     monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
-        "lm_studio_url": "http://first:1111/v1",
+        "lm_studio_url": "http://localhost:1111/v1",
     })
     config.load_config()
 
@@ -254,5 +257,123 @@ def test_lm_studio_client_reads_config_fresh(monkeypatch):
     with patch.object(_backend, "OpenAI", side_effect=lambda **kw: calls.append(kw) or MagicMock()):
         _backend.LMStudioBackend()._client()
 
-    assert calls[0]["base_url"] == "http://first:1111/v1"
+    assert calls[0]["base_url"] == "http://localhost:1111/v1"
     assert calls[0]["api_key"] == "lm-studio"
+
+
+# ---------------------------------------------------------------------------
+# Endpoint policy: link-local rejection (use-time)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("backend_name,url_key,rejected_url", [
+    ("ollama", "ollama_url", "http://169.254.169.254/"),
+    ("ollama_openai", "ollama_url", "http://169.254.169.254/v1"),
+    ("lm_studio", "lm_studio_url", "http://169.254.169.254/v1"),
+    ("api_key", "api_base_url", "http://169.254.169.254/v1"),
+])
+def test_backend_rejects_link_local_url(monkeypatch, backend_name, url_key, rejected_url):
+    """A link-local address (169.254.x.x) is refused at client construction time."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    defaults = dict(config._DEFAULTS)
+    defaults[url_key] = rejected_url
+    if backend_name == "api_key":
+        defaults["api_key"] = "sk-test"
+    monkeypatch.setattr(config, "_DEFAULTS", defaults)
+    config.load_config()
+
+    backend = _backend.get_client(backend_name)
+    with pytest.raises(EndpointRejected, match="link-local"):
+        if hasattr(backend, "_client"):
+            backend._client()
+        else:
+            backend.chat(model="m", messages=[{"role": "user", "content": "hi"}])
+
+
+# ---------------------------------------------------------------------------
+# Endpoint policy: public URL requires opt-in (use-time)
+# ---------------------------------------------------------------------------
+
+
+def test_api_key_backend_rejects_public_url_by_default(monkeypatch):
+    """The default api_base_url (api.openai.com) is refused without the env var."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "api_key": "sk-test",
+        "api_base_url": "http://8.8.8.8/v1",
+    })
+    # Use a policy that explicitly denies public
+    strict_policy = EndpointPolicy(allow_public=False)
+    monkeypatch.setattr(_backend, "_endpoint_policy", strict_policy)
+    config.load_config()
+
+    with pytest.raises(EndpointRejected, match="public address"):
+        _backend.ApiKeyBackend()._client()
+
+
+def test_api_key_backend_allows_public_url_with_env_var(monkeypatch):
+    """A public URL is accepted when the endpoint policy permits public."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "api_key": "sk-test",
+        "api_base_url": "http://8.8.8.8/v1",
+    })
+    # Use a policy that explicitly permits public
+    permissive_policy = EndpointPolicy(allow_public=True)
+    monkeypatch.setattr(_backend, "_endpoint_policy", permissive_policy)
+    config.load_config()
+
+    mock_client = MagicMock()
+    with patch.object(_backend, "OpenAI", return_value=mock_client):
+        _backend.ApiKeyBackend()._client()
+    # If we reach here, the URL was accepted.
+
+
+# ---------------------------------------------------------------------------
+# Endpoint policy: loopback / private still works (use-time)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("backend_name,url_key,good_url", [
+    ("ollama", "ollama_url", "http://localhost:11434"),
+    ("ollama_openai", "ollama_url", "http://localhost:11434/v1"),
+    ("lm_studio", "lm_studio_url", "http://localhost:1234/v1"),
+    ("api_key", "api_base_url", "http://10.0.0.1/v1"),
+])
+def test_backend_allows_loopback_or_private_url(monkeypatch, backend_name, url_key, good_url):
+    """Loopback and private-network URLs are accepted without the public opt-in."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    defaults = dict(config._DEFAULTS)
+    defaults[url_key] = good_url
+    if backend_name == "api_key":
+        defaults["api_key"] = "sk-test"
+    monkeypatch.setattr(config, "_DEFAULTS", defaults)
+    config.load_config()
+
+    mock_client = MagicMock()
+    with patch.object(_backend, "OpenAI", return_value=mock_client):
+        with patch.object(_backend.ollama, "chat", return_value=MagicMock()):
+            backend = _backend.get_client(backend_name)
+            if hasattr(backend, "_client"):
+                backend._client()
+            else:
+                # Ollama native backend — verify _validate_url doesn't raise
+                backend.chat(model="m", messages=[{"role": "user", "content": "hi"}])
+
+
+# ---------------------------------------------------------------------------
+# LMStudioBackend.health_check raises on rejected URL (does not swallow)
+# ---------------------------------------------------------------------------
+
+
+def test_lm_studio_health_check_raises_endpoint_rejected(monkeypatch):
+    """health_check must raise EndpointRejected for a bad URL, not swallow it."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "lm_studio_url": "http://169.254.169.254/v1",
+    })
+    monkeypatch.delenv("ARTIFICE_ALLOW_PUBLIC_MODELS", raising=False)
+    config.load_config()
+
+    with pytest.raises(EndpointRejected, match="link-local"):
+        _backend.LMStudioBackend().health_check()

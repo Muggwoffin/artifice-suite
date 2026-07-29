@@ -4,10 +4,33 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from model_harness.contract import EndpointRejected
+from model_harness.endpoint_policy import EndpointPolicy
+
 from ... import config
 from ..._prompts import DOCUMENT_TYPES
 
 router = APIRouter(tags=["settings"])
+
+# ── Model endpoints ──────────────────────────────────────────────────────────
+#
+# The allowlist policy lives in ``model_harness.endpoint_policy`` — this app
+# only wraps it with FastAPI's exception type.  See
+# :class:`model_harness.endpoint_policy.EndpointPolicy` for the full
+# rationale and constraint set.
+
+_endpoint_policy = EndpointPolicy()
+
+
+def _validate_base_url(raw: str, field_name: str) -> str:
+    """Return *raw* after checking its scheme and host. Fails closed, loudly."""
+    try:
+        return _endpoint_policy.validate_url(raw)
+    except EndpointRejected as e:
+        raise HTTPException(status_code=400, detail=f"{field_name}: {e}") from e
+
+
+_URL_FIELDS = ("ollama_url", "lm_studio_url", "api_base_url")
 
 _CONFIG_KEYS = (
     "lm_studio_url", "ollama_url", "huggingface_token",
@@ -39,6 +62,11 @@ def get_config() -> dict:
 @router.post("/api/config")
 def set_config(overrides: dict[str, Any]) -> dict:
     allowed = {k: v for k, v in overrides.items() if k in config.PERSISTED_KEYS}
+    # Validate endpoint URLs before persisting — a bad value should be
+    # refused when entered rather than only when used.
+    for field in _URL_FIELDS:
+        if field in allowed and allowed[field]:
+            _validate_base_url(allowed[field], field)
     config.apply_overrides(allowed)
     config.save_user_settings(allowed)
     return {"ok": True}

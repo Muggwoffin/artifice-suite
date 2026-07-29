@@ -325,6 +325,7 @@ version = "0.1.0"
 source = { editable = "apps/artifice-ocr" }
 dependencies = [
     { name = "huggingface-hub" },
+    { name = "model-harness" },
     { name = "ollama" },
     { name = "openai" },
     { name = "pymupdf" },
@@ -345,6 +346,7 @@ web = [
 requires-dist = [
     { name = "fastapi", marker = "extra == 'web'" },
     { name = "huggingface-hub" },
+    { name = "model-harness", editable = "packages/model-harness" },
     { name = "ollama" },
     { name = "openai" },
     { name = "pymupdf" },
@@ -408,6 +410,7 @@ dev = [
     { name = "fonttools", extra = ["woff"] },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-httpx" },
 ]
 
 [package.metadata]
@@ -447,6 +450,7 @@ dev = [
     { name = "fonttools", extras = ["woff"], specifier = ">=4.63.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
+    { name = "pytest-httpx", specifier = ">=0.36.2" },
 ]
 
 [[package]]
@@ -2164,11 +2168,6 @@ dependencies = [
     { name = "pydantic" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "pytest-httpx" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
@@ -2176,7 +2175,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest-httpx", specifier = ">=0.36.2" }]
+dev = []
 
 [[package]]
 name = "mpmath"

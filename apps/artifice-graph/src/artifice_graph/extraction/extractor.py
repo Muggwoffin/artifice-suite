@@ -151,6 +151,12 @@ class EntityExtractor:
             "moved onto model_harness.driver.run_structured.  The harness "
             "contract deliberately excludes streaming (see contract.py:254)."
         )
+        # Unreachable — exists only so this function is a real async
+        # generator, not a coroutine.  Without this `yield`, a caller
+        # following the AsyncGenerator[str, None] annotation with
+        # `async for` gets TypeError ('coroutine' object is not an async
+        # iterable) instead of NotImplementedError.
+        yield ""  # type: ignore[unreachable]
 
     def extract_batch(self, chunks: list[TextChunk]) -> list[ExtractionResult]:
         results: list[ExtractionResult] = []
