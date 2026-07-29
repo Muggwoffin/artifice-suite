@@ -36,10 +36,10 @@ strip_ansi() { sed -e 's/\x1b\[[0-9;]*m//g' -e 's/\r$//'; }
 OPENCODE_AGENTS=(
   "lead-engineer:deepseek-v4-pro"
   "tester:kimi-k3"
-  "arch-auditor-docs:gpt-5.4"
-  "ui-ux:claude-sonnet-4.6"
+  "arch-auditor-docs:kimi-k3"
+  "ui-ux:qwen3.7-max"
   "security-auditor:qwen3.7-max"
-  "code-reviewer:claude-sonnet-5"
+  "code-reviewer:minimax-m3"
   "oss-reviewer:gemma4-32k:12b"
 )
 
