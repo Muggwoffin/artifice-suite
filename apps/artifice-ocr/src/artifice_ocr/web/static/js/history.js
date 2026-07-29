@@ -57,7 +57,7 @@ const HistoryTab = (function () {
         <td class="c">${r.total}</td>
         <td class="c">${r.failed}</td>
         <td class="c">${r.elapsed.toFixed(1)}s</td>
-      </tr>`).join("") || `<tr><td colspan="5" class="dim">No runs recorded yet.</td></tr>`;
+      </tr>`).join("") || `<tr><td colspan="5" class="table-empty-cell"><span class="panel-empty-title">No runs recorded yet.</span><span class="panel-empty-desc">Run OCR on a document to create a history entry.</span></td></tr>`;
 
     runsBody.querySelectorAll("tr[data-id]").forEach((tr) => {
       tr.addEventListener("click", () => selectRun(tr));
@@ -90,7 +90,7 @@ const HistoryTab = (function () {
         <td>${escapeHtml(r.state)}</td>
         <td>${escapeHtml(r.language || "\u2014")}</td>
         <td class="c">${r.confidence ?? "\u2014"}</td>
-      </tr>`).join("") || `<tr><td colspan="4" class="dim">No documents.</td></tr>`;
+      </tr>`).join("") || `<tr><td colspan="4" class="table-empty-cell"><span class="panel-empty-title">No documents.</span><span class="panel-empty-desc">Select a run from the table above to view its documents.</span></td></tr>`;
 
     itemsBody.querySelectorAll("tr[data-id]").forEach((tr) => {
       tr.addEventListener("click", () => selectItem(tr));
