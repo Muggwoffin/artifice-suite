@@ -16,8 +16,12 @@ The current versions are listed in the respective `pyproject.toml` files under
 
 ## Reporting a Vulnerability
 
-**Do not open a public issue.** Report security vulnerabilities privately by
-email to the maintainer at the address listed in `CITATION.cff`.
+**Do not open a public issue.** Report security vulnerabilities through GitHub's
+private vulnerability reporting, which keeps the report visible only to you and
+the maintainer until a fix is published:
+
+> [**Report a vulnerability**](https://github.com/Muggwoffin/artifice-suite/security/advisories/new)
+> — or from the repository, go to **Security → Advisories → Report a vulnerability**.
 
 Please include enough detail to reproduce the issue: which component is
 affected, the version, and a description of the behaviour you observed.
