@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Canonical design tokens, web fonts, and shared UI assets for the Artifice Suite"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = []
 
 [build-system]

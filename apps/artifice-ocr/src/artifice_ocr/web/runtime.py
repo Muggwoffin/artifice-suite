@@ -508,11 +508,13 @@ def _run_pdf_export(folder, stage, structure, output, manifest_path, format, sty
             bilingual=bilingual,
             on_progress=on_progress,
         )
-        pdf_export_state.output_path = str(result_path)
-        pdf_export_state.status = "done"
-        pdf_export_state.events.put(
-            {"type": "done", "output_path": str(result_path)})
+        with pdf_export_state.lock:
+            pdf_export_state.output_path = str(result_path)
+            pdf_export_state.status = "done"
+            pdf_export_state.events.put(
+                {"type": "done", "output_path": str(result_path)})
     except Exception as exc:
-        pdf_export_state.status = "error"
-        pdf_export_state.error = str(exc)
-        pdf_export_state.events.put({"type": "error", "message": str(exc)})
+        with pdf_export_state.lock:
+            pdf_export_state.status = "error"
+            pdf_export_state.error = str(exc)
+            pdf_export_state.events.put({"type": "error", "message": str(exc)})

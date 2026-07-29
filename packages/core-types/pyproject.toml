@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Shared Pydantic data schemas used across Artifice Suite apps and their web components."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
     "pydantic>=2.0",
 ]

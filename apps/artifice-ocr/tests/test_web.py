@@ -59,6 +59,23 @@ def client(tmp_path, monkeypatch):
     # pdf_export router does NOT import state, only pdf_export_state
     monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
 
+    # Reset pdf_export_state so no test inherits a prior run's output_path,
+    # status or queued events (see test_pdf_export_download_404_before_compilation
+    # which was order-dependent before this reset).
+    import queue as _queue_mod
+    pstate = runtime.pdf_export_state
+    # Wait for any thread from a previous test that didn't clean up
+    if pstate.thread is not None and pstate.thread.is_alive():
+        pstate.thread.join(timeout=5)
+    pstate.status = "idle"
+    pstate.error = None
+    pstate.output_path = None
+    while True:
+        try:
+            pstate.events.get_nowait()
+        except _queue_mod.Empty:
+            break
+
     with TestClient(server.app) as c:
         yield c
 
@@ -1344,3 +1361,163 @@ def test_pdf_export_events_sse_streams_log_then_done(client, pdf_text_folder):
 
     events_text = sse_res.text
     assert "log" in events_text or "done" in events_text
+
+
+def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_folder, monkeypatch):
+    """A finished export's terminal 'done' event must not appear in the next
+    export's event stream.
+
+    The race window: worker A finishes ``compile()``, publishes terminal state
+    and its terminal event, while ``start_pdf_export`` replaces the event queue.
+    If the terminal-event push is not inside the same lock that guards the queue
+    swap, A's "done" event can land in B's brand-new stream.
+
+    This test uses a custom queue whose ``put()`` signals a ``threading.Event``
+    so the main thread knows A is inside the terminal-write section (now under
+    ``pdf_export_state.lock``).  A concurrent ``start_pdf_export`` call then
+    blocks on that lock until A releases — guaranteeing A's terminal event is
+    published before B's queue is created.
+
+    Runs 50 iterations to exercise the interleaving window.  No sleeps, retries,
+    or timing tolerances in the critical path — all coordination is via Events
+    and the lock itself.
+    """
+    import queue, threading, time
+    from artifice_ocr import pdf_export as pdf_export_module
+    from artifice_ocr.web import runtime as runtime_module
+
+    folder = str(pdf_text_folder.parent.parent)
+
+    # Distinctive output path so we can identify A's done event even when B
+    # produces its own done event on the same queue.
+    A_OUTPUT = "/tmp/export_a_distinctive_output.pdf"
+
+    # Gating events for compile
+    entered = threading.Event()
+    release = threading.Event()
+
+    # Signalled by the custom queue when the worker calls .put()
+    put_called = threading.Event()
+
+    # Both A and B return instant fake paths — the test is about lock
+    # coordination, not PDF generation.  Running real compile 50× would
+    # make the test needlessly slow.
+    B_OUTPUT = "/tmp/export_b_output.pdf"
+    call_count = [0]
+
+    def gated_compile(*args, **kwargs):
+        call_count[0] += 1
+        entered.set()
+        release.wait(timeout=10)
+        if call_count[0] == 1:
+            return A_OUTPUT
+        return B_OUTPUT
+
+    monkeypatch.setattr(pdf_export_module, "compile", gated_compile)
+
+    # ``Queue.put`` on an unbounded ``queue.Queue`` never blocks, so
+    # inheriting and adding a ``set()`` call carries zero deadlock risk.
+    class SignalingQueue(queue.Queue):
+        def put(self, item, block=True, timeout=None):
+            put_called.set()
+            super().put(item, block, timeout)
+
+    state = runtime_module.pdf_export_state
+
+    leak_detected = False
+    ok_iterations = 0
+
+    for iteration in range(50):
+        # Reset state for this iteration.
+        # NOTE: start_pdf_export itself replaces pdf_export_state.events with a
+        # fresh queue.Queue(), so we set our SignalingQueue AFTER the call
+        # returns but while the worker is still gated inside compile.
+        state.status = "idle"
+        state.error = None
+        state.output_path = None
+        entered.clear()
+        release.clear()
+        put_called.clear()
+        call_count[0] = 0
+
+        # --- Start export A (gated inside compile) ---
+        ok = runtime_module.start_pdf_export(
+            folder, stage="cleaned", structure=False, output=None,
+            manifest_path=None, format="pdf", style="readable", bilingual=False,
+        )
+        assert ok, f"Iteration {iteration}: start_pdf_export A returned False"
+        assert entered.wait(timeout=5), (
+            f"Iteration {iteration}: A never entered compile()"
+        )
+
+        # A is blocked inside compile — it's safe to swap in our
+        # SignalingQueue because the worker hasn't reached events.put() yet.
+        state.events = SignalingQueue()
+        a_queue = state.events
+
+        # Release A — it finishes compile and proceeds to terminal writes
+        release.set()
+
+        # Wait for A to reach events.put() (inside the lock, with the fix).
+        # This tells us A is provably in the terminal-write section.
+        if not put_called.wait(timeout=10):
+            # Worker never reached put — drain and continue
+            for _ in range(50):
+                if state.status in ("done", "error"):
+                    break
+                time.sleep(0.05)
+            continue
+
+        # A is now inside events.put() and therefore inside the lock (with
+        # the fix).  Call start_pdf_export — it will block on the lock
+        # until A releases, then see status="done" and create B's queue.
+        ok2 = runtime_module.start_pdf_export(
+            folder, stage="cleaned", structure=False, output=None,
+            manifest_path=None, format="pdf", style="readable", bilingual=False,
+        )
+
+        if not ok2:
+            # B was rejected — the main thread won the race to the lock
+            # before A's status="done" was visible.  Wait for A to finish
+            # and continue to the next iteration.
+            if state.thread is not None and state.thread.is_alive():
+                state.thread.join(timeout=5)
+            continue
+
+        # B was accepted.  B's queue must not contain A's distinctive
+        # output path — that would mean A's terminal event leaked.
+        b_queue = state.events
+        assert b_queue is not a_queue, (
+            f"Iteration {iteration}: B did not get a fresh queue"
+        )
+
+        # Drain B's queue quickly.  B's thread has just started and cannot
+        # have produced a "done" event yet (compile returns instantly with
+        # our fake, but the worker still needs to acquire the lock).  Any
+        # "done" event with A_OUTPUT is a stale leak from A.
+        while True:
+            try:
+                event = b_queue.get(timeout=0.5)
+            except queue.Empty:
+                break
+            if event.get("type") == "done" and event.get("output_path") == A_OUTPUT:
+                leak_detected = True
+                break
+
+        if leak_detected:
+            break
+
+        ok_iterations += 1
+
+        # Wait for B to finish before the next iteration (keeps state clean)
+        if state.thread is not None and state.thread.is_alive():
+            state.thread.join(timeout=5)
+
+    assert not leak_detected, (
+        "A's terminal 'done' event leaked into B's event queue — "
+        "terminal writes are not atomic with respect to queue swap"
+    )
+    assert ok_iterations > 0, (
+        "No iteration reached the window; B was always rejected. "
+        "The test did not exercise the interleaving."
+    )
