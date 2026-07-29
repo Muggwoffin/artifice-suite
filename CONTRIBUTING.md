@@ -1,4 +1,4 @@
-# Contributing to Artifice Suite
+# Contributing to Artifice
 
 Thanks for considering a contribution. This project follows the
 [Contributor Covenant](CODE_OF_CONDUCT.md); by participating you agree to
