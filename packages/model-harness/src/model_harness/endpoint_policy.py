@@ -96,24 +96,34 @@ class EndpointPolicy:
         Split out from :meth:`validate_url` so it can be tested directly
         without constructing URLs.
         """
-        if host in self._always_allowed:
-            return True, "explicitly allowed host"
-
+        # Resolve first — the link-local denial must apply to *every* host
+        # regardless of the allowlist.
         try:
             infos = socket.getaddrinfo(host, None)
         except OSError:
+            if host in self._always_allowed:
+                return True, "explicitly allowed host (unresolvable)"
             return False, f"host {host!r} could not be resolved"
 
         addresses = {ipaddress.ip_address(info[4][0]) for info in infos}
         if not addresses:
+            if host in self._always_allowed:
+                return True, "explicitly allowed host (no addresses)"
             return False, f"host {host!r} resolved to no addresses"
 
+        # Link-local denial is unconditional — the allowlist does not
+        # override the one absolute rule.
         for addr in sorted(addresses, key=str):
             if addr.is_link_local:
                 return False, (
                     f"host {host!r} resolves to the link-local address {addr}, "
                     f"which is never permitted"
                 )
+
+        # The allowlist now means "skip the private/public classification"
+        # rather than "skip every check".
+        if host in self._always_allowed:
+            return True, "explicitly allowed host"
 
         if all(addr.is_loopback or addr.is_private for addr in addresses):
             return True, "loopback or private-network address"

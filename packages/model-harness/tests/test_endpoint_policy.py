@@ -101,6 +101,53 @@ class TestClassifyHost:
         # through the address check even though it's not explicitly allowed.
         assert permitted or "resolves to the link-local" not in reason
 
+    # -- always-allowed + link-local integration -------------------------------
+
+    def test_always_allowed_link_local_denied(self):
+        """An always-allowed hostname that resolves to a link-local address must
+        be denied — the allowlist must not override the one unconditional rule."""
+        policy = EndpointPolicy(
+            always_allowed_hosts=frozenset(["trusted.local"]),
+        )
+        with mock.patch(
+            "socket.getaddrinfo",
+            return_value=[_v4_info("169.254.169.254")],
+        ):
+            permitted, reason = policy.classify_host("trusted.local")
+        assert not permitted
+        assert "link-local" in reason
+        assert "169.254.169.254" in reason
+
+    def test_always_allowed_public_permitted(self):
+        """An always-allowed hostname resolving to a public address is
+        still permitted — the allowlist skips the private/public check."""
+        policy = EndpointPolicy(
+            always_allowed_hosts=frozenset(["trusted.local"]),
+            allow_public=False,
+        )
+        with mock.patch(
+            "socket.getaddrinfo",
+            return_value=[_v4_info("93.184.216.34")],
+        ):
+            permitted, reason = policy.classify_host("trusted.local")
+        assert permitted
+
+    def test_always_allowed_unresolvable_permitted(self):
+        """An always-allowed hostname that cannot be resolved is still
+        permitted.  DNS resolution failure in a particular environment is a
+        connectivity issue, not a security concern — the host cannot actually
+        be reached, and the link-local denial does not apply when there is no
+        address to inspect."""
+        policy = EndpointPolicy(
+            always_allowed_hosts=frozenset(["host.docker.internal"]),
+        )
+        with mock.patch(
+            "socket.getaddrinfo",
+            side_effect=OSError("Name or service not known"),
+        ):
+            permitted, reason = policy.classify_host("host.docker.internal")
+        assert permitted
+
     # -- multi-address resolution ------------------------------------------
 
     def test_name_resolving_to_private_and_link_local_is_rejected(self):
