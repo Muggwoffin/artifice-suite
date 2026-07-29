@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import json
-import logging
-import re
-import time
 import asyncio
+import logging
 from typing import AsyncGenerator
 
-from artifice_graph.config import ExtractionConfig, load_config, LLMConfig
+from artifice_graph.config import ExtractionConfig, load_config
 from artifice_graph.extraction.llm_client import LLMClient
 from artifice_graph.extraction.schemas import (
+    _LLMExtractionShape,
     EXTRACTION_SYSTEM_PROMPT,
     EXTRACTION_USER_TEMPLATE,
     ExtractionResult,
@@ -19,16 +17,46 @@ from artifice_graph.models.document import TextChunk
 from artifice_graph.models.entity import Entity, EntityType
 from artifice_graph.models.relationship import Relationship
 
+from model_harness.contract import (
+    EndpointPolicy,
+    ModelConnectorConfig,
+    ModelProvider,
+    StructuredOutputMode,
+    StructuredRequest,
+)
+from model_harness.driver import run_structured
+from model_harness.endpoint_policy import EndpointPolicy as ConcreteEndpointPolicy
+from model_harness.openai_adapter import OpenAIProvider
+
 logger = logging.getLogger(__name__)
 
 
 class EntityExtractor:
-    """Extract entities and relationships from text chunks via a local LLM."""
+    """Extract entities and relationships from text chunks via a local LLM.
+
+    Parameters
+    ----------
+    llm_client:
+        Legacy LLM client (for diagnostics only — extraction goes through
+        the harness).
+    config:
+        Extraction configuration (retry policy, batch size, cache dir).
+    provider:
+        A :class:`~model_harness.contract.ModelProvider`.  If ``None``, an
+        :class:`~model_harness.openai_adapter.OpenAIProvider` is constructed
+        from *llm_client*'s config.
+    endpoint_policy:
+        Endpoint validation policy.  If ``None``, the default
+        :class:`~model_harness.endpoint_policy.EndpointPolicy` is used.
+    """
 
     def __init__(
         self,
         llm_client: LLMClient | None = None,
         config: ExtractionConfig | None = None,
+        *,
+        provider: ModelProvider | None = None,
+        endpoint_policy: EndpointPolicy | None = None,
     ) -> None:
         if config is None:
             config = load_config().extraction
@@ -36,206 +64,93 @@ class EntityExtractor:
         self.llm = llm_client or LLMClient()
         self._cache = LLMResponseCache(config)
 
-    def _parse_json_response(self, raw: str) -> dict:
-        cleaned = raw.strip()
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-        try:
-            return json.loads(cleaned)
-        except json.JSONDecodeError:
-            start = cleaned.find("{")
-            end = cleaned.rfind("}") + 1
-            if start != -1 and end > start:
-                return json.loads(cleaned[start:end])
-            raise
+        # -- Harness infrastructure -------------------------------------------
+        if provider is not None:
+            self._provider = provider
+        else:
+            self._provider = OpenAIProvider(
+                provider_type="ollama",
+                endpoint_policy=endpoint_policy or ConcreteEndpointPolicy(),
+                http_client=self.llm.inference_engine.client,
+            )
+        self._endpoint_policy = endpoint_policy or ConcreteEndpointPolicy()
+        self._schema_json = _LLMExtractionShape.model_json_schema()
 
-    def _validate_or_retry(self, raw: str) -> dict:
-        last_exc: Exception | None = None
-        delay = self.config.retry_delay
-
-        for attempt in range(1, self.config.max_retries + 1):
-            try:
-                data = self._parse_json_response(raw)
-                ExtractionResult(
-                    entities=data.get("entities", []),
-                    relationships=data.get("relationships", []),
-                )
-                return data
-            except Exception as exc:
-                last_exc = exc
-                logger.warning(
-                    "Extraction attempt %d/%d failed: %s",
-                    attempt,
-                    self.config.max_retries,
-                    exc,
-                )
-                if attempt < self.config.max_retries:
-                    time.sleep(delay)
-                    delay *= 2
-
-        raise ValueError(
-            f"Failed to get valid JSON after {self.config.max_retries} attempts: {last_exc}"
-        )
+    # -- Extraction -----------------------------------------------------------
 
     async def extract_from_chunk(self, chunk: TextChunk) -> ExtractionResult:
+        """Extract entities and relationships from a single text chunk.
+
+        Routes through :func:`model_harness.driver.run_structured` so the
+        response is schema-validated and the caller receives a guaranteed
+        result with ``mode_used`` and ``repaired`` logged.
+        """
         user_msg = EXTRACTION_USER_TEMPLATE.format(
             source_id=chunk.document_id, text=chunk.text
         )
         model = self.llm.config.model
 
+        # -- Cache hit path ---------------------------------------------------
         cached = self._cache.get(model, user_msg)
         if cached is not None:
-            data = self._validate_or_retry(cached)
-            raw = cached
-        else:
-            raw = await self.llm.chat(EXTRACTION_SYSTEM_PROMPT, user_msg)
-            data = self._validate_or_retry(raw)
-            self._cache.set(model, user_msg, raw)
+            data = _LLMExtractionShape.model_validate_json(cached)
+            return _to_extraction_result(data, chunk.document_id, raw="[cached]")
 
-        entities: list[Entity] = []
-        seen_names: set[str] = set()
-        for e in data.get("entities", []):
-            name = e.get("name", "").strip()
-            if not name or name.lower() in seen_names:
-                continue
-            seen_names.add(name.lower())
-            entities.append(
-                Entity(
-                    name=name,
-                    entity_type=EntityType(e.get("entity_type", "Concept")),
-                    aliases=e.get("aliases", []),
-                    summary=e.get("summary", ""),
-                    source_doc_ids=[chunk.document_id],
-                )
-            )
-
-        relationships: list[Relationship] = []
-        for r in data.get("relationships", []):
-            relationships.append(
-                Relationship(
-                    source_entity=r.get("source_entity", ""),
-                    target_entity=r.get("target_entity", ""),
-                    relationship_type=r.get("relationship_type", "related_to"),
-                    time_frame=r.get("time_frame", ""),
-                    evidence_quote=r.get("evidence_quote", ""),
-                    confidence_score=float(r.get("confidence_score", 0.8)),
-                    source_doc_id=chunk.document_id,
-                )
-            )
-
-        return ExtractionResult(
-            entities=entities,
-            relationships=relationships,
-            raw_response=raw,
+        # -- Build the harness request ----------------------------------------
+        model_config = ModelConnectorConfig(
+            provider="ollama",
+            endpoint=self.llm.config.base_url,
+            model=model,
+            api_key=self.llm.config.api_key or None,
+            timeout_s=float(self.llm.config.timeout),
         )
+
+        request = StructuredRequest(
+            instructions=EXTRACTION_SYSTEM_PROMPT,
+            input=user_msg,
+            schema_json=self._schema_json,
+            mode=StructuredOutputMode.PROMPTED,
+            config=model_config,
+        )
+
+        # -- Run through the harness ------------------------------------------
+        result = await run_structured(
+            request,
+            self._provider,
+            _LLMExtractionShape,
+            endpoint_policy=self._endpoint_policy,
+        )
+
+        logger.info(
+            "Extraction chunk=%s mode=%s repaired=%s",
+            chunk.id,
+            result.mode_used.value,
+            result.repaired,
+        )
+
+        # -- Cache the validated result ---------------------------------------
+        self._cache.set(model, user_msg, result.data.model_dump_json())
+
+        return _to_extraction_result(result.data, chunk.document_id, raw=result.raw)
 
     async def extract_from_chunk_stream(
         self,
         chunk: TextChunk,
     ) -> AsyncGenerator[str, None]:
+        """Streaming extraction — removed in harness port.
+
+        The harness contract (:mod:`model_harness.contract`) deliberately
+        excludes streaming from :class:`~model_harness.contract.ModelProvider`,
+        and this method had no callers anywhere in the codebase.  Retained as
+        a stub that raises :exc:`NotImplementedError` so any downstream code
+        that attempts to call it fails loudly rather than silently returning
+        nothing.
         """
-        Extract from a chunk with streaming support.
-        Yields:
-            Complete text chunks or partial responses as they arrive
-        """
-        user_msg = EXTRACTION_USER_TEMPLATE.format(
-            source_id=chunk.document_id, text=chunk.text
+        raise NotImplementedError(
+            "extract_from_chunk_stream was removed when the extraction path "
+            "moved onto model_harness.driver.run_structured.  The harness "
+            "contract deliberately excludes streaming (see contract.py:254)."
         )
-        model = self.llm.config.model
-
-        cached = self._cache.get(model, user_msg)
-        if cached is not None:
-            data = self._validate_or_retry(cached)
-            raw = cached
-
-            entities: list[Entity] = []
-            seen_names: set[str] = set()
-            for e in data.get("entities", []):
-                name = e.get("name", "").strip()
-                if not name or name.lower() in seen_names:
-                    continue
-                seen_names.add(name.lower())
-                entities.append(
-                    Entity(
-                        name=name,
-                        entity_type=EntityType(e.get("entity_type", "Concept")),
-                        aliases=e.get("aliases", []),
-                        summary=e.get("summary", ""),
-                        source_doc_ids=[chunk.document_id],
-                    )
-                )
-
-            relationships: list[Relationship] = []
-            for r in data.get("relationships", []):
-                relationships.append(
-                    Relationship(
-                        source_entity=r.get("source_entity", ""),
-                        target_entity=r.get("target_entity", ""),
-                        relationship_type=r.get("relationship_type", "related_to"),
-                        time_frame=r.get("time_frame", ""),
-                        evidence_quote=r.get("evidence_quote", ""),
-                        confidence_score=float(r.get("confidence_score", 0.8)),
-                        source_doc_id=chunk.document_id,
-                    )
-                )
-
-            yield json.dumps(ExtractionResult(
-                entities=entities,
-                relationships=relationships,
-                raw_response=raw,
-            ).model_dump(exclude_none=True))
-            return
-
-        try:
-            async for chunk_text in self.llm.chat_stream(EXTRACTION_SYSTEM_PROMPT, user_msg):
-                yield chunk_text
-                if "[DONE]" in chunk_text:
-                    break
-
-            raw = await self.llm.chat(EXTRACTION_SYSTEM_PROMPT, user_msg)
-            data = self._validate_or_retry(raw)
-            self._cache.set(model, user_msg, raw)
-
-            entities: list[Entity] = []
-            seen_names: set[str] = set()
-            for e in data.get("entities", []):
-                name = e.get("name", "").strip()
-                if not name or name.lower() in seen_names:
-                    continue
-                seen_names.add(name.lower())
-                entities.append(
-                    Entity(
-                        name=name,
-                        entity_type=EntityType(e.get("entity_type", "Concept")),
-                        aliases=e.get("aliases", []),
-                        summary=e.get("summary", ""),
-                        source_doc_ids=[chunk.document_id],
-                    )
-                )
-
-            relationships: list[Relationship] = []
-            for r in data.get("relationships", []):
-                relationships.append(
-                    Relationship(
-                        source_entity=r.get("source_entity", ""),
-                        target_entity=r.get("target_entity", ""),
-                        relationship_type=r.get("relationship_type", "related_to"),
-                        time_frame=r.get("time_frame", ""),
-                        evidence_quote=r.get("evidence_quote", ""),
-                        confidence_score=float(r.get("confidence_score", 0.8)),
-                        source_doc_id=chunk.document_id,
-                    )
-                )
-
-            yield json.dumps(ExtractionResult(
-                entities=entities,
-                relationships=relationships,
-                raw_response=raw,
-            ).model_dump(exclude_none=True))
-
-        except Exception as exc:
-            logger.error("Failed to extract from chunk %s: %s", chunk.id, exc)
-            raise
 
     def extract_batch(self, chunks: list[TextChunk]) -> list[ExtractionResult]:
         results: list[ExtractionResult] = []
@@ -261,3 +176,56 @@ class EntityExtractor:
                 len(chunks),
             )
         return results
+
+
+# -- Helpers -------------------------------------------------------------------
+
+
+def _to_extraction_result(
+    shape: _LLMExtractionShape,
+    document_id: str,
+    *,
+    raw: str,
+) -> ExtractionResult:
+    """Convert a validated harness response into the domain result type.
+
+    Maps :class:`ExtractedEntity` / :class:`ExtractedRelationship` (the clean
+    schemas the LLM produces) to :class:`Entity` / :class:`Relationship`
+    (the domain types with auto-generated ids and source-document references).
+    """
+    entities: list[Entity] = []
+    seen_names: set[str] = set()
+    for e in shape.entities:
+        name = e.name.strip()
+        if not name or name.lower() in seen_names:
+            continue
+        seen_names.add(name.lower())
+        entities.append(
+            Entity(
+                name=name,
+                entity_type=e.entity_type,
+                aliases=e.aliases,
+                summary=e.summary,
+                source_doc_ids=[document_id],
+            )
+        )
+
+    relationships: list[Relationship] = []
+    for r in shape.relationships:
+        relationships.append(
+            Relationship(
+                source_entity=r.source_entity,
+                target_entity=r.target_entity,
+                relationship_type=r.relationship_type,
+                time_frame=r.time_frame,
+                evidence_quote=r.evidence_quote,
+                confidence_score=r.confidence_score,
+                source_doc_id=document_id,
+            )
+        )
+
+    return ExtractionResult(
+        entities=entities,
+        relationships=relationships,
+        raw_response=raw,
+    )

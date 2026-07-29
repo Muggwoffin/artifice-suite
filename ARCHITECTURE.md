@@ -18,10 +18,24 @@ scoping to a single agent.
 
 ## Core Abstraction: `packages/model-harness`
 
-> **Corrected 2026-07-29.** The contract in `packages/model-harness/contract.py` now defines the
-> call shape (response schema required, not optional; degradation ladder; bottom rung raises). 15
-> tests pass. **Zero apps import it.** The architecture claims this is real; it is currently
-> **half** real — a correct definition with no consumers.
+`packages/model-harness` defines the structured-output contract and its single implementation:
+
+- **`contract.py`** — the protocols (`StructuredRequest`, `HarnessResult`, `EndpointRejected`) and the
+  degradation ladder. A response schema is a *required* argument; providers declare their strongest
+  `StructuredOutputMode`; the ladder walks from most-structured to least and records which rung
+  produced the result; the bottom rung raises `StructuredOutputUnsupported` rather than returning prose.
+- **`endpoint_policy.py`** — the SSRF rule. Single owner of the endpoint allowlist; refuses
+  link-local outright and checks it *before* any opt-in; loopback and private addresses are allowed,
+  public requires `ARTIFICE_ALLOW_PUBLIC_MODELS`.
+- **`openai_adapter.py`** — the one adapter, implementing `ModelProvider` against the OpenAI API
+  compatible endpoint shape.
+- **`driver.py`** — `run_structured`, the function an app calls. Takes a `StructuredRequest`, runs
+  the degradation ladder, validates the response against the declared schema, returns a
+  `HarnessResult`.
+
+90 tests pass. The web layers of `artifice-graph` and `artifice-transcribe` import
+`model_harness.contract` and `model_harness.endpoint_policy`; no extraction path yet calls
+`run_structured`.
 
 The contract specifies that all model interactions must pass through `packages/model-harness` to
 prevent the ELIZA effect and ensure deterministic outputs. 
