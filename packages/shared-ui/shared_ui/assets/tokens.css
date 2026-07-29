@@ -97,8 +97,12 @@
   /* Row-alignment (§8.3) — any button or input that can share a row
      must resolve to this height. 2.75rem = 44px at a 16px root, which
      is the WCAG 2.5.5 (AAA) minimum target size and Apple's HIG minimum.
-     Use min-height (not height) on row-adjacent controls so a control
-     whose content genuinely needs more room can grow rather than clipping.
+     Use height (not min-height) on row-adjacent controls: min-height is
+     a floor that a <select>'s intrinsic browser chrome can overshoot,
+     producing misaligned controls in the same row. height clamps the
+     element to exactly 44px regardless of content type. Pair with
+     display: inline-flex; align-items: center on buttons for reliable
+     vertical centring of text and inline icons within the clamped height.
      Compact/dense variants (.btn.tiny, find-bar, image-toolbar) are exempt. */
   --control-height: 2.75rem;
 }
