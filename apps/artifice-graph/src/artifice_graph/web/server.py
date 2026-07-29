@@ -11,6 +11,7 @@ import threading
 import time
 from pathlib import Path
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 import httpx
 import uvicorn
@@ -135,18 +136,113 @@ def _mark_run_failed(run_key: str, msg: str | None = None) -> None:
         _log(run_key, msg, "error")
 
 
+# ── Input validation — directory and URL allowlists ─────────────────
+
+# Directories: only accept paths within these roots.
+# Additional roots can be added via the ARTIFFICE_GRAPH_ALLOWED_ROOTS
+# env var (colon-separated).  The current working directory is always
+# permitted so that relative paths resolve as the user expects.
+_ALLOWED_ROOT_DIRS: list[Path] = [
+    Path.home(),
+    Path("/tmp"),
+    Path.cwd(),
+]
+
+_extra_roots = os.environ.get("ARTIFICE_GRAPH_ALLOWED_ROOTS", "")
+for _r in _extra_roots.split(os.pathsep):
+    _r = _r.strip()
+    if _r:
+        _ALLOWED_ROOT_DIRS.append(Path(_r).expanduser().resolve())
+
+
+def _validate_directory(raw: str, field_name: str) -> str:
+    """Return *raw* as a normalised path string after checking it resides
+    within an allowed root directory.  Raises HTTP 400 on rejection."""
+    if not raw or not raw.strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: path must not be empty",
+        )
+    try:
+        p = Path(raw).expanduser().resolve(strict=False)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: cannot resolve path {raw!r}",
+        ) from None
+    for root in _ALLOWED_ROOT_DIRS:
+        resolved_root = root.resolve()
+        try:
+            p.relative_to(resolved_root)
+            break
+        except ValueError:
+            continue
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_name}: path {str(p)!r} is outside allowed roots. "
+                f"Allowed: {[str(r) for r in _ALLOWED_ROOT_DIRS]}"
+            ),
+        )
+    return str(p)
+
+
+# URLs: only accept hosts that are within the local-first boundary.
+# The WSL host gateway IP is configurable via WSL_HOST_IP so the
+# maintainer's actual working setup is not broken.
+_ALLOWED_HOSTS: frozenset[str] = frozenset(
+    h.lower()
+    for h in [
+        "localhost",
+        "127.0.0.1",
+        "[::1]",
+        "host.docker.internal",
+        os.environ.get("WSL_HOST_IP", "172.21.176.1"),
+    ]
+    if h  # skip empty string when env var is unset (get returns None)
+)
+
+
+def _validate_base_url(raw: str, field_name: str) -> str:
+    """Return *raw* after verifying its host is in the allowlist.
+    Raises HTTP 400 on rejection (fail closed, fail loudly)."""
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: {raw!r} is not a valid URL",
+        ) from None
+    host = (parsed.hostname or "").lower()
+    if host not in _ALLOWED_HOSTS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_name}: host {host!r} is not in the local-first "
+                f"allowlist. Allowed: {sorted(_ALLOWED_HOSTS)}"
+            ),
+        )
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: scheme must be http or https, got {parsed.scheme!r}",
+        )
+    return raw
+
+
 # ── Config from POST body ──────────────────────────────────────────
 
 def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
     cfg = load_config()
     if i := body.get("input_dir"):
-        cfg.ingestion.input_dir = i
+        cfg.ingestion.input_dir = _validate_directory(i, "input_dir")
     if o := body.get("output_dir"):
-        cfg.export.output_dir = o
+        cfg.export.output_dir = _validate_directory(o, "output_dir")
     if v := body.get("vault_dir"):
-        cfg.export.obsidian_vault_dir = v
+        cfg.export.obsidian_vault_dir = _validate_directory(v, "vault_dir")
     if u := body.get("llm_base_url"):
-        cfg.llm.base_url = u
+        cfg.llm.base_url = _validate_base_url(u, "llm_base_url")
     if k := body.get("llm_api_key"):
         cfg.llm.api_key = k
     if m := body.get("llm_model"):
@@ -164,7 +260,7 @@ def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
     if "use_semantic" in body:
         cfg.entity_resolution.use_semantic = bool(body["use_semantic"])
     if ebu := body.get("embedding_base_url"):
-        cfg.embedding.base_url = ebu
+        cfg.embedding.base_url = _validate_base_url(ebu, "embedding_base_url")
     if em := body.get("embedding_model"):
         cfg.embedding.model = em
     return cfg, bool(body.get("incremental", False))
@@ -626,13 +722,13 @@ async def api_save_config(body: dict[str, Any]):
         cfg = load_config()
 
         if i := body.get("input_dir"):
-            cfg.ingestion.input_dir = i
+            cfg.ingestion.input_dir = _validate_directory(i, "input_dir")
         if o := body.get("output_dir"):
-            cfg.export.output_dir = o
+            cfg.export.output_dir = _validate_directory(o, "output_dir")
         if v := body.get("vault_dir"):
-            cfg.export.obsidian_vault_dir = v
+            cfg.export.obsidian_vault_dir = _validate_directory(v, "vault_dir")
         if u := body.get("llm_base_url"):
-            cfg.llm.base_url = u
+            cfg.llm.base_url = _validate_base_url(u, "llm_base_url")
         if k := body.get("llm_api_key"):
             cfg.llm.api_key = k
         if m := body.get("llm_model"):
@@ -650,13 +746,15 @@ async def api_save_config(body: dict[str, Any]):
         if "use_semantic" in body:
             cfg.entity_resolution.use_semantic = bool(body["use_semantic"])
         if ebu := body.get("embedding_base_url"):
-            cfg.embedding.base_url = ebu
+            cfg.embedding.base_url = _validate_base_url(ebu, "embedding_base_url")
         if em := body.get("embedding_model"):
             cfg.embedding.model = em
 
         save_user_config(cfg)
 
         return {"status": "ok", "message": "Configuration saved successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error saving config: {e}")
         return {"status": "error", "message": f"Error saving configuration: {str(e)}"}

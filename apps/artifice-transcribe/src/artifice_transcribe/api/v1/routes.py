@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
@@ -104,6 +106,48 @@ def _assert_contained(path: Path, container: Path) -> None:
         raise HTTPException(400, "Path traversal detected")
 
 
+# ── URL host allowlist (local-first boundary) ────────────────────────────────
+
+_ALLOWED_HOSTS: frozenset[str] = frozenset(
+    h.lower()
+    for h in [
+        "localhost",
+        "127.0.0.1",
+        "[::1]",
+        "host.docker.internal",
+        os.environ.get("WSL_HOST_IP", "172.21.176.1"),
+    ]
+    if h
+)
+
+
+def _validate_base_url(raw: str, field_name: str) -> str:
+    """Return *raw* after verifying its host is in the allowlist.
+    Raises HTTP 400 on rejection (fail closed, fail loudly)."""
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: {raw!r} is not a valid URL",
+        ) from None
+    host = (parsed.hostname or "").lower()
+    if host not in _ALLOWED_HOSTS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_name}: host {host!r} is not in the local-first "
+                f"allowlist. Allowed: {sorted(_ALLOWED_HOSTS)}"
+            ),
+        )
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name}: scheme must be http or https, got {parsed.scheme!r}",
+        )
+    return raw
+
+
 # ── Inference configuration persistence helper ───────────────────────────────
 # Uses platformdirs to resolve a per-user data directory, so the config file
 # survives frozen bundles (.exe/.dmg) where CWD can be anywhere.
@@ -150,7 +194,9 @@ def _load_inference_config() -> dict:
 
 def _save_inference_config(cfg: dict) -> None:
     _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _INFERENCE_CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    fd = os.open(_INFERENCE_CONFIG_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2)
 
 
 # Module-level engine singleton (lazy init)
@@ -410,16 +456,32 @@ async def update_config(body: ModelConfigRequest):
     return {"status": "updated", "changes": list(updates.keys())}
 
 
+# Keys whose values must not be returned verbatim in API responses.
+_REDACTED_INFERENCE_KEYS = frozenset({"api_key"})
+_REDACTED_PLACEHOLDER = "*" * 12
+
+
+def _redact_inference_config(cfg: dict) -> dict:
+    """Return *cfg* with secret values replaced by a placeholder."""
+    out = dict(cfg)
+    for key in _REDACTED_INFERENCE_KEYS:
+        if out.get(key):
+            out[key] = _REDACTED_PLACEHOLDER
+    return out
+
+
 @router.get("/inference/config")
 async def get_inference_config():
-    return _load_inference_config()
+    return _redact_inference_config(_load_inference_config())
 
 
 @router.post("/inference/config")
 async def update_inference_config(body: InferenceConfigRequest):
     cfg = body.model_dump()
+    if url := cfg.get("base_url"):
+        _validate_base_url(url, "base_url")
     _save_inference_config(cfg)
-    return {"status": "saved", "config": cfg}
+    return {"status": "saved", "config": _redact_inference_config(cfg)}
 
 
 @router.delete("/inference/config")
@@ -435,6 +497,7 @@ async def delete_inference_config():
 
 @router.post("/inference/models")
 async def fetch_inference_models(body: InferenceModelsRequest):
+    _validate_base_url(body.base_url, "base_url")
     try:
         models = await get_available_models(body.base_url, body.api_key)
         return {"models": models}
@@ -444,6 +507,7 @@ async def fetch_inference_models(body: InferenceModelsRequest):
 
 @router.post("/inference/test")
 async def test_inference_connection(body: InferenceTestRequest):
+    _validate_base_url(body.base_url, "base_url")
     result = await test_inf_conn(body.base_url, body.api_key)
     return result
 

@@ -191,7 +191,8 @@ def save_user_settings(settings: dict[str, Any]) -> None:
     _USER_DIR.mkdir(parents=True, exist_ok=True)
     merged = load_user_settings()
     merged.update({k: v for k, v in settings.items() if k in PERSISTED_KEYS})
-    with open(_SETTINGS_PATH, "w", encoding="utf-8") as f:
+    fd = os.open(_SETTINGS_PATH, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(merged, f, indent=2)
 
 

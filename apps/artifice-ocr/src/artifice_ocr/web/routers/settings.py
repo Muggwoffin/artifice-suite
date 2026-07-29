@@ -18,10 +18,22 @@ _CONFIG_KEYS = (
     "resume", "confidence_enabled", "ollama_think",
 )
 
+# Keys whose values must not be returned verbatim in API responses.
+_REDACTED_KEYS = frozenset({"api_key", "huggingface_token"})
+
+REDACTED_PLACEHOLDER = "*" * 12
+
+
+def _redact_config(key: str, value: str) -> str:
+    """Return a placeholder if *key* holds a secret that is configured."""
+    if key in _REDACTED_KEYS and value:
+        return REDACTED_PLACEHOLDER
+    return value
+
 
 @router.get("/api/config")
 def get_config() -> dict:
-    return {k: config.get(k) for k in _CONFIG_KEYS}
+    return {k: _redact_config(k, config.get(k)) for k in _CONFIG_KEYS}
 
 
 @router.post("/api/config")

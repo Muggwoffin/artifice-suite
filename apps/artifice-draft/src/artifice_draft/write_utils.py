@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+import tempfile
 import zipfile
 
 from docx import Document
@@ -33,11 +34,9 @@ STYLE_MAP: dict[str, str] = {
 def _add_inline_image(run, blob: bytes, filename: str, content_type: str) -> None:
     """Embed an image blob as an inline drawing inside a run using a temp file."""
     ext = os.path.splitext(filename)[1] or ".png"
-    tmp_dir = "C:/Users/mjcas/AppData/Local/Temp/opencode"
-    os.makedirs(tmp_dir, exist_ok=True)
-    tmp_path = os.path.join(tmp_dir, f"_img_{hash(blob) % 10**8}{ext}")
-    with open(tmp_path, "wb") as f:
-        f.write(blob)
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+        tmp.write(blob)
+        tmp_path = tmp.name
     try:
         run.add_picture(tmp_path, width=Pt(96))
     finally:
