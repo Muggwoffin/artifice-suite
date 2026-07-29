@@ -1,7 +1,7 @@
 ---
 description: Open-source folder standards, cross-app consistency, and documentation
 mode: all
-model: opencode-go/kimi-k3
+model: opencode-go/minimax-m2.7
 tools:
   read: true
   write: true

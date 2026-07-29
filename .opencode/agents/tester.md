@@ -1,7 +1,7 @@
 ---
 description: Automated test execution, log parsing, and bug patching
 mode: all
-model: opencode-go/kimi-k3
+model: opencode-go/kimi-k2.7-code
 tools:
   read: true
   write: true
