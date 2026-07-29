@@ -1,4 +1,6 @@
-<img width="960" height="540" alt="Artifice Logo" src="https://github.com/user-attachments/assets/54090678-ae12-45c1-a3f9-eec56dd5eb82" />
+<img width="960" height="540" alt="Artifice Logo copy" src="https://github.com/user-attachments/assets/6f7262b1-a9e5-4c2d-bacd-1546b3eba557" />
+
+
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg)](https://doi.org/10.5281/zenodo.21621935)
 
