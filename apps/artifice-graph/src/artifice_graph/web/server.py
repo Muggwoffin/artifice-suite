@@ -985,8 +985,13 @@ async def api_stream(run: str = Query(...)):
 # alone is not a sufficient guard.  The backslash replacement handles
 # Windows-style paths supplied from a browser on a POSIX server.
 
-_ALLOWED_EXTENSIONS: frozenset[str] = frozenset({".txt", ".md", ".pdf", ".html", ".htm"})
 _MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB, mirrors IngestionConfig.max_file_size_mb
+
+
+def _allowed_upload_extensions(cfg: PipelineConfig) -> frozenset[str]:
+    return frozenset(
+        {ext.lower() for ext in cfg.ingestion.supported_extensions} | {".pdf", ".html", ".htm"}
+    )
 
 
 def _sanitise_path_component(raw: str) -> str:
@@ -1015,8 +1020,8 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
 
     Filenames are sanitised with the same ``_sanitise_path_component`` guard used
     in artifice-transcribe to prevent path-traversal. Only the extensions the
-    ingest stage accepts (.txt, .md, .pdf, .html, .htm) are stored; oversized
-    files (>50 MB) are refused.
+    ingest stage accepts (plus the built-in PDF/HTML handlers) are stored;
+    oversized files (>50 MB) are refused.
 
     **This is a batch endpoint and always returns HTTP 200** when the request
     itself is well-formed. Per-file outcomes are reported in the response body:
@@ -1037,6 +1042,7 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
     cfg = load_config()
     input_dir = Path(cfg.ingestion.input_dir)
     input_dir.mkdir(parents=True, exist_ok=True)
+    allowed_extensions = _allowed_upload_extensions(cfg)
 
     results = []
     for upload in files:
@@ -1044,11 +1050,11 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
         safe_name = _sanitise_path_component(raw_name)
         ext = Path(safe_name).suffix.lower()
 
-        if ext not in _ALLOWED_EXTENSIONS:
+        if ext not in allowed_extensions:
             results.append({
                 "filename": raw_name,
                 "status": "rejected",
-                "reason": f"Extension {ext!r} not accepted. Allowed: {sorted(_ALLOWED_EXTENSIONS)}",
+                "reason": f"Extension {ext!r} not accepted. Allowed: {sorted(allowed_extensions)}",
             })
             continue
 
