@@ -766,20 +766,109 @@ through rather than deleted, because each was wrong in an instructive way.
 - [ ] Per-app domain colours follow the `entity-colors.css` precedent
 - [ ] Rendered review of every app at desktop, ~900px and ~600px before sign-off
 
-### Phase 3 — Make the harness real
+### Phase 3 — Introduce structured output where the suite currently has none
 
-> **2026-07-29: the contract design is done; zero apps use it.** `contract.py` defines the call
-> shape, a required response schema, a degradation ladder, and the bottom-rung-raises rule. 15
-> tests pass. Nothing imports it. The architecture has claimed this was done since Phase 1; it is
-> now actually defined and still has no consumers.
+> **The framing that leads this phase, because the old one described the mechanical half and missed
+> the point.** Phase 3 is recorded as "port four duplicate LLM clients onto a shared harness." That
+> is real work, but it is the transport layer, not the goal. Measured 2026-07-29 by grep:
+>
+> - **Two** sites in the entire suite use `response_format: {"type": "json_object"}` — both in
+>   `artifice-draft` (`llm_client.py:470`, `style_guides/scraper.py:351`), and only on one of the
+>   two response types that module produces.
+> - **Zero** sites use `json_schema`, `tools`, or `tool_choice`. None of the four apps has ever
+>   declared a structured output contract at the call site.
+> - **Three** separate JSON-recovery helpers therefore exist to extract structure from prose:
+>   `parse_llm_json_response` and `_parse_llm_response` in `artifice-draft/llm_client.py`, and
+>   `parse_json_robust` in `artifice-transcribe/services/inference.py`. None can tell a caller
+>   whether it received a guaranteed-schema response or a lucky parse — and the code treats both
+>   identically.
+>
+> **So Phase 3 is "introduce structured output where the suite currently has none."** The transport
+> migration is the mechanical part. Lead with the capability gap, because a fresh session that reads
+> the recorded description will plan the wrong thing.
 
 - [x] ~~Design the schema contract in `packages/model-harness`~~ — **Landed 2026-07-29.**
       `StructuredRequest` (required `schema_json`), `HarnessResult` (records `mode_used`), bottom
-      rung raises `StructuredOutputUnsupported` rather than returning prose.
-- [ ] Port `artifice-graph` first (its extraction schemas are the most developed)
-- [ ] Port `artifice-ocr` and `artifice-draft`; retire the duplicate LLM clients
-- [ ] Establish what `packages/core-types` is for, or remove it
-- [ ] Enforce `host.docker.internal` / `localhost` routing in one place rather than per app
+      rung raises `StructuredOutputUnsupported` rather than returning prose. Zero apps import it.
+
+**The four clients are not four variants of one thing.** `artifice-graph`'s `llm_client.py` is
+74 lines — a clean `LLMClient` with one seam (`InferenceEngine`). `artifice-ocr` is a 28-line
+façade (`_llm.py`) over a 228-line `_backend.py` that already abstract three backends. Transcribe's
+`inference.py` is 160 lines with its own `InferenceEngine` class. `artifice-draft`'s
+`llm_client.py` is **540 lines** and additionally contains dynamic token-aware batching, a prompt
+builder, an `LLMEdit` domain type, and two parsers (`parse_llm_json_response` + `_parse_llm_response`).
+Draft must be decomposed before it can be ported, and it is roughly seven times the size of the
+app that goes first.
+
+**`packages/core-types` is 34 lines** (`ProcessingStatus`, `PipelineProgress`) with zero
+importers confirmed by grep across the suite. Adopt or delete — a decision, not an obstacle.
+
+**Recommended sequence, with the reasoning that a fresh session needs:**
+
+**Step 1 — Fix the `NameError` in `artifice-graph/extraction/llm_client.py:47`.**
+`chat_sync()` calls `asyncio.run(...)` but `asyncio` is imported only at line 72, *inside*
+`close_sync()`. Every call to `chat_sync()` therefore raises `NameError: name 'asyncio' is not
+defined`. Nothing calls it today — the bug is dead but broken, it is in the first file Phase 3
+touches, and it has the same shape as the `logger` NameError recorded in §I.7. Fix it before
+porting anything.
+
+**Step 2 — Move `EndpointPolicy` into the harness and collapse the two identical allowlists.**
+`graph/web/server.py` and `transcribe/api/v1/routes.py` each carry a copy of the endpoint
+allowlist decision, and each has a documented time-of-check gap. Pin the connection to the
+validated address in one place. `transcribe/routes.py:125` already notes this is the rule to
+consolidate, and that comment will need updating when this lands.
+
+> **This step was originally sequenced fourth, after the graph port, and was moved here on
+> 2026-07-29 after `arch-auditor-docs` challenged the ordering.** Its stated reason — that graph
+> would otherwise be ported against its own web-layer copy and have to migrate again — is not quite
+> right: graph's extraction path (`LLMClient` → `InferenceEngine`) and its web path
+> (`server.py::_validate_base_url`) are separate code, so porting one does not touch the other and
+> graph would not be ported twice.
+>
+> The **stronger** form of its argument is what moved the step: the adapter in the next step has to
+> resolve `ModelConnectorConfig.endpoint` somewhere. If the harness does not own endpoint policy by
+> then, the first adapter either skips validation or reaches back into an app — and whichever it
+> does becomes the pattern the other three copy. The challenge was right; the reasoning is recorded
+> because the two are not the same and the next reader needs the one that holds.
+
+**Step 3 — Write one provider adapter against `ModelProvider` before porting any app.**
+Prove the contract survives contact with a real backend, now with a policy it can call to resolve
+its endpoint. If the shape is wrong, better to learn that once than four times.
+
+**Step 4 — Port `artifice-graph`.**
+Goes first because `extraction/schemas.py` already holds pydantic models (`ExtractedEntity`,
+`ExtractedRelationship`, `ExtractionResult`) — the target shape exists on the domain side
+already. The extraction prompts in that file also describe the expected JSON structure in prose,
+which is the schema to extract and validate against.
+
+**Step 5 — Port `artifice-ocr`.**
+A single seam now: the consolidation in session 4 routed the three bypassing call sites through
+`_backend.py`, so `OpenAI(` appears only there. The porting surface went from eight construction
+sites to four measured 2026-07-29. No LLM-specific test coverage beyond the new `test_backend.py`.
+
+**Step 6 — Port `artifice-transcribe`.**
+`parse_json_robust` is the retirement target here. Once the port is live and the inference path
+uses the harness, this helper is dead code and goes.
+
+**Step 7 — Decompose `artifice-draft` before porting.**
+540 lines with dynamic batching, prompt building, and domain types are all in one module. Pull
+out the `LLMEdit` domain type, the batching logic, and the prompt builder as separate entities
+before wiring the harness. This is the largest client by far and the most entangled.
+
+**Step 8 — Retire each JSON-recovery helper as its app ports.**
+The helpers' disappearance is the acceptance criterion. When `parse_llm_json_response`,
+`_parse_llm_response`, and `parse_json_robust` are all gone from the suite, Phase 3 is done.
+Until then, structured output has been introduced in some places and the old prose-recovery
+pattern survives in others.
+
+**Step 9 — Settle `core-types`.**
+Zero importers, 34 lines. Either adopt `ProcessingStatus` / `PipelineProgress` into the
+harness or the package, or remove it. A decision is required; it cannot stay in limbo
+indefinitely.
+
+**Standing risk.** `artifice-ocr` and `artifice-transcribe` have no LLM-specific test coverage
+beyond `test_backend.py` added this session. A port there breaks silently. `artifice-draft`
+has `test_llm_client.py` — the largest client is the tested one, which is fortunate.
 
 ### Phase 4 — Structural parity
 
