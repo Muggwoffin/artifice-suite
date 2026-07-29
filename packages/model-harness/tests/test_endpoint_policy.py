@@ -3,11 +3,23 @@
 from __future__ import annotations
 
 import os
+import socket
+import unittest.mock as mock
 
 import pytest
 
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
+
+
+def _v4_info(addr: str) -> tuple:
+    """Build a minimal ``getaddrinfo`` 5-tuple for an IPv4 address."""
+    return (socket.AF_INET, socket.SOCK_STREAM, 6, "", (addr, 0))
+
+
+def _v6_info(addr: str) -> tuple:
+    """Build a minimal ``getaddrinfo`` 5-tuple for an IPv6 address."""
+    return (socket.AF_INET6, socket.SOCK_STREAM, 6, "", (addr, 0, 0, 0))
 
 
 class TestClassifyHost:
@@ -88,6 +100,89 @@ class TestClassifyHost:
         # localhost resolves to 127.0.0.1 which IS private, so it passes
         # through the address check even though it's not explicitly allowed.
         assert permitted or "resolves to the link-local" not in reason
+
+    # -- multi-address resolution ------------------------------------------
+
+    def test_name_resolving_to_private_and_link_local_is_rejected(self):
+        """A name that resolves to both a private and a link-local address
+        must be rejected — *every* resolved address is checked, not just
+        the first one."""
+        policy = EndpointPolicy()
+        with mock.patch(
+            "socket.getaddrinfo",
+            return_value=[_v4_info("10.0.0.5"), _v4_info("169.254.169.254")],
+        ):
+            permitted, reason = policy.classify_host("double.local")
+        assert not permitted
+        assert "link-local" in reason
+        assert "169.254.169.254" in reason
+
+    def test_link_local_first_in_resolution_order_is_rejected(self):
+        """The order of addresses in the resolution result must not matter.
+        A link-local address listed first is still caught."""
+        policy = EndpointPolicy()
+        with mock.patch(
+            "socket.getaddrinfo",
+            return_value=[_v4_info("169.254.169.254"), _v4_info("10.0.0.5")],
+        ):
+            permitted, reason = policy.classify_host("double.local")
+        assert not permitted
+        assert "link-local" in reason
+
+    def test_private_plus_public_rejected_without_opt_in(self):
+        """A name resolving to both private and public addresses is rejected
+        without ARTIFICE_ALLOW_PUBLIC_MODELS — one acceptable address does
+        not excuse an unacceptable one."""
+        policy = EndpointPolicy(allow_public=False)
+        with mock.patch(
+            "socket.getaddrinfo",
+            return_value=[_v4_info("192.168.1.10"), _v4_info("93.184.216.34")],
+        ):
+            permitted, reason = policy.classify_host("mixed.local")
+        assert not permitted
+        assert "ARTIFICE_ALLOW_PUBLIC_MODELS" in reason
+
+    def test_private_plus_public_accepted_with_opt_in(self, monkeypatch):
+        """With ARTIFICE_ALLOW_PUBLIC_MODELS=1, a name resolving to both
+        private and public addresses is permitted."""
+        monkeypatch.setenv("ARTIFICE_ALLOW_PUBLIC_MODELS", "1")
+        policy = EndpointPolicy()
+        with mock.patch(
+            "socket.getaddrinfo",
+            return_value=[_v4_info("192.168.1.10"), _v4_info("93.184.216.34")],
+        ):
+            permitted, reason = policy.classify_host("mixed.local")
+        assert permitted, reason
+
+    def test_all_private_multi_address_accepted(self):
+        """A name resolving to several RFC1918 addresses with no link-local
+        is accepted — multi-address does not cause over-rejection."""
+        policy = EndpointPolicy()
+        with mock.patch(
+            "socket.getaddrinfo",
+            return_value=[
+                _v4_info("10.0.0.5"),
+                _v4_info("192.168.1.10"),
+                _v4_info("172.16.0.1"),
+            ],
+        ):
+            permitted, reason = policy.classify_host("all-private.local")
+        assert permitted, reason
+
+    def test_mixed_ipv4_ipv6_with_public_is_rejected(self):
+        """IPv6 addresses in the resolved set must be checked alongside
+        IPv4.  A private IPv4 plus a public IPv6 is still public overall.
+        Uses 2001:4860:4860::8888 (Google DNS v6) which ipaddress treats as
+        global, unlike 2001:db8::/32 which is the documentation prefix and
+        classified as private."""
+        policy = EndpointPolicy(allow_public=False)
+        with mock.patch(
+            "socket.getaddrinfo",
+            return_value=[_v4_info("10.0.0.5"), _v6_info("2001:4860:4860::8888")],
+        ):
+            permitted, reason = policy.classify_host("mixed-family.local")
+        assert not permitted
+        assert "ARTIFICE_ALLOW_PUBLIC_MODELS" in reason
 
 
 class TestValidateUrl:
