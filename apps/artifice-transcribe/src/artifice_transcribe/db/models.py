@@ -1,22 +1,16 @@
 from __future__ import annotations
 
-import enum
 import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Enum, Float, ForeignKey, LargeBinary, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from artifice_transcribe.schemas.transcription import JobStatus
+
 
 class Base(DeclarativeBase):
     pass
-
-
-class JobStatus(str, enum.Enum):
-    queued = "queued"
-    processing = "processing"
-    completed = "completed"
-    failed = "failed"
 
 
 def _utcnow() -> datetime:
