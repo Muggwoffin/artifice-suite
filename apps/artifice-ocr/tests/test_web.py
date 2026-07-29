@@ -15,6 +15,7 @@ patches `runtime.state` directly for that reason.
 
 import socket
 import sys
+import types
 
 import pytest
 from fastapi.testclient import TestClient
@@ -1070,10 +1071,72 @@ def test_start_server_thread_captures_an_exception_from_uvicorn(monkeypatch):
     assert "port already in use" in str(errors[0])
 
 
-def test_report_startup_failure_prints_the_captured_exception(monkeypatch, capsys):
+@pytest.fixture
+def stub_tkinter(monkeypatch):
+    """Install a fake ``tkinter`` for the duration of a test.
+
+    Injected into ``sys.modules`` rather than patched onto the real module,
+    because patching requires tkinter to be importable and that cannot be
+    assumed either way:
+
+    - CI runners have no tkinter at all, so
+      ``monkeypatch.setattr("tkinter.messagebox.showerror", ...)`` fails at
+      import time and the test errors before it reaches its assertions.
+    - A machine that has both tkinter *and* a display — WSLg, for instance —
+      would run the real ``showerror``, which is modal and would block the
+      suite until a human dismissed it.
+
+    Returns the list of calls made to ``showerror`` so a test can assert the
+    dialog was attempted.
+    """
+    tk = types.ModuleType("tkinter")
+    messagebox = types.ModuleType("tkinter.messagebox")
+    calls: list[tuple] = []
+
+    class _Root:
+        def withdraw(self):
+            pass
+
+        def destroy(self):
+            pass
+
+    tk.Tk = _Root
+    messagebox.showerror = lambda *a, **k: calls.append(a)
+    tk.messagebox = messagebox
+
+    monkeypatch.setitem(sys.modules, "tkinter", tk)
+    monkeypatch.setitem(sys.modules, "tkinter.messagebox", messagebox)
+    return calls
+
+
+def test_report_startup_failure_reports_even_with_no_tkinter(monkeypatch, capsys):
+    """The console message is the guarantee; the dialog is a bonus.
+
+    ``_report_startup_failure`` is the only feedback a user gets who launched a
+    packaged build by double-clicking an icon and saw nothing happen. If a
+    missing tkinter could take that path down, the error handler would hide the
+    very error it exists to report.
+
+    Setting the ``sys.modules`` entry to ``None`` makes ``import tkinter``
+    raise ImportError, which is how a runner without tkinter behaves.
+    """
     from artifice_ocr.web.server import _report_startup_failure
 
-    monkeypatch.setattr("tkinter.messagebox.showerror", lambda *a, **k: None)
+    monkeypatch.setitem(sys.modules, "tkinter", None)
+    monkeypatch.setitem(sys.modules, "tkinter.messagebox", None)
+
+    class FakeThread:
+        def is_alive(self):
+            return False
+
+    _report_startup_failure(5099, FakeThread(), [ValueError("bad config")])
+    out = capsys.readouterr().out
+    assert "5099" in out
+    assert "bad config" in out
+
+
+def test_report_startup_failure_prints_the_captured_exception(stub_tkinter, capsys):
+    from artifice_ocr.web.server import _report_startup_failure
 
     class FakeThread:
         def is_alive(self):
@@ -1086,10 +1149,8 @@ def test_report_startup_failure_prints_the_captured_exception(monkeypatch, capsy
     assert "bad config" in out
 
 
-def test_report_startup_failure_explains_a_plain_timeout(monkeypatch, capsys):
+def test_report_startup_failure_explains_a_plain_timeout(stub_tkinter, capsys):
     from artifice_ocr.web.server import _report_startup_failure
-
-    monkeypatch.setattr("tkinter.messagebox.showerror", lambda *a, **k: None)
 
     class FakeThread:
         def is_alive(self):

@@ -62,3 +62,9 @@ apps/*/data/obsidian_vault/
 # Runtime state. artifice-transcribe defaults its SQLite DB to ./data/
 # (config.py:12), so starting a server from the repo root creates this.
 /data/
+
+# artifice-ocr's PDF-export tests write into a CWD-relative ./output/, so
+# running the suite from the repo root drops artefacts here. Ignored so they
+# cannot be committed by accident. The tests should use tmp_path instead —
+# recorded in IMPLEMENTATION_PLAN.md rather than fixed alongside unrelated work.
+/output/

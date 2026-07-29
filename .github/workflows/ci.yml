@@ -51,6 +51,10 @@ jobs:
     needs: gates
     runs-on: ubuntu-latest
     strategy:
+      # One app's failure must not cancel the other three.  With the default
+      # fail-fast, a single red suite hid every other result and each CI round
+      # reported one problem instead of all of them.
+      fail-fast: false
       matrix:
         include:
           # artfice-ocr: 306 passed, 1 skipped — clean baseline.
@@ -167,6 +171,10 @@ jobs:
     needs: gates
     runs-on: ${{ matrix.os }}
     strategy:
+      # The whole point of this job is comparing platforms.  Cancelling the
+      # other two the moment one fails destroys exactly the signal it exists
+      # to produce.
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     defaults:
