@@ -377,3 +377,82 @@ def test_lm_studio_health_check_raises_endpoint_rejected(monkeypatch):
 
     with pytest.raises(EndpointRejected, match="link-local"):
         _backend.LMStudioBackend().health_check()
+
+
+# ---------------------------------------------------------------------------
+# HuggingFaceBackend — public endpoint opt-in (no URL to validate)
+# ---------------------------------------------------------------------------
+
+
+def test_huggingface_backend_rejects_when_public_not_allowed(monkeypatch):
+    """HuggingFaceBackend.chat raises EndpointRejected without opt-in.
+
+    The HuggingFace Inference API is a public cloud service.  The endpoint
+    policy must permit public endpoints before any call is made.
+    """
+    import socket
+    from unittest.mock import patch
+
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "huggingface_token": "hf_test",
+    })
+    monkeypatch.delenv("ARTIFICE_ALLOW_PUBLIC_MODELS", raising=False)
+    config.load_config()
+
+    # Ensure the HuggingFace hostname resolves to a public IP so the
+    # policy correctly identifies it as public rather than failing DNS.
+    mock_addrinfo = [
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 443)),
+    ]
+
+    backend = _backend.HuggingFaceBackend()
+    with patch("socket.getaddrinfo", return_value=mock_addrinfo):
+        with pytest.raises(EndpointRejected, match="public address"):
+            backend.chat(
+                model="test-model",
+                messages=[{"role": "user", "content": "hi"}],
+            )
+
+
+def test_huggingface_backend_accepts_when_public_allowed(monkeypatch):
+    """HuggingFaceBackend.chat passes validation when public endpoints are allowed.
+
+    The endpoint policy check succeeds first; the SDK-level call is
+    mocked so no real network request is made.
+    """
+    import socket
+    from unittest.mock import MagicMock, patch
+
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "huggingface_token": "hf_test",
+    })
+    # Replace the module-level policy with one that permits public endpoints,
+    # because the module-level instance was created at import time and does
+    # not re-read the env var on each call.
+    permissive_policy = EndpointPolicy(allow_public=True)
+    monkeypatch.setattr(_backend, "_endpoint_policy", permissive_policy)
+    config.load_config()
+
+    # Ensure the HuggingFace hostname resolves to a public IP so the
+    # policy permits it.
+    mock_addrinfo = [
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 443)),
+    ]
+
+    mock_resp = MagicMock()
+    mock_resp.choices = [MagicMock()]
+    mock_resp.choices[0].message.content = "test response"
+
+    mock_client = MagicMock()
+    mock_client.chat_completion.return_value = mock_resp
+
+    backend = _backend.HuggingFaceBackend()
+    with patch("socket.getaddrinfo", return_value=mock_addrinfo):
+        with patch.object(_backend, "InferenceClient", return_value=mock_client):
+            result = backend.chat(
+                model="test-model",
+                messages=[{"role": "user", "content": "hi"}],
+            )
+            assert result.message.content == "test response"

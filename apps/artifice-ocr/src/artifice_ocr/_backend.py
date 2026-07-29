@@ -166,6 +166,19 @@ class LMStudioBackend:
 
 
 class HuggingFaceBackend:
+    """Hugging Face Inference API backend.
+
+    This backend connects to the public Hugging Face Inference API.
+    Like :class:`ApiKeyBackend`, it requires
+    ``ARTIFICE_ALLOW_PUBLIC_MODELS=1`` in the environment — a deliberate
+    opt-in from a user who has already provided a HuggingFace token.
+
+    There is no user-supplied URL here because the SDK always connects
+    to HuggingFace's own hosted service.  The validation is a direct
+    check against the endpoint policy to confirm public endpoints are
+    permitted.  The same policy governs every other backend in this file.
+    """
+
     def chat(
         self,
         *,
@@ -175,6 +188,13 @@ class HuggingFaceBackend:
         think: bool | None = None,
         num_predict: int | None = None,
     ) -> Any:
+        # HuggingFace Inference API is a public cloud service; the
+        # endpoint policy must permit public endpoints first.
+        _validate_url(
+            "https://api-inference.huggingface.co/models",
+            "huggingface",
+        )
+
         token = config.get("huggingface_token") or None
         client = InferenceClient(token=token)
         kwargs: dict[str, Any] = {}

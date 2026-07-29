@@ -19,12 +19,12 @@ You oversee the development of four local-first, BYOM (Bring-Your-Own-Model) aca
    interactions must pass through structured schemas in `packages/model-harness`.
 
    > **Corrected 2026-07-29.** `contract.py` now defines the call shape with a required response
-   > schema and a degradation ladder. 90 tests pass (up from 15). The web layers of
+   > schema and a degradation ladder. 128 tests pass (up from 15). The web layers of
    > `artifice-graph` (`web/server.py:22-23`) and `artifice-transcribe`
    > (`api/v1/routes.py:12-13`) both import `model_harness.contract` (`EndpointRejected`) and
-   > `model_harness.endpoint_policy` (`EndpointPolicy`). No app yet calls `driver.run_structured`
-   > from its extraction path. The mandate is real; the implementation is half-real — correct
-   > definition, beginning of consumers.
+   > `model_harness.endpoint_policy` (`EndpointPolicy`). `artifice-graph`'s extraction path calls
+   > `driver.run_structured` (`5aa8619`). The mandate is real; `ocr`, `draft` and transcribe's
+   > inference path remain unported — correct definition, partial implementation.
 3. **Enforce Design Philosophy.** Ensure all UI components and layout primitives strictly adhere to `Design_Philosophy.md` (The New Masses Design System: paper and ink aesthetics, warm palette, editorial typography, restrained motion).
 4. **Maintain Monorepo Parity.** Ensure all four apps maintain identical modular `src/` directory patterns (`apps/<app>/src/artifice_<app_slug>/`), PEP 621 `pyproject.toml` definitions, and Docker configurations.
 

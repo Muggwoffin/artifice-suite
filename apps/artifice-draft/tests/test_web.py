@@ -1,8 +1,7 @@
 """Tests for the FastAPI web frontend (src/web/).
 
-Mocks the LLM call the same way tests/test_llm_client.py does — patching
-`artifice_draft.llm_client._send_request_with_retry` — so no real Ollama/OpenAI/
-Anthropic request ever leaves the test process.
+Mocks ``asyncio.run`` inside ``call_ollama`` so no real Ollama/OpenAI/Anthropic
+request ever leaves the test process.
 """
 
 from __future__ import annotations
@@ -16,6 +15,7 @@ from docx import Document
 from fastapi.testclient import TestClient
 
 import artifice_draft.web.runtime as runtime
+from artifice_draft.llm_edit import LLMEdit
 from artifice_draft.web.server import app
 
 
@@ -55,10 +55,11 @@ def _wait_for_thread(doc_id: str, timeout: float = 5.0) -> None:
 
 
 def _mock_edits_response():
-    return json.dumps([
-        {"paragraph_index": 0, "edited_text": "Hello world", "status": "edited"},
-        {"paragraph_index": 1, "edited_text": None, "status": "unchanged"},
-    ])
+    """Return a list of LLMEdit objects matching the mocked harness output."""
+    return [
+        LLMEdit(paragraph_index=0, original_text="Hello wrold", edited_text="Hello world", status="edited"),
+        LLMEdit(paragraph_index=1, original_text="This is a secnd paragraph.", edited_text=None, status="unchanged"),
+    ]
 
 
 # --------------------------------------------------------------------- upload
@@ -122,7 +123,7 @@ def test_run_without_review_writes_output_and_is_downloadable(client, docx_bytes
     })
     doc_id = upload.json()["doc_id"]
 
-    with patch("artifice_draft.llm_client._send_request_with_retry", return_value=_mock_edits_response()):
+    with patch("artifice_draft.llm_client.asyncio.run", return_value=_mock_edits_response()):
         start = client.post(f"/api/run/{doc_id}/start")
         assert start.status_code == 200
         _wait_for_thread(doc_id)
@@ -164,7 +165,7 @@ def test_review_flow_reject_keeps_original_text(client, docx_bytes):
     })
     doc_id = upload.json()["doc_id"]
 
-    with patch("artifice_draft.llm_client._send_request_with_retry", return_value=_mock_edits_response()):
+    with patch("artifice_draft.llm_client.asyncio.run", return_value=_mock_edits_response()):
         client.post(f"/api/run/{doc_id}/start")
         _wait_for_thread(doc_id)
 

@@ -8,11 +8,11 @@ license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]
-ocr = ["artifice-ocr", "model-harness", "core-types", "shared-ui"]
-ocr-web = ["artifice-ocr[web]", "model-harness", "core-types", "shared-ui"]
-draft = ["artifice-draft", "model-harness", "core-types", "shared-ui"]
-graph = ["artifice-graph", "model-harness", "core-types", "shared-ui"]
-transcribe = ["artifice-transcribe", "model-harness", "core-types", "shared-ui"]
+ocr = ["artifice-ocr", "model-harness", "shared-ui"]
+ocr-web = ["artifice-ocr[web]", "model-harness", "shared-ui"]
+draft = ["artifice-draft", "model-harness", "shared-ui"]
+graph = ["artifice-graph", "model-harness", "shared-ui"]
+transcribe = ["artifice-transcribe", "model-harness", "shared-ui"]
 all = [
     "artifice-ocr",
     # web extra included so that --extra all carries the packages
@@ -23,7 +23,6 @@ all = [
     "artifice-graph",
     "artifice-transcribe",
     "model-harness",
-    "core-types",
     "shared-ui",
 ]
 
@@ -49,7 +48,7 @@ py-modules = []
 # Plain `pip` (not `uv pip`) only works for a single app installed directly:
 #   pip install -e apps/artifice-ocr
 [tool.uv.workspace]
-members = ["apps/*", "packages/model-harness", "packages/core-types", "packages/shared-ui"]
+members = ["apps/*", "packages/model-harness", "packages/shared-ui"]
 
 [tool.uv.sources]
 artifice-ocr = { workspace = true }
@@ -57,7 +56,6 @@ artifice-draft = { workspace = true }
 artifice-graph = { workspace = true }
 artifice-transcribe = { workspace = true }
 model-harness = { workspace = true }
-core-types = { workspace = true }
 shared-ui = { workspace = true }
 
 [dependency-groups]

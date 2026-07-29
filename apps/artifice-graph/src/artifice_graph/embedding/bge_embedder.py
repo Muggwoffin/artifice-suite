@@ -8,6 +8,7 @@ from typing import Optional
 import httpx
 
 from artifice_graph.config import EmbeddingConfig, load_config
+from model_harness.endpoint_policy import EndpointPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,12 @@ class BGEM3Embedder:
         if config is None:
             config = load_config().embedding
         self.config = config
+
+        # Validate the endpoint through the same policy every other model
+        # connection in this suite uses.  An embedder that cannot be
+        # constructed with an invalid URL is harder to misuse.
+        EndpointPolicy().validate_url(config.base_url)
+
         self._client = httpx.Client(timeout=config.timeout)
         self._dimension: int | None = None
 

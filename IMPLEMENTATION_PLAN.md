@@ -98,6 +98,14 @@ policy (**six** sites), `0600` secret files, credential redaction, and a hardcod
 were confirmed rather than fixed: ocr has no upload surface, graph already sanitises upload
 filenames, no `pickle.loads` survives.
 
+**The scraper was ported in `a26d1bf`.** `style_guides/scraper.py` now routes through the harness
+adapters — the suite's last raw `response_format: json_object` call site is gone. The same commit
+fixed an SSRF: the scraper had taken a URL from the browser and fetched it with redirects enabled.
+It now validates that the target address is globally routable, deliberately inverting the logic of
+`EndpointPolicy` — which permits loopback and private addresses because those are legitimate model
+endpoints. The suite now has two endpoint rules with opposite intents; record both or someone will
+consolidate them and break one of the two use cases.
+
 **One finding the orchestrator wrongly called stale was real.** `GET /api/config` and
 `GET /inference/config` were returning the **raw** API key. Caught only because the brief told
 the agent to verify rather than accept the orchestrator's reading. The brief's instruction to
@@ -168,16 +176,17 @@ is in flight, marked **in flight** below, not done. `artifice-graph`'s entity re
 counter-example and the model to follow: manual aliases, then `difflib` fuzzy matching, then
 embeddings only if configured.
 
-**Test counts, measured 2026-07-29 by the orchestrator and recorded here, not verified against the
-running system (those are marked Landed, not Verified):**
+**Test counts, measured 2026-07-29 by the orchestrator under a clean `uv sync --group dev
+--extra all` then `uv run --no-sync pytest` per package. Replaces the stale table from the
+previous session.**
 
-| Suite | Passed | Skipped | Status |
-|---|---|---|---|
-| `artifice-ocr` | 329 | 1 | Landed 2026-07-29 |
-| `artifice-draft` | 152 | — | Landed 2026-07-29 |
-| `artifice-graph` | 74 | — | Landed 2026-07-29 |
-| `artifice-transcribe` | 64 | — | Landed 2026-07-29 |
-| `model-harness` | 90 | — | Landed 2026-07-29 |
+| Suite | Passed | Status |
+|---|---|---|
+| `packages/model-harness` | 128 | Landed 2026-07-29 |
+| `apps/artifice-ocr` | 405 | Landed 2026-07-29 |
+| `apps/artifice-draft` | 183 | Landed 2026-07-29 |
+| `apps/artifice-graph` | 76 | Landed 2026-07-29 |
+| `apps/artifice-transcribe` | 70 | Landed 2026-07-29 |
 
 **Reading the status marks:**
 
@@ -800,6 +809,12 @@ through rather than deleted, because each was wrong in an instructive way.
 > migration is the mechanical part. Lead with the capability gap, because a fresh session that reads
 > the recorded description will plan the wrong thing.
 
+**Phase 3 is closed, measured 2026-07-29.** Grep across the entire suite confirmed zero remaining
+definitions of `parse_llm_json_response`, `_parse_llm_response`, `parse_json_robust`,
+`_extract_json_from_text`, `_parse_json_response`, or `_recover_json_from_response`. The acceptance
+criterion is met. `driver._extract_json` (`driver.py:170`) is not a survivor — it runs only on the
+`PROMPTED` rung and labels its result, and must not be deleted to satisfy this criterion.
+
 - [x] ~~Design the schema contract in `packages/model-harness`~~ — **Landed 2026-07-29.**
       `StructuredRequest` (required `schema_json`), `HarnessResult` (records `mode_used`), bottom
       rung raises `StructuredOutputUnsupported` rather than returning prose. Zero apps import it.
@@ -815,6 +830,7 @@ app that goes first.
 
 **`packages/core-types` is 34 lines** (`ProcessingStatus`, `PipelineProgress`) with zero
 importers confirmed by grep across the suite. Adopt or delete — a decision, not an obstacle.
+**Deleted `966d551`**: see Step 9.
 
 **Recommended sequence, with the reasoning that a fresh session needs:**
 
@@ -891,10 +907,19 @@ must not be deleted to satisfy this criterion. It runs only on the `PROMPTED` ru
 result carries `mode_used=PROMPTED`, so a caller can tell a scrape from a guarantee. The
 five above scrape and report nothing, which is the entire defect.
 
-**Step 9 — Settle `core-types`.**
-Zero importers, 34 lines. Either adopt `ProcessingStatus` / `PipelineProgress` into the
-harness or the package, or remove it. A decision is required; it cannot stay in limbo
-indefinitely.
+**Step 9 — Settle `core-types`. — Closed, `966d551`.**
+Deleted: 34 lines, zero importers, and its types contradicted both apps that had equivalents.
+The suite's real duplication was transcribe's doubled `JobStatus`, now one definition. An unused
+shared package is a published artefact and a false signal to contributors — `model-harness` is the
+counter-example: it also began with zero importers but had measured duplication behind it.
+
+**The unit of work was wrong, and only measuring each app before briefing revealed it.** The plan
+said "port app X" four times. Only two were ports: ocr needed an endpoint policy and no schemas;
+transcribe's port target was already dead code (`parse_json_robust`). The helper count was wrong
+by two for the same reason. Building a second provider adapter first proved that `ModelProvider`
+had been fitted to its first OpenAI-shaped implementation — the ladder assumed a provider supporting
+a stronger mode supports every weaker one, which is false for Anthropic. That is why the adapter
+came before the ports.
 
 **Standing risk.** `artifice-ocr` and `artifice-transcribe` have no LLM-specific test coverage
 beyond `test_backend.py` added this session. A port there breaks silently. `artifice-draft`
@@ -929,7 +954,76 @@ has `test_llm_client.py` — the largest client is the tested one, which is fort
       import, document ingest) for path traversal, zip-slip and decompression bombs
 - [ ] Test coverage for the restored `pipeline.js` and the SSE log broker, which have none
 
-### Phase 6 — Academic release
+### Phase 6 — Packaging for ordinary users
+
+> The preceding phases produce software that works for the people who built it. Phase 6 is about
+> making it easy for people who did not build it to download and run it. The maintainer's
+> position: *packaging is the real test before academic release — months of real users, issues
+> and PRs, only then does academic submission follow.* This phase names the open questions rather
+> than pretending they are settled.
+
+**What already exists:**
+
+- **Four `Dockerfile`s** (one per app) and a root `docker-compose.yml`. Their currency relative
+  to the `0979359` web-layer migration has not been verified — the Dockerfiles may need updating
+  to reflect the `src/artifice_<slug>/web/` layout that replaced the previous `web/` and
+  `static/` locations.
+- **Console entry points** in `[project.scripts]` for all six commands: `artifice-ocr`,
+  `artifice-ocr-web`, `artifice-graph`, `artifice-graph-web`, `artifice-draft`,
+  `artifice-transcribe`. Confirmed by reading each `pyproject.toml` on 2026-07-29.
+- **`platformdirs`** is already used for user data in `artifice-transcribe`; CI builds and
+  asserts on a wheel.
+- **`pywebview`** is a declared dependency of `artifice-draft` (`pyproject.toml:23`) and
+  already has a launch script (`launch_personae_web.pyw`) that prefers a native window and
+  falls back to the browser. A native window gives real filesystem path pickers, which a
+  browser never exposes (see `CLAUDE.md`).
+- **`importlib.resources`** is already used for prompt templates and PDF fonts in
+  `artifice-ocr`, specifically to survive frozen distribution — but **no frozen-distribution
+  configuration exists anywhere**. `grep` for `PyInstaller`, `.spec`, `briefcase`, `nuitka`
+  returns one comment only: `main.py:110` notes the reloader breaks under PyInstaller. The
+  two "frozen `.exe`/`.dmg`" comments at `_prompts.py:15` and `pdf_export.py:69` document
+  *intent* with no supporting tooling. This gap is a finding, not a task.
+
+**Open questions, in the order that matters for a first-run experience:**
+
+1. **Distribution format.** Wheel, frozen bundle (PyInstaller / Nuitka), Docker, or an
+   installer — and whether the answer differs by app. `artifice-transcribe` pulls large ASR
+   models (Whisper + pyannote); the other three do not. A Docker user on Windows needs
+   WSL2 or Docker Desktop; a frozen bundle does not. The tradeoffs are open and the answer
+   may differ per app.
+
+2. **How a user obtains a model.** The suite is BYOM, and the first-run experience cannot
+   assume a working Ollama install. Options include: detecting Ollama on the host,
+   downloading a default model automatically, surfacing the model selection UI before the
+   first run, or documenting the requirement clearly and failing gracefully. "Easy to
+   download and experiment with" is not compatible with a blank screen when no model
+   server is found.
+
+3. **Where API keys live on Windows.** Open item 0 (Part IV): `os.open(..., 0o600)` protects
+   files on POSIX but Windows does not implement POSIX mode bits, so on Windows the same call
+   reports `0o666`. Both ocr's `settings.json` and transcribe's inference config hold an
+   API key. The fix is platform-specific (`icacls` or `pywin32`), not a parameter change.
+   **Any packaging work that precedes this fix ships an API-key exposure on Windows.**
+
+4. **What "uninstall" means.** `platformdirs` creates a user data directory. Does the
+   uninstaller remove it, prompt for it, or leave it? None of the three is obviously
+   correct for a researcher who wants to reinstall cleanly without losing their settings.
+
+5. **Signing and notarisation on macOS.** A macOS user cannot open an app without
+   notarisation unless they explicitly bypass Gatekeeper (`xattr -r -d
+   com.apple.quarantine`). This is a requirement for ordinary users, not a polish item.
+
+6. **The Dockerfiles may be stale.** The web-layer migration (`0979359`) moved assets from
+   `apps/<app>/web/` and `apps/<app>/src/<pkg>/static/` to
+   `apps/<app>/src/artifice_<slug>/web/static/`. The `COPY` commands in each Dockerfile
+   need verification against this structure.
+
+See also: **ROADMAP.md** — the development roadmap for the community period between Phases 6
+and 7.
+
+---
+
+### Phase 7 — Academic release *(follows community uptake, not Phase 5)*
 
 - [ ] Verify `CITATION.cff` is current
 - [ ] Confirm the Zenodo integration mints a DOI on a `v*.*.*` tag
@@ -1020,6 +1114,19 @@ of them propagated into a wrong instruction given to an agent.
    scriptable exactly; **work in flight**, not done. The counter-example and model to follow:
    `artifice-graph`'s entity resolution — manual aliases, then `difflib` fuzzy matching, then
    embeddings only if configured.
+
+**Phase 3 left open, not Phase 3 regressions (all pre-existing):**
+
+7. **Phase 1.5 security — four findings, no Phase 3 regressions.** Graph's diagnostic paths and
+   embedder; OCR's HuggingFace backend; draft's model-discovery path. Neutral terms only; no
+   reproduction steps published.
+8. **Two `httpx` clients in graph set `follow_redirects=True`.** The scraper fix (`a26d1bf`)
+   built the per-hop mechanism graph can adopt for these. Scraper fix (`a26d1bf`) already closed the SSRF vector
+   that makes this urgent; the clients are still present.
+9. **TOCTOU in `EndpointPolicy`.** Resolving the endpoint address and connecting to it are
+   separate operations; the address could change between them. Open by design — the alternative
+   is blocking all redirects, which would break every model provider that uses them. No fix
+   without a breaking change to the API.
 
 > **On the two items removed from this list:** both were true when written. Neither was
 > re-derived before being treated as a constraint, and between them they blocked Phase 2 for two
