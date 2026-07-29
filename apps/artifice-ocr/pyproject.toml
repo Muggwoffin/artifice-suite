@@ -16,6 +16,7 @@ dependencies = [
     "reportlab",
     "huggingface_hub",
     "shared-ui",
+    "model-harness",
 ]
 
 [project.optional-dependencies]

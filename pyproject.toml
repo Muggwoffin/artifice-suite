@@ -65,4 +65,10 @@ dev = [
     "fonttools[woff]>=4.63.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    # pytest-httpx is needed by packages/model-harness/tests but must be
+    # declared here because `uv sync --group dev` installs the *root's*
+    # dev group, not any member package's.  The member-level dev group
+    # in packages/model-harness/pyproject.toml is intentionally empty
+    # (see that file's comment for why).
+    "pytest-httpx>=0.36.2",
 ]

@@ -5,9 +5,25 @@ from typing import Any
 import ollama
 from openai import OpenAI
 from huggingface_hub import InferenceClient
+from model_harness.contract import EndpointRejected
+from model_harness.endpoint_policy import EndpointPolicy
 from . import config
 
 logger = logging.getLogger(__name__)
+
+_endpoint_policy = EndpointPolicy()
+
+
+def _validate_url(url: str, field_name: str) -> str:
+    """Validate a model endpoint URL through the harness policy.
+
+    Raises :class:`~model_harness.contract.EndpointRejected` if the URL
+    is not permitted by the local-first endpoint policy.
+    """
+    try:
+        return _endpoint_policy.validate_url(url)
+    except EndpointRejected as e:
+        raise EndpointRejected(f"{field_name}: {e}") from e
 
 _THINK_UNSUPPORTED_HINTS = (
     "does not support thinking",
@@ -44,6 +60,7 @@ class OllamaBackend:
         num_predict: int | None = None,
     ) -> Any:
         host = config.get("ollama_url") or "http://localhost:11434"
+        _validate_url(host, "ollama_url")
         ollama.host = host
         options: dict[str, Any] = {"temperature": temperature}
         if num_predict is not None:
@@ -81,6 +98,7 @@ class OllamaOpenAIBackend:
 
     def _client(self) -> OpenAI:
         base_url = (config.get("ollama_url") or "http://localhost:11434") + "/v1"
+        _validate_url(base_url, "ollama_url")
         return OpenAI(base_url=base_url, api_key="ollama")
 
     def chat(
@@ -110,11 +128,13 @@ class OllamaOpenAIBackend:
 class LMStudioBackend:
     def _client(self) -> OpenAI:
         base_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+        _validate_url(base_url, "lm_studio_url")
         return OpenAI(base_url=base_url, api_key="lm-studio")
 
     def health_check(self) -> tuple[bool, str | None]:
         """Return (ok, error_detail)."""
         url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+        _validate_url(url, "lm_studio_url")
         try:
             self._client().models.list()
             return True, None
@@ -172,11 +192,19 @@ class HuggingFaceBackend:
 
 
 class ApiKeyBackend:
-    """Any OpenAI-compatible cloud API (OpenAI, Together, Groq, etc.)."""
+    """Any OpenAI-compatible cloud API (OpenAI, Together, Groq, etc.).
+
+    The default endpoint is ``https://api.openai.com/v1``, which is a
+    public address.  The endpoint policy denies public endpoints unless
+    ``ARTIFICE_ALLOW_PUBLIC_MODELS=1`` is set in the environment —
+    a deliberate opt-in that a user who has already entered an API key
+    must also make.  See :class:`model_harness.endpoint_policy.EndpointPolicy`.
+    """
 
     def _client(self) -> OpenAI:
         base_url = config.get("api_base_url") or "https://api.openai.com/v1"
         api_key = config.get("api_key") or ""
+        _validate_url(base_url, "api_base_url")
         return OpenAI(base_url=base_url, api_key=api_key)
 
     def health_check(self) -> tuple[bool, str | None]:
@@ -184,6 +212,8 @@ class ApiKeyBackend:
         api_key = config.get("api_key")
         if not api_key:
             return False, "No API key configured"
+        base_url = config.get("api_base_url") or "https://api.openai.com/v1"
+        _validate_url(base_url, "api_base_url")
         try:
             self._client().models.list()
             return True, None

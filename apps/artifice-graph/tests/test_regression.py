@@ -10,7 +10,9 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -30,6 +32,16 @@ from artifice_graph.models.document import TextChunk
 from artifice_graph.models.entity import Entity, EntityType
 from artifice_graph.models.relationship import Relationship
 from artifice_graph.storage.file_store import FileStore
+
+from model_harness.contract import (
+    EndpointPolicy,
+    ModelConnectorConfig,
+    ModelProvider,
+    ProviderCapabilities,
+    RawCompletion,
+    StructuredOutputMode,
+    StructuredRequest,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -82,31 +94,31 @@ class TestBug1aExtractionResultTypes:
 # Bug 1b – extract_batch must not silently convert total failure into success
 # ---------------------------------------------------------------------------
 
-class _FailingLLM(LLMClient):
-    """An LLM client that raises on every chat call."""
+class _FailingProvider:
+    """A ModelProvider that raises on every ``complete`` call."""
 
-    def __init__(self) -> None:
-        pass  # skip parent init – we never call the real server
+    def capabilities(self, model: str) -> ProviderCapabilities:
+        return ProviderCapabilities(structured_output=StructuredOutputMode.PROMPTED)
 
-    async def chat(self, system: str, user: str) -> str:
+    async def complete(self, request: StructuredRequest) -> RawCompletion:
         raise ConnectionError("Simulated connection failure")
 
-    async def chat_stream(self, system: str, user: str):
-        raise ConnectionError("Simulated connection failure")
-        yield  # type: ignore[unreachable]
 
-    async def close(self) -> None:
-        pass
+class _PassEndpointPolicy:
+    """An EndpointPolicy that always passes."""
+
+    def resolve(self, endpoint: str) -> str:
+        return endpoint
 
 
 class TestBug1bLoudFailure:
 
     def test_all_chunks_fail_raises(self) -> None:
         """When every chunk raises, extract_batch must raise RuntimeError."""
-        llm = _FailingLLM()
         extractor = EntityExtractor(
-            llm_client=llm,
             config=ExtractionConfig(max_retries=1, retry_delay=0.0),
+            provider=_FailingProvider(),
+            endpoint_policy=_PassEndpointPolicy(),
         )
         chunks = [TextChunk(id="c1", text="foo", document_id="d1", chunk_index=0, start_char=0, end_char=3)]
 
@@ -126,8 +138,9 @@ class TestBug1bLoudFailure:
     def test_empty_chunks_returns_empty(self) -> None:
         """Zero chunks is not a failure – return empty list."""
         extractor = EntityExtractor(
-            llm_client=_FailingLLM(),
             config=ExtractionConfig(max_retries=1, retry_delay=0.0),
+            provider=_FailingProvider(),
+            endpoint_policy=_PassEndpointPolicy(),
         )
         results = extractor.extract_batch([])
         assert results == []

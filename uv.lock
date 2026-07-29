@@ -279,6 +279,7 @@ version = "0.1.0"
 source = { editable = "apps/artifice-graph" }
 dependencies = [
     { name = "httpx" },
+    { name = "model-harness" },
     { name = "networkx" },
     { name = "pydantic" },
     { name = "pyyaml" },
@@ -305,6 +306,7 @@ requires-dist = [
     { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.100" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "jinja2", marker = "extra == 'web'", specifier = ">=3.1" },
+    { name = "model-harness", editable = "packages/model-harness" },
     { name = "networkx", specifier = ">=3.0" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
@@ -323,6 +325,7 @@ version = "0.1.0"
 source = { editable = "apps/artifice-ocr" }
 dependencies = [
     { name = "huggingface-hub" },
+    { name = "model-harness" },
     { name = "ollama" },
     { name = "openai" },
     { name = "pymupdf" },
@@ -343,6 +346,7 @@ web = [
 requires-dist = [
     { name = "fastapi", marker = "extra == 'web'" },
     { name = "huggingface-hub" },
+    { name = "model-harness", editable = "packages/model-harness" },
     { name = "ollama" },
     { name = "openai" },
     { name = "pymupdf" },
@@ -406,6 +410,7 @@ dev = [
     { name = "fonttools", extra = ["woff"] },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-httpx" },
 ]
 
 [package.metadata]
@@ -445,6 +450,7 @@ dev = [
     { name = "fonttools", extras = ["woff"], specifier = ">=4.63.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
+    { name = "pytest-httpx", specifier = ">=0.36.2" },
 ]
 
 [[package]]
@@ -455,6 +461,7 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "fastapi" },
     { name = "fpdf2" },
+    { name = "model-harness" },
     { name = "openai" },
     { name = "platformdirs" },
     { name = "pydantic" },
@@ -482,6 +489,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "fpdf2", specifier = ">=2.8.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
+    { name = "model-harness", editable = "packages/model-harness" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "platformdirs", specifier = ">=4.0.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
@@ -2166,6 +2174,9 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "mpmath"
 version = "1.3.0"
@@ -3539,6 +3550,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/43/7c/d36d04db312ecf4298932ef77e6e4a9e8ad017906e24e34f0b0c361a2473/pytest_asyncio-1.4.0.tar.gz", hash = "sha256:c6c0d2259945122819f171a32ecea2c349ead889ee28176caaf492143424be42", size = 58514, upload-time = "2026-05-26T09:56:04.083Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/03/e2/08a497ef684b88559c9cc5f4ad53a37e7b99e727094a86d6ea32536d5d3c/pytest_asyncio-1.4.0-py3-none-any.whl", hash = "sha256:933ca923a23075a87fb7070c0ec272a6848489824d887c85c812670932835aa1", size = 16930, upload-time = "2026-05-26T09:56:02.576Z" },
+]
+
+[[package]]
+name = "pytest-httpx"
+version = "0.36.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4e/42/f53c58570e80d503ade9dd42ce57f2915d14bcbe25f6308138143950d1d6/pytest_httpx-0.36.2.tar.gz", hash = "sha256:05a56527484f7f4e8c856419ea379b8dc359c36801c4992fdb330f294c690356", size = 57683, upload-time = "2026-04-09T13:57:19.837Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/55/1fa65f8e4fceb19dd6daa867c162ad845d547f6058cd92b4b02384a44777/pytest_httpx-0.36.2-py3-none-any.whl", hash = "sha256:d42ebd5679442dc7bfb0c48e0767b6562e9bc4534d805127b0084171886a5e22", size = 20315, upload-time = "2026-04-09T13:57:18.587Z" },
 ]
 
 [[package]]

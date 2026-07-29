@@ -116,7 +116,7 @@ and without that rule it also meant `~/.ssh` and `~/.gnupg`.
 a config object and a `SchemaT` TypeVar nothing referenced. `contract.py` now defines the call
 shape, with no transport in it: a response schema is a *required* argument, providers declare
 their strongest `StructuredOutputMode`, degradation walks a ladder and records which rung produced
-the result, and the bottom rung raises rather than returning prose. 15 tests, measured
+the result, and the bottom rung raises rather than returning prose. 90 tests, measured
 2026-07-29. **Zero apps import it.**
 
 > **State that precisely.** `ARCHITECTURE.md` and `CLAUDE.md` both assert the harness is real. It
@@ -177,7 +177,7 @@ running system (those are marked Landed, not Verified):**
 | `artifice-draft` | 152 | — | Landed 2026-07-29 |
 | `artifice-graph` | 74 | — | Landed 2026-07-29 |
 | `artifice-transcribe` | 64 | — | Landed 2026-07-29 |
-| `model-harness` | 15 | — | Landed 2026-07-29 |
+| `model-harness` | 90 | — | Landed 2026-07-29 |
 
 **Reading the status marks:**
 
@@ -384,11 +384,17 @@ failed** measured 2026-07-29. Fleet smoke test **20/20** measured 2026-07-29.
 
 These were not the task, but they are load-bearing and should be recorded rather than rediscovered.
 
-**The model harness is half real.** `contract.py` now defines the call shape — response schema
-required (not optional), `StructuredOutputMode` ladder, bottom rung raises — with 15 tests passing
-measured 2026-07-29. **Zero apps import it.** `ARCHITECTURE.md` and `CLAUDE.md` both assert the
-harness is real; recording that as settled would be this document's fifth narrow-result-as-general
-failure.
+**The model harness is real, and one app is on it.** `contract.py` defines the call shape —
+response schema required (not optional), `StructuredOutputMode` ladder, bottom rung raises.
+`endpoint_policy.py` owns the SSRF rule, `openai_adapter.py` is the one provider adapter, and
+`driver.py::run_structured` runs the ladder and validates. 90 tests, measured 2026-07-29.
+
+**Superseded.** This paragraph read "Zero apps import it" until 2026-07-29. As of that date
+`artifice-graph`'s extraction path routes through `run_structured`, and both `artifice-graph`
+and `artifice-transcribe` resolve endpoints through the harness in their web layers. Three
+apps' *model calls* remain unported — `artifice-ocr`, `artifice-draft`, and transcribe's
+inference path. Stating the scope is the point: the earlier wording was accurate when written
+and would have been read as permanent.
 
 The four apps still carry their own LLM client objects:
 
@@ -777,11 +783,18 @@ through rather than deleted, because each was wrong in an instructive way.
 >   two response types that module produces.
 > - **Zero** sites use `json_schema`, `tools`, or `tool_choice`. None of the four apps has ever
 >   declared a structured output contract at the call site.
-> - **Three** separate JSON-recovery helpers therefore exist to extract structure from prose:
->   `parse_llm_json_response` and `_parse_llm_response` in `artifice-draft/llm_client.py`, and
->   `parse_json_robust` in `artifice-transcribe/services/inference.py`. None can tell a caller
+> - **Five** separate JSON-recovery helpers therefore exist to extract structure from prose:
+>   `parse_llm_json_response` and `_parse_llm_response` in `artifice-draft/llm_client.py`,
+>   `parse_json_robust` in `artifice-transcribe/services/inference.py`,
+>   `_extract_json_from_text` in `artifice-graph/extraction/inference_engine.py`, and
+>   `_parse_json_response` in `artifice-graph/extraction/extractor.py`. None can tell a caller
 >   whether it received a guaranteed-schema response or a lucky parse — and the code treats both
 >   identically.
+>
+>   A sixth function, `_extract_json` in `packages/model-harness/driver.py:170`, is **not** a
+>   recovery helper: it runs only on the `PROMPTED` rung and records `mode_used=PROMPTED`, so a
+>   caller can distinguish a guaranteed-schema response from a scraped parse. The five above scrape
+>   and report nothing.
 >
 > **So Phase 3 is "introduce structured output where the suite currently has none."** The transport
 > migration is the mechanical part. Lead with the capability gap, because a fresh session that reads
@@ -805,12 +818,11 @@ importers confirmed by grep across the suite. Adopt or delete — a decision, no
 
 **Recommended sequence, with the reasoning that a fresh session needs:**
 
-**Step 1 — Fix the `NameError` in `artifice-graph/extraction/llm_client.py:47`.**
-`chat_sync()` calls `asyncio.run(...)` but `asyncio` is imported only at line 72, *inside*
-`close_sync()`. Every call to `chat_sync()` therefore raises `NameError: name 'asyncio' is not
-defined`. Nothing calls it today — the bug is dead but broken, it is in the first file Phase 3
-touches, and it has the same shape as the `logger` NameError recorded in §I.7. Fix it before
-porting anything.
+**~~Step 1 — Fix the `NameError` in `artifice-graph/extraction/llm_client.py:47`.~~** —
+**Done, `67697c4`.** `chat_sync()` called `asyncio.run(...)` but `asyncio` was imported only
+*inside* `close_sync()`; the import is now at the module top (line 4). `chat_stream` was also
+re-annotated `AsyncGenerator`. Nothing calls `chat_sync` today — the bug was dead but broken — and
+it is the same shape as the `logger` NameError recorded in §I.7.
 
 **Step 2 — Move `EndpointPolicy` into the harness and collapse the two identical allowlists.**
 `graph/web/server.py` and `transcribe/api/v1/routes.py` each carry a copy of the endpoint
@@ -831,9 +843,13 @@ consolidate, and that comment will need updating when this lands.
 > does becomes the pattern the other three copy. The challenge was right; the reasoning is recorded
 > because the two are not the same and the next reader needs the one that holds.
 
-**Step 3 — Write one provider adapter against `ModelProvider` before porting any app.**
+**Step 3 — Write one provider adapter and `run_structured` before porting any app.**
 Prove the contract survives contact with a real backend, now with a policy it can call to resolve
 its endpoint. If the shape is wrong, better to learn that once than four times.
+`openai_adapter.py` (`ModelProvider`) and `driver.py` (`run_structured`) landed together in
+`5aa8619`; `run_structured` is the function a calling app uses — it takes a request, runs the
+degradation ladder, validates the response against the declared schema, and returns a
+`HarnessResult`.
 
 **Step 4 — Port `artifice-graph`.**
 Goes first because `extraction/schemas.py` already holds pydantic models (`ExtractedEntity`,
@@ -856,10 +872,24 @@ out the `LLMEdit` domain type, the batching logic, and the prompt builder as sep
 before wiring the harness. This is the largest client by far and the most entangled.
 
 **Step 8 — Retire each JSON-recovery helper as its app ports.**
-The helpers' disappearance is the acceptance criterion. When `parse_llm_json_response`,
-`_parse_llm_response`, and `parse_json_robust` are all gone from the suite, Phase 3 is done.
-Until then, structured output has been introduced in some places and the old prose-recovery
-pattern survives in others.
+The helpers' disappearance is the acceptance criterion. There are **five**, not the three
+recorded before 2026-07-29, and two of them were in the same `artifice-graph` call path:
+
+| File | Function | Status |
+|---|---|---|
+| `artifice-graph/extraction/inference_engine.py:186` | `_extract_json_from_text` | **gone** — step 4 |
+| `artifice-graph/extraction/extractor.py:39` | `_parse_json_response` | **gone** — step 4 |
+| `artifice-transcribe/services/inference.py:56` | `parse_json_robust` | open — step 6 |
+| `artifice-draft/llm_client.py:28` | `parse_llm_json_response` | open — step 7 |
+| `artifice-draft/llm_client.py:332` | `_parse_llm_response` | open — step 7 |
+
+When all five are gone, Phase 3 is done. Until then, structured output has been introduced
+in some places and the old prose-recovery pattern survives in others.
+
+`_extract_json` in `packages/model-harness/driver.py:170` is **not** a sixth instance and
+must not be deleted to satisfy this criterion. It runs only on the `PROMPTED` rung and its
+result carries `mode_used=PROMPTED`, so a caller can tell a scrape from a guarantee. The
+five above scrape and report nothing, which is the entire defect.
 
 **Step 9 — Settle `core-types`.**
 Zero importers, 34 lines. Either adopt `ProcessingStatus` / `PipelineProgress` into the

@@ -1,9 +1,6 @@
-"""Unified LLM Inference Engine with OpenAI compatibility and fallback parsing."""
+"""Unified LLM Inference Engine with OpenAI compatibility."""
 
-import asyncio
-import json
 import logging
-import re
 from typing import AsyncGenerator, Any, Dict, List, Optional
 
 import httpx
@@ -182,61 +179,6 @@ class InferenceEngine:
                 text_models.append(ModelInfo(model_info, "openai"))
 
         return text_models, vision_models
-
-    def _extract_json_from_text(self, text: str) -> Dict[str, Any]:
-        """
-        Extract JSON from text with fallback parsing for non-strict endpoints.
-
-        Args:
-            text: The text to parse, which may contain additional content
-
-        Returns:
-            The parsed JSON as a dictionary
-
-        Raises:
-            json.JSONDecodeError: If JSON parsing fails
-        """
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            cleaned = text.strip()
-            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-            cleaned = re.sub(r"\s*```$", "", cleaned)
-
-            try:
-                return json.loads(cleaned)
-            except json.JSONDecodeError:
-                start = cleaned.find("{")
-                end = cleaned.rfind("}") + 1
-
-                if start != -1 and end > start:
-                    try:
-                        return json.loads(cleaned[start:end])
-                    except json.JSONDecodeError:
-                        pass
-
-                for pattern in [
-                    r"\{.*\}",
-                    r"\[.*\]",
-                    r"\{.*?\}",
-                    r"\[.*?\]"
-                ]:
-                    matches = re.findall(pattern, cleaned, re.DOTALL)
-                    for match in matches:
-                        try:
-                            match = match.strip()
-                            if match.startswith("{") and match.endswith("}"):
-                                parsed = json.loads(match)
-                                if isinstance(parsed, dict) and "entities" in parsed:
-                                    return parsed
-                        except json.JSONDecodeError:
-                            continue
-
-                raise json.JSONDecodeError(
-                    f"Unable to extract valid JSON from response: {text[:200]}...",
-                    text,
-                    0
-                )
 
     async def _make_chat_request(
         self,

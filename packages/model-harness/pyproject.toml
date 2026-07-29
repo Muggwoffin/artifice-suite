@@ -17,3 +17,16 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/model_harness"]
+
+# pytest-httpx (used by tests/test_openai_adapter.py) is declared in the
+# *root* pyproject.toml because `uv sync --group dev` installs only the
+# root's dev group, not any member package's.  This section is left empty
+# intentionally — adding a dependency here would silently do nothing in CI.
+[dependency-groups]
+dev = []
+
+[tool.pytest.ini_options]
+markers = [
+    "live_smoke: live smoke test requiring a running Ollama server (run with --live-smoke)",
+]
+addopts = "-m 'not live_smoke'"

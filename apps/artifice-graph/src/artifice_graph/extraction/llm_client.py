@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import logging
-from typing import Generator
+from typing import AsyncGenerator
 
 from artifice_graph.config import LLMConfig
 from artifice_graph.extraction.inference_engine import InferenceEngine, ModelInfo
@@ -46,7 +47,7 @@ class LLMClient:
         """Get a complete response text (synchronous)."""
         return asyncio.run(self.chat(system, user))
 
-    async def chat_stream(self, system: str, user: str) -> Generator[str, None, None]:
+    async def chat_stream(self, system: str, user: str) -> AsyncGenerator[str, None]:
         """Chat with streaming support."""
         async for chunk in self.inference_engine.chat_completion(system, user, self.config.model, stream=True):
             yield chunk
@@ -69,6 +70,4 @@ class LLMClient:
 
     def close_sync(self) -> None:
         """Close the inference engine (synchronous)."""
-        import asyncio
-
         asyncio.run(self.close())

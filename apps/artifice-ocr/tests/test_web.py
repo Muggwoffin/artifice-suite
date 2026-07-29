@@ -238,6 +238,75 @@ def test_config_reset_discards_overrides(client):
 
 
 # --------------------------------------------------------------------------- #
+# config — endpoint URL validation on save
+# --------------------------------------------------------------------------- #
+
+def test_set_config_rejects_link_local_ollama_url(client):
+    """A link-local ollama_url is refused at save time with HTTP 400."""
+    res = client.post("/api/config", json={"ollama_url": "http://169.254.169.254/"})
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "link-local" in detail.lower()
+
+
+def test_set_config_rejects_link_local_lm_studio_url(client):
+    """A link-local lm_studio_url is refused at save time with HTTP 400."""
+    res = client.post("/api/config", json={"lm_studio_url": "http://169.254.169.254/v1"})
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "link-local" in detail.lower()
+
+
+def test_set_config_rejects_link_local_api_base_url(client):
+    """A link-local api_base_url is refused at save time with HTTP 400."""
+    res = client.post("/api/config", json={"api_base_url": "http://169.254.169.254/v1"})
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "link-local" in detail.lower()
+
+
+def test_set_config_allows_loopback_urls(client):
+    """Loopback URLs are accepted at save time (no rejection)."""
+    res = client.post("/api/config", json={
+        "ollama_url": "http://localhost:11434",
+        "lm_studio_url": "http://localhost:1234/v1",
+        "api_base_url": "http://localhost:8080/v1",
+    })
+    assert res.status_code == 200
+    assert res.json() == {"ok": True}
+
+
+def test_set_config_rejects_public_api_base_url_without_env_var(client, monkeypatch):
+    """A public api_base_url is refused at save time without the env var."""
+    from model_harness.endpoint_policy import EndpointPolicy
+    from artifice_ocr.web.routers import settings as settings_mod
+    strict_policy = EndpointPolicy(allow_public=False)
+    monkeypatch.setattr(settings_mod, "_endpoint_policy", strict_policy)
+    res = client.post("/api/config", json={"api_base_url": "http://8.8.8.8/v1"})
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "public address" in detail.lower()
+
+
+def test_set_config_allows_public_api_base_url_with_env_var(client, monkeypatch):
+    """A public api_base_url is accepted at save time when the env var is set."""
+    from model_harness.endpoint_policy import EndpointPolicy
+    from artifice_ocr.web.routers import settings as settings_mod
+    permissive_policy = EndpointPolicy(allow_public=True)
+    monkeypatch.setattr(settings_mod, "_endpoint_policy", permissive_policy)
+    res = client.post("/api/config", json={"api_base_url": "http://8.8.8.8/v1"})
+    assert res.status_code == 200
+    assert res.json() == {"ok": True}
+
+
+def test_set_config_passes_non_url_fields_through(client):
+    """Non-URL config fields are not affected by endpoint validation."""
+    res = client.post("/api/config", json={"output_dir": "somewhere"})
+    assert res.status_code == 200
+    assert config.get("output_dir") == "somewhere"
+
+
+# --------------------------------------------------------------------------- #
 # tropy (read-only endpoints; no real project on disk during tests)
 # --------------------------------------------------------------------------- #
 
