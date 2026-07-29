@@ -1,6 +1,6 @@
 <p align="center"><img width="960" height="540" alt="Artifice Logo copy" src="https://github.com/user-attachments/assets/6f7262b1-a9e5-4c2d-bacd-1546b3eba557" /></p>
 
-# OCR + Copy Editing + Transcription + Data Visualisation
+# OCR + Transcription + Data Visualisation + Copy Editing
 
 A collection of local-first and open-source tools that place a user-friendly interface on top of AI models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed from the ground up for digital humanities workflows.
 
@@ -29,9 +29,13 @@ All user interfaces across the suite adhere to **The New Masses Design System** 
 ## Applications Overview
 
 1. **`apps/artifice-ocr`**: Local-first OCR processing that allows you to edit raw OCR output, perform text cleanup and translate documents in one workflow. Integrates with Tropy so you can import entire folders of your archival photographs and then write back the transcriptions into your Tropy library.
-2. **`apps/artifice-draft`**: Local-first copy editing harness for structural transformations (supports Ollama, LM Studio, or generic API). Copy and paste a journal style guide for precise edits. The app outputs a track-changed Word file: you veto any change.
-3. **`apps/artifice-graph`**: Knowledge graph creator extracting entities and relationships into a variety of formats. 
-4. **`apps/artifice-transcribe`**: Oral history transcription utilising a Speech to Text model of your choice. Couple with pyannote diarization via Hugging Face to create a transcript that labels and seperates speakers. Transcribe, edit and make your Oral History transcripts OHMS and TEI compliant in one app.
+
+2. **`apps/artifice-transcribe`**: Oral history transcription utilising a Speech to Text model of your choice. Couple with pyannote diarization via Hugging Face to create a transcript that labels and seperates speakers. Transcribe, edit and make your Oral History transcripts OHMS and TEI compliant in one app.
+
+3. **`apps/artifice-graph`**: Knowledge graph creator extracting entities and relationships into a variety of formats.
+
+4. **`apps/artifice-draft`**: Local-first copy editing harness for structural transformations (supports Ollama, LM Studio, or generic API). Copy and paste a journal style guide for precise edits. The app outputs a track-changed Word file: you veto any change.
+
 
 ## Quick-Start Guide (Bring Your Own Model)
 
