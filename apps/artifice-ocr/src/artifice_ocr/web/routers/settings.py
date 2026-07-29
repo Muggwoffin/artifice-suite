@@ -142,17 +142,9 @@ def health_check() -> dict:
         }
 
     if "api_key" in backends:
-        api_key = config.get("api_key")
         base_url = config.get("api_base_url") or "https://api.openai.com/v1"
-        if not api_key:
-            results["api_key"] = {"ok": False, "detail": "No API key configured", "url": base_url}
-        else:
-            try:
-                from openai import OpenAI
-                client = OpenAI(base_url=base_url, api_key=api_key)
-                client.models.list()
-                results["api_key"] = {"ok": True, "detail": None, "url": base_url}
-            except Exception as exc:
-                results["api_key"] = {"ok": False, "detail": str(exc), "url": base_url}
+        from ..._backend import get_client
+        ok, detail = get_client("api_key").health_check()
+        results["api_key"] = {"ok": ok, "detail": detail, "url": base_url}
 
     return results

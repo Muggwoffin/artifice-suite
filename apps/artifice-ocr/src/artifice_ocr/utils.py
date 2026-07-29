@@ -1,19 +1,12 @@
 import ollama as _ollama
-from openai import OpenAI
 
-from artifice_ocr.config import get as cfg
+from artifice_ocr._backend import get_client
 
 
 def check_lm_studio(url: str | None = None) -> str | None:
     """Return an error message if LM Studio is unreachable, else None."""
-    if url is None:
-        url = cfg("lm_studio_url")
-    try:
-        client = OpenAI(base_url=url, api_key="lm-studio")
-        client.models.list()
-        return None
-    except Exception as exc:
-        return f"Cannot reach LM Studio at {url}. Is it running?"
+    ok, detail = get_client("lm_studio").health_check()
+    return detail if not ok else None
 
 
 def check_ollama(required_models: list[str] | None = None, url: str | None = None) -> list[str]:
