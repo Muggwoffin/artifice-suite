@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Server-side state for the web frontend.
 
 This plays the same role `gui/app.py` plays for the tkinter build: it owns the

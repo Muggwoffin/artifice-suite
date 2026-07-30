@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Endpoint allowlist policy — which addresses this suite may send a model request to.
 
 This module is the single owner of the rule. Every app that validates a model

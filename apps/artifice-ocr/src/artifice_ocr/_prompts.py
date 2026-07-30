@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Prompt registry for document-type-specific prompt variations.
 
 Allows selecting prompt templates based on document characteristics

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tropy integration routes: browse, add, send preview, send write."""
 
 from fastapi import APIRouter, HTTPException

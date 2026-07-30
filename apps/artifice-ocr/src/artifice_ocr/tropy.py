@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Re-exports from the read-only and write modules for backward compatibility."""
 
 from .tropy_read import (  # noqa: F401

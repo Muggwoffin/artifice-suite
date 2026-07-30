@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """The driver that apps call to execute a structured model request.
 
 This module owns the degradation ladder: it takes a :class:`StructuredRequest`,

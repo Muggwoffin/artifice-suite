@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """LLM edit result types — domain and wire schema.
 
 ``LLMEdit`` is the domain object; ``_DraftEditEntry`` / ``_DraftEditsShape``

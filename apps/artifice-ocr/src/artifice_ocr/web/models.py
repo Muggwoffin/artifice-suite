@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Pydantic request/response models for all web routes.
 
 Consolidated here so every router file can import them without circular

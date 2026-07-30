@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Token parity guard: compare design-system reference tokens against runtime tokens,
 and app-local token re-declarations against the canonical runtime tokens.
 

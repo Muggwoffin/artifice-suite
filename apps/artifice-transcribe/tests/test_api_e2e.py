@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """End-to-end API tests — the automated counterpart of ``test_api.py``.
 
 ``test_api.py`` is a standalone script that verifies this same path against

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Pure utility functions for LLM client: token estimation, prompt building, batch packing.
 
 These are stateless, trivially testable functions that share no logic with the

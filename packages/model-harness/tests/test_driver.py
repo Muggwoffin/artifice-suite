@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for :func:`run_structured` — the degradation-ladder driver.
 
 All tests use stub :class:`ModelProvider` adapters that return canned responses.

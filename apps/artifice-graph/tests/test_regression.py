@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Regression tests for three correctness bugs.
 
 Bug 1 – Extraction silently discards valid output / overwrites good data.

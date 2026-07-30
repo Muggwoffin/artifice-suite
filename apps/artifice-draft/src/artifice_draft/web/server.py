@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """FastAPI backend for the ArtificeDraft web frontend.
 
 This is the primary interface for ArtificeDraft. The pipeline modules it

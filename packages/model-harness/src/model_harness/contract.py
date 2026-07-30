@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """The BYOM call contract for the Artifice Suite.
 
 This module defines *what a model call is* in this project. It contains no

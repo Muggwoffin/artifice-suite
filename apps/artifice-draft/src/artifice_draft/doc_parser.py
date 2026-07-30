@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Parse a Word document into paragraphs with rich metadata."""
 
 from __future__ import annotations

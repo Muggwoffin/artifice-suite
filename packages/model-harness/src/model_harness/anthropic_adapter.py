@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Anthropic HTTP adapter implementing the :class:`ModelProvider` contract.
 
 This adapter speaks the Anthropic Messages API and can drive any model

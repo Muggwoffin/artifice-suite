@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 from artifice_graph.extraction.schemas import ExtractionResult
 from artifice_graph.extraction.extractor import EntityExtractor
 from artifice_graph.extraction.llm_client import LLMClient

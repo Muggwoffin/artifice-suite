@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Structure stage: adds paragraph breaks and blank lines for reading.
 
 This stage reflows already-finished text — it does NOT repair OCR errors

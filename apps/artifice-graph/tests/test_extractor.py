@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Unit tests for EntityExtractor — no LLM required."""
 
 from __future__ import annotations

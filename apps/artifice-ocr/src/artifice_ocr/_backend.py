@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Unified backend abstraction for LLMs (Ollama, LM Studio, Hugging Face)."""
 
 import logging

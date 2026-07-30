@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Read-only reader for Tropy projects.
 
 This module never writes to a Tropy project. The connection is opened with

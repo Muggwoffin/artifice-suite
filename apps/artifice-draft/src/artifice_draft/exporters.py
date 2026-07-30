@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Export edited paragraphs to various formats (Markdown, HTML, plain text)."""
 
 from __future__ import annotations

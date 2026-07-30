@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for :mod:`model_harness.endpoint_policy`."""
 
 from __future__ import annotations

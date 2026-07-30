@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for writing OCR results back into a Tropy project.
 
 Everything runs against a synthetic project built to match the real schema

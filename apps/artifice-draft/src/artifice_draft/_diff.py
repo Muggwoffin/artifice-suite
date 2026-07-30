@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Word-level diff ranges between an original and an edited paragraph.
 
 Used by the web review screen to highlight what an LLM edit actually changed,

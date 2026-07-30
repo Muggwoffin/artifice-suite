@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for the cleanup content-preservation guard.
 
 The fixtures are real failure cases from the ISK archive audit, not invented

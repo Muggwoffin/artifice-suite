@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for HistoryStore — preserved from test_gui.py.
 
 These cover the SQLite-backed history layer. They were co-located in

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Web frontend for the OCR pipeline (spike).
 
 Additive to the tkinter GUI, not a replacement for it: `server.py` is the only

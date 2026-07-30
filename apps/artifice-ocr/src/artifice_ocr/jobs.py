@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Job runner: per-file pipeline execution with live status, pause and skip.
 
 The pipeline runs three strictly sequential passes — OCR, then Cleanup,

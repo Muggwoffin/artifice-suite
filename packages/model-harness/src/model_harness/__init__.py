@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Shared BYOM connector contract for the Artifice Suite.
 
 `CLAUDE.md` requires that every model interaction pass through structured

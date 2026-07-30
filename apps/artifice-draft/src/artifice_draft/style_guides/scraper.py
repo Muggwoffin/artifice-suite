@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Scrape a journal style guide from a URL and convert it to a StyleGuide.
 
 Uses readability-lxml to extract the main article content from any HTML page,

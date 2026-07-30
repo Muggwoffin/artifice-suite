@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Pure text-diffing helpers shared by every frontend.
 
 Originally lived inside `gui/widgets/compare_view.py`, which is otherwise a

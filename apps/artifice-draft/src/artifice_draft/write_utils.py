@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Shared utilities for writing plain .docx files from paragraph data."""
 
 from __future__ import annotations

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """PDF export: collect processed text, structure it, and render a readable PDF.
 
 Continuous-flow reading document using reportlab Platypus with the
