@@ -1,21 +1,21 @@
 <img width="960" height="540" alt="Readme Logo (1)" src="https://github.com/user-attachments/assets/4a68238d-20b1-4461-9cdb-eba2aed69bfc" />
-<h1 align="center"> OCR Sources + Transcribe Speech + Visualise Data + Edit Precisely </h1>
+<h1 align="center"> OCR Sources | Transcribe Speech | Visualise Data | Edit Precisely </h1>
 
 A collection of local-first and open-source tools that place a user-friendly interface on top of AI models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed from the ground up for digital humanities workflows.
 
 ## Applications Overview
 
-1. 📷 **Artifice OCR**: Local-first OCR processing that allows you to edit raw OCR output, perform text cleanup and translate documents in one workflow. Integrates with Tropy so you can import entire folders of your archival photographs and then write back the transcriptions into your Tropy library.
+1. 📷 **Artifice OCR**: Local-first OCR processing that allows you to edit raw OCR output, perform text cleanup and translate documents in one workflow. Integrates with Tropy so you can import entire folders of your archival photographs and then send back the transcriptions into your Tropy library.
 
-2. 🎧 **Artifice Transcribe**: Oral history transcription utilising a Speech to Text model of your choice. Couple with pyannote diarization via Hugging Face to create a transcript that labels and seperates speakers. Transcribe, edit and make your Oral History transcripts OHMS and TEI compliant in one app.
+2. 🎧 **Artifice Transcribe**: Oral history transcription utilising a Speech to Text model of your choice. Couple with pyannote diarization to create a transcript that labels and seperates speakers. Transcribe, edit and make your Oral History transcripts OHMS and TEI compliant in one app.
 
-3. 🗺️ **Artifice Graph**: Knowledge graph creator extracting entities and relationships into a variety of formats.
+3. 🗺️ **Artifice Graph**: Knowledge graph creator extracting entities and relationships into a variety of formats. Integrated with Obsidian to provide easily navigated graphs.
 
-4. 📝 **Artifice Draft**: Local-first copy editing harness for structural transformations (supports Ollama, LM Studio, or generic API). Copy and paste a journal style guide for precise edits. The app outputs a track-changed Word file: you veto any change.
+4. 📝 **Artifice Draft**: Copy and paste an academic journal style guide for precise edits of your writing. Tune the model to offer more general feedback or keep things precise. The app outputs a track-changed Word file: you veto any change.
 
 ## AI Tools for Responsible Humanities Research:
 
-Artifice deploys AI to improve research workflows in specific cases: OCR, copy editing, transcribing oral histories and creating data visualisations. Free, open-source and privacy focused.
+Artifice deploys AI to improve research workflows in specific cases: OCR, copy editing, transcribing oral histories and creating data visualisations. Free, open-source and privacy focused, it is designed for a Digital Humanities landscape increasingly shaped by local and open source models.
 
 ### Bring Your Own Model
 Use your model choice, whether it's a model running on your computer, a cloud-based model or models that your university hosts on a local network. 
