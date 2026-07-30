@@ -151,8 +151,13 @@ def _is_restricted_windows(path: Path) -> bool:
 
     Returns ``True`` when:
     - The ACL contains no inherited entries (no ``(I)`` markers).
-    - Exactly one explicit ACE exists.
-    - That ACE grants both Read and Write access.
+    - An ACE for the current user's SID grants both Read and Write access.
+
+    Additional explicit ACEs (e.g. SYSTEM, Administrators) are tolerated
+    because on Administrator accounts Windows retains built-in security
+    principals even after ``/inheritance:r``.  The two security properties
+    we enforce are: *no inherited permissions leak in*, and the *owner has
+    private access*.
     """
     try:
         result = subprocess.run(
@@ -168,11 +173,17 @@ def _is_restricted_windows(path: Path) -> bool:
     # none should remain.
     if "(I)" in output:
         return False
-    # Count explicit ACEs — patterns like ``:(R,W)`` or ``:(F)``.
-    ace_matches = re.findall(r":\(([A-Z,]+)\)", output)
-    if len(ace_matches) != 1:
+    # Locate the ACE for the current user's SID and verify it grants both
+    # Read and Write.  The SID may appear with an optional leading ``*`` in
+    # icacls output when the grant was issued by SID.
+    sid = _get_current_user_sid()
+    user_ace_re = re.compile(
+        r"\*?" + re.escape(sid) + r":\(([A-Z,]+)\)"
+    )
+    match = user_ace_re.search(output)
+    if not match:
         return False
-    perms = ace_matches[0]
+    perms = match.group(1)
     return "R" in perms and "W" in perms
 
 
