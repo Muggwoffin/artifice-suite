@@ -239,7 +239,12 @@ def test_accepts_temp_outside_tmp_and_home(monkeypatch):
 
     d = Path(tempfile.mkdtemp(dir=str(custom_root)))
     try:
-        assert server_mod._validate_directory(str(d), "input_dir") == str(d)
+        # Compare against the RESOLVED path: _validate_directory returns the
+        # path after resolve(). On Linux /var/tmp is a real directory so
+        # resolve() is a no-op and either form passes — but on macOS /var is a
+        # symlink to /private/var, so the unresolved form fails there and only
+        # there.
+        assert server_mod._validate_directory(str(d), "input_dir") == str(d.resolve())
     finally:
         if d.exists():
             d.rmdir()

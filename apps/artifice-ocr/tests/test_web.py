@@ -1876,7 +1876,11 @@ def test_validate_directory_accepts_temp_dir_from_custom_tmpdir(monkeypatch):
 
     d = Path(tempfile.mkdtemp(dir=str(custom_root)))
     try:
-        assert validate_directory(str(d), "input_dir") == str(d)
+        # Compare against the RESOLVED path: validate_directory returns str(p)
+        # after resolve(). On Linux /var/tmp is a real directory so resolve() is
+        # a no-op and either form passes — but on macOS /var is a symlink to
+        # /private/var, so the unresolved form fails there and only there.
+        assert validate_directory(str(d), "input_dir") == str(d.resolve())
     finally:
         if d.exists():
             d.rmdir()
