@@ -15,6 +15,7 @@ from ..models import (
     TropySendWriteRequest,
 )
 from ..runtime import state
+from ..validation import validate_directory
 from ...tropy import TropyProject, pages_to_job_items, recent_projects, write_manifest
 
 router = APIRouter(tags=["tropy"])
@@ -27,6 +28,7 @@ def tropy_recent() -> dict:
 
 @router.post("/api/tropy/browse")
 def tropy_browse(req: TropyBrowseRequest) -> dict:
+    validate_directory(req.project, "project")
     try:
         with TropyProject(req.project) as proj:
             if req.list_id is not None:
@@ -57,6 +59,8 @@ def tropy_browse(req: TropyBrowseRequest) -> dict:
 
 @router.post("/api/tropy/add")
 def tropy_add(req: TropyAddRequest) -> dict:
+    validate_directory(req.project, "project")
+    validate_directory(req.output_dir, "output_dir")
     try:
         with TropyProject(req.project) as proj:
             pages = proj.pages(req.item_ids)
@@ -88,6 +92,7 @@ def _build_tropy_preview(req: TropySendRequest):
 
 @router.post("/api/tropy/send/preview")
 def tropy_send_preview(req: TropySendRequest) -> dict:
+    validate_directory(req.project, "project")
     try:
         preview = _build_tropy_preview(req)
     except Exception as exc:
@@ -109,6 +114,7 @@ def tropy_send_preview(req: TropySendRequest) -> dict:
 def tropy_send_write(req: TropySendWriteRequest) -> dict:
     from ...tropy_write import TropyWriter
 
+    validate_directory(req.project, "project")
     try:
         preview = _build_tropy_preview(req)
         if preview.blockers:
@@ -174,6 +180,7 @@ def _build_tropy_history_preview(req: TropySendHistoryRequest):
 
 @router.post("/api/tropy/send/history/preview")
 def tropy_send_history_preview(req: TropySendHistoryRequest) -> dict:
+    validate_directory(req.project, "project")
     try:
         preview = _build_tropy_history_preview(req)
     except Exception as exc:
@@ -195,6 +202,7 @@ def tropy_send_history_preview(req: TropySendHistoryRequest) -> dict:
 def tropy_send_history_write(req: TropySendHistoryWriteRequest) -> dict:
     from ...tropy_write import TropyWriter
 
+    validate_directory(req.project, "project")
     try:
         preview = _build_tropy_history_preview(req)
         if preview.blockers:

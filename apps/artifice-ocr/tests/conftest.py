@@ -12,6 +12,10 @@ CREATE TABLE project (project_id TEXT, name TEXT, created TEXT, base TEXT, store
 CREATE TABLE items (id INTEGER PRIMARY KEY);
 CREATE TABLE subjects (id INTEGER PRIMARY KEY, template TEXT);
 CREATE TABLE images (id INTEGER PRIMARY KEY);
+CREATE TABLE lists (list_id INTEGER PRIMARY KEY, name TEXT, parent_list_id INTEGER, position INTEGER);
+CREATE TABLE list_items (list_id INTEGER, id INTEGER);
+CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE taggings (tag_id INTEGER, id INTEGER);
 CREATE TABLE photos (
     id INTEGER PRIMARY KEY, item_id INTEGER, path TEXT, mimetype TEXT,
     page INTEGER DEFAULT 0, filename TEXT,

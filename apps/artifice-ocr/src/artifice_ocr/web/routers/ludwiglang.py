@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 
 from ...config import get as config_get
 from ..models import LudwigLangExportRequest
-from ..validation import validate_contained
+from ..validation import validate_contained, validate_directory
 
 router = APIRouter(tags=["ludwiglang"])
 
@@ -29,21 +29,24 @@ def _collections(output_dir: str) -> list[str]:
 
 @router.get("/api/ludwiglang/collections")
 def ludwiglang_collections(output_dir: str = "output") -> dict:
-    return {"collections": _collections(output_dir)}
+    safe_output_dir = validate_directory(output_dir, "output_dir")
+    return {"collections": _collections(safe_output_dir)}
 
 
 @router.post("/api/ludwiglang/export")
 def ludwiglang_export(req: LudwigLangExportRequest) -> dict:
     from ...export_ludwiglang import export_md, _read_manifest
 
-    cleaned_root = Path(req.output_dir) / "cleaned" / "text" / req.collection
+    safe_output_dir = validate_directory(req.output_dir, "output_dir")
+
+    cleaned_root = Path(safe_output_dir) / "cleaned" / "text" / req.collection
     if not cleaned_root.exists():
         raise HTTPException(
             status_code=404,
             detail=f"Collection '{req.collection}' not found at {cleaned_root}",
         )
 
-    manifest = _read_manifest(Path(req.output_dir))
+    manifest = _read_manifest(Path(safe_output_dir))
 
     try:
         result_path = export_md(

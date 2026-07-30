@@ -344,6 +344,98 @@ def test_tropy_add_writes_manifest_and_reports_missing(client, tropy_project, tm
 
 
 # --------------------------------------------------------------------------- #
+# tropy — path validation
+# --------------------------------------------------------------------------- #
+
+def test_tropy_browse_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/browse", json={
+        "project": "/opt/rejected/scan.tropy",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_browse_accepts_project_in_allowed_root(client, tropy_project):
+    res = client.post("/api/tropy/browse", json={
+        "project": str(tropy_project),
+    })
+    assert res.status_code == 200
+    assert res.json()["project"] == "Archive"
+
+
+def test_tropy_add_refuses_project_outside_allowed_roots(client, tmp_path):
+    out = tmp_path / "out"
+    out.mkdir()
+    res = client.post("/api/tropy/add", json={
+        "project": "/opt/rejected/scan.tropy",
+        "output_dir": str(out),
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_add_refuses_output_dir_outside_allowed_roots(client, tropy_project):
+    res = client.post("/api/tropy/add", json={
+        "project": str(tropy_project),
+        "output_dir": "/opt/rejected/out",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_send_preview_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/send/preview", json={
+        "project": "/opt/rejected/scan.tropy",
+        "targets": ["notes"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_send_write_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/send/write", json={
+        "project": "/opt/rejected/scan.tropy",
+        "targets": ["notes"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_send_history_preview_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/send/history/preview", json={
+        "item_ids": [1],
+        "project": "/opt/rejected/scan.tropy",
+        "targets": ["notes"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_send_history_write_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/send/history/write", json={
+        "item_ids": [1],
+        "project": "/opt/rejected/scan.tropy",
+        "targets": ["notes"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+# --------------------------------------------------------------------------- #
 # preview (in-memory queue item text)
 # --------------------------------------------------------------------------- #
 
@@ -1382,9 +1474,14 @@ def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder, monkeypatch
     assert status["status"] == "done"
 
 
-def test_pdf_export_400_on_missing_folder(client):
+def test_pdf_export_400_on_missing_folder(client, tmp_path):
+    """A folder inside allowed roots that contains no text passes web validation
+    but fails in the worker thread — confirming the thread still catches the
+    error after the web layer validates."""
+    empty = tmp_path / "empty_folder"
+    empty.mkdir()
     res = client.post("/api/pdf-export/start", json={
-        "folder": "C:/does/not/exist", "stage": "cleaned", "structure": False,
+        "folder": str(empty), "stage": "cleaned", "structure": False,
     })
     assert res.status_code == 200  # start returns ok; error surfaces on thread
     assert res.json()["ok"] is True
@@ -1599,6 +1696,60 @@ def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_fo
 
 
 # --------------------------------------------------------------------------- #
+# path validation — pdf export
+# --------------------------------------------------------------------------- #
+
+def test_pdf_export_refuses_folder_outside_allowed_roots(client):
+    res = client.post("/api/pdf-export/start", json={
+        "folder": "/opt/rejected/scans", "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_pdf_export_refuses_output_outside_allowed_roots(client):
+    res = client.post("/api/pdf-export/start", json={
+        "folder": "/tmp/scans", "stage": "cleaned", "structure": False,
+        "output": "/opt/rejected/out.pdf",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_pdf_export_refuses_manifest_outside_allowed_roots(client):
+    res = client.post("/api/pdf-export/start", json={
+        "folder": "/tmp/scans", "stage": "cleaned", "structure": False,
+        "manifest": "/opt/rejected/manifest.json",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_pdf_export_accepts_valid_paths(client, pdf_text_folder):
+    folder = str(pdf_text_folder.parent.parent)
+    res = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+
+    # Wait for the thread to finish
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert status["status"] == "done"
+
+
+# --------------------------------------------------------------------------- #
 # path validation — ludwiglang download
 # --------------------------------------------------------------------------- #
 
@@ -1690,6 +1841,40 @@ def test_ludwiglang_download_refuses_windows_style_escape(client, tmp_path):
     })
     assert res.status_code == 400
     assert "not within" in res.json()["detail"].lower()
+
+
+# --------------------------------------------------------------------------- #
+# path validation — ludwiglang collections / export
+# --------------------------------------------------------------------------- #
+
+def test_ludwiglang_collections_refuses_output_dir_outside_allowed_roots(client):
+    res = client.get("/api/ludwiglang/collections", params={
+        "output_dir": "/opt/rejected/output",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_ludwiglang_collections_accepts_valid_output_dir(client, tmp_path):
+    out = tmp_path / "out"
+    out.mkdir()
+    res = client.get("/api/ludwiglang/collections", params={
+        "output_dir": str(out),
+    })
+    assert res.status_code == 200
+    assert res.json()["collections"] == []
+
+
+def test_ludwiglang_export_refuses_output_dir_outside_allowed_roots(client):
+    res = client.post("/api/ludwiglang/export", json={
+        "collection": "test", "output_dir": "/opt/rejected/output",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
 
 
 # --------------------------------------------------------------------------- #
