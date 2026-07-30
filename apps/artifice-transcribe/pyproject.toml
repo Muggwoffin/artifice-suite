@@ -2,9 +2,15 @@
 name = "artifice-transcribe"
 version = "0.1.0"
 description = "Speech-to-Text & Diarization API using WhisperX + PyAnnote"
+readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
+# fastapi, uvicorn and python-multipart are deliberately core dependencies here
+# rather than sitting behind a [web] extra as they do in the other three apps.
+# transcribe's only entry point IS its API (artifice_transcribe.main:app), so a
+# web-less install would produce something that cannot start, and
+# `uv sync --extra transcribe` would resolve to a non-runnable app.
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -23,14 +29,6 @@ dependencies = [
     "shared-ui",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.24.0",
-    "httpx>=0.27.0",
-    "ruff>=0.5.0",
-]
-
 [project.scripts]
 artifice-transcribe = "artifice_transcribe.main:cli"
 
@@ -43,13 +41,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "artifice_transcribe.web" = ["static/**"]
-
-[tool.ruff]
-line-length = 100
-target-version = "py311"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
