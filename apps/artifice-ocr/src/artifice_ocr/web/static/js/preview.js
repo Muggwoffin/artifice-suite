@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Preview tab: Raw / Cleaned / Translated for one in-memory queue item.
  * Populated either by clicking a queue row's view arrow, by picking from the

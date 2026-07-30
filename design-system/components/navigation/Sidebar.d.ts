@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import type { ReactNode } from 'react';
 /** @startingPoint section="Navigation" subtitle="Persistent file/source list" viewport="700x320" */
 export interface SidebarItem { id: string; label: string; meta?: string; }

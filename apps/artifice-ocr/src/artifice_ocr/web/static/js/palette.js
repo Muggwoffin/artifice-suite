@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Command palette (Ctrl+K / Cmd+K) — search tabs, jump to actions, run
  * templates. Lightweight fuzzy-ish matcher over a static command list.

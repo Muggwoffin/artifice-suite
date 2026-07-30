@@ -83,8 +83,22 @@ def load_saved_config() -> PipelineConfig | None:
 
 
 def save_user_config(config: PipelineConfig) -> None:
-    """Save user configuration to file."""
+    """Save user configuration to file (all sections, with restricted permissions).
+
+    If *config.llm.api_key* is the redacted placeholder the existing on-disk
+    key is preserved instead — a client that GETs preferences, receives
+    ``"api_key": "************"``, and POSTs the same body back must not
+    overwrite the real key with the placeholder.
+    """
+    from secure_io import is_restricted, write_private_json
+
     ensure_preferences_dir()
+
+    PLACEHOLDER = "*" * 12
+    if config.llm.api_key == PLACEHOLDER:
+        existing = load_saved_config()
+        if existing and existing.llm.api_key and existing.llm.api_key != PLACEHOLDER:
+            config.llm.api_key = existing.llm.api_key
 
     data = {
         "llm": config.llm.model_dump(),
@@ -96,8 +110,19 @@ def save_user_config(config: PipelineConfig) -> None:
         "storage": config.storage.model_dump(),
     }
 
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    write_private_json(CONFIG_FILE, data)
+
+    # Align write-time verification with the public is_restricted() contract
+    # that the test suite asserts — a platform-specific false-negative
+    # (e.g. Administrator accounts retaining SYSTEM ACEs on Windows CI
+    # runners) must not block a successful, secure write.
+    if not is_restricted(CONFIG_FILE):
+        # One retry handles occasional ACL propagation delay on Windows.
+        write_private_json(CONFIG_FILE, data)
+        if not is_restricted(CONFIG_FILE):
+            raise PermissionError(
+                f"Failed to secure config file after retry: {CONFIG_FILE}"
+            )
 
 
 def apply_preferences_to_config(config: PipelineConfig, preferences: UserPreferences) -> PipelineConfig:

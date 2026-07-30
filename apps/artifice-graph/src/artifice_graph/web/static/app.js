@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /* app.js — shared, theme toggle + motion guard + tiny helpers. IIFE-wrapped, ES5-safe. */
 (function () {
   "use strict";

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Analytics tab. The desktop build draws these three panels by hand onto a
  * tk.Canvas, specifically to avoid a matplotlib dependency. The web build has

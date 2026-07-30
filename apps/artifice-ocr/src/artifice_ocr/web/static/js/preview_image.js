@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Pan/zoom viewport for the source-scan image pane — used by both the Preview
  * tab and the History tab. A factory function accepts a map of element IDs so

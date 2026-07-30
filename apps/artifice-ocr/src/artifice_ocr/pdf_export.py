@@ -21,6 +21,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from .validation import validate_path
+
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
@@ -701,6 +703,11 @@ def compile(
     skipped by default for bilingual mode (pass ``structure=True`` to opt in).
     """
     on_progress = on_progress or (lambda msg: None)
+    validate_path(folder, "folder")
+    if output is not None:
+        validate_path(str(output), "output")
+    if manifest_path is not None:
+        validate_path(manifest_path, "manifest_path")
     folder_path = Path(folder)
 
     if bilingual:
@@ -816,6 +823,11 @@ def compile_batch(
     caller opts in.
     """
     on_progress = on_progress or (lambda msg: None)
+    validate_path(output_dir, "output_dir")
+    if output is not None:
+        validate_path(str(output), "output")
+    if manifest_path is not None:
+        validate_path(manifest_path, "manifest_path")
 
     on_progress(f"Collecting {len(stems)} item(s) from {output_dir}...")
     pages, skipped = collect_stems(

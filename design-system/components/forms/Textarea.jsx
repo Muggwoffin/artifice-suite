@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function Textarea({label,placeholder,rows=4,value,onChange}){
   return React.createElement('label',{style:{display:'flex',flexDirection:'column',gap:4,fontFamily:'var(--font-body)'}},

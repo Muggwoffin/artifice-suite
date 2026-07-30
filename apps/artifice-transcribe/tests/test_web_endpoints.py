@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
+from fastapi import HTTPException
 
 from artifice_transcribe.db.models import JobStatus, SpeakerMapping, TranscriptionJob
 
@@ -231,7 +234,7 @@ async def test_enroll_rejects_oversized_upload(api, monkeypatch):
         files={"file": ("voice.wav", b"x" * 11)},
     )
     assert resp.status_code == 413
-    assert "too large" in resp.json()["detail"].lower()
+    assert "exceeds" in resp.json()["detail"].lower()
 
 
 async def test_transcribe_rejects_oversized_upload(api, monkeypatch):
@@ -244,4 +247,64 @@ async def test_transcribe_rejects_oversized_upload(api, monkeypatch):
         files={"file": ("interview.wav", b"x" * 11)},
     )
     assert resp.status_code == 413
-    assert "too large" in resp.json()["detail"].lower()
+    assert "exceeds" in resp.json()["detail"].lower()
+
+
+# -------------------------------------------------------- streaming cap (bypass)
+
+
+def test_read_capped_raises_during_read():
+    """_read_capped raises HTTP 413 once the limit is exceeded mid-stream,
+    before the full body is gathered.
+
+    This is a unit test on the helper; the endpoint-level tests above
+    (``test_transcribe_rejects_oversized_upload`` and
+    ``test_enroll_rejects_oversized_upload``) prove the routes use it.
+    """
+    from artifice_transcribe.api.v1.routes import _read_capped
+
+    class _FakeUpload:
+        filename = "test.wav"
+        def __init__(self, total: int):
+            self._remain = total
+        async def read(self, size: int = -1) -> bytes:
+            if self._remain <= 0:
+                return b""
+            n = min(size if size > 0 else 4096, 4096, self._remain)
+            self._remain -= n
+            return b"x" * n
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(_read_capped(_FakeUpload(10_000), 10))
+    assert exc_info.value.status_code == 413
+
+
+def test_read_capped_respects_dynamic_limit():
+    """_read_capped uses the caller-supplied limit, not a hardcoded
+    constant — important because transcribe's limit is configurable
+    via settings.max_upload_size."""
+    from artifice_transcribe.api.v1.routes import _read_capped
+
+    class _FakeUpload:
+        filename = "test.wav"
+        def __init__(self, total: int):
+            self._remain = total
+        async def read(self, size: int = -1) -> bytes:
+            if self._remain <= 0:
+                return b""
+            n = min(size if size > 0 else 4096, 4096, self._remain)
+            self._remain -= n
+            return b"x" * n
+
+    # Under a 1000-byte limit, 500 bytes should pass.
+    result = asyncio.run(_read_capped(_FakeUpload(500), 1000))
+    assert len(result) == 500
+
+    # At exactly the limit, should still pass.
+    result2 = asyncio.run(_read_capped(_FakeUpload(1000), 1000))
+    assert len(result2) == 1000
+
+    # One byte over must fail.
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(_read_capped(_FakeUpload(1001), 1000))
+    assert exc_info.value.status_code == 413

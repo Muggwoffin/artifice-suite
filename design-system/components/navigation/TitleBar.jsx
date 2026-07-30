@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function TitleBar({product,doc,actions}){
   return React.createElement('div',{style:{height:44,display:'flex',alignItems:'center',padding:'0 12px',background:'var(--surface-card)',borderBottom:'1px solid var(--border-subtle)',fontFamily:'var(--font-body)',gap:10}},

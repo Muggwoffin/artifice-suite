@@ -32,7 +32,7 @@ _SRC = Path(__file__).resolve().parent.parent.parent  # src/
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from artifice_graph.config import PipelineConfig, load_config
+from artifice_graph.config import LLMConfig, PipelineConfig, load_config
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
 from artifice_graph.entity_resolution.resolver import EntityResolver
 from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityResolver
@@ -80,6 +80,22 @@ import importlib.resources
 import shared_ui
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
+# ── Credential redaction ───────────────────────────────────────────
+# The ``PipelineConfig`` model is the authority on which fields hold
+# credentials; ``_redact_config`` keys off the model structure directly
+# rather than maintaining a parallel key list.  This matches the
+# convention in artifice-ocr's settings router.
+
+REDACTED_PLACEHOLDER = "*" * 12
+
+
+def _redact_config(model: PipelineConfig) -> PipelineConfig:
+    """Return a deep copy of *model* with credential fields redacted."""
+    cfg = model.model_copy(deep=True)
+    if cfg.llm.api_key:
+        cfg.llm.api_key = REDACTED_PLACEHOLDER
+    return cfg
 
 # ── Run log broker (cross-thread SSE bridging) ─────────────────────
 # In-memory: each active run gets a log buffer + wake condition.
@@ -251,7 +267,8 @@ def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
     if u := body.get("llm_base_url"):
         cfg.llm.base_url = _validate_base_url(u, "llm_base_url")
     if k := body.get("llm_api_key"):
-        cfg.llm.api_key = k
+        if k != REDACTED_PLACEHOLDER:
+            cfg.llm.api_key = k
     if m := body.get("llm_model"):
         cfg.llm.model = m
     if v := body.get("vision_mode"):
@@ -737,7 +754,10 @@ async def api_save_config(body: dict[str, Any]):
         if u := body.get("llm_base_url"):
             cfg.llm.base_url = _validate_base_url(u, "llm_base_url")
         if k := body.get("llm_api_key"):
-            cfg.llm.api_key = k
+            # A round-tripped redacted placeholder must not overwrite the
+            # real key — same guard OCR's config router applies.
+            if k != REDACTED_PLACEHOLDER:
+                cfg.llm.api_key = k
         if m := body.get("llm_model"):
             cfg.llm.model = m
         if v := body.get("vision_mode"):
@@ -774,11 +794,12 @@ async def api_load_preferences():
         from artifice_graph.web.config_helper import load_saved_config
         saved_cfg = load_saved_config()
         if saved_cfg:
-            return {"status": "ok", "config": saved_cfg.model_dump()}
+            redacted = _redact_config(saved_cfg)
+            return {"status": "ok", "config": redacted.model_dump()}
         return {"status": "ok", "config": {}}
     except Exception as e:
-        logger.error(f"Error loading preferences: {e}")
-        return {"status": "error", "message": f"Error loading preferences: {str(e)}"}
+        logger.error("Error loading preferences: %s", e)
+        return {"status": "error", "message": "Error loading preferences"}
 
 
 @app.get("/api/state")
@@ -971,15 +992,29 @@ async def api_get_models():
         }
 
 
-@app.get("/api/test-connection")
-async def api_test_connection():
-    """Test LLM server connection."""
+@app.post("/api/test-connection")
+async def api_test_connection(body: dict[str, Any] | None = None):
+    """Test LLM server connection against the posted config, or the saved one if absent."""
+    # Build the LLM config that will be tested: posted fields override the
+    # saved config; missing or empty posted fields fall back to saved.
+    cfg = load_config()
+    if body:
+        llm_base_url = body.get("llm_base_url") or cfg.llm.base_url
+        llm_api_key = body.get("llm_api_key", cfg.llm.api_key)
+        llm_model = body.get("llm_model") or cfg.llm.model
+        llm_cfg = LLMConfig(
+            base_url=llm_base_url,
+            api_key=llm_api_key,
+            model=llm_model,
+        )
+    else:
+        llm_cfg = cfg.llm
+
     try:
-        cfg = load_config()
-        llm = LLMClient(cfg.llm)
+        llm = LLMClient(llm_cfg)
 
         async with httpx.AsyncClient(timeout=5) as client:
-            ollama_base = cfg.llm.base_url.rstrip("/")
+            ollama_base = llm_cfg.base_url.rstrip("/")
             if "/v1" in ollama_base:
                 ollama_base = ollama_base.replace("/v1", "")
 
@@ -1007,10 +1042,10 @@ async def api_test_connection():
                     suggestions.append("Ensure LM Studio server is running and accessible")
 
             try:
-                if "api.openai.com" in cfg.llm.base_url:
+                if "api.openai.com" in llm_cfg.base_url:
                     resp = await client.get(
-                        f"{cfg.llm.base_url}/v1/models",
-                        headers={"Authorization": f"Bearer {cfg.llm.api_key}" if cfg.llm.api_key else None},
+                        f"{llm_cfg.base_url}/v1/models",
+                        headers={"Authorization": f"Bearer {llm_cfg.api_key}" if llm_cfg.api_key else None},
                         timeout=5
                     )
                     if resp.status_code == 200:
@@ -1038,8 +1073,8 @@ async def api_test_connection():
             "status": status,
             "error": error,
             "suggestions": suggestions,
-            "url": cfg.llm.base_url,
-            "model": cfg.llm.model,
+            "url": llm_cfg.base_url,
+            "model": llm_cfg.model,
         }
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
@@ -1047,8 +1082,8 @@ async def api_test_connection():
             "status": "error",
             "error": str(e),
             "suggestions": ["Check if the URL is correct and accessible"],
-            "url": load_config().llm.base_url,
-            "model": load_config().llm.model,
+            "url": llm_cfg.base_url,
+            "model": llm_cfg.model,
         }
 
 
@@ -1091,6 +1126,23 @@ async def api_stream(run: str = Query(...)):
 # Windows-style paths supplied from a browser on a POSIX server.
 
 _MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB, mirrors IngestionConfig.max_file_size_mb
+
+
+async def _read_capped(upload: UploadFile, limit: int) -> bytes:
+    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
+    exceeded **during** the read so an oversized body is never fully resident.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await upload.read(64 * 1024):
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 def _allowed_upload_extensions(cfg: PipelineConfig) -> frozenset[str]:
@@ -1163,12 +1215,13 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
             })
             continue
 
-        contents = await upload.read()
-        if len(contents) > _MAX_UPLOAD_BYTES:
+        try:
+            contents = await _read_capped(upload, _MAX_UPLOAD_BYTES)
+        except HTTPException:
             results.append({
                 "filename": raw_name,
                 "status": "rejected",
-                "reason": f"File exceeds 50 MB limit ({len(contents) // (1024*1024)} MB)",
+                "reason": f"File exceeds 50 MB limit",
             })
             continue
 
@@ -1194,7 +1247,7 @@ def _render(template_name: str, **extra) -> str:
     ctx = {
         "active_tab": template_name.replace(".html", "").replace("index", "pipeline"),
         "asset_v": int(time.time()),
-        "config": cfg,
+        "config": _redact_config(cfg),
         "state": {"entities": entities, "relationships": relationships, "documents": documents, "chunks": chunks},
         "theme": "auto",
         "reduce_motion": False,

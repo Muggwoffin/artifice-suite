@@ -1026,6 +1026,21 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
 
 ### Phase 5 — Engineering quality gates
 
+> **PHASE 5 IS COMPLETE — 2026-07-30.** Every item is closed except **5.2b**, which is three
+> security questions deliberately left open for the maintainer rather than answered by an agent.
+>
+> Final measured state: ocr **456 passed / 1 skipped**, draft **203**, graph **126**, transcribe
+> **72**, model-harness **128**, secure-io **16**. Gates: `reuse lint` 470/470, `gitleaks` no leaks,
+> `token-parity-check.py`, `audit-controls.py` and `shellcheck` all exit 0.
+>
+> **What the phase actually cost, and the pattern worth carrying into Phase 6:** four separate
+> defects were found *after* the work that introduced them was believed finished, and **not one was
+> caught by a test** — they were caught by re-reading code against the claim made about it. A
+> permission fix that only applied at file creation; two upload limits that ran after the allocation
+> they existed to prevent; a path validator that guarded the directory and not the second component;
+> a licensing pass that exited 0 twelve files short. In three further cases a **comment asserted a
+> safeguard the code did not provide**. Green tests and a zero exit code were present throughout.
+
 - [x] ~~CI on pull request: `uv sync --extra all`, run all 34 test suites, lint~~ — **Landed,
       measured 2026-07-29.** `.github/workflows/ci.yml` runs on `push` and `pull_request` to
       `main` and defines `gates`, `tests`, `wheel` and `tests-cross-platform`. The recorded "34"
@@ -1045,7 +1060,26 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
       The one part that remains true: **WSL2 is represented indirectly by Linux rather than by a
       hosted runner.** That is not a gap to close — GitHub offers no WSL2 runner — so it is a
       documented limitation, not a task. Treat it as closed.
-- [ ] **5.1 — Licensing, comprehensively.** See the dedicated subsection below.
+- [x] ~~**5.1 — Licensing, comprehensively.**~~ — **closed 2026-07-30**, commit `bd09a48`.
+      `reuse lint` reports **470/470** files with copyright and licence information and exits 0,
+      gated in CI's `gates` job.
+
+      Source files carry real SPDX headers; markdown, JSON, TOML, dotfiles and binaries are declared
+      in `REUSE.toml`. **Third-party material is declared with its real licence and was not stamped
+      MIT** — the vendored Leaflet bundle is BSD-2-Clause and left byte-unmodified, and three font
+      families (Libre Baskerville, Playfair Display, Archivo) are OFL-1.1 with their upstream
+      copyright holders. Stamping any of it MIT would have been a licence misstatement, which is
+      worse than leaving a file undeclared.
+
+      **The implementing agent stopped twelve files short with `exit=0` and its last recorded
+      `reuse lint` still non-compliant.** The remainder — two `.pyw` launchers the `*.py` glob
+      missed, ten dotfiles and binaries, and the CI gate itself — was finished by hand. **An exit
+      code reports how a process ended, not whether the work was done**; the only signals were the
+      agent's own unchecked todo list and the lint output.
+
+      Left for a decision: `apps/artifice-ocr/*.lnk`, two tracked Windows shortcuts.
+      `.gitattributes` already calls `.lnk` "machine-local artifacts", so they arguably should not
+      be in the index. Declared so the gate is green; removing them is separate.
 
       **Partly done already, and the origin matters.** The maintainer began an SPDX pass by hand on
       2026-07-30 as a test of the approach, tagging 115 of 197 tracked `.py` files before the session
@@ -1057,9 +1091,77 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
       still fail. The decision to do the job properly here, rather than let a half-finished pass
       look complete, is the maintainer's — recorded because a partial pass silently read as a
       general one is this plan's most-repeated failure.
-- [ ] **5.2 — Full `security-auditor` sweep** of every ingestion surface (OCR upload, audio upload,
-      graph import, document ingest) for path traversal, zip-slip and decompression bombs.
-- [ ] **5.3 — Front-end test coverage** for `pipeline.js` and the SSE log broker.
+- [x] ~~**5.0 — the Windows API-key permission bug.**~~ — **closed 2026-07-30**, branch
+      `phase5-windows-key-permissions`, commits `7b25967`, `3b3b4d3`, `18f5808`.
+
+      `os.open(..., 0o600)` protects a file on POSIX and does nothing on Windows. Fixed via a new
+      shared workspace package, `packages/secure-io`, rather than the same platform-specific ACL
+      code four times. On Windows it creates the file empty, applies an ACL through `icacls` keyed
+      on the current user's **SID** (a username-based ACL breaks on non-English installs), verifies
+      it, and only then writes — so a secret never touches an unprotected file. Fails closed.
+
+      **The bug was in four apps, not the two this plan recorded.** `artifice-draft` was the worst:
+      a plain `write_text` with no protection on *any* platform. `artifice-graph`'s `save_config`
+      was the fourth.
+
+      **Two defects were found in this work after it was first believed complete**, both by
+      re-reading rather than by any test:
+
+      1. `write_private_json` restricted a file it *created* and silently left an existing file's
+         mode alone — `os.open`'s mode argument applies only at creation. Two call sites had quietly
+         compensated with an extra `restrict_to_current_user`, which read as redundant and would
+         have been tidied away. Fixed in `18f5808`; all four call sites are now uniform.
+      2. Both apps' permission tests **skipped on Windows**, and each skip marker's own comment
+         said it recorded a *product* gap. An honest note had been functioning as a suppression, and
+         CI stayed green over a live defect for as long as it existed.
+
+- [x] ~~**5.2 — Full `security-auditor` sweep**~~ — **run and closed 2026-07-30**, branch
+      `phase5-security-fixes`, commits `be50909`, `3e7714d`. **Seven findings, all fixed** — the six
+      the sweep reported, plus one found while fixing them (below the table).
+
+      | Severity | Finding | Fix |
+      |---|---|---|
+      | CRITICAL | ocr Tropy routes took unvalidated paths from unauthenticated HTTP | `be50909` |
+      | HIGH | ocr LudwigLang `output_dir` — directory-listing oracle | `be50909` |
+      | HIGH | ocr PDF export — arbitrary write; UNC exfiltration on Windows | `be50909` |
+      | HIGH | draft returned `api_key` from `/api/settings` | `3e7714d` |
+      | HIGH | graph returned `api_key` from `/api/load-preferences` | `3e7714d` |
+      | MEDIUM | unbounded uploads — **three apps, not one** | `3e7714d` |
+
+      A seventh, found while fixing: graph's `_render()` passed the raw config to Jinja, so
+      `index.html:181` rendered `{{ config.llm.api_key }}` into the HTML source of **every page**.
+
+      **Two of the auditor's CLEAN verdicts were wrong, and that is the lesson worth keeping.** It
+      reported unbounded uploads in draft only and passed transcribe and graph. Both in fact did
+      `await file.read()` and checked `len()` *afterwards* — the limit existed, it just ran after
+      the whole body was resident; graph did it inside a loop over multiple files. The orchestrator
+      verified all six *findings* and took the two *clean verdicts* on trust. **A clean verdict is a
+      claim like any other. Verify it the same way.**
+
+      ocr's path fix reuses the app's existing `validate_directory` rather than adding a second
+      ruleset. A first pass duplicated the allow-list into `pdf_export.py` — for two legitimate
+      reasons, since `validate_directory` raises `HTTPException` (wrong for a library) and
+      `pdf_export.py` importing from `web/` would invert the layering. The ruleset was therefore
+      moved **down** into `artifice_ocr/validation.py`, with `web/validation.py` as a thin
+      translating wrapper. Two allow-lists would have drifted the first time an operator widened
+      `ARTIFICE_OCR_ALLOWED_ROOTS`, which its own docstring invites.
+
+- [ ] **5.2b — three findings deliberately not fixed, awaiting a maintainer decision.**
+      Recorded here so they are not lost: whether the Tropy endpoints are reachable without
+      authentication in a deployed instance (the auditor could not tell, and no auth middleware is
+      visible); whether unvalidated paths are echoed into logs anywhere the fix did not cover; and
+      graph's `api_get_models` error handler (`server.py:963-971`), which returns `str(e)` from an
+      httpx failure whose request carried the key as a Bearer token — a low-probability reflection,
+      not a direct leak.
+
+      **Added 2026-07-30, found while fixing review findings:** `ludwiglang_export`'s 404 detail
+      (`web/routers/ludwiglang.py:53-54`) interpolates the **resolved** `cleaned_root` path. That
+      contradicts the policy the validation module states explicitly and implements everywhere else
+      — echo the caller's own input, never the resolved path, because the latter discloses server
+      filesystem layout whenever the input was relative. Pre-existing and untouched by `be50909`;
+      one line to fix, listed here so it is not lost.
+
+- [x] ~~**5.3 — Front-end test coverage** for `pipeline.js` and the SSE log broker.~~
       **Re-measured 2026-07-30, and the item was understated:** `pipeline.js` is
       `apps/artifice-graph/src/artifice_graph/web/static/pipeline.js`, **915 lines**, referenced by
       no test anywhere in the repo. The SSE broker is
@@ -1067,7 +1169,52 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
       and monkeypatches it, but its own header comment (`test_web.py:8`) states the stream "is
       exercised manually against a live" server — so the endpoint has no automated coverage.
       **There is no JavaScript test runner anywhere in the repo** — no `package.json`, no vitest or
-      jest config. This item therefore cannot start without a decision (Step 0 below).
+      jest config, and per the Step 0 decision **there will not be one.** The suite stays vanilla JS.
+
+      **So this item splits, and the two halves are not equally achievable.**
+
+      **CLOSED 2026-07-30**, commits `658fc50` (SSE) and `e957694` (`pipeline.js`), and the split
+      held exactly as predicted.
+
+      **SSE broker — properly covered.** Seven tests: headers, the no-runner waiting frame,
+      data-frame delivery, the heartbeat, client disconnect, and the two state mutations buried
+      inside the generator (`record_finished_items`, `finish_run`) that are reachable only by
+      draining frames. ocr 449 → **456**.
+
+      One prediction in this entry was wrong: **`TestClient` cannot drive this endpoint at all.**
+      Starlette buffers the whole response body before returning, and `_event_stream()` is an
+      unbounded `while True` generator that never sets `more_body=False`, so the call never returns.
+      The tests run a real uvicorn server in a daemon thread instead. Every test reads a bounded
+      number of frames — a full consume does not fail, it **hangs**, and a hung test is
+      indistinguishable from a slow one.
+
+      Observed and not fixed: a client disconnecting inside the one-second poll window can silently
+      lose one event, because `queue.Queue.get` has already removed it when Starlette cancels the
+      generator.
+
+      **`pipeline.js` — NOT covered, and this is the accepted outcome, not a shortfall.** Two
+      structural gates were added instead of unit tests: a reverse binding check in
+      `audit-controls.py` (ids the JS looks up that exist in no template — the failure that once
+      "disabled every control on the page", cited in that tool's docstring for however long without
+      ever being checked), and an endpoint-contract test introspecting `app.routes`.
+
+      They reach **~80-90 of 915 lines (~9%)**. They gate the wiring; they do not test the logic.
+      They cannot catch SSE parsing errors, stage-transition bugs, config extraction errors, upload
+      failure modes, event-binding mistakes, or the run-key handshake.
+
+      **The contract check found a dead control on its first run**, which is the justification for
+      the whole item: graph's "Test Connection" button POSTed to a GET-only route and had never
+      worked. `audit-controls.py` reported "0 unbound controls" throughout and was *correct* — the
+      button was bound; its handler called a method the server refused. Two further defects sat
+      behind it (the handler ignored the posted config and would have tested the saved one; a
+      `ReferenceError` in the `.catch` block). Fixed in `e957694`.
+
+      **Where the remaining gap actually carries risk** — the honest version, for whoever picks this
+      up: `_handleSSEEvent` / `_finishRun` (`:573-638`) and the stage state machine (`:321-361`).
+      Both hold real logic and **fail silently**: a missed event type stops the UI mid-run and
+      presents as a hung backend. Both are pure enough to be driven from Python if extracted. The
+      rest of the uncovered 91% is thin DOM manipulation where a defect is visible on sight and does
+      not warrant a toolchain.
 
 ---
 
@@ -1091,18 +1238,47 @@ these standing rules:
 - Judge a quiet agent by **CPU time against wall time**, not by its log — logs are block-buffered
   and both billing tiers have failed silently before.
 
-**Step 0 — two decisions only the maintainer can make.** Both block work; neither is technical
-trivia.
+**Step 0 — both decisions RESOLVED by the maintainer, 2026-07-30.** Recorded with the reasoning,
+because in both cases the reasoning constrains later work more than the answer does.
 
-1. **A JavaScript test runner: yes or no?** 5.3 cannot begin without this. Adding vitest introduces
-   `package.json` and a Node toolchain to a repo whose rule is *"Do not run bare `pip install` or
-   legacy Node/npm scripts"* and whose four apps are deliberately vanilla JS. The alternative is to
-   cover `pipeline.js` behaviourally from Python — drive the served page and assert on DOM and
-   network effects — which needs no Node but cannot unit-test 915 lines of logic.
-2. **Per-file headers or `REUSE.toml` for the non-code surfaces?** Recommended: `REUSE.toml`.
-   Real headers belong in source files, but stamping `.md`, `.css` and `.json` individually is
-   noisy and, for JSON, impossible without a sidecar. `REUSE.toml` declares those in bulk in one
-   auditable place.
+1. **A JavaScript test runner: NO.** ~~5.3 cannot begin without this.~~ **Decided: the suite stays
+   vanilla JS.** No `package.json`, no vitest, no Node toolchain — the standing commitment holds and
+   is not to be revisited per-task. **Consequence for 5.3, stated plainly: `pipeline.js` will not be
+   unit-tested.** Coverage is behavioural, driven from Python against the served page, and will reach
+   far less of its 915 lines than a unit suite would. That is an accepted limit, not a gap to
+   apologise for later — **do not record 5.3 as "pipeline.js covered" when it closes.**
+2. **`REUSE.toml`, not per-file headers, for the non-code surfaces.** Confirmed. Real headers stay in
+   source files; `.md`, `.css` and `.json` are declared in bulk in one auditable place, which is also
+   the only option for JSON (no comment syntax, so the alternative is a sidecar file per JSON file).
+
+**The maintainer's stated reason for both, which should govern ties in this phase:** this is about
+maintainability and preventing the rot that kills Digital Humanities projects once their maintainers
+move on. Where two options are otherwise balanced, **prefer the one a stranger can still understand
+and repair in five years** — fewer toolchains, one place per concern, and decisions written down
+rather than implied.
+
+**Step 0.5 — 5.0, the Windows API-key permission bug. Moved into Phase 5 and dispatched
+2026-07-30.** The maintainer promoted it out of Phase 6 on the grounds that it is a live security
+defect rather than a packaging blocker, and Phase 5 is the security phase.
+
+`os.open(..., 0o600)` protects a file on POSIX and does nothing on Windows, where the mode argument
+is ignored and `st_mode` reports `0o666`. Two files holding a plaintext API key are affected:
+`apps/artifice-ocr/src/artifice_ocr/config.py:208` and
+`apps/artifice-transcribe/src/artifice_transcribe/api/v1/routes.py:194`.
+
+**Why it survived a green CI:** both test suites skip the permission assertion on Windows
+(`test_config_security.py:20-23`, `test_security.py:14`), and each skip marker states in terms that
+it records a *product* gap. A skip that documents a real defect reads exactly like a skip that
+documents a platform quirk — this is the second time in this plan that an honest note has quietly
+functioned as a suppression. `ci.yml` already runs all four apps on `windows-latest`, so removing the
+skip is what converts the fix into a proven one.
+
+Briefed to `lead-engineer` on branch `phase5-windows-key-permissions`: one shared workspace package
+rather than the same fix twice (the two sites are already byte-identical in shape, including their
+comments — that duplication is the rot the maintainer named); create-restrict-verify-then-write so a
+secret never touches an unprotected file; `icacls` with the current user's **SID** rather than a
+username, because a username-based ACL breaks on non-English Windows; and fail closed if the ACL
+cannot be verified.
 
 **Step 1 — 5.1 Licensing, comprehensively.** Agent: **`lead-engineer`** (needs `write`/`edit`).
 Mechanical, low-risk, and independent of everything else, so it goes first.
@@ -1126,6 +1302,17 @@ Mechanical, low-risk, and independent of everything else, so it goes first.
 >
 > **Deliverable.** `reuse lint` exiting 0, quoted verbatim, plus the new CI step and a list of every
 > file whose licence was declared rather than stamped, with the reason.
+
+> **Status, 2026-07-30.** Steps 0.5, 2 and 3 are **done** — see 5.0 and 5.2 above. Steps 1 and 4
+> (licensing, front-end coverage) are the remaining work and their briefs are written
+> (`.briefs/lead-engineer-reuse-compliance.md`, `.briefs/lead-engineer-sse-broker-tests.md`). Step 5
+> runs against `phase5-security-fixes` before it becomes a PR. The step order below is kept as
+> written because the *reasoning* still applies; only the sequencing changed, when the maintainer
+> promoted security ahead of licensing and tests.
+>
+> **One scheduling constraint learned the hard way: there is a single working tree.** A read-only
+> reviewer and a writing agent cannot run at once, because the reviewer reads files from disk and a
+> branch switch changes them mid-review. Sequence them, or use a git worktree.
 
 **Step 2 — 5.2 Security sweep.** Agent: **`security-auditor`** (read-only, `qwen3.7-max`). Runs in
 parallel with Step 1 — different files, different agent, no shared state.
@@ -1170,11 +1357,34 @@ work. Then **`oss-reviewer`** — a local 12B that **silently summarises instead
 over-fed, and still exits 0**. Give it **one diff at a time** and reject any output that reads as a
 summary.
 
-**Not in Phase 5, and deliberately so.** The Windows API-key permission bug (Part IV open item 0) is
-listed under Phase 6 because it gates *packaging*, but it is a live security defect today: `0o600`
-reports `0o666` on Windows and both ocr's `settings.json` and transcribe's inference config hold an
-API key. If Phase 5 is meant to be the security phase, **the maintainer should decide whether this
-moves here** rather than shipping with it.
+**Resolved:** the Windows API-key permission bug was moved into Phase 5 by the maintainer and closed
+as 5.0 above. Part IV open item 0 is superseded by that entry.
+
+---
+
+#### A comment that claims a safeguard is worse than no comment
+
+**Three instances found in two days, each one making a real defect look handled.** This is a pattern,
+not a coincidence, and it is the single most reliable way a defect has survived review in this repo:
+
+1. `artifice-draft/web/runtime.py:61-63` — *"non-secret only; API keys stay in environment variables
+   and are never read from or written back to a browser form."* All three clauses were false. The
+   settings schema accepted `api_key`, the POST merged it, and the config layer read it back.
+2. `test_config_security.py` and `test_security.py` — Windows skip markers whose comments stated
+   they recorded a *product* gap. True, well-intentioned, and they kept CI green over a live defect
+   for as long as they existed.
+3. `artifice-draft/web/server.py` — a `Content-Length` check whose docstring said *"the actual read
+   is still capped below"*. There was no cap. Caught before it was committed, but only by reading
+   the code the docstring described.
+
+Two of the three were written **by the same honest impulse**: documenting a known limitation. The
+failure is that a note describing a gap is indistinguishable, to the next reader, from a note
+describing a handled edge case.
+
+**The rule this yields:** when a comment asserts a security property, treat it as a claim to verify,
+not context to absorb — and when *writing* one, say what the code does, never what it guarantees.
+A skip marker that documents a defect should reference an open tracking item, so the defect can be
+found without reading the test that hides it.
 
 ### Phase 6 — Packaging for ordinary users
 

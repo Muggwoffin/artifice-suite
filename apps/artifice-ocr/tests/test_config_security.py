@@ -7,28 +7,15 @@
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
 
-import pytest
-
-#: POSIX permission bits are not implemented on Windows: ``os.open(..., 0o600)``
-#: does not restrict access there and ``st_mode`` reports ``0o666`` regardless.
-#: This skip marks a **product** gap, not a test limitation — on Windows the
-#: secret file genuinely is not protected, and closing that needs an ACL applied
-#: through ``icacls`` or ``pywin32``. Tracked in IMPLEMENTATION_PLAN.md.
-posix_permissions_only = pytest.mark.skipif(
-    os.name == "nt",
-    reason="POSIX mode bits are not enforced on Windows; the file is unprotected there",
-)
+from secure_io import is_restricted
 
 
 class TestConfigFilePermissions:
     """Restrictive file permissions for settings.json — finding #3."""
 
-    @posix_permissions_only
     def test_save_user_settings_creates_restricted_file(self, tmp_path, monkeypatch):
-        """save_user_settings must write with mode 0600."""
+        """save_user_settings must write a file restricted to the current user."""
         from artifice_ocr import config
 
         monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
@@ -39,8 +26,7 @@ class TestConfigFilePermissions:
 
         settings_file = tmp_path / "settings.json"
         assert settings_file.exists()
-        st = settings_file.stat()
-        assert st.st_mode & 0o777 == 0o600
+        assert is_restricted(settings_file)
 
     def test_contents_are_preserved(self, tmp_path, monkeypatch):
         """The restrictive open must still write correct JSON."""

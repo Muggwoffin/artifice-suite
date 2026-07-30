@@ -14,12 +14,18 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from ..models import PdfExportRequest
 from ..runtime import pdf_export_state, start_pdf_export
+from ..validation import validate_directory
 
 router = APIRouter(tags=["pdf-export"])
 
 
 @router.post("/api/pdf-export/start")
 def pdf_export_start(req: PdfExportRequest) -> dict:
+    validate_directory(req.folder, "folder")
+    if req.output is not None:
+        validate_directory(req.output, "output")
+    if req.manifest is not None:
+        validate_directory(req.manifest, "manifest")
     started = start_pdf_export(
         req.folder, stage=req.stage,
         structure=req.structure, output=req.output,

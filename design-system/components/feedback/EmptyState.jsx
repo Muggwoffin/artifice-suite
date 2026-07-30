@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function EmptyState({title,description,action}){
   return React.createElement('div',{style:{textAlign:'center',padding:'40px 20px',fontFamily:'var(--font-body)'}},

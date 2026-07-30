@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 const {Button,IconButton,Badge,Tag,Input,Select,Sidebar,TitleBar,Tabs,Card,Panel,Toast}=window.ArtificeDesignSystem_1fd848;
 
 const DOCS=[

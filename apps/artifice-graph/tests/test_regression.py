@@ -365,10 +365,19 @@ class TestBug4UploadValidation:
     class _FakeUpload:
         def __init__(self, filename: str, payload: bytes) -> None:
             self.filename = filename
+            self._pos = 0
             self._payload = payload
 
-        async def read(self) -> bytes:
-            return self._payload
+        async def read(self, size: int = -1) -> bytes:
+            if self._pos >= len(self._payload):
+                return b""
+            if size < 0:
+                result = self._payload[self._pos:]
+                self._pos = len(self._payload)
+                return result
+            result = self._payload[self._pos:self._pos + size]
+            self._pos += size
+            return result
 
     def test_upload_accepts_configured_extensions_and_builtin_handlers(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """api_upload_files accepts configured extensions plus PDF/HTML handlers."""

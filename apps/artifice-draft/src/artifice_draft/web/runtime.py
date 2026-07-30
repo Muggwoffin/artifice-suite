@@ -58,9 +58,22 @@ _EXT_MAP = {
 
 
 # --------------------------------------------------------------------------- #
-# settings — non-secret only; API keys stay in environment variables and are
-# never read from or written back to a browser form.
+# settings — persisted as JSON at ~/.artifice_draft/web_settings.json.
+# Includes api_key alongside non-secret preferences; the file is protected
+# by OS-level access controls (POSIX 0o600 / Windows restricted ACL).
 # --------------------------------------------------------------------------- #
+
+# Keys whose values must not be returned verbatim in API responses.
+_REDACTED_KEYS = frozenset({"api_key"})
+REDACTED_PLACEHOLDER = "*" * 12
+
+
+def _redact_value(key: str, value: str) -> str:
+    """Return a placeholder if *key* holds a secret that is configured."""
+    if key in _REDACTED_KEYS and value:
+        return REDACTED_PLACEHOLDER
+    return value
+
 
 def load_settings() -> dict:
     if not _SETTINGS_PATH.exists():
@@ -77,11 +90,40 @@ def save_settings(patch: dict) -> dict:
     A prior project in this same family (OCR Pipeline) shipped a replace-not-
     merge settings save that silently dropped every other saved key the first
     time the web UI wrote just one field. Don't repeat that here.
+
+    Redacted placeholder values are silently dropped — a client that GETs
+    settings, receives ``"api_key": "************"``, and POSTs the same body
+    back must not overwrite the real key with the placeholder.
     """
+    from secure_io import is_restricted, write_private_json
+
+    cleaned = {}
+    for k, v in patch.items():
+        if k in _REDACTED_KEYS and v == REDACTED_PLACEHOLDER:
+            continue  # a round-tripped placeholder must not overwrite the stored key
+        cleaned[k] = v
+    if not cleaned:
+        return load_settings()
+
     current = load_settings()
-    current.update(patch)
+    current.update(cleaned)
     _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _SETTINGS_PATH.write_text(json.dumps(current, indent=2), encoding="utf-8")
+
+    write_private_json(_SETTINGS_PATH, current)
+
+    # The security invariant our test suite treats as the contract is
+    # ``is_restricted(path)``, not an internal ACL predicate.  Align the
+    # write-time verification with that same public API so a platform-
+    # specific false-negative (e.g. Administrator accounts retaining
+    # SYSTEM ACEs on Windows CI runners) cannot block a successful write.
+    if not is_restricted(_SETTINGS_PATH):
+        # One retry — transient ACL propagation is rare but real on Windows.
+        write_private_json(_SETTINGS_PATH, current)
+        if not is_restricted(_SETTINGS_PATH):
+            raise PermissionError(
+                f"Failed to secure settings file after retry: {_SETTINGS_PATH}"
+            )
+
     return current
 
 
@@ -151,7 +193,7 @@ def serialize_settings(cfg: AppConfig) -> dict:
         "author_name": cfg.author_name,
         "active_model": cfg.active_model,
         "base_url": cfg.base_url,
-        "api_key": cfg.api_key,
+        "api_key": _redact_value("api_key", cfg.api_key),
         "model_name": cfg.model_name,
         "vision_enabled": cfg.vision_enabled,
         "providers": [p.value for p in LLMProvider],

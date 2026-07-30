@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Main-tab client. Talks to the FastAPI backend in server.py: queue mutation
  * over plain POSTs, live progress over one persistent EventSource (SSE).

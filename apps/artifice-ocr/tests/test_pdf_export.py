@@ -1083,3 +1083,92 @@ def test_collect_folder_stems_use_manifest_keys(tmp_path):
     assert len(pages) == 1
     assert pages[0].stem == "Item A/scan"
     assert pages[0].page_number == 1
+
+
+# --------------------------------------------------------------------------- #
+# compile / compile_batch — path validation
+# --------------------------------------------------------------------------- #
+
+def test_compile_refuses_folder_outside_allowed_roots():
+    from artifice_ocr import pdf_export
+
+    with pytest.raises(ValueError, match="outside the directories"):
+        pdf_export.compile("/opt/rejected/scans", stage="cleaned", structure=False)
+
+
+def test_compile_refuses_output_outside_allowed_roots(tmp_path):
+    from artifice_ocr import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "page1.txt").write_text("Page 1 text.", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="outside the directories"):
+        pdf_export.compile(
+            str(tmp_path), stage="cleaned", structure=False,
+            output="/opt/rejected/out.pdf",
+        )
+
+
+def test_compile_refuses_manifest_outside_allowed_roots(tmp_path):
+    from artifice_ocr import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "page1.txt").write_text("Page 1 text.", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="outside the directories"):
+        pdf_export.compile(
+            str(tmp_path), stage="cleaned", structure=False,
+            manifest_path="/opt/rejected/manifest.json",
+        )
+
+
+def test_compile_accepts_valid_paths(tmp_path):
+    from artifice_ocr import pdf_export
+
+    text_dir = tmp_path / "cleaned" / "text"
+    text_dir.mkdir(parents=True)
+    (text_dir / "page1.txt").write_text("Page 1 text.", encoding="utf-8")
+
+    result = pdf_export.compile(
+        str(tmp_path), stage="cleaned", structure=False,
+        output=str(tmp_path / "out.pdf"),
+    )
+    assert result.exists()
+    assert result.suffix == ".pdf"
+
+
+def test_compile_batch_refuses_output_dir_outside_allowed_roots():
+    from artifice_ocr import pdf_export
+
+    with pytest.raises(ValueError, match="outside the directories"):
+        pdf_export.compile_batch(["stem"], output_dir="/opt/rejected/out")
+
+
+def test_compile_batch_refuses_output_outside_allowed_roots(tmp_path):
+    from artifice_ocr import pdf_export
+
+    item_dir = tmp_path / "cleaned" / "text" / "Item A"
+    item_dir.mkdir(parents=True)
+    (item_dir / "scan.txt").write_text("Some text.", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="outside the directories"):
+        pdf_export.compile_batch(
+            ["Item A/scan"], output_dir=str(tmp_path),
+            output="/opt/rejected/out.pdf",
+        )
+
+
+def test_compile_batch_refuses_manifest_outside_allowed_roots(tmp_path):
+    from artifice_ocr import pdf_export
+
+    item_dir = tmp_path / "cleaned" / "text" / "Item A"
+    item_dir.mkdir(parents=True)
+    (item_dir / "scan.txt").write_text("Some text.", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="outside the directories"):
+        pdf_export.compile_batch(
+            ["Item A/scan"], output_dir=str(tmp_path),
+            manifest_path="/opt/rejected/manifest.json",
+        )

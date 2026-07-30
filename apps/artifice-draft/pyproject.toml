@@ -12,6 +12,7 @@ dependencies = [
     "requests>=2.31.0",
     "httpx>=0.27",
     "model-harness",
+    "secure-io",
     "shared-ui",
 ]
 

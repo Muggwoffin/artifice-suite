@@ -49,6 +49,45 @@ from artifice_draft.style_guides.base import StyleGuide
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
+# 50 MB — mirrors artifice-graph's _MAX_UPLOAD_BYTES and artifice-transcribe's
+# max_upload_size.
+_MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024
+
+
+async def _read_capped(upload: UploadFile, limit: int) -> bytes:
+    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
+    exceeded **during** the read so an oversized body is never fully resident.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await upload.read(64 * 1024):
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _content_length_exceeds(request: Request, limit: int) -> bool:
+    """Return True if the Content-Length header exceeds *limit* bytes.
+
+    A fast-path early rejection — an honest client that declares a
+    content-length above the limit is refused without the body ever being
+    read.  If the header is absent or unparseable the check passes, and the
+    streaming cap in ``_read_capped`` becomes the guarantee.
+    """
+    raw = request.headers.get("content-length")
+    if raw is None:
+        return False
+    try:
+        return int(raw) > limit
+    except (TypeError, ValueError):
+        return False
+
+
 # ── Shared design system (resolved from installed shared-ui package) ───────
 import importlib.resources
 import shared_ui
@@ -160,7 +199,7 @@ def preview_guide_text(req: GuideImportTextRequest) -> dict:
 
 
 @app.post("/api/style-guides/preview-file")
-async def preview_guide_file(file: UploadFile = File(...)) -> dict:
+async def preview_guide_file(request: Request, file: UploadFile = File(...)) -> dict:
     """Upload a .docx or .pdf file and parse it into a StyleGuide."""
     from artifice_draft.style_guides.scraper import preview_guide_from_file
     from artifice_draft.web.runtime import config_from_settings
@@ -172,8 +211,14 @@ async def preview_guide_file(file: UploadFile = File(...)) -> dict:
     if not (lower.endswith(".docx") or lower.endswith(".pdf")):
         raise HTTPException(status_code=400, detail="Only .docx and .pdf files are supported")
 
+    if _content_length_exceeds(request, _MAX_UPLOAD_BYTES):
+        raise HTTPException(
+            status_code=413,
+            detail=f"File exceeds 50 MB upload limit",
+        )
+
     import tempfile
-    data = await file.read()
+    data = await _read_capped(file, _MAX_UPLOAD_BYTES)
     suffix = ".docx" if lower.endswith(".docx") else ".pdf"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(data)
@@ -219,11 +264,17 @@ def delete_guide(name: str) -> dict:
 # --------------------------------------------------------------------------- #
 
 @app.post("/api/upload")
-async def upload(file: UploadFile = File(...)) -> dict:
+async def upload(request: Request, file: UploadFile = File(...)) -> dict:
     if not (file.filename or "").lower().endswith(".docx"):
         raise HTTPException(status_code=400, detail="Only .docx files are supported")
 
-    data = await file.read()
+    if _content_length_exceeds(request, _MAX_UPLOAD_BYTES):
+        raise HTTPException(
+            status_code=413,
+            detail=f"File exceeds 50 MB upload limit",
+        )
+
+    data = await _read_capped(file, _MAX_UPLOAD_BYTES)
     try:
         doc = state.add_document(file.filename, data)
     except ValueError as exc:

@@ -80,7 +80,7 @@ def set_config(overrides: dict[str, Any]) -> dict:
 def reset_config() -> dict:
     config.reset()
     config.load_config()
-    return {k: config.get(k) for k in _CONFIG_KEYS}
+    return {k: _redact_config(k, config.get(k)) for k in _CONFIG_KEYS}
 
 
 @router.get("/api/templates")

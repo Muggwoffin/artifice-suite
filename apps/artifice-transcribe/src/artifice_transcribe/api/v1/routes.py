@@ -7,7 +7,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -82,6 +81,23 @@ from artifice_transcribe.services.inference import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["transcription"])
+
+
+async def _read_capped(upload: UploadFile, limit: int) -> bytes:
+    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
+    exceeded **during** the read so an oversized body is never fully resident.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await upload.read(64 * 1024):
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 # ── Path safety ──────────────────────────────────────────────────────────────
 
@@ -183,17 +199,19 @@ def _load_inference_config() -> dict:
 
 
 def _save_inference_config(cfg: dict) -> None:
+    from secure_io import is_restricted, write_private_json
+
     _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    # Created 0600 rather than chmod'ed afterwards, so the file is never
-    # world-readable even briefly.
-    #
-    # POSIX only. Windows ignores the mode argument and reports st_mode 0o666,
-    # so on Windows this file — which holds an API key — is NOT protected.
-    # Restricting it there needs an explicit ACL (icacls or pywin32). Recorded
-    # in IMPLEMENTATION_PLAN.md; found by the cross-platform CI leg.
-    fd = os.open(_INFERENCE_CONFIG_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, indent=2)
+    write_private_json(_INFERENCE_CONFIG_FILE, cfg)
+
+    # Align write-time verification with the public is_restricted() contract
+    # (see artifice-graph config_helper.save_user_config for rationale).
+    if not is_restricted(_INFERENCE_CONFIG_FILE):
+        write_private_json(_INFERENCE_CONFIG_FILE, cfg)
+        if not is_restricted(_INFERENCE_CONFIG_FILE):
+            raise PermissionError(
+                f"Failed to secure inference config after retry: {_INFERENCE_CONFIG_FILE}"
+            )
 
 
 # Module-level engine singleton (lazy init)
@@ -709,9 +727,7 @@ async def create_transcription(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> JobCreated:
-    contents = await file.read()
-    if len(contents) > settings.max_upload_size:
-        raise HTTPException(413, "File too large")
+    contents = await _read_capped(file, settings.max_upload_size)
 
     job = TranscriptionJob(
         filename=file.filename or "unknown",
@@ -1308,9 +1324,7 @@ async def enroll_speaker(
 ) -> SpeakerEnrollResponse:
     """Enroll a known speaker by uploading a short audio clip of their voice."""
 
-    contents = await file.read()
-    if len(contents) > settings.max_upload_size:
-        raise HTTPException(413, "File too large")
+    contents = await _read_capped(file, settings.max_upload_size)
 
     safe_name = _sanitise_path_component(name)
     safe_filename = _sanitise_path_component(file.filename or "unknown")

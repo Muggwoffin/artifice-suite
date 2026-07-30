@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Core app: settings form, document upload, run control, SSE progress.
  * Plain globals (no module system) — matches the OCR Pipeline tool's web

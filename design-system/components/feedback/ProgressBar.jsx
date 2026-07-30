@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function ProgressBar({value=0,label}){
   return React.createElement('div',{style:{fontFamily:'var(--font-body)'}},

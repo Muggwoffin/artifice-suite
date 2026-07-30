@@ -5,11 +5,10 @@
 """Tests for the web frontend's HTTP surface.
 
 Scope is deliberately the same as the rest of this test suite: no real model
-calls. The SSE stream (`/api/events`) is exercised manually against a live
-server instead of here, since driving an unbounded generator through a
-synchronous TestClient risks a hanging test for no real safety benefit — the
-underlying event plumbing (`JobRunner` -> `queue.Queue`) already has its own
-coverage in `test_gui.py`.
+calls. The SSE stream (`/api/events`) is now covered by bounded-consumption
+tests below — each test reads a fixed number of frames and exits, so none can
+hang. The underlying event plumbing (`JobRunner` -> `queue.Queue`) also retains
+its own coverage in `test_gui.py`.
 
 `server.py` binds `state` at import time via `from .runtime import state`, so
 patching `runtime.state` after that import would not reach the endpoints —
@@ -17,7 +16,9 @@ they resolve `state` from `server`'s own module globals. The fixture below
 patches `runtime.state` directly for that reason.
 """
 
+import json
 import os
+import queue as _sync_queue
 import socket
 import sys
 import types
@@ -100,6 +101,242 @@ def test_static_assets_are_mounted(client):
     res = client.get("/static/css/app.css")
     assert res.status_code == 200
     assert "--paper" in res.text  # the actual design tokens, not a stub
+
+
+# --------------------------------------------------------------------------- #
+# SSE event stream
+# --------------------------------------------------------------------------- #
+# The stream (`/api/events`) is an unbounded while-True generator.  Every test
+# in this section consumes a fixed number of frames and then closes the stream
+# explicitly — none depends on a timeout to finish.
+#
+# Starlette's TestClient buffers the entire response body and therefore cannot
+# drive an infinite stream — it would hang forever.  Instead we start a real
+# uvicorn server in a thread and talk to it with httpx, the same pattern the
+# `_wait_for_server` tests use.  No new dependency is required: both uvicorn
+# and httpx are already transitive deps of FastAPI/Starlette and are present
+# in the lockfile.
+
+import threading
+import time
+
+import httpx
+import uvicorn
+
+
+def _start_test_server(app, *, host="127.0.0.1", port=0):
+    """Start uvicorn in a daemon thread and return the bound address.
+
+    The caller must arrange for the server's process-global state (e.g. the
+    ``runtime.state`` singleton) to be set up *before* calling this, since the
+    server reads it at request time.
+    """
+    config = uvicorn.Config(app, host=host, port=port, log_level="error")
+    server = uvicorn.Server(config)
+    sock = config.bind_socket()
+    port = sock.getsockname()[1]
+    t = threading.Thread(target=server.run, args=([sock],), daemon=True)
+    t.start()
+    # Give uvicorn a moment to start accepting.
+    time.sleep(0.05)
+    return f"http://{host}:{port}"
+
+
+@pytest.fixture
+def events_server(tmp_path, monkeypatch):
+    """A live uvicorn server with patched state, for streaming tests.
+
+    Reuses the same config and state setup as the ``client`` fixture so
+    that the event stream sees the fresh, isolated ``RunState``.
+    """
+    import artifice_ocr.config as _config
+    monkeypatch.setattr(_config, "_SETTINGS_PATH", tmp_path / "settings.json")
+    _config.reset()
+    _config.load_config()
+    _config.apply_overrides({"history_db": str(tmp_path / "history.db")})
+
+    fresh = RunState()
+    monkeypatch.setattr(_events_router, "state", fresh)
+    monkeypatch.setattr(_run_router, "state", fresh)
+    monkeypatch.setattr(_queue_router, "state", fresh)
+    monkeypatch.setattr(_history_router, "state", fresh)
+    monkeypatch.setattr(_analytics_router, "state", fresh)
+    monkeypatch.setattr(_tropy_router, "state", fresh)
+    monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
+
+    base = _start_test_server(server.app)
+    yield base, fresh
+    # State is discarded — no explicit server teardown (daemon threads
+    # die with the process).
+
+
+def test_events_stream_has_correct_headers(events_server):
+    """`text/event-stream` content-type and both cache-control headers."""
+    base, _ = events_server
+    with httpx.Client() as client:
+        with client.stream("GET", f"{base}/api/events") as resp:
+            assert resp.headers["content-type"].startswith("text/event-stream")
+            assert resp.headers["cache-control"] == "no-cache"
+            assert resp.headers["x-accel-buffering"] == "no"
+
+
+def test_events_no_runner_yields_waiting_message(events_server):
+    """With no run in progress the stream yields the `: waiting ...` comment."""
+    base, _ = events_server
+    with httpx.Client() as client:
+        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+            chunk = next(resp.iter_bytes())
+    assert b": waiting for a run to start" in chunk
+
+
+def test_events_puts_data_frames_on_the_wire(events_server):
+    """An event on the runner queue reaches the client as a `data:` frame."""
+    base, state = events_server
+    from artifice_ocr.jobs import JobEvent, JobRunner
+
+    eq = _sync_queue.Queue()
+    fake = JobRunner([], ".", stages={"ocr"}, events=eq)
+    event = JobEvent(kind="log", stage="ocr", message="hello", tag="test")
+    eq.put(event)
+
+    state.runner = fake
+
+    with httpx.Client() as client:
+        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+            chunk = next(resp.iter_bytes())
+    assert b"data:" in chunk
+    data_line = [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0]
+    payload = json.loads(data_line[len("data: "):])
+    assert payload["kind"] == "log"
+    assert payload["message"] == "hello"
+
+
+def test_events_heartbeat_when_queue_is_empty(events_server):
+    """Empty queue yields the `: heartbeat` comment after a 1 s block.
+
+    This is the only heartbeat test — it costs ≥1 s of wall time.  Prefer
+    putting events *on* the queue in other tests so the poll returns
+    immediately.
+    """
+    base, state = events_server
+    from artifice_ocr.jobs import JobRunner
+
+    state.runner = JobRunner([], ".", stages={"ocr"})
+
+    with httpx.Client() as client:
+        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+            chunk = next(resp.iter_bytes())
+    assert b": heartbeat" in chunk
+
+
+def test_events_item_finished_triggers_record_finished_items(events_server):
+    """An `item_finished` event calls `state.record_finished_items()`.
+
+    The side-effect is observable via the history database — after the event
+    is drained, DONE items are persisted.
+    """
+    base, state = events_server
+    from artifice_ocr.jobs import JobEvent, JobItem, JobRunner, State
+
+    # Give the state a DONE item and a run record so record_finished_items()
+    # has something to persist.
+    item = JobItem(path="/fake/doc.png")
+    item.state = State.DONE
+    state.add_items([item])
+    run_id = state.history.start_run(stages=["ocr"], output_dir=".", total=1)
+    state.run_id = run_id
+
+    eq = _sync_queue.Queue()
+    event = JobEvent(kind="item_finished", stage="ocr",
+                     message="done", tag="item")
+    eq.put(event)
+
+    state.runner = JobRunner([], ".", stages={"ocr"}, events=eq)
+
+    with httpx.Client() as client:
+        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+            chunk = next(resp.iter_bytes())
+
+    assert b"data:" in chunk
+    data_line = [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0]
+    payload = json.loads(data_line[len("data: "):])
+    assert payload["kind"] == "item_finished"
+
+    # The item should now be recorded in the history.
+    rows = state.history._conn.execute(
+        "SELECT name FROM run_items WHERE run_id = ?", (run_id,)
+    ).fetchall()
+    assert len(rows) == 1
+    assert rows[0][0] == "doc.png"
+
+
+def test_events_run_finished_triggers_finish_run(events_server):
+    """A `run_finished` event calls `state.finish_run()` with the payload.
+
+    The side-effect clears state.run_id and records the run in history.
+    """
+    base, state = events_server
+    from artifice_ocr.jobs import JobEvent, JobRunner
+
+    # Create a run row so finish_run has something to update.
+    run_id = state.history.start_run(stages=["ocr"], output_dir=".", total=1)
+    state.run_id = run_id
+
+    eq = _sync_queue.Queue()
+    event = JobEvent(kind="run_finished", stage="",
+                     payload={"done": 3, "failed": 1, "elapsed": 12.5})
+    eq.put(event)
+
+    state.runner = JobRunner([], ".", stages={"ocr"}, events=eq)
+
+    with httpx.Client() as client:
+        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+            chunk = next(resp.iter_bytes())
+
+    assert b"data:" in chunk
+    payload = json.loads(
+        [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0][len("data: "):]
+    )
+    assert payload["kind"] == "run_finished"
+    assert payload["payload"]["done"] == 3
+
+    # run_id must be cleared after finish_run
+    assert state.run_id is None
+
+    # The run record in history must reflect the payload
+    run = state.history._conn.execute(
+        "SELECT succeeded, failed, elapsed FROM runs WHERE run_id = ?", (run_id,)
+    ).fetchone()
+    assert run is not None
+    assert run[0] == 3   # succeeded
+    assert run[1] == 1   # failed
+    assert run[2] == 12.5  # elapsed
+
+
+def test_events_client_disconnect_does_not_leave_state_broken(events_server):
+    """Closing the stream does not leave the run in a broken state.
+
+    The generator has no explicit disconnect handler — Starlette cancels it.
+    This test asserts the state is still usable afterward.
+    """
+    base, state = events_server
+    from artifice_ocr.jobs import JobRunner
+
+    state.runner = JobRunner([], ".", stages={"ocr"})
+
+    with httpx.Client() as client:
+        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+            # Consume one frame and then exit the context — the stream closes.
+            _ = next(resp.iter_bytes())
+
+    # State must still be cleanly usable: no exception on access.
+    assert state.runner is not None
+    assert state.items == []
+    # Heartbeat path works again — the state is intact.
+    with httpx.Client() as client2:
+        with client2.stream("GET", f"{base}/api/events", timeout=5) as resp:
+            chunk = next(resp.iter_bytes())
+    assert b": heartbeat" in chunk
 
 
 # --------------------------------------------------------------------------- #
@@ -341,6 +578,98 @@ def test_tropy_add_writes_manifest_and_reports_missing(client, tropy_project, tm
     data = json.loads(manifest.read_text(encoding="utf-8"))
     assert "pages" in data
     assert "project" in data
+
+
+# --------------------------------------------------------------------------- #
+# tropy — path validation
+# --------------------------------------------------------------------------- #
+
+def test_tropy_browse_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/browse", json={
+        "project": "/opt/rejected/scan.tropy",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_browse_accepts_project_in_allowed_root(client, tropy_project):
+    res = client.post("/api/tropy/browse", json={
+        "project": str(tropy_project),
+    })
+    assert res.status_code == 200
+    assert res.json()["project"] == "Archive"
+
+
+def test_tropy_add_refuses_project_outside_allowed_roots(client, tmp_path):
+    out = tmp_path / "out"
+    out.mkdir()
+    res = client.post("/api/tropy/add", json={
+        "project": "/opt/rejected/scan.tropy",
+        "output_dir": str(out),
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_add_refuses_output_dir_outside_allowed_roots(client, tropy_project):
+    res = client.post("/api/tropy/add", json={
+        "project": str(tropy_project),
+        "output_dir": "/opt/rejected/out",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_send_preview_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/send/preview", json={
+        "project": "/opt/rejected/scan.tropy",
+        "targets": ["notes"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_send_write_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/send/write", json={
+        "project": "/opt/rejected/scan.tropy",
+        "targets": ["notes"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_send_history_preview_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/send/history/preview", json={
+        "item_ids": [1],
+        "project": "/opt/rejected/scan.tropy",
+        "targets": ["notes"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_tropy_send_history_write_refuses_project_outside_allowed_roots(client):
+    res = client.post("/api/tropy/send/history/write", json={
+        "item_ids": [1],
+        "project": "/opt/rejected/scan.tropy",
+        "targets": ["notes"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
 
 
 # --------------------------------------------------------------------------- #
@@ -1382,9 +1711,14 @@ def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder, monkeypatch
     assert status["status"] == "done"
 
 
-def test_pdf_export_400_on_missing_folder(client):
+def test_pdf_export_400_on_missing_folder(client, tmp_path):
+    """A folder inside allowed roots that contains no text passes web validation
+    but fails in the worker thread — confirming the thread still catches the
+    error after the web layer validates."""
+    empty = tmp_path / "empty_folder"
+    empty.mkdir()
     res = client.post("/api/pdf-export/start", json={
-        "folder": "C:/does/not/exist", "stage": "cleaned", "structure": False,
+        "folder": str(empty), "stage": "cleaned", "structure": False,
     })
     assert res.status_code == 200  # start returns ok; error surfaces on thread
     assert res.json()["ok"] is True
@@ -1599,6 +1933,60 @@ def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_fo
 
 
 # --------------------------------------------------------------------------- #
+# path validation — pdf export
+# --------------------------------------------------------------------------- #
+
+def test_pdf_export_refuses_folder_outside_allowed_roots(client):
+    res = client.post("/api/pdf-export/start", json={
+        "folder": "/opt/rejected/scans", "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_pdf_export_refuses_output_outside_allowed_roots(client):
+    res = client.post("/api/pdf-export/start", json={
+        "folder": "/tmp/scans", "stage": "cleaned", "structure": False,
+        "output": "/opt/rejected/out.pdf",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_pdf_export_refuses_manifest_outside_allowed_roots(client):
+    res = client.post("/api/pdf-export/start", json={
+        "folder": "/tmp/scans", "stage": "cleaned", "structure": False,
+        "manifest": "/opt/rejected/manifest.json",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_pdf_export_accepts_valid_paths(client, pdf_text_folder):
+    folder = str(pdf_text_folder.parent.parent)
+    res = client.post("/api/pdf-export/start", json={
+        "folder": folder, "stage": "cleaned", "structure": False,
+    })
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+
+    # Wait for the thread to finish
+    import time
+    for _ in range(50):
+        status = client.get("/api/pdf-export/status").json()
+        if status["status"] in ("done", "error"):
+            break
+        time.sleep(0.05)
+    assert status["status"] == "done"
+
+
+# --------------------------------------------------------------------------- #
 # path validation — ludwiglang download
 # --------------------------------------------------------------------------- #
 
@@ -1690,6 +2078,40 @@ def test_ludwiglang_download_refuses_windows_style_escape(client, tmp_path):
     })
     assert res.status_code == 400
     assert "not within" in res.json()["detail"].lower()
+
+
+# --------------------------------------------------------------------------- #
+# path validation — ludwiglang collections / export
+# --------------------------------------------------------------------------- #
+
+def test_ludwiglang_collections_refuses_output_dir_outside_allowed_roots(client):
+    res = client.get("/api/ludwiglang/collections", params={
+        "output_dir": "/opt/rejected/output",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+
+
+def test_ludwiglang_collections_accepts_valid_output_dir(client, tmp_path):
+    out = tmp_path / "out"
+    out.mkdir()
+    res = client.get("/api/ludwiglang/collections", params={
+        "output_dir": str(out),
+    })
+    assert res.status_code == 200
+    assert res.json()["collections"] == []
+
+
+def test_ludwiglang_export_refuses_output_dir_outside_allowed_roots(client):
+    res = client.post("/api/ludwiglang/export", json={
+        "collection": "test", "output_dir": "/opt/rejected/output",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
 
 
 # --------------------------------------------------------------------------- #
@@ -1888,3 +2310,131 @@ def test_validate_directory_accepts_temp_dir_from_custom_tmpdir(monkeypatch):
     finally:
         if d.exists():
             d.rmdir()
+
+
+# --------------------------------------------------------------------------- #
+# ludwiglang export — collection path-traversal (platform-independent)
+# --------------------------------------------------------------------------- #
+# ``validate_contained`` decides containment after resolving the fully joined
+# path, so a trajectory that escapes the validated output directory is rejected
+# with 400 regardless of platform.  Asserting on the *containment decision*
+# (400 vs 200) rather than the resolved string makes the test meaningful on
+# POSIX as well as Windows.
+
+def test_ludwiglang_export_rejects_traversal_collection(client, tmp_path, monkeypatch):
+    """A collection name that escapes the validated output directory is 400.
+
+    ``../../etc`` resolves outside the container on every platform —
+    POSIX ``Path.__truediv__`` resolves it relative to the joined base,
+    and ``validate_contained`` checks the resolved result against the
+    validated root.  This is the test the brief asks for: it fails on the
+    unfixed code (which just joins and uses the path), and it fails on
+    POSIX, not just Windows.
+    """
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "cleaned" / "text").mkdir(parents=True)
+
+    # Suppress export_md — we only need the validation check to run.
+    # These are imported inside ludwiglang_export() (lazy), so
+    # monkeypatch the source module rather than the router.
+    monkeypatch.setattr(
+        "artifice_ocr.export_ludwiglang._read_manifest",
+        lambda p: {},
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.export_ludwiglang.export_md",
+        lambda *a, **kw: tmp_path / "out.md",
+    )
+
+    res = client.post("/api/ludwiglang/export", json={
+        "collection": "../../../etc",
+        "output_dir": str(out),
+    })
+    assert res.status_code == 400, (
+        f"Expected 400 for traversal collection, got {res.status_code}: "
+        f"{res.json()}"
+    )
+    # The rejection message comes from validate_contained — it must not
+    # disclose the resolved path.
+    detail = res.json()["detail"].lower()
+    assert "not within" in detail, (
+        f"Expected containment rejection, got: {detail}"
+    )
+
+
+def test_ludwiglang_export_accepts_legitimate_collection(client, tmp_path, monkeypatch):
+    """A plain collection name that stays inside the output directory is allowed.
+
+    This ensures the fix does not break the success path — a legitimate
+    ``collection`` name must still work.
+    """
+    out = tmp_path / "out"
+    out.mkdir()
+    coll_dir = out / "cleaned" / "text" / "my-collection"
+    coll_dir.mkdir(parents=True)
+    # export_md expects page JSON files within the collection directory.
+    (coll_dir / "page0001.json").write_text(
+        '{"extracted_text": "test"}', encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        "artifice_ocr.export_ludwiglang._read_manifest",
+        lambda p: {},
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.export_ludwiglang.export_md",
+        lambda *a, **kw: tmp_path / "out.md",
+    )
+
+    res = client.post("/api/ludwiglang/export", json={
+        "collection": "my-collection",
+        "output_dir": str(out),
+    })
+    assert res.status_code == 200, (
+        f"Expected 200 for legitimate collection, got {res.status_code}: "
+        f"{res.json()}"
+    )
+
+
+# --------------------------------------------------------------------------- #
+# config reset — credential redaction
+# --------------------------------------------------------------------------- #
+
+def test_config_reset_does_not_leak_credentials(client, monkeypatch):
+    """POST /api/config/reset must not return api_key or huggingface_token
+    verbatim.
+
+    ``config.reset()`` clears the in-memory cache; we prevent that here by
+    making it a no-op so the secrets survive into the response path.  On the
+    unfixed code the response includes them verbatim; with the fix
+    ``_redact_config`` replaces them with the shared placeholder.
+    """
+    # Populate secrets in the live config cache.
+    config.apply_overrides({
+        "api_key": "sk-secret-test-key",
+        "huggingface_token": "hf-secret-test-token",
+    })
+
+    # Prevent reset from clearing the cache so the secrets survive into the
+    # response dict — this reproduces the leak scenario from the review.
+    monkeypatch.setattr(config, "reset", lambda: None)
+
+    res = client.post("/api/config/reset")
+    assert res.status_code == 200
+    body = res.json()
+
+    assert body.get("api_key") != "sk-secret-test-key", (
+        "api_key was returned verbatim in reset_config response"
+    )
+    assert body.get("huggingface_token") != "hf-secret-test-token", (
+        "huggingface_token was returned verbatim in reset_config response"
+    )
+    # Optionally confirm the placeholder appears (only true if the values
+    # are truthy — they are here).
+    assert body.get("api_key") == "************", (
+        f"Expected placeholder for api_key, got: {body.get('api_key')}"
+    )
+    assert body.get("huggingface_token") == "************", (
+        f"Expected placeholder for huggingface_token, got: {body.get('huggingface_token')}"
+    )

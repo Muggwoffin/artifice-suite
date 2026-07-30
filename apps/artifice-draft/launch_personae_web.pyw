@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Windowed launcher for the PersonaeEdit web frontend.
 
 Mirrors `launch_personae.pyw` — same self-healing interpreter search, same

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * First-run onboarding tips — shown once when the user first opens the app.
  * Persists dismissal in localStorage and (optionally) server-side settings

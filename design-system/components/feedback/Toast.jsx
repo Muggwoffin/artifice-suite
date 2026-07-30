@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function Toast({tone='neutral',children,onClose}){
   const tones={neutral:'var(--ink)',success:'var(--accent-darker)',danger:'var(--state-danger)'};
