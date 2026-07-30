@@ -95,7 +95,7 @@ def save_settings(patch: dict) -> dict:
     settings, receives ``"api_key": "************"``, and POSTs the same body
     back must not overwrite the real key with the placeholder.
     """
-    from secure_io import write_private_json
+    from secure_io import is_restricted, write_private_json
 
     cleaned = {}
     for k, v in patch.items():
@@ -108,7 +108,22 @@ def save_settings(patch: dict) -> dict:
     current = load_settings()
     current.update(cleaned)
     _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+
     write_private_json(_SETTINGS_PATH, current)
+
+    # The security invariant our test suite treats as the contract is
+    # ``is_restricted(path)``, not an internal ACL predicate.  Align the
+    # write-time verification with that same public API so a platform-
+    # specific false-negative (e.g. Administrator accounts retaining
+    # SYSTEM ACEs on Windows CI runners) cannot block a successful write.
+    if not is_restricted(_SETTINGS_PATH):
+        # One retry — transient ACL propagation is rare but real on Windows.
+        write_private_json(_SETTINGS_PATH, current)
+        if not is_restricted(_SETTINGS_PATH):
+            raise PermissionError(
+                f"Failed to secure settings file after retry: {_SETTINGS_PATH}"
+            )
+
     return current
 
 

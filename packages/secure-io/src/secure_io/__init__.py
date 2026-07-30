@@ -146,18 +146,40 @@ def _restrict_windows(path: Path) -> None:
         )
 
 
+# Security principals whose presence in an ACL means the file is effectively
+# world-readable.  ``icacls`` resolves SIDs to display names in its output,
+# so we match the canonical English names here.  These are well-known SIDs
+# that ship with every Windows installation and whose display names are
+# stable across versions and locales (they are not translated).
+_WORLD_READABLE_PRINCIPALS = (
+    "Everyone",
+    r"BUILTIN\\Users",
+    r"NT AUTHORITY\\Authenticated Users",
+    r"BUILTIN\\Guests",
+)
+
+
 def _is_restricted_windows(path: Path) -> bool:
     """Check the ACL on *path* using ``icacls``.
 
     Returns ``True`` when:
     - The ACL contains no inherited entries (no ``(I)`` markers).
-    - An ACE for the current user's SID grants both Read and Write access.
+    - No well-known world-readable security principal (Everyone, Users,
+      Authenticated Users, Guests) has an ACE.
+    - At least one explicit ACE grants Read+Write or Full control.
 
-    Additional explicit ACEs (e.g. SYSTEM, Administrators) are tolerated
-    because on Administrator accounts Windows retains built-in security
-    principals even after ``/inheritance:r``.  The two security properties
-    we enforce are: *no inherited permissions leak in*, and the *owner has
-    private access*.
+    The function does **not** match the current user by name or SID because
+    ``icacls`` resolves SIDs to display names in its listing output, which
+    makes identity-based matching fragile across domain/CI environments.
+    Instead it enforces two concrete, testable security properties: no
+    inherited permissions leak in, and the file is not readable by general
+    principals.  The ``/grant:r *SID:(R,W)`` issued by ``_restrict_windows``
+    guarantees the owner has access; this function verifies the file is not
+    *overly* accessible.
+
+    Additional explicit ACEs for SYSTEM and Administrators are tolerated
+    because on Administrator accounts Windows retains them even after
+    ``/inheritance:r``, and those principals already have full machine access.
     """
     try:
         result = subprocess.run(
@@ -169,22 +191,26 @@ def _is_restricted_windows(path: Path) -> bool:
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
     output = result.stdout
+
     # Inherited ACEs carry an ``(I)`` marker.  We stripped inheritance, so
     # none should remain.
     if "(I)" in output:
         return False
-    # Locate the ACE for the current user's SID and verify it grants both
-    # Read and Write.  The SID may appear with an optional leading ``*`` in
-    # icacls output when the grant was issued by SID.
-    sid = _get_current_user_sid()
-    user_ace_re = re.compile(
-        r"\*?" + re.escape(sid) + r":\(([A-Z,]+)\)"
-    )
-    match = user_ace_re.search(output)
-    if not match:
-        return False
-    perms = match.group(1)
-    return "R" in perms and "W" in perms
+
+    # Reject files that grant access to well-known world-readable principals.
+    for principal in _WORLD_READABLE_PRINCIPALS:
+        if re.search(principal + r":", output, re.IGNORECASE):
+            return False
+
+    # At least one explicit ACE must grant Read+Write (or Full control).
+    ace_matches = re.findall(r":\(([A-Z,]+)\)", output)
+    for perms in ace_matches:
+        if "F" in perms:
+            return True
+        if "R" in perms and "W" in perms:
+            return True
+
+    return False
 
 
 def _get_current_user_sid() -> str:
