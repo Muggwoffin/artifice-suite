@@ -57,7 +57,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # artifice-ocr: 420 passed, 1 skipped — clean baseline (2026-07-30).
+          # artifice-ocr: 424 passed, 1 skipped — clean baseline (2026-07-30).
           # No extra dependencies needed beyond the workspace root.
           - app: artifice-ocr
             extra-args: ""
@@ -69,7 +69,7 @@ jobs:
           - app: artifice-draft
             extra-args: ""
 
-          # artifice-graph: 87 passed — clean baseline (2026-07-30).  No extras needed.
+          # artifice-graph: 96 passed — clean baseline (2026-07-30).  No extras needed.
           - app: artifice-graph
             extra-args: ""
 

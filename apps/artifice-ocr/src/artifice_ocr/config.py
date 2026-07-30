@@ -141,6 +141,7 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
         "cleanup_model": "CLEANUP_MODEL",
         "translate_model": "TRANSLATE_MODEL",
         "lm_studio_url": "LM_STUDIO_URL",
+        "ollama_url": "OLLAMA_URL",
         "output_dir": "OUTPUT_DIR",
     }
     for key, env_var in env_overrides.items():
