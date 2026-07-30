@@ -958,13 +958,30 @@ has `test_llm_client.py` — the largest client is the tested one, which is fort
       extra, because its only entry point *is* its API; behind an extra,
       `uv sync --extra transcribe` would resolve to an app that cannot start.
 
-- [ ] **Two model-endpoint gaps found while fixing compose, both needing a `.py` change.**
-      `artifice-ocr`'s `ollama_url` (`_backend.py:62`) and `artifice-graph`'s `llm.base_url` have
-      **no environment-variable override** — they come from YAML or a GUI settings file only. So a
-      container cannot be pointed at the host's model server, and both will try `localhost:11434`
-      *inside* the container regardless of what compose sets. ocr's fix is one entry in the
-      `env_overrides` dict at `config.py:135-141`. Until then the Docker path requires a mounted
-      config or web-UI configuration, which is not "easy for people who did not build it".
+- [x] ~~**Two model-endpoint gaps found while fixing compose, both needing a `.py` change.**
+      `artifice-ocr`'s `ollama_url` and `artifice-graph`'s `llm.base_url` have **no
+      environment-variable override**~~ — **closed 2026-07-30, commit `af429c3`.**
+
+      `artifice-ocr`: one entry in the existing `env_overrides` dict (`config.py:144`) — a
+      single line, exactly as this item predicted.
+
+      `artifice-graph`: no env layer existed at all, so `_apply_env_overrides`
+      (`config.py:208-228`) is new, reading `LLM_BASE_URL` and `EMBEDDING_BASE_URL`. Precedence
+      is env > user config > `config.yaml` > pydantic defaults, applied at the end of
+      `load_config` so CLI arguments applied by callers still win. Blank and whitespace-only
+      values are ignored rather than overwriting a good default with an empty string.
+
+      **Scope, stated because this plan's most expensive failure is a narrow result recorded as a
+      general one:** this covered `ocr` and `graph` only. `artifice-draft` already had
+      `OLLAMA_URL` (`config.py:83`) and needed no change; `artifice-transcribe` reads env
+      natively via pydantic `BaseSettings`. `docker-compose.yml` now sets the vars via
+      `host.docker.internal` on the three services that need them, and the three comments
+      documenting the gap were removed as false.
+
+      **What is still not proven:** the tests establish that the env var is read and takes
+      precedence. **No test starts a container and reaches a host model server** — the compose
+      wiring itself remains unexercised by CI, and that is the claim a reader is most likely to
+      over-read here.
 - [x] ~~Commission `arch-auditor-docs` for a full parity audit once the above lands~~ — **run
       2026-07-28.** Findings folded into Part II and Part IV. Two of its six checks refuted a
       recorded claim; the orchestrator independently re-verified every consequential finding, and
@@ -982,9 +999,19 @@ has `test_llm_client.py` — the largest client is the tested one, which is fort
       this plan documents repeatedly: a stale constraint reads as a live one, and the next brief is
       written against it.
 
-**Verified at Phase 4 close, 2026-07-30.** Per-app suites, as CI runs them: ocr 418 passed/1
-skipped, draft 187, graph 87, transcribe 70 (`--ignore=tests/test_api.py`, per CI), model-harness
-128. `gitleaks detect --redact --no-banner` exits 0, no leaks. Wheels rebuilt via
+**Verified at Phase 4 close, re-measured 2026-07-30 after commit `af429c3`.** Per-app suites, as
+CI runs them: ocr **424** passed/1 skipped, draft 187, graph **96**, transcribe 70
+(`--ignore=tests/test_api.py`, per CI), model-harness 128 — **905 passing, 1 skipped** in total.
+`gitleaks detect --redact --no-banner` exits 0, no leaks; `token-parity-check.py` and
+`audit-controls.py` both exit 0.
+
+> **Two figures in the previous version of this paragraph were wrong, in both directions.** It
+> recorded ocr as 418 and graph as 87. The env-var work added 2 ocr and 7 graph test functions
+> (parametrised, so the pass counts rose by 4 and 9), which accounts for 424 and 96 — but the old
+> **418 for ocr never matched `ci.yml`'s own baseline comment of 420 even before this work**, so
+> that figure was already drifting independently of any code change. Both `ci.yml` comments were
+> corrected in the same commit. This is the fourth time a recorded test count in this file has been
+> refuted by re-running the suite; **re-measure before quoting any figure here as a constraint.** Wheels rebuilt via
 `scripts/build-wheel.sh` and inspected with `zipfile`: graph's carries all four `web/templates/`
 files and 13 `web/static/`; ocr's carries its fonts and all three prompt templates. `uv lock`
 regenerated — it still recorded `artifice-suite v1.0.0`, so **`--frozen` in the new Dockerfiles was
@@ -1006,12 +1033,148 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
       2026-07-29.
 - [x] ~~`gitleaks` in CI, per the Zero Secrets Policy~~ — **Landed, measured 2026-07-29.** The
       `gates` job runs `gitleaks detect --redact --no-banner`.
-- [ ] Cross-platform CI matrix — **partly landed, re-measured 2026-07-29.** OCR runs on Windows,
-      macOS and Linux in `tests-cross-platform`; WSL2 remains represented indirectly by Linux rather
-      than by a hosted runner, and the other three apps are not yet in the cross-platform matrix.
-- [ ] Full `security-auditor` sweep of every ingestion surface (OCR upload, audio upload, graph
-      import, document ingest) for path traversal, zip-slip and decompression bombs
-- [ ] Test coverage for the restored `pipeline.js` and the SSE log broker, which have none
+- [x] ~~Cross-platform CI matrix — partly landed; the other three apps are not yet in the
+      matrix~~ — **closed by re-measurement 2026-07-30, no code change needed.** The claim was
+      stale. `ci.yml`'s `tests-cross-platform` job declares
+      `os: [ubuntu-latest, windows-latest, macos-latest]` against
+      `app: [artifice-ocr, artifice-draft, artifice-graph, artifice-transcribe]` — **all four apps
+      on all three platforms, 12 combinations**, with `fail-fast: false` so one red result cannot
+      hide the other eleven. It works: commit `8ea2b1f` fixed three genuine cross-platform defects
+      "the new CI matrix caught on day one".
+
+      The one part that remains true: **WSL2 is represented indirectly by Linux rather than by a
+      hosted runner.** That is not a gap to close — GitHub offers no WSL2 runner — so it is a
+      documented limitation, not a task. Treat it as closed.
+- [ ] **5.1 — Licensing, comprehensively.** See the dedicated subsection below.
+
+      **Partly done already, and the origin matters.** The maintainer began an SPDX pass by hand on
+      2026-07-30 as a test of the approach, tagging 115 of 197 tracked `.py` files before the session
+      was interrupted; commit `841eb0d` finished the mechanical remainder, so **all 197 tracked `.py`
+      files across all four apps and both packages now carry the MIT header.**
+
+      **That is a Python-only result and the repository is NOT REUSE-compliant.** `.css`, `.js`,
+      `.html` and `.md` are untouched, there is no `LICENSES/` directory, and `reuse lint` would
+      still fail. The decision to do the job properly here, rather than let a half-finished pass
+      look complete, is the maintainer's — recorded because a partial pass silently read as a
+      general one is this plan's most-repeated failure.
+- [ ] **5.2 — Full `security-auditor` sweep** of every ingestion surface (OCR upload, audio upload,
+      graph import, document ingest) for path traversal, zip-slip and decompression bombs.
+- [ ] **5.3 — Front-end test coverage** for `pipeline.js` and the SSE log broker.
+      **Re-measured 2026-07-30, and the item was understated:** `pipeline.js` is
+      `apps/artifice-graph/src/artifice_graph/web/static/pipeline.js`, **915 lines**, referenced by
+      no test anywhere in the repo. The SSE broker is
+      `apps/artifice-ocr/src/artifice_ocr/web/routers/events.py`, 48 lines; `test_web.py` imports
+      and monkeypatches it, but its own header comment (`test_web.py:8`) states the stream "is
+      exercised manually against a live" server — so the endpoint has no automated coverage.
+      **There is no JavaScript test runner anywhere in the repo** — no `package.json`, no vitest or
+      jest config. This item therefore cannot start without a decision (Step 0 below).
+
+---
+
+#### Phase 5 — step-by-step execution plan
+
+**Written 2026-07-30.** Ordering is deliberate: the two items that need no decision run first and in
+parallel, because they touch disjoint files and use different agents. Every brief below follows the
+four-part format from `CLAUDE.md` (**objective / scope / constraints / deliverable**) and inherits
+these standing rules:
+
+- Dispatch with `bash scripts/dispatch-opencode.sh <agent> <brief-file>`. Never hand-roll
+  `opencode run`. Confirm the response banner reads `> <agent> · <expected-model>`.
+- **Only `lead-engineer` and `tester` have `bash`, `write` and `edit`.** `security-auditor`,
+  `code-reviewer` and `oss-reviewer` are read-only — a brief that asks them to run a command or
+  apply a fix wastes the run. `arch-auditor-docs` reports proposed text and changes nothing unless
+  the brief explicitly says *use Edit/Write*; verify with `git diff` either way.
+- **Audit findings return to the orchestrator, never straight to `lead-engineer`, and no code is
+  written off an audit until the maintainer has seen it.**
+- Brief every agent to **disagree**: state figures as "my survey may be wrong — report the
+  discrepancy rather than adjusting to match". Three of this phase's own premises were stale.
+- Judge a quiet agent by **CPU time against wall time**, not by its log — logs are block-buffered
+  and both billing tiers have failed silently before.
+
+**Step 0 — two decisions only the maintainer can make.** Both block work; neither is technical
+trivia.
+
+1. **A JavaScript test runner: yes or no?** 5.3 cannot begin without this. Adding vitest introduces
+   `package.json` and a Node toolchain to a repo whose rule is *"Do not run bare `pip install` or
+   legacy Node/npm scripts"* and whose four apps are deliberately vanilla JS. The alternative is to
+   cover `pipeline.js` behaviourally from Python — drive the served page and assert on DOM and
+   network effects — which needs no Node but cannot unit-test 915 lines of logic.
+2. **Per-file headers or `REUSE.toml` for the non-code surfaces?** Recommended: `REUSE.toml`.
+   Real headers belong in source files, but stamping `.md`, `.css` and `.json` individually is
+   noisy and, for JSON, impossible without a sidecar. `REUSE.toml` declares those in bulk in one
+   auditable place.
+
+**Step 1 — 5.1 Licensing, comprehensively.** Agent: **`lead-engineer`** (needs `write`/`edit`).
+Mechanical, low-risk, and independent of everything else, so it goes first.
+
+> **Objective.** Make the repository REUSE-compliant, so `reuse lint` exits 0 and every file's
+> licence is machine-determinable.
+>
+> **Scope.** `LICENSES/MIT.txt` (new); `REUSE.toml` (new); SPDX headers for the `.css`, `.js`,
+> `.html`, `.sh` and `.ps1` files under `apps/*/src/**/web/`, `packages/`, `design-system/` and
+> `scripts/`; one new `gates` step in `.github/workflows/ci.yml`. **Do not touch any `.py` file** —
+> all 197 are already tagged (commit `841eb0d`) and re-running a header pass over them risks
+> duplicate blocks.
+>
+> **Constraints.** Header text is fixed and must match the existing Python files byte-for-byte:
+> `# SPDX-FileCopyrightText: 2026 Maurice Casey` / `#` / `# SPDX-License-Identifier: MIT`, with the
+> comment leader adapted per syntax (`/* */` for CSS, `//` for JS). **`.gitattributes` forces
+> `eol=lf`; preserve it** — a CRLF shebang breaks a shell script under WSL2 with
+> `bad interpreter: /bin/bash^M`. Fonts under `apps/artifice-ocr/assets/fonts/` carry **third-party**
+> licences: declare them in `REUSE.toml` with their real upstream licence and **do not** stamp them
+> MIT. CI already asserts font-licence presence in the `wheel` job (`ci.yml:211`) — do not weaken it.
+>
+> **Deliverable.** `reuse lint` exiting 0, quoted verbatim, plus the new CI step and a list of every
+> file whose licence was declared rather than stamped, with the reason.
+
+**Step 2 — 5.2 Security sweep.** Agent: **`security-auditor`** (read-only, `qwen3.7-max`). Runs in
+parallel with Step 1 — different files, different agent, no shared state.
+
+> **Objective.** Determine whether any ingestion surface accepts a hostile input that escapes its
+> intended directory, exhausts memory or disk, or is written outside the sandbox.
+>
+> **Scope, four surfaces, named explicitly:** OCR image/PDF upload (`apps/artifice-ocr/src/artifice_ocr/web/`),
+> audio upload (`apps/artifice-transcribe/src/artifice_transcribe/`), graph import
+> (`apps/artifice-graph/src/artifice_graph/ingestion/`), document ingest
+> (`apps/artifice-draft/src/artifice_draft/doc_parser.py`). Read-only.
+>
+> **Constraints.** Report `file:line` for every finding, ranked most-severe first, and **state
+> plainly when a surface is clean — do not pad the report to look thorough.** Cover path traversal
+> (`../`, absolute paths, symlinks, Windows drive letters and UNC paths), zip-slip in any archive
+> path, decompression bombs, and unbounded upload size. You have **no `bash`, `write` or `edit`** —
+> do not propose running anything; cite code. Note that `os.open(..., 0o600)` does **not** protect a
+> file on Windows (Part IV open item 0) — flag any new instance, but that specific fix is already
+> tracked and is not yours to solve.
+>
+> **Deliverable.** A ranked findings list, each with surface, `file:line`, the hostile input, and the
+> concrete consequence. **No code changes.**
+
+**Step 3 — triage 5.2, then fix.** Orchestrator folds the findings into Part II and Part IV,
+re-verifies every consequential one independently (the last audit got two of six wrong, and the
+orchestrator caught both), and **puts them to the maintainer before any code is written.** Only then
+does **`lead-engineer`** receive a bounded fix brief, one surface per brief.
+
+**Step 4 — 5.3 Front-end coverage.** Unblocked by Step 0's runner decision. Agents:
+**`lead-engineer`** writes, **`tester`** runs and triages.
+
+- The **SSE broker** needs no decision and can start immediately: it is 48 lines of Python, and
+  FastAPI's `TestClient` can consume `text/event-stream` directly. Brief `lead-engineer` to cover
+  connect, event delivery, and client disconnect without leaking the queue.
+- **`pipeline.js`** waits on Step 0. If the answer is "no Node", scope it to behavioural coverage of
+  the served page and expect to cover far less than 915 lines — **say so in the plan rather than
+  reporting the item complete.**
+
+**Step 5 — review gate before merge.** **`code-reviewer`** (`minimax-m3`) reviews the whole branch;
+it is deliberately on a different model from `lead-engineer` so it is not grading its own family's
+work. Then **`oss-reviewer`** — a local 12B that **silently summarises instead of reviewing when
+over-fed, and still exits 0**. Give it **one diff at a time** and reject any output that reads as a
+summary.
+
+**Not in Phase 5, and deliberately so.** The Windows API-key permission bug (Part IV open item 0) is
+listed under Phase 6 because it gates *packaging*, but it is a live security defect today: `0o600`
+reports `0o666` on Windows and both ocr's `settings.json` and transcribe's inference config hold an
+API key. If Phase 5 is meant to be the security phase, **the maintainer should decide whether this
+moves here** rather than shipping with it.
 
 ### Phase 6 — Packaging for ordinary users
 
@@ -1165,9 +1328,12 @@ of them propagated into a wrong instruction given to an agent.
    that would otherwise be a user's first impression of "local-first" software.
 4. **Delete the committed `.idea/` directories** — **8** files still tracked, measured 2026-07-28.
    Trivial, and it has survived several sessions on this list.
-5. **Cross-platform CI scope.** CI now exists, but only OCR runs in the Windows/macOS/Linux matrix;
-   WSL2 remains represented indirectly by Linux rather than by a hosted runner, and the other three
-   apps are not yet in that matrix.
+5. ~~**Cross-platform CI scope.** CI now exists, but only OCR runs in the Windows/macOS/Linux
+   matrix, and the other three apps are not yet in that matrix.~~ — **closed by re-measurement
+   2026-07-30; the claim was stale.** `ci.yml`'s `tests-cross-platform` job runs **all four apps on
+   all three platforms — 12 combinations** — with `fail-fast: false`. Only the WSL2 clause survives:
+   it is represented indirectly by Linux because GitHub offers no WSL2 runner, which is a documented
+   limitation rather than a task. See Phase 5.
 6. **Minimal-computing audit — OCR pre-pass.** `artifice-ocr`'s cleanup stage sends raw text
    straight to a model with no deterministic pre-pass. Three of its four requested repairs are
    scriptable exactly; **work in flight**, not done. The counter-example and model to follow:
