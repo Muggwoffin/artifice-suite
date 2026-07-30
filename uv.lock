@@ -247,6 +247,7 @@ dependencies = [
     { name = "model-harness" },
     { name = "python-docx" },
     { name = "requests" },
+    { name = "secure-io" },
     { name = "shared-ui" },
 ]
 
@@ -272,6 +273,7 @@ requires-dist = [
     { name = "pywebview", marker = "extra == 'web'", specifier = ">=4.4" },
     { name = "readability-lxml", marker = "extra == 'web'", specifier = ">=0.8.1" },
     { name = "requests", specifier = ">=2.31.0" },
+    { name = "secure-io", editable = "packages/secure-io" },
     { name = "shared-ui", editable = "packages/shared-ui" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.29" },
 ]
@@ -288,6 +290,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "rich" },
+    { name = "secure-io" },
     { name = "shared-ui" },
     { name = "typer" },
 ]
@@ -311,6 +314,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
+    { name = "secure-io", editable = "packages/secure-io" },
     { name = "shared-ui", editable = "packages/shared-ui" },
     { name = "typer", extras = ["all"], specifier = ">=0.12" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.20" },

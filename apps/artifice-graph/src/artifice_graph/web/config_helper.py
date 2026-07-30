@@ -83,7 +83,9 @@ def load_saved_config() -> PipelineConfig | None:
 
 
 def save_user_config(config: PipelineConfig) -> None:
-    """Save user configuration to file."""
+    """Save user configuration to file (all sections, with restricted permissions)."""
+    from secure_io import restrict_to_current_user, write_private_json
+
     ensure_preferences_dir()
 
     data = {
@@ -96,8 +98,8 @@ def save_user_config(config: PipelineConfig) -> None:
         "storage": config.storage.model_dump(),
     }
 
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    write_private_json(CONFIG_FILE, data)
+    restrict_to_current_user(CONFIG_FILE)
 
 
 def apply_preferences_to_config(config: PipelineConfig, preferences: UserPreferences) -> PipelineConfig:

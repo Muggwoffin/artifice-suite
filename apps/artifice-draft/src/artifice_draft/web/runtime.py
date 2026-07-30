@@ -58,8 +58,9 @@ _EXT_MAP = {
 
 
 # --------------------------------------------------------------------------- #
-# settings — non-secret only; API keys stay in environment variables and are
-# never read from or written back to a browser form.
+# settings — persisted as JSON at ~/.artifice_draft/web_settings.json.
+# Includes api_key alongside non-secret preferences; the file is protected
+# by OS-level access controls (POSIX 0o600 / Windows restricted ACL).
 # --------------------------------------------------------------------------- #
 
 def load_settings() -> dict:
@@ -78,10 +79,13 @@ def save_settings(patch: dict) -> dict:
     merge settings save that silently dropped every other saved key the first
     time the web UI wrote just one field. Don't repeat that here.
     """
+    from secure_io import restrict_to_current_user, write_private_json
+
     current = load_settings()
     current.update(patch)
     _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _SETTINGS_PATH.write_text(json.dumps(current, indent=2), encoding="utf-8")
+    write_private_json(_SETTINGS_PATH, current)
+    restrict_to_current_user(_SETTINGS_PATH)
     return current
 
 
