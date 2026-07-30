@@ -17,9 +17,6 @@
   --ink-faint: #635e51;
   --rule: #ddd6c6;
   --rule-dark: #45413a;
-  --accent: #2f7d45;
-  --accent-deep: #1f5a31;
-  --accent-wash: rgba(47, 125, 69, 0.07);
   --gold: #bf9b30;
 
   /* Semantic (status, not part of core identity) */
@@ -112,8 +109,29 @@
   --control-height: 2.75rem;
 }
 
+/* ── Per-App Accent Identity ─────────────────────────────────────────────
+   --accent, --accent-deep and --accent-wash are NOT declared in canonical
+   runtime tokens.  Each app supplies its own triple in its local app.css,
+   inheriting through the cascade:
+     artifice-ocr       — viridian     #017259 / #005942 / rgba(1,114,89,0.07)
+                                           light 5.33:1 against --paper
+     artifice-graph     — ink blue     #066a9c / #005282 / rgba(6,106,156,0.07)
+                                           light 5.33:1 against --paper
+     artifice-draft     — deep berry   #892254 / #6d003d / rgba(137,34,84,0.07)
+                                           light 7.82:1 against --paper
+                                           (deliberately darker — L*32, C*47)
+     artifice-transcribe — violet      #715993 / #584179 / rgba(113,89,147,0.07)
+                                           light 5.33:1 against --paper
+   Dark-mode values are declared in each app's @media / [data-theme] blocks.
+   --accent-deep is lighter than --accent in dark mode (Design_Philosophy.md
+   §2: "is used as text — must read light").  Do not "correct" this.
+   Shared components reference var(--accent) and rely on cascade inheritance
+   from the host app.  Dev-only preview routes (e.g. /byom-preview) must
+   load a host app stylesheet to supply the --accent value.
+   ======================================================================= */
+
 ::selection {
-  background: rgba(47, 125, 69, 0.22);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--ink);
 }
 
@@ -132,13 +150,6 @@
     --ink-faint: #a39a88;
     --rule: #38332b;
     --rule-dark: #5b554a;
-    --accent: #4aa066;
-    /* --accent-deep is lighter than --accent in dark mode — not a bug. Per
-       Design_Philosophy.md §2, --accent-deep "is used as text — must read
-       light" against the dark paper ground. Do not "fix" this to be darker
-       than --accent. */
-    --accent-deep: #7cc492;
-    --accent-wash: rgba(74, 160, 102, 0.12);
     --gold: #bf9b30;
 
     /* --success is deliberately a different hue family (moss/olive, ~H100)
@@ -173,11 +184,6 @@
   --ink-faint: #a39a88;
   --rule: #38332b;
   --rule-dark: #5b554a;
-  --accent: #4aa066;
-  /* See the matching comment in the prefers-color-scheme block above —
-     lighter-than---accent is intentional here, not a bug. */
-  --accent-deep: #7cc492;
-  --accent-wash: rgba(74, 160, 102, 0.12);
   --gold: #bf9b30;
 
   /* See the matching comment in the prefers-color-scheme block above —

@@ -8,6 +8,25 @@
   Derived from E:\Claude Sandbox\ArtificeTranscribe\Design_Philosophy.md
 */
 
+/* ── App Accent Identity — Violet ──────────────────── */
+:root {
+  --accent: #715993;
+  --accent-deep: #584179;
+  --accent-wash: rgba(113, 89, 147, 0.07);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --accent: #9178b4;
+    --accent-deep: #ac92d0;
+    --accent-wash: rgba(145, 120, 180, 0.12);
+  }
+}
+[data-theme="dark"] {
+  --accent: #9178b4;
+  --accent-deep: #ac92d0;
+  --accent-wash: rgba(145, 120, 180, 0.12);
+}
+
 /* Canonical design tokens (paper/ink, accent, semantic status colours,
    typography, fluid type scale, shadows, radius scale, spacing, motion,
    layout) are served by packages/shared-ui at /shared/tokens.css and
@@ -663,7 +682,7 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
   padding: 0 1px;
 }
 .diff-add {
-  background: rgba(47, 125, 69, 0.15);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent-deep);
   border-radius: 2px;
   padding: 0 1px;

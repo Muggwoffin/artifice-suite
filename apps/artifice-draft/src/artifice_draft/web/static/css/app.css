@@ -22,6 +22,10 @@
    shared-ui. */
 
 :root {
+  --accent: #892254;
+  --accent-deep: #6d003d;
+  --accent-wash: rgba(137, 34, 84, 0.07);
+
   /* Diff / Review Highlights */
   --diff-insert: #dcead9;
   --diff-delete: #f2ddd9;
@@ -33,6 +37,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --accent: #ca5f8c;
+    --accent-deep: #e77aa6;
+    --accent-wash: rgba(202, 95, 140, 0.12);
+
     --diff-insert: #1e2b1f;
     --diff-delete: #2f1f1c;
     --diff-replace: #2e2718;
@@ -42,7 +50,7 @@
 
 /* ---------------------------------------------------------------- Selection */
 ::selection {
-  background: rgba(47, 125, 69, 0.22);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--ink);
 }
 
