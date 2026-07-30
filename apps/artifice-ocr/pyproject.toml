@@ -39,3 +39,6 @@ where = ["src"]
 [tool.setuptools.package-data]
 "artifice_ocr.web" = ["static/**", "fonts/*.ttf", "fonts/*.txt"]
 "artifice_ocr.prompts" = ["*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

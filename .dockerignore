@@ -1,0 +1,21 @@
+# Python virtual environment
+.venv/
+
+# Version control
+.git/
+
+# Bytecode
+**/__pycache__/
+
+# Build artifacts
+build/
+dist/
+
+# Windows Zone.Identifier
+*Zone.Identifier
+
+# Data directories
+**/data/
+
+# Node (should not be in tree, but safety)
+node_modules/

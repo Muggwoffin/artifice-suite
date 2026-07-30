@@ -6,7 +6,9 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
+from ...config import get as config_get
 from ..models import LudwigLangExportRequest
+from ..validation import validate_contained
 
 router = APIRouter(tags=["ludwiglang"])
 
@@ -63,7 +65,13 @@ def ludwiglang_export(req: LudwigLangExportRequest) -> dict:
 
 @router.get("/api/ludwiglang/download")
 def ludwiglang_download(path: str) -> FileResponse:
-    p = Path(path)
+    output_dir = config_get("output_dir", "output")
+    # must_exist=False so that containment is enforced without existence being
+    # folded into the same answer: a file inside output_dir that is simply not
+    # there is a 404 below, while anything outside it is a 400 from the
+    # validator. Requiring existence here would make every miss a 400.
+    normalised = validate_contained(path, output_dir, "path", must_exist=False)
+    p = Path(normalised)
     if not p.exists():
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(p, media_type="text/markdown", filename=p.name)

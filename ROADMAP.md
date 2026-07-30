@@ -118,14 +118,10 @@ result, and a degradation ladder — it is not a feature this project will add.
 
 ### Current state
 
-All four apps declare `version = "0.1.0"` in their individual `pyproject.toml` files. The
-root `pyproject.toml` and `CITATION.cff` both declare `version: 1.0.0`. **This inconsistency
-will confuse the first person who tries to cite a specific version.** The suite presents
-itself as `1.0.0`; each app presents itself as `0.1.0`. A JOSS submission citing `artifice-suite 1.0.0` while the individual packages are `0.1.0` is a documentation inconsistency that reviewers will notice.
-
-**This should be corrected before the first public release.** The choices are: all `1.0.0`
-(ready for public use), or all `0.1.0` (not ready). A suite at `1.0.0` with individual
-packages at `0.1.0` is not a choice; it is an accident.
+Resolved 2026-07-30: all five `pyproject.toml` files and `CITATION.cff` now declare
+`version = "0.1.0"`. The maintainer's decision was to keep the suite at `0.1.0` precisely
+because Phases 4–6 are not yet complete; `0.1.0` signals pre-release software, which is
+accurate. The root `pyproject.toml` was previously `1.0.0`, creating the documented mismatch.
 
 ### Cadence
 

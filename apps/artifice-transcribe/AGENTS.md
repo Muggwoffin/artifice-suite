@@ -6,8 +6,17 @@ FastAPI backend for speech-to-text + speaker diarization. Uses WhisperX (Whisper
 
 ## Dev Commands
 
+> **Note:** the paths in this file still use an `app/` prefix from before the
+> `0979359` web-layer migration. The real package root is
+> `src/artifice_transcribe/`, and the web assets are at
+> `src/artifice_transcribe/web/static/`. Read `app/x` as
+> `src/artifice_transcribe/x` until this file is rewritten.
+
 ```bash
-pip install -e ".[dev]"        # install with dev extras
+uv sync                        # from the REPO ROOT — installs the root
+                               # [dependency-groups] dev. There is no per-app
+                               # [dev] extra any more; `pip install -e ".[dev]"`
+                               # no longer resolves.
 python -m artifice_transcribe.main              # run server on :8000, opens web UI at http://127.0.0.1:8000
 start.bat                       # Windows shortcut: starts server + opens browser
 python tests/test_api.py        # e2e verification (needs audio arg for full test)

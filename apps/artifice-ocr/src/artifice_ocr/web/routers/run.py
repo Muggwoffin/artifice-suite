@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from ...jobs import STAGES
 from ..models import SkipRequest, StartRunRequest
 from ..runtime import state
+from ..validation import validate_directory
 
 router = APIRouter(tags=["run"])
 
@@ -12,8 +13,9 @@ router = APIRouter(tags=["run"])
 @router.post("/api/run/start")
 def start_run(req: StartRunRequest) -> dict:
     stages = {s for s in req.stages if s in STAGES}
+    output_dir = validate_directory(req.output_dir, "output_dir")
     try:
-        state.start_run(stages=stages, output_dir=req.output_dir, force=req.force)
+        state.start_run(stages=stages, output_dir=output_dir, force=req.force)
     except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return {"ok": True}

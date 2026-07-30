@@ -2,6 +2,7 @@
 name = "artifice-graph"
 version = "0.1.0"
 description = "Modular local-first GraphRAG & Entity Extraction pipeline for historical OCR text"
+readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -17,10 +18,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-asyncio>=0.23",
-]
+# No `dev` extra here: dev tooling lives in the root pyproject.toml's
+# [dependency-groups] dev, which `uv sync` installs by default and which CI
+# uses. A per-app duplicate drifts from it silently.
 web = [
     "fastapi>=0.100",
     "uvicorn[standard]>=0.20",
@@ -33,6 +33,12 @@ artifice-graph = "artifice_graph.cli:app"
 artifice-graph-web = "artifice_graph.web.server:main"
 
 [build-system]
+# Deliberate: hatchling auto-includes files inside the package directory.
+# graph is the only app with both a templates/ and a static/ tree; converting
+# to setuptools risks silently dropping them from the wheel — a class of bug
+# this project has shipped four times and no test can see.
+# Both packages/model-harness and packages/shared-ui also use hatchling,
+# so graph is not an outlier here.
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 

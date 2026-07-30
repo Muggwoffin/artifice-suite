@@ -929,14 +929,73 @@ has `test_llm_client.py` — the largest client is the tested one, which is fort
 
 - [x] ~~Choose one canonical web-layer location and migrate all four apps to it~~ — **done in
       commit `0979359`**, verified 2026-07-28. All four apps use `src/artifice_<slug>/web/`
-- [ ] Align `pyproject.toml` definitions and Docker configuration across apps
+- [x] ~~Align `pyproject.toml` definitions and Docker configuration across apps~~ — **done
+      2026-07-30.** Recorded below, because "align" turned out to understate the Docker half.
+
+      **The Docker configuration was not unaligned; it was non-functional in all four apps.** Every
+      Dockerfile ran `pip install -e .` against an app declaring `shared-ui` and `model-harness` —
+      workspace-only packages, unpublished (both 404 on PyPI). Plain pip cannot resolve an
+      unpublished local sibling, which the root `pyproject.toml:38-49` comment already said. All
+      four builds failed. Now each installs the workspace with `uv sync --frozen --package <app>`
+      from a repo-root context, with uv pinned to `0.11.32`.
+
+      Three further defects found in the same pass: `artifice-graph`'s `CMD` was
+      `python -m web.server`, a module deleted by the `0979359` migration two days earlier;
+      **`MODEL_HARNESS_ENDPOINT`, set on three compose services, is read by no code in the repo**;
+      and no `.dockerignore` existed, so every build shipped `.venv` and `.git`.
+
+      pyproject side: `readme` added to graph and transcribe, `testpaths` to ocr, `[tool.ruff]`
+      hoisted to the root so all four inherit it, per-app `dev` extras deleted in favour of the root
+      `[dependency-groups] dev` (with `httpx` and `ruff` added there so nothing was dropped), and
+      **the root version moved `1.0.0` → `0.1.0`** to match the four apps — the mismatch `ROADMAP.md`
+      called "not a choice; it is an accident". `CITATION.cff` follows.
+
+      **Two divergences were kept deliberately, each now carrying a comment saying why.**
+      `artifice-graph` stays on hatchling: it is the only app with both a `templates/` and a
+      `static/` tree and has no explicit `package-data`, so converting it to setuptools risks
+      silently emptying the wheel — the one bug class no test can see. `artifice-transcribe` keeps
+      `fastapi`/`uvicorn`/`python-multipart` as core dependencies rather than behind a `[web]`
+      extra, because its only entry point *is* its API; behind an extra,
+      `uv sync --extra transcribe` would resolve to an app that cannot start.
+
+- [ ] **Two model-endpoint gaps found while fixing compose, both needing a `.py` change.**
+      `artifice-ocr`'s `ollama_url` (`_backend.py:62`) and `artifice-graph`'s `llm.base_url` have
+      **no environment-variable override** — they come from YAML or a GUI settings file only. So a
+      container cannot be pointed at the host's model server, and both will try `localhost:11434`
+      *inside* the container regardless of what compose sets. ocr's fix is one entry in the
+      `env_overrides` dict at `config.py:135-141`. Until then the Docker path requires a mounted
+      config or web-UI configuration, which is not "easy for people who did not build it".
 - [x] ~~Commission `arch-auditor-docs` for a full parity audit once the above lands~~ — **run
       2026-07-28.** Findings folded into Part II and Part IV. Two of its six checks refuted a
       recorded claim; the orchestrator independently re-verified every consequential finding, and
       corrected two the auditor got wrong (`Zone.Identifier` files and `build/lib/` directories
       are present on disk but **not tracked in git**, so neither is a repository problem)
-- [ ] Remaining parity gap: only `artifice-graph` has a `templates/` tree. The other three are a
-      single static `index.html` each — thinness, not divergence
+- [x] ~~Remaining parity gap: only `artifice-graph` has a `templates/` tree. The other three are a
+      single static `index.html` each — thinness, not divergence~~ — **closed as "no action needed",
+      2026-07-30.** Re-measured: the reading still holds, and it is now load-bearing rather than
+      cosmetic — it is precisely why graph's build backend must not be changed casually (above).
+
+      Also corrected in `CLAUDE.md` on the same pass: its canonical-web-layout section still listed
+      `artifice-graph` and `artifice-transcribe` as deviating, scheduled to move. **Neither legacy
+      path exists on disk** — `0979359` closed both, and all four apps now resolve to
+      `src/artifice_<slug>/web/static/`. The note outlived the fix by two days. That is the failure
+      this plan documents repeatedly: a stale constraint reads as a live one, and the next brief is
+      written against it.
+
+**Verified at Phase 4 close, 2026-07-30.** Per-app suites, as CI runs them: ocr 418 passed/1
+skipped, draft 187, graph 87, transcribe 70 (`--ignore=tests/test_api.py`, per CI), model-harness
+128. `gitleaks detect --redact --no-banner` exits 0, no leaks. Wheels rebuilt via
+`scripts/build-wheel.sh` and inspected with `zipfile`: graph's carries all four `web/templates/`
+files and 13 `web/static/`; ocr's carries its fonts and all three prompt templates. `uv lock`
+regenerated — it still recorded `artifice-suite v1.0.0`, so **`--frozen` in the new Dockerfiles was
+reading a stale lock**; note that `--frozen` skips the freshness check rather than enforcing it, and
+`--locked` is the flag that fails on staleness.
+
+**A whole-suite `pytest` from the repo root does not work and never did.** It dies with
+`ModuleNotFoundError: No module named 'tests.<module>'` during collection, because
+`artifice-draft` and `artifice-graph` both ship a `tests/__init__.py` and so both define a package
+literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` per matrix entry
+(`ci.yml`). Worth knowing before reading a root-level run as a regression — it is not one.
 
 ### Phase 5 — Engineering quality gates
 

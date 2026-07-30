@@ -57,29 +57,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # artfice-ocr: 306 passed, 1 skipped — clean baseline.
+          # artifice-ocr: 420 passed, 1 skipped — clean baseline (2026-07-30).
           # No extra dependencies needed beyond the workspace root.
           - app: artifice-ocr
             extra-args: ""
 
-          # artifice-draft: 149 passed.
+          # artifice-draft: 187 passed (2026-07-30).
           # The root `all` extra declares `artifice-draft[web]`, which pulls
           # in readability-lxml, fastapi, uvicorn, etc. — everything the
           # test suite needs.  No separate per-app install step is required.
           - app: artifice-draft
             extra-args: ""
 
-          # artifice-graph: 47 passed — clean baseline.  No extras needed.
+          # artifice-graph: 87 passed — clean baseline (2026-07-30).  No extras needed.
           - app: artifice-graph
             extra-args: ""
 
-          # artifice-transcribe: 50 passed, 3 failed (being fixed separately).
-          # The error is `fixture 'audio_path' not found` in
-          # tests/test_api.py, which is a standalone end-to-end script (not a
-          # pytest test suite).  pytest collects it because the function is
-          # named `test_*` and its parameter `audio_path` is not a registered
-          # fixture.  Ignoring the file is legitimate — it needs a live
-          # server and an actual audio file, neither of which exists in CI.
+          # artifice-transcribe: 70 passed (2026-07-30).
+          # tests/test_api.py is excluded permanently via
+          # apps/artifice-transcribe/tests/conftest.py:20 (collect_ignore).
+          # It is a standalone live-server script expecting 127.0.0.1:8000 and
+          # an audio path in sys.argv[1]; headless coverage lives in
+          # test_api_e2e.py.  The --ignore flag below is redundant with conftest
+          # and is retained only so the intent is visible in the matrix entry.
           - app: artifice-transcribe
             extra-args: "--ignore=tests/test_api.py"
 
@@ -212,26 +212,30 @@ jobs:
           "
 
   # ── Multi-platform smoke test ─────────────────────────────────────────────
-  # The suite targets Windows and macOS as well as Linux.  A full matrix
-  # across three OSes × four apps would be 12 jobs.  That is not practical
-  # here: several test suites import platform-specific modules (tkinter on
-  # Linux requires a display server; whisperx pulls PyTorch with CUDA
-  # shims).  Running a single representative app (ocr) across all three
-  # platforms gives us cross-build confidence without tripling the test
-  # runtime.  Expand this when CI bandwidth permits.
+  # All four apps × three platforms.  Previously this job covered only
+  # artifice-ocr, so artifice-draft, artifice-graph and
+  # artifice-transcribe had never been exercised on Windows or macOS in CI.
+  #
+  # transcribe pulls large ML dependencies (whisperx, torch, pyannote) and
+  # its suite takes ~35 s locally.  If a hosted runner cannot install its
+  # deps on a particular platform, that combination should be excluded
+  # explicitly in the matrix below with a comment explaining why — do not
+  # drop the app entirely or let it fail silently.
   tests-cross-platform:
     needs: gates
     runs-on: ${{ matrix.os }}
     strategy:
       # The whole point of this job is comparing platforms.  Cancelling the
-      # other two the moment one fails destroys exactly the signal it exists
-      # to produce.
+      # other combinations the moment one fails destroys exactly the signal
+      # it exists to produce.  fail-fast: false is *more* important now that
+      # there are 12 combinations instead of 3.
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        app: [artifice-ocr, artifice-draft, artifice-graph, artifice-transcribe]
     defaults:
       run:
-        working-directory: apps/artifice-ocr
+        working-directory: apps/${{ matrix.app }}
 
     steps:
       - uses: actions/checkout@v4
@@ -242,8 +246,8 @@ jobs:
           enable-cache: true
 
       - name: Install workspace root dependencies
-        run: uv sync --group dev --extra ocr-web
+        run: uv sync --group dev --extra all
         working-directory: .
 
-      - name: Run tests (OCR)
+      - name: Run tests (${{ matrix.app }})
         run: uv run pytest -q

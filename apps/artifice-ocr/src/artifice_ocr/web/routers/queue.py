@@ -11,6 +11,7 @@ from ..runtime import (_IMAGE_PASSTHROUGH_TYPES, batch_replace, render_page_imag
                        reprocess_item, save_cleaned_text, save_raw_text,
                        save_translated_text, state)
 from ..serializers import serialize_item_preview
+from ..validation import validate_directory
 
 router = APIRouter(tags=["queue"])
 
@@ -22,7 +23,8 @@ def get_queue() -> dict:
 
 @router.post("/api/queue/add-paths")
 def add_paths(req: AddPathsRequest) -> dict:
-    added = state.add_paths(req.paths)
+    safe = [validate_directory(p, "path") for p in req.paths]
+    added = state.add_paths(safe)
     return {"added": len(added), "items": state.queue_snapshot()}
 
 
