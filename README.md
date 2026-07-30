@@ -1,5 +1,5 @@
 <img width="960" height="540" alt="Readme Logo (1)" src="https://github.com/user-attachments/assets/4a68238d-20b1-4461-9cdb-eba2aed69bfc" />
-<h1 align="center"> OCR Sources | Transcribe Speech | Visualise Data | Edit Precisely </h1>
+<h1 align="center"> OCR | Transcribe Speech | Visualise Data | Edit </h1>
 
 A collection of local-first and open-source tools that place a user-friendly interface on top of AI models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed from the ground up for digital humanities workflows.
 
