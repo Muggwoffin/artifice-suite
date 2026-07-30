@@ -1,6 +1,4 @@
-
-
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg)](https://doi.org/10.5281/zenodo.21621935)
+<p align="center"><img width="960" height="540" alt="Artifice Logo copy" src="https://github.com/user-attachments/assets/6f7262b1-a9e5-4c2d-bacd-1546b3eba557" /></p>
 
 # OCR + Transcription + Data Visualisation + Copy Editing
 
@@ -31,9 +29,13 @@ All user interfaces across the suite adhere to **The New Masses Design System** 
 ## Applications Overview
 
 1. **`apps/artifice-ocr`**: Local-first OCR processing that allows you to edit raw OCR output, perform text cleanup and translate documents in one workflow. Integrates with Tropy so you can import entire folders of your archival photographs and then write back the transcriptions into your Tropy library.
-2. **`apps/artifice-draft`**: Local-first copy editing harness for structural transformations (supports Ollama, LM Studio, or generic API). Copy and paste a journal style guide for precise edits. The app outputs a track-changed Word file: you veto any change.
-3. **`apps/artifice-graph`**: Knowledge graph creator extracting entities and relationships into a variety of formats. 
-4. **`apps/artifice-transcribe`**: Oral history transcription utilising a Speech to Text model of your choice. Couple with pyannote diarization via Hugging Face to create a transcript that labels and seperates speakers. Transcribe, edit and make your Oral History transcripts OHMS and TEI compliant in one app.
+
+2. **`apps/artifice-transcribe`**: Oral history transcription utilising a Speech to Text model of your choice. Couple with pyannote diarization via Hugging Face to create a transcript that labels and seperates speakers. Transcribe, edit and make your Oral History transcripts OHMS and TEI compliant in one app.
+
+3. **`apps/artifice-graph`**: Knowledge graph creator extracting entities and relationships into a variety of formats.
+
+4. **`apps/artifice-draft`**: Local-first copy editing harness for structural transformations (supports Ollama, LM Studio, or generic API). Copy and paste a journal style guide for precise edits. The app outputs a track-changed Word file: you veto any change.
+
 
 ## Quick-Start Guide (Bring Your Own Model)
 
@@ -48,3 +50,12 @@ The Artifice Suite runs natively on macOS (Apple Silicon M1/M2/M3/M4 and Intel M
 - **Metal GPU Acceleration**: Run model engines (**Ollama** and **LM Studio**) **natively on the macOS host** to leverage Apple Silicon Metal GPU acceleration and Unified Memory.
 - **Docker Networking**: The provided `docker-compose.yml` configures containers to connect to host-bound models via `http://host.docker.internal:11434` (Ollama) or `http://host.docker.internal:1234/v1` (LM Studio).
 - **Device Agnostic Execution**: Python components dynamically target `cuda` $\rightarrow$ `mps` (Apple Metal Performance Shaders) $\rightarrow$ `cpu`. For `artifice-transcribe`, set `PYTORCH_ENABLE_MPS_FALLBACK=1` on macOS if required.
+
+
+<p align="center">
+  <a href="https://doi.org/10.5281/zenodo.21621935">
+    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg" alt="DOI">
+  </a>
+</p>
+
+
