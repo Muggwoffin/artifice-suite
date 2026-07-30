@@ -2073,3 +2073,131 @@ def test_validate_directory_accepts_temp_dir_from_custom_tmpdir(monkeypatch):
     finally:
         if d.exists():
             d.rmdir()
+
+
+# --------------------------------------------------------------------------- #
+# ludwiglang export — collection path-traversal (platform-independent)
+# --------------------------------------------------------------------------- #
+# ``validate_contained`` decides containment after resolving the fully joined
+# path, so a trajectory that escapes the validated output directory is rejected
+# with 400 regardless of platform.  Asserting on the *containment decision*
+# (400 vs 200) rather than the resolved string makes the test meaningful on
+# POSIX as well as Windows.
+
+def test_ludwiglang_export_rejects_traversal_collection(client, tmp_path, monkeypatch):
+    """A collection name that escapes the validated output directory is 400.
+
+    ``../../etc`` resolves outside the container on every platform —
+    POSIX ``Path.__truediv__`` resolves it relative to the joined base,
+    and ``validate_contained`` checks the resolved result against the
+    validated root.  This is the test the brief asks for: it fails on the
+    unfixed code (which just joins and uses the path), and it fails on
+    POSIX, not just Windows.
+    """
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "cleaned" / "text").mkdir(parents=True)
+
+    # Suppress export_md — we only need the validation check to run.
+    # These are imported inside ludwiglang_export() (lazy), so
+    # monkeypatch the source module rather than the router.
+    monkeypatch.setattr(
+        "artifice_ocr.export_ludwiglang._read_manifest",
+        lambda p: {},
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.export_ludwiglang.export_md",
+        lambda *a, **kw: tmp_path / "out.md",
+    )
+
+    res = client.post("/api/ludwiglang/export", json={
+        "collection": "../../../etc",
+        "output_dir": str(out),
+    })
+    assert res.status_code == 400, (
+        f"Expected 400 for traversal collection, got {res.status_code}: "
+        f"{res.json()}"
+    )
+    # The rejection message comes from validate_contained — it must not
+    # disclose the resolved path.
+    detail = res.json()["detail"].lower()
+    assert "not within" in detail, (
+        f"Expected containment rejection, got: {detail}"
+    )
+
+
+def test_ludwiglang_export_accepts_legitimate_collection(client, tmp_path, monkeypatch):
+    """A plain collection name that stays inside the output directory is allowed.
+
+    This ensures the fix does not break the success path — a legitimate
+    ``collection`` name must still work.
+    """
+    out = tmp_path / "out"
+    out.mkdir()
+    coll_dir = out / "cleaned" / "text" / "my-collection"
+    coll_dir.mkdir(parents=True)
+    # export_md expects page JSON files within the collection directory.
+    (coll_dir / "page0001.json").write_text(
+        '{"extracted_text": "test"}', encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        "artifice_ocr.export_ludwiglang._read_manifest",
+        lambda p: {},
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.export_ludwiglang.export_md",
+        lambda *a, **kw: tmp_path / "out.md",
+    )
+
+    res = client.post("/api/ludwiglang/export", json={
+        "collection": "my-collection",
+        "output_dir": str(out),
+    })
+    assert res.status_code == 200, (
+        f"Expected 200 for legitimate collection, got {res.status_code}: "
+        f"{res.json()}"
+    )
+
+
+# --------------------------------------------------------------------------- #
+# config reset — credential redaction
+# --------------------------------------------------------------------------- #
+
+def test_config_reset_does_not_leak_credentials(client, monkeypatch):
+    """POST /api/config/reset must not return api_key or huggingface_token
+    verbatim.
+
+    ``config.reset()`` clears the in-memory cache; we prevent that here by
+    making it a no-op so the secrets survive into the response path.  On the
+    unfixed code the response includes them verbatim; with the fix
+    ``_redact_config`` replaces them with the shared placeholder.
+    """
+    # Populate secrets in the live config cache.
+    config.apply_overrides({
+        "api_key": "sk-secret-test-key",
+        "huggingface_token": "hf-secret-test-token",
+    })
+
+    # Prevent reset from clearing the cache so the secrets survive into the
+    # response dict — this reproduces the leak scenario from the review.
+    monkeypatch.setattr(config, "reset", lambda: None)
+
+    res = client.post("/api/config/reset")
+    assert res.status_code == 200
+    body = res.json()
+
+    assert body.get("api_key") != "sk-secret-test-key", (
+        "api_key was returned verbatim in reset_config response"
+    )
+    assert body.get("huggingface_token") != "hf-secret-test-token", (
+        "huggingface_token was returned verbatim in reset_config response"
+    )
+    # Optionally confirm the placeholder appears (only true if the values
+    # are truthy — they are here).
+    assert body.get("api_key") == "************", (
+        f"Expected placeholder for api_key, got: {body.get('api_key')}"
+    )
+    assert body.get("huggingface_token") == "************", (
+        f"Expected placeholder for huggingface_token, got: {body.get('huggingface_token')}"
+    )

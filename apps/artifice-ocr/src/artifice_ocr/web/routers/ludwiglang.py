@@ -39,7 +39,14 @@ def ludwiglang_export(req: LudwigLangExportRequest) -> dict:
 
     safe_output_dir = validate_directory(req.output_dir, "output_dir")
 
-    cleaned_root = Path(safe_output_dir) / "cleaned" / "text" / req.collection
+    # Validate the fully joined path against the validated output directory
+    # so a drive-absolute collection name on Windows (e.g. ``D:/etc/passwd``)
+    # cannot escape — the same validate_contained pattern the download
+    # endpoint already uses.
+    cleaned_root_raw = str(Path(safe_output_dir) / "cleaned" / "text" / req.collection)
+    cleaned_root = Path(validate_contained(
+        cleaned_root_raw, safe_output_dir, "collection", must_exist=False,
+    ))
     if not cleaned_root.exists():
         raise HTTPException(
             status_code=404,

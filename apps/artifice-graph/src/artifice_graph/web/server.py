@@ -82,11 +82,11 @@ _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
 # ── Credential redaction ───────────────────────────────────────────
-# Keys whose values must not be returned verbatim in API responses or
-# rendered into template contexts.  Follows the same convention as
-# artifice-ocr's settings router (see test_config_security.py there).
+# The ``PipelineConfig`` model is the authority on which fields hold
+# credentials; ``_redact_config`` keys off the model structure directly
+# rather than maintaining a parallel key list.  This matches the
+# convention in artifice-ocr's settings router.
 
-_REDACTED_KEYS = frozenset({"api_key"})
 REDACTED_PLACEHOLDER = "*" * 12
 
 

@@ -1082,7 +1082,8 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
          CI stayed green over a live defect for as long as it existed.
 
 - [x] ~~**5.2 — Full `security-auditor` sweep**~~ — **run and closed 2026-07-30**, branch
-      `phase5-security-fixes`, commits `be50909`, `3e7714d`. Six findings, all fixed.
+      `phase5-security-fixes`, commits `be50909`, `3e7714d`. **Seven findings, all fixed** — the six
+      the sweep reported, plus one found while fixing them (below the table).
 
       | Severity | Finding | Fix |
       |---|---|---|
@@ -1118,6 +1119,13 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
       graph's `api_get_models` error handler (`server.py:963-971`), which returns `str(e)` from an
       httpx failure whose request carried the key as a Bearer token — a low-probability reflection,
       not a direct leak.
+
+      **Added 2026-07-30, found while fixing review findings:** `ludwiglang_export`'s 404 detail
+      (`web/routers/ludwiglang.py:53-54`) interpolates the **resolved** `cleaned_root` path. That
+      contradicts the policy the validation module states explicitly and implements everywhere else
+      — echo the caller's own input, never the resolved path, because the latter discloses server
+      filesystem layout whenever the input was relative. Pre-existing and untouched by `be50909`;
+      one line to fix, listed here so it is not lost.
 
 - [ ] **5.3 — Front-end test coverage** for `pipeline.js` and the SSE log broker.
       **Re-measured 2026-07-30, and the item was understated:** `pipeline.js` is
