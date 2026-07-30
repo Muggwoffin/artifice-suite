@@ -98,8 +98,13 @@ Never critique UI from source alone. Read the rendered page:
 
 ## Sub-Agent Fleet
 
-**Measured 2026-07-29:** the fleet is currently all on OpenCode. The older two-runtime wording is
-retained below only where it still explains historical decisions.
+**Measured 2026-07-30** by `scripts/smoke-test-agents.sh` — 20 passed, 0 failed. **The fleet is
+split across two runtimes:** six agents on OpenCode, and `ui-ux` in the Claude Code runtime on
+`sonnet`. The table immediately below is the authority; where a later section contradicts it, the
+table wins and the section is stale.
+
+The older "all on OpenCode" wording was wrong and is corrected here. Historical sections are
+retained below only where they explain why a current placement is what it is.
 
 | Agent | Runtime | Model | Owns |
 |---|---|---|---|
@@ -158,14 +163,21 @@ was. **xAI models are excluded by the maintainer's instruction**; `grok-4.5` was
 The three placements were chosen to preserve the independence rules below, which survive the move
 even though the specific models did not:
 
-| Agent | Now | Chosen because |
-|---|---|---|
-| `ui-ux` | `opencode-go/qwen3.7-max` | Top-tier generalist — the requirement was always precision against a long specification, not a particular vendor |
-| `code-reviewer` | `opencode-go/minimax-m3` | Must differ from **both** agents it reviews: `ui-ux` (qwen) and `lead-engineer` (deepseek) |
-| `arch-auditor-docs` | `opencode-go/kimi-k3` | Long-context prose, and a different family from `security-auditor` (qwen). Deliberately **not** `glm-5.2` — the model it was throttled on |
+**The table below is HISTORICAL — it records the 2026-07-29 placements and two of its three rows
+have since been superseded.** It is kept because the *reasoning* column still explains the
+constraints. For what each agent actually runs on today, use the header table at the top of this
+section, which was verified by the smoke test on 2026-07-30.
 
-`ui-ux` and `security-auditor` now share `qwen3.7-max`. That is allowed: neither reviews the other,
-and the rule is about **reviewer and reviewee**, not about uniqueness across the fleet.
+| Agent | As at 2026-07-29 (superseded) | Chosen because |
+|---|---|---|
+| `ui-ux` | `opencode-go/qwen3.7-max` — **wrong even then; it was Claude Code on `sonnet`** | Top-tier generalist — the requirement was always precision against a long specification, not a particular vendor |
+| `code-reviewer` | `opencode-go/minimax-m3` | Must differ from **both** agents it reviews: `ui-ux` (qwen) and `lead-engineer` (deepseek) |
+| `arch-auditor-docs` | `opencode-go/kimi-k3` — **superseded 2026-07-30 by `minimax-m2.7`** | Long-context prose, and a different family from `security-auditor` (qwen). Deliberately **not** `glm-5.2` — the model it was throttled on |
+
+**Historical — superseded 2026-07-30.** `ui-ux` and `security-auditor` never shared `qwen3.7-max`;
+`ui-ux` has been on the Claude Code runtime with `sonnet` since before this table was written.
+The principle that sharing a model between two agents neither of which reviews the other is acceptable
+remains sound and is preserved above.
 
 **Do not route any agent through OpenRouter** — that account is out of credits.
 
@@ -194,12 +206,19 @@ through the orchestrator before any code is written. Its `write`, `edit`, `bash`
 are disabled in its config — keep them disabled. It must exist in exactly one runtime: a leftover
 `.claude/agents/security-auditor.md` would shadow the OpenCode definition.
 
-It sits on a **different model from `arch-auditor-docs`** (`kimi-k3`) deliberately. The two
-auditors review overlapping files, and two independent readings are worth more than one model
-agreeing with itself. Keep them on different families whenever you change either one.
+**This rule is LIVE, not historical.** It sits on a **different model from `arch-auditor-docs`**
+(`minimax-m2.7` as at 2026-07-30 — only the model name here has ever changed, never the rule). The
+two auditors review overlapping files, and two independent readings are worth more than one model
+agreeing with itself. **Keep them on different families whenever you change either one.**
 
-**`arch-auditor-docs` has moved four times: `opencode-go/glm-5.2` → `github-copilot/claude-sonnet-4.6`
-(2026-07-28) → `github-copilot/gpt-5.4` → `opencode-go/kimi-k3` (2026-07-29).** The glm move
+*(A docs pass on 2026-07-30 mislabelled this paragraph "Historical — superseded" while correcting
+the model name. It is called out here because marking a standing rule as spent is the more dangerous
+direction of this error: a stale claim merely misleads, whereas a live rule marked dead invites
+someone to break it.)*
+
+**Historical — superseded 2026-07-30.** `arch-auditor-docs` has moved four times: `opencode-go/glm-5.2`
+→ `github-copilot/claude-sonnet-4.6` (2026-07-28) → `github-copilot/gpt-5.4` → `opencode-go/kimi-k3`
+(2026-07-29) → `opencode-go/minimax-m2.7` (2026-07-30). The glm move
 addressed throttling — it was not failing, but a five-item documentation pass took **17 minutes at
 ~11% CPU**, the signature described below. The two Copilot placements bought headroom and family
 independence from `code-reviewer`; both ended when the Copilot tier ran out. `kimi-k3` was chosen

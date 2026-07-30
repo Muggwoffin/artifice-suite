@@ -1739,12 +1739,26 @@ def test_add_paths_accepts_normal_path(client, tmp_path):
 
 def test_add_paths_refuses_windows_style_path(client, tmp_path):
     """A Windows-style path with backslashes that points outside allowed
-    roots is rejected."""
+    roots is rejected.
+
+    The *reason* differs by platform and the assertion has to follow, or this
+    test passes on POSIX and fails on Windows. On POSIX a drive letter is
+    refused outright by `_normalise`, because pathlib would otherwise treat
+    "C:/SystemFolder" as relative and `resolve()` would prepend the cwd,
+    landing it inside an allowed root. On Windows the same string is a
+    perfectly valid absolute path, so it resolves and is then refused by the
+    containment check instead. Either way it must be a 400 — that is the
+    property under test.
+    """
     res = client.post("/api/queue/add-paths", json={
         "paths": ["C:\\SystemFolder\\file.png"],
     })
     assert res.status_code == 400
-    assert "not valid on this platform" in res.json()["detail"].lower()
+    detail = res.json()["detail"].lower()
+    if os.name == "posix":
+        assert "not valid on this platform" in detail
+    else:
+        assert "outside the directories this server is permitted" in detail
 
 
 # --------------------------------------------------------------------------- #
@@ -1789,9 +1803,18 @@ def test_start_run_accepts_normal_output_dir(client, tmp_path):
 
 
 def test_start_run_refuses_windows_style_output_dir(client):
-    """A Windows-style output directory path is rejected."""
+    """A Windows-style output directory path is rejected.
+
+    Platform-dependent for the same reason as
+    ``test_add_paths_refuses_windows_style_path`` — see its docstring. The 400
+    is the invariant; the message is not.
+    """
     res = client.post("/api/run/start", json={
         "stages": ["ocr"], "output_dir": "C:\\SystemFolder\\output",
     })
     assert res.status_code == 400
-    assert "not valid on this platform" in res.json()["detail"].lower()
+    detail = res.json()["detail"].lower()
+    if os.name == "posix":
+        assert "not valid on this platform" in detail
+    else:
+        assert "outside the directories this server is permitted" in detail
