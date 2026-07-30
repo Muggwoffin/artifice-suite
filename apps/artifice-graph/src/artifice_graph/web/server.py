@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -145,6 +146,7 @@ def _mark_run_failed(run_key: str, msg: str | None = None) -> None:
 # permitted so that relative paths resolve as the user expects.
 _ALLOWED_ROOT_DIRS: list[Path] = [
     Path.home(),
+    Path(tempfile.gettempdir()),
     Path("/tmp"),
     Path.cwd(),
 ]

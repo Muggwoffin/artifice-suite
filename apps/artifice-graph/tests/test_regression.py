@@ -273,10 +273,10 @@ class TestBug2LoadConfigWithUserConfig:
 
 class TestBug3RelativePathResolution:
 
-    def test_resolve_config_paths_turns_relative_into_absolute(self) -> None:
+    def test_resolve_config_paths_turns_relative_into_absolute(self, tmp_path: Path) -> None:
         """All relative-path fields become absolute after resolution."""
         config = PipelineConfig()
-        app_root = Path("/home/user/projects/artifice-graph")
+        app_root = tmp_path  # a real, platform-valid absolute path
 
         # Set known relative values
         config.ingestion.input_dir = "data/input_ocr"
@@ -288,28 +288,37 @@ class TestBug3RelativePathResolution:
 
         resolve_config_paths(config, app_root)
 
+        # The product resolves the joined path (config.py:154), so compare
+        # against the resolved form — never the plain join of two parts.
         assert Path(config.ingestion.input_dir).is_absolute()
-        assert str(app_root / "data/input_ocr") == config.ingestion.input_dir
-        assert str(app_root / "data/cache") == config.extraction.cache_dir
-        assert str(app_root / "data/output") == config.export.output_dir
-        assert str(app_root / "data/vault") == config.export.obsidian_vault_dir
-        assert str(app_root / "data/aliases.yaml") == config.entity_resolution.aliases_file
-        assert str(app_root / "data/output/entities.json") == config.storage.entities_file
+        assert str((app_root / "data/input_ocr").resolve()) == config.ingestion.input_dir
+        assert str((app_root / "data/cache").resolve()) == config.extraction.cache_dir
+        assert str((app_root / "data/output").resolve()) == config.export.output_dir
+        assert str((app_root / "data/vault").resolve()) == config.export.obsidian_vault_dir
+        assert str((app_root / "data/aliases.yaml").resolve()) == config.entity_resolution.aliases_file
+        assert str((app_root / "data/output/entities.json").resolve()) == config.storage.entities_file
 
-    def test_absolute_paths_are_preserved(self) -> None:
+    def test_absolute_paths_are_preserved(self, tmp_path: Path) -> None:
         """An already-absolute path is left untouched."""
         config = PipelineConfig()
-        app_root = Path("/home/user/projects/artifice-graph")
+        app_root = tmp_path  # a real, platform-valid absolute path
 
-        config.export.output_dir = "/custom/absolute/path"
+        absolute_dir = tmp_path / "custom" / "absolute" / "path"
+        absolute_dir.mkdir(parents=True)
+        config.export.output_dir = str(absolute_dir)
         resolve_config_paths(config, app_root)
 
-        assert config.export.output_dir == "/custom/absolute/path"
+        # Compared UNRESOLVED on purpose. The property is that an absolute path
+        # is passed through untouched, and config.py:154 only resolves the
+        # relative branch. Asserting against `.resolve()` would keep passing if
+        # the product started resolving absolute paths too — which is precisely
+        # the regression this test exists to catch.
+        assert config.export.output_dir == str(absolute_dir)
 
-    def test_empty_paths_are_skipped(self) -> None:
+    def test_empty_paths_are_skipped(self, tmp_path: Path) -> None:
         """Empty-string paths are not resolved (they stay empty)."""
         config = PipelineConfig()
-        app_root = Path("/home/user/projects/artifice-graph")
+        app_root = tmp_path  # a real, platform-valid absolute path
 
         config.export.output_dir = ""
         resolve_config_paths(config, app_root)
