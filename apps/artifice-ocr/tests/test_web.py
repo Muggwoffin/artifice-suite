@@ -13,9 +13,11 @@ they resolve `state` from `server`'s own module globals. The fixture below
 patches `runtime.state` directly for that reason.
 """
 
+import os
 import socket
 import sys
 import types
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -1590,3 +1592,168 @@ def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_fo
         "No iteration reached the window; B was always rejected. "
         "The test did not exercise the interleaving."
     )
+
+
+# --------------------------------------------------------------------------- #
+# path validation — ludwiglang download
+# --------------------------------------------------------------------------- #
+
+def test_ludwiglang_download_refuses_path_outside_output_dir(client, tmp_path):
+    """A download path outside the configured output directory is refused."""
+    config.apply_overrides({"output_dir": str(tmp_path / "out")})
+
+    # Create a file adjacent to (not inside) the output directory
+    sibling = tmp_path / "text.md"
+    sibling.write_text("secret", encoding="utf-8")
+
+    res = client.get("/api/ludwiglang/download", params={
+        "path": str(sibling),
+    })
+    assert res.status_code == 400
+    assert "not within" in res.json()["detail"].lower()
+
+
+def test_ludwiglang_download_serves_file_within_output_dir(client, tmp_path):
+    """A download path within the configured output directory is served."""
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "ludwiglang").mkdir()
+    export_file = out / "ludwiglang" / "text.md"
+    export_file.write_text("# Test Document", encoding="utf-8")
+
+    config.apply_overrides({"output_dir": str(out)})
+
+    res = client.get("/api/ludwiglang/download", params={
+        "path": str(export_file),
+    })
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("text/markdown")
+    assert "# Test Document" in res.text
+
+
+def test_ludwiglang_download_refuses_windows_style_escape(client, tmp_path):
+    """A Windows-style path with backslashes that resolves outside the output
+    directory is rejected, not misinterpreted."""
+    config.apply_overrides({"output_dir": str(tmp_path / "out")})
+
+    # Create a real file outside the output directory so resolve(strict=True)
+    # succeeds, and the rejection comes from containment, not resolution.
+    sibling = tmp_path / "other" / "file.md"
+    sibling.parent.mkdir()
+    sibling.write_text("data", encoding="utf-8")
+
+    # Simulate what a Windows client might send — backslashes for separators
+    res = client.get("/api/ludwiglang/download", params={
+        "path": str(sibling).replace("/", "\\"),
+    })
+    assert res.status_code == 400
+    assert "not within" in res.json()["detail"].lower()
+
+
+# --------------------------------------------------------------------------- #
+# path validation — add_paths
+# --------------------------------------------------------------------------- #
+
+def test_add_paths_refuses_path_outside_allowed_roots(client, tmp_path):
+    """A path outside the permitted root directories is refused with 400."""
+    # Pick a directory that is not /home, /tmp, or the working directory.
+    # resolve(strict=False) does not require the path to exist, so a
+    # nonexistent path under /opt is sufficient.
+    res = client.post("/api/queue/add-paths", json={
+        "paths": ["/opt/rejected/scan.png"],
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    # The rejection must not disclose the server's filesystem layout. The
+    # allowed roots include Path.home(), so naming them would hand the OS
+    # username to an unauthenticated caller.
+    assert str(Path.home()) not in detail
+    assert "allowed:" not in detail.lower()
+
+
+def test_add_paths_refuses_hidden_directory(client, tmp_path):
+    """A path that descends into a hidden directory is refused even when the
+    root itself is permitted."""
+    hidden = tmp_path / ".hidden"
+    hidden.mkdir()
+    (hidden / "scan.png").write_bytes(b"x")
+
+    res = client.post("/api/queue/add-paths", json={
+        "paths": [str(hidden / "scan.png")],
+    })
+    assert res.status_code == 400
+    assert "hidden" in res.json()["detail"].lower()
+
+
+def test_add_paths_accepts_normal_path(client, tmp_path):
+    """A normal folder of scans in a normal location still queues and
+    processes — the security fix does not break the actual workflow."""
+    (tmp_path / "scan.png").write_bytes(b"x")
+    (tmp_path / "scan.pdf").write_bytes(b"x")
+
+    res = client.post("/api/queue/add-paths", json={
+        "paths": [str(tmp_path)],
+    })
+    assert res.status_code == 200
+    assert res.json()["added"] == 2
+
+
+def test_add_paths_refuses_windows_style_path(client, tmp_path):
+    """A Windows-style path with backslashes that points outside allowed
+    roots is rejected."""
+    res = client.post("/api/queue/add-paths", json={
+        "paths": ["C:\\SystemFolder\\file.png"],
+    })
+    assert res.status_code == 400
+    assert "not valid on this platform" in res.json()["detail"].lower()
+
+
+# --------------------------------------------------------------------------- #
+# path validation — output_dir
+# --------------------------------------------------------------------------- #
+
+def test_start_run_refuses_output_dir_outside_allowed_roots(client, tmp_path):
+    """An output directory outside the permitted roots is refused before
+    any run is started."""
+    res = client.post("/api/run/start", json={
+        "stages": ["ocr"], "output_dir": "/opt/rejected/output",
+    })
+    assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "outside the directories this server is permitted" in detail.lower()
+    assert str(Path.home()) not in detail
+    assert "allowed:" not in detail.lower()
+
+
+def test_start_run_refuses_hidden_output_dir(client, tmp_path):
+    """A hidden output directory is refused at validation time."""
+    hidden = tmp_path / ".hidden_out"
+    res = client.post("/api/run/start", json={
+        "stages": ["ocr"], "output_dir": str(hidden),
+    })
+    assert res.status_code == 400
+    assert "hidden" in res.json()["detail"].lower()
+
+
+def test_start_run_accepts_normal_output_dir(client, tmp_path):
+    """A normal output directory passes validation (the run then fails because
+    the queue is empty, but that means the path check succeeded)."""
+    out = tmp_path / "out"
+    out.mkdir()
+
+    res = client.post("/api/run/start", json={
+        "stages": ["ocr"], "output_dir": str(out),
+    })
+    # 409 = queue is empty, but validation passed (otherwise 400)
+    assert res.status_code == 409
+    assert "empty" in res.json()["detail"].lower()
+
+
+def test_start_run_refuses_windows_style_output_dir(client):
+    """A Windows-style output directory path is rejected."""
+    res = client.post("/api/run/start", json={
+        "stages": ["ocr"], "output_dir": "C:\\SystemFolder\\output",
+    })
+    assert res.status_code == 400
+    assert "not valid on this platform" in res.json()["detail"].lower()
