@@ -5,23 +5,23 @@
 
 A collection of local-first and open-source tools that place a user-friendly interface on top of AI models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed from the ground up for digital humanities workflows.
 
-# AI Tools for Responsible Humanities Research:
+## AI Tools for Responsible Humanities Research:
 
 Artifice deploys AI to improve research workflows in specific cases: OCR, copy editing, transcribing oral histories and creating data visualisations. Free, open-source and privacy focused.
 
-## Bring Your Own Model
+### Bring Your Own Model
 Use your model choice, whether it's a model running on your computer, a cloud-based model or models that your university hosts on a local network. 
 
-## Data Privacy
+### Data Privacy
 Artifice never connects to the internet unless you permit it. By default, none of your research material leaves your machine. Cloud access is an option but must be actively enabled.
 
-## Digital Sovereignty
+### Digital Sovereignty
 Artifice is designed from the ground-up to work with open models, allowing researchers to reduce their dependency on corporations for digital tools and data storage.
 
-## Minimal Computing
+### Minimal Computing
 Artifice is designed to use models running locally on your computer. Artifice never uses an LLM where a straightforward script can achieve the same result.
 
-## Avoiding the Graveyard of Digital Humanities Software
+### Avoiding the Graveyard of Digital Humanities Software
 Artifice is designed to last. No fancy dependencies that could break software with a single future update. Just lightweight and vanilla code. 
 
 
