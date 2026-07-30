@@ -34,9 +34,16 @@ Web assets live at **`apps/<app>/src/artifice_<slug>/web/static/`** — inside t
 package, never at the app root. Decided 2026-07-28 as a Phase 2/4 prerequisite; `artifice-draft`
 and `artifice-ocr` already conform.
 
-Two apps deviate and are scheduled to move: `artifice-graph` keeps assets at `apps/artifice-graph/web/`,
-and `artifice-transcribe` has `src/artifice_transcribe/static/` with no `web/` level. Treat both as
-known drift, not as precedent.
+**All four apps now conform — re-measured 2026-07-30.** The two deviations this section used to
+record (`apps/artifice-graph/web/`, and `artifice-transcribe`'s `static/` with no `web/` level) were
+closed by the `0979359` migration; **neither legacy path exists on disk any more.** The note
+survived the fix by two days and is the same failure this file warns about elsewhere — a stale
+constraint reads as a live one and misdirects the next brief.
+
+The only remaining asymmetry is that `artifice-graph` is the sole app with a `templates/` tree
+beside its `static/`; the other three serve a single static `index.html`. That is thinness in the
+other three, not divergence in graph, and it is also why graph is the one app whose build backend
+should not be changed casually.
 
 The rule exists because assets outside the package are excluded from a wheel and can only be
 located by a path relative to the current working directory — which breaks the moment the server is

@@ -1,8 +1,8 @@
-<img width="960" height="540" alt="Artifice Logo" src="https://github.com/user-attachments/assets/54090678-ae12-45c1-a3f9-eec56dd5eb82" />
+
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg)](https://doi.org/10.5281/zenodo.21621935)
 
-# OCR + Copy Editing + Transcription + Data Visualisation
+# OCR + Transcription + Data Visualisation + Copy Editing
 
 A collection of local-first and open-source tools that place a user-friendly interface on top of AI models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed from the ground up for digital humanities workflows.
 
