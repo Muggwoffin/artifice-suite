@@ -82,6 +82,23 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["transcription"])
 
+
+async def _read_capped(upload: UploadFile, limit: int) -> bytes:
+    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
+    exceeded **during** the read so an oversized body is never fully resident.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await upload.read(64 * 1024):
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
 # ── Path safety ──────────────────────────────────────────────────────────────
 
 
@@ -701,9 +718,7 @@ async def create_transcription(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> JobCreated:
-    contents = await file.read()
-    if len(contents) > settings.max_upload_size:
-        raise HTTPException(413, "File too large")
+    contents = await _read_capped(file, settings.max_upload_size)
 
     job = TranscriptionJob(
         filename=file.filename or "unknown",
@@ -1300,9 +1315,7 @@ async def enroll_speaker(
 ) -> SpeakerEnrollResponse:
     """Enroll a known speaker by uploading a short audio clip of their voice."""
 
-    contents = await file.read()
-    if len(contents) > settings.max_upload_size:
-        raise HTTPException(413, "File too large")
+    contents = await _read_capped(file, settings.max_upload_size)
 
     safe_name = _sanitise_path_component(name)
     safe_filename = _sanitise_path_component(file.filename or "unknown")

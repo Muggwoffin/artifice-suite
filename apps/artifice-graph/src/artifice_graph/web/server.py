@@ -81,6 +81,22 @@ import shared_ui
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
+# ── Credential redaction ───────────────────────────────────────────
+# Keys whose values must not be returned verbatim in API responses or
+# rendered into template contexts.  Follows the same convention as
+# artifice-ocr's settings router (see test_config_security.py there).
+
+_REDACTED_KEYS = frozenset({"api_key"})
+REDACTED_PLACEHOLDER = "*" * 12
+
+
+def _redact_config(model: PipelineConfig) -> PipelineConfig:
+    """Return a deep copy of *model* with credential fields redacted."""
+    cfg = model.model_copy(deep=True)
+    if cfg.llm.api_key:
+        cfg.llm.api_key = REDACTED_PLACEHOLDER
+    return cfg
+
 # ── Run log broker (cross-thread SSE bridging) ─────────────────────
 # In-memory: each active run gets a log buffer + wake condition.
 
@@ -251,7 +267,8 @@ def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
     if u := body.get("llm_base_url"):
         cfg.llm.base_url = _validate_base_url(u, "llm_base_url")
     if k := body.get("llm_api_key"):
-        cfg.llm.api_key = k
+        if k != REDACTED_PLACEHOLDER:
+            cfg.llm.api_key = k
     if m := body.get("llm_model"):
         cfg.llm.model = m
     if v := body.get("vision_mode"):
@@ -737,7 +754,10 @@ async def api_save_config(body: dict[str, Any]):
         if u := body.get("llm_base_url"):
             cfg.llm.base_url = _validate_base_url(u, "llm_base_url")
         if k := body.get("llm_api_key"):
-            cfg.llm.api_key = k
+            # A round-tripped redacted placeholder must not overwrite the
+            # real key — same guard OCR's config router applies.
+            if k != REDACTED_PLACEHOLDER:
+                cfg.llm.api_key = k
         if m := body.get("llm_model"):
             cfg.llm.model = m
         if v := body.get("vision_mode"):
@@ -774,11 +794,12 @@ async def api_load_preferences():
         from artifice_graph.web.config_helper import load_saved_config
         saved_cfg = load_saved_config()
         if saved_cfg:
-            return {"status": "ok", "config": saved_cfg.model_dump()}
+            redacted = _redact_config(saved_cfg)
+            return {"status": "ok", "config": redacted.model_dump()}
         return {"status": "ok", "config": {}}
     except Exception as e:
-        logger.error(f"Error loading preferences: {e}")
-        return {"status": "error", "message": f"Error loading preferences: {str(e)}"}
+        logger.error("Error loading preferences: %s", e)
+        return {"status": "error", "message": "Error loading preferences"}
 
 
 @app.get("/api/state")
@@ -1093,6 +1114,23 @@ async def api_stream(run: str = Query(...)):
 _MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB, mirrors IngestionConfig.max_file_size_mb
 
 
+async def _read_capped(upload: UploadFile, limit: int) -> bytes:
+    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
+    exceeded **during** the read so an oversized body is never fully resident.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await upload.read(64 * 1024):
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 def _allowed_upload_extensions(cfg: PipelineConfig) -> frozenset[str]:
     return frozenset(
         {ext.lower() for ext in cfg.ingestion.supported_extensions} | {".pdf", ".html", ".htm"}
@@ -1163,12 +1201,13 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
             })
             continue
 
-        contents = await upload.read()
-        if len(contents) > _MAX_UPLOAD_BYTES:
+        try:
+            contents = await _read_capped(upload, _MAX_UPLOAD_BYTES)
+        except HTTPException:
             results.append({
                 "filename": raw_name,
                 "status": "rejected",
-                "reason": f"File exceeds 50 MB limit ({len(contents) // (1024*1024)} MB)",
+                "reason": f"File exceeds 50 MB limit",
             })
             continue
 
@@ -1194,7 +1233,7 @@ def _render(template_name: str, **extra) -> str:
     ctx = {
         "active_tab": template_name.replace(".html", "").replace("index", "pipeline"),
         "asset_v": int(time.time()),
-        "config": cfg,
+        "config": _redact_config(cfg),
         "state": {"entities": entities, "relationships": relationships, "documents": documents, "chunks": chunks},
         "theme": "auto",
         "reduce_motion": False,

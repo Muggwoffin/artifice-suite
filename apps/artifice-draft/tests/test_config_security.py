@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Security tests for draft: file permissions on web_settings.json."""
+"""Security tests for draft: file permissions, credential redaction, and
+round-trip safety."""
 
 from __future__ import annotations
 
@@ -58,3 +59,79 @@ class TestConfigFilePermissions:
         assert is_restricted(settings_file)
         data = json.loads(settings_file.read_text())
         assert data["api_key"] == "new-secret"
+
+
+class TestCredentialRedaction:
+    """API key redaction in serialize_settings — follows OCR's pattern."""
+
+    def test_serialize_settings_redacts_api_key(self, monkeypatch, tmp_path):
+        """serialize_settings must return a placeholder, not the real key."""
+        from artifice_draft import config
+        from artifice_draft.web.runtime import serialize_settings
+
+        cfg = config.AppConfig()
+        cfg.api_key = "sk-real-secret"
+
+        result = serialize_settings(cfg)
+        assert result["api_key"] == "*" * 12
+
+    def test_serialize_settings_preserves_empty_key(self):
+        """An empty/None api_key must not be redacted to asterisks."""
+        from artifice_draft import config
+        from artifice_draft.web.runtime import serialize_settings
+
+        cfg = config.AppConfig()
+        cfg.api_key = ""
+
+        result = serialize_settings(cfg)
+        assert result["api_key"] == ""
+
+    def test_serialize_settings_preserves_other_fields(self):
+        """Redaction must not touch non-secret fields."""
+        from artifice_draft import config
+        from artifice_draft.web.runtime import serialize_settings
+
+        cfg = config.AppConfig()
+        cfg.api_key = "sk-secret"
+        cfg.model_name = "test-model"
+        cfg.base_url = "http://example.com:1234"
+
+        result = serialize_settings(cfg)
+        assert result["model_name"] == "test-model"
+        assert result["base_url"] == "http://example.com:1234"
+
+
+class TestRoundTripGuard:
+    """save_settings must reject the redacted placeholder."""
+
+    def test_placeholder_is_not_written_to_file(self, tmp_path, monkeypatch):
+        """A POST with the redacted placeholder must not overwrite the stored key."""
+        from artifice_draft.web import runtime
+
+        monkeypatch.setattr(runtime, "_SETTINGS_PATH", tmp_path / "web_settings.json")
+
+        # Store a real key first.
+        runtime.save_settings({"api_key": "sk-real-key-123"})
+
+        # Simulate a round-trip: the client GETs settings, receives the
+        # placeholder, and POSTs the same body back unmodified.
+        runtime.save_settings({"api_key": "*" * 12, "model_name": "updated-model"})
+
+        data = json.loads((tmp_path / "web_settings.json").read_text())
+        assert data["api_key"] == "sk-real-key-123", (
+            "The stored key must survive a round-trip of the redacted placeholder"
+        )
+        assert data["model_name"] == "updated-model"
+
+    def test_empty_patch_after_cleaning_placeholder_does_not_crash(self, tmp_path, monkeypatch):
+        """A patch containing only the placeholder should not error."""
+        from artifice_draft.web import runtime
+
+        monkeypatch.setattr(runtime, "_SETTINGS_PATH", tmp_path / "web_settings.json")
+
+        runtime.save_settings({"api_key": "sk-real"})
+        # Patch with only the placeholder — should be a no-op.
+        result = runtime.save_settings({"api_key": "*" * 12})
+        assert result["api_key"] == "sk-real", (
+            "The returned settings must still show the stored key"
+        )

@@ -2,17 +2,18 @@
 #
 # SPDX-License-Identifier: MIT
 
-"""Tests for directory allowlist and SSRF URL validation in the web server."""
+"""Tests for directory allowlist, SSRF URL validation, and upload limits in the web server."""
 
 from __future__ import annotations
 
+import asyncio
 import os
 from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
 
-from artifice_graph.web.server import _validate_directory, _validate_base_url, _ALLOWED_ROOT_DIRS
+from artifice_graph.web.server import _validate_directory, _validate_base_url, _ALLOWED_ROOT_DIRS, _read_capped, _MAX_UPLOAD_BYTES
 
 
 class TestValidateDirectory:
@@ -252,3 +253,71 @@ def test_accepts_temp_outside_tmp_and_home(monkeypatch):
     finally:
         if d.exists():
             d.rmdir()
+
+
+# --------------------------------------------------------------------------- #
+# Streaming upload cap — _read_capped
+# --------------------------------------------------------------------------- #
+
+
+def test_read_capped_raises_during_read():
+    """_read_capped raises HTTP 413 once the limit is exceeded mid-stream,
+    before the full body is gathered."""
+    class _FakeUpload:
+        filename = "test.txt"
+        def __init__(self, total: int):
+            self._remain = total
+        async def read(self, size: int = -1) -> bytes:
+            if self._remain <= 0:
+                return b""
+            n = min(size if size > 0 else 4096, 4096, self._remain)
+            self._remain -= n
+            return b"x" * n
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(_read_capped(_FakeUpload(10_000), 10))
+    assert exc_info.value.status_code == 413
+
+
+def test_upload_oversized_rejected_per_file_in_batch(monkeypatch, tmp_path):
+    """An oversized file is rejected as a per-entry status/reason, not a 413
+    that kills the whole batch — per the docstring contract at
+    server.py:1160-1167."""
+    from artifice_graph.config import PipelineConfig
+    from artifice_graph.web import server as server_mod
+
+    cfg = PipelineConfig()
+    cfg.ingestion.input_dir = str(tmp_path / "input")
+    cfg.ingestion.supported_extensions = [".txt"]
+    monkeypatch.setattr(server_mod, "load_config", lambda: cfg)
+
+    class _FakeUpload:
+        def __init__(self, filename: str, total: int):
+            self.filename = filename
+            self._remain = total
+        async def read(self, size: int = -1) -> bytes:
+            if self._remain <= 0:
+                return b""
+            n = min(size if size > 0 else 4096, 4096, self._remain)
+            self._remain -= n
+            return b"x" * n
+
+    response = asyncio.run(
+        server_mod.api_upload_files(
+            [
+                _FakeUpload("notes.txt", 10),
+                _FakeUpload("big.txt", _MAX_UPLOAD_BYTES + 1),
+                _FakeUpload("more.txt", 20),
+            ]
+        )
+    )
+
+    uploaded = response["uploaded"]
+    assert len(uploaded) == 3
+    assert uploaded[0]["status"] == "ok"
+    assert uploaded[0]["filename"] == "notes.txt"
+    assert uploaded[1]["status"] == "rejected"
+    assert "exceeds" in uploaded[1]["reason"]
+    assert uploaded[1]["filename"] == "big.txt"
+    assert uploaded[2]["status"] == "ok"
+    assert uploaded[2]["filename"] == "more.txt"

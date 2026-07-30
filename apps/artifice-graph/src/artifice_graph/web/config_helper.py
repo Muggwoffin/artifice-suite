@@ -83,10 +83,22 @@ def load_saved_config() -> PipelineConfig | None:
 
 
 def save_user_config(config: PipelineConfig) -> None:
-    """Save user configuration to file (all sections, with restricted permissions)."""
+    """Save user configuration to file (all sections, with restricted permissions).
+
+    If *config.llm.api_key* is the redacted placeholder the existing on-disk
+    key is preserved instead — a client that GETs preferences, receives
+    ``"api_key": "************"``, and POSTs the same body back must not
+    overwrite the real key with the placeholder.
+    """
     from secure_io import write_private_json
 
     ensure_preferences_dir()
+
+    PLACEHOLDER = "*" * 12
+    if config.llm.api_key == PLACEHOLDER:
+        existing = load_saved_config()
+        if existing and existing.llm.api_key and existing.llm.api_key != PLACEHOLDER:
+            config.llm.api_key = existing.llm.api_key
 
     data = {
         "llm": config.llm.model_dump(),
