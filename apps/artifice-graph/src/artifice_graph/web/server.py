@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """FastAPI web server for ArtificeGraph — pipeline control + SSE log streaming + state API."""
 
 from __future__ import annotations

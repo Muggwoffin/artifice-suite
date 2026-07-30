@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for the shared text-diff helpers in ``artifice_ocr._diff``.
 
 Originally tested via imports from ``gui.widgets.compare_view``, but the

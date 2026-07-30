@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Main entry point — CLI mode and web server launcher."""
 
 from __future__ import annotations

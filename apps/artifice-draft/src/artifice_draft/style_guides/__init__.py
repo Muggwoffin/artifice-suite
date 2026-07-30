@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Journal style guide registry and loaders.
 
 Built-in guides (Chicago, MLA, APA) are always available. Custom guides

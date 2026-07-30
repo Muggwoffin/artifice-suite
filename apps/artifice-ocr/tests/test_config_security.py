@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Security tests for OCR: credential redaction and file permissions."""
 
 from __future__ import annotations

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for llm_client module using mocked harness responses."""
 
 from __future__ import annotations

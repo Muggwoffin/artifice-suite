@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Generate the application icon from the project's design tokens.
 
 Run with:  py -3.12 scripts/make_icon.py

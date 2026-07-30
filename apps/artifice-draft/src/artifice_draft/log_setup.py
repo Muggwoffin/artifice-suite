@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Centralized logging configuration for the ArtificeDraft tool.
 
 Provides structured logging with optional file output, rotation, and

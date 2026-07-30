@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 from artifice_graph.models.entity import Entity, EntityType
 from artifice_graph.models.relationship import Relationship
 from artifice_graph.models.document import Document, TextChunk

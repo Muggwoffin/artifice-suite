@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Shared type definitions for the ArtificeDraft pipeline."""
 
 from __future__ import annotations

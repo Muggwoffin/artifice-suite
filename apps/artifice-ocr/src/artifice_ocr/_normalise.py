@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Deterministic OCR artifact repair — pre-pass for the cleanup stage.
 
 This module handles four of the five repairs the cleanup prompt previously

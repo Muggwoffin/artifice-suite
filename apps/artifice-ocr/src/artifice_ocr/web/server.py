@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """FastAPI backend for the web frontend.
 
 This module owns the FastAPI ``app`` and the bootstrap code (CLI, port

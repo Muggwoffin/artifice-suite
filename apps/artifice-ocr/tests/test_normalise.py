@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for the deterministic OCR pre-pass (_normalise).
 
 Verifies each of the seven rules individually, the rule-ordering

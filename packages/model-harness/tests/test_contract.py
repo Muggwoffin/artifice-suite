@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for the BYOM call contract.
 
 ``select_mode`` is the only branching logic in the contract, and it decides

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for the JobRunner and JobItem — preserved from test_gui.py.
 
 These cover the non-visual job-runner layer. They were co-located in

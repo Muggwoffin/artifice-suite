@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Security tests for artifice-transcribe: SSRF validation and credential redaction."""
 
 from __future__ import annotations

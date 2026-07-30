@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for the FastAPI web frontend (src/web/).
 
 Mocks ``asyncio.run`` inside ``call_ollama`` so no real Ollama/OpenAI/Anthropic

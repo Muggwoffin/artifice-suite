@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Apply tracked insertions/deletions to a .docx using docx-revisions.
 
 Uses the document-level API from ``docx_revisions``: each edit is applied via

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for the read-only Tropy reader and page-level pipeline plumbing.
 
 A miniature `.tropy` bundle is built on disk (real SQLite, real multi-page

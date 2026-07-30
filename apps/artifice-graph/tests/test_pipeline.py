@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Integration test for the Graph Pipeline — no LLM required.
 
 Tests chunking, entity resolution, graph export, and Obsidian vault build

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Run control routes: start, pause, resume, cancel, skip, retry, status."""
 
 from fastapi import APIRouter, HTTPException

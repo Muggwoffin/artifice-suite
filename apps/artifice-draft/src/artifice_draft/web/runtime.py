@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Adapter between the ArtificeDraft pipeline and the FastAPI web layer.
 
 One `RunState` instance per server process — a local tool run by one person on

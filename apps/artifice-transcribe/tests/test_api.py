@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """End-to-end verification script for the ArtificeTranscribe API.
 
 This file is deliberately excluded from pytest collection (see

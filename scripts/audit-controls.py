@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Find UI controls that render but are wired to nothing.
 
 Artifice apps kept shipping controls that look functional and are not: a Save

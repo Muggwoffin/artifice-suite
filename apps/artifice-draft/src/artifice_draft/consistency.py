@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Cross-document consistency checks for proper nouns and naming."""
 
 from __future__ import annotations

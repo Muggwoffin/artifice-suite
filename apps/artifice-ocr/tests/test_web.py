@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for the web frontend's HTTP surface.
 
 Scope is deliberately the same as the rest of this test suite: no real model

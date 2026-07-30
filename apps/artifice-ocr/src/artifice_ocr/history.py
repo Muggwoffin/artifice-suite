@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Local SQLite history of completed pipeline runs.
 
 Kept deliberately small: two tables, no ORM, no migrations framework. The

@@ -1,7 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -124,6 +129,11 @@ def load_config(config_path: str | Path | None = None) -> PipelineConfig:
     # User config may have introduced new relative paths - resolve again.
     resolve_config_paths(config, app_root)
 
+    # Layer 4: environment variable overrides (highest automatic precedence).
+    # CLI arguments (applied by callers after this function returns) can still
+    # override these.
+    _apply_env_overrides(config)
+
     return config
 
 
@@ -198,3 +208,25 @@ def _merge_user_config(config: PipelineConfig) -> None:
 
     if applied:
         logger.debug("Applied user config from %s", _USER_CONFIG_PATH)
+
+
+# -- environment variable overrides -------------------------------------------
+
+
+def _apply_env_overrides(config: PipelineConfig) -> None:
+    """Apply environment variable overrides on top of merged config.
+
+    Precedence: env > user config > config.yaml > pydantic defaults.
+    Only URL-type fields that affect model-server connectivity are
+    overridden; enumerations of every config field would duplicate
+    the file and user-config layers for no benefit.
+    """
+    _overrides: list[tuple[object, str, str]] = [
+        (config.llm, "base_url", "LLM_BASE_URL"),
+        (config.embedding, "base_url", "EMBEDDING_BASE_URL"),
+    ]
+    for section_model, attr, env_var in _overrides:
+        val = os.environ.get(env_var)
+        if val is not None and val.strip():
+            setattr(section_model, attr, val.strip())
+            logger.debug("Set %s from %s env var", attr, env_var)

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Serialization helpers — shared across SSE events, REST responses, and preview.
 
 Extracted from runtime.py so that both the routes (server/routers) and the

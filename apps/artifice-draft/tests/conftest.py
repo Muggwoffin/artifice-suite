@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Shared test fixtures for the copy-edit test suite."""
 
 from __future__ import annotations

@@ -6,11 +6,8 @@ services:
     ports:
       - "3001:8000"
     environment:
-      # OCR uses ollama_url (default localhost:11434) for cleanup/translate
-      # stages and lm_studio_url (default localhost:1234/v1) for OCR.  Only
-      # LM_STUDIO_URL is settable via env var; ollama_url requires a
-      # config.yaml mount or web-UI configuration.  See Gap 1 in the report.
       - LM_STUDIO_URL=http://host.docker.internal:1234/v1
+      - OLLAMA_URL=http://host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -37,11 +34,10 @@ services:
     ports:
       - "3003:8766"
     environment:
-      # The llm.base_url (default localhost:11434/v1) is not settable via
-      # env vars — configure through the web UI or a config.yaml volume
-      # mount.  See Gap 2 in the report.
       - CALLOSIP_HOST=0.0.0.0
       - CALLOSIP_PORT=8766
+      - LLM_BASE_URL=http://host.docker.internal:11434/v1
+      - EMBEDDING_BASE_URL=http://host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

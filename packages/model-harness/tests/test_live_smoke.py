@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Live smoke test: a real call against a running Ollama server.
 
 This test is **not** run by default.  It is guarded by ``--live-smoke`` so that

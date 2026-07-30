@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Footnote and citation validation against journal style guide rules."""
 
 from __future__ import annotations

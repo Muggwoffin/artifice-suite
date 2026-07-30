@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for src/_diff.py's word-level diff ranges."""
 
 from __future__ import annotations

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests that pin the seam: all OpenAI client construction flows through _backend."""
 
 import ast

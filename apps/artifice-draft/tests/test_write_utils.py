@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Tests for write_utils: tempfile usage instead of hardcoded paths — finding #4."""
 
 from __future__ import annotations

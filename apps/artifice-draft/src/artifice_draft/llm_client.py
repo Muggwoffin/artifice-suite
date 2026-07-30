@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """LLM integration for copy-editing paragraphs.
 
 Supports multiple providers (Ollama, OpenAI, Anthropic) and batches paragraphs

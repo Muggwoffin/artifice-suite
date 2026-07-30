@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Shared helpers for talking to LLMs across backends (Ollama, LM Studio, Hugging Face)."""
 
 from typing import Any

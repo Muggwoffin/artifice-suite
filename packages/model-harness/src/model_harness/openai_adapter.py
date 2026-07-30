@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """OpenAI-compatible HTTP adapter implementing the :class:`ModelProvider` contract.
 
 This adapter speaks the OpenAI chat-completions protocol and can drive Ollama,

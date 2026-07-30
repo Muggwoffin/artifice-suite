@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Path validation for web endpoints.
 
 Adopted from ``artifice-graph``'s ``_validate_directory`` model, which the

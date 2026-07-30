@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Generate the icon for the web frontend's desktop shortcut.
 
 Run with:  py -3.12 scripts/make_web_icon.py

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Latin and foreign phrase italicization and consistency checking."""
 
 from __future__ import annotations

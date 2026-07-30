@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Accessibility and structural document hierarchy checker."""
 
 from __future__ import annotations

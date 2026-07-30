@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Write OCR results back into a Tropy project.
 
 Deliberately separate from :mod:`tropy`, which stays provably read-only: the

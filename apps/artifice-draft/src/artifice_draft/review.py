@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Human-in-the-loop review module for approving or rejecting edits.
 
 Provides a CLI-based review interface and data structures for the GUI review.

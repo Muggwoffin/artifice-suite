@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -407,6 +411,29 @@ def test_config_env_override(tmp_path, monkeypatch):
     config.reset()
     cfg = config.load_config()
     assert cfg["ocr_model"] == "env-model"
+    config.reset()
+
+
+def test_ollama_url_env_override(tmp_path, monkeypatch):
+    from artifice_ocr import config
+
+    monkeypatch.setenv("OLLAMA_URL", "http://host.docker.internal:11434")
+
+    config.reset()
+    cfg = config.load_config()
+    assert cfg["ollama_url"] == "http://host.docker.internal:11434"
+    config.reset()
+
+
+def test_ollama_url_default_when_env_absent(tmp_path, monkeypatch):
+    from artifice_ocr import config
+
+    # Ensure OLLAMA_URL is NOT set
+    monkeypatch.delenv("OLLAMA_URL", raising=False)
+
+    config.reset()
+    cfg = config.load_config()
+    assert cfg["ollama_url"] == "http://localhost:11434"
     config.reset()
 
 

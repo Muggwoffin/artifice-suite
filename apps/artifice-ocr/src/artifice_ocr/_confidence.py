@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Confidence scoring for OCR pipeline outputs.
 
 Uses LLM self-assessment and heuristic markers to estimate quality.

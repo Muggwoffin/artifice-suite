@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Regression tests for three correctness bugs.
 
 Bug 1 – Extraction silently discards valid output / overwrites good data.
@@ -17,13 +21,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from artifice_graph.config import (
-    LLMConfig,
     ExtractionConfig,
     PipelineConfig,
-    load_config,
-    resolve_config_paths,
+    _apply_env_overrides,
     _merge_user_config,
     _USER_CONFIG_PATH,
+    load_config,
+    resolve_config_paths,
 )
 from artifice_graph.extraction.schemas import ExtractionResult
 from artifice_graph.extraction.extractor import EntityExtractor
@@ -712,3 +716,101 @@ class TestFixGraphFormats:
 
         assert "gexf" in results
         assert "graphml" not in results
+
+
+# ---------------------------------------------------------------------------
+# Env-var overrides — LLM_BASE_URL and EMBEDDING_BASE_URL
+# ---------------------------------------------------------------------------
+
+
+class TestEnvOverrides:
+
+    def test_llm_base_url_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """LLM_BASE_URL env var overrides the config file and defaults."""
+        monkeypatch.setenv("LLM_BASE_URL", "http://host.docker.internal:11434/v1")
+
+        config = PipelineConfig()
+        assert config.llm.base_url == "http://localhost:11434/v1"  # default
+
+        _apply_env_overrides(config)
+        assert config.llm.base_url == "http://host.docker.internal:11434/v1"
+
+    def test_embedding_base_url_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """EMBEDDING_BASE_URL env var overrides the config file and defaults."""
+        monkeypatch.setenv("EMBEDDING_BASE_URL", "http://host.docker.internal:11434")
+
+        config = PipelineConfig()
+        assert config.embedding.base_url == "http://localhost:11434"  # default
+
+        _apply_env_overrides(config)
+        assert config.embedding.base_url == "http://host.docker.internal:11434"
+
+    def test_defaults_preserved_when_env_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When env vars are not set, defaults are preserved."""
+        monkeypatch.delenv("LLM_BASE_URL", raising=False)
+        monkeypatch.delenv("EMBEDDING_BASE_URL", raising=False)
+
+        config = PipelineConfig()
+        _apply_env_overrides(config)
+
+        assert config.llm.base_url == "http://localhost:11434/v1"
+        assert config.embedding.base_url == "http://localhost:11434"
+
+    def test_env_beats_user_config(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Env var overrides user config, establishing correct precedence."""
+        monkeypatch.setenv("LLM_BASE_URL", "http://env-override:11434/v1")
+
+        config = PipelineConfig()
+        # Simulate user config having set a different value
+        config.llm.base_url = "http://user-config:11434/v1"
+        assert config.llm.base_url == "http://user-config:11434/v1"
+
+        _apply_env_overrides(config)
+        assert config.llm.base_url == "http://env-override:11434/v1"
+
+    def test_load_config_applies_env_overrides(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """load_config() applies env overrides after user config merge."""
+        user_cfg_path = tmp_path / "user_config.json"
+        monkeypatch.setattr(
+            "artifice_graph.config._USER_CONFIG_PATH",
+            user_cfg_path,
+        )
+        user_cfg_path.parent.mkdir(parents=True, exist_ok=True)
+        user_data = {
+            "llm": {"base_url": "http://user-config:11434/v1"},
+        }
+        user_cfg_path.write_text(json.dumps(user_data))
+
+        # Set env var to a different value
+        monkeypatch.setenv("LLM_BASE_URL", "http://env-override:11434/v1")
+        monkeypatch.delenv("EMBEDDING_BASE_URL", raising=False)
+
+        cfg = Path(__file__).parent.parent / "config.yaml"
+        config = load_config(cfg)
+
+        # Env var should win over user config
+        assert config.llm.base_url == "http://env-override:11434/v1"
+        # Embedding should still be at default (no env set)
+        assert config.embedding.base_url == "http://localhost:11434"
+
+    def test_empty_env_var_does_not_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """An empty env var value does NOT override — it falls back to existing."""
+        monkeypatch.setenv("LLM_BASE_URL", "")
+
+        config = PipelineConfig()
+        original = config.llm.base_url
+        _apply_env_overrides(config)
+        assert config.llm.base_url == original
+
+    def test_whitespace_only_env_var_does_not_override(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Whitespace-only env var value does NOT override."""
+        monkeypatch.setenv("LLM_BASE_URL", "   ")
+
+        config = PipelineConfig()
+        original = config.llm.base_url
+        _apply_env_overrides(config)
+        assert config.llm.base_url == original

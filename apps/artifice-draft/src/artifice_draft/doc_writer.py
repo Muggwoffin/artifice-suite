@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Apply LLM edits to a .docx as track changes using docx-revisions.
 
 Also supports exporting to Markdown, HTML, and plain text formats.

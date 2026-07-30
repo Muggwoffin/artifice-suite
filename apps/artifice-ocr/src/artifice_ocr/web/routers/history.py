@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """History routes: listing runs, items, detail, search, delete, image, raw-text."""
 
 import re
