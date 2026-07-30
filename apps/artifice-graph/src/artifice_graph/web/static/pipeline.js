@@ -827,7 +827,7 @@
         }).catch(function(err) {
           var resultContainer = $("connectionResult");
           if (resultContainer) {
-            showResult(resultContainer, false, "Network error: " + err.message, ["Check your internet connection and try again."].concat(data.suggestions || []));
+            showResult(resultContainer, false, "Network error: " + err.message, ["Check your internet connection and try again."]);
           }
         }).finally(function() {
           btn.disabled = false;

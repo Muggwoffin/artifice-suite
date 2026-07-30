@@ -32,7 +32,7 @@ _SRC = Path(__file__).resolve().parent.parent.parent  # src/
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from artifice_graph.config import PipelineConfig, load_config
+from artifice_graph.config import LLMConfig, PipelineConfig, load_config
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
 from artifice_graph.entity_resolution.resolver import EntityResolver
 from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityResolver
@@ -992,15 +992,29 @@ async def api_get_models():
         }
 
 
-@app.get("/api/test-connection")
-async def api_test_connection():
-    """Test LLM server connection."""
+@app.post("/api/test-connection")
+async def api_test_connection(body: dict[str, Any] | None = None):
+    """Test LLM server connection against the posted config, or the saved one if absent."""
+    # Build the LLM config that will be tested: posted fields override the
+    # saved config; missing or empty posted fields fall back to saved.
+    cfg = load_config()
+    if body:
+        llm_base_url = body.get("llm_base_url") or cfg.llm.base_url
+        llm_api_key = body.get("llm_api_key", cfg.llm.api_key)
+        llm_model = body.get("llm_model") or cfg.llm.model
+        llm_cfg = LLMConfig(
+            base_url=llm_base_url,
+            api_key=llm_api_key,
+            model=llm_model,
+        )
+    else:
+        llm_cfg = cfg.llm
+
     try:
-        cfg = load_config()
-        llm = LLMClient(cfg.llm)
+        llm = LLMClient(llm_cfg)
 
         async with httpx.AsyncClient(timeout=5) as client:
-            ollama_base = cfg.llm.base_url.rstrip("/")
+            ollama_base = llm_cfg.base_url.rstrip("/")
             if "/v1" in ollama_base:
                 ollama_base = ollama_base.replace("/v1", "")
 
@@ -1028,10 +1042,10 @@ async def api_test_connection():
                     suggestions.append("Ensure LM Studio server is running and accessible")
 
             try:
-                if "api.openai.com" in cfg.llm.base_url:
+                if "api.openai.com" in llm_cfg.base_url:
                     resp = await client.get(
-                        f"{cfg.llm.base_url}/v1/models",
-                        headers={"Authorization": f"Bearer {cfg.llm.api_key}" if cfg.llm.api_key else None},
+                        f"{llm_cfg.base_url}/v1/models",
+                        headers={"Authorization": f"Bearer {llm_cfg.api_key}" if llm_cfg.api_key else None},
                         timeout=5
                     )
                     if resp.status_code == 200:
@@ -1059,8 +1073,8 @@ async def api_test_connection():
             "status": status,
             "error": error,
             "suggestions": suggestions,
-            "url": cfg.llm.base_url,
-            "model": cfg.llm.model,
+            "url": llm_cfg.base_url,
+            "model": llm_cfg.model,
         }
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
@@ -1068,8 +1082,8 @@ async def api_test_connection():
             "status": "error",
             "error": str(e),
             "suggestions": ["Check if the URL is correct and accessible"],
-            "url": load_config().llm.base_url,
-            "model": load_config().llm.model,
+            "url": llm_cfg.base_url,
+            "model": llm_cfg.model,
         }
 
 
