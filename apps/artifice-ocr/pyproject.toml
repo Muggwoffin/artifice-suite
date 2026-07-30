@@ -15,6 +15,7 @@ dependencies = [
     "PyMuPDF",
     "reportlab",
     "huggingface_hub",
+    "secure-io",
     "shared-ui",
     "model-harness",
 ]

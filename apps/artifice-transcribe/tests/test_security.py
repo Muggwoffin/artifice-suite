@@ -6,21 +6,8 @@
 
 from __future__ import annotations
 
-import json
-import os
-
 import pytest
-
-#: POSIX permission bits are not implemented on Windows: ``os.open(..., 0o600)``
-#: does not restrict access there and ``st_mode`` reports ``0o666`` regardless.
-#: This marks a **product** gap, not a test limitation — on Windows the config
-#: file holding the API key genuinely is not protected, and closing that needs
-#: an ACL via ``icacls`` or ``pywin32``. Tracked in IMPLEMENTATION_PLAN.md.
-posix_permissions_only = pytest.mark.skipif(
-    os.name == "nt",
-    reason="POSIX mode bits are not enforced on Windows; the file is unprotected there",
-)
-
+from secure_io import is_restricted
 
 # Module-level endpoint rejection markers carried in HTTP 400 detail strings.
 # None are secrets — they describe which rule rejected the endpoint.
@@ -281,10 +268,8 @@ class TestCredentialRedaction:
 class TestConfigFilePermissions:
     """Restrictive file permissions for config files — finding #3."""
 
-    @posix_permissions_only
     def test_saved_config_has_restricted_permissions(self, tmp_path, monkeypatch):
-        """After saving, the config file must be readable only by the owner."""
-        from artifice_transcribe.api.v1.routes import _INFERENCE_CONFIG_FILE
+        """After saving, the config file must be restricted to the current user."""
 
         monkeypatch.setattr(
             "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
@@ -297,6 +282,4 @@ class TestConfigFilePermissions:
         )
         config_file = tmp_path / "inference_config.json"
         assert config_file.exists()
-        st = config_file.stat()
-        # Mode should be exactly 0o600 (or 0o100600 with file type bits).
-        assert st.st_mode & 0o777 == 0o600
+        assert is_restricted(config_file)

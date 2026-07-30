@@ -26,6 +26,7 @@ dependencies = [
     "fpdf2>=2.8.0",
     "openai>=1.0.0",
     "model-harness",
+    "secure-io",
     "shared-ui",
 ]
 
