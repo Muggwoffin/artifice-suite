@@ -84,7 +84,7 @@ def load_saved_config() -> PipelineConfig | None:
 
 def save_user_config(config: PipelineConfig) -> None:
     """Save user configuration to file (all sections, with restricted permissions)."""
-    from secure_io import restrict_to_current_user, write_private_json
+    from secure_io import write_private_json
 
     ensure_preferences_dir()
 
@@ -99,7 +99,6 @@ def save_user_config(config: PipelineConfig) -> None:
     }
 
     write_private_json(CONFIG_FILE, data)
-    restrict_to_current_user(CONFIG_FILE)
 
 
 def apply_preferences_to_config(config: PipelineConfig, preferences: UserPreferences) -> PipelineConfig:

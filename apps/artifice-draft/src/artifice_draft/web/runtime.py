@@ -79,13 +79,12 @@ def save_settings(patch: dict) -> dict:
     merge settings save that silently dropped every other saved key the first
     time the web UI wrote just one field. Don't repeat that here.
     """
-    from secure_io import restrict_to_current_user, write_private_json
+    from secure_io import write_private_json
 
     current = load_settings()
     current.update(patch)
     _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     write_private_json(_SETTINGS_PATH, current)
-    restrict_to_current_user(_SETTINGS_PATH)
     return current
 
 

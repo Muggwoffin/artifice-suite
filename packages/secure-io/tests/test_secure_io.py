@@ -56,6 +56,15 @@ class TestWritePrivateJson:
         write_private_json(path, {"x": 1})
         assert (path.stat().st_mode & 0o777) == 0o600
 
+    def test_overwrite_tightens_existing_world_readable_file(self, tmp_path: Path) -> None:
+        """Overwriting a world-readable (mode 0644) file with ``write_private_json``
+        must tighten it to mode 0600, not leave the looser permissions in place."""
+        path = tmp_path / "test.json"
+        path.write_text('{"original": true}', encoding="utf-8")
+        path.chmod(0o644)
+        write_private_json(path, {"x": 1})
+        assert (path.stat().st_mode & 0o777) == 0o600
+
 
 # ---------------------------------------------------------------------------
 # restrict_to_current_user
@@ -162,8 +171,8 @@ class TestPlatformDispatch:
         leave an empty file behind."""
         monkeypatch.setattr("secure_io.sys.platform", "win32")
         path = tmp_path / "win32.json"
-        # The whoami call would also fail, but icacls is what we actually
-        # call first.  Either way the raised exception should clean up.
+        # _restrict_windows calls whoami first, not icacls; both are missing
+        # on POSIX, and either way the raised exception should clean up.
         with pytest.raises((FileNotFoundError, subprocess.CalledProcessError)):  # type: ignore[name-defined]
             write_private_json(path, {"x": 1})
         # The empty file created before ACL application must have been removed.

@@ -82,10 +82,16 @@ def is_restricted(path: Path) -> bool:
 
 
 def _write_private_json_posix(path: Path, data: object) -> None:
-    """Create the file with mode 0600, then write atomically."""
+    """Write *data* as JSON at *path*, ensuring mode 0600 afterward.
+
+    ``os.open(..., 0o600)`` makes the file private when created; ``os.chmod``
+    afterward tightens an already-existing file that was upgraded from a looser
+    mode (e.g. a file that shipped world-readable in an earlier version).
+    """
     fd = os.open(path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    os.chmod(path, 0o600)
 
 
 # ---------------------------------------------------------------------------
