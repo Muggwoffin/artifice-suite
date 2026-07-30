@@ -90,7 +90,7 @@ def save_user_config(config: PipelineConfig) -> None:
     ``"api_key": "************"``, and POSTs the same body back must not
     overwrite the real key with the placeholder.
     """
-    from secure_io import write_private_json
+    from secure_io import is_restricted, write_private_json
 
     ensure_preferences_dir()
 
@@ -111,6 +111,18 @@ def save_user_config(config: PipelineConfig) -> None:
     }
 
     write_private_json(CONFIG_FILE, data)
+
+    # Align write-time verification with the public is_restricted() contract
+    # that the test suite asserts — a platform-specific false-negative
+    # (e.g. Administrator accounts retaining SYSTEM ACEs on Windows CI
+    # runners) must not block a successful, secure write.
+    if not is_restricted(CONFIG_FILE):
+        # One retry handles occasional ACL propagation delay on Windows.
+        write_private_json(CONFIG_FILE, data)
+        if not is_restricted(CONFIG_FILE):
+            raise PermissionError(
+                f"Failed to secure config file after retry: {CONFIG_FILE}"
+            )
 
 
 def apply_preferences_to_config(config: PipelineConfig, preferences: UserPreferences) -> PipelineConfig:

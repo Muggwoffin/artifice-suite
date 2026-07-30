@@ -192,12 +192,21 @@ def save_user_settings(settings: dict[str, Any]) -> None:
     (`output_dir` alone, right after starting a run) — a plain overwrite would
     silently discard every other saved setting each time that happened.
     """
-    from secure_io import write_private_json
+    from secure_io import is_restricted, write_private_json
 
     _USER_DIR.mkdir(parents=True, exist_ok=True)
     merged = load_user_settings()
     merged.update({k: v for k, v in settings.items() if k in PERSISTED_KEYS})
     write_private_json(_SETTINGS_PATH, merged)
+
+    # Align write-time verification with the public is_restricted() contract
+    # (see artifice-graph config_helper.save_user_config for rationale).
+    if not is_restricted(_SETTINGS_PATH):
+        write_private_json(_SETTINGS_PATH, merged)
+        if not is_restricted(_SETTINGS_PATH):
+            raise PermissionError(
+                f"Failed to secure settings file after retry: {_SETTINGS_PATH}"
+            )
 
 
 def reset():

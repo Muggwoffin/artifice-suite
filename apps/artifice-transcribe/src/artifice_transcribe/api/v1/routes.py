@@ -199,10 +199,19 @@ def _load_inference_config() -> dict:
 
 
 def _save_inference_config(cfg: dict) -> None:
-    from secure_io import write_private_json
+    from secure_io import is_restricted, write_private_json
 
     _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
     write_private_json(_INFERENCE_CONFIG_FILE, cfg)
+
+    # Align write-time verification with the public is_restricted() contract
+    # (see artifice-graph config_helper.save_user_config for rationale).
+    if not is_restricted(_INFERENCE_CONFIG_FILE):
+        write_private_json(_INFERENCE_CONFIG_FILE, cfg)
+        if not is_restricted(_INFERENCE_CONFIG_FILE):
+            raise PermissionError(
+                f"Failed to secure inference config after retry: {_INFERENCE_CONFIG_FILE}"
+            )
 
 
 # Module-level engine singleton (lazy init)
