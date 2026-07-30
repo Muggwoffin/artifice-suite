@@ -1,5 +1,5 @@
 <img width="960" height="540" alt="Readme Logo (1)" src="https://github.com/user-attachments/assets/4a68238d-20b1-4461-9cdb-eba2aed69bfc" />
-<h1 align="center"> OCR | Transcribe Speech | Visualise Data | Edit </h1>
+<h1 align="center"> OCR | Transcribe Speech | Visualise Data | Copy Edit </h1>
 
 A collection of local-first and open-source tools that place a user-friendly interface on top of AI models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed from the ground up for digital humanities workflows.
 
@@ -18,10 +18,10 @@ A collection of local-first and open-source tools that place a user-friendly int
 Artifice deploys AI to improve research workflows in specific cases: OCR, copy editing, transcribing oral histories and creating data visualisations. Free, open-source and privacy focused, it is designed for a Digital Humanities landscape increasingly shaped by local and open source models.
 
 ### Bring Your Own Model
-Use your model choice, whether it's a model running on your computer, a cloud-based model or models that your university hosts on a local network. 
+Use your model of choice, whether it's a model running on your computer, a cloud-based model or models that your university hosts on a local network. 
 
 ### Data Privacy
-Artifice never connects to the internet unless you permit it. By default, none of your research material leaves your machine. Cloud access is an option but must be actively enabled.
+Artifice never connects to the internet unless you permit it. By default, none of your research material leaves your machine. Cloud access is a choice you make, not a feature of the app.
 
 ### Digital Sovereignty
 Artifice is designed from the ground-up to work with open models, allowing researchers to reduce their dependency on corporations for digital tools and data storage.
