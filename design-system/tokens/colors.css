@@ -9,12 +9,6 @@
   --rule:#ddd6c6;
   --rule-dark:#45413a;
 
-  --accent:#2f7d45;
-  --accent-deep:#1f5a31;
-  --accent-darker:#163f22;
-  --accent-wash:rgba(47,125,69,0.07);
-  --accent-wash-solid:#e6efe8;
-  --accent-tint:#c3dbc9;
   --gold:#bf9b30;
 
   --success:#455f2b;
@@ -36,13 +30,6 @@
   --ink-500:var(--ink-soft);
   --ink-300:var(--ink-faint);
   --ink-100:var(--rule);
-  --sage-100:var(--accent-wash-solid);
-  --sage-200:var(--accent-tint);
-  --sage-400:#5fa876;
-  --sage-500:var(--accent);
-  --sage-600:var(--accent-deep);
-  --sage-700:var(--accent-darker);
-  --white:var(--paper-raised);
 
   --surface-page:var(--paper);
   --surface-card:var(--paper-raised);
@@ -54,17 +41,10 @@
   --text-secondary:var(--ink-soft);
   --text-tertiary:var(--ink-faint);
   --text-on-inverse:var(--paper-raised);
-  --text-link:var(--accent-deep);
-  --text-link-hover:var(--accent);
 
   --border-subtle:var(--rule);
   --border-default:var(--rule);
   --border-strong:var(--rule-dark);
-
-  --accent-primary:var(--accent);
-  --accent-primary-hover:var(--accent-deep);
-  --accent-primary-active:var(--accent-darker);
-  --accent-soft:var(--accent-wash-solid);
 
   --state-success:var(--success);
   --state-warning:var(--warning);
@@ -82,12 +62,6 @@
     --ink-faint:#a39a88;
     --rule:#38332b;
     --rule-dark:#5b554a;
-    --accent:#4aa066;
-    --accent-deep:#7cc492;
-    --accent-darker:#9ad9ac;
-    --accent-wash:rgba(74,160,102,0.12);
-    --accent-wash-solid:#25302a;
-    --accent-tint:#2f4536;
     --success:#67a04b;
     --warning:#e4cb81;
     --error:#dd5555;
@@ -97,15 +71,11 @@
   --paper:#161310;--paper-raised:#1f1b16;--paper-recessed:#100e0b;
   --ink:#e8e2d3;--ink-soft:#beb5a3;--ink-faint:#a39a88;
   --rule:#38332b;--rule-dark:#5b554a;
-  --accent:#4aa066;--accent-deep:#7cc492;--accent-darker:#9ad9ac;
-  --accent-wash:rgba(74,160,102,0.12);--accent-wash-solid:#25302a;--accent-tint:#2f4536;
   --success:#67a04b;--warning:#e4cb81;--error:#dd5555;
 }
 [data-theme="light"]{
   --paper:#f6f3ea;--paper-raised:#fbf9f3;--paper-recessed:#efebdf;
   --ink:#1b1813;--ink-soft:#4b463d;--ink-faint:#635e51;
   --rule:#ddd6c6;--rule-dark:#45413a;
-  --accent:#2f7d45;--accent-deep:#1f5a31;--accent-darker:#163f22;
-  --accent-wash:rgba(47,125,69,0.07);--accent-wash-solid:#e6efe8;--accent-tint:#c3dbc9;
   --success:#455f2b;--warning:#7c5e1a;--error:#a8322b;
 }

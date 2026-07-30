@@ -18,6 +18,10 @@
 */
 
 :root {
+  --accent: #017259;
+  --accent-deep: #005942;
+  --accent-wash: rgba(1, 114, 89, 0.07);
+
   --indigo: #3d5a80;
   --diff-insert: #dcead9;
   --diff-delete: #f2ddd9;
@@ -29,6 +33,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --accent: #359277;
+    --accent-deep: #52ad91;
+    --accent-wash: rgba(53, 146, 119, 0.12);
+
     --indigo: #7d95bd;
     --diff-insert: #1e2b1f;
     --diff-delete: #2f1f1c;
@@ -1060,6 +1068,10 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
    from /shared/tokens.css's own [data-theme="dark"] / [data-theme="light"]
    blocks. Only the app-only tokens below need a per-theme value. */
 [data-theme="dark"] {
+  --accent: #359277;
+  --accent-deep: #52ad91;
+  --accent-wash: rgba(53, 146, 119, 0.12);
+
   --indigo: #7d95bd;
   --diff-insert: #1e2b1f;
   --diff-delete: #2f1f1c;
@@ -1068,6 +1080,10 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 }
 
 [data-theme="light"] {
+  --accent: #017259;
+  --accent-deep: #005942;
+  --accent-wash: rgba(1, 114, 89, 0.07);
+
   --indigo: #3d5a80;
   --diff-insert: #dcead9;
   --diff-delete: #f2ddd9;
