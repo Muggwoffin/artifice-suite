@@ -131,16 +131,34 @@ def validate_directory(raw: str, field_name: str) -> str:
     return str(p)
 
 
-def validate_contained(raw: str, container: str, field_name: str) -> str:
+def validate_contained(
+    raw: str,
+    container: str,
+    field_name: str,
+    *,
+    must_exist: bool = True,
+) -> str:
     """Return *raw* as a normalised path after checking it resolves within
     *container*.  Raises HTTP 400 on rejection.
 
     Backslashes are normalised to forward slashes (same rationale as
     ``validate_directory``).
+
+    ``must_exist=False`` resolves non-strictly, so a path that is inside
+    *container* but absent is returned rather than refused. A caller wanting to
+    answer 404 for a missing file needs this: with strict resolution the
+    nonexistent path raises first and every miss becomes a 400, which collapses
+    "not there" and "not permitted" into one answer.
+
+    **Containment is still decided after resolution either way**, so relaxing
+    existence does not relax the security check — and it must not be reordered
+    to test existence first. An endpoint that answered 404 for a path outside
+    *container* would become an existence oracle for arbitrary filesystem
+    paths.
     """
     normalised_raw = _normalise(raw, field_name)
     try:
-        p = Path(normalised_raw).expanduser().resolve(strict=True)
+        p = Path(normalised_raw).expanduser().resolve(strict=must_exist)
     except Exception:
         raise HTTPException(
             status_code=400,

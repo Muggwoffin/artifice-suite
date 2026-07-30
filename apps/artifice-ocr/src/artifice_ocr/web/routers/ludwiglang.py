@@ -66,10 +66,11 @@ def ludwiglang_export(req: LudwigLangExportRequest) -> dict:
 @router.get("/api/ludwiglang/download")
 def ludwiglang_download(path: str) -> FileResponse:
     output_dir = config_get("output_dir", "output")
-    try:
-        normalised = validate_contained(path, output_dir, "path")
-    except HTTPException:
-        raise
+    # must_exist=False so that containment is enforced without existence being
+    # folded into the same answer: a file inside output_dir that is simply not
+    # there is a 404 below, while anything outside it is a 400 from the
+    # validator. Requiring existence here would make every miss a 400.
+    normalised = validate_contained(path, output_dir, "path", must_exist=False)
     p = Path(normalised)
     if not p.exists():
         raise HTTPException(status_code=404, detail="File not found")

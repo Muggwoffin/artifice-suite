@@ -1631,6 +1631,44 @@ def test_ludwiglang_download_serves_file_within_output_dir(client, tmp_path):
     assert "# Test Document" in res.text
 
 
+def test_ludwiglang_download_missing_file_returns_404(client, tmp_path):
+    """A file that does not exist inside the permitted output directory is a
+    404, not a 400.
+
+    Containment and existence are separate questions. The validator is asked
+    not to require existence here precisely so that "the thing you named is not
+    there" stays distinguishable from "you may not have that".
+    """
+    out = tmp_path / "out"
+    (out / "ludwiglang").mkdir(parents=True)
+    config.apply_overrides({"output_dir": str(out)})
+
+    res = client.get("/api/ludwiglang/download", params={
+        "path": str(out / "ludwiglang" / "absent.md"),
+    })
+    assert res.status_code == 404
+    assert "not found" in res.json()["detail"].lower()
+
+
+def test_ludwiglang_download_refuses_missing_path_outside_output_dir(client, tmp_path):
+    """Containment is checked before existence.
+
+    A nonexistent path *outside* the output directory must still be refused
+    with 400 rather than answered with 404. Answering 404 there would turn the
+    endpoint into an existence oracle for arbitrary filesystem paths — the
+    caller could distinguish "outside and absent" from "outside and present".
+    """
+    out = tmp_path / "out"
+    out.mkdir()
+    config.apply_overrides({"output_dir": str(out)})
+
+    res = client.get("/api/ludwiglang/download", params={
+        "path": str(tmp_path / "elsewhere" / "absent.md"),
+    })
+    assert res.status_code == 400
+    assert "not within" in res.json()["detail"].lower()
+
+
 def test_ludwiglang_download_refuses_windows_style_escape(client, tmp_path):
     """A Windows-style path with backslashes that resolves outside the output
     directory is rejected, not misinterpreted."""
