@@ -1,7 +1,7 @@
 <img width="960" height="540" alt="Readme Logo (1)" src="https://github.com/user-attachments/assets/4a68238d-20b1-4461-9cdb-eba2aed69bfc" />
 <h1 align="center"> OCR | Transcribe Speech | Visualise Data | Copy Edit </h1>
 
-A collection of local-first and open-source tools that place a user-friendly interface on top of AI models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed from the ground up for digital humanities workflows.
+A collection of local-first and open-source tools that place a user-friendly interface over models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed to support digital humanities research.
 
 ## Applications Overview
 
@@ -15,7 +15,7 @@ A collection of local-first and open-source tools that place a user-friendly int
 
 ## AI Tools for Responsible Humanities Research:
 
-Artifice deploys AI to improve research workflows in specific cases: OCR, copy editing, transcribing oral histories and creating data visualisations. Free, open-source and privacy focused, it is designed for a Digital Humanities landscape increasingly shaped by local and open source models.
+Artifice deploys AI to assist research workflows in specific cases: OCR, copy editing, transcribing oral histories and creating data visualisations. Free, open-source and privacy focused, it is designed for a Digital Humanities landscape increasingly shaped by local and open source models.
 
 ### Bring Your Own Model
 Use your model of choice, whether it's a model running on your computer, a cloud-based model or models that your university hosts on a local network. 
