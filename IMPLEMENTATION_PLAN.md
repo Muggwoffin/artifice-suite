@@ -1026,6 +1026,21 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
 
 ### Phase 5 — Engineering quality gates
 
+> **PHASE 5 IS COMPLETE — 2026-07-30.** Every item is closed except **5.2b**, which is three
+> security questions deliberately left open for the maintainer rather than answered by an agent.
+>
+> Final measured state: ocr **456 passed / 1 skipped**, draft **203**, graph **126**, transcribe
+> **72**, model-harness **128**, secure-io **16**. Gates: `reuse lint` 470/470, `gitleaks` no leaks,
+> `token-parity-check.py`, `audit-controls.py` and `shellcheck` all exit 0.
+>
+> **What the phase actually cost, and the pattern worth carrying into Phase 6:** four separate
+> defects were found *after* the work that introduced them was believed finished, and **not one was
+> caught by a test** — they were caught by re-reading code against the claim made about it. A
+> permission fix that only applied at file creation; two upload limits that ran after the allocation
+> they existed to prevent; a path validator that guarded the directory and not the second component;
+> a licensing pass that exited 0 twelve files short. In three further cases a **comment asserted a
+> safeguard the code did not provide**. Green tests and a zero exit code were present throughout.
+
 - [x] ~~CI on pull request: `uv sync --extra all`, run all 34 test suites, lint~~ — **Landed,
       measured 2026-07-29.** `.github/workflows/ci.yml` runs on `push` and `pull_request` to
       `main` and defines `gates`, `tests`, `wheel` and `tests-cross-platform`. The recorded "34"
@@ -1045,7 +1060,26 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
       The one part that remains true: **WSL2 is represented indirectly by Linux rather than by a
       hosted runner.** That is not a gap to close — GitHub offers no WSL2 runner — so it is a
       documented limitation, not a task. Treat it as closed.
-- [ ] **5.1 — Licensing, comprehensively.** See the dedicated subsection below.
+- [x] ~~**5.1 — Licensing, comprehensively.**~~ — **closed 2026-07-30**, commit `bd09a48`.
+      `reuse lint` reports **470/470** files with copyright and licence information and exits 0,
+      gated in CI's `gates` job.
+
+      Source files carry real SPDX headers; markdown, JSON, TOML, dotfiles and binaries are declared
+      in `REUSE.toml`. **Third-party material is declared with its real licence and was not stamped
+      MIT** — the vendored Leaflet bundle is BSD-2-Clause and left byte-unmodified, and three font
+      families (Libre Baskerville, Playfair Display, Archivo) are OFL-1.1 with their upstream
+      copyright holders. Stamping any of it MIT would have been a licence misstatement, which is
+      worse than leaving a file undeclared.
+
+      **The implementing agent stopped twelve files short with `exit=0` and its last recorded
+      `reuse lint` still non-compliant.** The remainder — two `.pyw` launchers the `*.py` glob
+      missed, ten dotfiles and binaries, and the CI gate itself — was finished by hand. **An exit
+      code reports how a process ended, not whether the work was done**; the only signals were the
+      agent's own unchecked todo list and the lint output.
+
+      Left for a decision: `apps/artifice-ocr/*.lnk`, two tracked Windows shortcuts.
+      `.gitattributes` already calls `.lnk` "machine-local artifacts", so they arguably should not
+      be in the index. Declared so the gate is green; removing them is separate.
 
       **Partly done already, and the origin matters.** The maintainer began an SPDX pass by hand on
       2026-07-30 as a test of the approach, tagging 115 of 197 tracked `.py` files before the session
@@ -1127,7 +1161,7 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
       filesystem layout whenever the input was relative. Pre-existing and untouched by `be50909`;
       one line to fix, listed here so it is not lost.
 
-- [ ] **5.3 — Front-end test coverage** for `pipeline.js` and the SSE log broker.
+- [x] ~~**5.3 — Front-end test coverage** for `pipeline.js` and the SSE log broker.~~
       **Re-measured 2026-07-30, and the item was understated:** `pipeline.js` is
       `apps/artifice-graph/src/artifice_graph/web/static/pipeline.js`, **915 lines**, referenced by
       no test anywhere in the repo. The SSE broker is
@@ -1137,13 +1171,50 @@ literally named `tests`. CI sidesteps it with `working-directory: apps/<app>` pe
       **There is no JavaScript test runner anywhere in the repo** — no `package.json`, no vitest or
       jest config, and per the Step 0 decision **there will not be one.** The suite stays vanilla JS.
 
-      **So this item splits, and the two halves are not equally achievable.** The SSE broker is 48
-      lines of Python and can be covered properly — FastAPI's `TestClient` consumes
-      `text/event-stream` directly, so connect, delivery and client-disconnect are all reachable.
-      `pipeline.js` gets behavioural coverage driven from Python against the served page, which will
-      exercise a small fraction of its 915 lines. **When this item closes, it must not be recorded as
-      "`pipeline.js` is covered".** State the fraction and the accepted limit, or the next reader
-      inherits a false sense of safety — the precise failure this plan documents throughout.
+      **So this item splits, and the two halves are not equally achievable.**
+
+      **CLOSED 2026-07-30**, commits `658fc50` (SSE) and `e957694` (`pipeline.js`), and the split
+      held exactly as predicted.
+
+      **SSE broker — properly covered.** Seven tests: headers, the no-runner waiting frame,
+      data-frame delivery, the heartbeat, client disconnect, and the two state mutations buried
+      inside the generator (`record_finished_items`, `finish_run`) that are reachable only by
+      draining frames. ocr 449 → **456**.
+
+      One prediction in this entry was wrong: **`TestClient` cannot drive this endpoint at all.**
+      Starlette buffers the whole response body before returning, and `_event_stream()` is an
+      unbounded `while True` generator that never sets `more_body=False`, so the call never returns.
+      The tests run a real uvicorn server in a daemon thread instead. Every test reads a bounded
+      number of frames — a full consume does not fail, it **hangs**, and a hung test is
+      indistinguishable from a slow one.
+
+      Observed and not fixed: a client disconnecting inside the one-second poll window can silently
+      lose one event, because `queue.Queue.get` has already removed it when Starlette cancels the
+      generator.
+
+      **`pipeline.js` — NOT covered, and this is the accepted outcome, not a shortfall.** Two
+      structural gates were added instead of unit tests: a reverse binding check in
+      `audit-controls.py` (ids the JS looks up that exist in no template — the failure that once
+      "disabled every control on the page", cited in that tool's docstring for however long without
+      ever being checked), and an endpoint-contract test introspecting `app.routes`.
+
+      They reach **~80-90 of 915 lines (~9%)**. They gate the wiring; they do not test the logic.
+      They cannot catch SSE parsing errors, stage-transition bugs, config extraction errors, upload
+      failure modes, event-binding mistakes, or the run-key handshake.
+
+      **The contract check found a dead control on its first run**, which is the justification for
+      the whole item: graph's "Test Connection" button POSTed to a GET-only route and had never
+      worked. `audit-controls.py` reported "0 unbound controls" throughout and was *correct* — the
+      button was bound; its handler called a method the server refused. Two further defects sat
+      behind it (the handler ignored the posted config and would have tested the saved one; a
+      `ReferenceError` in the `.catch` block). Fixed in `e957694`.
+
+      **Where the remaining gap actually carries risk** — the honest version, for whoever picks this
+      up: `_handleSSEEvent` / `_finishRun` (`:573-638`) and the stage state machine (`:321-361`).
+      Both hold real logic and **fail silently**: a missed event type stops the UI mid-run and
+      presents as a hung backend. Both are pure enough to be driven from Python if extracted. The
+      rest of the uncovered 91% is thin DOM manipulation where a defect is visible on sight and does
+      not warrant a toolchain.
 
 ---
 
