@@ -178,3 +178,73 @@ class TestValidateBaseUrl:
         with pytest.raises(HTTPException) as exc_info:
             _validate_base_url("not-a-url!!!", "llm_base_url")
         assert exc_info.value.status_code == 400
+
+
+# --------------------------------------------------------------------------- #
+# Cause A regression — temp dir from gettempdir() is always an allowed root
+# --------------------------------------------------------------------------- #
+
+def test_tempfile_gettempdir_in_allowed_roots():
+    """``tempfile.gettempdir()`` is always in the allowed-roots list.
+
+    Before the fix, only ``Path(\"/tmp\")`` was listed.  On macOS that fails
+    because ``tempfile.gettempdir()`` returns ``/var/folders/…``, which is
+    neither ``/tmp`` nor ``$HOME``.  This test asserts the mechanism is
+    present regardless of platform default.
+    """
+    import tempfile
+    temp_root = Path(tempfile.gettempdir()).resolve()
+    resolved_roots = [r.resolve() for r in _ALLOWED_ROOT_DIRS]
+    assert temp_root in resolved_roots
+
+
+@pytest.mark.skipif(
+    os.name != "posix",
+    reason=(
+        "Reproduces a POSIX-only failure mode. On Windows the platform temp "
+        "directory sits below Path.home(), so it is already covered by the home "
+        "root and this failure cannot arise; /var/tmp does not exist there "
+        "either. The platform-neutral invariant is asserted unconditionally in "
+        "the test above."
+    ),
+)
+def test_accepts_temp_outside_tmp_and_home(monkeypatch):
+    """A temp directory outside both ``/tmp`` and ``$HOME`` is still accepted.
+
+    On macOS that is the default (``/var/folders/…``); here it is reproduced by
+    pointing ``TMPDIR`` at ``/var/tmp``.
+
+    ``_ALLOWED_ROOT_DIRS`` is a module-level constant evaluated at import time,
+    so the relocated temp directory is injected into that list directly.
+    **Deliberately not `importlib.reload`:** reloading the server module
+    recomputes the constant with the test's ``TMPDIR`` baked in and cannot be
+    undone by monkeypatch, leaking into every later test in the session, and it
+    would also invalidate other tests' references to ``app`` and its routers.
+    """
+    import tempfile
+
+    from artifice_graph.web import server as server_mod
+
+    custom_root = Path("/var/tmp")
+    if not custom_root.is_dir():
+        pytest.skip("/var/tmp is absent on this POSIX host")
+
+    monkeypatch.setenv("TMPDIR", str(custom_root))
+    monkeypatch.setattr(tempfile, "tempdir", None)
+    monkeypatch.setattr(
+        server_mod,
+        "_ALLOWED_ROOT_DIRS",
+        [*server_mod._ALLOWED_ROOT_DIRS, Path(tempfile.gettempdir())],
+    )
+
+    d = Path(tempfile.mkdtemp(dir=str(custom_root)))
+    try:
+        # Compare against the RESOLVED path: _validate_directory returns the
+        # path after resolve(). On Linux /var/tmp is a real directory so
+        # resolve() is a no-op and either form passes — but on macOS /var is a
+        # symlink to /private/var, so the unresolved form fails there and only
+        # there.
+        assert server_mod._validate_directory(str(d), "input_dir") == str(d.resolve())
+    finally:
+        if d.exists():
+            d.rmdir()

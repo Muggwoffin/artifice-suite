@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import re
+import tempfile
 from pathlib import Path
 
 from fastapi import HTTPException
@@ -58,6 +59,7 @@ def _build_allowed_roots() -> list[Path]:
     """
     roots: list[Path] = [
         Path.home(),
+        Path(tempfile.gettempdir()),
         Path("/tmp"),
         Path.cwd(),
     ]

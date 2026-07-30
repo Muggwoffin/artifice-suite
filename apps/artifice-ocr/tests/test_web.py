@@ -1818,3 +1818,69 @@ def test_start_run_refuses_windows_style_output_dir(client):
         assert "not valid on this platform" in detail
     else:
         assert "outside the directories this server is permitted" in detail
+
+
+# --------------------------------------------------------------------------- #
+# Cause A regression — temp dir from TMPDIR is always an allowed root
+# --------------------------------------------------------------------------- #
+
+def test_platform_temp_dir_is_always_an_allowed_root():
+    """The platform's own temp directory is an allowed root on every platform.
+
+    This is the invariant that the macOS breakage violated, and it is checked
+    unconditionally so that Windows and macOS both assert it rather than
+    skipping. Before the fix the list carried a bare ``Path("/tmp")``, which is
+    not the platform temp directory on macOS (``/var/folders/…``) and does not
+    exist at all on Windows.
+    """
+    import tempfile
+
+    from artifice_ocr.web.validation import _build_allowed_roots
+
+    temp_root = Path(tempfile.gettempdir()).resolve()
+    assert temp_root in [r.resolve() for r in _build_allowed_roots()]
+
+
+@pytest.mark.skipif(
+    os.name != "posix",
+    reason=(
+        "Reproduces a POSIX-only failure mode. On Windows the platform temp "
+        "directory lives under %LOCALAPPDATA%, i.e. below Path.home(), so it is "
+        "already covered by the home root and this failure cannot arise. "
+        "/var/tmp also does not exist on Windows. The platform-neutral "
+        "invariant is asserted unconditionally in the test above."
+    ),
+)
+def test_validate_directory_accepts_temp_dir_from_custom_tmpdir(monkeypatch):
+    """A temp directory under a relocated ``TMPDIR`` is accepted.
+
+    This reproduces the macOS failure *on Linux*: on macOS
+    ``tempfile.gettempdir()`` returns a per-user directory under
+    ``/var/folders/…`` that is neither ``/tmp`` nor ``$HOME``, so without
+    ``gettempdir()`` in the roots list every path in a macOS ``tmp_path`` is
+    refused. Pointing ``TMPDIR`` at ``/var/tmp`` puts the temp directory outside
+    both ``/tmp`` and ``$HOME``, which is the same shape of problem.
+    """
+    import tempfile
+
+    from artifice_ocr.web.validation import validate_directory
+
+    custom_root = Path("/var/tmp")
+    if not custom_root.is_dir():
+        pytest.skip("/var/tmp is absent on this POSIX host")
+
+    monkeypatch.setenv("TMPDIR", str(custom_root))
+    # setattr, not assignment: monkeypatch restores the cache afterwards, so a
+    # later test does not inherit a cleared tempdir.
+    monkeypatch.setattr(tempfile, "tempdir", None)
+
+    d = Path(tempfile.mkdtemp(dir=str(custom_root)))
+    try:
+        # Compare against the RESOLVED path: validate_directory returns str(p)
+        # after resolve(). On Linux /var/tmp is a real directory so resolve() is
+        # a no-op and either form passes — but on macOS /var is a symlink to
+        # /private/var, so the unresolved form fails there and only there.
+        assert validate_directory(str(d), "input_dir") == str(d.resolve())
+    finally:
+        if d.exists():
+            d.rmdir()
