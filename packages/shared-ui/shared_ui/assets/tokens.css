@@ -1,3 +1,8 @@
+/* SPDX-FileCopyrightText: 2026 Maurice Casey
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 /* The New Masses — canonical design tokens.
    Source of truth: Design_Philosophy.md. Keep in sync with any app-local
    :root block until those are consolidated to import this file directly. */

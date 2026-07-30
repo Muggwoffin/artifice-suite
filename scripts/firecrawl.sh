@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 #
 # firecrawl.sh — lifecycle control for the self-hosted Firecrawl instance used
 # by OpenCode sub-agents to verify locally-served app surfaces.

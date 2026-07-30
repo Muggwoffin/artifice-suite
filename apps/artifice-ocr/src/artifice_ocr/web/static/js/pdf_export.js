@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * "Compile PDF…" modal — one-off PDF export of a folder of processed .txt
  * files. Uses SSE for live progress instead of a synchronous fetch (the

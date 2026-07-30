@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 <#
 .SYNOPSIS
     Create the "OCR Pipeline (Web)" desktop shortcut.

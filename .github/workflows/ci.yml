@@ -34,6 +34,17 @@ jobs:
       - name: gitleaks detect (Zero Secrets Policy)
         run: gitleaks detect --redact --no-banner
 
+      - name: Install reuse
+        run: pipx install reuse
+
+      - name: REUSE compliance (every file's licence is machine-determinable)
+        # Exits non-zero when any file lacks copyright/licence information.
+        # Source files carry real SPDX headers; dotfiles, binaries and markdown
+        # are declared in REUSE.toml.  Third-party material — the vendored
+        # Leaflet bundle (BSD-2-Clause) and three font families (OFL-1.1) — is
+        # declared with its real upstream licence, NOT stamped MIT.
+        run: reuse lint
+
       - name: Token parity check
         run: python3 scripts/token-parity-check.py
 

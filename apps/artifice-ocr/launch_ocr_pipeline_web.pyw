@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 """Windowed launcher for the OCR Pipeline web frontend.
 
 Mirrors `launch_artifice_ocr.pyw` — same self-healing interpreter search, same

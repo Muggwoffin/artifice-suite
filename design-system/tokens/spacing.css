@@ -1,3 +1,8 @@
+/* SPDX-FileCopyrightText: 2026 Maurice Casey
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 :root{
   /* rem, not px — spacing scales with the reader's font size. Same numbers at
      a 16px root. Must stay in step with

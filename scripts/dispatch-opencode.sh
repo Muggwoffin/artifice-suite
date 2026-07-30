@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 # Dispatch an OpenCode sub-agent safely from a Windows-side orchestrator session.
 #
 # Usage:

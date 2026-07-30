@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Settings tab: models/endpoints/processing options bound to /api/config,
  * plus a pre-flight service-health check. Mirrors gui/views/settings_view.py

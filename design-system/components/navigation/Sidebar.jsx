@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function Sidebar({items=[],activeId,onSelect,footer}){
   return React.createElement('div',{style:{width:220,background:'var(--parchment-200)',borderRight:'1px solid var(--border-subtle)',display:'flex',flexDirection:'column',height:'100%',fontFamily:'var(--font-body)'}},

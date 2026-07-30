@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function Checkbox({label,checked,onChange}){
   return React.createElement('label',{style:{display:'inline-flex',alignItems:'center',gap:8,fontFamily:'var(--font-body)',fontSize:14,color:'var(--text-primary)',cursor:'pointer'}},

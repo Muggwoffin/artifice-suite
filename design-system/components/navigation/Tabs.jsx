@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function Tabs({items=[],active,onChange}){
   return React.createElement('div',{style:{display:'flex',gap:4,borderBottom:'1px solid var(--border-subtle)',fontFamily:'var(--font-body)'}},

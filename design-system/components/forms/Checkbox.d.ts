@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /** @startingPoint section="Forms" subtitle="Checkbox with label" viewport="700x100" */
 export interface CheckboxProps {
   label?: string;

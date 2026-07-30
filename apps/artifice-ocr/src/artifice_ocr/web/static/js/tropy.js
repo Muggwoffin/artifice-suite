@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Both Tropy dialogs: "Add from Tropy…" (pull pages into the queue) and
  * "Send to Tropy…" (write finished results back). Loaded after app.js, whose

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Toast notification system — non-blocking messages that appear in the
  * top-right corner and auto-dismiss. Intentionally lightweight: no

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function Panel({title,actions,children}){
   return React.createElement('div',{style:{background:'var(--surface-card-raised)',border:'1px solid var(--border-subtle)',borderRadius:'var(--radius-xl)',fontFamily:'var(--font-body)',overflow:'hidden',boxShadow:'var(--shadow-paper)'}},

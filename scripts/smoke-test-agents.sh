@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: MIT
+
 # Verify the Artifice Suite agent fleet is actually wired up.
 #
 # Run from the repo root:

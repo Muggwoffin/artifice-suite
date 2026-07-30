@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 import React from 'react';
 export function Dialog({title,children,onClose,actions}){
   return React.createElement('div',{style:{position:'absolute',inset:0,background:'rgba(23,23,15,.4)',display:'flex',alignItems:'center',justifyContent:'center'}},

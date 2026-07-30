@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * LudwigLang export dialog: export a cleaned collection as a frontmatter .md
  * file for LudwigLang's Import Text page (Transport A).

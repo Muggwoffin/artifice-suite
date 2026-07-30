@@ -1,3 +1,8 @@
+/* SPDX-FileCopyrightText: 2026 Maurice Casey
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 /* ArtificeGraph domain colours — entity and register taxonomy.
    These are app-specific vocabulary, not suite-wide identity, so they live
    here rather than in packages/shared-ui/shared_ui/assets/tokens.css. Loaded after

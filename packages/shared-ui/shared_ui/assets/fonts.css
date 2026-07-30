@@ -1,3 +1,8 @@
+/* SPDX-FileCopyrightText: 2026 Maurice Casey
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 /* The New Masses — vendored web fonts.
    Kept separate from tokens.css: this file performs network/asset loading
    (@font-face src fetches), while tokens.css only declares custom

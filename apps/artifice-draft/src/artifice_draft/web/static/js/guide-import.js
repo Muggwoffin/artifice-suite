@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * Guide import: scrape a URL, paste text, or upload a file, then review the
  * extracted StyleGuide and save it. Relies on the shared `api()` helper.

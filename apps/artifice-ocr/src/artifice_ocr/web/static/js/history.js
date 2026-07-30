@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Maurice Casey
+//
+// SPDX-License-Identifier: MIT
+
 /*
  * History tab: past runs from the local SQLite store (`history.py`, unchanged
  * from the desktop build), with the same three-pane comparison the Preview
