@@ -26,6 +26,30 @@ from artifice_graph.web.server import app
 _SAVED = load_config().llm
 
 
+def _ollama_tags_url(base_url: str) -> str:
+    """Mirror ``discovery._strip_v1`` — the Ollama-native probe drops a /v1 suffix."""
+    base = base_url.rstrip("/")
+    return f"{base[:-3].rstrip('/')}/api/tags" if base.endswith("/v1") else f"{base}/api/tags"
+
+
+def _openai_models_url(base_url: str) -> str:
+    """Mirror ``discovery._probe_openai_models``' URL rule.
+
+    It appends ``/models`` when the base already ends in ``/v1``, and
+    ``/v1/models`` when it does not.
+
+    Replicating the rule rather than assuming one shape is load-bearing:
+    ``_SAVED`` comes from ``load_config()``, which reads ``~/.callosip/config.json``
+    if the developer has one. On a machine where that file sets a base_url ending
+    in ``/v1`` the old ``f"{base}/models"`` matched; in CI, which has no such file
+    and falls back to config.yaml's ``http://localhost:11434``, the probe requests
+    ``/v1/models`` and the mock never fired — so the test passed locally and failed
+    on every CI platform.
+    """
+    base = base_url.rstrip("/")
+    return f"{base}/models" if base.endswith("/v1") else f"{base}/v1/models"
+
+
 @pytest.mark.asyncio
 async def test_test_connection_is_post_not_get():
     """GET returns 405; POST is accepted (with mocked internals)."""
@@ -84,16 +108,13 @@ async def test_test_connection_empty_body_falls_back_to_saved_config(
 ):
     """When an empty body is sent, the saved config values are used."""
     # Mock based on the saved config's base URL (probe calls /api/tags + /v1/models)
-    saved_base = _SAVED.base_url.rstrip("/")
-    if saved_base.endswith("/v1"):
-        saved_base = saved_base[:-3]
     httpx_mock.add_response(
-        url=f"{saved_base}/api/tags",
+        url=_ollama_tags_url(_SAVED.base_url),
         method="GET",
         json={"models": [{"name": "test-model"}]},
     )
     httpx_mock.add_response(
-        url=f"{_SAVED.base_url.rstrip('/')}/models",
+        url=_openai_models_url(_SAVED.base_url),
         method="GET",
         json={"data": [{"id": "test-model"}]},
     )
@@ -177,16 +198,13 @@ async def test_test_connection_failure_shape_matches_js(httpx_mock: HTTPXMock):
 @pytest.mark.asyncio
 async def test_api_models_success_shape_matches_js(httpx_mock: HTTPXMock):
     """GET /api/models returns the keys consumed by pipeline.js for model dropdown."""
-    saved_base = _SAVED.base_url.rstrip("/")
-    if saved_base.endswith("/v1"):
-        saved_base = saved_base[:-3]
     httpx_mock.add_response(
-        url=f"{saved_base}/api/tags",
+        url=_ollama_tags_url(_SAVED.base_url),
         method="GET",
         json={"models": [{"name": "gemma2:27b"}, {"name": "llava:7b"}]},
     )
     httpx_mock.add_response(
-        url=f"{_SAVED.base_url.rstrip('/')}/models",
+        url=_openai_models_url(_SAVED.base_url),
         method="GET",
         json={"data": [{"id": "gpt-4"}]},
     )
