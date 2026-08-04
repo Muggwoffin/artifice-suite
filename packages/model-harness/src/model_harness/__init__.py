@@ -37,15 +37,32 @@ from model_harness.contract import (
 from model_harness.driver import run_structured
 from model_harness.openai_adapter import OpenAIProvider
 from model_harness.anthropic_adapter import AnthropicProvider
+from model_harness.registry import (
+    ASR_MODELS,
+    AsrModelInfo,
+    EndpointInfo,
+    HardwareTier,
+    KNOWN_ENDPOINTS,
+    ModelRecommendation,
+    get_asr_model,
+    get_endpoint,
+    recommendations_for_app,
+)
 
 __all__ = [
+    "ASR_MODELS",
     "AnthropicProvider",
+    "AsrModelInfo",
+    "EndpointInfo",
     "EndpointPolicy",
     "EndpointRejected",
+    "HardwareTier",
     "HarnessError",
     "HarnessResult",
+    "KNOWN_ENDPOINTS",
     "ModelConnectorConfig",
     "ModelProvider",
+    "ModelRecommendation",
     "OpenAIProvider",
     "Provider",
     "ProviderCapabilities",
@@ -55,6 +72,9 @@ __all__ = [
     "StructuredOutputMode",
     "StructuredOutputUnsupported",
     "StructuredRequest",
+    "get_asr_model",
+    "get_endpoint",
+    "recommendations_for_app",
     "run_structured",
     "select_mode",
 ]
