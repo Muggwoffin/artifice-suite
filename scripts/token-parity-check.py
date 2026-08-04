@@ -2,7 +2,7 @@
 
 # SPDX-FileCopyrightText: 2026 Maurice Casey
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Token parity guard: compare design-system reference tokens against runtime tokens,
 and app-local token re-declarations against the canonical runtime tokens.

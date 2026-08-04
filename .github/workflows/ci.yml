@@ -42,7 +42,7 @@ jobs:
         # Source files carry real SPDX headers; dotfiles, binaries and markdown
         # are declared in REUSE.toml.  Third-party material — the vendored
         # Leaflet bundle (BSD-2-Clause) and three font families (OFL-1.1) — is
-        # declared with its real upstream licence, NOT stamped MIT.
+        # declared with its real upstream licence, NOT stamped AGPL-3.0-or-later.
         run: reuse lint
 
       - name: Token parity check
@@ -170,7 +170,7 @@ jobs:
               print(f'All wheel-content assertions passed ({len(names)} entries).')
           "
 
-      - name: Assert wheel METADATA declares MIT licence
+      - name: Assert wheel METADATA declares AGPL-3.0-or-later licence
         run: |
           python3 -c "
           import zipfile, glob
@@ -187,8 +187,8 @@ jobs:
               lic_lines = [l for l in meta.split('\n')
                            if l.lower().startswith('license-expression:')]
               assert lic_lines, 'No License field found in wheel METADATA'
-              assert any('MIT' in l for l in lic_lines), \
-                  f'License field does not declare MIT: {lic_lines}'
+              assert any('AGPL-3.0-or-later' in l for l in lic_lines), \
+                  f'License field does not declare AGPL-3.0-or-later: {lic_lines}'
               print(f'METADATA licence field: {lic_lines[0].strip()}')
           "
 

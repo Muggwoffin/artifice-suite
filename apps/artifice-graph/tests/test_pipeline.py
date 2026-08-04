@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Maurice Casey
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Integration test for the Graph Pipeline — no LLM required.
 

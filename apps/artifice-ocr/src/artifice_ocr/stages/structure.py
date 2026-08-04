@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Maurice Casey
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Structure stage: adds paragraph breaks and blank lines for reading.
 

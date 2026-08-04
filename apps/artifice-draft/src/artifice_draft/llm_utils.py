@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Maurice Casey
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Pure utility functions for LLM client: token estimation, prompt building, batch packing.
 

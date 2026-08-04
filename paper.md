@@ -19,6 +19,7 @@ affiliations:
   - name: Queen's University Belfast
     index: 1
 date: "TODO(author): fill in submission date,
+license: AGPL-3.0-or-later
 bibliography: paper.bib
 ---
 

@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Maurice Casey
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Content-preservation guards: never trust a model's output just because
 the prompt asked nicely.

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Maurice Casey
 //
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 /*
  * Both Tropy dialogs: "Add from Tropy…" (pull pages into the queue) and

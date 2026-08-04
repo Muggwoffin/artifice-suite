@@ -347,6 +347,16 @@ accents in `artifice-graph`, for example — live in their own app-local stylesh
 - If your change affects a Dockerfile or `docker-compose.yml`, confirm
   `docker-compose build` succeeds for the affected service.
 
+## Licence
+
+Artifice Suite is licensed under the GNU Affero General Public License v3.0 or
+later. By contributing you agree to license your contribution under the same
+terms. See [LICENSE](LICENSE) for the full text.
+
+Third-party assets (bundled fonts, vendored JavaScript) carry their own
+licences; check the corresponding `LICENSE` file or `REUSE.toml` annotation
+before reusing them.
+
 ## Reporting bugs or requesting features
 
 Open a GitHub issue with enough detail to reproduce the problem (app name,

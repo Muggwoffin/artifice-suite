@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Maurice Casey
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Security tests for graph: file permissions, credential redaction, and
 round-trip safety."""
