@@ -17,6 +17,7 @@ from artifice_transcribe.api.v1.routes import router as v1_router
 from artifice_transcribe.config import settings
 from artifice_transcribe.db.models import Base
 from artifice_transcribe.db.session import engine
+from artifice_transcribe.web.routers.byom import router as byom_router
 
 STATIC_DIR = Path(__file__).parent / "web" / "static"
 
@@ -57,6 +58,7 @@ app.add_middleware(
 )
 
 app.include_router(v1_router)
+app.include_router(byom_router)
 
 
 @app.middleware("http")

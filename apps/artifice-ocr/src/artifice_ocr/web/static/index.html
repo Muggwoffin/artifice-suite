@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="/shared/tokens.css?v=__ASSET_V__">
 
 <link rel="stylesheet" href="/static/css/app.css?v=__ASSET_V__">
+<link rel="stylesheet" href="/shared/byom.css?v=__ASSET_V__">
 </head>
 <body>
 <a href="#panel-main" class="skip-link">Skip to content</a>
@@ -642,6 +643,22 @@
 <script src="/static/js/analytics.js?v=__ASSET_V__"></script>
 <script src="/static/js/ludwiglang.js?v=__ASSET_V__"></script>
 <script src="/static/js/settings.js?v=__ASSET_V__"></script>
+<script src="/shared/byom.js?v=__ASSET_V__"></script>
+<script>
+(function () {
+  "use strict";
+  var byom = window.ArtificeByom.create({
+    appName: "OCR Pipeline",
+    onConfigured: function () { byom.close(); }
+  });
+  fetch("/api/byom/state")
+    .then(function (r) { return r.json(); })
+    .then(function (state) {
+      if (!state.configured) { byom.open(); }
+    })
+    ["catch"](function () { /* server not ready yet — fine */ });
+})();
+</script>
 
   
 </body>

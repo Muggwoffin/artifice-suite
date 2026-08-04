@@ -23,6 +23,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from .routers import analytics as analytics_router
+from .routers import byom as byom_router
 from .routers import events as events_router
 from .routers import history as history_router
 from .routers import pdf_export as pdf_export_router
@@ -55,6 +56,7 @@ async def no_cache_static(request: Request, call_next):
         response.headers["Expires"] = "0"
     return response
 
+app.include_router(byom_router.router)
 app.include_router(queue_router.router)
 app.include_router(run_router.router)
 app.include_router(events_router.router)

@@ -34,6 +34,7 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from .routers import byom as byom_router
 from .runtime import (
     config_from_settings,
     save_settings,
@@ -94,6 +95,8 @@ import shared_ui
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 
 app = FastAPI(title="ArtificeDraft")
+
+app.include_router(byom_router.router)
 
 
 @app.middleware("http")
