@@ -1445,10 +1445,14 @@ found without reading the test that hides it.
    notarisation unless they explicitly bypass Gatekeeper (`xattr -r -d
    com.apple.quarantine`). This is a requirement for ordinary users, not a polish item.
 
-6. **The Dockerfiles may be stale.** The web-layer migration (`0979359`) moved assets from
-   `apps/<app>/web/` and `apps/<app>/src/<pkg>/static/` to
-   `apps/<app>/src/artifice_<slug>/web/static/`. The `COPY` commands in each Dockerfile
-   need verification against this structure.
+6. **~~The Dockerfiles may be stale.~~** — **checked and found false, 2026-08-04.** All four
+   Dockerfiles use root-context `COPY . .` (compose sets `context: .`) and were unaffected
+   by the `0979359` web-layer migration. The Phase 4 Docker rebuild (see lines 932-945) had
+   already replaced `pip install -e .` with `uv sync --frozen --package <app>` from the
+   repo root, settled ports, and added `.dockerignore`. The worry recorded here was a
+   post-migration precaution that a later measurement refuted — the `COPY` never needed to
+   change and never did. The remaining Docker debt (single-stage, root user, `build-essential`
+   in the transcribe runtime image) was paid down on the same date in the builder+runtime split.
 
 See also: **ROADMAP.md** — the development roadmap for the community period between Phases 6
 and 7.

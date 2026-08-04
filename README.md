@@ -40,4 +40,13 @@ Artifice is designed to last. No fancy dependencies that could break software wi
   </a>
 </p>
 
+## Licence
+
+Artifice Suite is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See [LICENSE](LICENSE) for the full terms.
+
+Bundled third-party components carry their own licences (BSD-2-Clause for
+Leaflet, OFL-1.1 for fonts).
 

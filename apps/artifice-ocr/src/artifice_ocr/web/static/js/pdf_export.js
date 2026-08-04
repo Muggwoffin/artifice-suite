@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Maurice Casey
 //
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 /*
  * "Compile PDF…" modal — one-off PDF export of a folder of processed .txt

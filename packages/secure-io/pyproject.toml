@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "OS-appropriate access controls for secret-bearing files in the Artifice Suite"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
+license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
 dependencies = []
 

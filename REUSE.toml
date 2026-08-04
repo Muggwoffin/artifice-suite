@@ -12,115 +12,115 @@ version = 1
 # files that match both patterns.
 # =============================================================================
 
-# ── First-party MIT: Markdown documents ────────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: Markdown documents ────────────────────────
 
 [[annotations]]
 path = "**.md"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: JSON (no comment syntax) ──────────────────────────────────
+# ── First-party AGPL-3.0-or-later: JSON (no comment syntax) ──────────────────
 
 [[annotations]]
 path = "**.json"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: TOML ──────────────────────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: TOML ──────────────────────────────────────
 
 [[annotations]]
 path = "**.toml"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: YAML ──────────────────────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: YAML ──────────────────────────────────────
 
 [[annotations]]
 path = "**.yml"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
 path = "**.yaml"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: Citation / bibliography ───────────────────────────────────
+# ── First-party AGPL-3.0-or-later: Citation / bibliography ───────────────────
 
 [[annotations]]
 path = "**.cff"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
 path = "**.bib"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: Lockfiles ─────────────────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: Lockfiles ─────────────────────────────────
 
 [[annotations]]
 path = "**.lock"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: Dockerfiles ───────────────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: Dockerfiles ───────────────────────────────
 
 [[annotations]]
 path = "**/Dockerfile"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: Repo-config dotfiles ──────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: Repo-config dotfiles ──────────────────────
 
 [[annotations]]
 path = ".gitignore"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
 path = ".gitattributes"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
 path = ".dockerignore"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
 path = ".python-version"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: Binary / image assets ─────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: Binary / image assets ─────────────────────
 
 [[annotations]]
 path = "**.png"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
 path = "**.ico"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: Text files ────────────────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: Text files ────────────────────────────────
 
 [[annotations]]
 path = "**.txt"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
-# ── First-party MIT: Windows batch files ───────────────────────────────────────
+# ── First-party AGPL-3.0-or-later: Windows batch files ───────────────────────
 
 [[annotations]]
 path = "**.bat"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# THIRD-PARTY MATERIAL — override the general MIT patterns above
+# THIRD-PARTY MATERIAL — override the general first-party patterns above
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # ── Vendored Leaflet (BSD-2-Clause) ────────────────────────────────────────────
@@ -201,7 +201,7 @@ SPDX-License-Identifier = "OFL-1.1"
 [[annotations]]
 path = ["**/.gitignore", "**/.gitattributes"]
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # ── Test fixtures and binary assets ────────────────────────────────────────────
 # First-party fixtures with no comment syntax. The .jpg is a scanned public
@@ -214,7 +214,7 @@ path = [
     "design-system/.thumbnail",
 ]
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 # ── Windows shortcuts ──────────────────────────────────────────────────────────
 # Binary .lnk files. NOTE: these are machine-local build artefacts and arguably
@@ -225,4 +225,4 @@ SPDX-License-Identifier = "MIT"
 [[annotations]]
 path = "apps/artifice-ocr/*.lnk"
 SPDX-FileCopyrightText = "2026 Maurice Casey"
-SPDX-License-Identifier = "MIT"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
