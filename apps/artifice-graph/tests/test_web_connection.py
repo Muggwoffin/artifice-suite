@@ -109,7 +109,7 @@ async def test_test_connection_empty_body_falls_back_to_saved_config(
     httpx_mock: HTTPXMock,
 ):
     """When an empty body is sent, the saved config values are used."""
-    # Mock based on the saved config's base URL (probe calls /api/tags + /v1/models)
+    # Mock based on the saved config's base URL (probe calls /api/tags + /models or /v1/models)
     httpx_mock.add_response(
         url=_ollama_tags_url(_SAVED.base_url),
         method="GET",
