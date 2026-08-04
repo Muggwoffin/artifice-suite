@@ -1771,6 +1771,48 @@ used to flag.
 
 ## Part VI — Starting a fresh session
 
+### NEXT SESSION'S FIRST TASK — tailor the BYOM screen per app
+
+**Decided 2026-08-04 by the maintainer. Do this before Step 5.**
+
+The BYOM onboarding screen shipped as one shared component with a per-app accent. That was the
+right first move — one file, no forking — but the *content* is currently generic and it does not
+fit all four apps. Three findings, in descending severity:
+
+1. **`artifice-transcribe`'s screen is actively wrong.** `byom.js:540-572` hard-codes a four-step
+   *Ollama* install ("Download Ollama" → "Pull a model") and falls back to
+   `ollama pull llama3.2:3b`. Transcribe's models are Whisper, Parakeet and pyannote, pulled from
+   **Hugging Face**, and `recommendations_for_app("artifice-transcribe", …)` correctly returns
+   nothing. So a transcribe user is taught to install the wrong software. The screen is
+   `dismissable: true` so nobody is blocked, but the guidance is misleading.
+
+2. **`artifice-graph` needs two endpoints, and the screen only configures one.** Graph uses a
+   separate embedding server (`EmbeddingConfig.base_url`, `config.py:30`, typically bge-m3)
+   alongside its LLM. A user who completes BYOM has configured the LLM and still has an
+   unconfigured embedder — and the "Run All" stage will fail later for a reason the onboarding
+   never mentioned.
+
+3. **`artifice-ocr` needs a vision model and the screen does not say so.** The registry already
+   recommends vision-capable models for ocr and text models for graph/draft, so the *data* is
+   right, but nothing in the copy tells an ocr user that a non-vision model will not work.
+
+**Approach.** Keep one shared component — do not fork it into four. Branch on app: `byom.js`
+already receives the app slug from `/api/byom/state`, so the step content, the pull command and
+the "what you need" copy can vary while the layout, tokens and accent inheritance stay shared.
+Transcribe likely wants a different framing entirely ("configure the optional post-transcription
+inference endpoint"), since its ASR models are Step 5's consent-and-download flow, not this screen's.
+
+Owner: `ui-ux` for the component, `lead-engineer` if `/api/byom/state` needs to carry more.
+The orchestrator must review it rendered in **all four** apps — this session only reviewed ocr.
+
+Related and still open: `code-reviewer` noted the four apps use **three different formulas** for
+`configured` (draft: any non-empty `base_url`; ocr and graph: "departed from built-in defaults";
+transcribe: same but also discounting the default `api_key="not-needed"`). Benign today because
+`byom.js` only reads the boolean, but a user moving between apps will meet different behaviour.
+Worth settling as one shared rule.
+
+---
+
 ### PICK UP HERE — Phase 6, as at 2026-08-04
 
 Branch **`phase6-packaging`**, pushed, 6 commits ahead of `main`, working tree clean.
@@ -1784,8 +1826,36 @@ Branch **`phase6-packaging`**, pushed, 6 commits ahead of `main`, working tree c
 | 1 — `model_harness.registry` | done, `5c96610` |
 | 2a — `model_harness.discovery` | done, `b9c0e03` |
 | 2b — migrate 4 apps, delete 6 legacy probes | done, `97b34e7` |
-| **3 — BYOM screen (`ui-ux`)** | **NEXT** |
-| 4-8 | not started |
+| CI fix — graph tests read the dev's own dotfile | done, `2d20dd7` (PR #24) |
+| 3 — BYOM screen in `shared-ui` | done, `13e2cc2`, reviewed rendered |
+| registry — MAC_UNIFIED duplicated LAPTOP | done, `669cc1e` |
+| theme — draft's accent + diff tokens ignored the manual toggle | done, in `87ccfc9` |
+| 4 — BYOM routers in all four apps | done, `87ccfc9`, reviewed + tested |
+| **tailored BYOM per app** | **NEXT — see the section above** |
+| 5-8 | not started |
+
+**Branch `phase6-byom-screen`, pushed, 4 commits ahead of `main`. Not yet PR'd.**
+
+Test baselines after this session — supersede the ones below:
+
+| Suite | Count |
+|---|---|
+| `apps/artifice-ocr` | 485 passed, 1 skipped |
+| `apps/artifice-draft` | 225 passed |
+| `apps/artifice-graph` | 158 passed |
+| `apps/artifice-transcribe` | 108 passed (`--ignore=tests/test_api.py`) |
+| `packages/model-harness` | 208 passed, 1 deselected |
+
+All local gates green: `reuse lint`, `token-parity-check.py`, `audit-controls.py`,
+`gitleaks detect`. **`reuse lint` fails while the new `routers/` directories are untracked** —
+`__pycache__` inside an untracked directory is walked; it passes once staged, and CI's `gates` job
+runs before any test so the situation never arises there. Not a defect; do not "fix" it.
+
+Two measured properties worth not re-deriving:
+- `POST /api/byom/test` rejects link-local, public-without-opt-in, `file://`, `ftp://` and
+  host-less URLs **before any request leaves the process** — evidenced by
+  `httpx_mock.get_requests()` being empty, not by a 400 alone.
+- Root routes do not probe: 0.002-0.013s with every model endpoint mocked refused.
 
 **Test baselines, measured 2026-08-04 — the older 424/187/96/70 figures in this file and in
 `CLAUDE.md` are stale, do not use them.** Run each from its own directory; a root `pytest` does not

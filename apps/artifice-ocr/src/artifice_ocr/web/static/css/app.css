@@ -37,7 +37,20 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  /* :not([data-theme="light"]) guard — added for consistency with
+     artifice-graph and artifice-transcribe, and as defence-in-depth
+     rather than a live bug fix here specifically: this file's own
+     [data-theme="light"] block below (~line 1095) already re-declares
+     every one of these tokens at equal selector specificity
+     ((0,1,0), same as :root) and later in source order, so it already
+     wins the cascade against this unguarded block whenever
+     data-theme="light" is set — an explicit light override was not
+     actually broken in ocr the way it was in draft (which had no
+     [data-theme="light"]/[data-theme="dark"] blocks at all). But that
+     correctness depends on declaration order surviving future edits,
+     which is a fragile thing to depend on when an explicit guard is free
+     and makes the intent self-evident at the point of use. */
+  :root:not([data-theme="light"]) {
     --accent: #359277;
     --accent-deep: #52ad91;
     --accent-wash: rgba(53, 146, 119, 0.12);

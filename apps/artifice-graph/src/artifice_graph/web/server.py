@@ -48,11 +48,15 @@ from artifice_graph.models.relationship import Relationship
 from artifice_graph.storage.file_store import FileStore
 from artifice_graph.web.config_helper import load_saved_config, save_user_config
 
+from .routers import byom as byom_router
+
 logger = logging.getLogger(__name__)
 
 # ── App setup ──────────────────────────────────────────────────────
 
 app = FastAPI(title="ArtificeGraph", version="0.1.0")
+
+app.include_router(byom_router.router)
 
 app.add_middleware(
     CORSMiddleware,

@@ -36,7 +36,13 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  /* :not([data-theme="light"]) guard: without it, a user who explicitly
+     forces light mode on a dark-OS machine still gets the dark accent
+     here (this block would otherwise apply unconditionally on any
+     dark-OS browser), producing a dark accent on a light surface — the
+     mirror image of the bug this whole change fixes. Matches
+     artifice-graph (app.css:15) and artifice-transcribe (app.css:17). */
+  :root:not([data-theme="light"]) {
     --accent: #ca5f8c;
     --accent-deep: #e77aa6;
     --accent-wash: rgba(202, 95, 140, 0.12);
@@ -46,6 +52,35 @@
     --diff-replace: #2e2718;
     --marker-bg: #3a3120;
   }
+}
+
+/* Manual theme-toggle override — was missing entirely before this change,
+   which is the defect: draft's accent and diff/review-highlight tokens
+   followed the OS preference but not the app's own [data-theme] toggle,
+   so switching to dark manually left the light-mode accent (#892254) and
+   light-mode diff colours (e.g. --diff-insert #dcead9, pale green) on a
+   dark surface. All values reused verbatim from the prefers-color-scheme
+   block above, not invented. Mirrors artifice-ocr (app.css:1075),
+   artifice-graph (app.css:21) and artifice-transcribe (app.css:24).
+
+   Originally scoped to --accent only, matching artifice-transcribe's
+   equivalent block. Widened to include --diff-insert/--diff-delete/
+   --diff-replace/--marker-bg on review: artifice-draft is the copy-editing
+   app and these four tokens colour its tracked-changes highlighting —
+   insert/delete/replace — which is the product's core UI, not an
+   incidental colour the way transcribe has no domain-specific palette to
+   mirror. ocr is the closer precedent here (it mirrors all of its
+   app-local tokens in its own [data-theme="dark"]/[data-theme="light"]
+   blocks), not transcribe. */
+[data-theme="dark"] {
+  --accent: #ca5f8c;
+  --accent-deep: #e77aa6;
+  --accent-wash: rgba(202, 95, 140, 0.12);
+
+  --diff-insert: #1e2b1f;
+  --diff-delete: #2f1f1c;
+  --diff-replace: #2e2718;
+  --marker-bg: #3a3120;
 }
 
 /* ---------------------------------------------------------------- Selection */
