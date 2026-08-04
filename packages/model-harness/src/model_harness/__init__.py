@@ -37,6 +37,12 @@ from model_harness.contract import (
 from model_harness.driver import run_structured
 from model_harness.openai_adapter import OpenAIProvider
 from model_harness.anthropic_adapter import AnthropicProvider
+from model_harness.discovery import (
+    ProbeResult,
+    detect_local_servers,
+    probe_endpoint,
+    probe_endpoint_sync,
+)
 from model_harness.registry import (
     ASR_MODELS,
     AsrModelInfo,
@@ -64,6 +70,7 @@ __all__ = [
     "ModelProvider",
     "ModelRecommendation",
     "OpenAIProvider",
+    "ProbeResult",
     "Provider",
     "ProviderCapabilities",
     "RawCompletion",
@@ -72,8 +79,11 @@ __all__ = [
     "StructuredOutputMode",
     "StructuredOutputUnsupported",
     "StructuredRequest",
+    "detect_local_servers",
     "get_asr_model",
     "get_endpoint",
+    "probe_endpoint",
+    "probe_endpoint_sync",
     "recommendations_for_app",
     "run_structured",
     "select_mode",
