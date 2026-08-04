@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
+from artifice_graph.extraction.inference_engine import _VISION_INDICATORS
 
 # ── Ensure src is importable (dev mode without pip install) ──────
 _SRC = Path(__file__).resolve().parent.parent.parent  # src/
@@ -914,72 +915,63 @@ async def api_map_entities(mode: str = Query("approx", pattern="^(approx|lookup)
 
 @app.get("/api/models")
 async def api_get_models():
-    """Get available models from LLM server."""
+    """Get available models from LLM server (via model_harness.discovery)."""
     try:
         cfg = load_config()
-        llm = LLMClient(cfg.llm)
+        from model_harness.discovery import probe_endpoint
 
-        async with httpx.AsyncClient(timeout=10) as client:
-            ollama_base = cfg.llm.base_url.rstrip("/")
+        policy = EndpointPolicy()
+        result = await probe_endpoint(cfg.llm.base_url, policy=policy, timeout_s=10)
 
-            if "/v1" in ollama_base:
-                ollama_base = ollama_base.replace("/v1", "")
+        if not result.reachable:
+            error_msg = result.hint or f"Cannot reach {cfg.llm.base_url}"
+            return {
+                "models": [],
+                "vision_models": [],
+                "ollama_base": "",
+                "openai_base": "",
+                "error": error_msg,
+                "suggestions": [result.hint] if result.hint else [],
+            }
 
-            models = []
-            vision_models = []
+        models: list[dict[str, Any]] = []
+        vision_models: list[dict[str, Any]] = []
 
-            try:
-                resp = await client.get(f"{ollama_base}/api/tags", timeout=10)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    for model_info in data.get("models", []):
-                        model_obj = {
-                            "id": model_info.get("name", ""),
-                            "name": model_info.get("name", ""),
-                            "source": "ollama"
-                        }
-                        models.append(model_obj)
+        seen: set[str] = set()
+        for name in result.models:
+            if name in seen:
+                continue
+            seen.add(name)
 
-                        model_name = str(model_info.get("name", "")).lower()
-                        vision_indicators = ["vision", "vl", "multi-modal", "image", "visual"]
-                        if any(indicator in model_name for indicator in vision_indicators):
-                            model_obj["supports_vision"] = True
-                            vision_models.append(model_obj)
-            except Exception:
-                pass
+            model_obj: dict[str, Any] = {
+                "id": name,
+                "name": name,
+                "source": "ollama" if result.provider == "ollama" else "openai",
+            }
+            models.append(model_obj)
 
-            try:
-                if "api.openai.com" in cfg.llm.base_url:
-                    resp = await client.get(
-                        f"{cfg.llm.base_url}/v1/models",
-                        headers={"Authorization": f"Bearer {cfg.llm.api_key}" if cfg.llm.api_key else None},
-                        timeout=10
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        for model_info in data.get("data", []):
-                            model_obj = {
-                                "id": model_info.get("id", ""),
-                                "name": model_info.get("name", model_info.get("id", "")),
-                                "source": "openai"
-                            }
-                            models.append(model_obj)
+            if any(indicator in name.lower() for indicator in _VISION_INDICATORS):
+                model_obj["supports_vision"] = True
+                vision_models.append(model_obj)
 
-                            model_id = model_info.get("id", "").lower()
-                            vision_indicators = ["vision", "vl", "multi-modal", "image", "visual"]
-                            if any(indicator in model_id for indicator in vision_indicators):
-                                model_obj["supports_vision"] = True
-                                vision_models.append(model_obj)
-            except Exception:
-                pass
-
-            await llm.close()
+        ollama_base = cfg.llm.base_url.rstrip("/")
+        if "/v1" in ollama_base:
+            ollama_base = ollama_base.replace("/v1", "")
 
         return {
             "models": models,
             "vision_models": vision_models,
             "ollama_base": ollama_base,
             "openai_base": cfg.llm.base_url,
+        }
+    except EndpointRejected as e:
+        logger.error(f"Endpoint rejected when fetching models: {e}")
+        return {
+            "models": [],
+            "vision_models": [],
+            "ollama_base": "",
+            "openai_base": "",
+            "error": f"Endpoint rejected: {e}",
         }
     except Exception as e:
         logger.error(f"Error fetching models: {e}")
@@ -988,7 +980,7 @@ async def api_get_models():
             "vision_models": [],
             "ollama_base": "",
             "openai_base": "",
-            "error": str(e)
+            "error": str(e),
         }
 
 
@@ -1011,68 +1003,31 @@ async def api_test_connection(body: dict[str, Any] | None = None):
         llm_cfg = cfg.llm
 
     try:
-        llm = LLMClient(llm_cfg)
+        from model_harness.discovery import probe_endpoint
 
-        async with httpx.AsyncClient(timeout=5) as client:
-            ollama_base = llm_cfg.base_url.rstrip("/")
-            if "/v1" in ollama_base:
-                ollama_base = ollama_base.replace("/v1", "")
+        policy = EndpointPolicy()
+        result = await probe_endpoint(llm_cfg.base_url, policy=policy, timeout_s=5)
 
-            status = "error"
-            error = "Server not reachable"
-            suggestions = []
+        suggestions: list[str] = []
+        if result.hint:
+            suggestions.append(result.hint)
 
-            try:
-                resp = await client.get(ollama_base, timeout=5)
-                if resp.status_code == 200:
-                    status = "connected"
-                    error = None
-                else:
-                    status = "error"
-                    error = f"Server responded with status {resp.status_code}"
-            except httpx.ConnectError as e:
-                status = "error"
-                error = f"Connection failed: {str(e)}"
-                if "11434" in ollama_base:
-                    suggestions.extend([
-                        "Make sure Ollama server is running: 'ollama serve'",
-                        "Set OLLAMA_ORIGINS=* to allow cross-origin requests"
-                    ])
-                elif "1234" in ollama_base:
-                    suggestions.append("Ensure LM Studio server is running and accessible")
-
-            try:
-                if "api.openai.com" in llm_cfg.base_url:
-                    resp = await client.get(
-                        f"{llm_cfg.base_url}/v1/models",
-                        headers={"Authorization": f"Bearer {llm_cfg.api_key}" if llm_cfg.api_key else None},
-                        timeout=5
-                    )
-                    if resp.status_code == 200:
-                        if status == "connected":
-                            status = "connected"
-                        else:
-                            status = "partial"
-                        error = None
-                    else:
-                        if status == "connected":
-                            status = "partial"
-                        else:
-                            status = "error"
-                        error = f"OpenAI API error: {resp.status_code}"
-            except Exception as e:
-                if status == "connected":
-                    status = "partial"
-                else:
-                    status = "error"
-                error = error or f"OpenAI API check failed: {str(e)}"
-
-            await llm.close()
+        status = "connected" if result.reachable else "error"
+        error: str | None = None if result.reachable else "Server not reachable"
 
         return {
             "status": status,
             "error": error,
             "suggestions": suggestions,
+            "url": llm_cfg.base_url,
+            "model": llm_cfg.model,
+        }
+    except EndpointRejected as e:
+        logger.error(f"Endpoint rejected in test-connection: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "suggestions": ["Check if the URL is correct and accessible"],
             "url": llm_cfg.base_url,
             "model": llm_cfg.model,
         }

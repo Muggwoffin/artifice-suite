@@ -9,6 +9,15 @@ with dynamic token-aware chunking.  The LLM call routes through
 :func:`model_harness.driver.run_structured` so the response is schema-validated
 and the caller receives a guaranteed result with ``mode_used`` and ``repaired``
 logged.
+
+.. note::
+
+   ``get_available_models`` and ``test_connection`` were removed in the 2b
+   migration.  They were dead code with no route, no CLI flag, and no page
+   calling them.  Model discovery is now handled by
+   :func:`model_harness.discovery.probe_endpoint`.  Draft has no discovery
+   surface; if one is added, the harness discovery module is the correct
+   foundation.
 """
 
 from __future__ import annotations
@@ -17,8 +26,6 @@ import asyncio
 import json
 import logging
 from typing import Any
-
-import requests
 
 from artifice_draft.config import AppConfig
 from artifice_draft.llm_edit import (
@@ -354,65 +361,6 @@ def call_ollama(
 
     logger.info("LLM returned %d edit results", len(edits))
     return edits
-
-
-# ---------------------------------------------------------------------------
-# Model discovery (validated through the endpoint policy)
-# ---------------------------------------------------------------------------
-
-def get_available_models(base_url: str, api_key: str = "not-needed") -> list[dict]:
-    """Query {base_url}/models (or /v1/models) to auto-discover available models and capabilities.
-
-    The *base_url* is validated through
-    :class:`~model_harness.endpoint_policy.EndpointPolicy` before any
-    request is made — the same rule that governs every other model endpoint
-    in this suite.
-    """
-    _endpoint_policy.validate_url(base_url)
-    base = base_url.rstrip("/")
-    urls_to_try = [f"{base}/models", f"{base}/v1/models"]
-    if base.endswith("/v1"):
-        urls_to_try = [f"{base}/models", f"{base[:-3]}/models"]
-    elif base.endswith("/api"):
-        urls_to_try.append(f"{base}/tags")
-
-    headers = {}
-    if api_key and api_key != "not-needed":
-        headers["Authorization"] = f"Bearer {api_key}"
-
-    last_error = None
-    for url in urls_to_try:
-        try:
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            models_list = []
-            items = data.get("data", data.get("models", data))
-            if isinstance(items, list):
-                for item in items:
-                    if isinstance(item, dict):
-                        m_id = item.get("id", item.get("name", str(item)))
-                    else:
-                        m_id = str(item)
-                    is_vision = any(k in m_id.lower() for k in ["vision", "vl", "multimodal", "llava", "qwen2-vl", "qwen2.5-vl", "pixtral"])
-                    models_list.append({"id": m_id, "name": m_id, "vision": is_vision})
-                return models_list
-        except Exception as e:
-            last_error = e
-
-    raise ConnectionError(
-        f"Server unreachable at {base_url}. "
-        f"If running Ollama locally, ensure Ollama is running and set environment variable OLLAMA_ORIGINS=* (or check CORS settings). Details: {last_error}"
-    )
-
-
-def test_connection(base_url: str, api_key: str = "not-needed") -> dict:
-    _endpoint_policy.validate_url(base_url)
-    try:
-        models = get_available_models(base_url, api_key)
-        return {"success": True, "models": models, "message": f"Connected successfully! Found {len(models)} models."}
-    except Exception as e:
-        return {"success": False, "models": [], "error": str(e)}
 
 
 # ---------------------------------------------------------------------------

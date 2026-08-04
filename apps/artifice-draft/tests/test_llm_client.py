@@ -468,62 +468,9 @@ def test_endpoint_for_anthropic():
 
 
 # ---------------------------------------------------------------------------
-# Endpoint policy: model discovery functions
+# Endpoint policy: model discovery (now delegated to model_harness.discovery)
+#
+# The get_available_models and test_connection functions were removed from
+# llm_client.py — they were dead code with no route exposing them.  Model
+# discovery is now handled by model_harness.discovery.probe_endpoint.
 # ---------------------------------------------------------------------------
-
-from model_harness.contract import EndpointRejected
-
-
-def test_get_available_models_rejects_link_local():
-    """A link-local URL (169.254.x.x) is refused before any HTTP request."""
-    from artifice_draft.llm_client import get_available_models
-
-    with pytest.raises(EndpointRejected, match="link-local"):
-        get_available_models("http://169.254.169.254/")
-
-
-def test_get_available_models_accepts_localhost(monkeypatch):
-    """A localhost URL passes validation and proceeds to discovery."""
-    import artifice_draft.llm_client as llm_mod
-    from unittest.mock import MagicMock
-
-    mock_resp = MagicMock()
-    mock_resp.raise_for_status.return_value = None
-    mock_resp.json.return_value = {"models": [{"id": "test-model", "name": "test-model"}]}
-
-    mock_requests = MagicMock()
-    mock_requests.get.return_value = mock_resp
-
-    monkeypatch.setattr(llm_mod, "requests", mock_requests)
-
-    result = llm_mod.get_available_models("http://localhost:11434")
-    # Validation passed — the mock was called (rather than EndpointRejected)
-    assert len(result) == 1
-    assert result[0]["id"] == "test-model"
-
-
-def test_test_connection_rejects_link_local():
-    """test_connection refuses a link-local URL."""
-    from artifice_draft.llm_client import test_connection
-
-    with pytest.raises(EndpointRejected, match="link-local"):
-        test_connection("http://169.254.169.254/")
-
-
-def test_test_connection_accepts_localhost(monkeypatch):
-    """test_connection passes validation for a localhost URL."""
-    import artifice_draft.llm_client as llm_mod
-    from unittest.mock import MagicMock
-
-    mock_resp = MagicMock()
-    mock_resp.raise_for_status.return_value = None
-    mock_resp.json.return_value = {"models": [{"id": "test-model", "name": "test-model"}]}
-
-    mock_requests = MagicMock()
-    mock_requests.get.return_value = mock_resp
-
-    monkeypatch.setattr(llm_mod, "requests", mock_requests)
-
-    result = llm_mod.test_connection("http://localhost:11434")
-    assert result["success"] is True
-    assert len(result["models"]) == 1

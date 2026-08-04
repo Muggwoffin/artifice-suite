@@ -90,41 +90,8 @@ def test_get_client_case_insensitive():
 
 
 # ---------------------------------------------------------------------------
-# LMStudioBackend.health_check
-# ---------------------------------------------------------------------------
-
-def test_lm_studio_health_check_ok(monkeypatch):
-    monkeypatch.setattr(config, "_config_cache", None)
-    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
-        "lm_studio_url": "http://localhost:1234/v1",
-    })
-    config.load_config()
-
-    mock_client = MagicMock()
-    with patch.object(_backend, "OpenAI", return_value=mock_client) as mock_openai_cls:
-        ok, detail = _backend.LMStudioBackend().health_check()
-    assert ok is True
-    assert detail is None
-    mock_openai_cls.assert_called_once_with(base_url="http://localhost:1234/v1", api_key="lm-studio")
-
-
-def test_lm_studio_health_check_unreachable(monkeypatch):
-    monkeypatch.setattr(config, "_config_cache", None)
-    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
-        "lm_studio_url": "http://localhost:1234/v1",
-    })
-    config.load_config()
-
-    mock_client = MagicMock()
-    mock_client.models.list.side_effect = ConnectionError("refused")
-    with patch.object(_backend, "OpenAI", return_value=mock_client):
-        ok, detail = _backend.LMStudioBackend().health_check()
-    assert ok is False
-    assert "Cannot reach LM Studio" in detail
-
-
-# ---------------------------------------------------------------------------
-# ApiKeyBackend.health_check
+# ApiKeyBackend.health_check (retained — does not fit discovery cleanly;
+# see the brief for rationale)
 # ---------------------------------------------------------------------------
 
 def test_api_key_health_check_missing_key(monkeypatch):
@@ -158,25 +125,123 @@ def test_api_key_health_check_ok(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# check_lm_studio delegates to LMStudioBackend.health_check
+# check_lm_studio delegates to discovery.probe_endpoint_sync
 # ---------------------------------------------------------------------------
 
-def test_check_lm_studio_delegates_to_backend():
+def test_check_lm_studio_ok(monkeypatch):
     from artifice_ocr.utils import check_lm_studio
+    from model_harness.discovery import ProbeResult
 
-    ok, detail = True, None
-    with patch.object(_backend.LMStudioBackend, "health_check", return_value=(ok, detail)):
-        result = check_lm_studio()
+    ok_result = ProbeResult(
+        url="http://localhost:1234/v1", reachable=True, models=("test-model",)
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.utils.probe_endpoint_sync", lambda *a, **k: ok_result
+    )
+
+    result = check_lm_studio()
     assert result is None
 
 
-def test_check_lm_studio_returns_error_from_backend():
+def test_check_lm_studio_returns_error(monkeypatch):
+    from artifice_ocr.utils import check_lm_studio
+    from model_harness.discovery import ProbeResult
+
+    fail_result = ProbeResult(
+        url="http://localhost:1234/v1",
+        reachable=False,
+        hint="Cannot reach LM Studio at http://x. Is it running?",
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.utils.probe_endpoint_sync", lambda *a, **k: fail_result
+    )
+
+    result = check_lm_studio()
+    assert "Cannot reach LM Studio" in result
+
+
+def test_check_lm_studio_rejects_link_local(monkeypatch):
+    """Policy rejection in the discovery path must propagate (security property)."""
     from artifice_ocr.utils import check_lm_studio
 
-    ok, detail = False, "Cannot reach LM Studio at http://x. Is it running?"
-    with patch.object(_backend.LMStudioBackend, "health_check", return_value=(ok, detail)):
-        result = check_lm_studio()
-    assert result == detail
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "lm_studio_url": "http://169.254.169.254/v1",
+    })
+    monkeypatch.delenv("ARTIFICE_ALLOW_PUBLIC_MODELS", raising=False)
+    config.load_config()
+
+    with pytest.raises(EndpointRejected, match="link-local"):
+        check_lm_studio()
+
+
+# ---------------------------------------------------------------------------
+# check_ollama error strings are preserved for CLI consumers
+# ---------------------------------------------------------------------------
+
+
+def test_check_ollama_unreachable_string_unchanged(monkeypatch):
+    """The unreachable message is byte-identical to the pre-migration version."""
+    from artifice_ocr.utils import check_ollama
+    from model_harness.discovery import ProbeResult
+
+    fail_result = ProbeResult(
+        url="http://localhost:11434",
+        reachable=False,
+        hint="any hint",
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.utils.probe_endpoint_sync", lambda *a, **k: fail_result
+    )
+
+    errors = check_ollama()
+    assert errors == ["Cannot reach Ollama at http://localhost:11434. Is it running?"]
+
+
+def test_check_ollama_model_missing_string_unchanged(monkeypatch):
+    """The missing-model message is byte-identical to the pre-migration version."""
+    from artifice_ocr.utils import check_ollama
+    from model_harness.discovery import ProbeResult
+
+    result = ProbeResult(
+        url="http://localhost:11434",
+        reachable=True,
+        models=("other-model",),
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.utils.probe_endpoint_sync", lambda *a, **k: result
+    )
+
+    errors = check_ollama(["missing-model"])
+    assert errors == [
+        'Model "missing-model" is not downloaded. Open Ollama and download it first.'
+    ]
+
+
+def test_check_lm_studio_unreachable_string_changed(monkeypatch):
+    """LM Studio unreachable returns the URL followed by discovery's hint.
+
+    The old LMStudioBackend.health_check returned:
+    'Cannot reach LM Studio at <url>. Is it running?'
+    The new path now prepends the URL to discovery's hint so the caller can
+    see *which* address failed — matching check_ollama's format.
+    """
+    from artifice_ocr.utils import check_lm_studio
+    from model_harness.discovery import ProbeResult
+
+    fail_result = ProbeResult(
+        url="http://localhost:1234/v1",
+        reachable=False,
+        hint="Ensure your local model runner is running. Ensure LM Studio is running.",
+    )
+    monkeypatch.setattr(
+        "artifice_ocr.utils.probe_endpoint_sync", lambda *a, **k: fail_result
+    )
+
+    result = check_lm_studio()
+    assert result is not None
+    assert "Cannot reach LM Studio at http://localhost:1234/v1." in result
+    assert fail_result.hint in result
 
 
 # ---------------------------------------------------------------------------
@@ -368,19 +433,6 @@ def test_backend_allows_loopback_or_private_url(monkeypatch, backend_name, url_k
 # ---------------------------------------------------------------------------
 # LMStudioBackend.health_check raises on rejected URL (does not swallow)
 # ---------------------------------------------------------------------------
-
-
-def test_lm_studio_health_check_raises_endpoint_rejected(monkeypatch):
-    """health_check must raise EndpointRejected for a bad URL, not swallow it."""
-    monkeypatch.setattr(config, "_config_cache", None)
-    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
-        "lm_studio_url": "http://169.254.169.254/v1",
-    })
-    monkeypatch.delenv("ARTIFICE_ALLOW_PUBLIC_MODELS", raising=False)
-    config.load_config()
-
-    with pytest.raises(EndpointRejected, match="link-local"):
-        _backend.LMStudioBackend().health_check()
 
 
 # ---------------------------------------------------------------------------

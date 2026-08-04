@@ -2,30 +2,36 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import ollama as _ollama
+from __future__ import annotations
 
-from artifice_ocr._backend import get_client
+from model_harness.discovery import probe_endpoint_sync
+from model_harness.endpoint_policy import EndpointPolicy
+
+from . import config
+
+_endpoint_policy = EndpointPolicy()
 
 
 def check_lm_studio(url: str | None = None) -> str | None:
     """Return an error message if LM Studio is unreachable, else None."""
-    ok, detail = get_client("lm_studio").health_check()
-    return detail if not ok else None
+    lm_studio_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+    result = probe_endpoint_sync(lm_studio_url, policy=_endpoint_policy, timeout_s=5)
+    if result.reachable:
+        return None
+    return f"Cannot reach LM Studio at {lm_studio_url}. {result.hint or 'Is it running?'}"
 
 
 def check_ollama(required_models: list[str] | None = None, url: str | None = None) -> list[str]:
     """Return list of error messages for Ollama. Empty list = all OK."""
-    import ollama as _ollama_client
-
     errors: list[str] = []
-    try:
-        host = url or "http://localhost:11434"
-        client = _ollama_client.Client(host=host)
-        available = {m.model for m in client.list().models}
-    except Exception as exc:
-        return [f"Cannot reach Ollama at {url or 'http://localhost:11434'}. Is it running?"]
+    host = url or "http://localhost:11434"
+    result = probe_endpoint_sync(host, policy=_endpoint_policy, timeout_s=10)
+
+    if not result.reachable:
+        return [f"Cannot reach Ollama at {host}. Is it running?"]
 
     if required_models:
+        available = set(result.models)
         for model in required_models:
             if model not in available:
                 errors.append(f'Model "{model}" is not downloaded. Open Ollama and download it first.')

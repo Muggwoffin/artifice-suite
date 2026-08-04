@@ -18,14 +18,22 @@ _inference_endpoint_policy = EndpointPolicy()
 
 
 async def get_available_models(base_url: str, api_key: str | None = None) -> list[str]:
-    """Query {base_url}/models and return list of model IDs."""
+    """Query {base_url} for available models via model_harness.discovery.
+
+    Raises:
+        RuntimeError: If the endpoint is unreachable.
+    """
     _inference_endpoint_policy.validate_url(base_url)
-    key = api_key if api_key and api_key.strip() else "not-needed"
+    from model_harness.discovery import probe_endpoint
+
     try:
-        client = AsyncOpenAI(base_url=base_url, api_key=key)
-        response = await client.models.list()
-        models = [model.id for model in response.data]
-        return sorted(models)
+        result = await probe_endpoint(base_url, policy=_inference_endpoint_policy, timeout_s=10)
+        if not result.reachable:
+            detail = result.hint or f"Cannot reach {base_url}"
+            raise RuntimeError(detail)
+        return sorted(result.models)
+    except RuntimeError:
+        raise
     except Exception as exc:
         logger.error("Failed to fetch models from %s: %s", base_url, exc)
         raise
@@ -34,29 +42,28 @@ async def get_available_models(base_url: str, api_key: str | None = None) -> lis
 async def test_connection(base_url: str, api_key: str | None = None) -> dict:
     """Test connectivity to the endpoint and return status with details."""
     _inference_endpoint_policy.validate_url(base_url)
-    key = api_key if api_key and api_key.strip() else "not-needed"
+    from model_harness.discovery import probe_endpoint
+
     try:
-        client = AsyncOpenAI(base_url=base_url, api_key=key)
-        models_resp = await client.models.list()
-        count = len(models_resp.data)
-        return {
-            "success": True,
-            "message": f"Connected successfully! Found {count} model(s).",
-            "model_count": count,
-        }
+        result = await probe_endpoint(base_url, policy=_inference_endpoint_policy, timeout_s=10)
+        count = len(result.models)
+        if result.reachable:
+            return {
+                "success": True,
+                "message": f"Connected successfully! Found {count} model(s).",
+                "model_count": count,
+            }
+        else:
+            err_msg = result.hint or "Server not reachable"
+            return {
+                "success": False,
+                "message": f"Server unreachable: {err_msg}",
+                "model_count": 0,
+            }
     except Exception as exc:
-        err_msg = str(exc)
-        if "CORS" in err_msg or "origin" in err_msg.lower() or "Failed to fetch" in err_msg:
-            err_msg += (
-                " (Hint: If running Ollama, ensure OLLAMA_ORIGINS=* is set in your environment)"
-            )
-        elif "10061" in err_msg or "Connection refused" in err_msg:
-            err_msg += (
-                " (Hint: Ensure your local model runner (Ollama, LM Studio, vLLM) is running)"
-            )
         return {
             "success": False,
-            "message": f"Server unreachable: {err_msg}",
+            "message": f"Server unreachable: {exc}",
             "model_count": 0,
         }
 
