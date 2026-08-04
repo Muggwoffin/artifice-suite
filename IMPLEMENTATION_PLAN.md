@@ -1771,6 +1771,74 @@ used to flag.
 
 ## Part VI — Starting a fresh session
 
+### PICK UP HERE — Phase 6, as at 2026-08-04
+
+Branch **`phase6-packaging`**, pushed, 6 commits ahead of `main`, working tree clean.
+
+| Step | State |
+|---|---|
+| A — land accent work on `main` | done (was already done: PR #21 merged it before the session started) |
+| B — relicense MIT → AGPL-3.0-or-later | done, `afcf124` |
+| 0 — Docker builder/runtime split, non-root | done, `8155db4` |
+| — graph container fix (unplanned) | done, `b4a941f` |
+| 1 — `model_harness.registry` | done, `5c96610` |
+| 2a — `model_harness.discovery` | done, `b9c0e03` |
+| 2b — migrate 4 apps, delete 6 legacy probes | done, `97b34e7` |
+| **3 — BYOM screen (`ui-ux`)** | **NEXT** |
+| 4-8 | not started |
+
+**Test baselines, measured 2026-08-04 — the older 424/187/96/70 figures in this file and in
+`CLAUDE.md` are stale, do not use them.** Run each from its own directory; a root `pytest` does not
+work (duplicate `tests` packages in draft and graph).
+
+| Suite | Count |
+|---|---|
+| `apps/artifice-ocr` | 459 passed, 1 skipped |
+| `apps/artifice-draft` | 199 passed |
+| `apps/artifice-graph` | 131 passed |
+| `apps/artifice-transcribe` | 76 passed (`--ignore=tests/test_api.py`) |
+| `packages/model-harness` | 204 passed, 1 deselected |
+
+**CI has never run on this branch.** `ci.yml` triggers only on `push`/`pull_request` to `main`, so
+six commits are unvalidated by CI. All gates were run locally and pass: `reuse lint` (474/474),
+`token-parity-check.py`, `audit-controls.py`, `gitleaks detect`, `shellcheck`. The wheel job's
+AGPL METADATA assertion was replicated by hand and passes. **Open a PR early next session** so CI
+exercises the cross-platform matrix, which cannot be reproduced locally.
+
+**Carry these into Step 3's brief:**
+- `--accent`, `--accent-deep`, `--accent-wash` must **never** be added to
+  `packages/shared-ui/shared_ui/assets/tokens.css`. Each app declares its own; adding them to the
+  canonical set makes `token-parity-check.py` fail with four DRIFT errors. The comment at
+  `tokens.css:107-126` is enforcing an invariant the script depends on.
+- `byom.js` must be **ES5** — that is graph's dialect (`var`, no arrow functions, `.then()`), not
+  the `const`/`async` dialect the other three use. It has to run inside all four.
+- `shared-ui` ships **no JavaScript today**; `byom.js` is the first and sets the precedent.
+- `artifice-ocr` has **no dev/preview route** to copy for `/byom-preview`. Model it on
+  `web/server.py:90-93` and gate it behind an env flag. It must load ocr's `app.css` or `--accent`
+  will not resolve.
+- Nothing in the suite implements `Design_Philosophy.md` §8.6 for modals. All four apps' modals
+  diverge from it. Build to the spec, not to the existing code.
+
+**Carry this into Step 5's brief — it is a false promise if lost:** the
+`pyannote-speaker-diarization` registry entry records **5.9 MB** (the `segmentation-3.0` weight its
+pipeline config points at). Loading that pipeline *also* pulls `pyannote/embedding` at **96 MB**, a
+separate entry. **The consent dialog must sum them.**
+
+**Known, deliberately deferred:**
+- `artifice-draft` has no `[data-theme="dark"]` accent block, so its accent follows the OS
+  preference but not the manual theme toggle. The other three have one.
+- `VisionCapabilityChecker` cleanup in graph, and graph's CWD-relative data paths
+  (`config.py:47,56,69,72`), which are fine in Docker now but still resolve against the launch
+  directory outside it.
+- `typer[all]` warns on `uv lock`: `typer==0.27.0 does not have an extra named 'all'`.
+
+**Two agent failure modes seen this session, both in `CLAUDE.md` already:** `lead-engineer` hung in
+the provider stream after finishing its edits (CPU fell to 1.4% while the diff stayed frozen —
+verify the tree yourself and `--stop` it), and low CPU alone is *not* the diagnosis. During a Docker
+build the agent legitimately idles; check whether a child process exists before concluding it hung.
+
+---
+
 Read in this order: this document's status block and §I.7, then Part V, then `CLAUDE.md`.
 
 **Confirm the environment before trusting anything:**
@@ -1782,8 +1850,10 @@ wsl.exe -d Ubuntu -- bash -lc "cd ~/projects/artifice-suite && \
   (cd apps/artifice-graph && uv run pytest tests/ -q | tail -2)"
 ```
 
-Expected: `artifice-graph: clean`, `13 passed, 0 failed`, `48 passed`. Anything else means the
+Expected: `artifice-graph: clean`, `20 passed, 0 failed`, `131 passed`. Anything else means the
 environment has drifted, not that the code has regressed — check Part V first.
+*(The `48 passed` and `13 passed` figures recorded here previously were stale; re-measured
+2026-08-04.)*
 
 **To serve `artifice-graph`** (port 8766), write a wrapper script and launch it detached per Part V;
 do not background it inside `wsl.exe`.
