@@ -27,9 +27,11 @@ _SAVED = load_config().llm
 
 
 def _ollama_tags_url(base_url: str) -> str:
-    """Mirror ``discovery._strip_v1`` — the Ollama-native probe drops a /v1 suffix."""
-    base = base_url.rstrip("/")
-    return f"{base[:-3].rstrip('/')}/api/tags" if base.endswith("/v1") else f"{base}/api/tags"
+    """Mirror ``model_harness.discovery._strip_v1`` — the Ollama-native probe drops a /v1 suffix."""
+    from model_harness.discovery import _strip_v1
+
+    base = _strip_v1(base_url).rstrip("/")
+    return f"{base}/api/tags"
 
 
 def _openai_models_url(base_url: str) -> str:
