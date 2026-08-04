@@ -22,7 +22,12 @@ COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
 
 RUN useradd --create-home --shell /bin/bash appuser
 WORKDIR /app
-COPY --from=builder /app /app
+# --chown is load-bearing here, unlike in the other three images. graph resolves
+# its data directories CWD-relative (config.py:47,56,69,72 — "data/input_ocr",
+# "data/output", ...) and creates them on first request, so a root-owned /app
+# gives a non-root process PermissionError and a 500. ocr, draft and transcribe
+# write to ~/.artifice_* and platformdirs instead, which useradd already owns.
+COPY --from=builder --chown=appuser:appuser /app /app
 
 EXPOSE 8766
 USER appuser

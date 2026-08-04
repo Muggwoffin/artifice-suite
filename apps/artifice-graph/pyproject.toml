@@ -27,6 +27,11 @@ web = [
     "uvicorn[standard]>=0.20",
     "jinja2>=3.1",
     "aiofiles>=23.0",
+    # Required by the File()/UploadFile handler at web/server.py:1175 — FastAPI
+    # refuses to start without it ("Form data requires python-multipart").
+    # It was never declared, so the container has never served a request; no
+    # test caught it because no test starts a container.
+    "python-multipart>=0.0.9",
 ]
 
 [project.scripts]
