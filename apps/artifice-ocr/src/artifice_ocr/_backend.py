@@ -128,22 +128,21 @@ class OllamaOpenAIBackend:
         content = resp.choices[0].message.content or ""
         return _SimpleResponse(content)
 
-
 class LMStudioBackend:
+    """OpenAI-compatible LM Studio backend.
+
+    .. note::
+
+       ``LMStudioBackend.health_check`` was removed in the 2b migration.
+       The same check now lives in :func:`artifice_ocr.utils.check_lm_studio`,
+       which delegates to :func:`model_harness.discovery.probe_endpoint_sync`.
+       Nothing is broken; the surface has moved, not disappeared.
+    """
+
     def _client(self) -> OpenAI:
         base_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
         _validate_url(base_url, "lm_studio_url")
         return OpenAI(base_url=base_url, api_key="lm-studio")
-
-    def health_check(self) -> tuple[bool, str | None]:
-        """Return (ok, error_detail)."""
-        url = config.get("lm_studio_url") or "http://localhost:1234/v1"
-        _validate_url(url, "lm_studio_url")
-        try:
-            self._client().models.list()
-            return True, None
-        except Exception as exc:
-            return False, f"Cannot reach LM Studio at {url}. Is it running?"
 
     def chat(
         self,

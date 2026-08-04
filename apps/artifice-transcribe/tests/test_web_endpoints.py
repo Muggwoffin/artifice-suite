@@ -8,8 +8,10 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi import HTTPException
+from pytest_httpx import HTTPXMock
 
 from artifice_transcribe.db.models import JobStatus, SpeakerMapping, TranscriptionJob
 
@@ -308,3 +310,92 @@ def test_read_capped_respects_dynamic_limit():
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(_read_capped(_FakeUpload(1001), 1000))
     assert exc_info.value.status_code == 413
+
+
+# --------------------------------------------------- inference endpoint shapes
+
+
+async def test_inference_models_success_shape_matches_js(api, httpx_mock: HTTPXMock):
+    """POST /api/v1/inference/models returns the keys app.js line 1565 reads."""
+    httpx_mock.add_response(
+        url="http://localhost:11434/api/tags",
+        json={"models": [{"name": "whisper-model"}, {"name": "llama3.2:3b"}]},
+    )
+    httpx_mock.add_response(
+        url="http://localhost:11434/v1/models",
+        json={"data": [{"id": "openai-model"}]},
+    )
+
+    resp = await api.client.post(
+        "/api/v1/inference/models",
+        json={"base_url": "http://localhost:11434/v1", "api_key": "not-needed"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    # Consumed by transcribe/web/static/js/app.js:1565
+    assert set(data.keys()) == {"models"}
+    assert sorted(data["models"]) == ["llama3.2:3b", "openai-model", "whisper-model"]
+
+
+async def test_inference_models_failure_returns_empty_list(api, httpx_mock: HTTPXMock):
+    """Unreachable server returns 500 so the frontend shows the error.
+
+    probe_endpoint returns reachable=False as a normal ProbeResult, but
+    get_available_models now raises RuntimeError when that happens.
+    The route catches it and raises HTTP 500, matching the old behavior.
+    """
+    httpx_mock.add_exception(
+        httpx.ConnectError("Connection refused"),
+        url="http://localhost:11434/api/tags",
+    )
+
+    resp = await api.client.post(
+        "/api/v1/inference/models",
+        json={"base_url": "http://localhost:11434/v1", "api_key": "not-needed"},
+    )
+    assert resp.status_code == 500
+    data = resp.json()
+    assert "detail" in data
+
+
+async def test_inference_test_success_shape_matches_js(api, httpx_mock: HTTPXMock):
+    """POST /api/v1/inference/test returns the keys app.js line 1596 reads."""
+    httpx_mock.add_response(
+        url="http://localhost:11434/api/tags",
+        json={"models": [{"name": "model-a"}, {"name": "model-b"}]},
+    )
+    httpx_mock.add_response(
+        url="http://localhost:11434/v1/models",
+        json={"data": []},
+    )
+
+    resp = await api.client.post(
+        "/api/v1/inference/test",
+        json={"base_url": "http://localhost:11434/v1", "api_key": "not-needed"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    # Consumed by transcribe/web/static/js/app.js:1596-1603
+    assert set(data.keys()) == {"success", "message", "model_count"}
+    assert data["success"] is True
+    assert data["model_count"] == 2
+    assert "Connected successfully" in data["message"]
+
+
+async def test_inference_test_failure_shape_matches_js(api, httpx_mock: HTTPXMock):
+    """Failure path keeps the same keys the JS consumes."""
+    httpx_mock.add_exception(
+        httpx.ConnectError("Connection refused"),
+        url="http://localhost:11434/api/tags",
+    )
+
+    resp = await api.client.post(
+        "/api/v1/inference/test",
+        json={"base_url": "http://localhost:11434/v1", "api_key": "not-needed"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert set(data.keys()) == {"success", "message", "model_count"}
+    assert data["success"] is False
+    assert data["model_count"] == 0
+    assert "Server unreachable" in data["message"]

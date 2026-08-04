@@ -133,7 +133,7 @@ def document_types() -> dict:
 
 @router.get("/api/health")
 def health_check() -> dict:
-    from ...utils import check_lm_studio, check_ollama
+    from model_harness.discovery import probe_endpoint_sync
 
     backends = {
         config.get("ocr_backend") or "lm_studio",
@@ -144,25 +144,27 @@ def health_check() -> dict:
     results: dict[str, Any] = {}
 
     if "lm_studio" in backends:
-        lm_err = check_lm_studio(config.get("lm_studio_url"))
+        lm_studio_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+        probe = probe_endpoint_sync(lm_studio_url, policy=_endpoint_policy, timeout_s=5)
         results["lm_studio"] = {
-            "ok": lm_err is None,
-            "detail": lm_err,
-            "url": config.get("lm_studio_url"),
+            "ok": probe.reachable,
+            "detail": None if probe.reachable else (probe.hint or "Cannot reach LM Studio"),
+            "url": lm_studio_url,
         }
 
     if "ollama" in backends:
         models = [config.get("ocr_model"), config.get("cleanup_model"), config.get("translate_model")]
-        ollama_url = config.get("ollama_url")
-        ollama_errors = check_ollama(models, url=ollama_url)
-        ollama_reachable = not any("Cannot reach" in e for e in ollama_errors)
+        ollama_url = config.get("ollama_url") or "http://localhost:11434"
+        probe = probe_endpoint_sync(ollama_url, policy=_endpoint_policy, timeout_s=10)
+        ollama_reachable = probe.reachable
+        available = set(probe.models)
         results["ollama"] = {
             "ok": ollama_reachable,
-            "detail": None if ollama_reachable else ollama_errors[0],
-            "url": ollama_url or "http://localhost:11434",
+            "detail": None if ollama_reachable else (probe.hint or "Cannot reach Ollama"),
+            "url": ollama_url,
         }
         results["models"] = [
-            {"name": m, "ok": ollama_reachable and not any(m in e for e in ollama_errors)}
+            {"name": m, "ok": ollama_reachable and m in available}
             for m in models if m
         ]
 

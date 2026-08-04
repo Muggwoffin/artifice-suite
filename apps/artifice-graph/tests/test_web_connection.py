@@ -41,11 +41,17 @@ async def test_test_connection_is_post_not_get():
 @pytest.mark.asyncio
 async def test_test_connection_uses_posted_url_and_model(httpx_mock: HTTPXMock):
     """A POST with a config body tests the posted values, not the saved ones."""
-    # Mock the health-check GET that the handler issues to the LLM server.
+    # discovery.probe_endpoint calls /api/tags and /v1/models.
+    # Mock both so the probe reports reachable.
     httpx_mock.add_response(
-        url="http://localhost:12345",
+        url="http://localhost:12345/api/tags",
         method="GET",
-        status_code=200,
+        json={"models": [{"name": "test-model"}]},
+    )
+    httpx_mock.add_response(
+        url="http://localhost:12345/v1/models",
+        method="GET",
+        json={"data": [{"id": "test-model"}]},
     )
 
     async with httpx.AsyncClient(
@@ -77,7 +83,20 @@ async def test_test_connection_empty_body_falls_back_to_saved_config(
     httpx_mock: HTTPXMock,
 ):
     """When an empty body is sent, the saved config values are used."""
-    httpx_mock.add_response(status_code=200)
+    # Mock based on the saved config's base URL (probe calls /api/tags + /v1/models)
+    saved_base = _SAVED.base_url.rstrip("/")
+    if saved_base.endswith("/v1"):
+        saved_base = saved_base[:-3]
+    httpx_mock.add_response(
+        url=f"{saved_base}/api/tags",
+        method="GET",
+        json={"models": [{"name": "test-model"}]},
+    )
+    httpx_mock.add_response(
+        url=f"{_SAVED.base_url.rstrip('/')}/models",
+        method="GET",
+        json={"data": [{"id": "test-model"}]},
+    )
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://testserver"
@@ -99,9 +118,14 @@ async def test_test_connection_partial_fields_override_only_those(
 ):
     """Only the posted fields override; the rest come from saved config."""
     httpx_mock.add_response(
-        url="http://localhost:12346",
+        url="http://localhost:12346/api/tags",
         method="GET",
-        status_code=200,
+        json={"models": [{"name": "test-model"}]},
+    )
+    httpx_mock.add_response(
+        url="http://localhost:12346/v1/models",
+        method="GET",
+        json={"data": [{"id": "test-model"}]},
     )
 
     async with httpx.AsyncClient(
@@ -121,3 +145,92 @@ async def test_test_connection_partial_fields_override_only_those(
     assert data["model"] == _SAVED.model, (  # saved config value
         f"Expected saved config model {_SAVED.model!r}, got {data.get('model')!r}"
     )
+
+
+@pytest.mark.asyncio
+async def test_test_connection_failure_shape_matches_js(httpx_mock: HTTPXMock):
+    """Unreachable server returns the same keys the JS consumes (pipeline.js)."""
+    httpx_mock.add_exception(
+        httpx.ConnectError("Connection refused"),
+        url="http://localhost:12347/api/tags",
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as test_client:
+        response = await test_client.post(
+            "/api/test-connection",
+            json={"llm_base_url": "http://localhost:12347", "llm_model": "test"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    # Keys consumed by graph/web/static/pipeline.js line 824
+    assert set(data.keys()) == {"status", "error", "suggestions", "url", "model"}
+    assert data["status"] == "error"
+    assert data["error"] == "Server not reachable"
+    assert data["suggestions"]
+    assert data["url"] == "http://localhost:12347"
+    assert data["model"] == "test"
+
+
+@pytest.mark.asyncio
+async def test_api_models_success_shape_matches_js(httpx_mock: HTTPXMock):
+    """GET /api/models returns the keys consumed by pipeline.js for model dropdown."""
+    saved_base = _SAVED.base_url.rstrip("/")
+    if saved_base.endswith("/v1"):
+        saved_base = saved_base[:-3]
+    httpx_mock.add_response(
+        url=f"{saved_base}/api/tags",
+        method="GET",
+        json={"models": [{"name": "gemma2:27b"}, {"name": "llava:7b"}]},
+    )
+    httpx_mock.add_response(
+        url=f"{_SAVED.base_url.rstrip('/')}/models",
+        method="GET",
+        json={"data": [{"id": "gpt-4"}]},
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as test_client:
+        response = await test_client.get("/api/models")
+
+    assert response.status_code == 200
+    data = response.json()
+    # Keys consumed by graph/web/static/pipeline.js lines 136-150
+    assert set(data.keys()) == {"models", "vision_models", "ollama_base", "openai_base"}
+    expected_ollama_base = _SAVED.base_url.rstrip("/")
+    if expected_ollama_base.endswith("/v1"):
+        expected_ollama_base = expected_ollama_base[:-3]
+    assert data["ollama_base"] == expected_ollama_base
+    assert data["openai_base"] == _SAVED.base_url
+    assert {m["id"] for m in data["models"]} == {"gemma2:27b", "llava:7b", "gpt-4"}
+    assert len(data["vision_models"]) == 1
+    assert data["vision_models"][0]["id"] == "llava:7b"
+    assert data["vision_models"][0]["supports_vision"] is True
+
+
+@pytest.mark.asyncio
+async def test_api_models_failure_shape_matches_js(httpx_mock: HTTPXMock):
+    """GET /api/models failure path returns error so the frontend shows it."""
+    saved_base = _SAVED.base_url.rstrip("/")
+    if saved_base.endswith("/v1"):
+        saved_base = saved_base[:-3]
+    httpx_mock.add_exception(
+        httpx.ConnectError("Connection refused"),
+        url=f"{saved_base}/api/tags",
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as test_client:
+        response = await test_client.get("/api/models")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "error" in data, (
+        "Unreachable server must populate 'error' so the frontend shows a failure"
+    )
+    assert "models" in data
+    assert data["models"] == []

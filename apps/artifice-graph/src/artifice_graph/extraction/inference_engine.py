@@ -4,66 +4,27 @@
 
 """Unified LLM Inference Engine with OpenAI compatibility."""
 
+from __future__ import annotations
+
 import logging
 from typing import AsyncGenerator, Any, Dict, List, Optional
 
 import httpx
 
+from model_harness.discovery import probe_endpoint
 from model_harness.endpoint_policy import EndpointPolicy
 
 logger = logging.getLogger(__name__)
 
-
-class VisionCapabilityChecker:
-    """Helper class to detect and check vision model capabilities."""
-
-    @staticmethod
-    def extract_vision_models(model_info: Dict[str, Any]) -> List[Dict[str, Any]]:
-        vision_models = []
-        model_details = model_info.get("model", {})
-        model_name = str(model_info.get("id", "")).lower()
-
-        vision_indicators = [
-            "vision", "vl", "multi-modal", "image", "visual",
-            "qwen", "llava", "dot.*/llava", "vision.*gpt"
-        ]
-
-        if any(indicator in model_name for indicator in vision_indicators):
-            vision_models.append({
-                "id": model_info.get("id", ""),
-                "name": model_info.get("name", model_info.get("id", "")),
-                "supports_vision": True,
-                "supports_chat": model_details.get("supports_chat", True),
-                "supports_images": model_details.get("supports_images", True),
-                "max_tokens": model_details.get("max_tokens", 8192),
-                "description": model_details.get("description", "")
-            })
-
-        return vision_models
-
-    @staticmethod
-    def extract_openai_vision_models(model_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        vision_models = []
-        for model in model_data.get("data", []):
-            model_id = model.get("id", "").lower()
-            vision_indicators = [
-                "vision", "vl", "multi-modal", "image", "visual",
-                "gpt-4-vision", "claude-3-opus", "claude-3-sonnet"
-            ]
-
-            if any(indicator in model_id for indicator in vision_indicators):
-                model_obj = {
-                    "id": model["id"],
-                    "name": model.get("name", model["id"]),
-                    "owned_by": model.get("owned_by", "openai"),
-                    "created": model.get("created", 0),
-                    "supports_vision": True,
-                    "max_completion_tokens": model.get("max_completion_tokens"),
-                    "max_context_length": model.get("max_context_length")
-                }
-                vision_models.append(model_obj)
-
-        return vision_models
+# ---------------------------------------------------------------------------
+# Heuristic indicators that a model may support vision (image inputs).
+# Used by both server.py and inference_engine.py to tag vision-capable
+# models without a dedicated vision API.
+# ---------------------------------------------------------------------------
+_VISION_INDICATORS = [
+    "vision", "vl", "multi-modal", "image", "visual",
+    "qwen", "llava", "gpt-4-vision", "claude-3",
+]
 
 
 class ModelInfo:
@@ -123,25 +84,16 @@ class InferenceEngine:
 
         self.client = httpx.AsyncClient(timeout=timeout)
         self.last_status = "disconnected"
-        self.vision_checker = VisionCapabilityChecker()
 
     async def close(self) -> None:
         await self.client.aclose()
 
     async def health_check(self) -> bool:
-        """Check if the server is reachable."""
-        try:
-            async with httpx.AsyncClient(timeout=5) as test_client:
-                response = await test_client.get(
-                    self.base_url.replace("/v1", ""),
-                    timeout=5
-                )
-                self.last_status = "connected" if response.status_code == 200 else "error"
-                return response.status_code == 200
-        except Exception as e:
-            logger.debug(f"Health check failed: {e}")
-            self.last_status = "error"
-            return False
+        """Check if the server is reachable (delegates to discovery.probe_endpoint)."""
+        policy = EndpointPolicy()
+        result = await probe_endpoint(self.base_url, policy=policy, timeout_s=5)
+        self.last_status = "connected" if result.reachable else "error"
+        return result.reachable
 
     async def get_available_models(self) -> tuple[List[ModelInfo], List[ModelInfo]]:
         """
@@ -150,47 +102,33 @@ class InferenceEngine:
         Returns:
             tuple: (text_models, vision_models)
         """
-        text_models = []
-        vision_models = []
+        policy = EndpointPolicy()
+        result = await probe_endpoint(self.base_url, policy=policy, timeout_s=10)
 
-        ollama_models = []
-        openai_models = []
+        text_models: list[ModelInfo] = []
+        vision_models: list[ModelInfo] = []
 
-        try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                ollama_base = self.base_url.replace("/v1", "")
+        model_names: set[str] = set()
+        for name in result.models:
+            if name in model_names:
+                continue
+            model_names.add(name)
 
-                resp = await client.get(f"{ollama_base}/api/tags", timeout=10)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    for model_info in data.get("models", []):
-                        ollama_models.append(model_info)
+            model_dict: dict[str, Any] = {"id": name, "name": name}
+            mi = ModelInfo(model_dict)
+            text_models.append(mi)
 
-                try:
-                    resp = await client.get(
-                        f"{self.base_url}/models",
-                        headers={"Authorization": f"Bearer {self.api_key}" if self.api_key else None},
-                        timeout=10
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        openai_models = data.get("data", []) or data.get("models", [])
-                except Exception:
-                    pass
-        except Exception as e:
-            logger.warning(f"Failed to fetch models: {e}")
-
-        for model_info in ollama_models:
-            vision_models.extend(
-                self.vision_checker.extract_vision_models(model_info)
-            )
-
-        for model_info in openai_models:
-            vision_models.extend(
-                self.vision_checker.extract_openai_vision_models({"data": [model_info]})
-            )
-            if not any(m.id == model_info.get("id", "") for m in text_models):
-                text_models.append(ModelInfo(model_info, "openai"))
+            if any(indicator in name.lower() for indicator in _VISION_INDICATORS):
+                vi_dict: dict[str, Any] = {
+                    "id": name,
+                    "name": name,
+                    "supports_vision": True,
+                    "supports_chat": True,
+                    "supports_images": True,
+                    "max_tokens": 8192,
+                    "description": "",
+                }
+                vision_models.append(ModelInfo(vi_dict))
 
         return text_models, vision_models
 
@@ -382,36 +320,18 @@ class InferenceEngine:
 
     async def test_connection(self) -> Dict[str, Any]:
         """Test the connection and return status with helpful error messages."""
-        status = {
-            "connected": await self.health_check(),
-            "error": None,
-            "suggestios": []
+        policy = EndpointPolicy()
+        result = await probe_endpoint(self.base_url, policy=policy, timeout_s=5)
+
+        suggestions: list[str] = []
+        if result.hint:
+            suggestions.append(result.hint)
+
+        return {
+            "connected": result.reachable,
+            "error": None if result.reachable else "Server not reachable",
+            "suggestions": suggestions,
         }
 
-        if not status["connected"]:
-            status["error"] = "Server not reachable"
-            if self.base_url.endswith("/v1"):
-                base_url = self.base_url.replace("/v1", "")
-            else:
-                base_url = self.base_url
 
-            if "11434" in base_url:
-                status["suggestions"].append(
-                    "For Ollama: Make sure the server is running with 'ollama serve'"
-                )
-                status["suggestions"].append(
-                    "For Ollama: Set OLLAMA_ORIGINS=* to allow cross-origin requests"
-                )
-            elif "1234" in base_url:
-                status["suggestions"].append(
-                    "For LM Studio: Ensure the LM Studio server is running and accessible"
-                )
-
-            status["suggestions"].append(
-                "Check if the server URL is correct and accessible from your browser"
-            )
-
-        return status
-
-
-__all__ = ["InferenceEngine", "ModelInfo", "VisionCapabilityChecker"]
+__all__ = ["InferenceEngine", "ModelInfo", "_VISION_INDICATORS"]

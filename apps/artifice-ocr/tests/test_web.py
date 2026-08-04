@@ -22,10 +22,13 @@ import queue as _sync_queue
 import socket
 import sys
 import types
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
+from pytest_httpx import HTTPXMock
 
 from conftest import TROPY_SCHEMA
 
@@ -1085,8 +1088,23 @@ def test_document_types_lists_known_types(client):
 
 
 def test_health_check_reports_service_status(client, monkeypatch):
-    monkeypatch.setattr("artifice_ocr.utils.check_lm_studio", lambda *a, **k: None)
-    monkeypatch.setattr("artifice_ocr.utils.check_ollama", lambda *a, **k: [])
+    from model_harness.discovery import ProbeResult
+
+    # Use the config model names so the per-model health check matches
+    from artifice_ocr import config as ocr_config
+    cleanup_model = ocr_config.get("cleanup_model") or "llama3.2:3b"
+    translate_model = ocr_config.get("translate_model") or "llama3.2:3b"
+    ocr_model = ocr_config.get("ocr_model") or "llama3.2-vision:11b"
+
+    ok_result = ProbeResult(
+        url="http://localhost:11434",
+        reachable=True,
+        models=(cleanup_model, translate_model, ocr_model),
+    )
+    monkeypatch.setattr(
+        "model_harness.discovery.probe_endpoint_sync",
+        lambda *a, **k: ok_result,
+    )
 
     res = client.get("/api/health")
     body = res.json()
@@ -1096,16 +1114,100 @@ def test_health_check_reports_service_status(client, monkeypatch):
 
 
 def test_health_check_surfaces_unreachable_services(client, monkeypatch):
-    monkeypatch.setattr("artifice_ocr.utils.check_lm_studio",
-                        lambda *a, **k: "Cannot reach LM Studio at http://x (ConnectionError)")
-    monkeypatch.setattr("artifice_ocr.utils.check_ollama",
-                        lambda *a, **k: ["Cannot reach Ollama server (ConnectionError)"])
+    from model_harness.discovery import ProbeResult
+
+    fail_result = ProbeResult(
+        url="http://localhost:11434",
+        reachable=False,
+        hint="Cannot reach Ollama",
+    )
+    monkeypatch.setattr(
+        "model_harness.discovery.probe_endpoint_sync",
+        lambda *a, **k: fail_result,
+    )
 
     res = client.get("/api/health")
     body = res.json()
     assert body["lm_studio"]["ok"] is False
     assert body["ollama"]["ok"] is False
     assert all(not m["ok"] for m in body["models"])
+
+
+def test_health_check_real_probe_returns_from_threadpool(client, httpx_mock: HTTPXMock):
+    """GET /api/health exercises the real probe_endpoint_sync inside FastAPI's threadpool.
+
+    Existing tests mock the sync wrapper.  This test mocks the HTTP layer so
+    the wrapper is genuinely called from a ``def`` route and must return rather
+    than deadlock.  A wall-clock timeout on the future keeps a regression from
+    freezing the suite.
+    """
+    # Default config probes LM Studio (port 1234) and Ollama (port 11434).
+    # Align the Ollama model names with the config so the per-model checks pass.
+    config.apply_overrides({
+        "ocr_model": "ollama-ocr",
+        "cleanup_model": "ollama-cleanup",
+        "translate_model": "ollama-translate",
+    })
+    httpx_mock.add_response(
+        url="http://localhost:1234/api/tags",
+        json={"models": []},
+    )
+    httpx_mock.add_response(
+        url="http://localhost:1234/v1/models",
+        json={"data": [{"id": "lm-studio-model"}]},
+    )
+    httpx_mock.add_response(
+        url="http://localhost:11434/api/tags",
+        json={"models": [
+            {"name": "ollama-ocr"},
+            {"name": "ollama-cleanup"},
+            {"name": "ollama-translate"},
+        ]},
+    )
+    httpx_mock.add_response(
+        url="http://localhost:11434/v1/models",
+        json={"data": []},
+    )
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(client.get, "/api/health")
+        res = future.result(timeout=15)
+
+    assert res.status_code == 200
+    body = res.json()
+    # Key set consumed by ocr/web/static/js/settings.js
+    assert set(body.keys()) == {"lm_studio", "ollama", "models"}
+    assert set(body["lm_studio"].keys()) == {"ok", "detail", "url"}
+    assert set(body["ollama"].keys()) == {"ok", "detail", "url"}
+    assert body["lm_studio"]["ok"] is True
+    assert body["ollama"]["ok"] is True
+    assert all(m["ok"] for m in body["models"])
+
+
+def test_health_check_real_probe_unreachable_shape(client, httpx_mock: HTTPXMock):
+    """Failure path of /api/health keeps the same key set the JS reads."""
+    httpx_mock.add_exception(
+        httpx.ConnectError("Connection refused"),
+        url="http://localhost:1234/api/tags",
+    )
+    httpx_mock.add_exception(
+        httpx.ConnectError("Connection refused"),
+        url="http://localhost:11434/api/tags",
+    )
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(client.get, "/api/health")
+        res = future.result(timeout=15)
+
+    assert res.status_code == 200
+    body = res.json()
+    assert set(body.keys()) == {"lm_studio", "ollama", "models"}
+    assert set(body["lm_studio"].keys()) == {"ok", "detail", "url"}
+    assert set(body["ollama"].keys()) == {"ok", "detail", "url"}
+    assert body["lm_studio"]["ok"] is False
+    assert body["ollama"]["ok"] is False
+    assert body["lm_studio"]["detail"] is not None
+    assert body["ollama"]["detail"] is not None
 
 
 # --------------------------------------------------------------------------- #
