@@ -33,7 +33,14 @@ def client(tmp_path, monkeypatch):
         "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
         cfg_file,
     )
-    return TestClient(app)
+    # Used as a context manager so the app's lifespan actually runs. The
+    # lifespan (main.py:28-38) is what creates the database tables, and
+    # ``TestClient(app)`` alone does not trigger it. Without this,
+    # ``/api/v1/jobs`` raises from SQLAlchemy on any machine whose database
+    # does not already exist — which is every CI runner, while passing on a
+    # developer's machine that has one left over from an earlier run.
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 # ── GET /api/byom/state ───────────────────────────────────────────────────
