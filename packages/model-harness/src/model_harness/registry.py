@@ -178,7 +178,12 @@ class ModelRecommendation:
     """``True`` if the model supports image inputs (vision-capable)."""
 
     min_vram_gb: float | None = None
-    """Approximate minimum VRAM in GB. ``None`` when unknown."""
+    """Approximate minimum VRAM in GB. ``None`` when unknown.
+
+    On unified-memory Macs (:data:`HardwareTier.MAC_UNIFIED`) this field
+    means minimum *shared* memory rather than dedicated VRAM — the GPU and
+    CPU draw from the same pool.
+    """
 
 
 # App → HardwareTier → recommendations.
@@ -217,13 +222,13 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
         ],
         HardwareTier.MAC_UNIFIED: [
             ModelRecommendation(
-                model_name="llava:7b",
+                model_name="llava:13b",
                 provider="ollama",
                 vision=True,
-                min_vram_gb=8.0,
+                min_vram_gb=12.0,
             ),
             ModelRecommendation(
-                model_name="minicpm-v:8b",
+                model_name="llava-llama3:8b",
                 provider="ollama",
                 vision=True,
                 min_vram_gb=8.0,
@@ -261,13 +266,13 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
         ],
         HardwareTier.MAC_UNIFIED: [
             ModelRecommendation(
-                model_name="llama3.2:3b",
+                model_name="qwen2.5:14b",
                 provider="ollama",
                 vision=False,
-                min_vram_gb=4.0,
+                min_vram_gb=12.0,
             ),
             ModelRecommendation(
-                model_name="qwen2.5:7b",
+                model_name="llama3.1:8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
@@ -305,13 +310,13 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
         ],
         HardwareTier.MAC_UNIFIED: [
             ModelRecommendation(
-                model_name="llama3.2:3b",
+                model_name="qwen2.5:14b",
                 provider="ollama",
                 vision=False,
-                min_vram_gb=4.0,
+                min_vram_gb=12.0,
             ),
             ModelRecommendation(
-                model_name="qwen2.5:7b",
+                model_name="llama3.1:8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
@@ -356,7 +361,9 @@ def recommendations_for_app(
 
     Args:
         app: One of ``"artifice-ocr"``, ``"artifice-graph"``,
-            ``"artifice-draft"``.
+            ``"artifice-draft"``.  ``"artifice-transcribe"`` is deliberately
+            absent — it uses :data:`ASR_MODELS` instead of these
+            recommendations, and passing it will raise ``KeyError``.
         tier: The hardware capability tier.
 
     Returns:
@@ -364,8 +371,9 @@ def recommendations_for_app(
         ordered from most- to least-preferred.
 
     Raises:
-        KeyError: if *app* has no recommendations registered, or if *tier*
-            has no entries for the given app.
+        KeyError: if *app* has no recommendations registered (including
+            ``"artifice-transcribe"``), or if *tier* has no entries for the
+            given app.
     """
     return _RECOMMENDATIONS[app][tier]
 

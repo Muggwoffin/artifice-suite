@@ -124,6 +124,37 @@ def test_recommendations_unknown_app_raises():
         recommendations_for_app("nonexistent-app", HardwareTier.LAPTOP)
 
 
+_KNOWN_RECOMMENDATION_APPS: tuple[str, ...] = (
+    "artifice-ocr",
+    "artifice-graph",
+    "artifice-draft",
+)
+
+
+def test_transcribe_is_not_in_recommendations():
+    """``artifice-transcribe`` uses :data:`ASR_MODELS`, not
+    ``_RECOMMENDATIONS``.  Passing it to ``recommendations_for_app`` must
+    raise ``KeyError``."""
+    with pytest.raises(KeyError):
+        recommendations_for_app("artifice-transcribe", HardwareTier.LAPTOP)
+
+
+@pytest.mark.parametrize("app", _KNOWN_RECOMMENDATION_APPS)
+def test_no_two_tiers_return_identical_recommendations(app: str):
+    """Every hardware tier for a given app must recommend a different set of
+    models.  If two tiers return the same list of model names, the tier
+    distinction is meaningless."""
+    tiers = list(HardwareTier)
+    seen: set[tuple[str, ...]] = set()
+    for tier in tiers:
+        recs = recommendations_for_app(app, tier)
+        names = tuple(r.model_name for r in recs)
+        assert names not in seen, (
+            f"{app}: {tier.value} recommendations {names!r} duplicate another tier"
+        )
+        seen.add(names)
+
+
 # ── Accessors ────────────────────────────────────────────────────────────────
 
 
