@@ -39,7 +39,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"artifice_ocr.web" = ["static/**", "templates/**/*.html"]
+"artifice_ocr.web" = ["static/**", "templates/**/*.html", "fonts/**"]
 "artifice_ocr.prompts" = ["*.txt"]
 
 [tool.pytest.ini_options]
