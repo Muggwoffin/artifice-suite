@@ -2096,7 +2096,154 @@ Worth settling as one shared rule.
 
 ---
 
-### PICK UP HERE — Phase 6, as at 2026-08-05 (supersedes the 2026-08-04 block below)
+### PICK UP HERE — Phase 6, as at 2026-08-06 (supersedes every block below)
+
+**Read this, then Part V, then `CLAUDE.md`. The 2026-08-05 block below is kept for its
+BYOM/Jinja detail; where it disagrees with this one, this one wins.**
+
+**Branch `phase6-distribution-and-hardening`, PR #40 open against `main`, 11 commits.**
+Local `main` also holds them; the branch exists so the work could be reviewed rather than
+pushed straight to `main`.
+
+#### Confirm the environment before trusting anything
+
+```bash
+wsl.exe -d Ubuntu -- bash -lc "cd ~/projects/artifice-suite && \
+  df -h /tmp | tail -1 && git status -sb && \
+  uv sync --extra all --group dev && \
+  (cd apps/artifice-ocr && uv run pytest tests/ -q | tail -1)"
+```
+
+**Check `/tmp` first** — it is a 7.6 GB tmpfs, and a leftover ASR venv once filled it,
+producing 148 failures that all read `OSError: [Errno 28]` and looked exactly like a code
+regression while `/` had 892 GB free.
+
+#### Current baselines — these supersede every earlier figure in this file
+
+| Suite | Count |
+|---|---|
+| `apps/artifice-ocr` | 489 passed, 1 skipped |
+| `apps/artifice-draft` | 227 passed |
+| `apps/artifice-graph` | 171 passed |
+| `apps/artifice-transcribe` | **116** passed with the ASR extra |
+| `packages/model-harness` | 222 passed, 1 deselected |
+| `packages/secure-io` | 16 passed, 1 skipped (the skip is Windows-only) |
+
+Run each from its own directory. Transcribe's number **depends on the environment** —
+without the ASR extra some tests skip. Check with
+`python -c "import importlib.util; print(importlib.util.find_spec('torch') is not None)"`
+before reporting a regression that is only an install state.
+
+#### What landed — see PR #40 for the full account
+
+`artifice-transcribe` went from **7.3 GB to 205 MB** base, **1.6 GB** for a working CPU
+transcription install, with `asr` / `asr-cuda` extras and CPU as the default everywhere.
+The ASR features show as visibly disabled rather than missing. Distribution is decided —
+uv primary, Docker second, thin bootstrap, frozen bundles ruled out. Internal packages are
+namespaced and pinned. Three security defects closed: a plaintext HuggingFace token on
+`GET /api/v1/config`, config files never repaired on load, and a Windows ACL check that was
+wrong three separate ways. `artifice-graph` no longer uses `~/.callosip`.
+
+---
+
+## THE CHECKLIST BEFORE THE COMMUNITY STAGE
+
+The community health files are all present and substantial — `README`, `CONTRIBUTING` (364
+lines), `CODE_OF_CONDUCT`, `SECURITY`, `LICENSE`, `CITATION.cff`, `paper.md`, `REUSE.toml`,
+`ROADMAP`, `ARCHITECTURE`, issue templates and a PR template. **The gap is not
+documentation. It is that a stranger cannot yet install this.**
+
+### Blocking — a contributor or user hits these immediately
+
+1. **Merge PR #40** once CI is green. It was pending at handoff.
+2. **Publish to PyPI.** Until then `uv tool install --editable ./apps/<app>` against a
+   cloned workspace is the only install path, which is not a distribution story. Order
+   matters: **the three shared packages must land before the apps**, because every app
+   declares `artifice-model-harness>=0.1.0` and friends. Steps: create the PyPI account with
+   2FA, add a **pending publisher** for each of the seven projects (they are all still
+   unregistered — verified 2026-08-05), do TestPyPI first, then add a `publish.yml` using
+   `pypa/gh-action-pypi-publish` with `permissions: id-token: write`. **Trusted Publishing,
+   not API tokens** — it needs no stored credential, which is the only thing compatible with
+   the Zero Secrets Policy.
+3. **Test `install.ps1` and `uninstall.ps1` on native Windows.** They have **never been
+   executed** — only AST-parsed. The bash versions ran end to end. No sub-agent can do this;
+   they all run on Linux.
+4. **Run the Windows ACL regression test natively**
+   (`test_everyone_by_sid_is_not_restricted`). It is skipped on Linux. This check has been
+   wrong three times, so treat a green Linux run as meaningless here.
+
+### Should do before inviting contributors
+
+5. **Close the test-coverage gaps `tester` ranked.** Highest: none of the five
+   `AsrUnavailable` handlers or `/api/v1/capabilities` are exercised by any test, so a
+   refactor could silently break the whole disabled-state feature. Then: the permission
+   repair's "already restricted" guard, and a smoke test for the install/uninstall scripts
+   (`tester` wrote one — see its log).
+6. **The `.callosip` migration has never run against a real directory.** The code path
+   (`shutil.move` + `ensure_restricted`) is not hit by any test. The maintainer's own
+   `~/.callosip` is the natural first case — back it up first.
+7. **The CUDA install path is unverified.** No NVIDIA GPU on this machine. `--extra asr-cuda`
+   resolves, but its size and whether it actually gets GPU torch are unmeasured.
+8. **Diarization is unproven end to end** — it needs a HuggingFace token. Transcription
+   itself was run through the API on CPU with the `tiny` model and works.
+9. **Decide the `curl | sh` question.** `install.sh:47` and `install.ps1:69` fetch and
+   execute the uv installer with no checksum. `security-auditor` rated it MEDIUM and noted
+   it is the standard pattern for uv, rustup and pip over HTTPS. Either pin a checksum or
+   require uv pre-installed. Maintainer's call, deliberately left.
+
+### Then the remaining Phase 6 work
+
+10. **Step 5 — the ASR consent-and-download flow.** Not started. Its PyTorch prerequisite is
+    now done, so tier 3 (runtime install) is unblocked *by the distribution decision* — uv
+    primary means a writable environment exists, which a frozen bundle would have denied.
+11. **Step 9 remainder** — favicons (no app has one), a shared toast (implemented three
+    times, missing from draft), and `artifice-draft`'s catch-up: no theme toggle, no
+    keyboard shortcuts, no `[data-theme="dark"]` accent block.
+12. **Consider upper bounds on the internal pins.** `>=0.1.0` is loose once these names are
+    public; `~=0.1.0` would stop a future 2.0 being pulled into an old app.
+
+---
+
+#### Fleet state — changed materially, do not trust older notes
+
+- **`oss-reviewer` is on `mistral/mistral-medium-latest`.** The local Ollama slot was
+  abandoned after two attempts: `ornith:9b` invoked tools correctly but **fabricated**
+  findings (it invented two unmatched comment delimiters and a "syntactically dead" rule,
+  with a rationale, in a file whose comments balance 12/12); `OLMo-2-13B` declares
+  `capabilities: ['completion']` — no tool support — with a 4096-token context against the
+  ~10KB `CLAUDE.md` auto-loads into every sub-agent. Mistral probed clean: native tool call,
+  two of three factual answers right, one undercount. **Imprecise rather than fictional**,
+  which is a different risk class.
+- **Declared context is load-bearing.** At `context: 16384` a 9B agent exhausted its window,
+  then *became the orchestrator* — attempted the orchestrator-only `wait_for_user`, announced
+  "four parallel lead-engineer dispatches", and invented a date and a file path. The guard
+  block in an agent definition **does not survive context exhaustion**.
+- **The smoke gate is flaky.** `mode=all` failed on different agents across two runs while
+  every direct check passed and `opencode agent list` was stable at 4027 lines across three
+  consecutive runs. Most likely concurrent `opencode` invocations. **Fix it before trusting
+  it** — it is the check that exists to catch silent agent fallback.
+- **Stale `.status` files lie.** `code-reviewer` and `tester` showed `exit=0` from a
+  *previous session* with timestamps later in the day than the current run's. Check the log
+  mtime, not just the status.
+
+#### The lesson worth more than any of the code
+
+**A verification that only tests the success case proves almost nothing.** The Windows ACL
+check was wrong three times — localised display names, then SID strings matched against SDDL
+that encodes them as two-letter aliases (`WD`, never `S-1-1-0`), then a Python f-string that
+ate PowerShell's `{0}{1}` placeholders and broke saving entirely. **Every one of those passed
+a native "restrict a file, confirm it looks restricted" test**, including mine. It was only
+caught by asking the opposite question: grant `Everyone` and confirm the check *rejects* it.
+Test both directions on anything that decides whether a secret is exposed.
+
+Second, unchanged from previous sessions and still earning its place: **the rendered page
+finds what source review cannot.** Two agent hand-offs this session were correct in the diff
+and wrong in the browser — a control at 52×21 against a 44px requirement, and focus dropped
+on dialog close.
+
+---
+
+### PICK UP HERE — Phase 6, as at 2026-08-05 *(superseded by the block above)*
 
 **Branch `phase6-byom-screen`, PR #26 open against `main`.** CI ran green on it — **18/18 checks**,
 including the full 12-combination cross-platform matrix and the wheel job. That was the first time
