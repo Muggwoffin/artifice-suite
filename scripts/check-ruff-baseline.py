@@ -32,6 +32,17 @@ BASELINE_PATH = REPO_ROOT / "scripts" / "ruff-baseline.json"
 RUFF_CMD = ["uv", "run", "ruff", "check", ".", "--output-format=json"]
 
 
+def _normalise_filename(filename: str) -> str:
+    """Return a repo-relative Ruff filename when possible."""
+    path = Path(filename)
+    if not path.is_absolute():
+        return path.as_posix()
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def _run_ruff() -> list[dict]:
     """Run ruff, returning parsed JSON.  Accepts exit codes 0 and 1 (both mean
     "ruff ran fine"; 1 merely means violations exist)."""
@@ -55,7 +66,7 @@ def _counts(violations: list[dict]) -> dict[str, int]:
     counts: dict[str, int] = defaultdict(int)
     for violation in violations:
         # ruff's JSON schema uses `filename`, not `file`.
-        key = f"{violation['filename']}|{violation['code']}"
+        key = f"{_normalise_filename(violation['filename'])}|{violation['code']}"
         counts[key] += 1
     return dict(counts)
 
