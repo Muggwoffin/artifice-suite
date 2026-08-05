@@ -214,6 +214,86 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   font-weight: 600;
 }
 
+/* Set alongside the disabling of #file-input when GET /api/v1/capabilities
+   reports asr.available === false (see app.js applyCapabilities). Overrides
+   the accent hover/drag treatment above so the zone reads as inert rather
+   than merely quiet — drop/click are guarded in JS regardless, this is the
+   visible half of that state. */
+.dropzone-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.dropzone-disabled:hover, .dropzone-disabled.drag {
+  background: none;
+  border-color: var(--rule-dark);
+  color: var(--ink-faint);
+}
+
+/* --------------------------------------------------- ASR unavailable notice */
+
+/* Shown when the base install (no PyTorch/CUDA, see
+   .briefs/ui-ux-asr-unavailable-state.md) reports asr.available === false.
+   A status surface, not an error: paper-recessed + ink-soft is the same
+   inset-panel idiom already used for #model-guide-panel and the BYOM note
+   in Settings below, and deliberately avoids --accent (reserved for
+   interactive affordances, Design_Philosophy.md "Color Usage Rules") and
+   any red/error token, since nothing here is broken. No motion — the state
+   is constant for the session, not a transient status change. */
+/* Capped to the suite's prose measure (see prose.css) so the reason and the
+   command row read as one unit inside a full-width card. .byom-code is
+   `flex: 1` with no intrinsic width limit of its own (byom.css) — it only
+   looked correct in the ~700px BYOM modal it was designed for; inherited
+   into a full-width card it stretched to 2340px for a 19-character command,
+   leaving COPY ~2300px from the text it belongs to. This value is set here,
+   not on byom.css, per scope — it constrains the container, not the
+   pattern it reuses. */
+.asr-unavailable {
+  margin: 1rem var(--space-6) 0;
+  padding: var(--space-5) var(--space-6);
+  max-width: 44rem;
+  background: var(--paper-recessed);
+  border-left: 3px solid var(--ink-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* Used inline within an already-padded panel (Settings, the Speakers form)
+   rather than a top-level card child, so it takes the panel's own padding
+   instead of re-asserting --space-6 gutters. Text-only: no code row, to
+   avoid repeating the same install command in three places on one page —
+   the Transcribe tab's copy of it is the canonical one. */
+.asr-unavailable.compact {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.asr-unavailable-text {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.asr-unavailable.compact .asr-unavailable-text { margin: 0; }
+
+.asr-unavailable .byom-code-row { margin: 0; }
+
+/* The copy button's accessible name is fixed ("Copy install command", set
+   via aria-label so it doesn't change when the visible "Copy"/"Copied"
+   label text does — same reasoning as .byom-copy in shared-ui/byom.js).
+   That means success/failure needs its own announcement; #asr-copy-status
+   is the aria-live region app.js writes to for that, visually hidden. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* --------------------------------------------------------------- form rows */
 
 .form-row {

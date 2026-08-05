@@ -25,7 +25,18 @@
           <h2>New Transcription</h2>
         </div>
 
-        <div class="dropzone" id="dropzone">
+        <div class="asr-unavailable hidden" id="asr-notice-transcribe">
+          <p class="asr-unavailable-text" id="asr-notice-transcribe-reason"></p>
+          <div class="byom-code-row">
+            <pre class="byom-code"><code id="asr-notice-transcribe-cmd"></code></pre>
+            <button type="button" class="byom-copy asr-unavailable-copy" id="asr-notice-transcribe-copy" aria-label="Copy install command">
+              <span>Copy</span>
+            </button>
+          </div>
+          <span class="sr-only" id="asr-copy-status" role="status" aria-live="polite"></span>
+        </div>
+
+        <div class="dropzone" id="dropzone" aria-describedby="asr-notice-transcribe-reason">
           <span id="dropzone-text">Drop an audio file here, or click to browse</span>
         </div>
         <input type="file" id="file-input" accept="audio/*,video/*" style="display:none;">
@@ -67,11 +78,11 @@
   <p class="dim" style="margin:0.5rem 0 0 0;">Starting a transcription downloads the selected Whisper, diarization and alignment models from Hugging Face on first use &mdash; roughly 140&nbsp;MB&ndash;3&nbsp;GB depending on model size. Later runs reuse the cached copy.</p>
 
         <div class="toolbar">
-          <button class="btn accent" id="btn-start" disabled>&#9654; Start Transcription</button>
-          <button class="btn" id="btn-clear-file" disabled>Clear</button>
+          <button class="btn accent" id="btn-start" disabled aria-describedby="asr-notice-transcribe-reason">&#9654; Start Transcription</button>
+          <button class="btn" id="btn-clear-file" disabled aria-describedby="asr-notice-transcribe-reason">Clear</button>
           <div class="spacer"></div>
           <span class="dim" id="upload-status"></span>
-          <button class="btn" id="btn-batch-upload">Batch Upload</button>
+          <button class="btn" id="btn-batch-upload" aria-describedby="asr-notice-transcribe-reason">Batch Upload</button>
           <input type="file" id="batch-file-input" accept="audio/*,video/*" multiple style="display:none;">
         </div>
       </div>
@@ -139,13 +150,16 @@
           </details>
           <div class="speaker-form" id="speaker-form">
             <h3>Speakers</h3>
+            <div class="asr-unavailable compact hidden" id="asr-notice-speakers">
+              <p class="asr-unavailable-text" id="asr-notice-speakers-reason"></p>
+            </div>
             <div id="speaker-rows"></div>
             <div class="toolbar" style="padding:0.5rem 0 0;">
               <button class="btn" id="btn-save-speakers">Save Names</button>
-              <button class="btn" id="btn-enroll-from-job">Enroll Selected as Known Speaker</button>
+              <button class="btn" id="btn-enroll-from-job" aria-describedby="asr-notice-speakers-reason">Enroll Selected as Known Speaker</button>
             </div>
             <div class="toolbar" style="padding:0.25rem 0 0;">
-              <button class="btn" id="btn-match-speakers">Match Speakers</button>
+              <button class="btn" id="btn-match-speakers" aria-describedby="asr-notice-speakers-reason">Match Speakers</button>
               <span class="dim" id="match-status"></span>
             </div>
           </div>
@@ -229,13 +243,16 @@
           <h2>Enroll a New Speaker</h2>
         </div>
         <div style="padding:1rem 1.1rem;">
+          <div class="asr-unavailable compact hidden" id="asr-notice-enroll">
+            <p class="asr-unavailable-text" id="asr-notice-enroll-reason"></p>
+          </div>
           <div class="form-row" style="padding:0 0 0.5rem;">
             <label>Name <input type="text" id="enroll-name" placeholder="e.g. John Smith"></label>
           </div>
           <div class="form-row" style="padding:0 0 0.5rem;">
             <label>Audio clip <input type="file" id="enroll-file" accept="audio/*"></label>
           </div>
-          <button class="btn accent" id="btn-enroll-speaker">Enroll Speaker</button>
+          <button class="btn accent" id="btn-enroll-speaker" aria-describedby="asr-notice-enroll-reason">Enroll Speaker</button>
           <span class="dim" id="enroll-status" style="margin-left:0.5rem;"></span>
         </div>
       </div>
@@ -253,10 +270,14 @@
         </div>
         <div style="padding:1rem 1.2rem;">
 
+          <div class="asr-unavailable compact hidden" id="asr-notice-settings">
+            <p class="asr-unavailable-text" id="asr-notice-settings-reason"></p>
+          </div>
+
           <div class="form-row" style="margin-bottom:0.75rem; display:flex; gap:0.5rem; align-items:flex-end;">
             <div style="flex:1;">
               <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model</label>
-              <select id="setting-model-size" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+              <select id="setting-model-size" aria-describedby="asr-notice-settings-reason" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
                 <option value="tiny">tiny</option>
                 <option value="base" selected>base</option>
                 <option value="small">small</option>
@@ -264,7 +285,7 @@
                 <option value="large-v3">large-v3</option>
               </select>
             </div>
-            <button class="btn" id="btn-apply-model" type="button">Apply</button>
+            <button class="btn" id="btn-apply-model" type="button" aria-describedby="asr-notice-settings-reason">Apply</button>
           </div>
 
           <div class="form-row" style="margin-bottom:0.75rem; display:flex; gap:0.5rem; align-items:flex-end;">
@@ -442,11 +463,14 @@
       <div class="card-head">
         <h2>System Health</h2>
         <div style="display:flex;gap:0.4rem;align-items:center;">
-          <button class="btn accent" id="btn-load-models">Load Models</button>
+          <button class="btn accent" id="btn-load-models" aria-describedby="asr-notice-health-reason">Load Models</button>
           <button class="btn tiny" id="btn-health-close">&times;</button>
         </div>
       </div>
       <p class="dim" style="margin:0 0 0.5rem 0;">Loading models downloads them from Hugging Face on first use &mdash; roughly 140&nbsp;MB&ndash;3&nbsp;GB depending on model size. Later runs reuse the cached copy.</p>
+      <div class="asr-unavailable compact hidden" id="asr-notice-health">
+        <p class="asr-unavailable-text" id="asr-notice-health-reason"></p>
+      </div>
       <div class="health-error hidden" id="health-error-box">
         <span class="health-error-icon">!</span>
         <span class="health-error-text" id="health-error-text"></span>

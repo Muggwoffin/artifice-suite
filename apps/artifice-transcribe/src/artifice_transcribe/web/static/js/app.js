@@ -43,6 +43,134 @@
     return resp;
   }
 
+  // -------------------------------------------------------- ASR availability
+
+  // GET /api/v1/capabilities never imports torch to answer (base install is
+  // ~207 MB with no PyTorch/CUDA stack). asr.available === false means
+  // Whisper transcription and pyannote diarisation are not installed.
+  // Everything that is pure database work — Library, every export button,
+  // transcript editing, the Dictionary tab, and the BYOM summarise/cleanup
+  // calls — does not depend on this and must stay enabled regardless.
+  // See .briefs/ui-ux-asr-unavailable-state.md.
+  let asrAvailable = true;
+
+  // `withCommand` only applies to the Transcribe tab's notice: it is the one
+  // place the install command appears, copyable, so the same string is not
+  // repeated three times on one page. The other two notices are same-panel
+  // local copies of the reason text only, required because aria-describedby
+  // pointing across a hidden ("display:none") tab panel announces nothing —
+  // Settings and the Library tab's Speakers form each need their own.
+  function renderAsrNotice(el, asr, { withCommand = false } = {}) {
+    if (!el) return;
+    const reason = (asr && asr.reason) || 'The transcription stack is not installed.';
+    const reasonEl = el.querySelector('[id$="-reason"]');
+    if (withCommand) {
+      const hint = (asr && asr.install_hint) || '';
+      if (reasonEl) reasonEl.textContent = reason;
+      const cmdEl = el.querySelector('[id$="-cmd"]');
+      if (cmdEl) cmdEl.textContent = hint;
+      const copyBtn = el.querySelector('.asr-unavailable-copy');
+      if (copyBtn) {
+        copyBtn.dataset.copy = hint;
+        copyBtn.closest('.byom-code-row')?.classList.toggle('hidden', !hint);
+      }
+    } else if (reasonEl) {
+      reasonEl.textContent = `${reason} See the Transcribe tab for the install command.`;
+    }
+    el.classList.remove('hidden');
+  }
+
+  function applyCapabilities(cap) {
+    const asr = (cap && cap.asr) || { available: true };
+    asrAvailable = asr.available !== false;
+
+    if (!asrAvailable) {
+      renderAsrNotice($('asr-notice-transcribe'), asr, { withCommand: true });
+      renderAsrNotice($('asr-notice-settings'), asr);
+      renderAsrNotice($('asr-notice-speakers'), asr);
+      renderAsrNotice($('asr-notice-health'), asr);
+      renderAsrNotice($('asr-notice-enroll'), asr);
+    }
+
+    [
+      'file-input', 'batch-file-input', 'btn-batch-upload',
+      'btn-match-speakers', 'btn-enroll-from-job', 'setting-model-size',
+      // btn-apply-model: PATCH /config always includes whisper_model, which
+      // always triggers _reload_engine_with_new_model server-side — on a
+      // base install that is a guaranteed 503, so the control has no
+      // non-error outcome (routes.py:475-497).
+      'btn-apply-model',
+      // btn-load-models: POST /health/preload calls _get_engine() directly
+      // (routes.py:747-755) — same category as above.
+      'btn-load-models',
+      // btn-enroll-speaker: POST /speakers/enroll extracts a pyannote
+      // embedding via _get_engine() unconditionally (routes.py:1373-1414) —
+      // same category. Not in the original brief's list; found while
+      // auditing for other ASR-only controls per the coordinator's request.
+      'btn-enroll-speaker',
+    ].forEach((id) => {
+      const el = $(id);
+      if (el) el.disabled = !asrAvailable;
+    });
+    // btn-start / btn-clear-file are left to initUploadForm's setFile() guard
+    // below: they start `disabled` in the markup and only ever become
+    // enabled once a file is picked, which the guard now refuses to do.
+
+    const dropzone = $('dropzone');
+    if (dropzone) {
+      dropzone.classList.toggle('dropzone-disabled', !asrAvailable);
+      // Only asserted when true, never `aria-disabled="false"` — the full
+      // install must not gain an attribute it never had (point 2 of the
+      // brief's deliverable: byte-for-byte unchanged when available).
+      if (!asrAvailable) dropzone.setAttribute('aria-disabled', 'true');
+      else dropzone.removeAttribute('aria-disabled');
+    }
+  }
+
+  function initAsrCopyButtons() {
+    // The button's accessible name is the fixed aria-label "Copy install
+    // command" (set in the template) so it doesn't change when the visible
+    // "Copy"/"Copied" span does — matching shared-ui/byom.js's .byom-copy.
+    // That means the state change needs its own announcement, hence
+    // #asr-copy-status: a visually-hidden aria-live region, not the toast
+    // (the toast container carries no aria-live and is not itself
+    // announced — a pre-existing gap in this app, out of scope here).
+    const srStatus = $('asr-copy-status');
+    document.querySelectorAll('.asr-unavailable-copy').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const text = btn.dataset.copy || '';
+        if (!text) return;
+        const label = btn.querySelector('span');
+        navigator.clipboard.writeText(text).then(() => {
+          toast('Copied to clipboard', 'accent');
+          if (srStatus) srStatus.textContent = 'Command copied to clipboard.';
+          btn.setAttribute('data-copied', 'true');
+          if (label) label.textContent = 'Copied';
+          setTimeout(() => {
+            btn.removeAttribute('data-copied');
+            if (label) label.textContent = 'Copy';
+          }, 1500);
+        }).catch(() => {
+          if (label) label.textContent = 'Copy failed';
+          if (srStatus) srStatus.textContent = 'Could not copy the command — copy it manually.';
+          toast('Could not copy — copy it manually', 'warning');
+          setTimeout(() => { if (label) label.textContent = 'Copy'; }, 1500);
+        });
+      });
+    });
+  }
+
+  async function loadCapabilities() {
+    try {
+      const cap = await api('/capabilities');
+      applyCapabilities(cap);
+    } catch (_) {
+      // The endpoint is designed to answer without importing torch, so this
+      // should not fail in practice. Fail open (leave controls as shipped)
+      // rather than disabling working functionality on a transient error.
+    }
+  }
+
   // ----------------------------------------------------------- keyboard shortcuts
 
   function initKeyboardShortcuts() {
@@ -181,6 +309,10 @@
     const btnClear = $('btn-clear-file');
 
     const setFile = (file) => {
+      // Guards every entry point (click-to-browse, the change event, and a
+      // direct drag-drop onto the dropzone div, which bypasses file-input's
+      // own `disabled` attribute since it never touches that element).
+      if (!asrAvailable) return;
       selectedFile = file;
       if (file) {
         dropzoneText.innerHTML = `<span class="picked">${escapeHtml(file.name)}</span> selected`;
@@ -196,7 +328,7 @@
     dropzone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', () => setFile(fileInput.files[0] || null));
 
-    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag'); });
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); if (asrAvailable) dropzone.classList.add('drag'); });
     dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
     dropzone.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -1742,6 +1874,8 @@ function downloadAIResult() {
 // ---------------------------------------------------------------- startup
 
   document.addEventListener('DOMContentLoaded', () => {
+    initAsrCopyButtons();
+    loadCapabilities();
     initTabs();
     initTheme();
     initUploadForm();
