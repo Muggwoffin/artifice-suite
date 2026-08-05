@@ -1483,6 +1483,15 @@ Four things this yields, in descending severity:
    port changed — has no route back to the screen built to fix exactly that. Graph is partly spared
    because it has its own Model Configuration panel; the other three are not.
 
+1a. **Remove every emoji from `artifice-ocr` — maintainer's instruction, 2026-08-05.** They are not
+   confined to the tips modal. Its in-page tab bar reads `☰ Main`, `👁 Preview`, `🕐 History`,
+   `📊 Analytics`, `⚙ Settings` (measured from the live DOM), and its theme toggle shipped as `🌙`
+   before the Jinja port replaced it with the shared masthead's SVG. `Design_Philosophy.md` §8.8
+   specifies line-drawn icons — `viewBox="0 0 24 24"`, `stroke="currentColor"`, stroke-width 2,
+   round caps, `aria-hidden` — and `byom.js` already carries a working set to copy the idiom from.
+   An emoji also renders in the user's system font, so it is the one glyph in the interface that
+   cannot be made to match the typography.
+
 2. **`artifice-ocr` has two onboarding systems that do not know about each other.** The BYOM screen
    and a separate first-run tips modal (`static/js/onboarding.js`) each keep their own
    `localStorage` key, and a genuine first-run user can meet both. They also disagree on style: the
@@ -1813,6 +1822,27 @@ browser. One reported that "a save-then-reload round trip preserves both values"
 correctly from the persistence code — while the actual failure was one layer earlier at a button
 that had never been wired. Brief them to say plainly when they could not exercise something; they
 comply when asked, and an honest "I verified statically" is worth more than a confident inference.
+
+**`/tmp` is a 7.6 GB tmpfs, and one ASR venv fills it.** On 2026-08-05 a `lead-engineer` run exited
+`exit=1` with 148 test failures and 57 errors — every one of them `OSError: [Errno 28] No space left
+on device`, none caused by its changes. The agent diagnosed it correctly and then died trying to
+write its own log.
+
+The cause: **`/tmp/ci-venv`, a throwaway `uv` venv left behind by the previous session, holding
+7.3 GB** — `nvidia` 4.1 GB, `torch` 1.7 GB, `triton` 540 MB. Exactly the ASR stack measured in the
+Step 5 prerequisite above. Meanwhile `/` had **892 GB free**: the disk was not full, only the
+RAM-backed tmpfs was.
+
+Two things to carry:
+- **Check `df -h /tmp`, not `df -h /`.** A root filesystem with hundreds of gigabytes free tells you
+  nothing, and `ENOSPC` from a test suite reads like a code failure until you look.
+- **A non-zero agent exit is not automatically the agent's fault.** Read the failures before
+  re-briefing; re-running the same work would have failed identically. `rm -rf /tmp/ci-venv` took
+  `/tmp` from 100% to 5% and all four suites went green with no code change.
+
+This is also the sharpest practical argument for the tier-1/tier-2 slimming above: the 5.8 GB
+install is not merely a download-size concern, it is large enough to halt development on the
+machine that builds it.
 
 **An SPDX header in the wrong comment syntax silently deletes the first CSS rule, and `reuse lint`
 cannot see it.** Found 2026-08-05 in `packages/shared-ui/shared_ui/assets/masthead.css`, which was

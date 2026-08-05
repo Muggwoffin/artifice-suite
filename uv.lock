@@ -331,6 +331,7 @@ version = "0.1.0"
 source = { editable = "apps/artifice-ocr" }
 dependencies = [
     { name = "huggingface-hub" },
+    { name = "jinja2" },
     { name = "model-harness" },
     { name = "ollama" },
     { name = "openai" },
@@ -353,6 +354,7 @@ web = [
 requires-dist = [
     { name = "fastapi", marker = "extra == 'web'" },
     { name = "huggingface-hub" },
+    { name = "jinja2", specifier = ">=3.0" },
     { name = "model-harness", editable = "packages/model-harness" },
     { name = "ollama" },
     { name = "openai" },
@@ -461,6 +463,7 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "fastapi" },
     { name = "fpdf2" },
+    { name = "jinja2" },
     { name = "model-harness" },
     { name = "openai" },
     { name = "platformdirs" },
@@ -481,6 +484,7 @@ requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "fpdf2", specifier = ">=2.8.0" },
+    { name = "jinja2", specifier = ">=3.0" },
     { name = "model-harness", editable = "packages/model-harness" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "platformdirs", specifier = ">=4.0.0" },

@@ -139,15 +139,15 @@
     const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
     const initial = stored || (prefersDark ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', initial);
-    const btn = $('btn-theme-toggle');
-    btn.textContent = initial === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
-    btn.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme') || 'light';
-      const next = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('pt-theme', next);
-      btn.textContent = next === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
-    });
+    const btn = document.getElementById('themeToggle');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('pt-theme', next);
+      });
+    }
   }
 
   // ------------------------------------------------------------ formatting

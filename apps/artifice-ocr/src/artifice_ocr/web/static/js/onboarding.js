@@ -52,7 +52,7 @@ const Onboarding = (function () {
       overlay.className = "onboarding-overlay";
       overlay.innerHTML = `
         <div class="onboarding-card">
-          <h2>Welcome to OCR Pipeline</h2>
+          <h2>Welcome to ArtificeOCR</h2>
           <p class="dim" style="margin:0 0 1rem;">Here's what you can do — this only shows once.</p>
           <div class="onboarding-tips">
             ${tips.map(t => `

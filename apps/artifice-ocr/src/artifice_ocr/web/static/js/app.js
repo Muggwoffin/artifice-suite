@@ -644,11 +644,10 @@ els["btn-browse-output"].onclick = async () => {
 
 const ThemeToggle = (function () {
   const STORAGE_KEY = "ocr_theme";
-  const btn = document.getElementById("btn-theme-toggle");
+  const btn = document.getElementById("themeToggle");
 
   function apply(theme) {
     document.documentElement.dataset.theme = theme;
-    if (btn) btn.textContent = theme === "dark" ? "☀️" : "🌙";
   }
 
   function init() {

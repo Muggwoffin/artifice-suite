@@ -32,6 +32,14 @@
   box-shadow: var(--shadow-nav);
 }
 
+/* The topnav is position:fixed and taken out of flow, so the page body
+ * must reserve the vertical space the nav occupies.  This lives here — not
+ * in per-app stylesheets — so every app that loads masthead.css is correct
+ * by construction. */
+body {
+  padding-top: var(--nav-height);
+}
+
 @media (min-width: 700px) {
   .topnav {
     backdrop-filter: blur(12px) saturate(1.1);

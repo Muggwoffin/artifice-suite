@@ -1,0 +1,51 @@
+<!-- SPDX-FileCopyrightText: 2026 Maurice Casey
+   -
+   - SPDX-License-Identifier: AGPL-3.0-or-later
+  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ArtificeTranscribe{% endblock %}</title>
+  <link rel="stylesheet" href="/shared/fonts.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/shared/tokens.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/shared/masthead.css?v={{ asset_v }}">
+  {% block head %}{% endblock %}
+  <link rel="stylesheet" href="/static/css/app.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/shared/byom.css?v={{ asset_v }}">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+{% include '_masthead.html' %}
+
+<div class="masthead-search" id="masthead-search">
+  <input type="text" id="global-search-input" placeholder="Search transcripts (/)" class="search-input">
+</div>
+
+<div class="app" id="main-content">
+{% block content %}{% endblock %}
+</div>
+
+<script src="/static/js/app.js?v={{ asset_v }}"></script>
+<script src="/shared/byom.js?v={{ asset_v }}"></script>
+<script>
+(function () {
+  "use strict";
+  var byom = window.ArtificeByom.create({
+    appName: "ArtificeTranscribe",
+    onConfigured: function () { byom.close(); }
+  });
+  fetch("/api/byom/state")
+    .then(function (r) { return r.json(); })
+    .then(function (state) {
+      if (!state.configured) { byom.open(); }
+    })
+    ["catch"](function () { /* server not ready yet — fine */ });
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

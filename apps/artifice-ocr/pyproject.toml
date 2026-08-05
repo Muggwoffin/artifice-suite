@@ -18,6 +18,7 @@ dependencies = [
     "secure-io",
     "shared-ui",
     "model-harness",
+    "jinja2>=3.0",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +39,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"artifice_ocr.web" = ["static/**", "fonts/*.ttf", "fonts/*.txt"]
+"artifice_ocr.web" = ["static/**", "templates/**/*.html"]
 "artifice_ocr.prompts" = ["*.txt"]
 
 [tool.pytest.ini_options]
