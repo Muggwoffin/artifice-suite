@@ -1894,6 +1894,54 @@ exercises the cross-platform matrix, which cannot be reproduced locally.
 pipeline config points at). Loading that pipeline *also* pulls `pyannote/embedding` at **96 MB**, a
 separate entry. **The consent dialog must sum them.**
 
+### Step 5 prerequisite — the ASR stack is 5.8 GB and need not ship
+
+**Raised by the maintainer and measured 2026-08-05.** The question was whether PyTorch and WhisperX
+must be bundled with `artifice-transcribe` at all, or whether a lightweight install could prompt the
+user to fetch them. Measured in this repo's `.venv`:
+
+| Package | Size |
+|---|---|
+| `torch` | 1.7 GB |
+| `nvidia/*` (CUDA runtime, pulled as torch's dependency) | 4.1 GB |
+| — `cudnn` / `cublas` / `cusparselt` / `nccl` | 1005 MB / 830 MB / 432 MB / 410 MB |
+
+**~5.8 GB, and `artifice-transcribe` is the only app that needs any of it.** `uv.lock` names no
+custom index, so Linux resolves the default PyPI wheel that bundles the whole CUDA runtime.
+
+**The code is already shaped for a lightweight install, which is the finding that matters.**
+`services/transcription.py` carries `import torch` at line 12, but that module is imported *only
+inside function bodies*, at `api/v1/routes.py:230` and `:243`. The app already starts, serves its
+UI, and runs uploads, the database, `summarize` and `cleanup` without torch ever being imported.
+Making the ASR stack optional is a `pyproject.toml` change plus two guarded import sites — **not a
+refactor.** Do not let a later session re-derive this by reading `pyproject.toml` alone and
+concluding it is a hard dependency.
+
+Three tiers, in increasing cost:
+
+1. **Pin the CPU wheel index** (`download.pytorch.org/whl/cpu`). Drops ~4.1 GB with no runtime
+   machinery at all; GPU users opt into the CUDA index. A lockfile change.
+2. **Move `whisperx` / `torch` / `torchaudio` into a `[project.optional-dependencies] asr` extra**
+   and guard the two import sites with a real error message. Everything except transcription itself
+   keeps working. Note this contradicts the standing comment atop `apps/artifice-transcribe/
+   pyproject.toml` — that comment justifies keeping *fastapi/uvicorn* core because a web-less
+   install cannot start, which is sound and unaffected; the ASR stack is a different case, because
+   the app **does** start and do useful work without it. Amend that comment rather than deleting it.
+3. **Prompt-and-install at runtime**, folded into Step 5's existing consent-and-download dialog —
+   same dialog, one more line item.
+
+**Tier 3 is coupled to Phase 6 open question #1 (distribution format), which is still undecided,
+and this is the part most likely to be lost:** installing torch at runtime is *not* the same as
+downloading model weights. It is a multi-GB wheel install into the app's own environment, needing a
+writable `site-packages` and the correct index for the user's hardware (CPU / CUDA / Metal) — and it
+is **impossible inside a frozen PyInstaller or Nuitka bundle**, which has no writable
+`site-packages`. Choosing a frozen bundle therefore forecloses tier 3 and forces the 5.8 GB back
+into the artefact. Decide the distribution format before briefing tier 3. Tiers 1 and 2 commit to
+nothing and can land first.
+
+Docker is unaffected either way — `apps/artifice-transcribe/Dockerfile` bakes the deps into the
+image; a lightweight image would be a separate build target, not a change to this one.
+
 **Known, deliberately deferred:**
 - `artifice-draft` has no `[data-theme="dark"]` accent block, so its accent follows the OS
   preference but not the manual theme toggle. The other three have one.
@@ -1920,10 +1968,14 @@ wsl.exe -d Ubuntu -- bash -lc "cd ~/projects/artifice-suite && \
   (cd apps/artifice-graph && uv run pytest tests/ -q | tail -2)"
 ```
 
-Expected: `artifice-graph: clean`, `20 passed, 0 failed`, `131 passed`. Anything else means the
+Expected: `artifice-graph: clean`, `20 passed, 0 failed`, `158 passed`. Anything else means the
 environment has drifted, not that the code has regressed — check Part V first.
 *(The `48 passed` and `13 passed` figures recorded here previously were stale; re-measured
-2026-08-04.)*
+2026-08-04. The `131 passed` that replaced them was **also** stale within the same document — the
+session that measured 158 updated the baseline table above but not this block. Re-measured and
+confirmed 158 on 2026-08-05. This is the third time this one figure has gone stale: when you update
+a baseline, grep the whole file for the old number rather than editing the table you happened to be
+looking at.)*
 
 **To serve `artifice-graph`** (port 8766), write a wrapper script and launch it detached per Part V;
 do not background it inside `wsl.exe`.
