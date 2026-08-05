@@ -590,7 +590,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.0" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.51" },
     { name = "torch", marker = "(sys_platform == 'linux' and extra == 'asr') or (sys_platform == 'win32' and extra == 'asr')", specifier = ">=2.8.0,<2.9.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "artifice-transcribe", extra = "asr" } },
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'asr'", specifier = ">=2.8.0,<2.9.0" },
     { name = "torch", marker = "extra == 'asr-cuda'", specifier = ">=2.8.0,<2.9.0" },
