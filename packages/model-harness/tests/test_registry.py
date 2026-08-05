@@ -26,6 +26,7 @@ from model_harness.registry import (
     ModelRecommendation,
     get_asr_model,
     get_endpoint,
+    is_configured,
     recommendations_for_app,
 )
 
@@ -97,10 +98,10 @@ def test_ocr_recommendations_are_vision_capable(tier: HardwareTier):
         )
 
 
-@pytest.mark.parametrize("app", ["artifice-graph", "artifice-draft"])
+@pytest.mark.parametrize("app", ["artifice-graph", "artifice-draft", "artifice-transcribe"])
 @pytest.mark.parametrize("tier", list(HardwareTier))
-def test_graph_and_draft_recommendations_are_text_only(app: str, tier: HardwareTier):
-    """Graph and draft models must not be vision models — they handle text."""
+def test_graph_draft_and_transcribe_recommendations_are_text_only(app: str, tier: HardwareTier):
+    """Graph, draft and transcribe models must not be vision models — they handle text."""
     recs = recommendations_for_app(app, tier)
     assert len(recs) > 0, f"no recommendations for {app}/{tier}"
     for rec in recs:
@@ -128,15 +129,19 @@ _KNOWN_RECOMMENDATION_APPS: tuple[str, ...] = (
     "artifice-ocr",
     "artifice-graph",
     "artifice-draft",
+    "artifice-transcribe",
 )
 
 
-def test_transcribe_is_not_in_recommendations():
-    """``artifice-transcribe`` uses :data:`ASR_MODELS`, not
-    ``_RECOMMENDATIONS``.  Passing it to ``recommendations_for_app`` must
-    raise ``KeyError``."""
-    with pytest.raises(KeyError):
-        recommendations_for_app("artifice-transcribe", HardwareTier.LAPTOP)
+def test_transcribe_recommendations_are_text_only():
+    """``artifice-transcribe`` now has text-only recommendations for its
+    optional post-transcription inference endpoint.  The old behaviour
+    (``KeyError``) is no longer correct."""
+    for tier in HardwareTier:
+        recs = recommendations_for_app("artifice-transcribe", tier)
+        assert len(recs) > 0, f"transcribe has no recommendations for {tier}"
+        for rec in recs:
+            assert rec.vision is False, f"transcribe recommendation {rec.model_name!r} has vision=True"
 
 
 @pytest.mark.parametrize("app", _KNOWN_RECOMMENDATION_APPS)
@@ -208,6 +213,56 @@ def test_registry_imports_no_io_libraries():
         f"registry imports I/O-related names: {sorted(flagged)}. "
         f"Probing belongs in discovery.py, not here."
     )
+
+
+# ── Types hold their shape ───────────────────────────────────────────────────
+
+
+# ── is_configured ────────────────────────────────────────────────────────────
+
+
+class TestIsConfigured:
+    """``is_configured`` provides one shared ``configured`` rule for all four apps."""
+
+    def test_empty_everything_is_false(self):
+        assert is_configured("") is False
+        assert is_configured("", "") is False
+
+    def test_non_empty_api_key_alone_is_true(self):
+        assert is_configured("", "sk-real") is True
+
+    def test_placeholder_api_key_is_not_true(self):
+        assert is_configured("", "not-needed") is False
+        assert is_configured("not-needed", "not-needed", defaults=("not-needed",)) is False
+        assert is_configured("", "") is False
+
+    def test_base_url_not_in_defaults_is_true(self):
+        assert is_configured("http://localhost:9999/v1", defaults=("http://localhost:11434/v1",)) is True
+
+    def test_base_url_in_defaults_is_false_without_key(self):
+        assert is_configured("http://localhost:11434/v1", defaults=("http://localhost:11434/v1",)) is False
+        assert is_configured("https://api.openai.com/v1", defaults=("https://api.openai.com/v1",)) is False
+
+    def test_base_url_in_defaults_is_true_with_key(self):
+        assert is_configured("http://localhost:11434/v1", "sk-real", defaults=("http://localhost:11434/v1",)) is True
+
+    def test_empty_defaults_draft_case(self):
+        """Draft's load_settings returns {} — no defaults, no api_key."""
+        assert is_configured("") is False  # empty base_url, empty api_key
+        assert is_configured("http://localhost:11434/v1") is True  # any non-empty URL counts
+
+    def test_two_urls_ocr_case(self):
+        """OCR calls the helper once per URL.  An ollama departure alone is enough."""
+        assert is_configured("http://localhost:11435", defaults=("http://localhost:11434",)) is True
+        assert is_configured("http://localhost:11434", defaults=("http://localhost:11434",)) is False
+
+    def test_transcribe_not_needed_discounted(self):
+        """The ``not-needed`` placeholder must not count as configured."""
+        assert is_configured("http://localhost:11434/v1", "not-needed", defaults=("http://localhost:11434/v1",)) is False
+
+    def test_multiple_defaults(self):
+        """If an app ships more than one possible default, all are harmless."""
+        assert is_configured("http://localhost:11434/v1", defaults=("http://localhost:11434/v1", "http://localhost:8080/v1")) is False
 
 
 # ── Types hold their shape ───────────────────────────────────────────────────

@@ -12,6 +12,13 @@
    (Step 4). The fake transport below matches the exact contract byom.js
    expects of any fetchImpl: a function returning a Promise that resolves
    to the *parsed* JSON body.
+
+   Two orthogonal query params: `state` (detecting/not-found/found/test-ok/
+   test-fail/advanced) picks the detect+test scenario, unchanged from
+   before; `app` (artifice-ocr/artifice-draft/artifice-graph/
+   artifice-transcribe) picks which app's GET /api/byom/state payload is
+   served — see web/server.py's byom_preview() route for how both get
+   HTML- and JS-escaped before being substituted in here.
   -->
 
 <!doctype html>
@@ -19,7 +26,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BYOM preview — OCR Pipeline</title>
+<title>BYOM preview — __APP_HTML__</title>
 
 <!-- Link order matters: fonts/tokens, then the host app's own app.css
      (supplies --accent/--accent-deep/--accent-wash by cascade — byom.css
@@ -45,13 +52,20 @@
 <body>
 
 <div class="preview-bar">
-  BYOM preview &middot; state=<strong id="previewStateLabel">__STATE_HTML__</strong> &middot;
-  <a href="/byom-preview?state=detecting">detecting</a>
-  <a href="/byom-preview?state=not-found">not-found</a>
-  <a href="/byom-preview?state=found">found</a>
-  <a href="/byom-preview?state=test-ok">test-ok</a>
-  <a href="/byom-preview?state=test-fail">test-fail</a>
-  <a href="/byom-preview?state=advanced">advanced</a>
+  BYOM preview &middot; app=<strong id="previewAppLabel">__APP_HTML__</strong> &middot;
+  <a href="/byom-preview?app=artifice-ocr&amp;state=__STATE_HTML__">ocr</a>
+  <a href="/byom-preview?app=artifice-draft&amp;state=__STATE_HTML__">draft</a>
+  <a href="/byom-preview?app=artifice-graph&amp;state=__STATE_HTML__">graph</a>
+  <a href="/byom-preview?app=artifice-transcribe&amp;state=__STATE_HTML__">transcribe</a>
+</div>
+<div class="preview-bar">
+  state=<strong id="previewStateLabel">__STATE_HTML__</strong> &middot;
+  <a href="/byom-preview?app=__APP_HTML__&amp;state=detecting">detecting</a>
+  <a href="/byom-preview?app=__APP_HTML__&amp;state=not-found">not-found</a>
+  <a href="/byom-preview?app=__APP_HTML__&amp;state=found">found</a>
+  <a href="/byom-preview?app=__APP_HTML__&amp;state=test-ok">test-ok</a>
+  <a href="/byom-preview?app=__APP_HTML__&amp;state=test-fail">test-fail</a>
+  <a href="/byom-preview?app=__APP_HTML__&amp;state=advanced">advanced</a>
 </div>
 
 <script src="/shared/byom.js?v=__ASSET_V__"></script>
@@ -59,14 +73,19 @@
 (function () {
   "use strict";
   var STATE_NAME = __STATE_JS__;
+  var APP_SLUG = __APP_JS__;
+  var APP_NAME = __APP_NAME_JS__;
   var FIXTURE = __FIXTURE_JSON__;
-  window.console && window.console.log("[byom-preview] state=" + STATE_NAME, FIXTURE);
+  document.title = "BYOM preview — " + APP_NAME;
+  window.console && window.console.log("[byom-preview] app=" + APP_SLUG + " state=" + STATE_NAME, FIXTURE);
 
   // Fake transport matching byom.js's fetchImpl contract exactly: takes
   // (url, opts), returns a Promise resolving to the already-parsed JSON
   // body. GET /api/byom/detect never resolves in the "detecting" scenario
   // so the reviewer can see the in-progress state rather than it flashing
-  // past.
+  // past. /api/byom/test-embedding is graph-only in the real contract, but
+  // answering it unconditionally here is harmless — byom.js only calls it
+  // when FIXTURE.state.embedding is present.
   function fakeFetch(url, opts) {
     opts = opts || {};
     if (url === "/api/byom/state") {
@@ -81,11 +100,14 @@
     if (url === "/api/byom/test") {
       return Promise.resolve(FIXTURE.test);
     }
+    if (url === "/api/byom/test-embedding") {
+      return Promise.resolve(FIXTURE.testEmbedding);
+    }
     return Promise.reject(new Error("no fixture for " + url));
   }
 
   var byom = window.ArtificeByom.create({
-    appName: "OCR Pipeline",
+    appName: APP_NAME,
     fetchImpl: fakeFetch,
     onConfigured: function (result) {
       window.console && window.console.log("[byom-preview] onConfigured:", result);

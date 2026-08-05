@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
 from model_harness.contract import EndpointRejected
 from model_harness.discovery import (
     ProbeResult,
@@ -17,7 +15,13 @@ from model_harness.discovery import (
     probe_endpoint,
 )
 from model_harness.endpoint_policy import EndpointPolicy
-from model_harness.registry import KNOWN_ENDPOINTS, HardwareTier, recommendations_for_app
+from model_harness.registry import (
+    KNOWN_ENDPOINTS,
+    HardwareTier,
+    is_configured,
+    recommendations_for_app,
+)
+from pydantic import BaseModel
 
 from ..runtime import load_settings, save_settings
 
@@ -86,10 +90,9 @@ def byom_state() -> dict:
     """Return current BYOM configuration — no network calls, no probing."""
     settings = load_settings()
     base_url = settings.get("base_url") or ""
-    api_key = settings.get("api_key") or ""
     model_name = settings.get("model_name") or ""
 
-    configured = bool(base_url)
+    configured = is_configured(base_url)
 
     return {
         "app": "artifice-draft",

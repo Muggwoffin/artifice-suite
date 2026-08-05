@@ -52,6 +52,7 @@ from model_harness.registry import (
     ModelRecommendation,
     get_asr_model,
     get_endpoint,
+    is_configured,
     recommendations_for_app,
 )
 
@@ -82,6 +83,7 @@ __all__ = [
     "detect_local_servers",
     "get_asr_model",
     "get_endpoint",
+    "is_configured",
     "probe_endpoint",
     "probe_endpoint_sync",
     "recommendations_for_app",

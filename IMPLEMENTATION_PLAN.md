@@ -1454,6 +1454,75 @@ found without reading the test that hides it.
    change and never did. The remaining Docker debt (single-stage, root user, `build-essential`
    in the transcribe runtime image) was paid down on the same date in the builder+runtime split.
 
+### Step 9 — cross-app UI parity
+
+**Raised by the maintainer 2026-08-05, surveyed the same day.** Every figure below was measured,
+not assumed; re-measure before treating any of it as a constraint.
+
+The four apps are meant to read as one suite. They do not. Monorepo parity is currently enforced on
+*structure* — `src/` layout, `pyproject.toml`, Docker, design tokens — and not at all on the
+surfaces a user actually meets. A researcher who installs two of these should not have to relearn
+where things are.
+
+**Measured divergence, 2026-08-05:**
+
+| Surface | ocr | draft | graph | transcribe |
+|---|---|---|---|---|
+| About page | — | — | `/about` | — |
+| Page title | `OCR Pipeline` | `ArtificeDraft` | `ArtificeGraph — Pipeline` | `ArtificeTranscribe` |
+| Nav | `<nav class="tabs">` | **none** | `<nav class="topnav">` | `<nav class="tabs">` |
+| Theme toggle | yes | **no** | yes | yes |
+| Re-run onboarding | tips only | — | — | — |
+
+Four things this yields, in descending severity:
+
+1. **The BYOM screen cannot be reopened in any of the four apps.** The only `byom.open()` call in
+   each is the auto-open on `!state.configured` (`ocr/index.html:657`, `draft/index.html:256`,
+   `transcribe/index.html:537`, `graph/base.html:50`), and the instance is a `var` inside an IIFE,
+   so nothing else can reach it. A user whose endpoint later breaks — model deleted, Ollama moved,
+   port changed — has no route back to the screen built to fix exactly that. Graph is partly spared
+   because it has its own Model Configuration panel; the other three are not.
+
+2. **`artifice-ocr` has two onboarding systems that do not know about each other.** The BYOM screen
+   and a separate first-run tips modal (`static/js/onboarding.js`) each keep their own
+   `localStorage` key, and a genuine first-run user can meet both. They also disagree on style: the
+   tips modal uses emoji glyphs (`▶ 📄 📋 🖼 🔍 ⌨ 🌙`), while the BYOM screen follows
+   `Design_Philosophy.md` §8.8 line-drawn icons. **Do not delete the tips modal to resolve this** —
+   it carries real product knowledge (Tropy, templates, Ctrl+K) that BYOM does not and should not.
+   The question is sequencing and one visual language, not which survives.
+
+3. **`ocr` already has the re-run pattern the other three lack**, and it is the precedent to
+   standardise on rather than reinvent: a "Show Onboarding Guide" button (`index.html:399`) wired to
+   `Onboarding.retrigger()` (`settings.js:221-222`), which clears the storage key and re-shows. It
+   just covers the tips modal, not BYOM.
+
+4. **Titles follow three conventions.** `graph`'s `Brand — Page` is the only one that scales to more
+   than one page and is the obvious target. `ocr` is the outlier twice over: it carries no brand at
+   all, and the same string is passed as `appName` into the BYOM screen, so its onboarding reads
+   "OCR Pipeline reads page images" where graph reads "ArtificeGraph needs two local models".
+   Settle the product-name question once — it is a naming decision, not a UI one, and it leaks into
+   copy everywhere.
+
+**The structural obstacle, which is why this is a step and not a chore.** `artifice-graph` is the
+only app with a `templates/` tree; the other three serve a single static `index.html` (already noted
+in `CLAUDE.md`, which also warns that graph is therefore the app whose build backend should not be
+changed casually). So "give every app an About page" is not one task:
+
+- for `graph` it exists;
+- for the other three it is *either* adopting Jinja — which changes their serving model and their
+  Dockerfiles — *or* an in-page About panel, which keeps them static but means "About" is not a URL
+  a user can link to or bookmark.
+
+**Decide that before briefing any of it.** A brief that says "add an About page to all four" without
+resolving this will get three different answers from three agents. The same fork governs nav:
+graph's `topnav` links between pages, while ocr's and transcribe's `tabs` switch panels within one
+page — they are not the same component wearing different names, and unifying the markup without
+unifying the navigation model would be cosmetic.
+
+**Sequencing.** Item 1 is small, self-contained, and the only one that fixes a live user-facing
+dead end — it needs no decision about page structure and can land first. Items 2–4 depend on the
+Jinja-vs-panel fork above.
+
 See also: **ROADMAP.md** — the development roadmap for the community period between Phases 6
 and 7.
 
@@ -1771,7 +1840,16 @@ used to flag.
 
 ## Part VI — Starting a fresh session
 
-### NEXT SESSION'S FIRST TASK — tailor the BYOM screen per app
+### ~~NEXT SESSION'S FIRST TASK — tailor the BYOM screen per app~~ — DONE 2026-08-05, `a5bdc3b`
+
+**All three findings below are closed**, plus the `configured` divergence noted at the end. Kept in
+full because the findings explain *why* the per-app content is shaped as it is, and a future edit
+that "simplifies" the branching back to one generic screen would silently reintroduce every one of
+them. What changed: transcribe reframed as optional with registry-backed models; graph given a
+second endpoint field and `POST /api/byom/test-embedding`; ocr's vision requirement stated in three
+places; `model_harness.is_configured()` adopted by all four routers. Reviewed rendered in all four
+apps — which caught a further five defects, one functional (graph's steps had "test the connection"
+before "pull the embedding model"). Do not re-open this as a task.
 
 **Decided 2026-08-04 by the maintainer. Do this before Step 5.**
 
@@ -1831,8 +1909,24 @@ Branch **`phase6-packaging`**, pushed, 6 commits ahead of `main`, working tree c
 | registry — MAC_UNIFIED duplicated LAPTOP | done, `669cc1e` |
 | theme — draft's accent + diff tokens ignored the manual toggle | done, in `87ccfc9` |
 | 4 — BYOM routers in all four apps | done, `87ccfc9`, reviewed + tested |
-| **tailored BYOM per app** | **NEXT — see the section above** |
+| tailored BYOM per app | done 2026-08-05, `a5bdc3b`, reviewed rendered in **all four** apps |
 | 5-8 | not started |
+| **9 — cross-app UI parity** | **new, added 2026-08-05 — surveyed, not started** |
+
+**PR #26 opened 2026-08-05** (`phase6-byom-screen` → `main`, 8 commits) — the first time CI has run
+on this branch. Test baselines after the tailoring work, superseding every earlier figure in this
+file: model-harness **222**, ocr **485 + 1 skipped**, draft **225**, graph **169**, transcribe
+**108**.
+
+Three things settled by measurement during that session, recorded so they are not re-derived:
+- `recommendations_for_app("artifice-transcribe", …)` **no longer raises `KeyError`** — transcribe
+  now has text recommendations for its optional summarise/cleanup endpoint. The `ASR_MODELS`
+  distinction still stands and is documented in the registry; the two are not alternatives.
+- `model_harness.is_configured()` is the single `configured` rule for all four routers. The three
+  divergent formulas `code-reviewer` found are gone.
+- Only `artifice-graph` carries an `embedding` key in `/api/byom/state` and a
+  `POST /api/byom/test-embedding`. The other three omit the key entirely, and draft's exact
+  key-set assertion enforces that — do not "add it for consistency".
 
 **Branch `phase6-byom-screen`, pushed, 4 commits ahead of `main`. Not yet PR'd.**
 
@@ -1894,6 +1988,54 @@ exercises the cross-platform matrix, which cannot be reproduced locally.
 pipeline config points at). Loading that pipeline *also* pulls `pyannote/embedding` at **96 MB**, a
 separate entry. **The consent dialog must sum them.**
 
+### Step 5 prerequisite — the ASR stack is 5.8 GB and need not ship
+
+**Raised by the maintainer and measured 2026-08-05.** The question was whether PyTorch and WhisperX
+must be bundled with `artifice-transcribe` at all, or whether a lightweight install could prompt the
+user to fetch them. Measured in this repo's `.venv`:
+
+| Package | Size |
+|---|---|
+| `torch` | 1.7 GB |
+| `nvidia/*` (CUDA runtime, pulled as torch's dependency) | 4.1 GB |
+| — `cudnn` / `cublas` / `cusparselt` / `nccl` | 1005 MB / 830 MB / 432 MB / 410 MB |
+
+**~5.8 GB, and `artifice-transcribe` is the only app that needs any of it.** `uv.lock` names no
+custom index, so Linux resolves the default PyPI wheel that bundles the whole CUDA runtime.
+
+**The code is already shaped for a lightweight install, which is the finding that matters.**
+`services/transcription.py` carries `import torch` at line 12, but that module is imported *only
+inside function bodies*, at `api/v1/routes.py:230` and `:243`. The app already starts, serves its
+UI, and runs uploads, the database, `summarize` and `cleanup` without torch ever being imported.
+Making the ASR stack optional is a `pyproject.toml` change plus two guarded import sites — **not a
+refactor.** Do not let a later session re-derive this by reading `pyproject.toml` alone and
+concluding it is a hard dependency.
+
+Three tiers, in increasing cost:
+
+1. **Pin the CPU wheel index** (`download.pytorch.org/whl/cpu`). Drops ~4.1 GB with no runtime
+   machinery at all; GPU users opt into the CUDA index. A lockfile change.
+2. **Move `whisperx` / `torch` / `torchaudio` into a `[project.optional-dependencies] asr` extra**
+   and guard the two import sites with a real error message. Everything except transcription itself
+   keeps working. Note this contradicts the standing comment atop `apps/artifice-transcribe/
+   pyproject.toml` — that comment justifies keeping *fastapi/uvicorn* core because a web-less
+   install cannot start, which is sound and unaffected; the ASR stack is a different case, because
+   the app **does** start and do useful work without it. Amend that comment rather than deleting it.
+3. **Prompt-and-install at runtime**, folded into Step 5's existing consent-and-download dialog —
+   same dialog, one more line item.
+
+**Tier 3 is coupled to Phase 6 open question #1 (distribution format), which is still undecided,
+and this is the part most likely to be lost:** installing torch at runtime is *not* the same as
+downloading model weights. It is a multi-GB wheel install into the app's own environment, needing a
+writable `site-packages` and the correct index for the user's hardware (CPU / CUDA / Metal) — and it
+is **impossible inside a frozen PyInstaller or Nuitka bundle**, which has no writable
+`site-packages`. Choosing a frozen bundle therefore forecloses tier 3 and forces the 5.8 GB back
+into the artefact. Decide the distribution format before briefing tier 3. Tiers 1 and 2 commit to
+nothing and can land first.
+
+Docker is unaffected either way — `apps/artifice-transcribe/Dockerfile` bakes the deps into the
+image; a lightweight image would be a separate build target, not a change to this one.
+
 **Known, deliberately deferred:**
 - `artifice-draft` has no `[data-theme="dark"]` accent block, so its accent follows the OS
   preference but not the manual theme toggle. The other three have one.
@@ -1920,10 +2062,14 @@ wsl.exe -d Ubuntu -- bash -lc "cd ~/projects/artifice-suite && \
   (cd apps/artifice-graph && uv run pytest tests/ -q | tail -2)"
 ```
 
-Expected: `artifice-graph: clean`, `20 passed, 0 failed`, `131 passed`. Anything else means the
+Expected: `artifice-graph: clean`, `20 passed, 0 failed`, `158 passed`. Anything else means the
 environment has drifted, not that the code has regressed — check Part V first.
 *(The `48 passed` and `13 passed` figures recorded here previously were stale; re-measured
-2026-08-04.)*
+2026-08-04. The `131 passed` that replaced them was **also** stale within the same document — the
+session that measured 158 updated the baseline table above but not this block. Re-measured and
+confirmed 158 on 2026-08-05. This is the third time this one figure has gone stale: when you update
+a baseline, grep the whole file for the old number rather than editing the table you happened to be
+looking at.)*
 
 **To serve `artifice-graph`** (port 8766), write a wrapper script and launch it detached per Part V;
 do not background it inside `wsl.exe`.

@@ -18,7 +18,7 @@ from model_harness.discovery import ProbeResult
 
 from artifice_graph.web.server import app
 from artifice_graph.web import config_helper
-from artifice_graph.config import LLMConfig, PipelineConfig
+from artifice_graph.config import LLMConfig, EmbeddingConfig, PipelineConfig
 
 
 @pytest.fixture()
@@ -262,9 +262,12 @@ class TestByomContractAndSsrf:
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         body = r.json()
-        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations"}
+        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations", "embedding"}
         assert body["app"] == "artifice-graph"
         assert body["configured"] is False
+        assert body["embedding"]["configured"] is False
+        assert body["embedding"]["endpoint"] == "http://localhost:11434"
+        assert body["embedding"]["model"] == "bge-m3"
 
     def test_state_json_keys_configured(self, client):
         cfg = PipelineConfig(llm=LLMConfig(base_url="http://localhost:9999/v1", api_key="sk-real"))
@@ -272,7 +275,7 @@ class TestByomContractAndSsrf:
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         body = r.json()
-        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations"}
+        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations", "embedding"}
         assert body["configured"] is True
 
     # -- GET /api/byom/detect --------------------------------------------
@@ -331,6 +334,106 @@ class TestByomContractAndSsrf:
         body = r.json()
         assert set(body.keys()) == {"reachable", "provider", "models", "hint"}
         assert body["reachable"] is False
+
+    # -- POST /api/byom/test-embedding ------------------------------------
+
+    def test_test_embedding_json_keys_reachable(self, client, httpx_mock):
+        httpx_mock.add_response(url="http://localhost:11434/api/tags", json={"models": [{"name": "bge-m3"}]})
+        httpx_mock.add_response(url="http://localhost:11434/v1/models", json={"data": [{"id": "bge-m3"}]})
+
+        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        assert r.status_code == 200
+        body = r.json()
+        assert set(body.keys()) == {"reachable", "provider", "models", "hint"}
+        assert body["reachable"] is True
+        assert body["provider"] == "ollama"
+
+    def test_test_embedding_json_keys_refused(self, client, httpx_mock):
+        httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags")
+
+        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        assert r.status_code == 200
+        body = r.json()
+        assert set(body.keys()) == {"reachable", "provider", "models", "hint"}
+        assert body["reachable"] is False
+
+    def test_test_embedding_json_keys_timeout(self, client, httpx_mock):
+        httpx_mock.add_exception(httpx.TimeoutException("Timed out"), url="http://localhost:11434/api/tags")
+
+        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        assert r.status_code == 200
+        body = r.json()
+        assert set(body.keys()) == {"reachable", "provider", "models", "hint"}
+        assert body["reachable"] is False
+
+    def test_embedding_success_saves_config(self, client, httpx_mock):
+        httpx_mock.add_response(url="http://localhost:11434/api/tags", json={"models": [{"name": "bge-m3"}]})
+        httpx_mock.add_response(url="http://localhost:11434/v1/models", json={"data": [{"id": "bge-m3"}]})
+
+        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        assert r.status_code == 200
+        assert r.json()["reachable"] is True
+
+        saved = config_helper.load_saved_config()
+        assert saved is not None
+        assert saved.embedding.base_url == "http://localhost:11434/v1"
+
+    def test_embedding_unreachable_does_not_save(self, client, httpx_mock):
+        httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags")
+
+        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        assert r.json()["reachable"] is False
+
+        saved = config_helper.load_saved_config()
+        assert saved is None
+
+    def test_embedding_empty_url_rejected(self, client, httpx_mock):
+        r = client.post("/api/byom/test-embedding", json={"url": "", "api_key": ""})
+        assert r.status_code == 400
+        body = r.json()
+        assert "hint" in body
+        assert "error" in body
+
+    def test_embedding_rejects_link_local_before_network(self, client, httpx_mock):
+        r = client.post("/api/byom/test-embedding", json={"url": "http://169.254.169.254/latest/meta-data/", "api_key": ""})
+        assert r.status_code == 400
+        assert "hint" in r.json()
+        assert not httpx_mock.get_requests(), "a request was issued for a rejected URL"
+
+    def test_embedding_rejects_public_host_before_network(self, client, httpx_mock):
+        r = client.post("/api/byom/test-embedding", json={"url": "https://api.openai.com/v1", "api_key": ""})
+        assert r.status_code == 400
+        assert "hint" in r.json()
+        assert not httpx_mock.get_requests(), "a request was issued for a rejected URL"
+
+    def test_embedding_rejects_file_scheme_before_network(self, client, httpx_mock):
+        r = client.post("/api/byom/test-embedding", json={"url": "file:///etc/passwd", "api_key": ""})
+        assert r.status_code == 400
+        assert "hint" in r.json()
+        assert not httpx_mock.get_requests(), "a request was issued for a rejected URL"
+
+    def test_embedding_state_reports_defaults(self, client):
+        """When no config is saved, embedding reports EmbeddingConfig field defaults."""
+        r = client.get("/api/byom/state")
+        assert r.status_code == 200
+        emb = r.json()["embedding"]
+        assert emb["configured"] is False
+        assert emb["endpoint"] == "http://localhost:11434"
+        assert emb["model"] == "bge-m3"
+
+    def test_embedding_state_reports_configured(self, client):
+        """When the embedding URL is changed, state reports configured=True."""
+        cfg = PipelineConfig(
+            llm=LLMConfig(),
+            embedding=EmbeddingConfig(base_url="http://localhost:8888/v1"),
+        )
+        config_helper.save_user_config(cfg)
+
+        r = client.get("/api/byom/state")
+        emb = r.json()["embedding"]
+        assert emb["configured"] is True
+        assert emb["endpoint"] == "http://localhost:8888/v1"
+        assert emb["model"] == "bge-m3"
 
     # -- SSRF surface -----------------------------------------------------
 
