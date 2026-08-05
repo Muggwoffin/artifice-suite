@@ -5,13 +5,16 @@
 from __future__ import annotations
 
 import logging
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 
 from artifice_transcribe.api.v1.routes import router as v1_router
 from artifice_transcribe.config import settings
@@ -82,9 +85,32 @@ import shared_ui
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
+# ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
+# ChoiceLoader lets templates include shared-ui’s masthead partial.
+_JINJA = Environment(
+    loader=ChoiceLoader([
+        PackageLoader("artifice_transcribe.web", "templates"),
+        PackageLoader("shared_ui", "templates"),
+    ]),
+    autoescape=select_autoescape(["html", "xml"]),
+)
+
+# ── Masthead context for shared _masthead.html partial ──────────────────
+_TRANSCRIBE_NAV_ITEMS = [
+    {"href": "/", "label": "Transcribe", "key": "transcribe"},
+    {"href": "/about", "label": "About", "key": "about"},
+]
+
+_MASTHEAD_CTX = {
+    "brand_accent": "Transcribe",
+    "brand_tagline": "speech-to-text \u00b7 diarization \u00b7 oral history",
+    "nav_items": _TRANSCRIBE_NAV_ITEMS,
+    "show_theme_toggle": True,
+}
+
 
 def _asset_version() -> str:
-    """Cache-busting version for the /static and /shared links in index.html.
+    """Cache-busting version for the /static and /shared links.
 
     Derived from the newest mtime across both asset trees and recomputed on
     every request to "/", so an asset edited while the server is running is
@@ -98,10 +124,24 @@ def _asset_version() -> str:
     return str(int(max(mtimes))) if mtimes else "0"
 
 
-@app.get("/")
+def _render(template_name: str, **extra) -> str:
+    """Build template context and render a Jinja template."""
+    ctx: dict[str, Any] = {
+        "asset_v": int(time.time()),
+    }
+    ctx.update(_MASTHEAD_CTX)
+    ctx.update(extra)
+    return _JINJA.get_template(template_name).render(**ctx)
+
+
+@app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
-    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    return HTMLResponse(html.replace("__ASSET_V__", _asset_version()))
+    return HTMLResponse(_render("index.html", active_tab="transcribe"))
+
+
+@app.get("/about", response_class=HTMLResponse)
+async def about() -> HTMLResponse:
+    return HTMLResponse(_render("about.html", active_tab="about"))
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

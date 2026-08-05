@@ -13,14 +13,17 @@ import json
 import os
 import socket
 import sys
+import time
 import webbrowser
 from html import escape
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 
 from .routers import analytics as analytics_router
 from .routers import byom as byom_router
@@ -33,7 +36,7 @@ from .routers import settings as settings_router
 from .routers import tropy as tropy_router
 from .routers import ludwiglang as ludwiglang_router
 
-app = FastAPI(title="OCR Pipeline")
+app = FastAPI(title="ArtificeOCR")
 
 app.add_middleware(
     CORSMiddleware,
@@ -75,9 +78,32 @@ import shared_ui
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
+# ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
+# ChoiceLoader lets templates include shared-ui’s masthead partial.
+_JINJA = Environment(
+    loader=ChoiceLoader([
+        PackageLoader("artifice_ocr.web", "templates"),
+        PackageLoader("shared_ui", "templates"),
+    ]),
+    autoescape=select_autoescape(["html", "xml"]),
+)
+
+# ── Masthead context for shared _masthead.html partial ──────────────────
+_OCR_NAV_ITEMS = [
+    {"href": "/", "label": "Pipeline", "key": "pipeline"},
+    {"href": "/about", "label": "About", "key": "about"},
+]
+
+_MASTHEAD_CTX = {
+    "brand_accent": "OCR",
+    "brand_tagline": "local-first \u00b7 LM Studio + Ollama",
+    "nav_items": _OCR_NAV_ITEMS,
+    "show_theme_toggle": True,
+}
+
 
 def _asset_version() -> str:
-    """Cache-busting version for the /static and /shared links in index.html.
+    """Cache-busting version for the /static and /shared links.
 
     Derived from the newest mtime across both asset trees and recomputed on
     every request to "/", so an asset edited while the server is running is
@@ -91,10 +117,24 @@ def _asset_version() -> str:
     return str(int(max(mtimes))) if mtimes else "0"
 
 
-@app.get("/")
+def _render(template_name: str, **extra) -> str:
+    """Build template context and render a Jinja template."""
+    ctx: dict[str, Any] = {
+        "asset_v": int(time.time()),
+    }
+    ctx.update(_MASTHEAD_CTX)
+    ctx.update(extra)
+    return _JINJA.get_template(template_name).render(**ctx)
+
+
+@app.get("/", response_class=HTMLResponse)
 def index() -> HTMLResponse:
-    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    return HTMLResponse(html.replace("__ASSET_V__", _asset_version()))
+    return HTMLResponse(_render("index.html", active_tab="pipeline"))
+
+
+@app.get("/about", response_class=HTMLResponse)
+def about() -> HTMLResponse:
+    return HTMLResponse(_render("about.html", active_tab="about"))
 
 
 # ── BYOM dev-only preview (phase6) ──────────────────────────────────────────
@@ -119,7 +159,7 @@ _BYOM_PREVIEW_APPS = (
 # endpoint only, per the docstring on ``recommendations_for_app``).
 
 _BYOM_PREVIEW_APP_NAMES = {
-    "artifice-ocr": "OCR Pipeline",
+    "artifice-ocr": "ArtificeOCR",
     "artifice-draft": "Draft",
     "artifice-graph": "Knowledge Graph",
     "artifice-transcribe": "Transcribe",
@@ -362,9 +402,9 @@ def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> N
         detail = "No response within 10s, though the server thread is still running."
     else:
         detail = "The server thread exited without ever starting to listen."
-    message = (f"OCR Pipeline's local server could not start on port {port}.\n\n"
+    message = (f"ArtificeOCR's local server could not start on port {port}.\n\n"
               f"{detail}\n\n"
-              f"Close any other OCR Pipeline window and try again.")
+              f"Close any other ArtificeOCR window and try again.")
     print(f"ERROR: {message}")
     try:
         import tkinter as tk
@@ -372,7 +412,7 @@ def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> N
 
         root = tk.Tk()
         root.withdraw()
-        messagebox.showerror("OCR Pipeline — server did not start", message)
+        messagebox.showerror("ArtificeOCR — server did not start", message)
         root.destroy()
     except Exception:
         pass
@@ -404,7 +444,7 @@ def main() -> None:
         return
 
     webbrowser.open(url)
-    print(f"OCR Pipeline running at {url}  (Ctrl+C to stop)")
+    print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)")
     try:
         server_thread.join()
     except KeyboardInterrupt:

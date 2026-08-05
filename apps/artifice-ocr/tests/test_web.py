@@ -97,7 +97,21 @@ def client(tmp_path, monkeypatch):
 def test_index_serves_the_frontend(client):
     res = client.get("/")
     assert res.status_code == 200
-    assert "OCR Pipeline" in res.text
+    assert "ArtificeOCR" in res.text
+    assert "skip-link" in res.text
+    assert "class=\"topnav\"" in res.text
+
+
+def test_about_page_serves(client):
+    res = client.get("/about")
+    assert res.status_code == 200
+    assert "About ArtificeOCR" in res.text
+    assert "class=\"topnav\"" in res.text
+
+
+def test_static_index_html_is_gone(client):
+    res = client.get("/static/index.html")
+    assert res.status_code == 404
 
 
 def test_static_assets_are_mounted(client):

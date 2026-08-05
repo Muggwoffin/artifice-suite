@@ -146,28 +146,6 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding-top: var(--nav-height);
-}
-
-.masthead {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 300;
-  height: var(--nav-height);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  background-color: rgba(251, 249, 243, 0.96);
-  border-bottom: 1px solid var(--rule);
-  backdrop-filter: blur(12px) saturate(1.1);
-  box-shadow: var(--shadow-nav);
-}
-
-@media (prefers-color-scheme: dark) {
-  .masthead {
-    background-color: rgba(31, 27, 22, 0.96);
-  }
 }
 
 .masthead h1 {
@@ -176,15 +154,6 @@ button, input, select, textarea {
   font-size: 1.4rem;
   margin: 0;
   color: var(--ink);
-}
-
-.masthead .tag {
-  font-family: var(--font-label);
-  font-weight: 600;
-  font-size: var(--text-xs);
-  letter-spacing: var(--label-tracking);
-  text-transform: uppercase;
-  color: var(--accent);
 }
 
 .panels {

@@ -68,12 +68,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # artifice-ocr: 424 passed, 1 skipped — clean baseline (2026-07-30).
+          # artifice-ocr: 487 passed, 1 skipped — clean baseline (2026-08-05).
           # No extra dependencies needed beyond the workspace root.
           - app: artifice-ocr
             extra-args: ""
 
-          # artifice-draft: 187 passed (2026-07-30).
+          # artifice-draft: 225 passed (2026-08-05).
           # The root `all` extra declares `artifice-draft[web]`, which pulls
           # in readability-lxml, fastapi, uvicorn, etc. — everything the
           # test suite needs.  No separate per-app install step is required.
@@ -84,7 +84,7 @@ jobs:
           - app: artifice-graph
             extra-args: ""
 
-          # artifice-transcribe: 70 passed (2026-07-30).
+          # artifice-transcribe: 111 passed (2026-08-05).
           # tests/test_api.py is excluded permanently via
           # apps/artifice-transcribe/tests/conftest.py:20 (collect_ignore).
           # It is a standalone live-server script expecting 127.0.0.1:8000 and
@@ -220,6 +220,136 @@ jobs:
                   print(f'  {font_path}  ->  {expected_txt}  (present)')
 
           print(f'Font-licence assertions passed for all {len(ttf_entries)} font(s).')
+           "
+
+      # ── artifice-ocr wheel: Jinja templates must be present ─────────
+      - name: Assert artifice-ocr wheel contains web/templates/
+        run: |
+          python3 -c "
+          import zipfile, glob
+
+          whl_files = glob.glob('apps/artifice-ocr/dist/*.whl')
+          assert len(whl_files) == 1, f'Expected exactly one .whl, found {len(whl_files)}'
+          whl_path = whl_files[0]
+
+          with zipfile.ZipFile(whl_path) as z:
+              names = z.namelist()
+
+              # web/templates/ must include the Jinja template tree
+              template_entries = [n for n in names if 'web/templates/' in n and n.endswith('.html')]
+              assert len(template_entries) >= 3, \
+                  f'Expected >=3 templates in ocr wheel, found {len(template_entries)}: {template_entries}'
+              for expected in ('base.html', 'index.html', 'about.html'):
+                  assert any(expected in t for t in template_entries), \
+                      f'Missing template: {expected}'
+
+              # The stale index.html at web/static/ must be absent
+              static_html = [n for n in names if n.endswith('web/static/index.html')]
+              assert len(static_html) == 0, \
+                  f'STALE ARTIFACT: web/static/index.html found in ocr wheel. ' \
+                  f'Delete the file and rebuild.'
+
+              print(f'Artifice-ocr wheel assertions passed ({len(names)} entries).')
+          "
+
+      # ── shared-ui wheel: masthead partial and templates ────────────
+      - name: Build shared-ui wheel
+        run: |
+          rm -rf packages/shared-ui/build packages/shared-ui/dist
+          uv run --with build python -m build --wheel
+        working-directory: packages/shared-ui
+
+      - name: Assert shared-ui wheel contains templates/
+        run: |
+          python3 -c "
+          import zipfile, glob
+
+          whl_files = glob.glob('packages/shared-ui/dist/*.whl')
+          assert len(whl_files) == 1, f'Expected exactly one .whl, found {len(whl_files)}'
+          whl_path = whl_files[0]
+
+          with zipfile.ZipFile(whl_path) as z:
+              names = z.namelist()
+
+              # shared_ui/templates/ must include the masthead partial
+              template_entries = [n for n in names if 'templates/' in n and n.endswith('.html')]
+              assert len(template_entries) >= 1, \
+                  f'Expected >=1 template in shared-ui wheel, found {len(template_entries)}: {template_entries}'
+              assert any('_masthead.html' in t for t in template_entries), \
+                  f'_masthead.html missing from shared-ui wheel. Templates: {template_entries}'
+
+              # shared_ui/assets/ must include masthead.css
+              asset_entries = [n for n in names if 'assets/' in n]
+              assert any('masthead.css' in a for a in asset_entries), \
+                  f'masthead.css missing from shared-ui wheel. Assets: {asset_entries}'
+
+              print(f'Shared-ui wheel assertions passed ({len(names)} entries).')
+          "
+
+      # ── artifice-draft wheel: Jinja templates must be present ──────
+      - name: Build artifice-draft wheel
+        run: bash scripts/build-wheel.sh artifice-draft
+
+      - name: Assert artifice-draft wheel contains web/templates/
+        run: |
+          python3 -c "
+          import zipfile, glob
+
+          whl_files = glob.glob('apps/artifice-draft/dist/*.whl')
+          assert len(whl_files) == 1, f'Expected exactly one .whl, found {len(whl_files)}'
+          whl_path = whl_files[0]
+
+          with zipfile.ZipFile(whl_path) as z:
+              names = z.namelist()
+
+              # web/templates/ must include the Jinja template tree
+              template_entries = [n for n in names if 'web/templates/' in n and n.endswith('.html')]
+              assert len(template_entries) >= 3, \
+                  f'Expected >=3 templates in draft wheel, found {len(template_entries)}: {template_entries}'
+              for expected in ('base.html', 'index.html', 'about.html'):
+                  assert any(expected in t for t in template_entries), \
+                      f'Missing template: {expected}'
+
+              # The stale index.html at web/static/ must be absent
+              static_html = [n for n in names if n.endswith('web/static/index.html')]
+              assert len(static_html) == 0, \
+                  f'STALE ARTIFACT: web/static/index.html found in draft wheel. ' \
+                  f'Delete the file and rebuild.'
+
+              print(f'Artifice-draft wheel assertions passed ({len(names)} entries).')
+          "
+
+      # ── artifice-transcribe wheel: Jinja templates must be present ─
+      - name: Build artifice-transcribe wheel
+        run: bash scripts/build-wheel.sh artifice-transcribe
+
+      - name: Assert artifice-transcribe wheel contains web/templates/
+        run: |
+          python3 -c "
+          import zipfile, glob
+
+          whl_files = glob.glob('apps/artifice-transcribe/dist/*.whl')
+          assert len(whl_files) == 1, f'Expected exactly one .whl, found {len(whl_files)}'
+          whl_path = whl_files[0]
+
+          with zipfile.ZipFile(whl_path) as z:
+              names = z.namelist()
+
+              # web/templates/ must include the Jinja template tree
+              template_entries = [n for n in names if 'web/templates/' in n and n.endswith('.html')]
+              assert len(template_entries) >= 3, \
+                  f'Expected >=3 templates in transcribe wheel, found {len(template_entries)}: {template_entries}'
+              for expected in ('base.html', 'index.html', 'about.html'):
+                  assert any(expected in t for t in template_entries), \
+                      f'Missing template: {expected}'
+
+              # The stale index.html at web/static/ must be absent
+              static_html = [n for n in names if n.endswith('web/static/index.html')]
+              assert len(static_html) == 0, \
+                  f'STALE ARTIFACT: web/static/index.html found in transcribe wheel. ' \
+                  f'Delete the file and rebuild.'
+
+              print(f'Artifice-transcribe wheel assertions passed ({len(names)} entries).')
           "
 
   # ── Multi-platform smoke test ─────────────────────────────────────────────

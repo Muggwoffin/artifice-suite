@@ -25,6 +25,7 @@ dependencies = [
     "torchaudio",
     "fpdf2>=2.8.0",
     "openai>=1.0.0",
+    "jinja2>=3.0",
     "model-harness",
     "secure-io",
     "shared-ui",
@@ -41,7 +42,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"artifice_transcribe.web" = ["static/**"]
+"artifice_transcribe.web" = ["static/**", "templates/**/*.html"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

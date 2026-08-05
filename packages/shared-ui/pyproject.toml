@@ -14,4 +14,4 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["shared_ui"]
-include = ["shared_ui/assets/**"]
+include = ["shared_ui/assets/**", "shared_ui/templates/**/*.html"]

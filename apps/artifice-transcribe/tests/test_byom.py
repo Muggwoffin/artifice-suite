@@ -390,6 +390,19 @@ class TestByomContractAndSsrf:
         html = r.text
         assert "/shared/byom.css" in html
         assert "/shared/byom.js" in html
+        assert "/shared/masthead.css" in html
+        assert 'class="topnav"' in html
+        assert 'global-search-input' in html
+
+    def test_about_page_serves(self, client):
+        r = client.get("/about")
+        assert r.status_code == 200
+        assert "About ArtificeTranscribe" in r.text
+        assert 'class="topnav"' in r.text
+
+    def test_static_index_html_is_gone(self, client):
+        r = client.get("/static/index.html")
+        assert r.status_code == 404
 
 
 class TestTranscribeRouterCollision:

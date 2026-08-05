@@ -11,6 +11,7 @@ dependencies = [
     "docx-revisions>=0.1.5",
     "requests>=2.31.0",
     "httpx>=0.27",
+    "jinja2>=3.0",
     "model-harness",
     "secure-io",
     "shared-ui",
@@ -37,7 +38,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"artifice_draft.web" = ["static/**"]
+"artifice_draft.web" = ["static/**", "templates/**/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

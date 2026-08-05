@@ -1483,6 +1483,15 @@ Four things this yields, in descending severity:
    port changed — has no route back to the screen built to fix exactly that. Graph is partly spared
    because it has its own Model Configuration panel; the other three are not.
 
+1a. **Remove every emoji from `artifice-ocr` — maintainer's instruction, 2026-08-05.** They are not
+   confined to the tips modal. Its in-page tab bar reads `☰ Main`, `👁 Preview`, `🕐 History`,
+   `📊 Analytics`, `⚙ Settings` (measured from the live DOM), and its theme toggle shipped as `🌙`
+   before the Jinja port replaced it with the shared masthead's SVG. `Design_Philosophy.md` §8.8
+   specifies line-drawn icons — `viewBox="0 0 24 24"`, `stroke="currentColor"`, stroke-width 2,
+   round caps, `aria-hidden` — and `byom.js` already carries a working set to copy the idiom from.
+   An emoji also renders in the user's system font, so it is the one glyph in the interface that
+   cannot be made to match the typography.
+
 2. **`artifice-ocr` has two onboarding systems that do not know about each other.** The BYOM screen
    and a separate first-run tips modal (`static/js/onboarding.js`) each keep their own
    `localStorage` key, and a genuine first-run user can meet both. They also disagree on style: the
@@ -1513,15 +1522,118 @@ changed casually). So "give every app an About page" is not one task:
   Dockerfiles — *or* an in-page About panel, which keeps them static but means "About" is not a URL
   a user can link to or bookmark.
 
-**Decide that before briefing any of it.** A brief that says "add an About page to all four" without
-resolving this will get three different answers from three agents. The same fork governs nav:
-graph's `topnav` links between pages, while ocr's and transcribe's `tabs` switch panels within one
-page — they are not the same component wearing different names, and unifying the markup without
-unifying the navigation model would be cosmetic.
+#### Decided by the maintainer, 2026-08-05
 
-**Sequencing.** Item 1 is small, self-contained, and the only one that fixes a live user-facing
-dead end — it needs no decision about page structure and can land first. Items 2–4 depend on the
-Jinja-vs-panel fork above.
+1. **~~In-page About panel. The three static apps stay static.~~ REVERSED the same day — see
+   "Jinja port" below.** The three apps are being ported to Jinja, so About becomes a real route in
+   all four. The original decision was sound *given* the asymmetry stays; the survey that followed
+   showed the asymmetry was not what it appeared to be, and the maintainer revised it. Kept rather
+   than deleted so the reversal is visible: a reader finding only the new decision would not know
+   the panel option was considered and why it lost.
+2. **Remove `artifice-ocr`'s first-run tips modal** (`static/js/onboarding.js`, its trigger at
+   `index.html:399`, and the Settings button at `settings.js:221-222`). This supersedes the "do not
+   delete it" note above, which was written before the About panel existed as a destination.
+   **Move its content, do not discard it** — Tropy, run templates, `Ctrl+K`, PDF export, preview and
+   history, and the OCR-engine choice are all real product knowledge that exists nowhere else in the
+   UI, and the About panel is now the natural home. Deleting the file without re-homing the content
+   is a regression disguised as a cleanup.
+3. **`OCR Pipeline` becomes `ArtificeOCR`** — in the `<title>`, the `<h1>`, and the `appName` passed
+   to the BYOM screen, which is where it currently leaks into onboarding copy.
+4. **All four adopt graph's wordmark treatment**: `Artifice` in `--ink`, the app word in `--accent`.
+   The markup is `Artifice<span class="brand-accent">Graph</span>` with
+   `.brand-accent { color: var(--accent); }` (`base.html:24`, `app.css:129-137`).
+
+Two things to get right when porting the wordmark:
+
+- **Do not port the link.** graph's brand is `<a class="brand" href="/">` because it is a multi-page
+  app; the other three use `<header class="masthead"><h1>` and are single-page. Keep the `<h1>` and
+  put the span inside it. A brand link to `/` in a single-page app is a no-op that reloads the page
+  and discards state.
+- `.brand` sets `font-size: 1.15rem` — a fixed `rem`. Check whether a token already expresses that
+  size before copying it into three more files; `CLAUDE.md` is explicit that a fixed `rem` copied
+  across apps is how fluid typography dies silently.
+
+#### Also found in the same survey — not part of the original ask
+
+- **No app has a favicon.** All four. It shows in every browser tab and is the kind of thing that
+  reads as unfinished to a first-time user, which makes it a packaging concern rather than a polish
+  one. Cheap to fix and suite-wide.
+- **Toast is implemented three times and missing once.** `ocr` has a dedicated `static/js/toast.js`
+  (52 lines); `transcribe` and `graph` have their own inline in `app.js` / `pipeline.js`; `draft`
+  has none. This is the clearest candidate for `packages/shared-ui`, which now ships JavaScript —
+  `byom.js` set that precedent and the second shared component is where it either becomes a pattern
+  or does not.
+- **`artifice-draft` is the outlier on nearly every axis** — no nav, no theme toggle, no toast, no
+  keyboard shortcuts, and the already-deferred missing `[data-theme="dark"]` accent block. It is not
+  four independent gaps; it is one app that has had the least UI attention, and it should be briefed
+  as a single workstream rather than swept into each item separately.
+- **Keyboard shortcuts are ocr-only in practice**: `ctrlKey`/`metaKey` handling appears in 6 files
+  in ocr, 1 each in graph and transcribe, 0 in draft.
+- **Part IV item 1 (JS-rendered empty states) is a parity item too** and should be folded in rather
+  than tracked separately — the `.panel-empty-title` / `.panel-empty-desc` component already exists
+  in two apps' CSS.
+
+#### The Jinja port — decided 2026-08-05, after measurement
+
+**The premise everyone had been working from was false.** `ocr`, `draft` and `transcribe` were
+described throughout this document as "static apps". They are not. Each reads `index.html` and runs
+`str.replace()` on it before serving — `ocr/web/server.py:97`, `draft/web/server.py:407`,
+`transcribe/main.py:104` — and ocr's preview route performs **eight** substitutions at
+`server.py:302-308`. All four apps already have a server-side template step. The real difference is
+that graph uses a template engine and the other three hand-roll one without escaping.
+
+**That hand-rolling has already cost a security bug.** The `</script>` XSS fixed in `a5bdc3b` came
+from `json.dumps(state)` being substituted with no escaping. Jinja autoescapes by default; that
+class of bug would have been structurally impossible.
+
+The two directions were weighed as follows.
+
+*Make graph static* — rejected. `library.html` (437 lines) genuinely server-renders, with
+`{% for e in state.entities %}` wrapping a nested `{% for r in state.relationships %}` that matches
+relationships to entities, plus aliases and source documents. `/api/state` returns **only counts and
+breakdowns**, not the entity list, so this direction needs a new JSON endpoint *and* that template
+rewritten client-side. `index.html` also server-renders config into form state
+(`{% if config.llm.supports_vision %}checked{% endif %}`), and moving that client-side reintroduces
+flash-of-wrong-state — the precise defect corrected in the BYOM lede during the same session. It
+optimises for a symmetry the code does not have by deleting the one app doing it properly.
+
+*Port the three to Jinja* — **chosen.** It replaces `str.replace` with a real engine in three apps,
+turns autoescaping on by default, and is the only direction that makes the parity work cheap: a
+shared masthead puts the wordmark, nav and About link in one place instead of four JavaScript
+re-implementations.
+
+Costs accepted, each a real step rather than a footnote:
+
+- Three apps gain `jinja2` (already in the lockfile via graph) and a `templates/` tree.
+- **Packaging must be updated per app, and this is the likeliest thing to be silently wrong.**
+  `draft`, `ocr` and `transcribe` use setuptools with explicit `[tool.setuptools.package-data]`;
+  `static/**` alone will not carry a `templates/` tree. A template missing from a wheel fails only
+  at runtime in an installed app, which no test in this repo currently exercises. Verify against a
+  built wheel with `zipfile` — **`unzip` is not installed** — and use `scripts/build-wheel.sh`,
+  which exists because a stale `build/` must be cleared first.
+- **`artifice-graph` must NOT be converted to setuptools.** It uses hatchling deliberately, and the
+  comment in its `pyproject.toml` says why: hatchling auto-includes package files, and converting
+  risks silently dropping `templates/`. A survey this session briefly mistook graph's *absence* of a
+  `package-data` section for a packaging bug. It is not one — it is the correct configuration for
+  its backend. Do not "fix" it.
+- `graph`'s `FileSystemLoader(str(HERE / "templates"))` (`server.py:75-76`) is `__file__`-relative,
+  the pattern `CLAUDE.md` warns breaks in a frozen bundle. **It is being fixed first, before the
+  pattern is copied into three more apps.** `PackageLoader` resolves through `importlib`;
+  `shared_ui` already demonstrates the correct precedent at `draft/web/server.py:94-95`.
+
+**Shared chrome lives in `packages/shared-ui`, not in four private `base.html` files.** If each app
+keeps its own, the work gets done and there are still four files to edit to change the wordmark —
+which is how the present divergence arose. The shared unit is a **masthead partial**, not a page
+skeleton: the apps' body content differs too much for one skeleton, but the chrome does not.
+`shared-ui` therefore becomes a template provider as well as an asset provider — the second such
+precedent after `byom.js` made it a JavaScript provider. Its hatchling `include` must gain
+`shared_ui/templates/**`; it currently lists only `assets/**`.
+
+**Sequencing.** Fix graph's loader, build the shared partial, and port **`draft` alone** as a pilot
+(262 lines, the smallest, and the app most in need of UI attention) — proving the wheel before
+`ocr` (665 lines) and `transcribe` (543) follow. Item 1 above (re-opening BYOM) is independent of
+all of this and can land at any point. `draft`'s theme toggle is deliberately **not** in the pilot:
+it also lacks a `[data-theme="dark"]` accent block, so a toggle without that would half-work.
 
 See also: **ROADMAP.md** — the development roadmap for the community period between Phases 6
 and 7.
@@ -1711,6 +1823,55 @@ correctly from the persistence code — while the actual failure was one layer e
 that had never been wired. Brief them to say plainly when they could not exercise something; they
 comply when asked, and an honest "I verified statically" is worth more than a confident inference.
 
+**`/tmp` is a 7.6 GB tmpfs, and one ASR venv fills it.** On 2026-08-05 a `lead-engineer` run exited
+`exit=1` with 148 test failures and 57 errors — every one of them `OSError: [Errno 28] No space left
+on device`, none caused by its changes. The agent diagnosed it correctly and then died trying to
+write its own log.
+
+The cause: **`/tmp/ci-venv`, a throwaway `uv` venv left behind by the previous session, holding
+7.3 GB** — `nvidia` 4.1 GB, `torch` 1.7 GB, `triton` 540 MB. Exactly the ASR stack measured in the
+Step 5 prerequisite above. Meanwhile `/` had **892 GB free**: the disk was not full, only the
+RAM-backed tmpfs was.
+
+Two things to carry:
+- **Check `df -h /tmp`, not `df -h /`.** A root filesystem with hundreds of gigabytes free tells you
+  nothing, and `ENOSPC` from a test suite reads like a code failure until you look.
+- **A non-zero agent exit is not automatically the agent's fault.** Read the failures before
+  re-briefing; re-running the same work would have failed identically. `rm -rf /tmp/ci-venv` took
+  `/tmp` from 100% to 5% and all four suites went green with no code change.
+
+This is also the sharpest practical argument for the tier-1/tier-2 slimming above: the 5.8 GB
+install is not merely a download-size concern, it is large enough to halt development on the
+machine that builds it.
+
+**An SPDX header in the wrong comment syntax silently deletes the first CSS rule, and `reuse lint`
+cannot see it.** Found 2026-08-05 in `packages/shared-ui/shared_ui/assets/masthead.css`, which was
+written with an **HTML** comment header:
+
+```css
+<!-- SPDX-FileCopyrightText: 2026 Maurice Casey
+   - SPDX-License-Identifier: AGPL-3.0-or-later
+  -->
+```
+
+`<!--` and `-->` are legacy CDO/CDC tokens that a CSS parser tolerates, but the text between them is
+parsed **as CSS**. The parser reads it as a malformed selector and keeps consuming until the first
+`{`, which swallows the entire next rule. Here that was `.topnav`, so the shared masthead rendered
+with `display: block`, `position: static`, no padding and no height — brand and nav stacked in two
+rows, flush against the viewport edge. Every rule *after* the first one applied normally, which is
+what makes it so confusing: `.brand-accent` was correctly magenta while `.topnav` was untouched.
+
+Three things conspire to hide it:
+- **`reuse lint` passes.** It checks that the tags are present, not that they are in valid comment
+  syntax for the file type. The gate that exists to police these headers is blind to this.
+- **No test can see it.** The stylesheet is served byte-for-byte correctly; `curl` shows the rule.
+- **The DOM inspection that finds it is unusual** — the tell was `document.styleSheets` reporting
+  **zero** rules matching `.topnav` while the file plainly contains one at line 21.
+
+Every other stylesheet in the repo uses `/* … */`. When adding a new CSS file, copy the header from
+`byom.css` or `tokens.css`, and if a shared component's first rule mysteriously does not apply,
+check the header before debugging the cascade.
+
 **Verify rendered, not from the diff.** This caught, in one session: the above; an entire UI whose
 buttons had never worked despite looking correct; and three of the orchestrator's *own* false
 alarms — a "stage 3 card is styled differently" that was a JPEG artifact, a "helper text is in small
@@ -1891,7 +2052,136 @@ Worth settling as one shared rule.
 
 ---
 
-### PICK UP HERE — Phase 6, as at 2026-08-04
+### PICK UP HERE — Phase 6, as at 2026-08-05 (supersedes the 2026-08-04 block below)
+
+**Branch `phase6-byom-screen`, PR #26 open against `main`.** CI ran green on it — **18/18 checks**,
+including the full 12-combination cross-platform matrix and the wheel job. That was the first time
+CI had ever run on this branch.
+
+**Read this section, then Part V, then `CLAUDE.md`. Ignore the 2026-08-04 block below except where
+this one points at it.**
+
+#### Confirm the environment before trusting anything
+
+```bash
+wsl.exe -d Ubuntu -- bash -lc "cd ~/projects/artifice-suite && \
+  df -h /tmp | tail -1 && \
+  git status -sb && \
+  (cd apps/artifice-ocr && uv run pytest tests/ -q | tail -1)"
+```
+
+Expected: `/tmp` well under 100%, branch clean, `487 passed, 1 skipped`. **Check `/tmp` first** —
+it is a 7.6 GB tmpfs, and a single leftover ASR venv filled it on 2026-08-05, producing 148 test
+failures that all read `OSError: [Errno 28]` and looked exactly like a code regression while `/`
+had 892 GB free. See Part V.
+
+#### Current test baselines — these supersede every earlier figure in this file
+
+| Suite | Count |
+|---|---|
+| `packages/model-harness` | 222 passed, 1 deselected |
+| `apps/artifice-ocr` | 487 passed, 1 skipped |
+| `apps/artifice-draft` | 225 passed |
+| `apps/artifice-graph` | 169 passed |
+| `apps/artifice-transcribe` | 111 passed (`--ignore=tests/test_api.py`) |
+
+Run each from its own directory; a root `pytest` does not work (duplicate `tests` packages in draft
+and graph). **This branch has a second author** — a `copilot-swe-agent` bot answers PR review
+comments and pushes to it, so `git fetch` before quoting a figure.
+
+#### What landed this session
+
+| Work | State |
+|---|---|
+| Tailored BYOM screen per app | done, `a5bdc3b`, reviewed rendered in all four |
+| PyTorch slimming findings recorded as a Step 5 prerequisite | done, `a374a67` |
+| Step 9 — cross-app UI parity, surveyed and written | done, `462ce4f` |
+| Jinja port stage 1 — loader, shared masthead, draft pilot | done, `a8c72c2` |
+| Jinja port stage 2 — ocr and transcribe | done, `9958f7b` |
+| Jinja port stage 3 — wordmark, About pages, emoji sweep | **in flight — see below** |
+
+#### THE ONE THING IN FLIGHT — finish this first
+
+Stage 3 is **substantially done and verified rendered**: ocr's tips modal is gone, its script tag
+gone, **zero emoji in the DOM**, all five tabs carry §8.8 SVG icons, the `.brand-group` wordmark
+sits on a shared baseline, and About pages exist for all four apps.
+
+**Two layout defects remain, both measured from the live DOM, both briefed to `ui-ux` and possibly
+already fixed — verify before acting:**
+
+1. **About prose has no measure.** `.page.page-prose { max-width: 44rem; }` is defined in exactly
+   one place — `apps/artifice-graph/.../static/app.css:202` — while **all four** About templates use
+   the class. ocr, draft and transcribe therefore render prose unbounded: measured at **2542px wide,
+   ~299 characters per line** on a 2552px viewport. Editorial typography wants 60–75.
+2. **The About page header collapses to one line** in ocr and transcribe. `.masthead { display: flex }`
+   survives as a leftover from the old fixed page header, and about.html reuses
+   `<header class="masthead">`. Measured on ocr: kicker at x=20, h1 at x=370, same y. `draft` and
+   `graph` have no such rule and are correct.
+
+Both are the *same failure as stage 1* — a pattern copied from graph without its supporting CSS.
+The fix chosen then was to put shared styling in `shared-ui` rather than three copies.
+
+Also left open by stage 3, all flagged honestly by the agent rather than hidden:
+- `apps/artifice-ocr/src/artifice_ocr/config.py:96` still lists `"onboarding_dismissed"` in
+  `PERSISTED_KEYS`. Dead but harmless; it was outside that brief's scope.
+- Wrapping `#btn-palette-hint` in the now-flex `.tab` rule adds `0.35rem` gaps around the `+` in
+  `Ctrl`+`K`. Cosmetic, on a hint button, not one of the five real tabs.
+- **A documentation discrepancy worth keeping:** ocr's deleted tips modal claimed PaddleOCR and
+  Tesseract as OCR-engine alternatives. A grep of the whole `artifice-ocr` tree found them named
+  only in that tips text and two handoff docs — **never in `config.py`, the Settings dropdown, or
+  any pipeline module.** They were not carried into the About page. Either implement them or stop
+  claiming them; do not reintroduce the claim from the old copy.
+
+#### Then, in order
+
+1. **Merge PR #26** once stage 3 lands. It is 12+ commits and CI is green.
+2. **Step 9 item 1 — make the BYOM screen re-openable.** The only `byom.open()` in each app is the
+   auto-open on `!configured`, and the instance is a `var` inside an IIFE, so nothing can reach it.
+   A user whose endpoint later breaks has no route back. Small, self-contained, no dependencies.
+3. **Step 9 remainder** — favicons (no app has one), a shared toast (implemented three separate
+   times, missing entirely from draft), and `artifice-draft`'s catch-up as one workstream: it has no
+   theme toggle, no keyboard shortcuts, and no `[data-theme="dark"]` accent block.
+4. **Step 5 — the ASR consent-and-download flow**, with the PyTorch slimming prerequisite recorded
+   above. Tiers 1 and 2 commit to nothing and can land first.
+5. **Open item 0 (Part IV) — Windows API-key permissions.** Still open, and still the thing that
+   makes any packaging work premature: `os.open(..., 0o600)` is ignored on Windows, so both ocr's
+   and transcribe's config files hold an API key world-readable there.
+
+#### Fleet state — changed materially this session, do not trust older notes
+
+- **`oss-reviewer` was broken and is now on a local model that does not work in this harness.** Its
+  configured `gemma4-32k:12b` is **no longer installed**; `CLAUDE.md`'s recorded Ollama model list
+  is stale. It is now pointed at `ollama/qwen2.5-coder-14b-16k:latest`.
+- **The 32B does not fit this machine.** RTX 5070 Ti, 16.3 GB. `qwen2.5-coder:32b` needs 28.8 GB
+  with a 16k KV cache, so Ollama split it 51% GPU / 49% CPU and it produced **~1 token/second** —
+  723 bytes in 185 seconds. The 14B is 11.9 GB, **100% GPU, ~40 tok/s**.
+- **But the local slot still does not work, for a different reason.** On the 14B the agent emitted
+  **raw tool-call JSON as plain text** instead of invoking tools — 7 such blocks, 6 attempts at
+  write tools it does not have, 1 attempt to spawn a subagent (the persona-bleed failure), and
+  **zero `file:line` citations**. It never read the files. Every model advertises `tools: YES` to
+  Ollama, so this is a **provider-adapter problem, not a model limitation** — most likely the
+  generic `@ai-sdk/openai-compatible` npm adapter in `opencode.json` failing to negotiate
+  tool-calling with Ollama's `/v1` endpoint. Try Ollama's native provider before blaming any model.
+- **This reframes the old "the local 12B silently summarises instead of reviewing" note.** That was
+  the same adapter. The local slot may never have worked properly, and the 12B may have been
+  condemned unfairly.
+- **`ui-ux` hit a Claude session limit mid-task** and had to be resumed after the reset. `CLAUDE.md`
+  predicted exactly this when it moved back onto the maintainer's subscription, and its own guidance
+  is: **if the shared budget bites again, move it to a paid tier — do not downgrade its model.** It
+  has now bitten. Decide before the next UI-heavy session.
+
+#### Two orchestration lessons from this session
+
+- **Verify rendered, every time.** Stage 1 passed 225 tests, served correct bytes, and shipped
+  wheels containing the right templates — while the page rendered with two overlapping headers and
+  an unstyled masthead. Stage 2 passed 487 tests while ocr's entire tab bar sat hidden under a fixed
+  nav with Settings unreachable. Neither was visible in a diff, a test, or a `curl`.
+- **A non-zero agent exit is not automatically the agent's fault.** One `exit=1` was a full `/tmp`;
+  one was a session limit. Read the failure before re-briefing.
+
+---
+
+### PICK UP HERE — Phase 6, as at 2026-08-04 *(superseded by the block above; kept for its Step 3–4 detail)*
 
 Branch **`phase6-packaging`**, pushed, 6 commits ahead of `main`, working tree clean.
 
@@ -1916,7 +2206,13 @@ Branch **`phase6-packaging`**, pushed, 6 commits ahead of `main`, working tree c
 **PR #26 opened 2026-08-05** (`phase6-byom-screen` → `main`, 8 commits) — the first time CI has run
 on this branch. Test baselines after the tailoring work, superseding every earlier figure in this
 file: model-harness **222**, ocr **485 + 1 skipped**, draft **225**, graph **169**, transcribe
-**108**.
+**109**.
+
+*(That transcribe figure was written as 108 and was stale within the hour — a `copilot-swe-agent`
+bot answering PR review comments on #26 pushed `4e120f0`, which added
+`test_keyerror_returns_empty_recommendations` to transcribe's suite. Noting the mechanism, not just
+the number: **this branch now has a second author pushing to it**, so a locally-measured baseline
+can go stale without anyone here touching the code. Fetch before quoting a figure from this branch.)*
 
 Three things settled by measurement during that session, recorded so they are not re-derived:
 - `recommendations_for_app("artifice-transcribe", …)` **no longer raises `KeyError`** — transcribe
@@ -1937,7 +2233,7 @@ Test baselines after this session — supersede the ones below:
 | `apps/artifice-ocr` | 485 passed, 1 skipped |
 | `apps/artifice-draft` | 225 passed |
 | `apps/artifice-graph` | 158 passed |
-| `apps/artifice-transcribe` | 108 passed (`--ignore=tests/test_api.py`) |
+| `apps/artifice-transcribe` | 109 passed (`--ignore=tests/test_api.py`) |
 | `packages/model-harness` | 208 passed, 1 deselected |
 
 All local gates green: `reuse lint`, `token-parity-check.py`, `audit-controls.py`,

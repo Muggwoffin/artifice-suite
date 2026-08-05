@@ -3,31 +3,10 @@
    - SPDX-License-Identifier: AGPL-3.0-or-later
   -->
 
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ArtificeTranscribe</title>
+{% extends "base.html" %}
+{% block title %}ArtificeTranscribe{% endblock %}
 
-<!-- Local fonts and design tokens, served from the shared-ui package. -->
-<link rel="stylesheet" href="/shared/fonts.css?v=__ASSET_V__">
-<link rel="stylesheet" href="/shared/tokens.css?v=__ASSET_V__">
-
-<link rel="stylesheet" href="/static/css/app.css?v=__ASSET_V__">
-<link rel="stylesheet" href="/shared/byom.css?v=__ASSET_V__">
-</head>
-<body>
-<a href="#main-content" class="skip-link">Skip to content</a>
-<div class="app" id="main-content">
-
-  <header class="masthead">
-    <h1>ArtificeTranscribe</h1>
-    <span class="tag">speech-to-text &middot; diarization &middot; oral history</span>
-    <div class="masthead-search" id="masthead-search">
-      <input type="text" id="global-search-input" placeholder="Search transcripts (/)" class="search-input">
-    </div>
-  </header>
+{% block content %}
 
   <nav class="tabs">
     <button class="tab active" data-tab="transcribe">Transcribe</button>
@@ -448,7 +427,6 @@
     <span id="status-text">Ready</span>
     <span class="dim" id="status-detail"></span>
     <div style="display:flex;align-items:center;gap:0.5rem;">
-      <button class="btn tiny" id="btn-theme-toggle" title="Toggle dark/light mode">&#127769;</button>
       <div class="health-indicator" id="health-indicator" title="System health">
       <span class="health-dot" id="health-db" title="Database"></span>
       <span class="health-dot" id="health-whisper" title="Whisper model"></span>
@@ -518,26 +496,6 @@
     </div>
   </div>
 
-</div>
+  <div class="toast-container" id="toast-container"></div>
 
-<div class="toast-container" id="toast-container"></div>
-
-<script src="/static/js/app.js?v=__ASSET_V__"></script>
-<script src="/shared/byom.js?v=__ASSET_V__"></script>
-<script>
-(function () {
-  "use strict";
-  var byom = window.ArtificeByom.create({
-    appName: "ArtificeTranscribe",
-    onConfigured: function () { byom.close(); }
-  });
-  fetch("/api/byom/state")
-    .then(function (r) { return r.json(); })
-    .then(function (state) {
-      if (!state.configured) { byom.open(); }
-    })
-    ["catch"](function () { /* server not ready yet — fine */ });
-})();
-</script>
-</body>
-</html>
+{% endblock %}

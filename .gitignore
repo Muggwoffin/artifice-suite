@@ -68,3 +68,6 @@ apps/*/data/obsidian_vault/
 # cannot be committed by accident. The tests should use tmp_path instead —
 # recorded in IMPLEMENTATION_PLAN.md rather than fixed alongside unrelated work.
 /output/
+
+# Orchestrator scratch scripts — never committed
+scratch-*.sh

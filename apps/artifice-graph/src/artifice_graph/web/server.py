@@ -23,7 +23,7 @@ from fastapi import FastAPI, Query, Request, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
 from artifice_graph.extraction.inference_engine import _VISION_INDICATORS
@@ -71,9 +71,13 @@ app.add_middleware(
 
 HERE = Path(__file__).resolve().parent
 
-# Jinja2
+# Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
+# ChoiceLoader lets templates include shared-ui’s masthead partial.
 _jinja = Environment(
-    loader=FileSystemLoader(str(HERE / "templates")),
+    loader=ChoiceLoader([
+        PackageLoader("artifice_graph.web", "templates"),
+        PackageLoader("shared_ui", "templates"),
+    ]),
     autoescape=select_autoescape(["html", "xml"]),
 )
 
