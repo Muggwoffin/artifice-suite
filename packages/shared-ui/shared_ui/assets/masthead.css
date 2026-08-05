@@ -141,6 +141,77 @@ body {
   transform: scaleX(1);
 }
 
+/* ── Model (BYOM) trigger ─────────────────────────────────────────────── */
+
+/* Reopens the "Connect a local model" screen (byom.js — ArtificeByom
+ * .autostart()/.open()), which otherwise only ever shows once, on first
+ * load, with no way back once dismissed. Sits immediately before
+ * .nav-theme so the two app-level controls (not nav destinations) group
+ * together at the right; .navlinks' flex: 1 keeps the nav links in the
+ * middle regardless of how many controls follow them.
+ *
+ * A labelled control, not a bare icon — "Model" is always in the accessible
+ * tree as visible text, not carried only by the dot or an aria-label.
+ * WCAG 2.5.5: 44px minimum target, via height (not min-height — min-height
+ * only raises a control shorter than the floor and does nothing to one
+ * already taller, see .nav-theme's own note below).
+ *
+ * Deliberately does NOT say "Connected"/"Online": GET /api/byom/state
+ * reports only whether settings differ from defaults, nothing about
+ * whether the endpoint answers right now, so any liveness wording here
+ * would be false the moment a configured endpoint goes down — exactly the
+ * situation this control exists to let a user recover from. byom.js sets
+ * [data-state] and a matching aria-label ("Model configured…" /
+ * "Model not configured…") once GET /api/byom/state resolves; the
+ * unqualified state below is what a first paint (before that fetch
+ * settles) and a no-JS render both show. */
+
+.nav-byom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  background: none;
+  border: 1px solid var(--rule-dark);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease,
+              border-color var(--duration-fast) ease;
+}
+
+.nav-byom:hover {
+  background-color: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+
+/* Design_Philosophy.md §9 ("Color is never the sole indicator of state,
+ * always pair with text, icon, or shape"): configured vs. not is a filled
+ * vs. hollow circle, a shape difference independent of the colour change,
+ * and the same state is repeated in words via the button's aria-label
+ * (set in byom.js) — never carried by this dot alone. */
+.nav-byom-dot {
+  flex: 0 0 auto;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--ink-faint);
+  background-color: transparent;
+  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.nav-byom[data-state="configured"] .nav-byom-dot {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* ── Theme toggle ─────────────────────────────────────────────────────── */
 
 /* WCAG 2.5.5: the theme toggle must meet the 44px minimum target size

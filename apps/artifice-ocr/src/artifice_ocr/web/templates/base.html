@@ -43,16 +43,10 @@
 <script>
 (function () {
   "use strict";
-  var byom = window.ArtificeByom.create({
+  var byom = window.ArtificeByom.autostart({
     appName: "ArtificeOCR",
     onConfigured: function () { byom.close(); }
   });
-  fetch("/api/byom/state")
-    .then(function (r) { return r.json(); })
-    .then(function (state) {
-      if (!state.configured) { byom.open(); }
-    })
-    ["catch"](function () { /* server not ready yet — fine */ });
 })();
 </script>
 {% block scripts %}{% endblock %}
