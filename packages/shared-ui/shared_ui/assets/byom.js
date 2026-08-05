@@ -305,7 +305,15 @@
     openOpts = openOpts || {};
     if (this.overlay) { this.close(); }
 
-    this.lastFocused = document.activeElement;
+    // Remember what had focus so close() can return it there. Only a real,
+    // pre-existing focus target counts: on the first-load auto-open (see
+    // autostart()) the screen opens with no user interaction at all and
+    // document.activeElement is document.body — that is not a trigger to
+    // restore focus to, it is the platform default, and restoring "to
+    // body" would force focus somewhere deliberately rather than leaving
+    // it alone as the first-load case always has.
+    var active = document.activeElement;
+    this.lastFocused = (active && active !== document.body) ? active : null;
     this._build();
     document.body.appendChild(this.overlay);
 
@@ -335,8 +343,16 @@
     if (this.overlay.parentNode) { this.overlay.parentNode.removeChild(this.overlay); }
     this.overlay = null;
     this.modal = null;
-    if (this.lastFocused && typeof this.lastFocused.focus === "function") {
-      this.lastFocused.focus();
+    // Restore focus to whichever element opened the dialog (e.g. the
+    // masthead trigger) — but only if it is still connected to the
+    // document. A trigger that was itself removed while the dialog was
+    // open (or the null captured for the no-trigger auto-open case above)
+    // must not force focus anywhere; leaving activeElement wherever the
+    // browser puts it on node removal is correct in that case, not a gap.
+    var target = this.lastFocused;
+    this.lastFocused = null;
+    if (target && typeof target.focus === "function" && document.contains(target)) {
+      target.focus();
     }
   };
 
