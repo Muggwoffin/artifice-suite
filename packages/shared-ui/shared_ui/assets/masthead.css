@@ -48,6 +48,22 @@ body {
 
 /* ── Brand wordmark ───────────────────────────────────────────────────── */
 
+/* The wordmark and its optional tagline are one typographic unit — a
+ * kicker caption attached to a headline, not a second independent nav
+ * item — so they get their own tight internal gap and share a text
+ * baseline, instead of inheriting .topnav's wider inter-item gap
+ * (--space-7) and its center alignment, both of which are correct
+ * between *unrelated* elements (brand vs. nav links vs. theme toggle)
+ * but read as the tagline drifting loose from the word it belongs to.
+ * Design_Philosophy.md §8.5 documents the wordmark as "three parts:
+ * .brand … .navlinks … nav-theme" with the tagline folded into the
+ * first part, not a fourth — this group makes that literal. */
+.brand-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
 .brand {
   font-family: var(--font-display);
   font-size: var(--text-lg);
@@ -61,8 +77,13 @@ body {
   color: var(--accent);
 }
 
-/* ── Optional tagline ─────────────────────────────────────────────────── */
+/* ── Tagline ──────────────────────────────────────────────────────────── */
 
+/* Subordinate to .brand by three independent typographic signals — small
+ * label size vs. the wordmark's display size, muted ink-soft vs. ink,
+ * and label-case/tracking vs. the wordmark's sentence-case serif — so the
+ * hierarchy holds even in a screen reader or a print of the page, not
+ * only by proximity. */
 .brand-tagline {
   font-family: var(--font-label);
   font-size: var(--text-xs);

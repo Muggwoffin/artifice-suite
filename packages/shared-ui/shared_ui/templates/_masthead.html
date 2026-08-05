@@ -42,10 +42,12 @@
    ───────────────────────────────────────────────────────────────────── #}
 
 <nav class="topnav">
-  <a class="brand" href="/">Artifice<span class="brand-accent">{{ brand_accent }}</span></a>
-  {%- if brand_tagline %}
-  <span class="brand-tagline">{{ brand_tagline }}</span>
-  {%- endif %}
+  <div class="brand-group">
+    <a class="brand" href="/">Artifice<span class="brand-accent">{{ brand_accent }}</span></a>
+    {%- if brand_tagline %}
+    <span class="brand-tagline">{{ brand_tagline }}</span>
+    {%- endif %}
+  </div>
   <div class="navlinks">
   {%- for item in nav_items %}
     <a href="{{ item.href }}"

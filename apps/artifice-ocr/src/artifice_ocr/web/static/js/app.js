@@ -287,20 +287,29 @@ els["btn-retry"].onclick = async () => {
 
 // ------------------------------------------------------------------- running
 
+// Pause/Resume is one button whose icon and label swap with run state; both
+// icons live in icons.js (Design_Philosophy.md §8.8) rather than as a
+// Unicode dingbat mixed into the label — see the app.css note by the
+// `.icon-btn` rule for why that used to inflate the button's line box.
+function setPauseButtonLabel(paused) {
+  els["btn-pause"].innerHTML = (paused ? Icons.play : Icons.pause) +
+    `<span>${paused ? "Resume" : "Pause"}</span>`;
+}
+
 function setRunning(isRunning) {
   running = isRunning;
   els["btn-run"].disabled = isRunning;
   els["btn-pause"].disabled = !isRunning;
   els["btn-stop"].disabled = !isRunning;
   if (!isRunning) {
-    els["btn-pause"].textContent = "⏸ Pause";
+    setPauseButtonLabel(false);
     els["progress-bar"].classList.remove("active");
   }
 }
 
 function applyRunStatus(status) {
   setRunning(!!status.running);
-  if (status.paused) els["btn-pause"].textContent = "▶ Resume";
+  if (status.paused) setPauseButtonLabel(true);
 }
 
 els["btn-run"].onclick = async () => {
@@ -328,7 +337,7 @@ els["btn-run"].onclick = async () => {
 els["btn-pause"].onclick = async () => {
   const paused = els["btn-pause"].textContent.includes("Resume");
   await api("POST", paused ? "/api/run/resume" : "/api/run/pause");
-  els["btn-pause"].textContent = paused ? "⏸ Pause" : "▶ Resume";
+  setPauseButtonLabel(!paused);
 };
 els["btn-stop"].onclick = async () => {
   await api("POST", "/api/run/cancel");
@@ -630,11 +639,6 @@ els["btn-browse-output"].onclick = async () => {
   try {
     const cfg = await api("GET", "/api/config");
     if (cfg.output_dir) els["output-dir"].value = cfg.output_dir;
-    // If user previously dismissed onboarding, sync that to localStorage
-    // so the onboarding overlay (loaded next) won't reappear.
-    if (cfg.onboarding_dismissed) {
-      localStorage.setItem("ocr_onboarding_dismissed", "1");
-    }
   } catch { /* config is optional at startup */ }
   await refreshQueue();
   connectEvents();

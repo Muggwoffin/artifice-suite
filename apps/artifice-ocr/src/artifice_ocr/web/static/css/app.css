@@ -91,36 +91,6 @@ button, input, select { font-family: inherit; font-size: inherit; }
   height: 100vh;
 }
 
-.masthead {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem var(--space-6);
-  border-bottom: 1px solid var(--rule);
-  flex-shrink: 0;
-}
-
-.masthead h1 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: var(--text-h3);
-  margin: 0;
-  line-height: 1.2;
-}
-
-.masthead .tag {
-  font-family: var(--font-label);
-  font-weight: 600;
-  font-size: 0.65rem;
-  letter-spacing: var(--label-tracking);
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 0.08rem 0.45rem;
-  white-space: nowrap;
-}
-
 .tabs {
   display: flex;
   gap: 0.2rem;
@@ -132,6 +102,9 @@ button, input, select { font-family: inherit; font-size: inherit; }
   appearance: none;
   background: none;
   border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.7rem var(--space-6);
   font-family: var(--font-label);
   font-weight: 600;
@@ -141,6 +114,8 @@ button, input, select { font-family: inherit; font-size: inherit; }
   border-bottom: 2px solid transparent;
   transition: color 0.15s ease;
 }
+
+.tab svg { flex-shrink: 0; }
 
 .tab:hover { color: var(--ink); }
 
@@ -302,13 +277,15 @@ button.btn {
   border-radius: var(--radius-md);
   /* Design_Philosophy.md §8.1 button padding, applied literally rather than
      the smaller ad hoc value this rule used to carry — see the app.css
-     header note on control-height parity. line-height is pinned to 1
-     because several .btn labels mix Latin text with a Unicode dingbat
-     (e.g. "&#9654; Run Pipeline"); with the default `line-height: normal`
-     the browser falls back to a different font for the glyph and that
-     font's own line metrics can inflate the button's line box by a few
-     px relative to a glyph-free sibling button, which is exactly the
-     "same class, different height" defect this pass corrects. */
+     header note on control-height parity. line-height is pinned to 1 as a
+     general row-alignment precaution across every .btn label, single-line
+     or not. It used to also be load-bearing for a Unicode dingbat mixed
+     into a couple of labels (e.g. "&#9654; Run Pipeline") — the browser's
+     font-fallback for that glyph could inflate the line box by a few px
+     relative to a glyph-free sibling button. Those dingbats are gone
+     (replaced by inline SVG per Design_Philosophy.md §8.8 — see
+     .icon-btn below), so that specific failure mode no longer applies,
+     but line-height: 1 stays for the general case. */
   padding: 0.8rem 1.4rem;
   /* §8.3 row-alignment: buttons that share a row with inputs/selects must
      resolve to --control-height. The find-bar and image-toolbar compact
@@ -346,6 +323,16 @@ button.btn.accent:hover:not(:disabled) { background: var(--accent-deep); }
 
 button.btn.danger { color: var(--error); }
 button.btn.danger:hover:not(:disabled) { background: var(--error); color: var(--paper); border-color: var(--error); }
+
+/* A button that pairs an inline SVG icon (Design_Philosophy.md §8.8) with a
+   text label — Run/Pause/Stop today. Flex handles the icon/label baseline
+   alignment that plain text-with-a-dingbat used to need line-height: 1 for. */
+button.btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+button.btn.icon-btn svg { flex-shrink: 0; }
 
 /* ---------------------------------------------------------------- section divider */
 
@@ -621,9 +608,6 @@ select.select, .output-row select, .run-row select, label select {
 .compare-conf { font-size: var(--text-sm);   white-space: nowrap;
 }
 
-.masthead .theme-toggle {
-  margin-left: auto;
-}
 .compare-conf.conf-high { color: var(--accent); }
 .compare-conf.conf-medium { color: var(--gold); }
 .compare-conf.conf-low { color: var(--error); }
@@ -1322,8 +1306,10 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 }
 
 .palette-item .palette-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 1.4rem;
-  text-align: center;
   color: var(--ink-faint);
   flex-shrink: 0;
 }
@@ -1344,56 +1330,6 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   text-align: center;
   color: var(--ink-faint);
   font-style: italic;
-}
-
-/* =================================================== ONBOARDING TIPS
-   ============================================================ */
-
-.onboarding-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 300;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.onboarding-overlay.hidden { display: none; }
-
-.onboarding-card {
-  width: min(560px, 92vw);
-  background: var(--paper-raised);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lifted);
-  padding: var(--space-7);
-}
-
-.onboarding-card h2 {
-  font-family: var(--font-display);
-  margin: 0 0 var(--space-5);
-  font-size: var(--text-h3);
-}
-
-.onboarding-card .tip {
-  display: flex;
-  gap: 0.7rem;
-  margin-bottom: var(--space-4);
-  font-size: var(--text-sm);
-}
-.onboarding-card .tip-icon {
-  flex-shrink: 0;
-  width: 1.5rem;
-  text-align: center;
-  color: var(--accent);
-}
-.onboarding-card .tip strong { color: var(--ink); }
-
-.onboarding-card .onboarding-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  margin-top: var(--space-6);
 }
 
 /* =================================================== COLUMN VISIBILITY TOGGLE
@@ -1441,7 +1377,6 @@ table.queue tbody tr.dragging { opacity: 0.4; }
 @media (max-width: 1100px) {
   .tiles { grid-template-columns: repeat(3, 1fr); }
   .charts-grid { grid-template-columns: 1fr; }
-  .masthead .tag { display: none; }
 }
 
 @media (max-width: 900px) {
@@ -1469,8 +1404,6 @@ table.queue tbody tr.dragging { opacity: 0.4; }
 
 @media (max-width: 600px) {
   .panel { padding: 0.75rem 0.8rem; }
-  .masthead { padding: 0.75rem 0.8rem 0.5rem; }
-  .masthead .tag { display: none; }
   .tabs { overflow-x: auto; padding: 0 0.5rem; }
   .tab { padding: 0.6rem 0.7rem; font-size: 0.78rem; }
 

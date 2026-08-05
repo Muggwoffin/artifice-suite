@@ -9,13 +9,65 @@
 {% block content %}
 <main class="page page-prose" id="main-content">
   <header class="masthead">
+    <span class="label">Local-first &middot; tracked changes</span>
     <h1>About ArtificeDraft</h1>
     <hr class="masthead-rule">
   </header>
 
   <p>
-    Content to be written by ui-ux in a later stage.
+    ArtificeDraft copy-edits a <code>.docx</code> manuscript and hands it
+    back with the changes recorded as Word's own tracked revisions &mdash;
+    the same review workflow a human copy editor would leave, so a co-author
+    or a journal can accept or reject each change in Word itself. It reads
+    each paragraph, sends it to a language model with the editing style and
+    journal guide you've chosen, and writes the result with nothing silently
+    overwritten.
   </p>
+
+  <h2 class="section-head">How a document moves through it</h2>
+  <ol>
+    <li><strong>Parse</strong> &mdash; the uploaded <code>.docx</code> is read
+        paragraph by paragraph, keeping style, indent level and
+        bold/italic runs intact.</li>
+    <li><strong>Edit</strong> &mdash; paragraphs are batched to the
+        configured provider (Ollama, OpenAI or Anthropic) with the chosen
+        editing style and any journal guide applied.</li>
+    <li><strong>Review</strong> &mdash; when review is enabled, each proposed
+        edit is shown for approval or rejection before anything is written,
+        rather than trusting the model's output outright.</li>
+    <li><strong>Write</strong> &mdash; the accepted edits are applied as
+        <code>&lt;w:ins&gt;</code>/<code>&lt;w:del&gt;</code> revisions in a
+        new <code>.docx</code>, leaving the original file untouched.</li>
+  </ol>
+
+  <h2 class="section-head">Editing styles and journal guides</h2>
+  <p>
+    Editing style (academic, creative, concise, business, journal or a
+    custom prompt) sets the general voice of the edit. A journal style
+    guide layers on top of it &mdash; Chicago, MLA and APA ship built in,
+    and the Journal Guide dialog can scrape a publisher's author guidelines
+    from a URL, parse a pasted block of text, or read a <code>.docx</code>
+    or <code>.pdf</code> you already have, so a guide specific to the
+    journal you're submitting to doesn't have to be written by hand.
+  </p>
+
+  <h2 class="section-head">Design language</h2>
+  <p>
+    This interface implements <strong>The New Masses</strong> design system:
+    an offline-first, print-inflected editorial aesthetic with warm paper
+    surfaces, a plum accent, and fluid serif typography. All design tokens
+    are served from the shared
+    <code>packages/shared-ui/shared_ui/assets/tokens.css</code>; never
+    hardcode colours or spacing.
+  </p>
+
+  <h2 class="section-head">Run it</h2>
+  <p>
+    From the project root:
+  </p>
+  <pre class="mono">pip install -e ".[web]"
+python -m artifice_draft.web.server
+# opens a native window (or --browser for the system browser)</pre>
 
   <p class="foot">
     ArtificeDraft &middot; an Artifice platform &middot; FastAPI + Jinja2 &middot; vanilla JS.

@@ -9,13 +9,80 @@
 {% block content %}
 <main class="page page-prose" id="main-content">
   <header class="masthead">
+    <span class="label">Local-first &middot; offline OCR, cleanup &amp; translation</span>
     <h1>About ArtificeOCR</h1>
     <hr class="masthead-rule">
   </header>
 
   <p>
-    Content to be written by ui-ux in a later stage.
+    ArtificeOCR turns a folder of scanned or photographed pages into corrected,
+    searchable text &mdash; and, where the source language isn't English, a
+    translation &mdash; without sending a single page to a remote service. Add
+    files by drag-and-drop, by browsing to a folder, or by pulling items
+    directly from a read-only Tropy project; queue them; choose which stages
+    to run; and watch the queue update live as each document moves through
+    the pipeline.
   </p>
+
+  <h2 class="section-head">Pipeline stages</h2>
+  <ol>
+    <li><strong>OCR</strong> &mdash; reads each page image with a vision-capable
+        model. The default route is a local model served by LM Studio; Ollama,
+        Hugging Face and a cloud API key are configurable alternatives in
+        Settings, one per stage.</li>
+    <li><strong>Cleanup</strong> &mdash; a language model pass corrects
+        recognition errors and normalises layout while a content-preservation
+        guard keeps the original wording whenever the edit looks lossy, so a
+        page is either cleaned or left untouched, never silently reworded.</li>
+    <li><strong>Translate</strong> &mdash; renders the cleaned text into
+        English. A confident language-detection pass skips already-English
+        pages rather than risking an LLM "helpfully" rewriting text that
+        didn't need translating.</li>
+    <li><strong>Export</strong> &mdash; compile any stage's output into a
+        continuous reading PDF or Markdown file, send corrected text back to
+        Tropy as notes or transcriptions, or export a collection for
+        LudwigLang's Import page.</li>
+  </ol>
+
+  <h2 class="section-head">Preview, history and correction</h2>
+  <p>
+    The Preview tab shows the source scan beside raw OCR, cleaned and
+    translated text side by side, with the original always one click away
+    behind "Original" so a correction never hides what the model actually
+    produced. History keeps every past run and document searchable, with the
+    same compare view and a thumbnail strip across the source images. Batch
+    Correct applies a single find/replace across the whole queue or a
+    selection, with its own template list for corrections you make often.
+  </p>
+
+  <h2 class="section-head">Templates and quick actions</h2>
+  <p>
+    Settings &rarr; Run Templates saves a stage-and-option combination under a
+    name, so a recurring job configuration is one click instead of six.
+    <span class="kbd">Ctrl</span>+<span class="kbd">K</span> (<span class="kbd">Cmd</span>+<span class="kbd">K</span> on macOS) opens a
+    command palette that jumps to any tab, runs a queue action, or applies a
+    template without leaving the keyboard. The same palette also toggles
+    light and dark themes, as does the icon at the right of the top
+    navigation bar.
+  </p>
+
+  <h2 class="section-head">Design language</h2>
+  <p>
+    This interface implements <strong>The New Masses</strong> design system:
+    an offline-first, print-inflected editorial aesthetic with warm paper
+    surfaces, a deep teal accent, and fluid serif typography. All
+    design tokens are served from the shared
+    <code>packages/shared-ui/shared_ui/assets/tokens.css</code>; never
+    hardcode colours or spacing.
+  </p>
+
+  <h2 class="section-head">Run it</h2>
+  <p>
+    From the project root:
+  </p>
+  <pre class="mono">pip install -e ".[web]"
+artifice-ocr-web
+# &rarr; http://localhost:8765</pre>
 
   <p class="foot">
     ArtificeOCR &middot; an Artifice platform &middot; FastAPI + Jinja2 &middot; vanilla JS.

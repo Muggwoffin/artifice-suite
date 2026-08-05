@@ -17,32 +17,32 @@ const Palette = (function () {
   function buildCommands() {
     commands = [
       // Tabs
-      { label: "Main", icon: "▸", action: () => activateTab("main"), shortcut: "1" },
-      { label: "Preview", icon: "▸", action: () => activateTab("preview"), shortcut: "2" },
-      { label: "History", icon: "▸", action: () => activateTab("history"), shortcut: "3" },
-      { label: "Analytics", icon: "▸", action: () => activateTab("analytics"), shortcut: "4" },
-      { label: "Settings", icon: "▸", action: () => activateTab("settings"), shortcut: "5" },
+      { label: "Main", icon: Icons.chevron, action: () => activateTab("main"), shortcut: "1" },
+      { label: "Preview", icon: Icons.chevron, action: () => activateTab("preview"), shortcut: "2" },
+      { label: "History", icon: Icons.chevron, action: () => activateTab("history"), shortcut: "3" },
+      { label: "Analytics", icon: Icons.chevron, action: () => activateTab("analytics"), shortcut: "4" },
+      { label: "Settings", icon: Icons.chevron, action: () => activateTab("settings"), shortcut: "5" },
       // Queue actions
-      { label: "Browse Files", icon: "📁", action: () => document.getElementById("btn-browse-files")?.click() },
-      { label: "Add Folder", icon: "📂", action: () => document.getElementById("btn-add-folder")?.click() },
-      { label: "Add from Tropy", icon: "📄", action: () => document.getElementById("btn-add-tropy")?.click() },
-      { label: "Clear Queue", icon: "🗑", action: () => document.getElementById("btn-clear")?.click() },
-      { label: "Remove Selected", icon: "🗑", action: () => document.getElementById("btn-remove")?.click() },
-      { label: "Skip Selected", icon: "⏭", action: () => document.getElementById("btn-skip")?.click() },
-      { label: "Retry Selected", icon: "🔄", action: () => document.getElementById("btn-retry")?.click() },
+      { label: "Browse Files", icon: Icons.file, action: () => document.getElementById("btn-browse-files")?.click() },
+      { label: "Add Folder", icon: Icons.folderPlus, action: () => document.getElementById("btn-add-folder")?.click() },
+      { label: "Add from Tropy", icon: Icons.file, action: () => document.getElementById("btn-add-tropy")?.click() },
+      { label: "Clear Queue", icon: Icons.trash, action: () => document.getElementById("btn-clear")?.click() },
+      { label: "Remove Selected", icon: Icons.trash, action: () => document.getElementById("btn-remove")?.click() },
+      { label: "Skip Selected", icon: Icons.skipForward, action: () => document.getElementById("btn-skip")?.click() },
+      { label: "Retry Selected", icon: Icons.refreshCw, action: () => document.getElementById("btn-retry")?.click() },
       // Run actions
-      { label: "Start Pipeline", icon: "▶", action: () => document.getElementById("btn-run")?.click(), shortcut: "Enter" },
-      { label: "Pause / Resume", icon: "⏸", action: () => document.getElementById("btn-pause")?.click() },
-      { label: "Stop Pipeline", icon: "⏹", action: () => document.getElementById("btn-stop")?.click() },
+      { label: "Start Pipeline", icon: Icons.play, action: () => document.getElementById("btn-run")?.click(), shortcut: "Enter" },
+      { label: "Pause / Resume", icon: Icons.pause, action: () => document.getElementById("btn-pause")?.click() },
+      { label: "Stop Pipeline", icon: Icons.stop, action: () => document.getElementById("btn-stop")?.click() },
       // Compile / Export
-      { label: "Compile PDF", icon: "📑", action: () => document.getElementById("btn-compile-pdf")?.click() },
-      { label: "Send to Tropy", icon: "📄", action: () => document.getElementById("btn-send-tropy")?.click() },
+      { label: "Compile PDF", icon: Icons.fileText, action: () => document.getElementById("btn-compile-pdf")?.click() },
+      { label: "Send to Tropy", icon: Icons.file, action: () => document.getElementById("btn-send-tropy")?.click() },
       // Settings
-      { label: "Save Settings", icon: "💾", action: () => document.getElementById("btn-settings-save")?.click() },
-      { label: "Reset Settings", icon: "↺", action: () => document.getElementById("btn-settings-reset")?.click() },
-      { label: "Check Connections", icon: "🏥", action: () => document.getElementById("btn-preflight")?.click() },
+      { label: "Save Settings", icon: Icons.save, action: () => document.getElementById("btn-settings-save")?.click() },
+      { label: "Reset Settings", icon: Icons.refreshCcw, action: () => document.getElementById("btn-settings-reset")?.click() },
+      { label: "Check Connections", icon: Icons.link, action: () => document.getElementById("btn-preflight")?.click() },
       // Toggle theme
-      { label: "Toggle Dark Mode", icon: "🌙", action: () => window.ThemeToggle?.toggle(), shortcut: "D" },
+      { label: "Toggle Dark Mode", icon: Icons.moon, action: () => window.ThemeToggle?.toggle(), shortcut: "D" },
     ];
 
     // Add templates as commands
@@ -53,7 +53,7 @@ const Palette = (function () {
         for (const name of Object.keys(templates)) {
           commands.push({
             label: `Apply template: ${name}`,
-            icon: "📋",
+            icon: Icons.clipboard,
             action: () => applyTemplate(name),
           });
         }

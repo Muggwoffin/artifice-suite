@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/shared/fonts.css?v={{ asset_v }}">
   <link rel="stylesheet" href="/shared/tokens.css?v={{ asset_v }}">
   <link rel="stylesheet" href="/shared/masthead.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/shared/prose.css?v={{ asset_v }}">
   {% block head %}{% endblock %}
   <link rel="stylesheet" href="/static/css/app.css?v={{ asset_v }}">
   <link rel="stylesheet" href="/shared/byom.css?v={{ asset_v }}">
@@ -21,7 +22,7 @@
 
 {% include '_masthead.html' %}
 
-<div class="app" id="main-content">
+<div class="app"{% if active_tab != 'about' %} id="main-content"{% endif %}>
 {% block content %}{% endblock %}
 </div>
 
