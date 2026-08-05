@@ -14,8 +14,6 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
 from model_harness.contract import EndpointRejected
 from model_harness.discovery import (
     ProbeResult,
@@ -23,7 +21,13 @@ from model_harness.discovery import (
     probe_endpoint,
 )
 from model_harness.endpoint_policy import EndpointPolicy
-from model_harness.registry import KNOWN_ENDPOINTS, HardwareTier, recommendations_for_app
+from model_harness.registry import (
+    KNOWN_ENDPOINTS,
+    HardwareTier,
+    is_configured,
+    recommendations_for_app,
+)
+from pydantic import BaseModel
 
 from ...api.v1.routes import _load_inference_config, _save_inference_config
 
@@ -45,21 +49,22 @@ def _name_for_probe(r: ProbeResult) -> str:
 
 # ── Recommendations helper ──────────────────────────────────────────────────
 #
-# ``artifice-transcribe`` is deliberately absent from
-# ``_RECOMMENDATIONS`` — it uses ``ASR_MODELS`` instead.  Calling
-# ``recommendations_for_app("artifice-transcribe", ...)`` raises
-# ``KeyError``, so we catch it and return an empty map rather than a 500.
+# As of 2026-08, the registry carries text-only model recommendations for
+# ``artifice-transcribe``'s optional post-transcription inference endpoint
+# (summarize / cleanup).  The ``try/except KeyError`` guard was written when
+# the registry deliberately omitted transcribe, and it remains as correct
+# defensive code for any app that might be absent in the future.
+# Transcribe separately uses ``ASR_MODELS`` for the transcription engines
+# themselves — those are ASR models pulled from Hugging Face, not LLMs.
 
 
 def _byom_recommendations(app_key: str) -> dict:
     """Serialise :func:`recommendations_for_app` for all three hardware tiers.
 
-    For ``artifice-transcribe`` this returns an empty map — the app uses
-    :data:`~model_harness.registry.ASR_MODELS` instead, and
-    ``recommendations_for_app`` deliberately raises ``KeyError`` for it
-    (see ``registry.py:364-366``).  The BYOM screen shows no model
-    recommendations for transcribe, which is correct: its models are ASR
-    engines pulled from Hugging Face, not Ollama images.
+    Returns text-only model recommendations for transcribe's post-
+    transcription inference endpoint.  Transcribe uses
+    :data:`~model_harness.registry.ASR_MODELS` separately for the
+    transcription engines themselves.
     """
     tier_keys = {
         "laptop": HardwareTier.LAPTOP,
@@ -103,9 +108,7 @@ def byom_state() -> dict:
     api_key = cfg.get("api_key") or ""
     model_name = cfg.get("model_name") or ""
 
-    configured = bool(api_key != "not-needed" and api_key) or (
-        base_url not in ("", "http://localhost:11434/v1")
-    )
+    configured = is_configured(base_url, api_key, defaults=("http://localhost:11434/v1",))
 
     return {
         "app": "artifice-transcribe",

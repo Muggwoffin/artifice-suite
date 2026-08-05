@@ -17,12 +17,11 @@ its provenance.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Mapping, Sequence
 
 from model_harness.contract import Provider
-
 
 # ── Enums ────────────────────────────────────────────────────────────────────
 
@@ -323,13 +322,59 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
             ),
         ],
     },
+    "artifice-transcribe": {
+        HardwareTier.LAPTOP: [
+            ModelRecommendation(
+                model_name="llama3.2:3b",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=4.0,
+            ),
+            ModelRecommendation(
+                model_name="phi4-mini:3.8b",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=4.0,
+            ),
+        ],
+        HardwareTier.DESKTOP: [
+            ModelRecommendation(
+                model_name="qwen2.5:32b",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=24.0,
+            ),
+            ModelRecommendation(
+                model_name="llama3.1:8b",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=8.0,
+            ),
+        ],
+        HardwareTier.MAC_UNIFIED: [
+            ModelRecommendation(
+                model_name="qwen2.5:14b",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=12.0,
+            ),
+            ModelRecommendation(
+                model_name="llama3.1:8b",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=8.0,
+            ),
+        ],
+    },
 }
 """
 Model recommendations by app and hardware tier.
 
-``artifice-ocr`` receives vision models; ``artifice-graph`` and
-``artifice-draft`` receive text-only models.  ``artifice-transcribe`` uses
-:data:`ASR_MODELS` instead of these recommendations.
+``artifice-ocr`` receives vision models; ``artifice-graph``,
+``artifice-draft``, and ``artifice-transcribe`` receive text-only models.
+``artifice-transcribe`` additionally uses :data:`ASR_MODELS` for its
+transcription engines themselves — these recommendations cover only its
+optional post-transcription inference endpoint (summarize / cleanup).
 """
 
 
@@ -361,9 +406,11 @@ def recommendations_for_app(
 
     Args:
         app: One of ``"artifice-ocr"``, ``"artifice-graph"``,
-            ``"artifice-draft"``.  ``"artifice-transcribe"`` is deliberately
-            absent — it uses :data:`ASR_MODELS` instead of these
-            recommendations, and passing it will raise ``KeyError``.
+            ``"artifice-draft"``, ``"artifice-transcribe"``.
+            ``"artifice-transcribe"`` receives **text** recommendations
+            for its optional post-transcription inference endpoint
+            (summarize / cleanup); it uses :data:`ASR_MODELS` separately
+            for the transcription engines themselves.
         tier: The hardware capability tier.
 
     Returns:
@@ -371,11 +418,51 @@ def recommendations_for_app(
         ordered from most- to least-preferred.
 
     Raises:
-        KeyError: if *app* has no recommendations registered (including
-            ``"artifice-transcribe"``), or if *tier* has no entries for the
-            given app.
+        KeyError: if *app* has no recommendations registered, or if *tier*
+            has no entries for the given app.
     """
     return _RECOMMENDATIONS[app][tier]
+
+
+# ── shared configured rule ──────────────────────────────────────────────────
+
+
+# API keys that do not count as user-configured — empty strings and
+# ``"not-needed"``, which transcribe writes as its default placeholder.
+_PLACEHOLDER_API_KEYS: frozenset[str] = frozenset({"", "not-needed"})
+
+
+def is_configured(
+    base_url: str,
+    api_key: str = "",
+    *,
+    defaults: Iterable[str] = (),
+) -> bool:
+    """Return ``True`` when the user has departed from the built-in defaults.
+
+    An endpoint is considered configured when either:
+
+    * *api_key* is non-empty and is not a known placeholder
+      (``""``, ``"not-needed"``), **or**
+    * *base_url* is non-empty and is not one of the values the app ships
+      as its default.
+
+    Args:
+        base_url: The URL the app will connect to (may be empty).
+        api_key: The API key (may be empty or a placeholder).
+        defaults: The set of base URLs the app ships as out-of-the-box
+            defaults.  A module-level default set is available as
+            :data:`_PLACEHOLDER_API_KEYS`.
+
+    Returns:
+        ``True`` if the user has intentionally changed at least one
+        configuration value away from the shipped default.
+    """
+    if api_key and api_key not in _PLACEHOLDER_API_KEYS:
+        return True
+    if base_url and base_url not in defaults:  # noqa: SIM103
+        return True
+    return False
 
 
 __all__ = [
@@ -387,5 +474,6 @@ __all__ = [
     "ModelRecommendation",
     "get_asr_model",
     "get_endpoint",
+    "is_configured",
     "recommendations_for_app",
 ]

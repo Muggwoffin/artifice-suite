@@ -441,6 +441,21 @@
   margin-bottom: var(--space-3);
 }
 
+/* Wraps a .byom-code-row together with a one-line caption underneath it —
+   used only on ocr's Advanced tab, to surface each recommendation's
+   `vision` flag right where a user is about to substitute their own model
+   (Design brief: "say it where a user is about to act on it"). Also
+   reused, without a row, for the "no recommendation for this tier" and
+   the pull-step fallback text elsewhere in this file — hence the class is
+   not scoped to .byom-code-item alone. */
+.byom-code-item .byom-code-row { margin-bottom: var(--space-2); }
+.byom-code-note {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  margin: 0 0 var(--space-3);
+}
+
 /* .byom-code is a static command, not editable input, and must not invite
    a click/cursor the way .byom-input does. It shares .byom-input's radius
    (4px is correct for both per §11's radius discipline) but not its fill

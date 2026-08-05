@@ -220,6 +220,62 @@
     try { window.localStorage.setItem(TIER_STORAGE_KEY, tier); } catch (e) { /* ignore */ }
   }
 
+  // ── Per-app copy ─────────────────────────────────────────────────────
+  // One shared component, four different framings: ocr requires a
+  // vision-capable model, graph needs two separate endpoints (an LLM and
+  // a separate embedding server), and transcribe's endpoint is genuinely
+  // optional — it powers only the post-transcription summarise/cleanup
+  // actions (api/v1/routes.py:614, :652), never transcription itself,
+  // which runs Whisper/pyannote downloaded separately and needs none of
+  // this. Slugs below match GET /api/byom/state's `app` field exactly.
+
+  var APP_OCR = "artifice-ocr";
+  var APP_DRAFT = "artifice-draft";
+  var APP_GRAPH = "artifice-graph";
+  var APP_TRANSCRIBE = "artifice-transcribe";
+
+  // titleFor/ledeFor are called only from _renderIdentity(), i.e. only
+  // after GET /api/byom/state has resolved and appSlug is known — see the
+  // timing note on _build()'s static placeholder lede below for why
+  // nothing app-specific can be written any earlier than that.
+
+  function titleFor(appSlug) {
+    if (appSlug === APP_TRANSCRIBE) { return "Connect a model for summaries (optional)"; }
+    if (appSlug === APP_GRAPH) { return "Connect local models"; }
+    return "Connect a local model";
+  }
+
+  function ledeFor(appSlug, appName) {
+    var name = escapeHtml(appName);
+    if (appSlug === APP_TRANSCRIBE) {
+      // Deliberately does not use "transcribe(s)" as the verb here — with
+      // an appName that is itself some form of "Transcribe", "X
+      // transcribes audio" reads as a stumble (repeats the app's own name
+      // as its verb). This is also the *only* place optionality is
+      // stated — the numbered steps below no longer repeat it as their
+      // own step (see _transcribeSteps and D4/D5 in the review notes).
+      return name + " turns audio into text using Whisper and pyannote, downloaded separately the " +
+        "first time you run a job &mdash; that works fully offline and needs none of this. This " +
+        "screen only configures an optional endpoint used to summarise and clean up a transcript " +
+        "once it is finished, if you choose to use those features.";
+    }
+    if (appSlug === APP_OCR) {
+      return name + " reads page images and needs a model that can <strong>see</strong> the " +
+        "page &mdash; a text-only model will not work here. Connect one below: a small program " +
+        "that runs on this computer, so nothing you scan is ever sent anywhere else.";
+    }
+    if (appSlug === APP_GRAPH) {
+      return name + " needs two local models to build a knowledge graph: a language model to " +
+        "extract entities and relations from your text, and a separate embedding model to match " +
+        "entities that refer to the same thing. Connect both below &mdash; small programs that " +
+        "run on this computer, so nothing you process here is ever sent anywhere else.";
+    }
+    // artifice-draft, and any app slug this file does not yet special-case.
+    return name + " runs entirely on your machine. To do its work it needs a language model " +
+      "&mdash; but instead of shipping one, you connect your own: a small program that runs on " +
+      "this computer, so nothing you process here is ever sent anywhere else.";
+  }
+
   // ── Byom ─────────────────────────────────────────────────────────────
 
   function Byom(opts) {
@@ -353,10 +409,16 @@
       '<h2 class="byom-title" id="byomTitle">Connect a local model</h2>' +
       '<button type="button" class="byom-close" id="byomClose" aria-label="Close">' + ICON_CLOSE + "</button>" +
       "</div>" +
+      // Neutral-until-known placeholder. this.state is null here — _build()
+      // runs at open() time, before _refresh()'s GET /api/byom/state fetch
+      // resolves, so which app this is (and therefore whether it actually
+      // *needs* a model, which is false for transcribe) is not yet known.
+      // This sentence is true for all four apps regardless of that, so a
+      // slow first paint shows something accurate rather than something
+      // later corrected. _renderIdentity() overwrites it once state loads.
       '<p class="byom-lede" id="byomLede">' + escapeHtml(this.appName) +
-      " runs entirely on your machine. To do its work it needs a language model &mdash; but instead of " +
-      "shipping one, you connect your own: a small program that runs on this computer, so nothing you " +
-      "process here is ever sent anywhere else.</p>" +
+      " can connect to a model server that runs on your own machine, so nothing you process here " +
+      "is ever sent anywhere else.</p>" +
       '<div class="byom-detect" id="byomDetect" data-state="detecting" role="status" aria-live="polite">' +
       '<div class="byom-detect-inner">' +
       '<span class="byom-detect-text" id="byomDetectText">Looking for a model server on your machine&hellip;</span>' +
@@ -385,7 +447,11 @@
       '<div id="byomAdvancedGroups"></div>' +
       "</div>" +
       '<div class="byom-connect">' +
-      '<h3 class="byom-connect-title">Connect</h3>' +
+      // Text is neutral ("Connect") at build time and stays that for
+      // draft/ocr/transcribe — only graph relabels this in
+      // _renderIdentity() to "Language model", so its two endpoint
+      // sections read as a named pair rather than identical twins (D2).
+      '<h3 class="byom-connect-title" id="byomConnectTitle">Connect</h3>' +
       '<div class="byom-field">' +
       '<label for="byomUrl">Server URL</label>' +
       '<input type="text" id="byomUrl" class="byom-input" placeholder="http://localhost:11434" autocomplete="off">' +
@@ -397,6 +463,31 @@
       '<div class="byom-connect-actions">' +
       '<button type="button" class="byom-btn-primary" id="byomTestBtn">Test connection</button>' +
       '<div class="byom-result" id="byomResult" role="status" aria-live="polite" data-state="idle">Not tested yet.</div>' +
+      "</div>" +
+      "</div>" +
+      // Second, independent endpoint — graph only. Present in the DOM for
+      // every app (this markup is built before state is known) but hidden
+      // by default; _renderIdentity() unhides it only when state.app is
+      // artifice-graph and state carries an `embedding` key, so the other
+      // three apps' layout is byte-for-byte what it was before this block
+      // existed. #byomEmbedResult is its own aria-live region, deliberately
+      // separate from #byomResult — two endpoints must never share one
+      // live region, or a screen-reader user cannot tell which endpoint a
+      // status message is about.
+      '<div class="byom-connect" id="byomEmbedConnect" hidden>' +
+      '<h3 class="byom-connect-title">Embedding server</h3>' +
+      '<p class="byom-advanced-lede" id="byomEmbedHint"></p>' +
+      '<div class="byom-field">' +
+      '<label for="byomEmbedUrl">Server URL</label>' +
+      '<input type="text" id="byomEmbedUrl" class="byom-input" placeholder="http://localhost:11434" autocomplete="off">' +
+      "</div>" +
+      '<details class="byom-apikey"><summary>API key (optional &mdash; only needed for some servers)</summary>' +
+      '<div class="byom-field"><label for="byomEmbedApiKey">API key</label>' +
+      '<input type="password" id="byomEmbedApiKey" class="byom-input" autocomplete="off"></div>' +
+      "</details>" +
+      '<div class="byom-connect-actions">' +
+      '<button type="button" class="byom-btn-primary" id="byomEmbedTestBtn">Test connection</button>' +
+      '<div class="byom-result" id="byomEmbedResult" role="status" aria-live="polite" data-state="idle">Not tested yet.</div>' +
       "</div>" +
       "</div>" +
       "</div></div></div>";
@@ -419,6 +510,15 @@
     this.testBtn = qs(this.overlay, "#byomTestBtn");
     this.resultEl = qs(this.overlay, "#byomResult");
     this.srStatusEl = qs(this.overlay, "#byomSrStatus");
+    this.titleEl = qs(this.overlay, "#byomTitle");
+    this.ledeEl = qs(this.overlay, "#byomLede");
+    this.connectTitleEl = qs(this.overlay, "#byomConnectTitle");
+    this.embedConnectEl = qs(this.overlay, "#byomEmbedConnect");
+    this.embedHintEl = qs(this.overlay, "#byomEmbedHint");
+    this.embedUrlInput = qs(this.overlay, "#byomEmbedUrl");
+    this.embedApiKeyInput = qs(this.overlay, "#byomEmbedApiKey");
+    this.embedTestBtn = qs(this.overlay, "#byomEmbedTestBtn");
+    this.embedResultEl = qs(this.overlay, "#byomEmbedResult");
 
     this.closeBtn.addEventListener("click", function () { if (self.dismissable) { self.close(); } });
     this.tabBeginner.addEventListener("click", function () { self._activateTab("beginner"); });
@@ -436,6 +536,7 @@
     });
 
     this.testBtn.addEventListener("click", function () { self._testConnection(); });
+    this.embedTestBtn.addEventListener("click", function () { self._testEmbeddingConnection(); });
 
     this.overlay.addEventListener("click", function (e) {
       var copyBtn = e.target.closest ? e.target.closest(".byom-copy") : null;
@@ -475,6 +576,7 @@
     this.fetchImpl("/api/byom/state")
       .then(function (state) {
         self.state = state;
+        self._renderIdentity();
         self._renderSteps();
         self._renderAdvancedGroups();
         self._markSelectedTier();
@@ -532,25 +634,84 @@
     }
   };
 
+  // Sets the title/lede and the embedding-server section from state.app —
+  // the one method allowed to write app-specific copy, because it only
+  // runs after GET /api/byom/state has resolved (see the timing note atop
+  // titleFor/ledeFor and on the _build() placeholder lede).
+  Byom.prototype._renderIdentity = function () {
+    var appSlug = this.state && this.state.app;
+    this.titleEl.textContent = titleFor(appSlug);
+    this.ledeEl.innerHTML = ledeFor(appSlug, this.appName);
+    // "Connect" says nothing about *what* it connects — indistinguishable
+    // from "Embedding server" below it when graph has two endpoint
+    // sections stacked with the same field labels and button text. Only
+    // graph relabels; the other three apps keep the plain "Connect" they
+    // had before this existed (D2).
+    this.connectTitleEl.textContent = appSlug === APP_GRAPH ? "Language model" : "Connect";
+
+    var embedding = (appSlug === APP_GRAPH && this.state) ? this.state.embedding : null;
+    if (embedding) {
+      this.embedConnectEl.removeAttribute("hidden");
+      // Prefill is conditional on `embedding.configured`, not merely on
+      // `embedding.endpoint` being present — the LLM field's placeholder
+      // vs. real-value distinction is exactly what tells a user whether
+      // an endpoint is actually set up, and this field must carry the
+      // same signal. Before this fix, an unconfigured embedder rendered
+      // its default URL as a real value indistinguishable from a saved
+      // one, so a user would see a "filled in" field, assume it was
+      // configured, and skip it — the Run All stage would then fail on
+      // an embedder nobody had actually set up, which is the exact
+      // failure this graph task exists to prevent. `configured: false`
+      // shows the suggested URL as a grey placeholder instead (matching
+      // #byomUrl's own untouched treatment); `configured: true` shows it
+      // as a real prefilled value, because it then reflects a genuine
+      // saved setting rather than a suggestion.
+      if (embedding.endpoint) {
+        if (embedding.configured) {
+          this.embedUrlInput.value = embedding.endpoint;
+        } else {
+          this.embedUrlInput.placeholder = embedding.endpoint;
+        }
+      }
+      this.embedHintEl.textContent = embedding.model ? "Recommended model: " + embedding.model : "";
+    } else {
+      this.embedConnectEl.setAttribute("hidden", "");
+    }
+  };
+
   Byom.prototype._recommendationsFor = function (tier) {
     if (!this.state || !this.state.recommendations) return [];
     return this.state.recommendations[tier] || [];
   };
 
-  Byom.prototype._renderSteps = function () {
-    var recs = this._recommendationsFor(this.selectedTier);
-    var top = recs.length ? recs[0] : null;
-    // Field is `model_name`, not `name` — see the file-level note on the
-    // /api/byom/state contract mismatch (model_harness.registry
-    // .ModelRecommendation has no `name`, `why` or `size_bytes` field; this
-    // reads the fields the dataclass actually has: model_name, vision,
-    // min_vram_gb).
-    var pullCmd = top ? "ollama pull " + top.model_name : "ollama pull llama3.2:3b";
+  // Shared Ollama-install steps (ocr, draft, and the fallback for any
+  // unrecognised app), the pull step tailored per app: ocr must say the
+  // model has to be vision-capable and *where* — the pull step, not only
+  // the lede — because that is the point a user acts on it. `appSlug` is
+  // only ever APP_OCR or something else here; APP_GRAPH and APP_TRANSCRIBE
+  // build their own step lists below and call this one for the shared
+  // first three steps.
+  //
+  // Field is `model_name`, not `name` — see the file-level note on the
+  // /api/byom/state contract mismatch (model_harness.registry
+  // .ModelRecommendation has no `name`, `why` or `size_bytes` field; this
+  // reads the fields the dataclass actually has: model_name, vision,
+  // min_vram_gb).
+  Byom.prototype._defaultSteps = function (top, appSlug) {
+    var isVisionApp = appSlug === APP_OCR;
+    var pullCmd = top ? "ollama pull " + top.model_name : null;
     var whyText = top && top.min_vram_gb
       ? "recommended for machines with at least " + top.min_vram_gb + "GB VRAM"
       : "";
+    var visionNote = isVisionApp
+      ? " It must be a vision-capable model &mdash; a text-only model will not work here."
+      : "";
+    var pullDesc = pullCmd
+      ? "Open a terminal and run the command below" + (whyText ? " — " + escapeHtml(whyText) : "") + "." + visionNote
+      : "No recommendation is available for this hardware tier yet &mdash; pull any" +
+        (isVisionApp ? " vision-capable" : "") + " model from ollama.com/library that fits your machine." + visionNote;
 
-    var steps = [
+    return [
       {
         title: "Download Ollama",
         desc: "Get the installer for your operating system from ollama.com — it is free and open source. " +
@@ -561,17 +722,97 @@
         desc: "Ollama runs quietly in the background once installed — there is no window to keep open."
       },
       {
-        title: "Pull a model sized for your machine",
-        desc: "Open a terminal and run the command below" + (whyText ? " — " + escapeHtml(whyText) : "") + ".",
-        code: pullCmd
+        title: isVisionApp ? "Pull a vision-capable model" : "Pull a model sized for your machine",
+        desc: pullDesc,
+        code: pullCmd || undefined
       },
       {
         title: "Test the connection",
         desc: "Use the Test connection button below once the model has finished downloading."
       }
     ];
+  };
 
-    var html = steps.map(function (s, idx) {
+  // Inserts *step* immediately before the list's terminal "Test the
+  // connection" step, found by title rather than by index — so this stays
+  // correct even if the shared step list this is spliced into ever grows
+  // another step after the pull step. A plain .push() would put the new
+  // step after "Test the connection", which is a real ordering bug (D1):
+  // it told a user to test the connection before pulling a model the app
+  // requires. Falls back to appending only if no such step exists, which
+  // should not happen given _defaultSteps always ends with it.
+  Byom.prototype._insertBeforeTestStep = function (steps, step) {
+    var idx = steps.length;
+    for (var i = 0; i < steps.length; i++) {
+      if (steps[i].title === "Test the connection") { idx = i; break; }
+    }
+    steps.splice(idx, 0, step);
+    return steps;
+  };
+
+  // Graph needs a second, separate model — see the lede in ledeFor(). The
+  // embedding pull command reads state.embedding.model directly rather
+  // than the recommendations registry: model_harness.registry has no
+  // embedding-model table (only _RECOMMENDATIONS, which is LLM/vision
+  // guidance), so state.embedding is the only source for this figure.
+  Byom.prototype._graphSteps = function (top) {
+    var steps = this._defaultSteps(top, APP_GRAPH);
+    var embedding = this.state && this.state.embedding;
+    var embedModel = embedding && embedding.model;
+    var embedCmd = embedModel ? "ollama pull " + embedModel : null;
+    return this._insertBeforeTestStep(steps, {
+      title: "Pull the embedding model too",
+      desc: embedCmd
+        ? "This app also needs a separate, smaller embedding model to match entities that refer to " +
+          "the same thing across your notes. Run the command below."
+        : "This app also needs a separate embedding model to match entities that refer to the same " +
+          "thing across your notes &mdash; pull one (bge-m3 is a good default) and set it in the " +
+          "Embedding server field below.",
+      code: embedCmd || undefined
+    });
+  };
+
+  // Transcribe's endpoint is optional — stated once, in the lede (see
+  // ledeFor() and the KNOWN CONTRACT MISMATCH note atop this file). It
+  // used to repeat as this list's own step 1 ("This step is optional"),
+  // which was wrong twice over: it duplicated the lede almost verbatim
+  // within one viewport, and a statement *about* the list is not itself
+  // one of its actions — it also pushed the four real actions to steps
+  // 2-5, out of step with the other three apps' 1-4. Removed; the actions
+  // below now renumber to 1-4 on their own (D4, D5).
+  Byom.prototype._transcribeSteps = function (top) {
+    var pullCmd = top ? "ollama pull " + top.model_name : null;
+    var whyText = top && top.min_vram_gb
+      ? "recommended for machines with at least " + top.min_vram_gb + "GB VRAM"
+      : "";
+    return [
+      {
+        title: "Download Ollama",
+        desc: "If you want those two actions, get the installer for your operating system from " +
+          "ollama.com &mdash; it is free and open source. (LM Studio is a good alternative if you " +
+          "prefer a graphical model browser.)"
+      },
+      {
+        title: "Install and open it",
+        desc: "Ollama runs quietly in the background once installed &mdash; there is no window to keep open."
+      },
+      {
+        title: "Pull a text model sized for your machine",
+        desc: pullCmd
+          ? "Open a terminal and run the command below" + (whyText ? " — " + escapeHtml(whyText) : "") + "."
+          : "No recommendation is available for this hardware tier yet &mdash; pull any small " +
+            "instruct model from ollama.com/library.",
+        code: pullCmd || undefined
+      },
+      {
+        title: "Test the connection",
+        desc: "Use the Test connection button below once the model has finished downloading."
+      }
+    ];
+  };
+
+  Byom.prototype._stepsHtml = function (steps) {
+    return steps.map(function (s, idx) {
       var codeHtml = s.code
         ? '<div class="byom-code-row"><pre class="byom-code"><code>' + escapeHtml(s.code) + "</code></pre>" +
           '<button type="button" class="byom-copy" data-copy="' + escapeHtml(s.code) + '" aria-label="Copy command">' +
@@ -587,31 +828,92 @@
         "</div></li>"
       );
     }).join("");
+  };
 
-    this.stepsEl.innerHTML = html;
+  Byom.prototype._renderSteps = function () {
+    var appSlug = this.state && this.state.app;
+    var recs = this._recommendationsFor(this.selectedTier);
+    var top = recs.length ? recs[0] : null;
+    var steps;
+    if (appSlug === APP_TRANSCRIBE) {
+      steps = this._transcribeSteps(top);
+    } else if (appSlug === APP_GRAPH) {
+      steps = this._graphSteps(top);
+    } else {
+      steps = this._defaultSteps(top, appSlug);
+    }
+    this.stepsEl.innerHTML = this._stepsHtml(steps);
   };
 
   Byom.prototype._renderAdvancedGroups = function () {
     var self = this;
+    var appSlug = this.state && this.state.app;
+    var isVisionApp = appSlug === APP_OCR;
+    // Stated once for the whole tab, not once per row (D3): every real
+    // ocr recommendation is vision-capable, so a label repeated on all six
+    // rows never varies and carries no signal — it read as noise breaking
+    // up the command blocks' rhythm. The per-row marker below now appears
+    // only on a row that *departs* from this norm (the exception is the
+    // information; the constant case isn't).
+    var visionOnceNote = isVisionApp
+      ? '<p class="byom-advanced-lede">Every recommendation below is vision-capable &mdash; ' +
+        escapeHtml(this.appName) + " needs a model that can read images, not just text.</p>"
+      : "";
     var html = TIERS.map(function (t) {
       var recs = self._recommendationsFor(t.value);
-      var rows = (recs.length ? recs : [{ model_name: "llama3.2:3b" }]).map(function (r) {
-        var cmd = "ollama pull " + r.model_name;
-        return (
-          '<div class="byom-code-row"><pre class="byom-code"><code>' + escapeHtml(cmd) + "</code></pre>" +
-          '<button type="button" class="byom-copy" data-copy="' + escapeHtml(cmd) + '" aria-label="Copy command">' +
-          ICON_COPY + "<span>Copy</span></button></div>"
-        );
-      }).join("");
+      var rowsHtml;
+      if (!recs.length) {
+        // No hardcoded model-name fallback (there used to be one,
+        // "ollama pull llama3.2:3b") — the registry now has data for
+        // every app (see model_harness.registry._RECOMMENDATIONS), so an
+        // empty list here means "genuinely nothing known for this tier",
+        // and inventing a model name would misrepresent that as guidance.
+        rowsHtml = '<p class="byom-code-note">No recommendation is available for this tier yet ' +
+          "&mdash; browse ollama.com/library for a model that fits your hardware" +
+          (isVisionApp ? " and supports vision" : "") + ".</p>";
+      } else if (isVisionApp) {
+        // ocr only: surface the vision flag per-model, since this tab is
+        // exactly where a user substitutes their own model and a
+        // text-only substitution fails with no explanation (Task B) — but
+        // only when it's false. A model that is vision-capable, the
+        // expected case, gets the same plain row as every other app.
+        rowsHtml = recs.map(function (r) {
+          var cmd = "ollama pull " + r.model_name;
+          if (r.vision) {
+            return (
+              '<div class="byom-code-row"><pre class="byom-code"><code>' + escapeHtml(cmd) + "</code></pre>" +
+              '<button type="button" class="byom-copy" data-copy="' + escapeHtml(cmd) + '" aria-label="Copy command">' +
+              ICON_COPY + "<span>Copy</span></button></div>"
+            );
+          }
+          return (
+            '<div class="byom-code-item">' +
+            '<div class="byom-code-row"><pre class="byom-code"><code>' + escapeHtml(cmd) + "</code></pre>" +
+            '<button type="button" class="byom-copy" data-copy="' + escapeHtml(cmd) + '" aria-label="Copy command">' +
+            ICON_COPY + "<span>Copy</span></button></div>" +
+            '<p class="byom-code-note">Text only &mdash; will not work for ' + escapeHtml(self.appName) + ".</p>" +
+            "</div>"
+          );
+        }).join("");
+      } else {
+        rowsHtml = recs.map(function (r) {
+          var cmd = "ollama pull " + r.model_name;
+          return (
+            '<div class="byom-code-row"><pre class="byom-code"><code>' + escapeHtml(cmd) + "</code></pre>" +
+            '<button type="button" class="byom-copy" data-copy="' + escapeHtml(cmd) + '" aria-label="Copy command">' +
+            ICON_COPY + "<span>Copy</span></button></div>"
+          );
+        }).join("");
+      }
       return (
         '<div class="byom-code-group" data-tier="' + t.value + '">' +
         '<h4 class="byom-code-group-title">' + escapeHtml(t.label) +
         '<span class="byom-code-group-hint">' + escapeHtml(t.hint) + "</span></h4>" +
-        rows +
+        rowsHtml +
         "</div>"
       );
     }).join("");
-    this.advancedGroupsEl.innerHTML = html;
+    this.advancedGroupsEl.innerHTML = visionOnceNote + html;
   };
 
   Byom.prototype._handleCopy = function (btn) {
@@ -636,44 +938,90 @@
     });
   };
 
-  Byom.prototype._setResult = function (state, text) {
-    this.resultEl.setAttribute("data-state", state);
+  // `resultEl` is a parameter rather than always `this.resultEl` because
+  // graph has two independent result regions (#byomResult and
+  // #byomEmbedResult) that must never share one aria-live announcement —
+  // see the comment on #byomEmbedResult in _build().
+  Byom.prototype._setResultOn = function (resultEl, state, text) {
+    resultEl.setAttribute("data-state", state);
     var icon = state === "ok" ? ICON_CHECK : (state === "fail" ? ICON_FAIL : "");
-    this.resultEl.innerHTML = icon ? icon + " " + escapeHtml(text) : escapeHtml(text);
+    resultEl.innerHTML = icon ? icon + " " + escapeHtml(text) : escapeHtml(text);
   };
 
-  Byom.prototype._testConnection = function (url, apiKey) {
+  Byom.prototype._setResult = function (state, text) {
+    this._setResultOn(this.resultEl, state, text);
+  };
+
+  // Shared by both Test connection buttons — the LLM one (always present)
+  // and the embedding one (graph only, hidden for the other three apps).
+  // `cfg.onSuccess`, when given, is called with the same
+  // {url, apiKey, provider, models} shape onConfigured always received;
+  // only the LLM endpoint wires it to `this.onConfigured` today (see the
+  // ambiguity noted in the report — there is no separate
+  // onEmbeddingConfigured in the frozen contract to wire the embedding
+  // test to).
+  Byom.prototype._runTest = function (cfg) {
     var self = this;
-    url = url != null ? url : this.urlInput.value.trim();
-    apiKey = apiKey != null ? apiKey : (this.apiKeyInput.value || "");
-    if (url && this.urlInput.value !== url) { this.urlInput.value = url; }
+    var url = cfg.url != null ? cfg.url : cfg.urlInput.value.trim();
+    var apiKey = cfg.apiKey != null ? cfg.apiKey : (cfg.apiKeyInput.value || "");
+    if (url && cfg.urlInput.value !== url) { cfg.urlInput.value = url; }
 
     if (!url) {
-      this._setResult("idle", "Enter a server URL first.");
+      self._setResultOn(cfg.resultEl, "idle", "Enter a server URL first.");
       return;
     }
 
-    this._setResult("pending", "Testing connection…");
-    this.testBtn.disabled = true;
+    self._setResultOn(cfg.resultEl, "pending", "Testing connection…");
+    cfg.testBtn.disabled = true;
 
-    this.fetchImpl("/api/byom/test", { method: "POST", body: { url: url, api_key: apiKey } })
+    this.fetchImpl(cfg.endpoint, { method: "POST", body: { url: url, api_key: apiKey } })
       .then(function (result) {
-        self.testBtn.disabled = false;
+        cfg.testBtn.disabled = false;
         if (result.reachable) {
           var count = (result.models || []).length;
           var modelsText = count
             ? count + " model" + (count === 1 ? "" : "s") + " available"
             : "connected, but no models are pulled yet";
-          self._setResult("ok", "Connected — " + modelsText + ".");
-          self.onConfigured({ url: url, apiKey: apiKey, provider: result.provider, models: result.models });
+          self._setResultOn(cfg.resultEl, "ok", "Connected — " + modelsText + ".");
+          if (cfg.onSuccess) {
+            cfg.onSuccess({ url: url, apiKey: apiKey, provider: result.provider, models: result.models });
+          }
         } else {
-          self._setResult("fail", result.hint || "Could not reach that server.");
+          self._setResultOn(cfg.resultEl, "fail", result.hint || "Could not reach that server.");
         }
       })
       ["catch"](function (err) {
-        self.testBtn.disabled = false;
-        self._setResult("fail", (err && err.message) || "Could not reach that server.");
+        cfg.testBtn.disabled = false;
+        self._setResultOn(cfg.resultEl, "fail", (err && err.message) || "Could not reach that server.");
       });
+  };
+
+  Byom.prototype._testConnection = function (url, apiKey) {
+    this._runTest({
+      url: url,
+      apiKey: apiKey,
+      urlInput: this.urlInput,
+      apiKeyInput: this.apiKeyInput,
+      resultEl: this.resultEl,
+      testBtn: this.testBtn,
+      endpoint: "/api/byom/test",
+      onSuccess: this.onConfigured
+    });
+  };
+
+  // Graph only — see #byomEmbedConnect in _build(), hidden for the other
+  // three apps. Posts to POST /api/byom/test-embedding per the frozen
+  // contract, response shape identical to /api/byom/test.
+  Byom.prototype._testEmbeddingConnection = function (url, apiKey) {
+    this._runTest({
+      url: url,
+      apiKey: apiKey,
+      urlInput: this.embedUrlInput,
+      apiKeyInput: this.embedApiKeyInput,
+      resultEl: this.embedResultEl,
+      testBtn: this.embedTestBtn,
+      endpoint: "/api/byom/test-embedding"
+    });
   };
 
   // ── Public namespace ─────────────────────────────────────────────────

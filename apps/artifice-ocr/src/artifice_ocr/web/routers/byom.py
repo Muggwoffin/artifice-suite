@@ -6,20 +6,22 @@
 
 from __future__ import annotations
 
-import asyncio
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
-from model_harness.contract import EndpointRejected, Provider
+from model_harness.contract import EndpointRejected
 from model_harness.discovery import (
     ProbeResult,
     detect_local_servers,
     probe_endpoint,
 )
 from model_harness.endpoint_policy import EndpointPolicy
-from model_harness.registry import KNOWN_ENDPOINTS, HardwareTier, recommendations_for_app
+from model_harness.registry import (
+    KNOWN_ENDPOINTS,
+    HardwareTier,
+    is_configured,
+    recommendations_for_app,
+)
+from pydantic import BaseModel
 
 from ... import config
 
@@ -98,11 +100,9 @@ def byom_state() -> dict:
 
     # "Configured" means the user has intentionally set something beyond
     # the default out-of-the-box endpoints.
-    configured = bool(api_key) or (
-        api_base_url not in ("", "https://api.openai.com/v1")
-    ) or (
-        ollama_url not in ("", "http://localhost:11434")
-    )
+    configured = is_configured(
+        api_base_url, api_key, defaults=("https://api.openai.com/v1",)
+    ) or is_configured(ollama_url, defaults=("http://localhost:11434",))
 
     return {
         "app": "artifice-ocr",

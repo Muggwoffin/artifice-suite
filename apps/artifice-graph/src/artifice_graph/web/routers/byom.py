@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
 from model_harness.contract import EndpointRejected
 from model_harness.discovery import (
     ProbeResult,
@@ -17,10 +15,17 @@ from model_harness.discovery import (
     probe_endpoint,
 )
 from model_harness.endpoint_policy import EndpointPolicy
-from model_harness.registry import KNOWN_ENDPOINTS, HardwareTier, recommendations_for_app
+from model_harness.registry import (
+    KNOWN_ENDPOINTS,
+    HardwareTier,
+    is_configured,
+    recommendations_for_app,
+)
+from pydantic import BaseModel
+
+from artifice_graph.config import EmbeddingConfig, LLMConfig, PipelineConfig
 
 from ..config_helper import load_saved_config, save_user_config
-from artifice_graph.config import LLMConfig, PipelineConfig
 
 router = APIRouter(prefix="/api/byom", tags=["byom"])
 
@@ -90,14 +95,18 @@ def byom_state() -> dict:
         base_url = cfg.llm.base_url or ""
         api_key = cfg.llm.api_key or ""
         model = cfg.llm.model or ""
+        emb_base_url = cfg.embedding.base_url or ""
+        emb_model = cfg.embedding.model or ""
     else:
         base_url = ""
         api_key = ""
         model = ""
+        emb_defaults = EmbeddingConfig()
+        emb_base_url = emb_defaults.base_url
+        emb_model = emb_defaults.model
 
-    configured = bool(api_key) or (
-        base_url not in ("", "http://localhost:11434/v1")
-    )
+    configured = is_configured(base_url, api_key, defaults=("http://localhost:11434/v1",))
+    emb_configured = is_configured(emb_base_url, defaults=("http://localhost:11434",))
 
     return {
         "app": "artifice-graph",
@@ -105,6 +114,11 @@ def byom_state() -> dict:
         "endpoint": base_url or None,
         "model": model or None,
         "recommendations": _byom_recommendations("artifice-graph"),
+        "embedding": {
+            "configured": emb_configured,
+            "endpoint": emb_base_url or None,
+            "model": emb_model or None,
+        },
     }
 
 
@@ -155,6 +169,42 @@ async def byom_test(req: TestRequest) -> dict:
             save_user_config(saved)
         else:
             cfg = PipelineConfig(llm=LLMConfig(base_url=req.url, api_key=req.api_key))
+            save_user_config(cfg)
+
+    return {
+        "reachable": result.reachable,
+        "provider": result.provider,
+        "models": list(result.models),
+        "hint": result.hint,
+    }
+
+
+# ── POST /api/byom/test-embedding ────────────────────────────────────────────
+
+
+@router.post("/test-embedding")
+async def byom_test_embedding(req: TestRequest) -> dict:
+    """Validate and probe a user-supplied embedding endpoint URL.
+
+    On success the embedding endpoint is persisted so the next
+    ``/api/byom/state`` reports ``embedding.configured: True``.
+    """
+    # Validate the URL through the endpoint policy before any network call.
+    try:
+        _policy.validate_url(req.url)
+    except EndpointRejected as exc:
+        exc_str = str(exc)
+        return JSONResponse(status_code=400, content={"hint": exc_str, "error": exc_str})
+
+    result = await probe_endpoint(req.url, policy=_policy)
+
+    if result.reachable and req.api_key is not None:
+        saved = load_saved_config()
+        if saved is not None:
+            saved.embedding.base_url = req.url
+            save_user_config(saved)
+        else:
+            cfg = PipelineConfig(embedding=EmbeddingConfig(base_url=req.url))
             save_user_config(cfg)
 
     return {

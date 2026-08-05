@@ -114,14 +114,18 @@ class TestByomState:
         r = client.get("/api/byom/state")
         assert r.json()["model"] == "llama3.2:3b"
 
-    def test_recommendations_is_empty_for_transcribe(self, client):
-        """Transcribe uses ASR_MODELS, not LLM recommendations — all tiers are empty."""
+    def test_recommendations_has_text_models(self, client):
+        """Transcribe receives text-only LLM recommendations for its post-transcription endpoint."""
         r = client.get("/api/byom/state")
         recs = r.json()["recommendations"]
 
         for tier in ("laptop", "desktop", "mac_unified"):
             assert tier in recs
-            assert recs[tier] == []
+            assert len(recs[tier]) > 0, f"transcribe has no recommendations for {tier}"
+            for entry in recs[tier]:
+                assert entry["vision"] is False, (
+                    f"transcribe {tier} recommendation {entry['model_name']!r} has vision=True"
+                )
 
     def test_response_is_json_serialisable(self, client):
         r = client.get("/api/byom/state")
@@ -410,19 +414,19 @@ class TestTranscribeRouterCollision:
 
 
 class TestRecommendationsGuard:
-    """``recommendations_for_app('artifice-transcribe')`` raises KeyError by design.
+    """The ``try/except KeyError`` guard is defensive code for any unregistered app.
 
-    The BYOM router catches that exact exception and returns empty tiers. It must not
-    swallow unrelated errors.
+    Since transcribe now has registry entries, the KeyError path is never hit in
+    normal operation, but it must still work correctly when deliberately triggered.
     """
 
-    def test_keyerror_returns_empty_tiers(self, client):
+    def test_transcribe_recommendations_are_non_empty(self, client):
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         recs = r.json()["recommendations"]
         for tier in ("laptop", "desktop", "mac_unified"):
             assert tier in recs
-            assert recs[tier] == []
+            assert len(recs[tier]) > 0, f"transcribe should have recommendations for {tier}"
 
     def test_non_keyerror_propagates(self, client):
         with patch("artifice_transcribe.web.routers.byom.recommendations_for_app") as mock_recs:
