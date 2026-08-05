@@ -29,22 +29,76 @@ A collection of local-first and open-source tools that place a user-friendly int
 
 ## Quick start
 
-The suite is a [uv](https://docs.astral.sh/uv/) workspace. No Node toolchain is required anywhere.
+The suite is a [uv](https://docs.astral.sh/uv/) workspace. No Node toolchain
+is required anywhere.
+
+### Install (primary: `uv`)
+
+Clone the repo and run the bootstrap script from the repo root:
 
 ```bash
 git clone https://github.com/Muggwoffin/artifice-suite.git
 cd artifice-suite
+bash scripts/install.sh artifice-ocr        # install one app
+bash scripts/install.sh artifice-ocr artifice-draft artifice-graph  # several
+```
+
+On Windows PowerShell:
+
+```powershell
+.\scripts\install.ps1 artifice-ocr
+.\scripts\install.ps1 artifice-transcribe -Cuda   # GPU stack
+```
+
+The script installs `uv` for you if it is missing, then runs
+`uv tool install --editable` from the local workspace. No packages are
+published to any index yet — the install relies on the cloned repo.
+
+For `artifice-transcribe` the default is a **CPU-only torch stack**
+(~1.6 GB download). Pass `--cuda` (or `-Cuda` on PowerShell) to opt into
+the CUDA build (~7.2 GB).
+
+### Install (development, within the workspace)
+
+```bash
 uv sync --extra all      # all four apps + shared packages, editable
 uv run artifice-ocr      # or artifice-draft / artifice-graph / artifice-transcribe
 ```
 
-Install a single app instead:
+### Install (Docker)
+
+Each app has its own `Dockerfile`:
 
 ```bash
-uv pip install -e "apps/artifice-ocr[web]"   # swap in the app you want
+cd apps/artifice-ocr
+docker build -t artifice-ocr .
+docker run -p 8000:8000 artifice-ocr
 ```
 
+### Uninstall
+
+```bash
+bash scripts/uninstall.sh artifice-ocr
+```
+
+The uninstaller removes the programs but **leaves your data in place**. It
+prints the exact path and warns that it may contain an API key. It never
+deletes your data automatically.
+
 Each app documents its own setup and entry points in its own `README.md`.
+
+### Supported apps
+
+| App | Install name | Commands after install | Data directory |
+|---|---|---|---|
+| OCR | `artifice-ocr` | `artifice-ocr`, `artifice-ocr-web` | `~/.artifice_ocr/` |
+| Draft | `artifice-draft` | `artifice-draft` | `~/.artifice_draft/` |
+| Graph | `artifice-graph` | `artifice-graph`, `artifice-graph-web` | `~/.callosip/` |
+| Transcribe | `artifice-transcribe` | `artifice-transcribe` | platform-dependent (see `artifice-transcribe --data-dir`) |
+
+> **Note:** ArtificeGraph stores its data under `~/.callosip/`, a legacy
+> name from an earlier project. The uninstaller reports this explicitly so you
+> do not mistake it for a directory belonging to another application.
 
 ## What makes this suite different
 

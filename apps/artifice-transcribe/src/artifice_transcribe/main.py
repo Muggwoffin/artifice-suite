@@ -149,7 +149,13 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 def cli():
     import os
+    import sys
     import uvicorn
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--data-dir":
+        from artifice_transcribe.config import settings
+        print(str(settings.data_path))
+        return
 
     # Reload is opt-in via ARTIFICE_TRANSCRIBE_RELOAD=1 for development use.
     # The packaged entry point (artifice-transcribe) defaults to off because the

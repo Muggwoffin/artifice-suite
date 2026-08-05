@@ -22,6 +22,10 @@ def _cli_progress(progress):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--data-dir":
+        print(str(Path.home() / ".artifice_draft"))
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "--help":
         print("Usage: artifice-draft [options]")
         print()

@@ -7,7 +7,7 @@ from pathlib import Path
 import typer
 
 from artifice_ocr._logging import get_logger, setup_logging
-from artifice_ocr.config import get as cfg
+from artifice_ocr.config import _USER_DIR, get as cfg
 from artifice_ocr.stages import ocr as ocr_stage
 from artifice_ocr.stages import cleanup as cleanup_stage
 from artifice_ocr.stages import translate as translate_stage
@@ -16,6 +16,25 @@ from artifice_ocr.utils import check_lm_studio, check_ollama
 log = get_logger("cli")
 
 app = typer.Typer()
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    data_dir: bool = typer.Option(
+        False,
+        "--data-dir",
+        help="Print the absolute path of the user-data directory and exit.",
+    ),
+):
+    if data_dir:
+        print(str(_USER_DIR.resolve()))
+        raise typer.Exit()
+
+
+@app.command("data-dir")
+def data_dir():
+    """Print the absolute path of the user-data directory and exit."""
+    print(str(_USER_DIR.resolve()))
 
 
 def _ollama_models_needed() -> list[str]:
