@@ -176,7 +176,9 @@ async def test_transcribe_traversal_sanitisation(
         ("", "", 422, "both fields empty -> rejected"),
     ],
 )
-@pytest.mark.skipif(not _ASR_AVAILABLE, reason="ASR stack not installed (pyannote.audio unavailable)")
+@pytest.mark.skipif(
+    not _ASR_AVAILABLE, reason="ASR stack not installed (pyannote.audio unavailable)"
+)
 async def test_enroll_traversal_sanitisation(
     api, name, fname, expected_status, description
 ):
