@@ -272,10 +272,16 @@ def audit(app: str) -> _AuditResult:
             for p in sorted(shared_assets.rglob("*.js"))
         )
     html_texts: list[str] = []
-    for html_file in html_files + shared_html_files:
+    for html_file in html_files:
         text = html_file.read_text(encoding="utf-8")
         html_texts.append(text)
         js_sources.extend(SCRIPT.findall(text))
+    # Shared templates contribute to the id inventory (reverse check) only —
+    # their inline scripts are NOT added to js_sources to avoid masking a
+    # missing binding in app-local JS with a script that is not loaded by
+    # every app.
+    for html_file in shared_html_files:
+        html_texts.append(html_file.read_text(encoding="utf-8"))
     js = "\n".join(js_sources)
 
     def referenced(name: str) -> bool:
