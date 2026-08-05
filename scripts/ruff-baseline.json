@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-08-05T14:41:16",
+  "_generated": "2026-08-05T14:55:02",
   "violations": {
     "/home/mjcasey/projects/artifice-suite/apps/artifice-draft/src/artifice_draft/_diff.py|E501": 1,
     "/home/mjcasey/projects/artifice-suite/apps/artifice-draft/src/artifice_draft/abbreviations.py|E501": 1,

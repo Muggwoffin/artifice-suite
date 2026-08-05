@@ -20,19 +20,29 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 - `docs/index.md`, a map of every document in the repository.
 - This changelog.
 
-## [0.1.0-alpha] - 2026-07-27
+## Prior pre-release tags (retired)
 
-First tagged release. See the [git tag `v0.1.0-alpha`](https://github.com/Muggwoffin/artifice-suite/tree/v0.1.0-alpha)
-for the state of the tree at this point.
+Two pre-release tags existed and were **removed 2026-08-05** as part of the
+2026-07-30 versioning policy (one shared version, `0.1.0`, with tags minted only
+at release):
 
-## [0.2.0-alpha]
+- `v0.1.0-alpha` — created 2026-07-27 at `238b717`; tagged before
+  `CITATION.cff` or a `LICENSE` existed.
+- `v0.2.0-alpha` — created 2026-07-30 at `6d07380`; tagged while the tree still
+  declared an MIT licence.
 
-Second tagged pre-release. See the [git tag `v0.2.0-alpha`](https://github.com/Muggwoffin/artifice-suite/tree/v0.2.0-alpha).
+They were deleted locally and from `origin` because their names contradicted
+the shared `0.1.0` version and both predated the 2026-07-30 relicensing to
+AGPL-3.0-or-later. Tag/version consistency is now enforced by
+`scripts/check-release-consistency.py` for all future tags.
 
-> Note: package metadata and `CITATION.cff` currently declare `0.1.0` while these
-> two pre-release tags exist. Keeping tag names and package versions in lockstep
-> is now enforced by `scripts/check-release-consistency.py` for future tags.
+> **Zenodo licence note.** Zenodo record `10.5281/zenodo.21707694` (concept DOI
+> `10.5281/zenodo.21621935`) was minted 2026-07-30 from the `v0.2.0-alpha`
+> tree, which declared an MIT licence. The codebase is now AGPL-3.0-or-later.
+> The published record retains the MIT stamp; this record predates the
+> relicensing and has **not** been corrected or deleted on Zenodo as of
+> 2026-08-05. A future tag push will mint a corrected record from the current
+> `CITATION.cff` (AGPL-3.0-or-later), but the existing MIT-stamped record
+> remains unless edited or deleted by the maintainer on zenodo.org.
 
-[Unreleased]: https://github.com/Muggwoffin/artifice-suite/compare/v0.2.0-alpha...HEAD
-[0.1.0-alpha]: https://github.com/Muggwoffin/artifice-suite/releases/tag/v0.1.0-alpha
-[0.2.0-alpha]: https://github.com/Muggwoffin/artifice-suite/releases/tag/v0.2.0-alpha
+[Unreleased]: https://github.com/Muggwoffin/artifice-suite/compare/main...HEAD
