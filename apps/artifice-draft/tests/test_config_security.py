@@ -64,6 +64,58 @@ class TestConfigFilePermissions:
         assert data["api_key"] == "new-secret"
 
 
+class TestLoadTimePermissionRepair:
+    """Permissions on pre-existing loose ``web_settings.json`` are
+    repaired at load time.
+
+    These tests exercise the POSIX branch (os.chmod).  The Windows
+    branch (icacls) is verified manually on native Windows.
+    """
+
+    def test_loose_file_is_repaired_on_load(self, tmp_path, monkeypatch):
+        """A file created at 0o644 is tightened to 0o600 on load."""
+        import os
+
+        from artifice_draft.web import runtime
+
+        settings_file = tmp_path / "web_settings.json"
+        monkeypatch.setattr(runtime, "_SETTINGS_PATH", settings_file)
+
+        # Create a loose file.
+        settings_file.write_text('{"api_key": "sk-old-secret"}')
+        os.chmod(settings_file, 0o644)
+        assert not is_restricted(settings_file)
+
+        result = runtime.load_settings()
+        assert is_restricted(settings_file)
+        assert result["api_key"] == "sk-old-secret"
+
+    def test_load_succeeds_when_repair_raises(self, tmp_path, monkeypatch, caplog):
+        """Load must still return the data even when the repair fails."""
+        import os
+
+        from artifice_draft.web import runtime
+
+        settings_file = tmp_path / "web_settings.json"
+        monkeypatch.setattr(runtime, "_SETTINGS_PATH", settings_file)
+
+        # Create a loose file.
+        settings_file.write_text('{"api_key": "sk-old-secret"}')
+        os.chmod(settings_file, 0o644)
+
+        def _failing_restrict(_path):
+            raise OSError("Simulated ACL failure — exFAT volume")
+
+        monkeypatch.setattr(
+            "secure_io.restrict_to_current_user", _failing_restrict
+        )
+
+        result = runtime.load_settings()
+        assert result["api_key"] == "sk-old-secret"
+
+        assert "Could not restrict permissions" in caplog.text
+
+
 class TestCredentialRedaction:
     """API key redaction in serialize_settings — follows OCR's pattern."""
 

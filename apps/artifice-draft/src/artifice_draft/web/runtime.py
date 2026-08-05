@@ -79,6 +79,16 @@ def load_settings() -> dict:
     if not _SETTINGS_PATH.exists():
         return {}
     try:
+        from secure_io import is_restricted, restrict_to_current_user
+
+        if not is_restricted(_SETTINGS_PATH):
+            restrict_to_current_user(_SETTINGS_PATH)
+    except Exception:
+        logger.warning(
+            "Could not restrict permissions on %s — continuing anyway",
+            _SETTINGS_PATH,
+        )
+    try:
         return json.loads(_SETTINGS_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}

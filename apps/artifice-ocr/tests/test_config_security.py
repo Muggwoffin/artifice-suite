@@ -43,6 +43,64 @@ class TestConfigFilePermissions:
         assert data["output_dir"] == "/overwritten"
 
 
+class TestLoadTimePermissionRepair:
+    """Permissions on pre-existing loose files are repaired at load time.
+
+    These tests exercise the POSIX branch (os.chmod).  The Windows
+    branch (icacls) is verified manually on native Windows.
+    """
+
+    def test_loose_file_is_repaired_on_load(self, tmp_path, monkeypatch):
+        """A file created at 0o644 is tightened to 0o600 on load."""
+        import os
+
+        from artifice_ocr import config
+
+        settings_file = tmp_path / "settings.json"
+        monkeypatch.setattr(config, "_SETTINGS_PATH", settings_file)
+        monkeypatch.setattr(config, "_USER_DIR", tmp_path)
+
+        # Create a loose file with a credential.
+        settings_file.write_text('{"api_key": "sk-old-secret"}')
+        os.chmod(settings_file, 0o644)
+        assert not is_restricted(settings_file)
+
+        # Loading must repair it.
+        result = config.load_user_settings()
+        assert is_restricted(settings_file)
+        assert result["api_key"] == "sk-old-secret"
+
+    def test_load_succeeds_when_repair_raises(self, tmp_path, monkeypatch, caplog):
+        """Load must still return the data even when the repair fails."""
+        import os
+
+        from artifice_ocr import config
+
+        settings_file = tmp_path / "settings.json"
+        monkeypatch.setattr(config, "_SETTINGS_PATH", settings_file)
+        monkeypatch.setattr(config, "_USER_DIR", tmp_path)
+
+        # Create a loose file.
+        settings_file.write_text('{"api_key": "sk-old-secret"}')
+        os.chmod(settings_file, 0o644)
+
+        original_restrict = settings_file.chmod
+
+        def _failing_restrict(_path):
+            raise OSError("Simulated ACL failure — exFAT volume")
+
+        monkeypatch.setattr(
+            "secure_io.restrict_to_current_user", _failing_restrict
+        )
+
+        # Load must succeed despite the repair failure.
+        result = config.load_user_settings()
+        assert result["api_key"] == "sk-old-secret"
+
+        # The warning must have been logged.
+        assert "Could not restrict permissions" in caplog.text
+
+
 class TestCredentialRedaction:
     """API key redaction in config endpoint — finding #5."""
 

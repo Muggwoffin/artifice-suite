@@ -188,6 +188,16 @@ def _load_inference_config() -> dict:
     _migrate_legacy_inference_config()
     if _INFERENCE_CONFIG_FILE.exists():
         try:
+            from secure_io import is_restricted, restrict_to_current_user
+
+            if not is_restricted(_INFERENCE_CONFIG_FILE):
+                restrict_to_current_user(_INFERENCE_CONFIG_FILE)
+        except Exception:
+            logger.warning(
+                "Could not restrict permissions on %s — continuing anyway",
+                _INFERENCE_CONFIG_FILE,
+            )
+        try:
             return json.loads(_INFERENCE_CONFIG_FILE.read_text(encoding="utf-8"))
         except Exception:
             pass

@@ -62,6 +62,18 @@ def load_saved_config() -> PipelineConfig | None:
 
     if CONFIG_FILE.exists():
         try:
+            from secure_io import is_restricted, restrict_to_current_user
+
+            if not is_restricted(CONFIG_FILE):
+                restrict_to_current_user(CONFIG_FILE)
+        except Exception:
+            import logging
+
+            logging.warning(
+                "Could not restrict permissions on %s — continuing anyway",
+                CONFIG_FILE,
+            )
+        try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
 

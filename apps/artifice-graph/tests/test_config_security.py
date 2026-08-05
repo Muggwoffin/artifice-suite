@@ -77,6 +77,62 @@ class TestConfigFilePermissions:
         assert data["llm"]["api_key"] == "new-secret"
 
 
+class TestLoadTimePermissionRepair:
+    """Permissions on pre-existing loose ``config.json`` are repaired at
+    load time.
+
+    These tests exercise the POSIX branch (os.chmod).  The Windows
+    branch (icacls) is verified manually on native Windows.
+    """
+
+    def test_loose_file_is_repaired_on_load(self, tmp_path, monkeypatch):
+        """A file created at 0o644 is tightened to 0o600 on load."""
+        import os
+
+        from artifice_graph.web import config_helper
+
+        config_file = tmp_path / "config.json"
+        monkeypatch.setattr(config_helper, "CONFIG_FILE", config_file)
+
+        # Create a loose file.
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        config_file.write_text('{"llm": {"api_key": "sk-old-secret"}}')
+        os.chmod(config_file, 0o644)
+        assert not is_restricted(config_file)
+
+        result = config_helper.load_saved_config()
+        assert result is not None
+        assert is_restricted(config_file)
+        assert result.llm.api_key == "sk-old-secret"
+
+    def test_load_succeeds_when_repair_raises(self, tmp_path, monkeypatch, caplog):
+        """Load must still return the data even when the repair fails."""
+        import os
+
+        from artifice_graph.web import config_helper
+
+        config_file = tmp_path / "config.json"
+        monkeypatch.setattr(config_helper, "CONFIG_FILE", config_file)
+
+        # Create a loose file.
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        config_file.write_text('{"llm": {"api_key": "sk-old-secret"}}')
+        os.chmod(config_file, 0o644)
+
+        def _failing_restrict(_path):
+            raise OSError("Simulated ACL failure — exFAT volume")
+
+        monkeypatch.setattr(
+            "secure_io.restrict_to_current_user", _failing_restrict
+        )
+
+        result = config_helper.load_saved_config()
+        assert result is not None
+        assert result.llm.api_key == "sk-old-secret"
+
+        assert "Could not restrict permissions" in caplog.text
+
+
 class TestCredentialRedaction:
     """Redaction in _redact_config — follows OCR's pattern."""
 

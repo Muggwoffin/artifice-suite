@@ -283,3 +283,67 @@ class TestConfigFilePermissions:
         config_file = tmp_path / "inference_config.json"
         assert config_file.exists()
         assert is_restricted(config_file)
+
+
+class TestLoadTimePermissionRepair:
+    """Permissions on pre-existing loose ``inference_config.json`` are
+    repaired at load time.
+
+    These tests exercise the POSIX branch (os.chmod).  The Windows
+    branch (icacls) is verified manually on native Windows.
+    """
+
+    def test_loose_file_is_repaired_on_load(self, tmp_path, monkeypatch):
+        """A file created at 0o644 is tightened to 0o600 on load."""
+        import os
+
+        config_file = tmp_path / "inference_config.json"
+        monkeypatch.setattr(
+            "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
+            config_file,
+        )
+
+        # Create a loose file.
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        config_file.write_text(
+            '{"base_url": "http://localhost:11434/v1", "api_key": "sk-old"}'
+        )
+        os.chmod(config_file, 0o644)
+        assert not is_restricted(config_file)
+
+        from artifice_transcribe.api.v1.routes import _load_inference_config
+
+        result = _load_inference_config()
+        assert is_restricted(config_file)
+        assert result["api_key"] == "sk-old"
+
+    def test_load_succeeds_when_repair_raises(self, tmp_path, monkeypatch, caplog):
+        """Load must still return the data even when the repair fails."""
+        import os
+
+        config_file = tmp_path / "inference_config.json"
+        monkeypatch.setattr(
+            "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
+            config_file,
+        )
+
+        # Create a loose file.
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        config_file.write_text(
+            '{"base_url": "http://localhost:11434/v1", "api_key": "sk-old"}'
+        )
+        os.chmod(config_file, 0o644)
+
+        def _failing_restrict(_path):
+            raise OSError("Simulated ACL failure — exFAT volume")
+
+        monkeypatch.setattr(
+            "secure_io.restrict_to_current_user", _failing_restrict
+        )
+
+        from artifice_transcribe.api.v1.routes import _load_inference_config
+
+        result = _load_inference_config()
+        assert result["api_key"] == "sk-old"
+
+        assert "Could not restrict permissions" in caplog.text

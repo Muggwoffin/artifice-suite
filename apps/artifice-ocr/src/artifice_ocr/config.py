@@ -175,6 +175,18 @@ def load_user_settings() -> dict[str, Any]:
     if not _SETTINGS_PATH.exists():
         return {}
     try:
+        from secure_io import is_restricted, restrict_to_current_user
+
+        if not is_restricted(_SETTINGS_PATH):
+            restrict_to_current_user(_SETTINGS_PATH)
+    except Exception:
+        import logging
+
+        logging.warning(
+            "Could not restrict permissions on %s — continuing anyway",
+            _SETTINGS_PATH,
+        )
+    try:
         import json
         with open(_SETTINGS_PATH, encoding="utf-8") as f:
             data = json.load(f)
