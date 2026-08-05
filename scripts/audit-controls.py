@@ -249,13 +249,30 @@ def audit(app: str) -> _AuditResult:
     if not html_files:
         return None  # nothing to audit — no templates and no static index.html
 
-    # Gather all JS source text: external .js files + inline <script> blocks
+    # Shared templates (e.g. _masthead.html) are included in every app at
+    # render time via Jinja {% include %} but live outside the app tree.
+    # Include them in the id inventory so that ids they define (e.g.
+    # #themeToggle, #navByom) are not falsely reported as reverse-unbound.
+    shared_templates = REPO / "packages" / "shared-ui" / "shared_ui" / "templates"
+    shared_html_files: list[Path] = (
+        sorted(shared_templates.glob("*.html")) if shared_templates.is_dir() else []
+    )
+
+    # Gather all JS source text: external .js files + inline <script> blocks.
+    # Also include shared JS assets (e.g. byom.js) which wire shared controls
+    # like #navByom that are rendered by shared templates.
+    shared_assets = REPO / "packages" / "shared-ui" / "shared_ui" / "assets"
     js_sources: list[str] = [
         p.read_text(encoding="utf-8")
         for p in sorted((web / "static").rglob("*.js"))
     ]
+    if shared_assets.is_dir():
+        js_sources.extend(
+            p.read_text(encoding="utf-8")
+            for p in sorted(shared_assets.rglob("*.js"))
+        )
     html_texts: list[str] = []
-    for html_file in html_files:
+    for html_file in html_files + shared_html_files:
         text = html_file.read_text(encoding="utf-8")
         html_texts.append(text)
         js_sources.extend(SCRIPT.findall(text))
