@@ -115,7 +115,26 @@ jobs:
         # resolved by a small bump inside the change at hand, add an
         # --ignore-vulns entry WITH a comment explaining why — do not bump
         # dependencies casually, and do not disable the gate.
-        run: uv run --with pip-audit pip-audit
+        run: |
+          # torch 2.8.0 — CVEs fixed in torch>=2.9.0/2.10.0/2.13.0.  Bumping torch
+          # is a whisperx/pyannote ecosystem change, not a one-line fix; tracked
+          # as a separate dependency-upgrade task.
+          # transformers 4.57.6 — CVEs fixed in transformers>=5.0.0.  The 4→5 major
+          # bump is a breaking change for the whisperx integration; tracked as a
+          # separate dependency-upgrade task alongside the torch bump above.
+          uv run --with pip-audit pip-audit \
+            --ignore-vuln PYSEC-2025-206 \
+            --ignore-vuln PYSEC-2025-204 \
+            --ignore-vuln PYSEC-2026-139 \
+            --ignore-vuln PYSEC-2025-203 \
+            --ignore-vuln PYSEC-2025-194 \
+            --ignore-vuln PYSEC-2026-2286 \
+            --ignore-vuln CVE-2025-2999 \
+            --ignore-vuln CVE-2025-3001 \
+            --ignore-vuln PYSEC-2025-217 \
+            --ignore-vuln PYSEC-2026-2290 \
+            --ignore-vuln PYSEC-2026-2288 \
+            --ignore-vuln PYSEC-2026-2289
 
       - name: Dependency licence gate (no NEW proprietary/unknown licences)
         # Fails on any licence that is proprietary, commercial, or lacks
