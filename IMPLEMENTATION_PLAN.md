@@ -1513,15 +1513,59 @@ changed casually). So "give every app an About page" is not one task:
   Dockerfiles — *or* an in-page About panel, which keeps them static but means "About" is not a URL
   a user can link to or bookmark.
 
-**Decide that before briefing any of it.** A brief that says "add an About page to all four" without
-resolving this will get three different answers from three agents. The same fork governs nav:
-graph's `topnav` links between pages, while ocr's and transcribe's `tabs` switch panels within one
-page — they are not the same component wearing different names, and unifying the markup without
-unifying the navigation model would be cosmetic.
+#### Decided by the maintainer, 2026-08-05
 
-**Sequencing.** Item 1 is small, self-contained, and the only one that fixes a live user-facing
-dead end — it needs no decision about page structure and can land first. Items 2–4 depend on the
-Jinja-vs-panel fork above.
+1. **In-page About panel. The three static apps stay static** — no Jinja adoption, no new routes,
+   no Dockerfile change. `graph` keeps its `/about` route; parity here means the *content and
+   placement* match, not the delivery mechanism. Accept that About is not linkable in three of four
+   apps; that was the trade taken deliberately.
+2. **Remove `artifice-ocr`'s first-run tips modal** (`static/js/onboarding.js`, its trigger at
+   `index.html:399`, and the Settings button at `settings.js:221-222`). This supersedes the "do not
+   delete it" note above, which was written before the About panel existed as a destination.
+   **Move its content, do not discard it** — Tropy, run templates, `Ctrl+K`, PDF export, preview and
+   history, and the OCR-engine choice are all real product knowledge that exists nowhere else in the
+   UI, and the About panel is now the natural home. Deleting the file without re-homing the content
+   is a regression disguised as a cleanup.
+3. **`OCR Pipeline` becomes `ArtificeOCR`** — in the `<title>`, the `<h1>`, and the `appName` passed
+   to the BYOM screen, which is where it currently leaks into onboarding copy.
+4. **All four adopt graph's wordmark treatment**: `Artifice` in `--ink`, the app word in `--accent`.
+   The markup is `Artifice<span class="brand-accent">Graph</span>` with
+   `.brand-accent { color: var(--accent); }` (`base.html:24`, `app.css:129-137`).
+
+Two things to get right when porting the wordmark:
+
+- **Do not port the link.** graph's brand is `<a class="brand" href="/">` because it is a multi-page
+  app; the other three use `<header class="masthead"><h1>` and are single-page. Keep the `<h1>` and
+  put the span inside it. A brand link to `/` in a single-page app is a no-op that reloads the page
+  and discards state.
+- `.brand` sets `font-size: 1.15rem` — a fixed `rem`. Check whether a token already expresses that
+  size before copying it into three more files; `CLAUDE.md` is explicit that a fixed `rem` copied
+  across apps is how fluid typography dies silently.
+
+#### Also found in the same survey — not part of the original ask
+
+- **No app has a favicon.** All four. It shows in every browser tab and is the kind of thing that
+  reads as unfinished to a first-time user, which makes it a packaging concern rather than a polish
+  one. Cheap to fix and suite-wide.
+- **Toast is implemented three times and missing once.** `ocr` has a dedicated `static/js/toast.js`
+  (52 lines); `transcribe` and `graph` have their own inline in `app.js` / `pipeline.js`; `draft`
+  has none. This is the clearest candidate for `packages/shared-ui`, which now ships JavaScript —
+  `byom.js` set that precedent and the second shared component is where it either becomes a pattern
+  or does not.
+- **`artifice-draft` is the outlier on nearly every axis** — no nav, no theme toggle, no toast, no
+  keyboard shortcuts, and the already-deferred missing `[data-theme="dark"]` accent block. It is not
+  four independent gaps; it is one app that has had the least UI attention, and it should be briefed
+  as a single workstream rather than swept into each item separately.
+- **Keyboard shortcuts are ocr-only in practice**: `ctrlKey`/`metaKey` handling appears in 6 files
+  in ocr, 1 each in graph and transcribe, 0 in draft.
+- **Part IV item 1 (JS-rendered empty states) is a parity item too** and should be folded in rather
+  than tracked separately — the `.panel-empty-title` / `.panel-empty-desc` component already exists
+  in two apps' CSS.
+
+**Sequencing.** Item 1 (re-opening BYOM) is small, self-contained, and the only one that fixes a
+live user-facing dead end — it depends on none of the above and should land first. The wordmark and
+title changes are next and are near-mechanical. The About panel is the largest piece because it
+absorbs ocr's tips content. `draft`'s catch-up is independent of all of it and can run in parallel.
 
 See also: **ROADMAP.md** — the development roadmap for the community period between Phases 6
 and 7.
