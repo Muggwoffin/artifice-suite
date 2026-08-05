@@ -71,6 +71,7 @@ dev = [
     # (see that file's comment for why).
     "pytest-httpx>=0.36.2",
     "httpx>=0.27.0",
+    "pillow>=10.0",
     "ruff>=0.5.0",
 ]
 

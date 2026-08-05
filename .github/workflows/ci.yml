@@ -83,6 +83,12 @@ jobs:
       - name: ruff baseline gate (no NEW violations)
         run: uv run python scripts/check-ruff-baseline.py
 
+      - name: Dependency audit (no ghost or undeclared imports)
+        # Supply-chain gate for generated code: fails on imports of packages
+        # that do not exist, are not declared, or are not in uv.lock, and on
+        # declared deps the lockfile does not resolve.
+        run: uv run python scripts/check-dependency-audit.py
+
       - name: ruff format check (changed files, PRs only)
         # `pull_request.base.sha` is empty on push, so this is a PR-only gate.
         # It checks only the files the PR touched — pre-existing formatting
