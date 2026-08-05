@@ -25,6 +25,14 @@
         "baseURL": "http://172.21.176.1:11434/v1"
       },
       "models": {
+        "hf.co/bartowski/OLMo-2-1124-13B-Instruct-GGUF:Q6_K": {
+          "name": "OLMo-2 13B Instruct (local GGUF Q6_K) — oss-reviewer",
+          "tool_call": true,
+          "limit": {
+            "context": 4096,
+            "output": 8192
+          }
+        },
         "ornith:9b": {
           "name": "Ornith 9B (local, qwen35 arch, native tool caller) — oss-reviewer",
           "limit": {

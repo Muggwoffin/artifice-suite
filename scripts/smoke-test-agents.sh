@@ -44,7 +44,7 @@ OPENCODE_AGENTS=(
   "arch-auditor-docs:minimax-m2.7"
   "security-auditor:qwen3.7-max"
   "code-reviewer:minimax-m3"
-  "oss-reviewer:ornith:9b"
+  "oss-reviewer:mistral-medium-latest"
 )
 
 # `ui-ux` is deliberately absent from this list — it moved to the Claude Code

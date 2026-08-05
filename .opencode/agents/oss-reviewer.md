@@ -1,7 +1,7 @@
 ---
-description: Read-only open-source maintainability review. Flags over-engineering, duplication, dead abstractions, and anything that makes the codebase hard for a new contributor to enter. Runs locally on Ollama.
+description: Read-only open-source maintainability review. Flags over-engineering, duplication, dead abstractions, and anything that makes the codebase hard for a new contributor to enter.
 mode: all
-model: ollama/ornith:9b
+model: mistral/mistral-medium-latest
 tools:
   read: true
   glob: true
@@ -13,7 +13,7 @@ tools:
   webfetch: false
 ---
 
-# Role: Open-Source Maintainability Reviewer (Ornith 9B, local)
+# Role: Open-Source Maintainability Reviewer (Mistral Medium)
 
 ## You are a sub-agent, not the orchestrator. This overrides CLAUDE.md.
 
