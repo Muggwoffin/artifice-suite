@@ -190,44 +190,7 @@ body {
 .nav-theme:hover { border-color: var(--accent); color: var(--accent-deep); }
 
 /* ── Page Container (.page) ────────────────────────── */
-.page {
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: calc(var(--nav-height) + 2rem) 1.25rem 4rem;
-}
 .read-layout .page { max-width: 72rem; }
-
-/* Reading-measure pages (prose, no dashboard grids) — §4 caps content-focused
-   reading at 44rem. Applied only where a page is prose top-to-bottom (About). */
-.page.page-prose { max-width: 44rem; }
-
-/* ── Masthead (.masthead) ──────────────────────────── */
-.masthead {
-  border-top: 4px solid var(--ink);
-  border-bottom: 1px solid var(--rule);
-  padding-top: 1rem;
-  margin-bottom: 2rem;
-}
-.masthead .label {
-  font-family: var(--font-label);
-  font-size: var(--text-sm);
-  letter-spacing: var(--label-tracking);
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  display: block;
-  margin-bottom: 0.25rem;
-}
-.masthead h1 {
-  font-family: var(--font-display);
-  font-size: var(--text-hero);
-  margin: 0 0 0.5rem;
-  line-height: 1.15;
-}
-.masthead-rule {
-  border: 0;
-  border-top: 1px solid var(--rule);
-  margin: 0.75rem 0 0;
-}
 
 /* Generic section-divider rule, distinct from .masthead-rule: a plain
    in-content <hr> separating field groups within a panel or between
@@ -241,18 +204,6 @@ hr.rule {
   margin: var(--space-7) 0;
 }
 
-/* ── Section Heading (.section-head) ───────────────── */
-.section-head {
-  font-family: var(--font-label);
-  font-size: var(--text-sm);
-  letter-spacing: var(--label-tracking);
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 0.35rem;
-  margin: 2.5rem 0 1.25rem;
-}
-
 /* ── Label (.label) ────────────────────────────────── */
 /* Standalone label class: small-caps Archivo for status indicators,
    secondary metadata, and inline annotations. Defined here so every
@@ -261,8 +212,12 @@ hr.rule {
    strip's own Archivo/uppercase rule (correct), while .label inside
    .log-toolbar inherited body's Libre Baskerville at --text-base
    (wrong). A class must mean the same thing everywhere.
-   .masthead .label (below) adds display: block + margin-bottom for
-   the masthead context; the typographic values agree. */
+   .masthead .label adds display: block + margin-bottom for the masthead
+   context; the typographic values agree. It no longer lives below this
+   rule — it moved to shared-ui's prose.css, which base.html loads BEFORE
+   this file, so this standalone rule now wins on later-source order as
+   well as on equal specificity. Keep both: prose.css owns the page-header
+   context, this owns everywhere else. */
 .label {
   font-family: var(--font-label);
   font-size: var(--text-sm);
@@ -692,15 +647,3 @@ hr.rule {
 .upload-file-status.ok   { color: var(--success, green); }
 .upload-file-status.err  { color: var(--danger); }
 .upload-file-status.wait { color: var(--ink-faint); }
-
-/* ── Footer ───────────────────────────────────────────────── */
-.foot {
-  margin-top: 4rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--rule);
-  font-family: var(--font-label);
-  font-size: var(--text-xs);
-  letter-spacing: var(--label-tracking);
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
