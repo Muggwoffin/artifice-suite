@@ -15,9 +15,9 @@ dependencies = [
     "PyMuPDF",
     "reportlab",
     "huggingface_hub",
-    "secure-io",
-    "shared-ui",
-    "model-harness",
+    "artifice-secure-io>=0.1.0",
+    "artifice-shared-ui>=0.1.0",
+    "artifice-model-harness>=0.1.0",
     "jinja2>=3.0",
 ]
 

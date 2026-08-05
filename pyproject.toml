@@ -8,11 +8,11 @@ license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]
-ocr = ["artifice-ocr", "model-harness", "shared-ui"]
-ocr-web = ["artifice-ocr[web]", "model-harness", "shared-ui"]
-draft = ["artifice-draft", "model-harness", "shared-ui"]
-graph = ["artifice-graph", "model-harness", "shared-ui"]
-transcribe = ["artifice-transcribe", "model-harness", "shared-ui"]
+ocr = ["artifice-ocr", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
+ocr-web = ["artifice-ocr[web]", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
+draft = ["artifice-draft", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
+graph = ["artifice-graph", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
+transcribe = ["artifice-transcribe", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
 all = [
     "artifice-ocr",
     # web extra included so that --extra all carries the packages
@@ -22,8 +22,8 @@ all = [
     "artifice-draft[web]",
     "artifice-graph",
     "artifice-transcribe",
-    "model-harness",
-    "shared-ui",
+    "artifice-model-harness>=0.1.0",
+    "artifice-shared-ui>=0.1.0",
 ]
 
 [build-system]
@@ -55,9 +55,9 @@ artifice-ocr = { workspace = true }
 artifice-draft = { workspace = true }
 artifice-graph = { workspace = true }
 artifice-transcribe = { workspace = true }
-model-harness = { workspace = true }
-secure-io = { workspace = true }
-shared-ui = { workspace = true }
+artifice-model-harness = { workspace = true }
+artifice-secure-io = { workspace = true }
+artifice-shared-ui = { workspace = true }
 
 [tool.uv]
 override-dependencies = [

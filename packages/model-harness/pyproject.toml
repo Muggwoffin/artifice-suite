@@ -1,5 +1,5 @@
 [project]
-name = "model-harness"
+name = "artifice-model-harness"
 version = "0.1.0"
 description = "Shared BYOM connector and schema-validated call surface for Ollama, LM Studio, and generic OpenAI-compatible endpoints."
 readme = "README.md"

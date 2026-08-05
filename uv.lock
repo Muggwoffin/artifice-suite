@@ -50,12 +50,12 @@ conflicts = [[
 members = [
     "artifice-draft",
     "artifice-graph",
+    "artifice-model-harness",
     "artifice-ocr",
+    "artifice-secure-io",
+    "artifice-shared-ui",
     "artifice-suite",
     "artifice-transcribe",
-    "model-harness",
-    "secure-io",
-    "shared-ui",
 ]
 overrides = [{ package = { name = "whisperx" }, dependencies = [{ name = "triton", marker = "python_full_version < '0'", specifier = ">=3.3.0" }] }]
 
@@ -273,15 +273,15 @@ name = "artifice-draft"
 version = "0.1.0"
 source = { editable = "apps/artifice-draft" }
 dependencies = [
+    { name = "artifice-model-harness" },
+    { name = "artifice-secure-io" },
+    { name = "artifice-shared-ui" },
     { name = "docx-revisions" },
     { name = "httpx" },
     { name = "jinja2" },
     { name = "lxml" },
-    { name = "model-harness" },
     { name = "python-docx" },
     { name = "requests" },
-    { name = "secure-io" },
-    { name = "shared-ui" },
 ]
 
 [package.optional-dependencies]
@@ -296,20 +296,20 @@ web = [
 
 [package.metadata]
 requires-dist = [
+    { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-secure-io", editable = "packages/secure-io" },
+    { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "beautifulsoup4", marker = "extra == 'web'", specifier = ">=4.12" },
     { name = "docx-revisions", specifier = ">=0.1.5" },
     { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "jinja2", specifier = ">=3.0" },
     { name = "lxml", specifier = ">=5.0" },
-    { name = "model-harness", editable = "packages/model-harness" },
     { name = "python-docx", specifier = ">=0.8.11" },
     { name = "python-multipart", marker = "extra == 'web'", specifier = ">=0.0.9" },
     { name = "pywebview", marker = "extra == 'web'", specifier = ">=4.4" },
     { name = "readability-lxml", marker = "extra == 'web'", specifier = ">=0.8.1" },
     { name = "requests", specifier = ">=2.31.0" },
-    { name = "secure-io", editable = "packages/secure-io" },
-    { name = "shared-ui", editable = "packages/shared-ui" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.29" },
 ]
 provides-extras = ["web"]
@@ -319,15 +319,15 @@ name = "artifice-graph"
 version = "0.1.0"
 source = { editable = "apps/artifice-graph" }
 dependencies = [
+    { name = "artifice-model-harness" },
+    { name = "artifice-secure-io" },
+    { name = "artifice-shared-ui" },
     { name = "httpx" },
-    { name = "model-harness" },
     { name = "networkx" },
     { name = "pdfplumber" },
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "rich" },
-    { name = "secure-io" },
-    { name = "shared-ui" },
     { name = "typer" },
 ]
 
@@ -343,39 +343,57 @@ web = [
 [package.metadata]
 requires-dist = [
     { name = "aiofiles", marker = "extra == 'web'", specifier = ">=23.0" },
+    { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-secure-io", editable = "packages/secure-io" },
+    { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.100" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "jinja2", marker = "extra == 'web'", specifier = ">=3.1" },
-    { name = "model-harness", editable = "packages/model-harness" },
     { name = "networkx", specifier = ">=3.0" },
     { name = "pdfplumber", specifier = ">=0.10" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "python-multipart", marker = "extra == 'web'", specifier = ">=0.0.9" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
-    { name = "secure-io", editable = "packages/secure-io" },
-    { name = "shared-ui", editable = "packages/shared-ui" },
     { name = "typer", extras = ["all"], specifier = ">=0.12" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.20" },
 ]
 provides-extras = ["web"]
 
 [[package]]
+name = "artifice-model-harness"
+version = "0.1.0"
+source = { editable = "packages/model-harness" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pydantic", specifier = ">=2.0" },
+]
+
+[package.metadata.requires-dev]
+dev = []
+
+[[package]]
 name = "artifice-ocr"
 version = "0.1.0"
 source = { editable = "apps/artifice-ocr" }
 dependencies = [
+    { name = "artifice-model-harness" },
+    { name = "artifice-secure-io" },
+    { name = "artifice-shared-ui" },
     { name = "huggingface-hub" },
     { name = "jinja2" },
-    { name = "model-harness" },
     { name = "ollama" },
     { name = "openai" },
     { name = "pymupdf" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "reportlab" },
-    { name = "secure-io" },
-    { name = "shared-ui" },
     { name = "typer" },
 ]
 
@@ -387,22 +405,32 @@ web = [
 
 [package.metadata]
 requires-dist = [
+    { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-secure-io", editable = "packages/secure-io" },
+    { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "fastapi", marker = "extra == 'web'" },
     { name = "huggingface-hub" },
     { name = "jinja2", specifier = ">=3.0" },
-    { name = "model-harness", editable = "packages/model-harness" },
     { name = "ollama" },
     { name = "openai" },
     { name = "pymupdf" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "reportlab" },
-    { name = "secure-io", editable = "packages/secure-io" },
-    { name = "shared-ui", editable = "packages/shared-ui" },
     { name = "typer" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'" },
 ]
 provides-extras = ["web"]
+
+[[package]]
+name = "artifice-secure-io"
+version = "0.1.0"
+source = { editable = "packages/secure-io" }
+
+[[package]]
+name = "artifice-shared-ui"
+version = "0.1.0"
+source = { editable = "packages/shared-ui" }
 
 [[package]]
 name = "artifice-suite"
@@ -413,35 +441,35 @@ source = { editable = "." }
 all = [
     { name = "artifice-draft", extra = ["web"] },
     { name = "artifice-graph" },
+    { name = "artifice-model-harness" },
     { name = "artifice-ocr" },
+    { name = "artifice-shared-ui" },
     { name = "artifice-transcribe" },
-    { name = "model-harness" },
-    { name = "shared-ui" },
 ]
 draft = [
     { name = "artifice-draft" },
-    { name = "model-harness" },
-    { name = "shared-ui" },
+    { name = "artifice-model-harness" },
+    { name = "artifice-shared-ui" },
 ]
 graph = [
     { name = "artifice-graph" },
-    { name = "model-harness" },
-    { name = "shared-ui" },
+    { name = "artifice-model-harness" },
+    { name = "artifice-shared-ui" },
 ]
 ocr = [
+    { name = "artifice-model-harness" },
     { name = "artifice-ocr" },
-    { name = "model-harness" },
-    { name = "shared-ui" },
+    { name = "artifice-shared-ui" },
 ]
 ocr-web = [
+    { name = "artifice-model-harness" },
     { name = "artifice-ocr", extra = ["web"] },
-    { name = "model-harness" },
-    { name = "shared-ui" },
+    { name = "artifice-shared-ui" },
 ]
 transcribe = [
+    { name = "artifice-model-harness" },
+    { name = "artifice-shared-ui" },
     { name = "artifice-transcribe" },
-    { name = "model-harness" },
-    { name = "shared-ui" },
 ]
 
 [package.dev-dependencies]
@@ -461,23 +489,23 @@ requires-dist = [
     { name = "artifice-draft", extras = ["web"], marker = "extra == 'all'", editable = "apps/artifice-draft" },
     { name = "artifice-graph", marker = "extra == 'all'", editable = "apps/artifice-graph" },
     { name = "artifice-graph", marker = "extra == 'graph'", editable = "apps/artifice-graph" },
+    { name = "artifice-model-harness", marker = "extra == 'all'", editable = "packages/model-harness" },
+    { name = "artifice-model-harness", marker = "extra == 'draft'", editable = "packages/model-harness" },
+    { name = "artifice-model-harness", marker = "extra == 'graph'", editable = "packages/model-harness" },
+    { name = "artifice-model-harness", marker = "extra == 'ocr'", editable = "packages/model-harness" },
+    { name = "artifice-model-harness", marker = "extra == 'ocr-web'", editable = "packages/model-harness" },
+    { name = "artifice-model-harness", marker = "extra == 'transcribe'", editable = "packages/model-harness" },
     { name = "artifice-ocr", marker = "extra == 'all'", editable = "apps/artifice-ocr" },
     { name = "artifice-ocr", marker = "extra == 'ocr'", editable = "apps/artifice-ocr" },
     { name = "artifice-ocr", extras = ["web"], marker = "extra == 'ocr-web'", editable = "apps/artifice-ocr" },
+    { name = "artifice-shared-ui", marker = "extra == 'all'", editable = "packages/shared-ui" },
+    { name = "artifice-shared-ui", marker = "extra == 'draft'", editable = "packages/shared-ui" },
+    { name = "artifice-shared-ui", marker = "extra == 'graph'", editable = "packages/shared-ui" },
+    { name = "artifice-shared-ui", marker = "extra == 'ocr'", editable = "packages/shared-ui" },
+    { name = "artifice-shared-ui", marker = "extra == 'ocr-web'", editable = "packages/shared-ui" },
+    { name = "artifice-shared-ui", marker = "extra == 'transcribe'", editable = "packages/shared-ui" },
     { name = "artifice-transcribe", marker = "extra == 'all'", editable = "apps/artifice-transcribe" },
     { name = "artifice-transcribe", marker = "extra == 'transcribe'", editable = "apps/artifice-transcribe" },
-    { name = "model-harness", marker = "extra == 'all'", editable = "packages/model-harness" },
-    { name = "model-harness", marker = "extra == 'draft'", editable = "packages/model-harness" },
-    { name = "model-harness", marker = "extra == 'graph'", editable = "packages/model-harness" },
-    { name = "model-harness", marker = "extra == 'ocr'", editable = "packages/model-harness" },
-    { name = "model-harness", marker = "extra == 'ocr-web'", editable = "packages/model-harness" },
-    { name = "model-harness", marker = "extra == 'transcribe'", editable = "packages/model-harness" },
-    { name = "shared-ui", marker = "extra == 'all'", editable = "packages/shared-ui" },
-    { name = "shared-ui", marker = "extra == 'draft'", editable = "packages/shared-ui" },
-    { name = "shared-ui", marker = "extra == 'graph'", editable = "packages/shared-ui" },
-    { name = "shared-ui", marker = "extra == 'ocr'", editable = "packages/shared-ui" },
-    { name = "shared-ui", marker = "extra == 'ocr-web'", editable = "packages/shared-ui" },
-    { name = "shared-ui", marker = "extra == 'transcribe'", editable = "packages/shared-ui" },
 ]
 provides-extras = ["ocr", "ocr-web", "draft", "graph", "transcribe", "all"]
 
@@ -498,10 +526,12 @@ version = "0.1.0"
 source = { editable = "apps/artifice-transcribe" }
 dependencies = [
     { name = "aiosqlite" },
+    { name = "artifice-model-harness" },
+    { name = "artifice-secure-io" },
+    { name = "artifice-shared-ui" },
     { name = "fastapi" },
     { name = "fpdf2" },
     { name = "jinja2" },
-    { name = "model-harness" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12' or (extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda')" },
     { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' or (extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda')" },
     { name = "openai" },
@@ -509,8 +539,6 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-multipart" },
-    { name = "secure-io" },
-    { name = "shared-ui" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -546,10 +574,12 @@ asr-cuda = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20.0" },
+    { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-secure-io", editable = "packages/secure-io" },
+    { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "fpdf2", specifier = ">=2.8.0" },
     { name = "jinja2", specifier = ">=3.0" },
-    { name = "model-harness", editable = "packages/model-harness" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "platformdirs", specifier = ">=4.0.0" },
@@ -558,8 +588,6 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "secure-io", editable = "packages/secure-io" },
-    { name = "shared-ui", editable = "packages/shared-ui" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.0" },
     { name = "torch", marker = "(sys_platform == 'linux' and extra == 'asr') or (sys_platform == 'win32' and extra == 'asr')", specifier = ">=2.8.0,<2.9.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "artifice-transcribe", extra = "asr" } },
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'asr'", specifier = ">=2.8.0,<2.9.0" },
@@ -2294,24 +2322,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec9
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
 ]
-
-[[package]]
-name = "model-harness"
-version = "0.1.0"
-source = { editable = "packages/model-harness" }
-dependencies = [
-    { name = "httpx" },
-    { name = "pydantic" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "pydantic", specifier = ">=2.0" },
-]
-
-[package.metadata.requires-dev]
-dev = []
 
 [[package]]
 name = "mpmath"
@@ -4412,11 +4422,6 @@ wheels = [
 ]
 
 [[package]]
-name = "secure-io"
-version = "0.1.0"
-source = { editable = "packages/secure-io" }
-
-[[package]]
 name = "setuptools"
 version = "81.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4424,11 +4429,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/0d/1c/73e719955c59b8e42
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/e3/c164c88b2e5ce7b24d667b9bd83589cf4f3520d97cad01534cd3c4f55fdb/setuptools-81.0.0-py3-none-any.whl", hash = "sha256:fdd925d5c5d9f62e4b74b30d6dd7828ce236fd6ed998a08d81de62ce5a6310d6", size = 1062021, upload-time = "2026-02-06T21:10:37.175Z" },
 ]
-
-[[package]]
-name = "shared-ui"
-version = "0.1.0"
-source = { editable = "packages/shared-ui" }
 
 [[package]]
 name = "shellingham"

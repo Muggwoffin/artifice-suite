@@ -13,9 +13,9 @@ body:
         - artifice-draft
         - artifice-graph
         - artifice-transcribe
-        - model-harness
-        - secure-io
-        - shared-ui
+        - artifice-model-harness
+        - artifice-secure-io
+        - artifice-shared-ui
         - other
     validations:
       required: true

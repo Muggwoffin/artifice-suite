@@ -376,14 +376,14 @@ jobs:
               print(f'Artifice-ocr wheel assertions passed ({len(names)} entries).')
           "
 
-      # ── shared-ui wheel: masthead partial and templates ────────────
-      - name: Build shared-ui wheel
+      # ── artifice-shared-ui wheel: masthead partial and templates ─────
+      - name: Build artifice-shared-ui wheel
         run: |
           rm -rf packages/shared-ui/build packages/shared-ui/dist
           uv run --with build python -m build --wheel
         working-directory: packages/shared-ui
 
-      - name: Assert shared-ui wheel contains templates/
+      - name: Assert artifice-shared-ui wheel contains templates/
         run: |
           python3 -c "
           import zipfile, glob
@@ -398,16 +398,16 @@ jobs:
               # shared_ui/templates/ must include the masthead partial
               template_entries = [n for n in names if 'templates/' in n and n.endswith('.html')]
               assert len(template_entries) >= 1, \
-                  f'Expected >=1 template in shared-ui wheel, found {len(template_entries)}: {template_entries}'
+                  f'Expected >=1 template in artifice-shared-ui wheel, found {len(template_entries)}: {template_entries}'
               assert any('_masthead.html' in t for t in template_entries), \
-                  f'_masthead.html missing from shared-ui wheel. Templates: {template_entries}'
+                  f'_masthead.html missing from artifice-shared-ui wheel. Templates: {template_entries}'
 
               # shared_ui/assets/ must include masthead.css
               asset_entries = [n for n in names if 'assets/' in n]
               assert any('masthead.css' in a for a in asset_entries), \
-                  f'masthead.css missing from shared-ui wheel. Assets: {asset_entries}'
+                  f'masthead.css missing from artifice-shared-ui wheel. Assets: {asset_entries}'
 
-              print(f'Shared-ui wheel assertions passed ({len(names)} entries).')
+              print(f'artifice-shared-ui wheel assertions passed ({len(names)} entries).')
           "
 
       # ── artifice-draft wheel: Jinja templates must be present ──────
