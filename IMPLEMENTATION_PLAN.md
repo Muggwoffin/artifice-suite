@@ -1515,10 +1515,12 @@ changed casually). So "give every app an About page" is not one task:
 
 #### Decided by the maintainer, 2026-08-05
 
-1. **In-page About panel. The three static apps stay static** — no Jinja adoption, no new routes,
-   no Dockerfile change. `graph` keeps its `/about` route; parity here means the *content and
-   placement* match, not the delivery mechanism. Accept that About is not linkable in three of four
-   apps; that was the trade taken deliberately.
+1. **~~In-page About panel. The three static apps stay static.~~ REVERSED the same day — see
+   "Jinja port" below.** The three apps are being ported to Jinja, so About becomes a real route in
+   all four. The original decision was sound *given* the asymmetry stays; the survey that followed
+   showed the asymmetry was not what it appeared to be, and the maintainer revised it. Kept rather
+   than deleted so the reversal is visible: a reader finding only the new decision would not know
+   the panel option was considered and why it lost.
 2. **Remove `artifice-ocr`'s first-run tips modal** (`static/js/onboarding.js`, its trigger at
    `index.html:399`, and the Settings button at `settings.js:221-222`). This supersedes the "do not
    delete it" note above, which was written before the About panel existed as a destination.
@@ -1562,10 +1564,67 @@ Two things to get right when porting the wordmark:
   than tracked separately — the `.panel-empty-title` / `.panel-empty-desc` component already exists
   in two apps' CSS.
 
-**Sequencing.** Item 1 (re-opening BYOM) is small, self-contained, and the only one that fixes a
-live user-facing dead end — it depends on none of the above and should land first. The wordmark and
-title changes are next and are near-mechanical. The About panel is the largest piece because it
-absorbs ocr's tips content. `draft`'s catch-up is independent of all of it and can run in parallel.
+#### The Jinja port — decided 2026-08-05, after measurement
+
+**The premise everyone had been working from was false.** `ocr`, `draft` and `transcribe` were
+described throughout this document as "static apps". They are not. Each reads `index.html` and runs
+`str.replace()` on it before serving — `ocr/web/server.py:97`, `draft/web/server.py:407`,
+`transcribe/main.py:104` — and ocr's preview route performs **eight** substitutions at
+`server.py:302-308`. All four apps already have a server-side template step. The real difference is
+that graph uses a template engine and the other three hand-roll one without escaping.
+
+**That hand-rolling has already cost a security bug.** The `</script>` XSS fixed in `a5bdc3b` came
+from `json.dumps(state)` being substituted with no escaping. Jinja autoescapes by default; that
+class of bug would have been structurally impossible.
+
+The two directions were weighed as follows.
+
+*Make graph static* — rejected. `library.html` (437 lines) genuinely server-renders, with
+`{% for e in state.entities %}` wrapping a nested `{% for r in state.relationships %}` that matches
+relationships to entities, plus aliases and source documents. `/api/state` returns **only counts and
+breakdowns**, not the entity list, so this direction needs a new JSON endpoint *and* that template
+rewritten client-side. `index.html` also server-renders config into form state
+(`{% if config.llm.supports_vision %}checked{% endif %}`), and moving that client-side reintroduces
+flash-of-wrong-state — the precise defect corrected in the BYOM lede during the same session. It
+optimises for a symmetry the code does not have by deleting the one app doing it properly.
+
+*Port the three to Jinja* — **chosen.** It replaces `str.replace` with a real engine in three apps,
+turns autoescaping on by default, and is the only direction that makes the parity work cheap: a
+shared masthead puts the wordmark, nav and About link in one place instead of four JavaScript
+re-implementations.
+
+Costs accepted, each a real step rather than a footnote:
+
+- Three apps gain `jinja2` (already in the lockfile via graph) and a `templates/` tree.
+- **Packaging must be updated per app, and this is the likeliest thing to be silently wrong.**
+  `draft`, `ocr` and `transcribe` use setuptools with explicit `[tool.setuptools.package-data]`;
+  `static/**` alone will not carry a `templates/` tree. A template missing from a wheel fails only
+  at runtime in an installed app, which no test in this repo currently exercises. Verify against a
+  built wheel with `zipfile` — **`unzip` is not installed** — and use `scripts/build-wheel.sh`,
+  which exists because a stale `build/` must be cleared first.
+- **`artifice-graph` must NOT be converted to setuptools.** It uses hatchling deliberately, and the
+  comment in its `pyproject.toml` says why: hatchling auto-includes package files, and converting
+  risks silently dropping `templates/`. A survey this session briefly mistook graph's *absence* of a
+  `package-data` section for a packaging bug. It is not one — it is the correct configuration for
+  its backend. Do not "fix" it.
+- `graph`'s `FileSystemLoader(str(HERE / "templates"))` (`server.py:75-76`) is `__file__`-relative,
+  the pattern `CLAUDE.md` warns breaks in a frozen bundle. **It is being fixed first, before the
+  pattern is copied into three more apps.** `PackageLoader` resolves through `importlib`;
+  `shared_ui` already demonstrates the correct precedent at `draft/web/server.py:94-95`.
+
+**Shared chrome lives in `packages/shared-ui`, not in four private `base.html` files.** If each app
+keeps its own, the work gets done and there are still four files to edit to change the wordmark —
+which is how the present divergence arose. The shared unit is a **masthead partial**, not a page
+skeleton: the apps' body content differs too much for one skeleton, but the chrome does not.
+`shared-ui` therefore becomes a template provider as well as an asset provider — the second such
+precedent after `byom.js` made it a JavaScript provider. Its hatchling `include` must gain
+`shared_ui/templates/**`; it currently lists only `assets/**`.
+
+**Sequencing.** Fix graph's loader, build the shared partial, and port **`draft` alone** as a pilot
+(262 lines, the smallest, and the app most in need of UI attention) — proving the wheel before
+`ocr` (665 lines) and `transcribe` (543) follow. Item 1 above (re-opening BYOM) is independent of
+all of this and can land at any point. `draft`'s theme toggle is deliberately **not** in the pilot:
+it also lacks a `[data-theme="dark"]` accent block, so a toggle without that would half-work.
 
 See also: **ROADMAP.md** — the development roadmap for the community period between Phases 6
 and 7.
@@ -1754,6 +1813,34 @@ browser. One reported that "a save-then-reload round trip preserves both values"
 correctly from the persistence code — while the actual failure was one layer earlier at a button
 that had never been wired. Brief them to say plainly when they could not exercise something; they
 comply when asked, and an honest "I verified statically" is worth more than a confident inference.
+
+**An SPDX header in the wrong comment syntax silently deletes the first CSS rule, and `reuse lint`
+cannot see it.** Found 2026-08-05 in `packages/shared-ui/shared_ui/assets/masthead.css`, which was
+written with an **HTML** comment header:
+
+```css
+<!-- SPDX-FileCopyrightText: 2026 Maurice Casey
+   - SPDX-License-Identifier: AGPL-3.0-or-later
+  -->
+```
+
+`<!--` and `-->` are legacy CDO/CDC tokens that a CSS parser tolerates, but the text between them is
+parsed **as CSS**. The parser reads it as a malformed selector and keeps consuming until the first
+`{`, which swallows the entire next rule. Here that was `.topnav`, so the shared masthead rendered
+with `display: block`, `position: static`, no padding and no height — brand and nav stacked in two
+rows, flush against the viewport edge. Every rule *after* the first one applied normally, which is
+what makes it so confusing: `.brand-accent` was correctly magenta while `.topnav` was untouched.
+
+Three things conspire to hide it:
+- **`reuse lint` passes.** It checks that the tags are present, not that they are in valid comment
+  syntax for the file type. The gate that exists to police these headers is blind to this.
+- **No test can see it.** The stylesheet is served byte-for-byte correctly; `curl` shows the rule.
+- **The DOM inspection that finds it is unusual** — the tell was `document.styleSheets` reporting
+  **zero** rules matching `.topnav` while the file plainly contains one at line 21.
+
+Every other stylesheet in the repo uses `/* … */`. When adding a new CSS file, copy the header from
+`byom.css` or `tokens.css`, and if a shared component's first rule mysteriously does not apply,
+check the header before debugging the cascade.
 
 **Verify rendered, not from the diff.** This caught, in one session: the above; an entire UI whose
 buttons had never worked despite looking correct; and three of the orchestrator's *own* false

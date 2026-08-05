@@ -3,29 +3,10 @@
    - SPDX-License-Identifier: AGPL-3.0-or-later
   -->
 
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ArtificeDraft</title>
+{% extends "base.html" %}
+{% block title %}ArtificeDraft{% endblock %}
 
-<!-- Local fonts and design tokens, served from the shared-ui package. -->
-<link rel="stylesheet" href="/shared/fonts.css?v=__ASSET_V__">
-<link rel="stylesheet" href="/shared/tokens.css?v=__ASSET_V__">
-
-<link rel="stylesheet" href="/static/css/app.css?v=__ASSET_V__">
-<link rel="stylesheet" href="/shared/byom.css?v=__ASSET_V__">
-</head>
-<body>
-<a href="#main-content" class="skip-link">Skip to content</a>
-
-<div class="app" id="main-content">
-
-  <header class="masthead">
-    <h1>ArtificeDraft</h1>
-    <span class="tag">local-first &middot; tracked changes</span>
-  </header>
+{% block content %}
 
   <div class="panels">
     <section class="panel active" id="panel-main">
@@ -237,26 +218,4 @@
     </div>
   </div>
 
-</div>
-
-<script src="/static/js/app.js?v=__ASSET_V__"></script>
-<script src="/static/js/review.js?v=__ASSET_V__"></script>
-<script src="/static/js/guide-import.js?v=__ASSET_V__"></script>
-<script src="/shared/byom.js?v=__ASSET_V__"></script>
-<script>
-(function () {
-  "use strict";
-  var byom = window.ArtificeByom.create({
-    appName: "ArtificeDraft",
-    onConfigured: function () { byom.close(); }
-  });
-  fetch("/api/byom/state")
-    .then(function (r) { return r.json(); })
-    .then(function (state) {
-      if (!state.configured) { byom.open(); }
-    })
-    ["catch"](function () { /* server not ready yet — fine */ });
-})();
-</script>
-</body>
-</html>
+{% endblock %}

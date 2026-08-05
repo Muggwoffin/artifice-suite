@@ -244,6 +244,7 @@ source = { editable = "apps/artifice-draft" }
 dependencies = [
     { name = "docx-revisions" },
     { name = "httpx" },
+    { name = "jinja2" },
     { name = "model-harness" },
     { name = "python-docx" },
     { name = "requests" },
@@ -267,6 +268,7 @@ requires-dist = [
     { name = "docx-revisions", specifier = ">=0.1.5" },
     { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },
+    { name = "jinja2", specifier = ">=3.0" },
     { name = "model-harness", editable = "packages/model-harness" },
     { name = "python-docx", specifier = ">=0.8.11" },
     { name = "python-multipart", marker = "extra == 'web'", specifier = ">=0.0.9" },
