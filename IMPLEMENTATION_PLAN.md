@@ -2052,7 +2052,136 @@ Worth settling as one shared rule.
 
 ---
 
-### PICK UP HERE — Phase 6, as at 2026-08-04
+### PICK UP HERE — Phase 6, as at 2026-08-05 (supersedes the 2026-08-04 block below)
+
+**Branch `phase6-byom-screen`, PR #26 open against `main`.** CI ran green on it — **18/18 checks**,
+including the full 12-combination cross-platform matrix and the wheel job. That was the first time
+CI had ever run on this branch.
+
+**Read this section, then Part V, then `CLAUDE.md`. Ignore the 2026-08-04 block below except where
+this one points at it.**
+
+#### Confirm the environment before trusting anything
+
+```bash
+wsl.exe -d Ubuntu -- bash -lc "cd ~/projects/artifice-suite && \
+  df -h /tmp | tail -1 && \
+  git status -sb && \
+  (cd apps/artifice-ocr && uv run pytest tests/ -q | tail -1)"
+```
+
+Expected: `/tmp` well under 100%, branch clean, `487 passed, 1 skipped`. **Check `/tmp` first** —
+it is a 7.6 GB tmpfs, and a single leftover ASR venv filled it on 2026-08-05, producing 148 test
+failures that all read `OSError: [Errno 28]` and looked exactly like a code regression while `/`
+had 892 GB free. See Part V.
+
+#### Current test baselines — these supersede every earlier figure in this file
+
+| Suite | Count |
+|---|---|
+| `packages/model-harness` | 222 passed, 1 deselected |
+| `apps/artifice-ocr` | 487 passed, 1 skipped |
+| `apps/artifice-draft` | 225 passed |
+| `apps/artifice-graph` | 169 passed |
+| `apps/artifice-transcribe` | 111 passed (`--ignore=tests/test_api.py`) |
+
+Run each from its own directory; a root `pytest` does not work (duplicate `tests` packages in draft
+and graph). **This branch has a second author** — a `copilot-swe-agent` bot answers PR review
+comments and pushes to it, so `git fetch` before quoting a figure.
+
+#### What landed this session
+
+| Work | State |
+|---|---|
+| Tailored BYOM screen per app | done, `a5bdc3b`, reviewed rendered in all four |
+| PyTorch slimming findings recorded as a Step 5 prerequisite | done, `a374a67` |
+| Step 9 — cross-app UI parity, surveyed and written | done, `462ce4f` |
+| Jinja port stage 1 — loader, shared masthead, draft pilot | done, `a8c72c2` |
+| Jinja port stage 2 — ocr and transcribe | done, `9958f7b` |
+| Jinja port stage 3 — wordmark, About pages, emoji sweep | **in flight — see below** |
+
+#### THE ONE THING IN FLIGHT — finish this first
+
+Stage 3 is **substantially done and verified rendered**: ocr's tips modal is gone, its script tag
+gone, **zero emoji in the DOM**, all five tabs carry §8.8 SVG icons, the `.brand-group` wordmark
+sits on a shared baseline, and About pages exist for all four apps.
+
+**Two layout defects remain, both measured from the live DOM, both briefed to `ui-ux` and possibly
+already fixed — verify before acting:**
+
+1. **About prose has no measure.** `.page.page-prose { max-width: 44rem; }` is defined in exactly
+   one place — `apps/artifice-graph/.../static/app.css:202` — while **all four** About templates use
+   the class. ocr, draft and transcribe therefore render prose unbounded: measured at **2542px wide,
+   ~299 characters per line** on a 2552px viewport. Editorial typography wants 60–75.
+2. **The About page header collapses to one line** in ocr and transcribe. `.masthead { display: flex }`
+   survives as a leftover from the old fixed page header, and about.html reuses
+   `<header class="masthead">`. Measured on ocr: kicker at x=20, h1 at x=370, same y. `draft` and
+   `graph` have no such rule and are correct.
+
+Both are the *same failure as stage 1* — a pattern copied from graph without its supporting CSS.
+The fix chosen then was to put shared styling in `shared-ui` rather than three copies.
+
+Also left open by stage 3, all flagged honestly by the agent rather than hidden:
+- `apps/artifice-ocr/src/artifice_ocr/config.py:96` still lists `"onboarding_dismissed"` in
+  `PERSISTED_KEYS`. Dead but harmless; it was outside that brief's scope.
+- Wrapping `#btn-palette-hint` in the now-flex `.tab` rule adds `0.35rem` gaps around the `+` in
+  `Ctrl`+`K`. Cosmetic, on a hint button, not one of the five real tabs.
+- **A documentation discrepancy worth keeping:** ocr's deleted tips modal claimed PaddleOCR and
+  Tesseract as OCR-engine alternatives. A grep of the whole `artifice-ocr` tree found them named
+  only in that tips text and two handoff docs — **never in `config.py`, the Settings dropdown, or
+  any pipeline module.** They were not carried into the About page. Either implement them or stop
+  claiming them; do not reintroduce the claim from the old copy.
+
+#### Then, in order
+
+1. **Merge PR #26** once stage 3 lands. It is 12+ commits and CI is green.
+2. **Step 9 item 1 — make the BYOM screen re-openable.** The only `byom.open()` in each app is the
+   auto-open on `!configured`, and the instance is a `var` inside an IIFE, so nothing can reach it.
+   A user whose endpoint later breaks has no route back. Small, self-contained, no dependencies.
+3. **Step 9 remainder** — favicons (no app has one), a shared toast (implemented three separate
+   times, missing entirely from draft), and `artifice-draft`'s catch-up as one workstream: it has no
+   theme toggle, no keyboard shortcuts, and no `[data-theme="dark"]` accent block.
+4. **Step 5 — the ASR consent-and-download flow**, with the PyTorch slimming prerequisite recorded
+   above. Tiers 1 and 2 commit to nothing and can land first.
+5. **Open item 0 (Part IV) — Windows API-key permissions.** Still open, and still the thing that
+   makes any packaging work premature: `os.open(..., 0o600)` is ignored on Windows, so both ocr's
+   and transcribe's config files hold an API key world-readable there.
+
+#### Fleet state — changed materially this session, do not trust older notes
+
+- **`oss-reviewer` was broken and is now on a local model that does not work in this harness.** Its
+  configured `gemma4-32k:12b` is **no longer installed**; `CLAUDE.md`'s recorded Ollama model list
+  is stale. It is now pointed at `ollama/qwen2.5-coder-14b-16k:latest`.
+- **The 32B does not fit this machine.** RTX 5070 Ti, 16.3 GB. `qwen2.5-coder:32b` needs 28.8 GB
+  with a 16k KV cache, so Ollama split it 51% GPU / 49% CPU and it produced **~1 token/second** —
+  723 bytes in 185 seconds. The 14B is 11.9 GB, **100% GPU, ~40 tok/s**.
+- **But the local slot still does not work, for a different reason.** On the 14B the agent emitted
+  **raw tool-call JSON as plain text** instead of invoking tools — 7 such blocks, 6 attempts at
+  write tools it does not have, 1 attempt to spawn a subagent (the persona-bleed failure), and
+  **zero `file:line` citations**. It never read the files. Every model advertises `tools: YES` to
+  Ollama, so this is a **provider-adapter problem, not a model limitation** — most likely the
+  generic `@ai-sdk/openai-compatible` npm adapter in `opencode.json` failing to negotiate
+  tool-calling with Ollama's `/v1` endpoint. Try Ollama's native provider before blaming any model.
+- **This reframes the old "the local 12B silently summarises instead of reviewing" note.** That was
+  the same adapter. The local slot may never have worked properly, and the 12B may have been
+  condemned unfairly.
+- **`ui-ux` hit a Claude session limit mid-task** and had to be resumed after the reset. `CLAUDE.md`
+  predicted exactly this when it moved back onto the maintainer's subscription, and its own guidance
+  is: **if the shared budget bites again, move it to a paid tier — do not downgrade its model.** It
+  has now bitten. Decide before the next UI-heavy session.
+
+#### Two orchestration lessons from this session
+
+- **Verify rendered, every time.** Stage 1 passed 225 tests, served correct bytes, and shipped
+  wheels containing the right templates — while the page rendered with two overlapping headers and
+  an unstyled masthead. Stage 2 passed 487 tests while ocr's entire tab bar sat hidden under a fixed
+  nav with Settings unreachable. Neither was visible in a diff, a test, or a `curl`.
+- **A non-zero agent exit is not automatically the agent's fault.** One `exit=1` was a full `/tmp`;
+  one was a session limit. Read the failure before re-briefing.
+
+---
+
+### PICK UP HERE — Phase 6, as at 2026-08-04 *(superseded by the block above; kept for its Step 3–4 detail)*
 
 Branch **`phase6-packaging`**, pushed, 6 commits ahead of `main`, working tree clean.
 

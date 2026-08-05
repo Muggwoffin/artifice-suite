@@ -25,6 +25,20 @@
         "baseURL": "http://172.21.176.1:11434/v1"
       },
       "models": {
+        "qwen2.5-coder-14b-16k:latest": {
+          "name": "Qwen2.5-Coder 14B (local, 16k ctx)",
+          "limit": {
+            "context": 16384,
+            "output": 8192
+          }
+        },
+        "qwen2.5-coder:32b": {
+          "name": "Qwen2.5-Coder 32B (local, does NOT fit 16GB VRAM)",
+          "limit": {
+            "context": 16384,
+            "output": 8192
+          }
+        },
         "gemma4-32k:12b": {
           "name": "Gemma 4 12B (32k ctx, local)",
           "limit": {
