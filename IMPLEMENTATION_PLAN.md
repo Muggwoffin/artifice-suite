@@ -1418,11 +1418,28 @@ found without reading the test that hides it.
 
 **Open questions, in the order that matters for a first-run experience:**
 
-1. **Distribution format.** Wheel, frozen bundle (PyInstaller / Nuitka), Docker, or an
-   installer — and whether the answer differs by app. `artifice-transcribe` pulls large ASR
-   models (Whisper + pyannote); the other three do not. A Docker user on Windows needs
-   WSL2 or Docker Desktop; a frozen bundle does not. The tradeoffs are open and the answer
-   may differ per app.
+1. **~~Distribution format.~~ DECIDED 2026-08-05 by the maintainer: `uv` primary, Docker
+   second, plus a thin bootstrap.** Wheels remain the archival artefact — they are what CI
+   already gates, what Zenodo archives, and what a JOSS reviewer can inspect. `uv tool
+   install` is the documented user path: it provisions Python itself, gives each app an
+   isolated environment, and **preserves the `--extra asr` / `--extra asr-cuda` split**
+   built on 2026-08-05. Docker stays as the reproducible/server path. A small per-OS
+   bootstrap that installs uv and runs the install removes the terminal requirement; it is
+   a script, not a build system.
+
+   **Frozen bundles (PyInstaller / Nuitka) are ruled out, and the reason is load-bearing:**
+   a frozen bundle has no writable `site-packages`, so the CPU/CUDA extras collapse and the
+   whole ASR stack is forced back into the artefact unconditionally. That would ship
+   multiple gigabytes to every user including those who never transcribe, immediately after
+   the work that took the base install to **205 MB** and a working CPU transcription install
+   to **1.6 GB**. It would also foreclose tier 3 (runtime opt-in install) permanently, and
+   make first-run model acquisition harder, since a frozen app cannot shell out to install
+   anything. Do not reopen this without a new reason.
+
+   A frozen bundle remains *technically* viable for `ocr`, `draft` and `graph`, which have
+   no heavy dependencies — but shipping two distribution mechanisms across four apps that
+   are otherwise deliberately identical costs the monorepo parity this repo exists to
+   enforce, and doubles the release surface for one maintainer.
 
 2. **How a user obtains a model.** The suite is BYOM, and the first-run experience cannot
    assume a working Ollama install. Options include: detecting Ollama on the host,
@@ -1431,15 +1448,42 @@ found without reading the test that hides it.
    download and experiment with" is not compatible with a blank screen when no model
    server is found.
 
-3. **Where API keys live on Windows.** Open item 0 (Part IV): `os.open(..., 0o600)` protects
-   files on POSIX but Windows does not implement POSIX mode bits, so on Windows the same call
-   reports `0o666`. Both ocr's `settings.json` and transcribe's inference config hold an
-   API key. The fix is platform-specific (`icacls` or `pywin32`), not a parameter change.
-   **Any packaging work that precedes this fix ships an API-key exposure on Windows.**
+3. **~~Where API keys live on Windows.~~ CLOSED 2026-08-05, and verified on real Windows.**
+   This entry — and the "still open… makes any packaging work premature" line in the
+   2026-08-05 PICK UP HERE block — were **stale**, and were the last thing still nominally
+   blocking packaging. The fix had already landed and nobody had confirmed it.
 
-4. **What "uninstall" means.** `platformdirs` creates a user data directory. Does the
-   uninstaller remove it, prompt for it, or leave it? None of the three is obviously
-   correct for a researcher who wants to reinstall cleanly without losing their settings.
+   `packages/secure-io` implements the Windows path in full: `icacls` with a SID-based
+   grant (so it works on non-English installs), `/inheritance:r`, verification *before* any
+   secret is written, and a hard failure that deletes the empty file rather than write a
+   plaintext secret if the ACL cannot be applied. **All four apps already call it on save** —
+   `ocr/config.py:195-205`, `transcribe/api/v1/routes.py:203-211`,
+   `draft/web/runtime.py:98-121`, `graph/web/config_helper.py:93-121`.
+
+   **Verified on native Windows 11 with real Python 3.12** (not WSL — no sub-agent can test
+   this, they all run on Linux): the resulting ACL is exactly one principal,
+   `<DOMAIN>\<user>:(R,W)`, with no inherited ACEs and no Everyone / BUILTIN\Users /
+   Authenticated Users / Guests entry. `is_restricted()` returns True and the JSON
+   round-trips. The repair path was checked the same way: a deliberately loose file
+   reported `False`, and `True` after `restrict_to_current_user()`.
+
+   **The one real gap found:** `restrict_to_current_user()` is documented as closing the
+   window for "installations that already have unprotected files on disk" and was **called
+   nowhere** — every app's *load* path used a plain `open()` with no permission check. A
+   config written by a pre-secure-io version therefore stayed loose until the user next
+   saved a setting. Fixed by repairing on load; see the commit. Note the deliberate
+   asymmetry there: the save path fails hard rather than write an unprotected secret, while
+   the load path only warns, because refusing to read a file the user already owns would
+   lock them out of their own settings.
+
+4. **~~What "uninstall" means.~~ DECIDED 2026-08-05 by the maintainer: uninstall removes
+   the program and leaves user data untouched, and the uninstaller says so.** The
+   `platformdirs` directory survives, so a researcher who reinstalls keeps their settings,
+   transcripts and enrolled speakers. The requirement this creates is the disclosure, not
+   the deletion: the uninstaller must **tell the user the data directory is being left
+   behind and where it is**, otherwise "uninstalled" silently leaves an API key on disk.
+   Whoever implements it must print or display the resolved `platformdirs` path — not a
+   generic sentence — since that path differs per OS and per app.
 
 5. **Signing and notarisation on macOS.** A macOS user cannot open an app without
    notarisation unless they explicitly bypass Gatekeeper (`xattr -r -d
@@ -2187,9 +2231,13 @@ Also left open by stage 3, all flagged honestly by the agent rather than hidden:
    theme toggle, no keyboard shortcuts, and no `[data-theme="dark"]` accent block.
 4. **Step 5 — the ASR consent-and-download flow**, with the PyTorch slimming prerequisite recorded
    above. Tiers 1 and 2 commit to nothing and can land first.
-5. **Open item 0 (Part IV) — Windows API-key permissions.** Still open, and still the thing that
-   makes any packaging work premature: `os.open(..., 0o600)` is ignored on Windows, so both ocr's
-   and transcribe's config files hold an API key world-readable there.
+5. ~~**Open item 0 (Part IV) — Windows API-key permissions.**~~ **DONE 2026-08-05 — and this
+   entry was wrong when written.** `secure-io` already implemented the Windows ACL path and
+   all four apps already called it; the claim that ocr's and transcribe's config files "hold
+   an API key world-readable" on Windows had not been true for some time. Verified on native
+   Windows 11, not inferred. See open question 3 in Part IV for the measurement and for the
+   one real gap it did surface (loose files were never repaired on load). **Packaging is no
+   longer blocked by this.**
 
 #### Fleet state — changed materially this session, do not trust older notes
 
