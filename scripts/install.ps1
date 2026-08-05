@@ -97,17 +97,29 @@ foreach ($app in $Apps) {
     if ($app -eq "artifice-transcribe") {
         if ($Cuda) {
             Write-Host "  GPU (CUDA) install -- this may download ~7 GB"
-            uv tool install --editable "./${AppDir}[asr]" `
+            uv tool install --editable "./${AppDir}[asr-cuda]" `
                 --torch-backend auto
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "uv tool install failed for $app (CUDA)"
+                exit 1
+            }
         }
         else {
             Write-Host "  CPU install -- this avoids the ~7 GB CUDA runtime"
             uv tool install --editable "./${AppDir}[asr]" `
                 --torch-backend cpu
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "uv tool install failed for $app (CPU)"
+                exit 1
+            }
         }
     }
     else {
         uv tool install --editable "./$AppDir"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "uv tool install failed for $app"
+            exit 1
+        }
     }
 
     $Installed += $app

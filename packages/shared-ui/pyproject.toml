@@ -7,6 +7,27 @@ requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
 dependencies = []
+authors = [
+    {name = "Maurice J. Casey"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = [
+    "design tokens",
+    "web fonts",
+    "UI assets",
+    "typography",
+]
+
+[project.urls]
+Homepage = "https://github.com/Muggwoffin/artifice-suite"
+Repository = "https://github.com/Muggwoffin/artifice-suite"
+Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 
 [build-system]
 requires = ["hatchling"]

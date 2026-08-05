@@ -30,8 +30,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure data directory exists, then create tables
-    _ = settings.data_path
+    # Ensure data directory exists (the config module resolves the path
+    # without creating it, so --data-dir does not cause a side effect).
+    data_path: Path = settings.data_path
+    data_path.mkdir(parents=True, exist_ok=True)
     async with engine.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await conn.commit()

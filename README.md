@@ -93,12 +93,13 @@ Each app documents its own setup and entry points in its own `README.md`.
 |---|---|---|---|
 | OCR | `artifice-ocr` | `artifice-ocr`, `artifice-ocr-web` | `~/.artifice_ocr/` |
 | Draft | `artifice-draft` | `artifice-draft` | `~/.artifice_draft/` |
-| Graph | `artifice-graph` | `artifice-graph`, `artifice-graph-web` | `~/.callosip/` |
+| Graph | `artifice-graph` | `artifice-graph`, `artifice-graph-web` | platformdirs(`artifice-graph`, `ArtificeSuite`) |
 | Transcribe | `artifice-transcribe` | `artifice-transcribe` | platform-dependent (see `artifice-transcribe --data-dir`) |
 
-> **Note:** ArtificeGraph stores its data under `~/.callosip/`, a legacy
-> name from an earlier project. The uninstaller reports this explicitly so you
-> do not mistake it for a directory belonging to another application.
+> **Note:** ArtificeGraph stores its data under the platform-conventional
+> user-data directory (was `~/.callosip/` prior to v0.1.1 — migrated
+> automatically on first launch). The uninstaller reports this explicitly
+> so you do not mistake it for a directory belonging to another application.
 
 ## What makes this suite different
 

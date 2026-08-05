@@ -100,7 +100,7 @@ for app in "${APPS[@]}"; do
     if [ "$app" = "artifice-transcribe" ]; then
         if [ "$CUDA" = true ]; then
             info "GPU (CUDA) install — this may download ~7 GB"
-            uv tool install --editable "./${app_dir}[asr]" \
+            uv tool install --editable "./${app_dir}[asr-cuda]" \
                 --torch-backend auto
         else
             info "CPU install — this avoids the ~7 GB CUDA runtime"

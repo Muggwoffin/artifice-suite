@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -160,6 +161,35 @@ class TestIsRestricted:
         path = tmp_path / "group_readable.json"
         path.write_text("{}", encoding="utf-8")
         os.chmod(path, 0o640)
+        assert not is_restricted(path)
+
+    @pytest.mark.skipif(sys.platform != "win32", reason="Windows ACL test")
+    def test_everyone_by_sid_is_not_restricted(self, tmp_path: Path) -> None:
+        """A file restricted then exposed to Everyone by SID must not pass
+        as restricted.
+
+        This catches the regression where ``_is_restricted_windows`` used
+        ``icacls /save`` to read the SDDL, but SDDL encodes well-known SIDs
+        as two-letter aliases (``WD`` for Everyone) rather than full
+        ``S-1-1-0`` strings, so the ``_WORLD_READABLE_SIDS`` check silently
+        passed world-readable files.
+
+        Uses ``icacls /grant *S-1-1-0:(R)`` which grants Everyone read access
+        by SID.  ``Get-Acl`` (the replacement mechanism) returns the canonical
+        ``S-1-1-0`` form, which must match ``_WORLD_READABLE_SIDS``.
+        """
+        path = tmp_path / "exposed.json"
+        write_private_json(path, {"key": "val"})
+        # Verify it starts restricted.
+        assert is_restricted(path)
+        # Grant Everyone read access by SID — this is the exact operation
+        # that the old icacls /save SDDL-parsing missed.
+        subprocess.run(
+            ["icacls", str(path), "/grant", "*S-1-1-0:(R)"],
+            capture_output=True,
+            check=True,
+        )
+        # Must now be NOT restricted — Everyone has Read.
         assert not is_restricted(path)
 
 

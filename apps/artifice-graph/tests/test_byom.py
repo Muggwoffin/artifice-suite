@@ -24,7 +24,7 @@ from artifice_graph.config import LLMConfig, EmbeddingConfig, PipelineConfig
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     """Isolate config and preferences per test."""
-    cfg_dir = tmp_path / ".callosip_test"
+    cfg_dir = tmp_path / "artifice_graph_test"
     cfg_dir.mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(config_helper, "CONFIG_FILE", cfg_dir / "config.json")
     monkeypatch.setattr(config_helper, "PREFERENCES_FILE", cfg_dir / "preferences.json")

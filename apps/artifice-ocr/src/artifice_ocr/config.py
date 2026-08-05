@@ -175,10 +175,8 @@ def load_user_settings() -> dict[str, Any]:
     if not _SETTINGS_PATH.exists():
         return {}
     try:
-        from secure_io import is_restricted, restrict_to_current_user
-
-        if not is_restricted(_SETTINGS_PATH):
-            restrict_to_current_user(_SETTINGS_PATH)
+        from secure_io import ensure_restricted
+        ensure_restricted(_SETTINGS_PATH)
     except Exception:
         import logging
 

@@ -41,8 +41,9 @@ def _openai_models_url(base_url: str) -> str:
     ``/v1/models`` when it does not.
 
     Replicating the rule rather than assuming one shape is load-bearing:
-    ``_SAVED`` comes from ``load_config()``, which reads ``~/.callosip/config.json``
-    if the developer has one. On a machine where that file sets a base_url ending
+    ``_SAVED`` comes from ``load_config()``, which reads the user-saved
+    ``config.json`` if the developer has one. On a machine where that file
+    sets a base_url ending
     in ``/v1`` the old ``f"{base}/models"`` matched; in CI, which has no such file
     and falls back to config.yaml's ``http://localhost:11434``, the probe requests
     ``/v1/models`` and the mock never fired — so the test passed locally and failed

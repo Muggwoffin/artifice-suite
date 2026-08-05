@@ -187,16 +187,8 @@ def _migrate_legacy_inference_config() -> None:
 def _load_inference_config() -> dict:
     _migrate_legacy_inference_config()
     if _INFERENCE_CONFIG_FILE.exists():
-        try:
-            from secure_io import is_restricted, restrict_to_current_user
-
-            if not is_restricted(_INFERENCE_CONFIG_FILE):
-                restrict_to_current_user(_INFERENCE_CONFIG_FILE)
-        except Exception:
-            logger.warning(
-                "Could not restrict permissions on %s — continuing anyway",
-                _INFERENCE_CONFIG_FILE,
-            )
+        from secure_io import ensure_restricted
+        ensure_restricted(_INFERENCE_CONFIG_FILE)
         try:
             return json.loads(_INFERENCE_CONFIG_FILE.read_text(encoding="utf-8"))
         except Exception:
@@ -470,9 +462,16 @@ async def _auto_match_speakers(job_id: str, db: AsyncSession) -> None:
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 
+def _redact_model_config(key: str, value: str) -> str:
+    """Return the placeholder if *key* holds a secret that is set."""
+    if key in _REDACTED_MODEL_CONFIG_KEYS and value:
+        return _REDACTED_PLACEHOLDER
+    return value
+
+
 @router.get("/config", response_model=ModelConfigResponse)
 async def get_config():
-    return {
+    fields = {
         "whisper_model": settings.whisper_model,
         "device": settings.device,
         "hf_token": settings.hf_token,
@@ -480,6 +479,7 @@ async def get_config():
         "diarization_model": settings.diarization_model,
         "enable_alignment_model_cache": settings.enable_alignment_model_cache,
     }
+    return {k: _redact_model_config(k, v) for k, v in fields.items()}
 
 
 @router.patch("/config")
@@ -492,7 +492,8 @@ async def update_config(body: ModelConfigRequest):
     if "device" in updates:
         settings.device = updates["device"]
     if "hf_token" in updates:
-        settings.hf_token = updates["hf_token"]
+        if updates["hf_token"] != _REDACTED_PLACEHOLDER:
+            settings.hf_token = updates["hf_token"]
     if "diarization_provider" in updates:
         settings.diarization_provider = updates["diarization_provider"]
     if "diarization_model" in updates:
@@ -511,6 +512,7 @@ async def update_config(body: ModelConfigRequest):
 
 # Keys whose values must not be returned verbatim in API responses.
 _REDACTED_INFERENCE_KEYS = frozenset({"api_key"})
+_REDACTED_MODEL_CONFIG_KEYS = frozenset({"hf_token"})
 _REDACTED_PLACEHOLDER = "*" * 12
 
 
@@ -747,8 +749,10 @@ async def health_detailed():
     except Exception:
         db_ok = False
 
+    engine_ok = engine_status.get("available") is not False
+
     return {
-        "status": "ok" if db_ok else "degraded",
+        "status": "ok" if (db_ok and engine_ok) else "degraded",
         "engine": engine_status,
         "database": {"status": "ok" if db_ok else "error"},
     }
@@ -767,9 +771,18 @@ async def health_preload():
 
 @router.get("/capabilities")
 async def capabilities():
-    """Report which optional features are available — never imports torch to
-    answer, so this is safe and fast on a base install."""
-    asr_available = importlib.util.find_spec("torch") is not None
+    """Report which optional features are available — never imports the ASR
+    stack to answer, so this is safe and fast on a base install.
+
+    Checks for the packages actually required by the transcription engine
+    rather than using ``torch`` alone as a proxy.  A partial install where
+    torch is present but whisperx (or its diarization dependency,
+    pyannote.audio) is missing correctly reports unavailable.
+    """
+    _required = ("whisperx", "torch", "torchaudio", "torchvision", "torchcodec")
+    asr_available = all(
+        importlib.util.find_spec(pkg) is not None for pkg in _required
+    )
     if asr_available:
         asr_info = {"available": True}
     else:

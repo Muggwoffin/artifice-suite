@@ -14,7 +14,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 logger = logging.getLogger(__name__)
 
 # ── Per-user data directory (uses platformdirs to resolve the canonical path) ──
-_USER_DATA_PATH = Path(user_data_dir("artifice-transcribe", "ArtificeSuite", ensure_exists=True))
+_USER_DATA_PATH = Path(user_data_dir("artifice-transcribe", "ArtificeSuite", ensure_exists=False))
 _DEFAULT_DB_PATH = _USER_DATA_PATH / "transcribe.db"
 _DEFAULT_DB_URL = f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH}"
 _LEGACY_DB_PATH = Path("./data/transcribe.db").resolve()

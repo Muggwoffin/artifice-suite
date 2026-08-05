@@ -10,9 +10,10 @@ current user can read the file.
 - **POSIX**: uses ``os.open(..., 0o600)``, which creates the file with
   restricted permissions atomically — the file is never world-readable.
 - **Windows**: creates the file empty, applies an ACL via ``icacls``, verifies
-  the ACL, and only then writes the contents.  The file exists empty and
-  unprotected between creation and the ACL call, but no secret is exposed
-  because the file is still empty during that window.
+  the ACL (via ``Get-Acl``, for locale-independent SID comparison), and only
+  then writes the contents.  The file exists empty and unprotected between
+  creation and the ACL call, but no secret is exposed because the file is
+  still empty during that window.
 
 ``restrict_to_current_user(path)`` applies the same restriction to an
 **existing** file, which closes the live-defect window for installations that
@@ -24,7 +25,6 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -65,8 +65,9 @@ def is_restricted(path: Path) -> bool:
     """Return ``True`` if *path* is readable/writable only by the current user.
 
     POSIX: checks ``st_mode & 0o777 == 0o600``.
-    Windows: verifies via ``icacls`` that the ACL grants the current user
-    read+write access and no other accounts appear.
+    Windows: verifies via ``Get-Acl`` (PowerShell) that the ACL grants the
+    current user read+write access, no inherited ACEs are present, and no
+    well-known world-readable SIDs appear.
     """
     if not path.exists():
         return False
@@ -74,6 +75,31 @@ def is_restricted(path: Path) -> bool:
         return _is_restricted_windows(path)
     else:
         return (path.stat().st_mode & 0o777) == 0o600
+
+
+def ensure_restricted(path: Path) -> None:
+    """Check whether *path* is restricted and repair it if not.
+
+    This is a load-time guard: it warns and continues on failure rather than
+    raising, because a repair failure must never prevent the app from
+    starting.  (A filesystem without permission support, such as exFAT, will
+    hit the repair failure path; the app still loads, the file remains
+    unprotected, and the warning documents the trade-off.)
+
+    If *path* does not exist this is a silent no-op — there is nothing to
+    repair and ``is_restricted`` returns ``False`` for non-existent paths.
+    """
+    import logging
+
+    if not path.exists():
+        return
+    try:
+        if not is_restricted(path):
+            restrict_to_current_user(path)
+    except Exception:
+        logging.warning(
+            "Could not restrict permissions on %s — continuing anyway", path
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -146,71 +172,135 @@ def _restrict_windows(path: Path) -> None:
         )
 
 
-# Security principals whose presence in an ACL means the file is effectively
-# world-readable.  ``icacls`` resolves SIDs to display names in its output,
-# so we match the canonical English names here.  These are well-known SIDs
-# that ship with every Windows installation and whose display names are
-# stable across versions and locales (they are not translated).
-_WORLD_READABLE_PRINCIPALS = (
-    "Everyone",
-    r"BUILTIN\\Users",
-    r"NT AUTHORITY\\Authenticated Users",
-    r"BUILTIN\\Guests",
+# Well-known security principals whose presence in an ACL means the file is
+# effectively world-readable.  These are matched by SID using the canonical
+# form returned by ``Get-Acl``, which is locale-independent and always emits
+# full SID strings (``icacls /save`` emits two-letter SDDL aliases like
+# ``WD`` for Everyone, so matching SID strings against its output silently
+# passes world-readable files — the same class of defect as matching
+# localised display names).
+_WORLD_READABLE_SIDS = frozenset(
+    {
+        "S-1-1-0",        # Everyone
+        "S-1-5-32-545",   # BUILTIN\Users
+        "S-1-5-11",       # NT AUTHORITY\Authenticated Users
+        "S-1-5-32-546",   # BUILTIN\Guests
+    }
 )
 
 
+def _get_acl_via_powershell(path: Path) -> list[dict[str, object]]:
+    """Return parsed ACE entries for *path* from ``Get-Acl`` via PowerShell.
+
+    Each returned dict has the keys ``sid`` (str), ``rights`` (comma-separated
+    str, e.g. ``"Read, Synchronize"``), ``is_inherited`` (bool), and
+    ``access_type`` (``"Allow"`` or ``"Deny"``).
+
+    ``Get-Acl`` returns canonical SIDs and exposes ``IsInherited`` directly,
+    avoiding both the localised-display-name problem and the SDDL-alias
+    problem that ``icacls`` and ``icacls /save`` suffer from respectively.
+    """
+    # Pipe-separated fields, one line per ACE.
+    #
+    # Two things here are load-bearing and were each got wrong once:
+    #
+    # 1. This must NOT be an f-string.  PowerShell's -f operator uses the same
+    #    {0}{1} placeholder syntax as Python's str.format, so an f-string
+    #    consumes them and the format string collapses to the constant
+    #    "0|1|2|3" — every ACE then reports identical junk and verification
+    #    rejects a correctly restricted file.
+    # 2. IdentityReference.Value returns an NTAccount *display name*
+    #    ("BUILTIN\\Administrators"), which is localised — the very bug this
+    #    function exists to avoid.  .Translate(SecurityIdentifier) is what
+    #    yields the canonical SID ("S-1-5-32-544").  Translate() throws for
+    #    an unresolvable account, so it is guarded; such an ACE is reported
+    #    with its raw value and simply will not match a well-known SID.
+    #
+    # -LiteralPath avoids glob interpretation; embedded single quotes are
+    # doubled, which is PowerShell's escape inside a single-quoted string.
+    ps_path = str(path).replace("'", "''")
+    cmd = (
+        "Get-Acl -LiteralPath '" + ps_path + "' | "
+        "Select-Object -ExpandProperty Access | ForEach-Object { "
+        "$id = $_.IdentityReference; "
+        "try { $sid = $id.Translate([System.Security.Principal.SecurityIdentifier]).Value } "
+        "catch { $sid = $id.Value }; "
+        "'{0}|{1}|{2}|{3}' -f $sid, $_.FileSystemRights, $_.IsInherited, $_.AccessControlType }"
+    )
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", cmd],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    entries: list[dict[str, object]] = []
+    for line in result.stdout.strip().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split("|")
+        if len(parts) < 3:
+            continue
+        entries.append(
+            {
+                "sid": parts[0],
+                "rights": parts[1],
+                "is_inherited": parts[2] == "True",
+                "access_type": parts[3] if len(parts) > 3 else "Allow",
+            }
+        )
+    return entries
+
+
 def _is_restricted_windows(path: Path) -> bool:
-    """Check the ACL on *path* using ``icacls``.
+    """Check the ACL on *path* using ``Get-Acl`` via PowerShell.
 
     Returns ``True`` when:
-    - The ACL contains no inherited entries (no ``(I)`` markers).
-    - No well-known world-readable security principal (Everyone, Users,
-      Authenticated Users, Guests) has an ACE.
-    - At least one explicit ACE grants Read+Write or Full control.
+    - No inherited ACEs are present (``IsInherited`` is ``False`` for every entry).
+    - No well-known world-readable SID (Everyone, Users,
+      Authenticated Users, Guests) has a non-Deny ACE that includes Read access.
+    - At least one explicit Allow ACE grants Read+Write or FullControl.
 
-    The function does **not** match the current user by name or SID because
-    ``icacls`` resolves SIDs to display names in its listing output, which
-    makes identity-based matching fragile across domain/CI environments.
-    Instead it enforces two concrete, testable security properties: no
-    inherited permissions leak in, and the file is not readable by general
-    principals.  The ``/grant:r *SID:(R,W)`` issued by ``_restrict_windows``
-    guarantees the owner has access; this function verifies the file is not
-    *overly* accessible.
+    ``Get-Acl`` returns canonical SIDs (locale-independent) and exposes
+    ``IsInherited`` directly, avoiding both the SDDL-alias problem (where
+    ``icacls /save`` encodes ``Everyone`` as ``WD`` rather than ``S-1-1-0``)
+    and the localised-display-name problem (where ``icacls`` displays
+    ``Jeder`` on German, ``Tout le monde`` on French).
 
     Additional explicit ACEs for SYSTEM and Administrators are tolerated
     because on Administrator accounts Windows retains them even after
     ``/inheritance:r``, and those principals already have full machine access.
     """
     try:
-        result = subprocess.run(
-            ["icacls", str(path)],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        entries = _get_acl_via_powershell(path)
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
-    output = result.stdout
 
-    # Inherited ACEs carry an ``(I)`` marker.  We stripped inheritance, so
-    # none should remain.
-    if "(I)" in output:
-        return False
+    has_explicit_allow_rw = False
+    for entry in entries:
+        sid = entry["sid"]
+        rights = str(entry["rights"])
+        is_inherited = bool(entry["is_inherited"])
+        access_type = str(entry["access_type"])
 
-    # Reject files that grant access to well-known world-readable principals.
-    for principal in _WORLD_READABLE_PRINCIPALS:
-        if re.search(principal + r":", output, re.IGNORECASE):
+        # Inherited ACEs must not be present — we strip them in _restrict_windows.
+        if is_inherited:
             return False
 
-    # At least one explicit ACE must grant Read+Write (or Full control).
-    ace_matches = re.findall(r":\(([A-Z,]+)\)", output)
-    for perms in ace_matches:
-        if "F" in perms:
-            return True
-        if "R" in perms and "W" in perms:
-            return True
+        if access_type == "Deny":
+            continue
 
-    return False
+        # Reject if a world-readable SID has any Read access.
+        if sid in _WORLD_READABLE_SIDS and "Read" in rights:
+            return False
+
+        # At least one Allow ACE must grant Read+Write (or FullControl).
+        if "FullControl" in rights:
+            has_explicit_allow_rw = True
+        elif "Read" in rights and "Write" in rights:
+            has_explicit_allow_rw = True
+
+    return has_explicit_allow_rw
 
 
 def _get_current_user_sid() -> str:

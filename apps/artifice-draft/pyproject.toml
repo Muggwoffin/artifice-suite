@@ -17,6 +17,27 @@ dependencies = [
     "artifice-secure-io>=0.1.0",
     "artifice-shared-ui>=0.1.0",
 ]
+authors = [
+    {name = "Maurice J. Casey"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = [
+    "copy editing",
+    "tracked changes",
+    "academic writing",
+    "DOCX",
+]
+
+[project.urls]
+Homepage = "https://github.com/Muggwoffin/artifice-suite"
+Repository = "https://github.com/Muggwoffin/artifice-suite"
+Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 
 [project.optional-dependencies]
 web = [

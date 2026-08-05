@@ -115,7 +115,7 @@ foreach ($app in $Apps) {
   Check manually -- typical paths:
     artifice-ocr         ~\.artifice_ocr\
     artifice-draft       ~\.artifice_draft\
-    artifice-graph       ~\.callosip\
+    artifice-graph       platformdirs("artifice-graph", "ArtificeSuite")
     artifice-transcribe  platformdirs("artifice-transcribe",
                          "ArtificeSuite")
 ------------------------------------------------------------

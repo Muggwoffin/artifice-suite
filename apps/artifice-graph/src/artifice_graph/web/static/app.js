@@ -28,7 +28,7 @@
   }
 
   function init() {
-    var savedTheme = getPref("callosip-theme");
+    var savedTheme = getPref("artifice-graph-theme");
     if (!savedTheme) {
       var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       savedTheme = prefersDark ? "dark" : "light";
@@ -40,11 +40,11 @@
       toggle.addEventListener("click", function () {
         var cur = document.documentElement.getAttribute("data-theme") || "light";
         applyTheme(cur === "dark" ? "light" : "dark");
-        setPref("callosip-theme", cur === "dark" ? "light" : "dark");
+        setPref("artifice-graph-theme", cur === "dark" ? "light" : "dark");
       });
     }
 
-    var motionPref = getPref("callosip-reduce-motion");
+    var motionPref = getPref("artifice-graph-reduce-motion");
     if (motionPref === null && window.matchMedia) {
       motionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "true" : "false";
     }

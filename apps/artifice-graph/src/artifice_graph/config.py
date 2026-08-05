@@ -7,10 +7,12 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 from pathlib import Path
 from typing import Any
 
 import yaml
+from platformdirs import user_data_dir
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -95,7 +97,8 @@ def load_config(config_path: str | Path | None = None) -> PipelineConfig:
     Precedence (lowest to highest):
       1. Pydantic defaults
       2. config.yaml (project checked-in defaults)
-      3. ~/.callosip/config.json (user preferences saved via web UI)
+      3. User config.json (preferences saved via web UI — stored under
+         platformdirs, migrated from legacy ~/.callosip on first access)
       4. CLI arguments (applied by callers AFTER this function returns)
 
     Relative paths declared in config.yaml are resolved against the
@@ -167,11 +170,64 @@ def resolve_config_paths(config: PipelineConfig, app_root: Path) -> None:
 # -- user config merge -------------------------------------------------------
 
 
-_USER_CONFIG_PATH = Path.home() / ".callosip" / "config.json"
+_LEGACY_CONFIG_DIR = Path.home() / ".callosip"
+
+
+def _resolve_user_data_dir() -> Path:
+    """Return the per-user data directory, migrating from legacy
+    ``~/.callosip`` on first access.
+
+    Migration moves the entire legacy directory to the platformdirs
+    location, then re-applies access restrictions on the migrated config
+    file so that a moved secret does not silently become world-readable.
+
+    If migration fails the legacy directory is used as a fallback — a
+    failed migration must never crash the app.
+    """
+    new_dir = Path(user_data_dir("artifice-graph", "ArtificeSuite"))
+
+    if _LEGACY_CONFIG_DIR.exists() and not new_dir.exists():
+        try:
+            logger.info(
+                "Migrating user data from %s to %s", _LEGACY_CONFIG_DIR, new_dir
+            )
+            new_dir.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(_LEGACY_CONFIG_DIR), str(new_dir))
+            # Re-apply access restriction on the migrated config file
+            # (a file moved or copied into a new directory can inherit
+            # that directory's ACL on Windows, silently becoming readable).
+            try:
+                from secure_io import ensure_restricted
+
+                config_file = new_dir / "config.json"
+                if config_file.exists():
+                    ensure_restricted(config_file)
+            except Exception:
+                logger.warning(
+                    "Could not re-restrict migrated config file at %s",
+                    new_dir / "config.json",
+                )
+            logger.info("User data migrated successfully to %s", new_dir)
+        except Exception as exc:
+            logger.warning(
+                "Failed to migrate user data from %s to %s: %s",
+                _LEGACY_CONFIG_DIR,
+                new_dir,
+                exc,
+            )
+            # Fall back to the legacy location — the app must still start.
+            return _LEGACY_CONFIG_DIR
+
+    return new_dir
+
+
+_USER_DATA_DIR = _resolve_user_data_dir()
+_USER_CONFIG_PATH = _USER_DATA_DIR / "config.json"
 
 
 def _merge_user_config(config: PipelineConfig) -> None:
-    """Overlay ~/.callosip/config.json onto *config* in-place.
+    """Overlay ``config.json`` (platformdirs, migrated from legacy
+    ``~/.callosip``) onto *config* in-place.
 
     Only keys that exist on the Pydantic config model are considered;
     unknown keys in the user file are silently ignored.

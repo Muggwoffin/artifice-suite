@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from platformdirs import user_data_dir
+
 from artifice_graph.config import (
     ExtractionConfig,
     EmbeddingConfig,
@@ -23,14 +25,16 @@ from artifice_graph.config import (
     load_config,
 )
 
-PREFERENCES_FILE = Path.home() / ".callosip" / "preferences.json"
-CONFIG_FILE = Path.home() / ".callosip" / "config.json"
+# User data is stored under platformdirs (migrated from legacy
+# ~/.callosip by artifice_graph.config on first import).
+_USER_DATA_DIR = Path(user_data_dir("artifice-graph", "ArtificeSuite"))
+PREFERENCES_FILE = _USER_DATA_DIR / "preferences.json"
+CONFIG_FILE = _USER_DATA_DIR / "config.json"
 
 
 def ensure_preferences_dir() -> None:
     """Ensure preferences directory exists."""
-    preferences_dir = Path.home() / ".callosip"
-    preferences_dir.mkdir(exist_ok=True)
+    _USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_user_preferences() -> UserPreferences:
@@ -62,10 +66,8 @@ def load_saved_config() -> PipelineConfig | None:
 
     if CONFIG_FILE.exists():
         try:
-            from secure_io import is_restricted, restrict_to_current_user
-
-            if not is_restricted(CONFIG_FILE):
-                restrict_to_current_user(CONFIG_FILE)
+            from secure_io import ensure_restricted
+            ensure_restricted(CONFIG_FILE)
         except Exception:
             import logging
 

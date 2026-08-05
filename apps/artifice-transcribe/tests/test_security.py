@@ -265,6 +265,47 @@ class TestCredentialRedaction:
         assert config.get("api_key") == "*" * 12
 
 
+class TestHfTokenRedaction:
+    """hf_token must not be returned verbatim in GET /api/v1/config."""
+
+    async def test_get_config_redacts_hf_token(self, api, monkeypatch):
+        """GET /api/v1/config must not expose the real hf_token."""
+        from artifice_transcribe.api.v1.routes import settings
+        monkeypatch.setattr(settings, "hf_token", "hf_real-secret-token-12345")
+        resp = await api.client.get("/api/v1/config")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("hf_token") == "*" * 12, (
+            f"hf_token must be redacted, got: {data.get('hf_token')!r}"
+        )
+
+    async def test_get_config_returns_empty_for_unset_hf_token(self, api):
+        """When hf_token is empty, the redacted response should still return
+        the empty string (not a redaction of empty)."""
+        resp = await api.client.get("/api/v1/config")
+        assert resp.status_code == 200
+        data = resp.json()
+        # hf_token default is "" — redaction only applies to truthy values.
+        assert data["hf_token"] == ""
+
+    async def test_patch_config_does_not_blank_hf_token_with_placeholder(
+        self, api, monkeypatch
+    ):
+        """PATCH with the redacted placeholder must not overwrite the real token."""
+        from artifice_transcribe.api.v1.routes import settings
+        monkeypatch.setattr(settings, "hf_token", "hf_real-secret-token-12345")
+        # Send the placeholder back — must not overwrite.
+        resp = await api.client.patch(
+            "/api/v1/config",
+            json={"hf_token": "*" * 12},
+        )
+        assert resp.status_code == 200
+        # The real token must survive.
+        assert settings.hf_token == "hf_real-secret-token-12345", (
+            "hf_token was overwritten by the redacted placeholder"
+        )
+
+
 class TestConfigFilePermissions:
     """Restrictive file permissions for config files — finding #3."""
 

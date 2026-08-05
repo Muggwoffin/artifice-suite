@@ -14,8 +14,8 @@
  * has ever shipped, so the choice here sets the pattern for anything shared
  * that follows it. graph's own app.js exposes `window.Callopp` — a name
  * that does not derive from "artifice" or "graph" and appears to be a
- * leftover from an unrelated codebase (see ~/.callosip in the maintainer's
- * environment notes). That name is not repeated here. This file exposes a
+ * leftover from an unrelated codebase (see the maintainer's environment
+ * notes). That name is not repeated here. This file exposes a
  * single global, `window.ArtificeByom`, prefixed with the suite name so it
  * cannot collide with any app-local global (app.js, palette.js, etc. in
  * each app already define their own page-scoped identifiers).

@@ -61,6 +61,13 @@ artifice-shared-ui = { workspace = true }
 
 [tool.uv]
 override-dependencies = [
+    # whisperx declares an unconditional triton dependency, which the
+    # maintainer has excluded because triton adds ~1.5 GB to the install
+    # and is not needed on this machine.  An always-false python_version
+    # marker ("< '0'") is the uv-native mechanism for suppressing a
+    # transitive dependency without forking — the resolver honours it,
+    # the marker never matches any real interpreter, and the override
+    # stays declarative rather than requiring a post-resolve script.
     { package = { name = "whisperx" }, dependencies = ["triton>=3.3.0; python_version < '0'"] },
 ]
 

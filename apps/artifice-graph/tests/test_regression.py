@@ -210,7 +210,7 @@ class TestBug1cEmptyOverwriteProtection:
 class TestBug2LoadConfigWithUserConfig:
 
     def test_user_config_overrides_defaults(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-        """load_config merges ~/.callosip/config.json on top of config.yaml."""
+        """load_config merges user-saved config.json on top of config.yaml."""
         user_cfg_path = tmp_path / "user_config.json"
         monkeypatch.setattr(
             "artifice_graph.config._USER_CONFIG_PATH",

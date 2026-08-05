@@ -10,6 +10,29 @@ dependencies = [
     "pydantic>=2.0",
     "httpx>=0.27",
 ]
+authors = [
+    {name = "Maurice J. Casey"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = [
+    "LLM",
+    "structured output",
+    "schema validation",
+    "BYOM",
+    "OpenAI-compatible",
+    "Ollama",
+]
+
+[project.urls]
+Homepage = "https://github.com/Muggwoffin/artifice-suite"
+Repository = "https://github.com/Muggwoffin/artifice-suite"
+Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 
 [build-system]
 requires = ["hatchling"]
