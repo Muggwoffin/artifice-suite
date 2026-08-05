@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report a bug in the Artifice Suite
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app or package?
+      options:
+        - artifice-ocr
+        - artifice-draft
+        - artifice-graph
+        - artifice-transcribe
+        - model-harness
+        - secure-io
+        - shared-ui
+        - other
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11 native
+        - Windows 11 / WSL2 Ubuntu
+        - macOS Apple Silicon
+        - macOS Intel
+        - Linux
+        - other
+    validations:
+      required: true
+  - type: input
+    id: install-method
+    attributes:
+      label: How was the app installed?
+      placeholder: uv sync, Docker, pip, source
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+    validations:
+      required: true
+  - type: input
+    id: model-backend
+    attributes:
+      label: Model backend
+      placeholder: Ollama, LM Studio, OpenAI-compatible cloud, Anthropic, local Whisper/pyannote for transcribe
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs/error text
+  - type: checkboxes
+    id: network-connection
+    attributes:
+      label: Network connection
+      options:
+        - label: Does this involve any network connection? If yes, describe what the app is contacting and whether you were told it would.
+          required: false

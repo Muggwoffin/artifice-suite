@@ -1,0 +1,37 @@
+name: Feature Request
+description: Suggest a new feature for the Artifice Suite
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / Use Case
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-behavior
+    attributes:
+      label: Proposed Behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: out-of-scope
+    attributes:
+      label: Out-of-Scope Confirmation
+      description: "Confirm this feature does NOT require any of the following:"
+      options:
+        - label: A chat/conversational UI
+        - label: A cloud service being required for the app to function
+        - label: A frontend build step / React
+        - label: Silent network access
+    validations:
+      required: true
+  - type: checkboxes
+    id: model-harness
+    attributes:
+      label: Model Harness
+      options:
+        - label: Does this change touch the shared model harness?
+          required: false
