@@ -1960,7 +1960,13 @@ Branch **`phase6-packaging`**, pushed, 6 commits ahead of `main`, working tree c
 **PR #26 opened 2026-08-05** (`phase6-byom-screen` → `main`, 8 commits) — the first time CI has run
 on this branch. Test baselines after the tailoring work, superseding every earlier figure in this
 file: model-harness **222**, ocr **485 + 1 skipped**, draft **225**, graph **169**, transcribe
-**108**.
+**109**.
+
+*(That transcribe figure was written as 108 and was stale within the hour — a `copilot-swe-agent`
+bot answering PR review comments on #26 pushed `4e120f0`, which added
+`test_keyerror_returns_empty_recommendations` to transcribe's suite. Noting the mechanism, not just
+the number: **this branch now has a second author pushing to it**, so a locally-measured baseline
+can go stale without anyone here touching the code. Fetch before quoting a figure from this branch.)*
 
 Three things settled by measurement during that session, recorded so they are not re-derived:
 - `recommendations_for_app("artifice-transcribe", …)` **no longer raises `KeyError`** — transcribe
@@ -1981,7 +1987,7 @@ Test baselines after this session — supersede the ones below:
 | `apps/artifice-ocr` | 485 passed, 1 skipped |
 | `apps/artifice-draft` | 225 passed |
 | `apps/artifice-graph` | 158 passed |
-| `apps/artifice-transcribe` | 108 passed (`--ignore=tests/test_api.py`) |
+| `apps/artifice-transcribe` | 109 passed (`--ignore=tests/test_api.py`) |
 | `packages/model-harness` | 208 passed, 1 deselected |
 
 All local gates green: `reuse lint`, `token-parity-check.py`, `audit-controls.py`,
