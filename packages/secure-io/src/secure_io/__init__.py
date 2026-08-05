@@ -22,11 +22,11 @@ already have unprotected files on disk.
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import subprocess
 import sys
+from contextlib import suppress
 from pathlib import Path
 
 
@@ -143,7 +143,7 @@ def _write_private_json_windows(path: Path, data: object) -> None:
         # the bug being fixed here, so a hard failure is the intended
         # trade-off.  (A filesystem without ACL support, such as exFAT,
         # will hit this.)
-        with contextlib.suppress(OSError):
+        with suppress(OSError):
             path.unlink()
         raise
     _write_json(path, data)
@@ -295,9 +295,7 @@ def _is_restricted_windows(path: Path) -> bool:
             return False
 
         # At least one Allow ACE must grant Read+Write (or FullControl).
-        if "FullControl" in rights:
-            has_explicit_allow_rw = True
-        elif "Read" in rights and "Write" in rights:
+        if "FullControl" in rights or ("Read" in rights and "Write" in rights):
             has_explicit_allow_rw = True
 
     return has_explicit_allow_rw

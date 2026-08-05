@@ -170,7 +170,8 @@ def _migrate_legacy_inference_config() -> None:
             logger.info(
                 "Legacy inference config found at %s but config already exists at %s. "
                 "Using the existing config.",
-                _LEGACY_INFERENCE_CONFIG, _INFERENCE_CONFIG_FILE,
+                _LEGACY_INFERENCE_CONFIG,
+                _INFERENCE_CONFIG_FILE,
             )
         return
     if _LEGACY_INFERENCE_CONFIG.exists():
@@ -246,8 +247,8 @@ async def _reload_engine_with_new_model(new_model: str):
 
     try:
         from artifice_transcribe.services.transcription import TranscriptionEngine
-    except ImportError:
-        raise AsrUnavailable()
+    except ImportError as exc:
+        raise AsrUnavailable() from exc
 
     _engine = TranscriptionEngine(
         model_size=settings.whisper_model,
@@ -262,8 +263,8 @@ def _get_engine():
     if _engine is None:
         try:
             from artifice_transcribe.services.transcription import TranscriptionEngine
-        except ImportError:
-            raise AsrUnavailable()
+        except ImportError as exc:
+            raise AsrUnavailable() from exc
 
         _engine = TranscriptionEngine(
             model_size=settings.whisper_model,
@@ -491,9 +492,8 @@ async def update_config(body: ModelConfigRequest):
         settings.whisper_model = updates["whisper_model"]
     if "device" in updates:
         settings.device = updates["device"]
-    if "hf_token" in updates:
-        if updates["hf_token"] != _REDACTED_PLACEHOLDER:
-            settings.hf_token = updates["hf_token"]
+    if "hf_token" in updates and updates["hf_token"] != _REDACTED_PLACEHOLDER:
+        settings.hf_token = updates["hf_token"]
     if "diarization_provider" in updates:
         settings.diarization_provider = updates["diarization_provider"]
     if "diarization_model" in updates:
@@ -1353,7 +1353,7 @@ async def export_transcript(
 
     body = await exporters[format](db, job_id)
     is_binary = format in (ExportFormat.pdf,)
-    content = body if is_binary else body.encode("utf-8") if isinstance(body, str) else body
+    content = body if is_binary or not isinstance(body, str) else body.encode("utf-8")
     return Response(
         content=content,
         media_type=content_type_map[format],

@@ -4,15 +4,14 @@
 
 from __future__ import annotations
 
-import importlib.util
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
-
 SCRIPT_PATH = Path(__file__).resolve().parents[3] / "scripts" / "check-ruff-baseline.py"
-SPEC = importlib.util.spec_from_file_location("check_ruff_baseline", SCRIPT_PATH)
+SPEC = spec_from_file_location("check_ruff_baseline", SCRIPT_PATH)
 assert SPEC is not None
 assert SPEC.loader is not None
-MODULE = importlib.util.module_from_spec(SPEC)
+MODULE = module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
@@ -30,6 +29,8 @@ def test_counts_normalises_repo_absolute_paths() -> None:
 
 
 def test_counts_preserves_relative_paths() -> None:
-    counts = MODULE._counts([{"filename": "packages/shared-ui/tests/test_tokens.py", "code": "F401"}])
+    counts = MODULE._counts(
+        [{"filename": "packages/shared-ui/tests/test_tokens.py", "code": "F401"}]
+    )
 
     assert counts == {"packages/shared-ui/tests/test_tokens.py|F401": 1}

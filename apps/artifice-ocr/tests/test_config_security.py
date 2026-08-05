@@ -84,8 +84,6 @@ class TestLoadTimePermissionRepair:
         settings_file.write_text('{"api_key": "sk-old-secret"}')
         os.chmod(settings_file, 0o644)
 
-        original_restrict = settings_file.chmod
-
         def _failing_restrict(_path):
             raise OSError("Simulated ACL failure — exFAT volume")
 
