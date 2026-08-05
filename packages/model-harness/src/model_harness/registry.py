@@ -451,8 +451,8 @@ def is_configured(
         base_url: The URL the app will connect to (may be empty).
         api_key: The API key (may be empty or a placeholder).
         defaults: The set of base URLs the app ships as out-of-the-box
-            defaults.  A module-level default set is available as
-            :data:`_PLACEHOLDER_API_KEYS`.
+            defaults. Callers should pass the app-specific shipped base
+            URL values to compare against.
 
     Returns:
         ``True`` if the user has intentionally changed at least one

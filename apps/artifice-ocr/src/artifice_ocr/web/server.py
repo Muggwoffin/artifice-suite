@@ -112,11 +112,11 @@ _BYOM_PREVIEW_APPS = (
     "artifice-graph",
     "artifice-transcribe",
 )
-"""Apps the dev-only preview can render. Matches the four `app` slugs
-GET /api/byom/state will actually return — see model_harness.registry
-._RECOMMENDATIONS, which already carries all four (artifice-transcribe's
-entries cover its optional post-transcription endpoint only, per the
-docstring on recommendations_for_app)."""
+# Apps the dev-only preview can render. Matches the four ``app`` slugs
+# ``GET /api/byom/state`` will actually return — see
+# ``model_harness.registry._RECOMMENDATIONS``, which already carries all four
+# (artifice-transcribe's entries cover its optional post-transcription
+# endpoint only, per the docstring on ``recommendations_for_app``).
 
 _BYOM_PREVIEW_APP_NAMES = {
     "artifice-ocr": "OCR Pipeline",

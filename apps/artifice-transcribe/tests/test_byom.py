@@ -428,6 +428,17 @@ class TestRecommendationsGuard:
             assert tier in recs
             assert len(recs[tier]) > 0, f"transcribe should have recommendations for {tier}"
 
+    def test_keyerror_returns_empty_recommendations(self, client):
+        with patch("artifice_transcribe.web.routers.byom.recommendations_for_app") as mock_recs:
+            mock_recs.side_effect = KeyError("artifice-transcribe")
+            r = client.get("/api/byom/state")
+        assert r.status_code == 200
+        assert r.json()["recommendations"] == {
+            "laptop": [],
+            "desktop": [],
+            "mac_unified": [],
+        }
+
     def test_non_keyerror_propagates(self, client):
         with patch("artifice_transcribe.web.routers.byom.recommendations_for_app") as mock_recs:
             mock_recs.side_effect = ValueError("unexpected failure")
