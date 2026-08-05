@@ -59,6 +59,11 @@ model-harness = { workspace = true }
 secure-io = { workspace = true }
 shared-ui = { workspace = true }
 
+[tool.uv]
+override-dependencies = [
+    { package = { name = "whisperx" }, dependencies = ["triton>=3.3.0; python_version < '0'"] },
+]
+
 [dependency-groups]
 dev = [
     "fonttools[woff]>=4.63.0",

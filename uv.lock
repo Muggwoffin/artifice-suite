@@ -57,6 +57,7 @@ members = [
     "secure-io",
     "shared-ui",
 ]
+overrides = [{ package = { name = "whisperx" }, dependencies = [{ name = "triton", marker = "python_full_version < '0'", specifier = ">=3.3.0" }] }]
 
 [[package]]
 name = "aiofiles"
@@ -706,7 +707,7 @@ name = "brotlicffi"
 version = "1.2.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi" },
+    { name = "cffi", marker = "python_full_version >= '3.14' or (python_full_version < '3.14' and extra != 'extra-19-artifice-transcribe-asr') or (python_full_version < '3.14' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda') or platform_machine != 'aarch64' or platform_python_implementation != 'CPython' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8a/b6/017dc5f852ed9b8735af77774509271acbf1de02d238377667145fcee01d/brotlicffi-1.2.0.1.tar.gz", hash = "sha256:c20d5c596278307ad06414a6d95a892377ea274a5c6b790c2548c009385d621c", size = 478156, upload-time = "2026-03-05T19:54:11.547Z" }
 wheels = [
@@ -5091,7 +5092,7 @@ name = "triton"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools", marker = "(python_full_version < '3.14' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (python_full_version >= '3.14' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (platform_machine != 'aarch64' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (platform_machine != 'aarch64' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (platform_python_implementation != 'CPython' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (platform_python_implementation != 'CPython' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'emscripten' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'win32' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'linux' and extra != 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda')" },
+    { name = "setuptools", marker = "(sys_platform != 'emscripten' and sys_platform != 'win32' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'emscripten' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'win32' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7d/39/43325b3b651d50187e591eefa22e236b2981afcebaefd4f2fc0ea99df191/triton-3.4.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7b70f5e6a41e52e48cfc087436c8a28c17ff98db369447bcaff3b887a3ab4467", size = 155531138, upload-time = "2025-07-30T19:58:29.908Z" },
@@ -5459,7 +5460,6 @@ dependencies = [
     { name = "torchaudio", version = "2.8.0", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'darwin' and sys_platform != 'emscripten' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'darwin' and extra == 'extra-19-artifice-transcribe-asr') or (sys_platform == 'darwin' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'emscripten' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda')" },
     { name = "torchaudio", version = "2.8.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (python_full_version >= '3.14' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (platform_machine != 'aarch64' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (platform_python_implementation != 'CPython' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (sys_platform == 'win32' and extra == 'extra-19-artifice-transcribe-asr') or (sys_platform != 'linux' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda')" },
     { name = "transformers", marker = "(python_full_version < '3.14' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (python_full_version >= '3.14' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (platform_machine != 'aarch64' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (platform_machine != 'aarch64' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (platform_python_implementation != 'CPython' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr') or (platform_python_implementation != 'CPython' and sys_platform == 'linux' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'darwin' and extra == 'extra-19-artifice-transcribe-asr') or (sys_platform == 'darwin' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'win32' and extra == 'extra-19-artifice-transcribe-asr') or (sys_platform == 'win32' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'emscripten' and extra == 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda') or (sys_platform == 'linux' and extra != 'extra-19-artifice-transcribe-asr' and extra == 'extra-19-artifice-transcribe-asr-cuda')" },
-    { name = "triton", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f1/ac/406faa7df2a618ee3aee5da540c3e5cc224f7241c3f5f2ee7c4179ea0dad/whisperx-3.8.4.tar.gz", hash = "sha256:5a45437d8eaac5815c42798cc99e8ea1dd574cae90b02b973295fa23e7e0081c", size = 16490230, upload-time = "2026-03-25T08:13:20.325Z" }
 wheels = [
