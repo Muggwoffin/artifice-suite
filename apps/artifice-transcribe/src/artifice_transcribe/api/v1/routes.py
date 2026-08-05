@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import importlib.util
 import json
 import logging
 from datetime import datetime, timezone
@@ -217,6 +218,20 @@ def _save_inference_config(cfg: dict) -> None:
 # Module-level engine singleton (lazy init)
 _engine = None
 
+_INSTALL_HINT = "uv sync --extra asr"
+_INSTALL_HINT_CUDA = "uv sync --extra asr-cuda"
+
+
+class AsrUnavailable(Exception):
+    """Raised when the ASR stack (torch, whisperx, pyannote) is not installed."""
+
+    def __init__(self, extra: str = "asr") -> None:
+        hint = _INSTALL_HINT_CUDA if extra == "asr-cuda" else _INSTALL_HINT
+        super().__init__(
+            f"The transcription stack is not installed. "
+            f"Run `{hint}` to install it, then restart the server."
+        )
+
 
 async def _reload_engine_with_new_model(new_model: str):
     """Reload the transcription engine with a new Whisper model while preserving the settings."""
@@ -227,7 +242,10 @@ async def _reload_engine_with_new_model(new_model: str):
     if old_engine:
         old_engine.unload()
 
-    from artifice_transcribe.services.transcription import TranscriptionEngine
+    try:
+        from artifice_transcribe.services.transcription import TranscriptionEngine
+    except ImportError:
+        raise AsrUnavailable()
 
     _engine = TranscriptionEngine(
         model_size=settings.whisper_model,
@@ -240,7 +258,10 @@ async def _reload_engine_with_new_model(new_model: str):
 def _get_engine():
     global _engine
     if _engine is None:
-        from artifice_transcribe.services.transcription import TranscriptionEngine
+        try:
+            from artifice_transcribe.services.transcription import TranscriptionEngine
+        except ImportError:
+            raise AsrUnavailable()
 
         _engine = TranscriptionEngine(
             model_size=settings.whisper_model,
@@ -362,8 +383,12 @@ async def _run_transcription(
                 await db.commit()
 
         finally:
-            engine = _get_engine()
-            engine.unload()
+            try:
+                engine = _get_engine()
+                if engine is not None:
+                    engine.unload()
+            except AsrUnavailable:
+                pass
 
 
 async def _auto_match_speakers(job_id: str, db: AsyncSession) -> None:
@@ -466,7 +491,10 @@ async def update_config(body: ModelConfigRequest):
         settings.enable_alignment_model_cache = updates["enable_alignment_model_cache"]
 
     if "whisper_model" in updates:
-        await _reload_engine_with_new_model(settings.whisper_model)
+        try:
+            await _reload_engine_with_new_model(settings.whisper_model)
+        except AsrUnavailable as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return {"status": "updated", "changes": list(updates.keys())}
 
@@ -692,8 +720,15 @@ async def cleanup_job(job_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/health/detailed")
 async def health_detailed():
     """Full health check: model load state, GPU info, database connectivity."""
-    engine = _get_engine()
-    engine_status = engine.health_check()
+    try:
+        engine = _get_engine()
+        engine_status = engine.health_check()
+    except AsrUnavailable:
+        engine_status = {
+            "available": False,
+            "reason": str(AsrUnavailable()),
+            "install_hint": _INSTALL_HINT,
+        }
 
     db_ok = True
     try:
@@ -712,9 +747,28 @@ async def health_detailed():
 @router.post("/health/preload")
 async def health_preload():
     """Load all models into memory. Returns success or error details."""
-    engine = _get_engine()
-    result = await asyncio.to_thread(engine.preload)
-    return result
+    try:
+        engine = _get_engine()
+        result = await asyncio.to_thread(engine.preload)
+        return result
+    except AsrUnavailable as exc:
+        return {"ok": False, "error": str(exc), "install_hint": _INSTALL_HINT}
+
+
+@router.get("/capabilities")
+async def capabilities():
+    """Report which optional features are available — never imports torch to
+    answer, so this is safe and fast on a base install."""
+    asr_available = importlib.util.find_spec("torch") is not None
+    if asr_available:
+        asr_info = {"available": True}
+    else:
+        asr_info = {
+            "available": False,
+            "reason": "The transcription stack is not installed.",
+            "install_hint": _INSTALL_HINT,
+        }
+    return {"asr": asr_info}
 
 
 @router.post("/transcribe", response_model=JobCreated, status_code=202)
@@ -1332,7 +1386,11 @@ async def enroll_speaker(
     _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
 
-    engine = _get_engine()
+    try:
+        engine = _get_engine()
+    except AsrUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     engine._ensure_models()
 
     # Extract embedding using the diarization pipeline's internal model

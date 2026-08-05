@@ -11,6 +11,12 @@ license-files = ["LICENSE"]
 # transcribe's only entry point IS its API (artifice_transcribe.main:app), so a
 # web-less install would produce something that cannot start, and
 # `uv sync --extra transcribe` would resolve to a non-runnable app.
+#
+# The ASR stack (whisperx, torch, torchaudio, pyannote.audio, transformers) is
+# optional — the app starts, serves its UI, and runs uploads, the database,
+# summarise and cleanup without it.  Transcription features are guarded at
+# runtime by a typed AsrUnavailable error that tells the user what extra to
+# install (`uv sync --extra asr` for CPU, `--extra asr-cuda` for NVIDIA GPU).
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -20,18 +26,51 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "python-multipart>=0.0.9",
     "platformdirs>=4.0.0",
-    "whisperx>=3.3.0",
-    "torch",
-    "torchaudio",
     "fpdf2>=2.8.0",
     "openai>=1.0.0",
     "jinja2>=3.0",
     "model-harness",
     "numpy>=1.26",
-    "pyannote.audio>=3.0",
-    "transformers>=4.0",
     "secure-io",
     "shared-ui",
+]
+
+[project.optional-dependencies]
+# --extra asr pulls torch from the CPU-only PyTorch index (Linux/Windows),
+# avoiding the ~4 GB CUDA runtime.  macOS PyPI wheels carry no CUDA and
+# already give MPS — the CPU-index marker excludes macOS so those wheels
+# resolve from PyPI as before.
+#
+# --extra asr-cuda resolves torch from default PyPI, which bundles the
+# CUDA runtime on Linux (the CUDA index could be used instead, but the
+# maintainer's constraint is that the suite is hardware-agnostic and must
+# not *default* to a GPU stack).
+#
+# whisperx>=3.8 requires pyannote-audio>=4.0, which works with current
+# torchaudio API.  Versions below 3.8 need pyannote 3.x which in turn
+# requires the removed torchaudio.AudioMetaData class.
+#
+# Torch & torchaudio are version-matched pairs and must stay within
+# whisperx's declared range (currently >=2.8.0,<2.9.dev0 across all
+# non-yanked 3.8.x releases).  Pinning the minor prevents a CPU vs CUDA
+# mismatch where uv floats torch to a version only available on one index.
+asr = [
+    "whisperx>=3.8.0",
+    "torch>=2.8.0,<2.9.0",
+    "torchaudio>=2.8.0,<2.9.0",
+    "torchvision>=0.23.0,<0.24.0",
+    "torchcodec>=0.11.0,<0.12.0",
+    "pyannote.audio>=4.0",
+    "transformers>=4.0",
+]
+asr-cuda = [
+    "whisperx>=3.8.0",
+    "torch>=2.8.0,<2.9.0",
+    "torchaudio>=2.8.0,<2.9.0",
+    "torchvision>=0.23.0,<0.24.0",
+    "torchcodec>=0.11.0,<0.12.0",
+    "pyannote.audio>=4.0",
+    "transformers>=4.0",
 ]
 
 [project.scripts]
@@ -46,6 +85,28 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "artifice_transcribe.web" = ["static/**", "templates/**/*.html"]
+
+[tool.uv]
+conflicts = [[{ extra = "asr" }, { extra = "asr-cuda" }]]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "asr", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchaudio = [
+    { index = "pytorch-cpu", extra = "asr", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "asr", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchcodec = [
+    { index = "pytorch-cpu", extra = "asr", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -16,6 +17,8 @@ from pytest_httpx import HTTPXMock
 from artifice_transcribe.db.models import JobStatus, SpeakerMapping, TranscriptionJob
 
 pytestmark = pytest.mark.asyncio
+
+_ASR_AVAILABLE = importlib.util.find_spec("torch") is not None
 
 
 async def _make_job(
@@ -173,6 +176,7 @@ async def test_transcribe_traversal_sanitisation(
         ("", "", 422, "both fields empty -> rejected"),
     ],
 )
+@pytest.mark.skipif(not _ASR_AVAILABLE, reason="ASR stack not installed (pyannote.audio unavailable)")
 async def test_enroll_traversal_sanitisation(
     api, name, fname, expected_status, description
 ):
