@@ -57,6 +57,111 @@ jobs:
       # push.  It belongs in a pre-release manual checklist, not CI.
       # -------------------------------------------------------------------
 
+  # ── Lint & audit gates ───────────────────────────────────────────────────
+  # Ruff is enforced against a COMMITTED BASELINE, not a clean tree: the repo
+  # carries a pre-existing ruff backlog (~318 (file|code) pairs when the
+  # baseline was generated), so a hard `ruff check` gate would be permanently
+  # red and teach contributors to ignore it.  The baseline gate fails only on
+  # NEW or INCREASED violations; shrinking the backlog is always allowed.
+  # Refresh it deliberately: `uv run python scripts/check-ruff-baseline.py
+  # --generate` in the same commit that cleans code up.
+  lint:
+    needs: gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install workspace root dependencies (incl. ruff)
+        run: uv sync --group dev --extra all
+        working-directory: .
+
+      - name: ruff baseline gate (no NEW violations)
+        run: uv run python scripts/check-ruff-baseline.py
+
+      - name: Dependency audit (no ghost or undeclared imports)
+        # Supply-chain gate for generated code: fails on imports of packages
+        # that do not exist, are not declared, or are not in uv.lock, and on
+        # declared deps the lockfile does not resolve.
+        run: uv run python scripts/check-dependency-audit.py
+
+      - name: ruff format check (changed files, PRs only)
+        # `pull_request.base.sha` is empty on push, so this is a PR-only gate.
+        # It checks only the files the PR touched — pre-existing formatting
+        # debt elsewhere in the tree is not this PR's concern.  When a file is
+        # touched, format the WHOLE file, not just the diff hunk.
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$BASE_SHA" ]; then
+            echo "Format gate runs on pull_request only; skipping on push."
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE_SHA" HEAD -- '*.py')
+          if [ -z "$CHANGED" ]; then
+            echo "No changed Python files; format gate passes."
+            exit 0
+          fi
+          echo "Checking format of changed files:"
+          echo "$CHANGED"
+          # shellcheck disable=SC2086  # intended word-splitting over file list
+          uv run ruff format --check $CHANGED
+
+      - name: pip-audit (known vulnerabilities in pinned deps)
+        # Queries the OSV API.  If a pinned dep has a known vuln that cannot be
+        # resolved by a small bump inside the change at hand, add an
+        # --ignore-vulns entry WITH a comment explaining why — do not bump
+        # dependencies casually, and do not disable the gate.
+        run: uv run --with pip-audit pip-audit
+
+      - name: Dependency licence gate (no NEW proprietary/unknown licences)
+        # Fails on any licence that is proprietary, commercial, or lacks
+        # metadata UNLESS the package is in the known, deliberate set below.
+        # The known set is a finding, not a pass: nvidia-* are the CUDA wheels
+        # that torch pulls in (their binaries are NVIDIA's proprietary software
+        # — unavoidable while transcribe depends on torch's CUDA wheels, and
+        # recorded as a maintainer finding rather than silently accepted);
+        # pyannote-* and torchcodec are MIT/BSD but publish no machine-readable
+        # licence metadata, so pip-licenses reports UNKNOWN (a metadata gap, not
+        # a proprietary dependency).  Anything NEW in the proprietary/unknown
+        # bucket fails the gate.
+        run: |
+          uv run --with pip-licenses pip-licenses --format=json > /tmp/licenses.json
+          python3 - <<'EOF'
+          import json, sys
+          from collections import Counter
+          with open('/tmp/licenses.json') as f:
+              packages = json.load(f)
+          EXEMPT_PREFIXES = ('nvidia-', 'pyannote', 'pyannoteai')
+          # pymupdf is dual-licensed AGPL-3.0-or-later OR Artifex Commercial;
+          # the AGPL branch is compatible with this project's own AGPL licence,
+          # so the "commercial" token in its string is a false positive.
+          EXEMPT_NAMES = {'torchcodec', 'pymupdf'}
+          bad = []
+          for p in packages:
+              name = p.get('Name', '')
+              lic = (p.get('License') or '').lower()
+              flagged = 'proprietary' in lic or 'commercial' in lic or lic in ('', 'unknown')
+              if not flagged:
+                  continue
+              if name.startswith(EXEMPT_PREFIXES) or name in EXEMPT_NAMES:
+                  continue
+              bad.append((name, p.get('License')))
+          freq = Counter((p.get('License') or 'UNKNOWN') for p in packages)
+          print(f'Packages checked: {len(packages)}')
+          for name, count in freq.most_common():
+              print(f'  {name}: {count}')
+          if bad:
+              print('NEW proprietary/unknown licences found:')
+              for name, lic in bad:
+                  print(f'  {name}: {lic}')
+              sys.exit(1)
+          print('Licence gate passed.')
+          EOF
+
   # ── Tests ─────────────────────────────────────────────────────────────────
   tests:
     needs: gates

@@ -112,7 +112,7 @@ retained below only where they explain why a current placement is what it is.
 | `tester` | OpenCode | `opencode-go/kimi-k2.7-code` | Test execution, log analysis, regression triage |
 | `arch-auditor-docs` | OpenCode | `opencode-go/minimax-m2.7` | Cross-app parity audits, folder standards, docs |
 | `code-reviewer` | OpenCode | `opencode-go/minimax-m3` | Read-only correctness and architecture-conformance review of changes before they land |
-| `oss-reviewer` | OpenCode | `ollama/gemma4-32k:12b` | Read-only open-source maintainability review |
+| `oss-reviewer` | OpenCode | `ollama/ornith:9b` | Read-only open-source maintainability review |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | Static analysis, secret handling, input sanitization |
 | `ui-ux` | **Claude Code** | `sonnet` | Frontend views, design tokens, accessibility |
 

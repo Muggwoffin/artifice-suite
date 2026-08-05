@@ -218,9 +218,6 @@ const SettingsTab = (function () {
   document.getElementById("btn-template-save").onclick = saveTemplate;
   document.getElementById("btn-template-apply").onclick = applyTemplate;
   document.getElementById("btn-template-delete").onclick = deleteTemplate;
-  document.getElementById("btn-retrigger-onboarding").onclick = () => {
-    if (window.Onboarding) window.Onboarding.retrigger();
-  };
 
   let loaded = false;
   TAB_ACTIVATE.settings = () => {

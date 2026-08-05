@@ -1,0 +1,37 @@
+name: Release Gate
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  version-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+
+      - name: Check version consistency
+        # The gate: exits non-zero on mismatch, which fails the job. Note the
+        # script strips a leading "v", so tag "v0.1.0" compares against "0.1.0".
+        run: uv run python scripts/check-release-consistency.py --expected "${{ github.ref_name }}"
+
+      - name: Report result
+        # Runs only after a green check step, so the gate above is the gate;
+        # this step is purely informational and must not re-evaluate anything.
+        run: echo "Release gate passed — versions locked at ${{ github.ref_name }}"
+
+      # ── Explanation ──
+      # This workflow guards that tag names, package versions and CITATION.cff
+      # stay in lockstep for the Zenodo DOI. Actual publishing (PyPI / GitHub
+      # Release / Zenodo) is intentionally out of scope for now — it will be
+      # added when a release cadence exists.
+      #
+      # The check script is in scripts/check-release-consistency.py.
+      # ── Explanation ──

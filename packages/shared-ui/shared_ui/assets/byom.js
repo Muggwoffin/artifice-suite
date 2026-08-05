@@ -1025,8 +1025,86 @@
   };
 
   // ── Public namespace ─────────────────────────────────────────────────
+  //
+  // create() (above) has been the only export since this file's first
+  // version. autostart()/open() are added for Step 9 item 1 ("make the
+  // BYOM screen re-openable") to replace four byte-identical bootstrap
+  // IIFEs that each app's base.html carried — see the four base.html
+  // files' single `ArtificeByom.autostart({...})` call. A `var byom`
+  // inside an IIFE cannot be reached once the closure returns, so once a
+  // user dismissed the screen nothing on the page — in particular, no
+  // later-added masthead control — had any way back in. These two
+  // functions share one module-level singleton so a masthead trigger and
+  // the bootstrap's own auto-open logic operate on the same instance.
+
+  var _instance = null;
+
+  // Element ID of the masthead control that reopens the screen — see
+  // _masthead.html and, for artifice-graph (which does not use that
+  // shared partial), its own base.html. Looked up by ID rather than
+  // wired from the host template because the markup is shared across
+  // four different DOMs and this keeps all of its behaviour in one file
+  // rather than duplicated per app.
+  var NAV_TRIGGER_ID = "navByom";
+
+  // Sets the masthead control's accessible name and its non-colour state
+  // signal (filled vs. hollow dot, driven by [data-state] in
+  // masthead.css) from the *configured* flag only. Never says
+  // "Connected"/"Online" — GET /api/byom/state reports only whether
+  // settings differ from defaults, nothing about whether the endpoint
+  // answers right now, so a liveness claim here would be false the
+  // moment a configured endpoint goes down, which is exactly the
+  // scenario this control exists to recover from. Design_Philosophy.md
+  // §9 ("Color is never the sole indicator of state") is why the dot's
+  // meaning is also carried in the aria-label text, not by colour alone.
+  function _setNavTriggerState(configured) {
+    var btn = document.getElementById(NAV_TRIGGER_ID);
+    if (!btn) return;
+    btn.setAttribute("data-state", configured ? "configured" : "unconfigured");
+    btn.setAttribute(
+      "aria-label",
+      configured ? "Model configured. Open connection settings." : "Model not configured. Open connection settings."
+    );
+  }
+
+  function _wireNavTrigger(instance) {
+    var btn = document.getElementById(NAV_TRIGGER_ID);
+    if (!btn || btn.getAttribute("data-byom-wired") === "true") return;
+    btn.setAttribute("data-byom-wired", "true");
+    btn.addEventListener("click", function () { instance.open(); });
+  }
+
+  // Creates the singleton (once) and performs exactly the auto-open check
+  // every base.html used to inline: fetch state, open only if not
+  // configured. Deliberately uses window.fetch directly rather than
+  // opts.fetchImpl — that override exists for byom-preview.html to feed
+  // fixture data to the *modal's own* state fetch inside open()/_refresh(),
+  // and the original four bootstraps never routed their own check through
+  // it either, so first-load behaviour stays byte-for-byte what it was.
+  function autostart(opts) {
+    if (!_instance) { _instance = new Byom(opts); }
+    _wireNavTrigger(_instance);
+    window.fetch("/api/byom/state")
+      .then(function (r) { return r.json(); })
+      .then(function (state) {
+        _setNavTriggerState(!!(state && state.configured));
+        if (!state.configured) { _instance.open(); }
+      })
+      ["catch"](function () { /* server not ready yet — fine */ });
+    return _instance;
+  }
+
+  // Opens the singleton, creating it with no options if autostart() has
+  // not run yet (defensive only — every host page calls autostart() from
+  // base.html before any control that could call open() is reachable).
+  function open() {
+    if (!_instance) { _instance = new Byom(); }
+    _instance.open();
+  }
 
   window.ArtificeByom = {
-    create: function (opts) { return new Byom(opts); }
+    create: function (opts) { return new Byom(opts); },
+    autostart: autostart,
+    open: open
   };
 })();

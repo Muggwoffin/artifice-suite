@@ -67,33 +67,6 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   height: 100vh;
 }
 
-.masthead {
-  display: flex;
-  align-items: baseline;
-  gap: 0.9rem;
-  padding: 1rem 1.4rem 0.75rem;
-  border-bottom: 1px solid var(--rule);
-  background: var(--paper-raised);
-}
-
-.masthead h1 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: var(--text-h2);
-  margin: 0;
-  letter-spacing: -0.01em;
-}
-
-.masthead .tag {
-  font-family: var(--font-label);
-  font-weight: 600;
-  font-size: var(--text-sm);
-  letter-spacing: var(--label-tracking);
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  white-space: nowrap;
-}
-
 .tabs {
   display: flex;
   gap: 0.2rem;
@@ -753,13 +726,8 @@ table.queue tbody tr.selected { background: var(--accent-wash); }
   .audio-pane { border-right: none; border-bottom: 1px solid var(--rule); }
 }
 
-@media (max-width: 860px) {
-  .masthead .tag { display: none; }
-}
-
 @media (max-width: 600px) {
   .panel { padding: 0.75rem 0.8rem; }
-  .masthead { padding: 0.75rem 0.8rem 0.5rem; }
   .tabs { padding: 0 0.5rem; }
   .tab { padding: 0.6rem 0.7rem; font-size: 0.78rem; }
   .queue-wrap { max-height: 30vh; }

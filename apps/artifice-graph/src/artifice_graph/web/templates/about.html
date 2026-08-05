@@ -23,7 +23,7 @@
   </p>
 
   <h2 class="section-head">Pipeline stages</h2>
-  <ol style="font-family: var(--font-body); line-height: 1.8; padding-left: 1.25rem;">
+  <ol>
     <li><strong>Ingest</strong> — discovers <code>.txt</code>/<code>.md</code> files and produces
         sliding-window chunks.</li>
     <li><strong>Extract</strong> — sends batches to a local Ollama or OpenAI-compatible LLM,
@@ -47,7 +47,7 @@
   <p>
     From the project root:
   </p>
-  <pre class="mono" style="background:var(--paper-raised); padding:0.9rem; border:1px solid var(--rule); border-radius:var(--radius-sm); overflow-x:auto;">pip install -e ".[web]"
+  <pre class="mono">pip install -e ".[web]"
 python -m web.server
 # → http://localhost:8766</pre>
 

@@ -2098,28 +2098,72 @@ comments and pushes to it, so `git fetch` before quoting a figure.
 | Step 9 — cross-app UI parity, surveyed and written | done, `462ce4f` |
 | Jinja port stage 1 — loader, shared masthead, draft pilot | done, `a8c72c2` |
 | Jinja port stage 2 — ocr and transcribe | done, `9958f7b` |
-| Jinja port stage 3 — wordmark, About pages, emoji sweep | **in flight — see below** |
+| Jinja port stage 3 — wordmark, About pages, emoji sweep | **done — see below** |
+| Jinja port stage 3a — the About page system in `shared-ui` | done 2026-08-05, **uncommitted**, verified rendered in all four |
 
-#### THE ONE THING IN FLIGHT — finish this first
+#### Stage 3a — closed 2026-08-05
 
-Stage 3 is **substantially done and verified rendered**: ocr's tips modal is gone, its script tag
-gone, **zero emoji in the DOM**, all five tabs carry §8.8 SVG icons, the `.brand-group` wordmark
-sits on a shared baseline, and About pages exist for all four apps.
+**The two defects recorded below were symptoms of a larger one, and the survey that found them
+understated it.** The real condition: **the entire About-page stylesheet existed only in
+`artifice-graph`.** The Jinja port gave all four apps the same `about.html`, but in ocr, draft and
+transcribe *every* editorial class it uses was undefined — `.page`, `.page-prose`,
+`.masthead .label`, `.masthead-rule`, `.section-head`, `.foot`, `.mono`. Not just `max-width`.
 
-**Two layout defects remain, both measured from the live DOM, both briefed to `ui-ux` and possibly
-already fixed — verify before acting:**
+Measured from the live DOM at 2552px, all four served locally, before the fix:
 
-1. **About prose has no measure.** `.page.page-prose { max-width: 44rem; }` is defined in exactly
-   one place — `apps/artifice-graph/.../static/app.css:202` — while **all four** About templates use
-   the class. ocr, draft and transcribe therefore render prose unbounded: measured at **2542px wide,
-   ~299 characters per line** on a 2552px viewport. Editorial typography wants 60–75.
-2. **The About page header collapses to one line** in ocr and transcribe. `.masthead { display: flex }`
-   survives as a leftover from the old fixed page header, and about.html reuses
-   `<header class="masthead">`. Measured on ocr: kicker at x=20, h1 at x=370, same y. `draft` and
-   `graph` have no such rule and are correct.
+| | graph (target) | ocr | draft | transcribe |
+|---|---|---|---|---|
+| `main` x-offset | 916 | **0** | **0** | **0** |
+| `main` width / padding | 704 / `88px 20px 64px` | **2542 / `0`** | **2537 / `0`** | **2542 / `0`** |
+| chars per line | 78 | **299** | **298** | **299** |
+| page header `display` | `block` | **`flex`** | `block` | **`flex`** |
+| `.section-head` | Archivo 12.8px | **unstyled h2** | **Baskerville 25.5px** | **25.5px** |
+| `#main-content` count | 1 | **2** | **2** | **2** |
 
-Both are the *same failure as stage 1* — a pattern copied from graph without its supporting CSS.
-The fix chosen then was to put shared styling in `shared-ui` rather than three copies.
+Six defects, not two. Beyond the recorded measure and header-collapse: **no gutter at all** (prose
+began at `x=0`, hard against the window edge — worse than the missing measure, since margins are
+the first thing the paper aesthetic depends on); `.section-head` rendering as a default `h2`;
+**duplicate `id="main-content"`** on every About page (base's `.app` wrapper *and* about's `<main>`,
+so the skip link landed on the app shell and the prose sat inside `height: 100vh`); and
+**transcribe rendering its "Search transcripts" bar on a page with nothing to search**.
+
+Fixed in `packages/shared-ui/shared_ui/assets/prose.css` — **new file, one definition, three
+consumers**, the same choice stage 1 made for the masthead — plus deletion of the dead app-bar
+`.masthead` CSS in ocr and transcribe. That CSS was not merely redundant: app stylesheets load
+*after* the shared sheets in `base.html`, so adding shared rules alone would have lost the cascade.
+It was also genuinely dead — `class="masthead"` appeared nowhere in those two apps outside
+`about.html`.
+
+**`artifice-graph` was deliberately left untouched** and is unchanged (re-measured after: `main` at
+x=916, width 704). It is the only correct implementation and its `.masthead` is shared with
+`index.html` and `library.html`, so converging it carries real regression risk for no visible gain.
+**Converging graph onto `prose.css` is an open follow-up** — until it happens, the same system is
+defined twice, which is the drift this repo keeps getting bitten by.
+
+**Two lessons worth more than the fix.**
+
+1. **A CSS comment silently ate a rule, and nothing reported it.** The first attempt at the prose
+   typography fix contained `--leading-*/line-height` inside a comment. The `*/` in `-*/l` closes
+   the comment early, and the parser's error recovery then discards the *next* block — which was the
+   `.page-prose` rule itself. Result: `p` kept inheriting the sans app-shell face while the `<li>`
+   below it rendered serif, so paragraphs and lists on one page were set in two different typefaces.
+   No error, no test failure, no bad byte — `curl` showed the rule present and correct in the served
+   file. **Only the computed style showed it.** Never write a `*` immediately before a `/` in CSS
+   prose; a comment in this file now says so.
+2. **The rendered page found what the survey could not, twice.** The source survey found two
+   defects; the rendered page found six. The agent's own fix looked right in the diff and in the
+   served bytes and was still wrong. This is the third consecutive stage where that held.
+
+Test baselines re-confirmed after the change: ocr **487 passed, 1 skipped**, draft **225 passed**,
+transcribe **111 passed** (`--ignore=tests/test_api.py`); `token-parity-check.py` exit 0;
+`prose.css` confirmed present in a built wheel.
+
+Three judgment calls `ui-ux` flagged rather than burying, all reviewed and approved: `--font-mono`
+for `.mono`; `.app:has(> .page-prose)` to escape the `100vh` shell (a template conditional was
+impossible — Jinja disallows two `{% block content %}` tags in one template); and hiding
+transcribe's search bar with `display: none` rather than removing the node, because
+`app.js:1147` calls `addEventListener` on it with no null guard and would have thrown on About.
+The `/` shortcut still focuses that now-invisible input — **open, minor, in `app.js`**.
 
 Also left open by stage 3, all flagged honestly by the agent rather than hidden:
 - `apps/artifice-ocr/src/artifice_ocr/config.py:96` still lists `"onboarding_dismissed"` in
@@ -2149,9 +2193,39 @@ Also left open by stage 3, all flagged honestly by the agent rather than hidden:
 
 #### Fleet state — changed materially this session, do not trust older notes
 
-- **`oss-reviewer` was broken and is now on a local model that does not work in this harness.** Its
-  configured `gemma4-32k:12b` is **no longer installed**; `CLAUDE.md`'s recorded Ollama model list
-  is stale. It is now pointed at `ollama/qwen2.5-coder-14b-16k:latest`.
+- **`oss-reviewer` is now on `ollama/ornith:9b`, and the local slot finally invokes tools — but it
+  confabulates. Measured 2026-08-05, superseding the `qwen2.5-coder-14b-16k` note below.**
+  The maintainer swapped the model; the change was made on the host (the model was pulled) but not
+  in the repo, so four files were updated to match: `.opencode/agents/oss-reviewer.md`,
+  `opencode.json`'s model allowlist, `CLAUDE.md`'s fleet table, and `scripts/smoke-test-agents.sh`.
+  **`qwen2.5-coder-14b-16k`, `qwen2.5-coder:32b` and `gemma4-32k:12b` are all no longer installed**
+  — the only models on the host are `ornith:9b`, `aya-expanse:8b-q8_0`, `olmocr2:7b-q8`, `bge-m3`
+  and an orpheus TTS. The three dead entries are kept in the allowlist but **relabelled
+  "NOT INSTALLED"**, because an undeclared model fails with an opaque `UnknownError` and a
+  silently-wrong label is how this file misleads people.
+- **Native tool-calling works now.** `ornith:9b` declares `capabilities: ['completion','tools',
+  'thinking']` and actually issued `→ Read packages/shared-ui/.../prose.css` as a real tool call.
+  That is the exact failure the previous entry blamed on the `@ai-sdk/openai-compatible` adapter —
+  **so the adapter was not the whole story; the model mattered after all.** Worth noting that
+  `ornith:9b` is architecturally `qwen35` (a Qwen 3.5 derivative), so this is not "moving off qwen"
+  so much as moving to one that negotiates tools properly.
+- **Declared context is load-bearing, and 16k is a trap.** The first probe was declared at
+  `context: 16384`; the agent read one file, exhausted context, then **became the orchestrator** —
+  it attempted `wait_for_user` (orchestrator-only) twice, announced "four parallel lead-engineer
+  dispatches", and invented both a date and a file path. That is textbook persona bleed, caused by
+  starvation: `CLAUDE.md` auto-loads ~10KB into every sub-agent and at 16k leaves almost nothing for
+  the brief. `ornith:9b`'s **native context is 262144**. Raised to `65536` (KV maths: 4 KV heads ×
+  256 × 2 × 32 layers ≈ 64KB/token, so 64k ≈ 4.3GB on top of the 5.6GB model — comfortable on the
+  16.3GB card). **Re-probe: `exit=0`, one clean tool call, zero persona-bleed markers.** The guard
+  block in the agent definition does not survive context exhaustion — declare context generously.
+- **But do not trust its findings yet.** On a three-question probe it got two right (a rule count of
+  13, which was correct and which the orchestrator's own grep got wrong at 17; and a `file:line`
+  citation) and **fabricated the third** — it claimed `prose.css` "does not set font-family on any
+  selector" and that "every font call is via JS-generated inline style", when six selectors set it
+  (lines 60, 108, 118, 133, 149, 184) and no JS is involved at all. It also visibly reversed itself
+  mid-sentence. **The old "the local 12B silently summarises" note was therefore only half the
+  story**: tool-calling was one bug, and confident confabulation is a second, still-present one.
+  Treat every `oss-reviewer` finding as a lead to verify, never as a result.
 - **The 32B does not fit this machine.** RTX 5070 Ti, 16.3 GB. `qwen2.5-coder:32b` needs 28.8 GB
   with a 16k KV cache, so Ollama split it 51% GPU / 49% CPU and it produced **~1 token/second** —
   723 bytes in 185 seconds. The 14B is 11.9 GB, **100% GPU, ~40 tok/s**.

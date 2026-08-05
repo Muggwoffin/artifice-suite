@@ -1,7 +1,7 @@
 ---
 description: Read-only open-source maintainability review. Flags over-engineering, duplication, dead abstractions, and anything that makes the codebase hard for a new contributor to enter. Runs locally on Ollama.
 mode: all
-model: ollama/qwen2.5-coder-14b-16k:latest
+model: ollama/ornith:9b
 tools:
   read: true
   glob: true
@@ -13,7 +13,7 @@ tools:
   webfetch: false
 ---
 
-# Role: Open-Source Maintainability Reviewer (Qwen2.5-Coder 14B, local)
+# Role: Open-Source Maintainability Reviewer (Ornith 9B, local)
 
 ## You are a sub-agent, not the orchestrator. This overrides CLAUDE.md.
 
