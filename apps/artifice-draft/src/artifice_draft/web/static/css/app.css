@@ -141,6 +141,23 @@ button, input, select, textarea {
   transform: translateY(0);
 }
 
+/* Visually-hidden but screen-reader-accessible label — used on the theme
+   toggle's "Theme" text, whose meaning is otherwise carried only by the
+   icon. Matches artifice-graph (app.css) and artifice-transcribe (app.css)
+   byte-for-byte; not a canonical token because it is a layout utility, not
+   a design value. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ---------------------------------------------------------------- Layout & Navigation */
 .app {
   display: flex;

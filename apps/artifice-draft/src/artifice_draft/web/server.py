@@ -116,7 +116,7 @@ _MASTHEAD_CTX = {
     "brand_accent": "Draft",
     "brand_tagline": "local-first \u00b7 tracked changes",
     "nav_items": _DRAFT_NAV_ITEMS,
-    "show_theme_toggle": False,
+    "show_theme_toggle": True,
 }
 
 app = FastAPI(title="ArtificeDraft")
