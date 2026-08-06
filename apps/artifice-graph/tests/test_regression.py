@@ -24,8 +24,8 @@ from artifice_graph.config import (
     ExtractionConfig,
     PipelineConfig,
     _apply_env_overrides,
+    _get_user_config_path,
     _merge_user_config,
-    _USER_CONFIG_PATH,
     load_config,
     resolve_config_paths,
 )
@@ -213,8 +213,8 @@ class TestBug2LoadConfigWithUserConfig:
         """load_config merges user-saved config.json on top of config.yaml."""
         user_cfg_path = tmp_path / "user_config.json"
         monkeypatch.setattr(
-            "artifice_graph.config._USER_CONFIG_PATH",
-            user_cfg_path,
+            "artifice_graph.config._get_user_config_path",
+            lambda: user_cfg_path,
         )
         user_cfg_path.parent.mkdir(parents=True, exist_ok=True)
         user_data = {
@@ -237,7 +237,8 @@ class TestBug2LoadConfigWithUserConfig:
     def test_load_config_works_without_user_config(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """load_config works when no user config file exists."""
         nonexistent = tmp_path / "nonexistent.json"
-        monkeypatch.setattr("artifice_graph.config._USER_CONFIG_PATH", nonexistent)
+        monkeypatch.setattr("artifice_graph.config._get_user_config_path",
+                            lambda: nonexistent)
 
         cfg = Path(__file__).parent.parent / "config.yaml"
 
@@ -248,7 +249,8 @@ class TestBug2LoadConfigWithUserConfig:
     def test_user_config_ignores_unknown_keys(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """Keys not in the config model are silently ignored."""
         user_cfg_path = tmp_path / "user_config.json"
-        monkeypatch.setattr("artifice_graph.config._USER_CONFIG_PATH", user_cfg_path)
+        monkeypatch.setattr("artifice_graph.config._get_user_config_path",
+                            lambda: user_cfg_path)
         user_cfg_path.parent.mkdir(parents=True, exist_ok=True)
         user_data = {
             "llm": {"model": "gemma4:12b", "nonexistent_field": "ignored"},
@@ -263,7 +265,8 @@ class TestBug2LoadConfigWithUserConfig:
     def test_merge_user_config_does_nothing_for_no_file(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """_merge_user_config is a no-op when the file doesn't exist."""
         nonexistent = tmp_path / "nonexistent.json"
-        monkeypatch.setattr("artifice_graph.config._USER_CONFIG_PATH", nonexistent)
+        monkeypatch.setattr("artifice_graph.config._get_user_config_path",
+                            lambda: nonexistent)
 
         config = PipelineConfig()
         original_model = config.llm.model
@@ -783,8 +786,8 @@ class TestEnvOverrides:
         """load_config() applies env overrides after user config merge."""
         user_cfg_path = tmp_path / "user_config.json"
         monkeypatch.setattr(
-            "artifice_graph.config._USER_CONFIG_PATH",
-            user_cfg_path,
+            "artifice_graph.config._get_user_config_path",
+            lambda: user_cfg_path,
         )
         user_cfg_path.parent.mkdir(parents=True, exist_ok=True)
         user_data = {

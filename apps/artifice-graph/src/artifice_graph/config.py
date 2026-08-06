@@ -221,8 +221,26 @@ def _resolve_user_data_dir() -> Path:
     return new_dir
 
 
-_USER_DATA_DIR = _resolve_user_data_dir()
-_USER_CONFIG_PATH = _USER_DATA_DIR / "config.json"
+_USER_DATA_DIR: Path | None = None  # Lazy — resolved via _get_user_data_dir()
+
+
+def _get_user_data_dir() -> Path:
+    """Return the per-user data directory, resolving on first call.
+
+    This is deliberately NOT resolved at import time — the migration
+    from ``~/.callosip`` involves ``shutil.move()``, which must never
+    run as a module-import side effect.  Resolving on first actual use
+    keeps the migration explicit, testable, and safe.
+    """
+    global _USER_DATA_DIR
+    if _USER_DATA_DIR is None:
+        _USER_DATA_DIR = _resolve_user_data_dir()
+    return _USER_DATA_DIR
+
+
+def _get_user_config_path() -> Path:
+    """Return the per-user ``config.json`` path."""
+    return _get_user_data_dir() / "config.json"
 
 
 def _merge_user_config(config: PipelineConfig) -> None:
@@ -232,14 +250,15 @@ def _merge_user_config(config: PipelineConfig) -> None:
     Only keys that exist on the Pydantic config model are considered;
     unknown keys in the user file are silently ignored.
     """
-    if not _USER_CONFIG_PATH.exists():
+    user_cfg = _get_user_config_path()
+    if not user_cfg.exists():
         return
 
     try:
-        with open(_USER_CONFIG_PATH, "r", encoding="utf-8") as f:
+        with open(user_cfg, "r", encoding="utf-8") as f:
             user_data = json.load(f)
     except Exception:
-        logger.debug("Failed to read user config at %s", _USER_CONFIG_PATH)
+        logger.debug("Failed to read user config at %s", user_cfg)
         return
 
     if not isinstance(user_data, dict):
@@ -263,7 +282,7 @@ def _merge_user_config(config: PipelineConfig) -> None:
                 applied = True
 
     if applied:
-        logger.debug("Applied user config from %s", _USER_CONFIG_PATH)
+        logger.debug("Applied user config from %s", user_cfg)
 
 
 # -- environment variable overrides -------------------------------------------

@@ -34,8 +34,8 @@ services:
     ports:
       - "3003:8766"
     environment:
-      - CALLOSIP_HOST=0.0.0.0
-      - CALLOSIP_PORT=8766
+      - ARTIFICE_HOST=0.0.0.0
+      - ARTIFICE_PORT=8766
       - LLM_BASE_URL=http://host.docker.internal:11434/v1
       - EMBEDDING_BASE_URL=http://host.docker.internal:11434
     extra_hosts:
@@ -50,8 +50,8 @@ services:
     ports:
       - "3004:8000"
     environment:
-      - CALLOSIP_HOST=0.0.0.0
-      - CALLOSIP_PORT=8000
+      - ARTIFICE_HOST=0.0.0.0
+      - ARTIFICE_PORT=8000
       - WHISPER_MODEL=base
       - DIARIZATION_PROVIDER=pyannote
     extra_hosts:

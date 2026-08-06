@@ -30,7 +30,7 @@ def _default_always_allowed() -> frozenset[str]:
         for h in [
             "localhost",
             "host.docker.internal",
-            os.environ.get("WSL_HOST_IP", "172.21.176.1"),
+            os.environ.get("WSL_HOST_IP", ""),
         ]
         if h
     )

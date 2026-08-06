@@ -18,7 +18,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 from rich import box
 
-from artifice_graph.config import _USER_CONFIG_PATH, load_config, resolve_config_paths
+from artifice_graph.config import _get_user_config_path, load_config, resolve_config_paths
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
 from artifice_graph.entity_resolution.resolver import EntityResolver
 from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityResolver
@@ -49,14 +49,14 @@ def main(
     ),
 ):
     if data_dir:
-        print(str(_USER_CONFIG_PATH.parent.resolve()))
+        print(str(_get_user_config_path().parent.resolve()))
         raise typer.Exit()
 
 
 @app.command("data-dir")
 def data_dir():
     """Print the absolute path of the user-data directory and exit."""
-    print(str(_USER_CONFIG_PATH.parent.resolve()))
+    print(str(_get_user_config_path().parent.resolve()))
 
 _APP_ROOT = Path(__file__).parent.parent.parent.resolve()
 

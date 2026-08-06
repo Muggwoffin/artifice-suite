@@ -150,11 +150,50 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 def cli():
+    import argparse
     import os
     import sys
     import uvicorn
 
-    if len(sys.argv) > 1 and sys.argv[1] == "--data-dir":
+    # --host and --port defaults come from ARTIFICE_HOST / ARTIFICE_PORT,
+    # falling back to the deprecated CALLOSIP_HOST / CALLOSIP_PORT for
+    # users who upgraded from 0.1.0 with those variables still set.
+    _default_host = os.environ.get(
+        "ARTIFICE_HOST",
+        os.environ.get("CALLOSIP_HOST", "127.0.0.1"),
+    )
+    _default_port = int(
+        os.environ.get(
+            "ARTIFICE_PORT",
+            os.environ.get("CALLOSIP_PORT", "8000"),
+        )
+    )
+
+    parser = argparse.ArgumentParser(
+        prog="artifice-transcribe",
+        description="Speech-to-Text & Diarization API",
+    )
+    parser.add_argument(
+        "--data-dir",
+        action="store_true",
+        help="Print the user-data directory path and exit.",
+    )
+    parser.add_argument(
+        "--host",
+        default=_default_host,
+        help="Host to bind the server to (default: 127.0.0.1, "
+             "or $ARTIFICE_HOST / $CALLOSIP_HOST if set).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=_default_port,
+        help="Port to bind the server to (default: 8000, "
+             "or $ARTIFICE_PORT / $CALLOSIP_PORT if set).",
+    )
+    args = parser.parse_args()
+
+    if args.data_dir:
         from artifice_transcribe.config import settings
         print(str(settings.data_path))
         return
@@ -167,8 +206,8 @@ def cli():
 
     uvicorn.run(
         "artifice_transcribe.main:app",
-        host=os.environ.get("CALLOSIP_HOST", "127.0.0.1"),
-        port=int(os.environ.get("CALLOSIP_PORT", "8000")),
+        host=args.host,
+        port=args.port,
         reload=enable_reload,
         reload_excludes=[
             "data/*",

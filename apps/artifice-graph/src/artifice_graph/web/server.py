@@ -10,7 +10,6 @@ import asyncio
 import json
 import logging
 import os
-import sys
 import tempfile
 import threading
 import time
@@ -27,11 +26,6 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
 from artifice_graph.extraction.inference_engine import _VISION_INDICATORS
-
-# ── Ensure src is importable (dev mode without pip install) ──────
-_SRC = Path(__file__).resolve().parent.parent.parent  # src/
-if str(_SRC) not in sys.path:
-    sys.path.insert(0, str(_SRC))
 
 from artifice_graph.config import LLMConfig, PipelineConfig, load_config
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
@@ -61,8 +55,8 @@ app.include_router(byom_router.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        f"http://localhost:{os.environ.get('CALLOSIP_PORT', '8766')}",
-        f"http://127.0.0.1:{os.environ.get('CALLOSIP_PORT', '8766')}",
+        f"http://localhost:{os.environ.get('ARTIFICE_PORT', os.environ.get('CALLOSIP_PORT', '8766'))}",
+        f"http://127.0.0.1:{os.environ.get('ARTIFICE_PORT', os.environ.get('CALLOSIP_PORT', '8766'))}",
     ],
     allow_credentials=False,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
@@ -1237,8 +1231,8 @@ async def about():
 # ── Main ────────────────────────────────────────────────────────────
 
 def main() -> None:
-    port = int(os.environ.get("CALLOSIP_PORT", "8766"))
-    host = os.environ.get("CALLOSIP_HOST", "127.0.0.1")
+    port = int(os.environ.get("ARTIFICE_PORT", os.environ.get("CALLOSIP_PORT", "8766")))
+    host = os.environ.get("ARTIFICE_HOST", os.environ.get("CALLOSIP_HOST", "127.0.0.1"))
     uvicorn.run("artifice_graph.web.server:app", host=host, port=port, reload=False)
 
 
