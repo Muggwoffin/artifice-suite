@@ -271,3 +271,54 @@ class ModelConfigResponse(BaseModel):
         default_factory=lambda: ["tiny", "base", "small", "medium", "large-v3"]
     )
     available_diarization_providers: list[str] = Field(default_factory=lambda: ["pyannote"])
+
+
+# ── ASR Model Download ─────────────────────────────────────────────────
+
+
+class ModelDownloadInfo(BaseModel):
+    """Information about a single model in a download set."""
+
+    key: str
+    hf_repo: str
+    size_bytes: int
+    size_human: str
+    requires_hf_token: bool
+    description: str
+
+
+class ModelInfoResponse(BaseModel):
+    """Full download info for a model key — shown in a consent dialog."""
+
+    key: str
+    models: list[ModelDownloadInfo]
+    total_size_bytes: int
+    total_size_human: str
+    requires_hf_token: bool
+    cache_directory: str
+    consented: bool
+
+
+class ConsentRequest(BaseModel):
+    """Consent to download a model — body is explicit consent boolean."""
+
+    consent: bool = Field(..., description="True to grant consent, False to revoke")
+
+
+class ConsentResponse(BaseModel):
+    key: str
+    consented: bool
+
+
+class DownloadStartResponse(BaseModel):
+    key: str
+    status: str = "started"
+    model_count: int
+    total_size_bytes: int
+    total_size_human: str
+
+
+class ModelListResponse(BaseModel):
+    """Summary of all available ASR models."""
+
+    models: list[ModelInfoResponse]
