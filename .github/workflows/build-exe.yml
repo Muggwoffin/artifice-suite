@@ -41,9 +41,13 @@ jobs:
         os: [windows-latest, ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      # v7 to match every other workflow. Dependabot's checkout/setup-uv bumps
+      # (#29, #30) were raised before this file existed, so they did not cover
+      # it — a new workflow added between a Dependabot PR being opened and
+      # merged inherits the old pins silently, and only a later run notices.
+      - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
           enable-cache: true
