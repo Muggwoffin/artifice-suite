@@ -1,0 +1,137 @@
+name: Publish to PyPI
+
+# Trusted Publishing (OIDC) — deliberately NOT API tokens.
+#
+# GitHub mints a short-lived OIDC token that PyPI exchanges for an upload
+# credential, so nothing long-lived is ever stored in the repository or in
+# Actions secrets.  That is the only publishing mechanism compatible with this
+# project's Zero Secrets Policy; an API token would have to live in a secret
+# and would be a standing credential with upload rights to every project.
+#
+# PREREQUISITE — this workflow FAILS until it is done.  For each of the seven
+# projects, add a PyPI "pending publisher" (PyPI → Your projects → Publishing)
+# with exactly:
+#     Owner:            Muggwoffin
+#     Repository:       artifice-suite
+#     Workflow name:    publish.yml
+#     Environment:      pypi
+# The environment name must match the `environment:` key below or PyPI refuses
+# the exchange.  See docs/PYPI_PUBLISHING.md for the full walkthrough.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Where to publish'
+        required: true
+        default: testpypi
+        type: choice
+        options:
+          - testpypi
+          - pypi
+
+jobs:
+  # ── Stage 1: the three shared packages ────────────────────────────────────
+  # ORDER IS LOAD-BEARING.  Every app declares artifice-model-harness,
+  # artifice-secure-io and artifice-shared-ui by name with `>=0.1.0`.  If the
+  # apps are published first, `pip install artifice-graph` from a clean machine
+  # cannot resolve its own dependencies — they would not exist on the index
+  # yet.  uv hides this locally because [tool.uv.sources] resolves them from
+  # the workspace.
+  shared-packages:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write        # required for Trusted Publishing; nothing else
+    strategy:
+      fail-fast: true        # a broken shared package must stop the apps
+      matrix:
+        package:
+          - packages/model-harness
+          - packages/secure-io
+          - packages/shared-ui
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        # build/ and dist/ are cleared first: setuptools reuses whatever it
+        # finds under build/, which silently resurrects deleted modules into a
+        # new wheel.  This repo has shipped that bug before.
+        run: |
+          rm -rf build dist
+          uv run --with build python -m build
+        working-directory: ${{ matrix.package }}
+
+      - name: Verify metadata before upload
+        # twine check is cheap and catches an unrenderable README, which PyPI
+        # accepts and then displays as a blank project page — unfixable without
+        # burning a version number, since a file cannot be re-uploaded.
+        run: uv run --with twine twine check dist/*
+        working-directory: ${{ matrix.package }}
+
+      - name: Publish to TestPyPI
+        if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.package }}/dist
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish to PyPI
+        if: github.event_name == 'push' || inputs.target == 'pypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.package }}/dist
+
+  # ── Stage 2: the four apps ────────────────────────────────────────────────
+  apps:
+    needs: shared-packages   # enforces the ordering described above
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    strategy:
+      fail-fast: false       # one app failing should not block the others
+      matrix:
+        app:
+          - apps/artifice-ocr
+          - apps/artifice-draft
+          - apps/artifice-graph
+          - apps/artifice-transcribe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        run: |
+          rm -rf build dist
+          uv run --with build python -m build
+        working-directory: ${{ matrix.app }}
+
+      - name: Verify metadata before upload
+        run: uv run --with twine twine check dist/*
+        working-directory: ${{ matrix.app }}
+
+      - name: Publish to TestPyPI
+        if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.app }}/dist
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish to PyPI
+        if: github.event_name == 'push' || inputs.target == 'pypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.app }}/dist
