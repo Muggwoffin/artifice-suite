@@ -94,15 +94,18 @@ def _content_length_exceeds(request: Request, limit: int) -> bool:
 # ── Shared design system (resolved from installed shared-ui package) ───────
 import importlib.resources
 import shared_ui
+
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 
 # ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
 # ChoiceLoader lets templates include shared-ui’s masthead partial.
 _JINJA = Environment(
-    loader=ChoiceLoader([
-        PackageLoader("artifice_draft.web", "templates"),
-        PackageLoader("shared_ui", "templates"),
-    ]),
+    loader=ChoiceLoader(
+        [
+            PackageLoader("artifice_draft.web", "templates"),
+            PackageLoader("shared_ui", "templates"),
+        ]
+    ),
     autoescape=select_autoescape(["html", "xml"]),
 )
 
@@ -137,6 +140,7 @@ async def no_cache_static(request: Request, call_next):
 # --------------------------------------------------------------------------- #
 # request models
 # --------------------------------------------------------------------------- #
+
 
 class SettingsPatch(BaseModel):
     llm_provider: str | None = None
@@ -180,6 +184,7 @@ class GuideSaveRequest(BaseModel):
 # --------------------------------------------------------------------------- #
 # settings
 # --------------------------------------------------------------------------- #
+
 
 @app.get("/api/settings")
 def get_settings() -> dict:
@@ -246,6 +251,7 @@ async def preview_guide_file(request: Request, file: UploadFile = File(...)) -> 
         )
 
     import tempfile
+
     data = await _read_capped(file, _MAX_UPLOAD_BYTES)
     suffix = ".docx" if lower.endswith(".docx") else ".pdf"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -259,6 +265,7 @@ async def preview_guide_file(request: Request, file: UploadFile = File(...)) -> 
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     finally:
         import os
+
         os.unlink(tmp_path)
 
     return {"guide": guide.to_dict()}
@@ -290,6 +297,7 @@ def delete_guide(name: str) -> dict:
 # --------------------------------------------------------------------------- #
 # document upload + run
 # --------------------------------------------------------------------------- #
+
 
 @app.post("/api/upload")
 async def upload(request: Request, file: UploadFile = File(...)) -> dict:
@@ -367,7 +375,8 @@ async def run_events(doc_id: str):
     if state.get(doc_id) is None:
         raise HTTPException(status_code=404, detail="Unknown document")
     return StreamingResponse(
-        _event_stream(doc_id), media_type="text/event-stream",
+        _event_stream(doc_id),
+        media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
@@ -438,6 +447,7 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # bootstrap
 # --------------------------------------------------------------------------- #
 
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
@@ -488,8 +498,11 @@ def main() -> None:
     import uvicorn
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--browser", action="store_true",
-                       help="Open in the default browser instead of a native window")
+    parser.add_argument(
+        "--browser",
+        action="store_true",
+        help="Open in the default browser instead of a native window",
+    )
     parser.add_argument("--port", type=int, default=None)
     args = parser.parse_args()
 
@@ -510,14 +523,15 @@ def main() -> None:
     )
 
     server_thread = threading.Thread(
-        target=lambda: uvicorn.run(app, host="127.0.0.1", port=port,
-                                   log_level="warning"),
+        target=lambda: uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning"),
         daemon=True,
     )
     server_thread.start()
     if not _wait_for_server(port):
-        print(f"WARNING: server did not respond on port {port} within 10s; "
-              f"opening the window anyway, but it may show a connection error.")
+        print(
+            f"WARNING: server did not respond on port {port} within 10s; "
+            f"opening the window anyway, but it may show a connection error."
+        )
 
     use_browser = args.browser
     if not use_browser:

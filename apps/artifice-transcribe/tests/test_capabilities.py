@@ -64,9 +64,7 @@ class TestCapabilitiesGet:
         assert resp.status_code == 200
         data = resp.json()
         assert "asr" in data
-        assert data["asr"]["available"] is True, (
-            f"expected available=True, got {data['asr']}"
-        )
+        assert data["asr"]["available"] is True, f"expected available=True, got {data['asr']}"
         # No reason or install_hint when the stack is available.
         assert "reason" not in data["asr"]
         assert "install_hint" not in data["asr"]
@@ -89,9 +87,7 @@ class TestCapabilitiesGet:
         resp = await api.client.get("/api/v1/capabilities")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["asr"]["available"] is False, (
-            "partial install must report unavailable"
-        )
+        assert data["asr"]["available"] is False, "partial install must report unavailable"
 
 
 # ── AsrUnavailable error handling across engine-dependent routes ──────────
@@ -102,9 +98,7 @@ class TestAsrUnavailableHandlers:
     """Routes that depend on the transcription engine must return a clear,
     structured response (not a 500 traceback) when the ASR stack is missing."""
 
-    async def test_health_detailed_degraded_when_asr_unavailable(
-        self, api, monkeypatch
-    ):
+    async def test_health_detailed_degraded_when_asr_unavailable(self, api, monkeypatch):
         """GET /health/detailed must return 'degraded' with engine unavailable
         and a correct database status when the ASR stack cannot be loaded."""
         monkeypatch.setattr(
@@ -116,9 +110,7 @@ class TestAsrUnavailableHandlers:
         assert resp.status_code == 200
         data = resp.json()
 
-        assert data["status"] == "degraded", (
-            f"expected 'degraded', got {data['status']!r}"
-        )
+        assert data["status"] == "degraded", f"expected 'degraded', got {data['status']!r}"
         assert data["engine"]["available"] is False
         assert "install_hint" in data["engine"]
         assert "uv sync" in data["engine"]["install_hint"]
@@ -127,9 +119,7 @@ class TestAsrUnavailableHandlers:
             "test database should report ok independently of ASR stack"
         )
 
-    async def test_health_preload_returns_error_when_asr_unavailable(
-        self, api, monkeypatch
-    ):
+    async def test_health_preload_returns_error_when_asr_unavailable(self, api, monkeypatch):
         """POST /health/preload catches AsrUnavailable and returns a 200 with
         ok=False and a clear error message — it must not surface a traceback."""
         monkeypatch.setattr(
@@ -148,12 +138,11 @@ class TestAsrUnavailableHandlers:
         assert "install_hint" in data
         assert "uv sync" in data["install_hint"]
 
-    async def test_config_update_rejects_with_503_when_asr_unavailable(
-        self, api, monkeypatch
-    ):
+    async def test_config_update_rejects_with_503_when_asr_unavailable(self, api, monkeypatch):
         """PATCH /api/v1/config triggers an engine reload when the whisper
         model changes.  An AsrUnavailable during that reload must return
         HTTP 503, not 500."""
+
         def _fail_on_reload(new_model: str):
             raise AsrUnavailable()
 
@@ -170,13 +159,11 @@ class TestAsrUnavailableHandlers:
             f"expected 503 for ASR-unavailable config update, got {resp.status_code}"
         )
         detail = resp.json().get("detail", "")
-        assert "not installed" in detail.lower() or (
-            "uv sync" in detail.lower()
-        ), f"unexpected error detail: {detail!r}"
+        assert "not installed" in detail.lower() or ("uv sync" in detail.lower()), (
+            f"unexpected error detail: {detail!r}"
+        )
 
-    async def test_enroll_speaker_returns_503_when_asr_unavailable(
-        self, api, monkeypatch
-    ):
+    async def test_enroll_speaker_returns_503_when_asr_unavailable(self, api, monkeypatch):
         """POST /api/v1/speakers/enroll must return HTTP 503 when the engine
         cannot be loaded, rather than surfacing a raw AsrUnavailable traceback."""
         monkeypatch.setattr(
@@ -193,9 +180,9 @@ class TestAsrUnavailableHandlers:
             f"expected 503 for ASR-unavailable enroll, got {resp.status_code}"
         )
         detail = resp.json().get("detail", "")
-        assert "not installed" in detail.lower() or (
-            "uv sync" in detail.lower()
-        ), f"unexpected error detail: {detail!r}"
+        assert "not installed" in detail.lower() or ("uv sync" in detail.lower()), (
+            f"unexpected error detail: {detail!r}"
+        )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
