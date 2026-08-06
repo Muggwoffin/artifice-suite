@@ -122,7 +122,7 @@ document.querySelectorAll(".settings-card input, .settings-card select, #model-s
   el.addEventListener("change", () => {
     api("POST", "/api/settings", readSettingsForm())
       .then(cfg => { document.getElementById("model-hint").textContent = `Active model: ${cfg.active_model}`; })
-      .catch(err => logLine(`Settings error: ${err.message}`, "error"));
+      .catch(err => window.ArtificeToast.error("Settings error: " + err.message));
   });
 });
 
@@ -140,7 +140,7 @@ document.getElementById("model-settings-modal").addEventListener("click", e => {
 
 async function handleFile(file) {
   if (!file.name.toLowerCase().endsWith(".docx")) {
-    logLine("Only .docx files are supported.", "error");
+    window.ArtificeToast.error("Only .docx files are supported.");
     return;
   }
   els.cardReview.style.display = "none";
@@ -163,7 +163,7 @@ async function handleFile(file) {
     els.btnStart.disabled = false;
     logLine(`Loaded ${doc.filename} (${doc.paragraph_count} paragraphs)`);
   } catch (err) {
-    logLine(`Upload failed: ${err.message}`, "error");
+    window.ArtificeToast.error("Upload failed: " + err.message);
   }
 }
 
@@ -195,7 +195,7 @@ els.btnStart.addEventListener("click", async () => {
     logLine("Started processing…", "accent");
     listenForProgress(currentDocId);
   } catch (err) {
-    logLine(`Could not start: ${err.message}`, "error");
+    window.ArtificeToast.error("Could not start: " + err.message);
     els.btnStart.disabled = false;
   }
 });
@@ -204,7 +204,13 @@ function listenForProgress(docId) {
   const source = new EventSource(`/api/run/${docId}/events`);
   source.onmessage = (ev) => {
     const data = JSON.parse(ev.data);
-    if (data.message) logLine(data.message, data.stage === "error" ? "error" : undefined);
+    if (data.message) {
+      if (data.stage === "error") {
+        window.ArtificeToast.error(data.message);
+      } else {
+        logLine(data.message);
+      }
+    }
     setProgress(data.percentage);
 
     if (data.stage === "awaiting_review") {
@@ -227,7 +233,7 @@ async function onRunFinished(docId) {
   els.btnDownload.style.display = "inline-block";
   els.btnDownload.href = `/api/run/${docId}/download`;
   els.btnStart.disabled = false;
-  logLine(`Saved to ${status.output_filename}`, "success");
+  window.ArtificeToast.success("Saved to " + status.output_filename);
 }
 
 window.PersonaeApp = { logLine, setProgress, onRunFinished };
@@ -324,4 +330,4 @@ function initKeyboardShortcuts() {
 initTheme();
 initKeyboardShortcuts();
 
-loadSettings().catch(err => logLine(`Could not load settings: ${err.message}`, "error"));
+loadSettings().catch(err => window.ArtificeToast.error("Could not load settings: " + err.message));

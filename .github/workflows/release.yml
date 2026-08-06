@@ -28,10 +28,56 @@ jobs:
         run: echo "Release gate passed — versions locked at ${{ github.ref_name }}"
 
       # ── Explanation ──
-      # This workflow guards that tag names, package versions and CITATION.cff
-      # stay in lockstep for the Zenodo DOI. Actual publishing (PyPI / GitHub
-      # Release / Zenodo) is intentionally out of scope for now — it will be
-      # added when a release cadence exists.
+      # This job guards that tag names, package versions and CITATION.cff stay
+      # in lockstep, which is the precondition for a citable DOI: Zenodo
+      # archives whatever the tag points at, so a tag that disagrees with
+      # CITATION.cff mints a DOI for a version that does not exist.
+      #
+      # PyPI upload is deliberately NOT here — it lives in publish.yml, which
+      # fires on the same tag. Two workflows, one trigger, separate concerns.
       #
       # The check script is in scripts/check-release-consistency.py.
       # ── Explanation ──
+
+  # ── Create the GitHub Release ─────────────────────────────────────────────
+  #
+  # WHY THIS JOB EXISTS
+  #
+  # Zenodo's GitHub integration archives on a *published GitHub Release*, not on
+  # a bare tag push. Until 2026-08-06 nothing in this repository created one, so
+  # the standing claim that "all Git tags automatically trigger Zenodo release
+  # archiving and DOI minting" was false — a tag fired this gate and publish.yml
+  # and nothing else. No DOI could ever have been minted.
+  #
+  # ONE MANUAL STEP REMAINS, AND WITHOUT IT THIS JOB MINTS NOTHING.
+  #
+  # The Zenodo GitHub App must be installed on Muggwoffin/artifice-suite and the
+  # repository toggled ON at https://zenodo.org/account/settings/github/ . That
+  # is a human action requiring a Zenodo login; it cannot be done from a
+  # workflow, exactly like the PyPI pending publishers. Zenodo only archives
+  # releases created AFTER the toggle is switched on — it does not backfill, so
+  # switching it on later will not retroactively mint a DOI for an earlier tag.
+  github-release:
+    needs: version-guard      # never publish a Release the gate has not passed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write         # required to create a Release; nothing else
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # release notes need history, not a shallow clone
+
+      - name: Create the GitHub Release
+        # `gh` is preinstalled on the runner, so this needs no third-party
+        # action with write access to the repository.
+        #
+        # --verify-tag refuses to invent a tag that does not exist, which turns
+        # a typo into a failure rather than a stray release.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            --verify-tag

@@ -6,14 +6,12 @@
 
 from __future__ import annotations
 
-import os
 import socket
 import unittest.mock as mock
 
 import pytest
-
 from model_harness.contract import EndpointRejected
-from model_harness.endpoint_policy import EndpointPolicy
+from model_harness.endpoint_policy import EndpointPolicy, _default_always_allowed
 
 
 def _v4_info(addr: str) -> tuple:
@@ -39,8 +37,20 @@ class TestClassifyHost:
         permitted, reason = policy.classify_host("host.docker.internal")
         assert permitted, reason
 
-    def test_accepts_wsl_gateway(self):
+    def test_accepts_wsl_gateway_when_env_set(self, monkeypatch):
+        """When WSL_HOST_IP is set, the specified host is in the always-allowed set."""
+        monkeypatch.setenv("WSL_HOST_IP", "172.30.0.1")
         policy = EndpointPolicy()
+        permitted, reason = policy.classify_host("172.30.0.1")
+        assert permitted, reason
+
+    def test_wsl_gateway_private_ip_still_passes(self):
+        """A private IP that is NOT in the always-allowed set still passes
+        via the private-network classification — 172.21.176.1 is in the
+        172.16.0.0/12 range."""
+        policy = EndpointPolicy()
+        # 172.21.176.1 is private, so it passes even without being
+        # explicitly always-allowed.
         permitted, reason = policy.classify_host("172.21.176.1")
         assert permitted, reason
 
@@ -298,3 +308,31 @@ class TestResolve:
         policy = EndpointPolicy()
         with pytest.raises(EndpointRejected):
             policy.resolve("ftp://evil.com")
+
+
+class TestDefaultAllowlist:
+    """The default always-allowed set must not ship a hardcoded IP."""
+
+    _IP_OCTET = __import__("ipaddress")
+
+    def test_no_literal_ip_when_env_unset(self, monkeypatch):
+        """When WSL_HOST_IP is not set, the default allowlist contains no
+        literal IP address."""
+        monkeypatch.delenv("WSL_HOST_IP", raising=False)
+        hosts = _default_always_allowed()
+        assert hosts, "default allowlist is empty — localhost must be present"
+        for h in hosts:
+            try:
+                self._IP_OCTET.ip_address(h)
+                is_ip = True
+            except ValueError:
+                is_ip = False
+            assert not is_ip, (
+                f"default allowlist contains literal IP {h!r} when WSL_HOST_IP is unset"
+            )
+
+    def test_wsl_host_ip_added_when_set(self, monkeypatch):
+        """When WSL_HOST_IP is set, the specified address is in the allowlist."""
+        monkeypatch.setenv("WSL_HOST_IP", "10.99.99.1")
+        hosts = _default_always_allowed()
+        assert "10.99.99.1" in hosts

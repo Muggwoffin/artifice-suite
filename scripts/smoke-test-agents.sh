@@ -45,10 +45,10 @@ OPENCODE_AGENTS=(
   "security-auditor:qwen3.7-max"
   "code-reviewer:minimax-m3"
   "oss-reviewer:mistral-medium-latest"
+  # ui-ux returned to OpenCode on 2026-08-06 — see the Claude Code block below
+  # for why, and why this model in particular.
+  "ui-ux:minimax-m2.7"
 )
-
-# `ui-ux` is deliberately absent from this list — it moved to the Claude Code
-# runtime on 2026-07-29 and is asserted separately below.
 
 bold "OpenCode runtime"
 
@@ -57,7 +57,27 @@ if ! command -v opencode >/dev/null 2>&1; then
 else
   ok "opencode CLI present ($(opencode --version 2>/dev/null | tr -d '\r'))"
 
-  registry="$(opencode agent list 2>&1 | strip_ansi)"
+  # Reduce the registry to just its header lines BEFORE matching.
+  #
+  # `opencode agent list` emits ~4000 lines, of which about nineteen are the
+  # "<name> (<mode>)" headers we care about; everything else is a pretty-printed
+  # JSON permission dump under each agent. Capturing all of it into a shell
+  # variable and grepping the blob once per agent was the cause of the flaky
+  # gate recorded as HANDOVER item 12 — `mode=all` failed on *different* agents
+  # across runs while every direct check passed, because a partial or
+  # interleaved capture of a 4000-line stream drops whichever headers happen to
+  # fall past the truncation point.
+  #
+  # Extracting the headers first makes the comparison deterministic: nineteen
+  # short lines, no JSON, nothing timing-dependent. Keep it this way — this gate
+  # exists to catch silent agent fallback, so a gate that cries wolf is worse
+  # than none. A gate that has never run clean is not a passing gate.
+  registry="$(opencode agent list 2>&1 | strip_ansi \
+    | grep -E '^[a-z0-9_-]+ \((all|primary|subagent)\)' || true)"
+
+  if [[ -z "$registry" ]]; then
+    bad "opencode agent list returned no agent headers — cannot verify any mode"
+  fi
 
   for entry in "${OPENCODE_AGENTS[@]}"; do
     agent="${entry%%:*}"
@@ -91,54 +111,51 @@ else
 fi
 
 # --- Claude Code runtime ---------------------------------------------------
-# As of 2026-07-28 NO agent runs here. `ui-ux` was the last one and moved to
-# OpenCode/Copilot, so the whole fleet is now off the maintainer's Claude
-# subscription, which the orchestrator alone uses. A stray definition here would
-# SHADOW the OpenCode one when the orchestrator dispatches by name — the same
-# trap the security-auditor check below guards against.
+# As of 2026-08-06 NO agent runs here. `ui-ux` was the last one, and it has now
+# moved to OpenCode for the SECOND time. A stray definition here would SHADOW the
+# OpenCode one when the orchestrator dispatches by name — the same trap the
+# security-auditor check below guards against.
+#
+# History, because this placement has oscillated and the reasoning is what
+# matters rather than any one destination:
+#   2026-07-28  left Claude Code -> OpenCode/Copilot; whole fleet off the
+#               maintainer's subscription, which the orchestrator alone used.
+#   2026-07-29  returned to Claude Code on `sonnet` after the Copilot and
+#               OpenCode Go tiers were each exhausted in a single day.
+#   2026-08-06  left again for `opencode-go/minimax-m2.7`, because the shared
+#               budget bit exactly as predicted: the agent died mid-task on a
+#               session limit, leaving a half-written shared component.
+#
+# The standing rule survived all three moves: `ui-ux` must not share a model with
+# `code-reviewer` (currently `minimax-m3`), which reviews its output. A reviewer
+# grading its own model's work is the failure the independence rule exists to
+# prevent. `minimax-m2.7` also satisfies the maintainer's cost constraint of
+# "cheaper than kimi-k3".
 
 bold "Claude Code runtime"
 
-# `ui-ux` returned to the Claude subscription on 2026-07-29, after the Copilot
-# and OpenCode Go tiers were each exhausted in a single day. It is the ONLY agent
-# that belongs here: it writes code against `Design_Philosophy.md` and has to hold
-# that document precisely, which has always been a requirement about the model
-# rather than the runtime.
-#
-# The trade-off is recorded rather than forgotten: it now shares a budget with the
-# orchestrator again, which is exactly the coupling that caused a session limit to
-# stop design work *and* orchestration once before. If that recurs, moving it back
-# to a paid tier is the fix, not reducing its model.
-if [[ -f .claude/agents/ui-ux.md ]]; then
-  if grep -qE '^model:\s*sonnet' .claude/agents/ui-ux.md; then
-    ok "ui-ux defined in Claude Code runtime on sonnet"
-  else
-    bad "ui-ux is in .claude/agents/ but not on sonnet — it must stay Sonnet-class"
-  fi
-else
-  bad "ui-ux missing from .claude/agents/ — it moved there on 2026-07-29"
-fi
-
-# Every *other* agent must stay out of this runtime. A stray definition here would
-# SHADOW the OpenCode one when the orchestrator dispatches by name.
+# NO agent definitions belong here at all any more.
 _stray=()
 for _f in .claude/agents/*.md; do
   [[ -e "$_f" ]] || continue
-  [[ "$(basename "$_f")" == "ui-ux.md" ]] && continue
   _stray+=("$_f")
 done
 if (( ${#_stray[@]} > 0 )); then
-  bad "unexpected agent definitions in .claude/agents/ — only ui-ux belongs there"
+  bad "unexpected agent definitions in .claude/agents/ — the whole fleet is OpenCode as of 2026-08-06"
   printf '        %s\n' "${_stray[@]}"
 else
-  ok "no stray Claude Code agents (only ui-ux, rest are OpenCode)"
+  ok "no Claude Code agent definitions (whole fleet is OpenCode)"
 fi
 
-# ui-ux must not be defined in both runtimes.
+# ui-ux must be defined in exactly one runtime, and that runtime is OpenCode.
 if [[ -f .opencode/agents/ui-ux.md ]]; then
-  bad "ui-ux still defined in .opencode/agents/ — it now lives in .claude/agents/"
+  if [[ -f .claude/agents/ui-ux.md ]]; then
+    bad "ui-ux defined in BOTH runtimes — the Claude Code copy will shadow the OpenCode one"
+  else
+    ok "ui-ux defined in OpenCode runtime only"
+  fi
 else
-  ok "ui-ux not duplicated in OpenCode runtime"
+  bad "ui-ux missing from .opencode/agents/ — it moved there on 2026-08-06"
 fi
 
 # security-auditor moved to OpenCode/Gemini to reduce Claude token usage. It must

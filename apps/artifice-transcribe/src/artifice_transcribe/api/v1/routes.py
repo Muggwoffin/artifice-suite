@@ -8,9 +8,11 @@ import asyncio
 import importlib.util
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+from queue import Empty
 
+import model_harness.registry as reg
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from model_harness.contract import EndpointRejected
@@ -35,8 +37,11 @@ from artifice_transcribe.db.models import (
 )
 from artifice_transcribe.db.session import async_session, get_db
 from artifice_transcribe.schemas.transcription import (
+    ConsentRequest,
+    ConsentResponse,
     DictionaryResponse,
     DictionaryUpdate,
+    DownloadStartResponse,
     EditHistoryResponse,
     EditVersionOut,
     EnrollFromJobRequest,
@@ -52,6 +57,9 @@ from artifice_transcribe.schemas.transcription import (
     KnownSpeakerOut,
     ModelConfigRequest,
     ModelConfigResponse,
+    ModelDownloadInfo,
+    ModelInfoResponse,
+    ModelListResponse,
     SearchMatch,
     SearchResults,
     SegmentMergeResponse,
@@ -70,6 +78,18 @@ from artifice_transcribe.schemas.transcription import (
     SpeakerRenameRequest,
     TranscriptionOptions,
     TranscriptResponse,
+)
+from artifice_transcribe.services.download import (
+    find_registry_key,
+    get_download_manager,
+    hf_cache_dir,
+    human_size,
+    is_consented,
+    record_consent,
+    requires_token,
+    resolve_transitive,
+    revoke_consent,
+    total_transitive_size,
 )
 from artifice_transcribe.services.inference import (
     InferenceEngine,
@@ -100,6 +120,7 @@ async def _read_capped(upload: UploadFile, limit: int) -> bytes:
         chunks.append(chunk)
     return b"".join(chunks)
 
+
 # ── Path safety ──────────────────────────────────────────────────────────────
 
 
@@ -109,7 +130,7 @@ def _sanitise_path_component(raw: str) -> str:
     Rejects components that are empty, ``"."``, or ``".."`` after
     stripping — ``Path("..").name`` returns ``".."``, so ``.name``
     alone is not sufficient.
-    
+
     Backslashes are treated as separators (Windows path support) so that
     ``..\\\\..\\\\windows\\\\system32`` collapses to ``system32`` even on
     POSIX where ``Path.name`` would return the whole string.
@@ -161,6 +182,43 @@ def _validate_base_url(raw: str, field_name: str) -> str:
 _LEGACY_INFERENCE_CONFIG = Path("./data/inference_config.json").resolve()
 _LEGACY_PT_INFERENCE_CONFIG = Path("./data/pt-inference-config.json").resolve()
 _INFERENCE_CONFIG_FILE = settings.data_path / "inference_config.json"
+_HF_TOKEN_FILE = settings.data_path / "hf_token.json"
+
+
+def _load_hf_token() -> str:
+    """Return the HF token, preferring the env var and falling back to
+    the secure-io-protected file on disk.
+
+    The token is never read from the plaintext ``.env`` file through
+    ``Settings.hf_token`` alone — if the env var is unset the secure-io
+    file is consulted.  This keeps the Zero Secrets Policy self-consistent.
+    """
+    token = settings.hf_token
+    if token:
+        return token
+    if _HF_TOKEN_FILE.exists():
+        from secure_io import ensure_restricted
+
+        ensure_restricted(_HF_TOKEN_FILE)
+        try:
+            data = json.loads(_HF_TOKEN_FILE.read_text(encoding="utf-8"))
+            return data.get("hf_token", "")
+        except Exception:
+            pass
+    return ""
+
+
+def _save_hf_token(token: str) -> None:
+    """Persist the HF token through ``secure_io.write_private_json``."""
+    from secure_io import is_restricted, write_private_json
+
+    _HF_TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+    write_private_json(_HF_TOKEN_FILE, {"hf_token": token})
+    # Verify write-time security (mirrors _save_inference_config).
+    if not is_restricted(_HF_TOKEN_FILE):
+        write_private_json(_HF_TOKEN_FILE, {"hf_token": token})
+        if not is_restricted(_HF_TOKEN_FILE):
+            raise PermissionError(f"Failed to secure HF token file after retry: {_HF_TOKEN_FILE}")
 
 
 def _migrate_legacy_inference_config() -> None:
@@ -177,10 +235,12 @@ def _migrate_legacy_inference_config() -> None:
     if _LEGACY_INFERENCE_CONFIG.exists():
         logger.info(
             "Migrating legacy inference config from %s to %s",
-            _LEGACY_INFERENCE_CONFIG, _INFERENCE_CONFIG_FILE,
+            _LEGACY_INFERENCE_CONFIG,
+            _INFERENCE_CONFIG_FILE,
         )
         _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
         import shutil
+
         shutil.move(str(_LEGACY_INFERENCE_CONFIG), str(_INFERENCE_CONFIG_FILE))
         logger.info("Migration complete — inference config is now at %s", _INFERENCE_CONFIG_FILE)
 
@@ -189,6 +249,7 @@ def _load_inference_config() -> dict:
     _migrate_legacy_inference_config()
     if _INFERENCE_CONFIG_FILE.exists():
         from secure_io import ensure_restricted
+
         ensure_restricted(_INFERENCE_CONFIG_FILE)
         try:
             return json.loads(_INFERENCE_CONFIG_FILE.read_text(encoding="utf-8"))
@@ -253,7 +314,7 @@ async def _reload_engine_with_new_model(new_model: str):
     _engine = TranscriptionEngine(
         model_size=settings.whisper_model,
         device=settings.device,
-        hf_token=settings.hf_token,
+        hf_token=_load_hf_token(),
     )
     logger.info("Engine reloaded successfully with model: %s", new_model)
 
@@ -269,7 +330,7 @@ def _get_engine():
         _engine = TranscriptionEngine(
             model_size=settings.whisper_model,
             device=settings.device,
-            hf_token=settings.hf_token,
+            hf_token=_load_hf_token(),
         )
     return _engine
 
@@ -366,7 +427,7 @@ async def _run_transcription(
 
             job.status = JobStatus.completed
             job.progress_percentage = 100.0
-            job.completed_at = datetime.now(timezone.utc)
+            job.completed_at = datetime.now(UTC)
             await db.commit()
             logger.info("Job %s completed with %d segments", job_id, len(segments))
 
@@ -382,7 +443,7 @@ async def _run_transcription(
             if job:
                 job.status = JobStatus.failed
                 job.error_message = str(exc)
-                job.completed_at = datetime.now(timezone.utc)
+                job.completed_at = datetime.now(UTC)
                 await db.commit()
 
         finally:
@@ -475,7 +536,7 @@ async def get_config():
     fields = {
         "whisper_model": settings.whisper_model,
         "device": settings.device,
-        "hf_token": settings.hf_token,
+        "hf_token": _load_hf_token(),
         "diarization_provider": settings.diarization_provider,
         "diarization_model": settings.diarization_model,
         "enable_alignment_model_cache": settings.enable_alignment_model_cache,
@@ -493,7 +554,7 @@ async def update_config(body: ModelConfigRequest):
     if "device" in updates:
         settings.device = updates["device"]
     if "hf_token" in updates and updates["hf_token"] != _REDACTED_PLACEHOLDER:
-        settings.hf_token = updates["hf_token"]
+        _save_hf_token(updates["hf_token"])
     if "diarization_provider" in updates:
         settings.diarization_provider = updates["diarization_provider"]
     if "diarization_model" in updates:
@@ -605,11 +666,13 @@ async def inference_generate(body: InferenceGenerateRequest):
 async def _build_transcript_prompt(job_id: str, db: AsyncSession, action: str) -> str:
     """Fetch segments for a job and build a prompt for the AI action."""
     segs = (
-        (await db.execute(
-            select(TranscriptSegment)
-            .where(TranscriptSegment.job_id == job_id)
-            .order_by(TranscriptSegment.start_time)
-        ))
+        (
+            await db.execute(
+                select(TranscriptSegment)
+                .where(TranscriptSegment.job_id == job_id)
+                .order_by(TranscriptSegment.start_time)
+            )
+        )
         .scalars()
         .all()
     )
@@ -621,10 +684,7 @@ async def _build_transcript_prompt(job_id: str, db: AsyncSession, action: str) -
         start = int(s.start_time // 60)
         end_sec = int(s.end_time % 60)
         start_sec = int(s.start_time % 60)
-        lines.append(
-            f"[{start}:{start_sec:02d}-{start}:{end_sec:02d}] "
-            f"{s.speaker_label}: {s.text}"
-        )
+        lines.append(f"[{start}:{start_sec:02d}-{start}:{end_sec:02d}] {s.speaker_label}: {s.text}")
 
     transcript = "\n".join(lines)
 
@@ -685,7 +745,7 @@ async def summarize_job(job_id: str, db: AsyncSession = Depends(get_db)):
                 yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
-        yield "data: {\"type\": \"done\"}\n\n"
+        yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
@@ -724,7 +784,7 @@ async def cleanup_job(job_id: str, db: AsyncSession = Depends(get_db)):
                 yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
-        yield "data: {\"type\": \"done\"}\n\n"
+        yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
@@ -780,9 +840,7 @@ async def capabilities():
     pyannote.audio) is missing correctly reports unavailable.
     """
     _required = ("whisperx", "torch", "torchaudio", "torchvision", "torchcodec")
-    asr_available = all(
-        importlib.util.find_spec(pkg) is not None for pkg in _required
-    )
+    asr_available = all(importlib.util.find_spec(pkg) is not None for pkg in _required)
     if asr_available:
         asr_info = {"available": True}
     else:
@@ -1385,7 +1443,7 @@ async def update_dictionary(
         db.add(row)
     else:
         row.words = body.words
-        row.updated_at = datetime.now(timezone.utc)
+        row.updated_at = datetime.now(UTC)
     await db.commit()
     return DictionaryResponse(id=row.id, words=row.words, updated_at=row.updated_at)
 
@@ -1573,3 +1631,241 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)) -> None:
 
     await db.delete(job)
     await db.commit()
+
+
+# ── ASR Model Download ───────────────────────────────────────────────────────
+#
+# These endpoints support the consent-and-download flow for multi-gigabyte ASR
+# model weights.  The dialog itself is rendered by the UI layer; these endpoints
+# provide the data it needs: model inventory, transitive size disclosure,
+# on-disk destination, consent persistence, and real-time progress via SSE.
+#
+# No endpoint imports ``torch`` at module scope — the lightweight install
+# (no ``--extra asr``) serves the model-list and consent endpoints so a user
+# can discover what is available before installing anything.
+
+
+def _model_info_response(key: str) -> ModelInfoResponse:
+    """Build a :class:`ModelInfoResponse` from the registry."""
+    models = resolve_transitive(key)
+    total = total_transitive_size(key)
+    need_token = requires_token(key)
+
+    # Build the list with the registry key for each entry.
+    model_list: list[ModelDownloadInfo] = []
+    for m in models:
+        m_key = find_registry_key(m)
+        model_list.append(
+            ModelDownloadInfo(
+                key=m_key,
+                hf_repo=m.hf_repo,
+                size_bytes=m.size_bytes,
+                size_human=human_size(m.size_bytes),
+                requires_hf_token=m.requires_hf_token,
+                description=m.description,
+            )
+        )
+
+    return ModelInfoResponse(
+        key=key,
+        models=model_list,
+        total_size_bytes=total,
+        total_size_human=human_size(total),
+        requires_hf_token=need_token,
+        cache_directory=str(hf_cache_dir()),
+        consented=is_consented(key),
+    )
+
+
+@router.get("/models", response_model=ModelListResponse)
+async def list_models() -> ModelListResponse:
+    """Return all available ASR models with transitive sizes and consent state.
+
+    This is a cheap, read-only endpoint — no imports of the ASR stack, no
+    network calls, no file I/O beyond reading the consent file.
+    """
+    return ModelListResponse(models=[_model_info_response(key) for key in reg.ASR_MODELS])
+
+
+@router.get("/models/{key}", response_model=ModelInfoResponse)
+async def model_info(key: str) -> ModelInfoResponse:
+    """Return detailed download info for a single model, including its
+    dependencies, total transitive size, on-disk destination, and consent state.
+    """
+    if key not in reg.ASR_MODELS:
+        raise HTTPException(404, f"Unknown model key: {key!r}")
+    return _model_info_response(key)
+
+
+@router.post("/models/{key}/consent", response_model=ConsentResponse)
+async def grant_model_consent(key: str, body: ConsentRequest) -> ConsentResponse:
+    """Record or revoke the user's consent to download *key*.
+
+    Consent is persisted to ``platformdirs`` user data (not the package
+    directory) so it survives reinstalls.  The download endpoint refuses to
+    start without recorded consent.
+
+    If *body.consent* is ``False``, consent is revoked.
+    """
+    if key not in reg.ASR_MODELS:
+        raise HTTPException(404, f"Unknown model key: {key!r}")
+
+    if body.consent:
+        record_consent(key)
+    else:
+        revoke_consent(key)
+
+    return ConsentResponse(key=key, consented=body.consent)
+
+
+@router.post("/models/{key}/download", response_model=DownloadStartResponse)
+async def start_model_download(key: str) -> DownloadStartResponse:
+    """Begin downloading *key* and all its transitive dependencies.
+
+    **Preconditions:**
+    - Consent must have been recorded via ``POST /models/{key}/consent``.
+    - If any model requires an HF token, ``hf_token`` must be set in the
+      config (see ``PATCH /api/v1/config``).
+
+    **Response:** ``202 Accepted`` with download metadata.  Progress is
+    streamed via SSE at ``GET /models/{key}/download/progress``.
+    """
+    if key not in reg.ASR_MODELS:
+        raise HTTPException(404, f"Unknown model key: {key!r}")
+
+    need_token = requires_token(key)
+    hf_token = _load_hf_token()
+
+    if need_token and not hf_token:
+        raise HTTPException(
+            400,
+            f"Model '{key}' requires a Hugging Face access token but "
+            f"no HF_TOKEN is configured.  Set it via PATCH /api/v1/config "
+            f"or the web UI settings panel.",
+        )
+
+    manager = get_download_manager()
+
+    # The manager's start_download is lock-guarded and handles dedup — this
+    # route is a thin caller.
+    try:
+        ds = manager.start_download(key, token=hf_token)
+    except PermissionError as exc:
+        raise HTTPException(403, str(exc)) from exc
+
+    total = total_transitive_size(key)
+    return DownloadStartResponse(
+        key=key,
+        model_count=len(ds.models),
+        total_size_bytes=total,
+        total_size_human=human_size(total),
+    )
+
+
+@router.get("/models/{key}/download/status")
+async def get_download_status(key: str) -> dict:
+    """Poll the current status of a download (or lack thereof).
+
+    Returns ``null`` state if no download has ever been started for *key*.
+    For real-time progress use ``GET /models/{key}/download/progress`` (SSE).
+    """
+    if key not in reg.ASR_MODELS:
+        raise HTTPException(404, f"Unknown model key: {key!r}")
+
+    manager = get_download_manager()
+    ds = manager.get_status(key)
+
+    if ds is None:
+        return {"key": key, "status": "never_started"}
+
+    return {
+        "key": key,
+        "started": ds.started,
+        "finished": ds.finished,
+        "error_message": ds.error_message,
+        "models": [
+            {
+                "key": ms.key,
+                "hf_repo": ms.hf_repo,
+                "state": ms.state.value,
+                "total_bytes": ms.total_bytes,
+                "downloaded_bytes": ms.downloaded_bytes,
+                "error_message": ms.error_message,
+            }
+            for ms in ds.models
+        ],
+    }
+
+
+@router.post("/models/{key}/download/cancel")
+async def cancel_model_download(key: str) -> dict:
+    """Request cancellation of an in-flight download for *key*."""
+    if key not in reg.ASR_MODELS:
+        raise HTTPException(404, f"Unknown model key: {key!r}")
+
+    manager = get_download_manager()
+    manager.cancel_download(key)
+    return {"key": key, "status": "cancellation_requested"}
+
+
+@router.get("/models/{key}/download/progress")
+async def stream_download_progress(key: str) -> StreamingResponse:
+    """SSE stream of download progress events for *key*.
+
+    Returns an error event immediately if no download is active for *key*.
+    Otherwise streams JSON-encoded events of type ``progress``, ``error``,
+    ``cancelled``, ``cancelling``, or ``completed``.
+
+    Events are formatted as standard SSE:
+    ``data: {json}\\n\\n``
+    """
+    if key not in reg.ASR_MODELS:
+        raise HTTPException(404, f"Unknown model key: {key!r}")
+
+    manager = get_download_manager()
+    ds = manager.get_status(key)
+
+    if ds is None:
+
+        async def _error_gen():
+            payload = {"type": "error", "error": f"No download active for {key}"}
+            yield f"data: {json.dumps(payload)}\n\n"
+
+        return StreamingResponse(_error_gen(), media_type="text/event-stream")
+
+    queue = manager.subscribe_events(key)
+
+    async def _event_generator():
+        try:
+            while True:
+                # Send any queued events first.
+                try:
+                    while True:
+                        event = queue.get_nowait()
+                        yield f"data: {json.dumps(event)}\n\n"
+                except Empty:
+                    pass
+
+                # Check if the download is done.
+                ds_now = manager.get_status(key)
+                if ds_now is not None and ds_now.finished:
+                    # Drain any last events.
+                    while True:
+                        try:
+                            event = queue.get_nowait()
+                            yield f"data: {json.dumps(event)}\n\n"
+                        except Empty:
+                            break
+                    return
+
+                # Wait for the next event.
+                try:
+                    event = queue.get(timeout=1.0)
+                    yield f"data: {json.dumps(event)}\n\n"
+                except Empty:
+                    # Timeout — send a heartbeat so the connection stays alive.
+                    yield f"data: {json.dumps({'type': 'heartbeat', 'key': key})}\n\n"
+        finally:
+            manager.unsubscribe_events(key, queue)
+
+    return StreamingResponse(_event_generator(), media_type="text/event-stream")

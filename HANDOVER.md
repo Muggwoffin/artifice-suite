@@ -16,8 +16,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 |---|---|
 | `main` | **CI green** — first green run on `main` since 2026-08-05 |
 | PR #45 | **merged** — CI fixes + install-script fixes |
-| PR #46 | **open, awaiting review** — draft UI, ASR test coverage, PyPI readiness |
-| PyPI | **7/7 distributions verified publishable.** Nothing published. Account setup outstanding |
+| PR #46 | **merged** — draft UI, ASR test coverage, PyPI readiness |
+| PyPI | **7/7 distributions published at `0.1.0` on 2026-08-06:** `artifice-model-harness`, `artifice-secure-io`, `artifice-shared-ui`, `artifice-ocr`, `artifice-draft`, `artifice-graph`, `artifice-transcribe`. All seven trusted publishers active. |
 
 ### Current suite baselines — these supersede every earlier figure
 
@@ -39,10 +39,14 @@ tests skip. Check before reporting a regression that is only an install state.
 
 ### Only you can do these — they need credentials or a human decision
 
-1. **Review and merge PR #46.** CI should be green; check before merging.
+1. ~~**Review and merge PR #46.** CI should be green; check before merging.~~
+   **Done 2026-08-06.** PR #46 merged. CI was green; all draft UI, ASR test
+   coverage, and PyPI readiness items landed.
 
-2. **Create the PyPI accounts and pending publishers.**
+2. ~~**Create the PyPI accounts and pending publishers.**~~
    Full walkthrough: **`docs/PYPI_PUBLISHING.md`**. Summary below.
+   **Done 2026-08-06.** All seven trusted publishers registered and active;
+   all seven distributions published at `0.1.0`.
 
 3. **Decide the `curl | sh` question.** `install.sh:47` and `install.ps1:69`
    fetch and execute the uv installer with no checksum. `security-auditor`

@@ -32,9 +32,45 @@ A collection of local-first and open-source tools that place a user-friendly int
 The suite is a [uv](https://docs.astral.sh/uv/) workspace. No Node toolchain
 is required anywhere.
 
-### Install (primary: `uv`)
+### Install from PyPI (primary)
 
-Clone the repo and run the bootstrap script from the repo root:
+All four apps are published at `0.1.0`. Install one or more with:
+
+```bash
+uv tool install artifice-ocr        # OCR pipeline
+uv tool install artifice-draft       # copy editing
+uv tool install artifice-graph       # knowledge graph
+uv tool install artifice-transcribe  # speech-to-text
+```
+
+On Windows PowerShell:
+
+```powershell
+uv tool install artifice-ocr
+uv tool install artifice-transcribe
+```
+
+**`artifice-transcribe` installs without the speech-recognition stack.** The app
+starts, serves its interface, and handles uploads, the database, summarise and
+cleanup with no PyTorch present — the ASR dependencies sit behind an `asr` extra
+and the two import sites are guarded, so a base install is small and fast.
+Transcription itself needs the extra:
+
+```bash
+uv tool install "artifice-transcribe[asr]"
+```
+
+> **Note on size.** Installed from this index, `[asr]` resolves PyTorch from
+> default PyPI, which on Linux bundles the CUDA runtime — several gigabytes.
+> The workspace pins a CPU-only PyTorch index, but that pin is uv workspace
+> configuration and **is not carried in the published package**, so it does not
+> apply to a PyPI install. If you want a CPU-only stack, select a CPU PyTorch
+> index yourself, or install from a clone (below), where the pin applies.
+
+### Install from a clone (development)
+
+If you are working on the suite itself, clone the repo and run the
+bootstrap script from the repo root:
 
 ```bash
 git clone https://github.com/Muggwoffin/artifice-suite.git
@@ -50,20 +86,9 @@ On Windows PowerShell:
 .\scripts\install.ps1 artifice-transcribe -Cuda   # GPU stack
 ```
 
-The script installs `uv` for you if it is missing, then runs
-`uv tool install --editable` from the local workspace. No packages are
-published to any index yet — the install relies on the cloned repo.
-
-For `artifice-transcribe` the default is a **CPU-only torch stack**
-(~1.6 GB download). Pass `--cuda` (or `-Cuda` on PowerShell) to opt into
-the CUDA build (~7.2 GB).
-
-### Install (development, within the workspace)
-
-```bash
-uv sync --extra all      # all four apps + shared packages, editable
-uv run artifice-ocr      # or artifice-draft / artifice-graph / artifice-transcribe
-```
+This installs `uv` if it is missing, then runs `uv tool install --editable`
+from the local workspace — it keeps the apps linked to your clone for
+development. Uninstall with `bash scripts/uninstall.sh <app>`.
 
 ### Install (Docker)
 

@@ -112,6 +112,20 @@ class AsrModelInfo:
     description: str
     """One-line description for use in UI labels."""
 
+    depends_on: tuple[str, ...] = ()
+    """Keys of other :data:`ASR_MODELS` entries that must also be downloaded.
+
+    Example: ``"pyannote-speaker-diarization"`` depends on
+    ``"pyannote-embedding"`` — the pipeline pulls both the segmentation weights
+    (whose size is recorded in this entry's ``size_bytes``) and the speaker
+    embedding model (whose size lives on the ``"pyannote-embedding"`` entry).
+
+    The download service MUST sum a model's own ``size_bytes`` with the
+    ``size_bytes`` of every entry reachable through ``depends_on`` before
+    presenting a total to the user.  Reporting only one entry's size understates
+    the real download.
+    """
+
 
 # Sizes sourced 2026-08-04 from the Hugging Face API
 # (``https://huggingface.co/api/models/<repo>?blobs=true&expand[]=siblings``):
@@ -142,8 +156,11 @@ ASR_MODELS: Mapping[str, AsrModelInfo] = {
         hf_repo="pyannote/speaker-diarization-3.0",
         # The pipeline repo is a config file; the size reflects the
         # ``pyannote/segmentation-3.0`` weights it depends on.
+        # The pipeline also pulls ``pyannote/embedding`` for speaker
+        # embeddings — see ``depends_on``.
         size_bytes=5_905_440,
         requires_hf_token=True,
+        depends_on=("pyannote-embedding",),
         description="pyannote speaker diarization 3.0 — identifies who spoke when",
     ),
     "pyannote-embedding": AsrModelInfo(
@@ -399,9 +416,7 @@ def get_asr_model(key: str) -> AsrModelInfo:
     return ASR_MODELS[key]
 
 
-def recommendations_for_app(
-    app: str, tier: HardwareTier
-) -> Sequence[ModelRecommendation]:
+def recommendations_for_app(app: str, tier: HardwareTier) -> Sequence[ModelRecommendation]:
     """Return recommended models for *app* on the given *tier*.
 
     Args:

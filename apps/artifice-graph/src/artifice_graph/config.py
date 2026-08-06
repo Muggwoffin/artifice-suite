@@ -9,7 +9,6 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Any
 
 import yaml
 from platformdirs import user_data_dir
@@ -112,10 +111,12 @@ def load_config(config_path: str | Path | None = None) -> PipelineConfig:
         config_path = Path(config_path)
 
     config_file = config_path if config_path.is_file() else None
-    app_root = (config_file.parent if config_file else Path(__file__).parent.parent.parent).resolve()
+    app_root = (
+        config_file.parent if config_file else Path(__file__).parent.parent.parent
+    ).resolve()
 
     if config_path.exists():
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             raw = yaml.safe_load(f) or {}
         config = PipelineConfig.model_validate(raw)
     else:
@@ -141,6 +142,7 @@ def load_config(config_path: str | Path | None = None) -> PipelineConfig:
 
 
 # -- path resolution ---------------------------------------------------------
+
 
 def resolve_config_paths(config: PipelineConfig, app_root: Path) -> None:
     """Resolve every relative-path config field against *app_root* in-place.
@@ -188,9 +190,7 @@ def _resolve_user_data_dir() -> Path:
 
     if _LEGACY_CONFIG_DIR.exists() and not new_dir.exists():
         try:
-            logger.info(
-                "Migrating user data from %s to %s", _LEGACY_CONFIG_DIR, new_dir
-            )
+            logger.info("Migrating user data from %s to %s", _LEGACY_CONFIG_DIR, new_dir)
             new_dir.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(_LEGACY_CONFIG_DIR), str(new_dir))
             # Re-apply access restriction on the migrated config file
@@ -221,8 +221,26 @@ def _resolve_user_data_dir() -> Path:
     return new_dir
 
 
-_USER_DATA_DIR = _resolve_user_data_dir()
-_USER_CONFIG_PATH = _USER_DATA_DIR / "config.json"
+_USER_DATA_DIR: Path | None = None  # Lazy — resolved via _get_user_data_dir()
+
+
+def _get_user_data_dir() -> Path:
+    """Return the per-user data directory, resolving on first call.
+
+    This is deliberately NOT resolved at import time — the migration
+    from ``~/.callosip`` involves ``shutil.move()``, which must never
+    run as a module-import side effect.  Resolving on first actual use
+    keeps the migration explicit, testable, and safe.
+    """
+    global _USER_DATA_DIR
+    if _USER_DATA_DIR is None:
+        _USER_DATA_DIR = _resolve_user_data_dir()
+    return _USER_DATA_DIR
+
+
+def _get_user_config_path() -> Path:
+    """Return the per-user ``config.json`` path."""
+    return _get_user_data_dir() / "config.json"
 
 
 def _merge_user_config(config: PipelineConfig) -> None:
@@ -232,22 +250,28 @@ def _merge_user_config(config: PipelineConfig) -> None:
     Only keys that exist on the Pydantic config model are considered;
     unknown keys in the user file are silently ignored.
     """
-    if not _USER_CONFIG_PATH.exists():
+    user_cfg = _get_user_config_path()
+    if not user_cfg.exists():
         return
 
     try:
-        with open(_USER_CONFIG_PATH, "r", encoding="utf-8") as f:
+        with open(user_cfg, encoding="utf-8") as f:
             user_data = json.load(f)
     except Exception:
-        logger.debug("Failed to read user config at %s", _USER_CONFIG_PATH)
+        logger.debug("Failed to read user config at %s", user_cfg)
         return
 
     if not isinstance(user_data, dict):
         return
 
     _section_names = (
-        "llm", "embedding", "ingestion", "extraction",
-        "entity_resolution", "export", "storage",
+        "llm",
+        "embedding",
+        "ingestion",
+        "extraction",
+        "entity_resolution",
+        "export",
+        "storage",
     )
     applied = False
     for section in _section_names:
@@ -263,7 +287,7 @@ def _merge_user_config(config: PipelineConfig) -> None:
                 applied = True
 
     if applied:
-        logger.debug("Applied user config from %s", _USER_CONFIG_PATH)
+        logger.debug("Applied user config from %s", user_cfg)
 
 
 # -- environment variable overrides -------------------------------------------

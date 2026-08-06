@@ -4,21 +4,18 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
+from rich import box
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
-from rich import box
 
-from artifice_graph.config import _USER_CONFIG_PATH, load_config, resolve_config_paths
+from artifice_graph.config import _get_user_config_path, load_config, resolve_config_paths
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
 from artifice_graph.entity_resolution.resolver import EntityResolver
 from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityResolver
@@ -49,14 +46,15 @@ def main(
     ),
 ):
     if data_dir:
-        print(str(_USER_CONFIG_PATH.parent.resolve()))
+        print(str(_get_user_config_path().parent.resolve()))
         raise typer.Exit()
 
 
 @app.command("data-dir")
 def data_dir():
     """Print the absolute path of the user-data directory and exit."""
-    print(str(_USER_CONFIG_PATH.parent.resolve()))
+    print(str(_get_user_config_path().parent.resolve()))
+
 
 _APP_ROOT = Path(__file__).parent.parent.parent.resolve()
 
@@ -84,15 +82,15 @@ def _safe_save_models(
         console.print(
             f"  [yellow]Refusing to overwrite non-empty {filename} with empty data.[/yellow]"
         )
-        console.print(
-            f"  [dim]Re-run with --force to overwrite anyway.[/dim]"
-        )
+        console.print("  [dim]Re-run with --force to overwrite anyway.[/dim]")
         return False
     store.save_models(filename, models)
     return True
 
 
-def _load_pipeline_data(store: FileStore) -> tuple[list[Entity], list[Relationship], list[Document], list[TextChunk]]:
+def _load_pipeline_data(
+    store: FileStore,
+) -> tuple[list[Entity], list[Relationship], list[Document], list[TextChunk]]:
     entities = [Entity.model_validate(d) for d in store.load("entities.json")]
     relationships = [Relationship.model_validate(d) for d in store.load("relationships.json")]
     documents = [Document.model_validate(d) for d in store.load("documents.json")]
@@ -105,6 +103,7 @@ def _build_resolver(
     use_semantic: bool | None = None,
 ) -> EntityResolver | SemanticEntityResolver:
     from artifice_graph.config import PipelineConfig
+
     cfg: PipelineConfig = config
     should_use = use_semantic if use_semantic is not None else cfg.entity_resolution.use_semantic
     if should_use:
@@ -114,6 +113,7 @@ def _build_resolver(
 
 
 # ── Shared stage runner with error isolation ─────────────────────────────
+
 
 def _run_stage(stage: int, total: int, label: str, fn) -> bool:
     """Run a pipeline stage with error isolation. Returns True on success."""
@@ -130,6 +130,7 @@ def _run_stage(stage: int, total: int, label: str, fn) -> bool:
 
 
 # ── Plain functions (real typed defaults, callable without Typer) ──────
+
 
 def _run_ingest(
     input_dir: str = "data/input_ocr",
@@ -164,19 +165,31 @@ def _run_ingest(
             console.print("[yellow]No new or changed files to process.[/yellow]")
             return
         new_hashes = {d.id: chunker.file_content_hash(Path(d.filepath)) for d in documents}
-        store.save("content_hashes.json", [{"id": k, "content_hash": v} for k, v in new_hashes.items()])
-        console.print(f"[bold green]Incremental: {len(documents)} new/changed docs -> {len(chunks)} chunks[/bold green]")
+        store.save(
+            "content_hashes.json", [{"id": k, "content_hash": v} for k, v in new_hashes.items()]
+        )
+        console.print(
+            f"[bold green]Incremental: {len(documents)} new/changed docs -> {len(chunks)} chunks[/bold green]"
+        )
     else:
-        with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as progress:
+        with Progress(
+            SpinnerColumn(), TextColumn("{task.description}"), console=console
+        ) as progress:
             task = progress.add_task("Discovering files…", total=None)
             documents, chunks = chunker.ingest_all()
-            progress.update(task, description=f"Found {len(documents)} documents, {len(chunks)} chunks")
+            progress.update(
+                task, description=f"Found {len(documents)} documents, {len(chunks)} chunks"
+            )
 
     if not documents:
         console.print("[yellow]No files found. Add files to the input directory.[/yellow]")
         raise typer.Exit(1)
 
-    console.print(Panel(f"[bold green]Ingested {len(documents)} documents -> {len(chunks)} chunks[/bold green]"))
+    console.print(
+        Panel(
+            f"[bold green]Ingested {len(documents)} documents -> {len(chunks)} chunks[/bold green]"
+        )
+    )
 
     store.save_models("documents.json", documents)
     store.save_models("chunks.json", chunks)
@@ -236,7 +249,9 @@ def _run_extract(
 
     _safe_save_models(store, "entities.json", all_entities, force=force)
     _safe_save_models(store, "relationships.json", all_relationships, force=force)
-    console.print(f"[dim]Saved to {config.export.output_dir}/entities.json, relationships.json[/dim]")
+    console.print(
+        f"[dim]Saved to {config.export.output_dir}/entities.json, relationships.json[/dim]"
+    )
 
 
 def _run_resolve_entities(
@@ -316,9 +331,7 @@ def _run_build_vault(
     obsidian = ObsidianExporter(resolver, config.export)
     vault_path = obsidian.build_vault(merged_entities, updated_relationships, documents, chunks)
 
-    console.print(
-        Panel(f"[bold cyan]Obsidian vault built at: {vault_path}[/bold cyan]")
-    )
+    console.print(Panel(f"[bold cyan]Obsidian vault built at: {vault_path}[/bold cyan]"))
 
 
 def _run_build_graph(
@@ -355,6 +368,7 @@ def _run_build_graph(
 
 # ── Commands (thin wrappers, forward Typer-resolved values) ────────────
 
+
 @app.command()
 def ingest(
     input_dir: str = typer.Argument("data/input_ocr", help="Directory containing OCR text files"),
@@ -384,7 +398,9 @@ def extract(
     base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
     api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
     output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
-    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
+    force: bool = typer.Option(
+        False, "--force", help="Overwrite existing output even if new data is empty"
+    ),
 ) -> None:
     """Extract entities and relationships from ingested chunks using local LLM."""
     _run_extract(
@@ -399,12 +415,16 @@ def extract(
 
 @app.command("resolve-entities")
 def resolve_entities(
-    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
+    semantic: bool = typer.Option(
+        None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"
+    ),
     model: str = typer.Option(None, "--model", help="LLM model name"),
     base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
     api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
     output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
-    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
+    force: bool = typer.Option(
+        False, "--force", help="Overwrite existing output even if new data is empty"
+    ),
 ) -> None:
     """Deduplicate and normalize extracted entities."""
     _run_resolve_entities(
@@ -419,7 +439,9 @@ def resolve_entities(
 
 @app.command("build-vault")
 def build_vault(
-    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
+    semantic: bool = typer.Option(
+        None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"
+    ),
     model: str = typer.Option(None, "--model", help="LLM model name"),
     base_url: str = typer.Option(None, "--base-url", help="LLM API base URL"),
     api_key: str = typer.Option(None, "--api-key", help="API key for cloud providers"),
@@ -437,9 +459,13 @@ def build_vault(
 
 @app.command("build-graph")
 def build_graph(
-    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
+    semantic: bool = typer.Option(
+        None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"
+    ),
     output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
-    format: list[str] = typer.Option(None, "--format", help="Export format(s): graphml, gexf, json, csv, cypher"),
+    format: list[str] = typer.Option(
+        None, "--format", help="Export format(s): graphml, gexf, json, csv, cypher"
+    ),
 ) -> None:
     """Export the knowledge graph as GraphML, GEXF, JSON, CSV, and/or Cypher."""
     _run_build_graph(
@@ -454,11 +480,17 @@ def run_all(
     input_dir: str = typer.Argument("data/input_ocr", help="Directory containing OCR text files"),
     model: str = typer.Option("gemma2:27b", help="LLM model name"),
     base_url: str = typer.Option("http://localhost:11434", help="LLM API base URL"),
-    semantic: bool = typer.Option(None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"),
+    semantic: bool = typer.Option(
+        None, "--semantic/--no-semantic", help="Use embedding-based semantic dedup"
+    ),
     output_dir: str = typer.Option(None, "--output-dir", help="Output directory"),
     incremental: bool = typer.Option(False, "--incremental", help="Only process new/changed files"),
-    force: bool = typer.Option(False, "--force", help="Overwrite existing output even if new data is empty"),
-    format: list[str] = typer.Option(None, "--format", help="Graph export format(s): graphml, gexf, json, csv, cypher"),
+    force: bool = typer.Option(
+        False, "--force", help="Overwrite existing output even if new data is empty"
+    ),
+    format: list[str] = typer.Option(
+        None, "--format", help="Graph export format(s): graphml, gexf, json, csv, cypher"
+    ),
 ) -> None:
     """Run the full pipeline: ingest -> extract -> resolve -> build vault + graph."""
     console.print(Panel("[bold]Running full pipeline[/bold]", title="graph-pipeline"))
@@ -513,11 +545,13 @@ def run_all(
             format=format,
         )
 
-    for ok in [_run_stage(1, stages_total, "Ingesting", _stage_ingest),
-               _run_stage(2, stages_total, "Extracting via LLM", _stage_extract),
-               _run_stage(3, stages_total, "Resolving entities", _stage_resolve),
-               _run_stage(4, stages_total, "Building vault", _stage_vault),
-               _run_stage(5, stages_total, "Building graph", _stage_graph)]:
+    for ok in [
+        _run_stage(1, stages_total, "Ingesting", _stage_ingest),
+        _run_stage(2, stages_total, "Extracting via LLM", _stage_extract),
+        _run_stage(3, stages_total, "Resolving entities", _stage_resolve),
+        _run_stage(4, stages_total, "Building vault", _stage_vault),
+        _run_stage(5, stages_total, "Building graph", _stage_graph),
+    ]:
         if ok:
             stages_ok += 1
 
@@ -525,7 +559,9 @@ def run_all(
         console.print(Panel("[bold green]Pipeline complete![/bold green]", title="Done"))
     else:
         console.print(
-            Panel(f"[bold yellow]{stages_ok}/{stages_total} stages completed successfully[/bold yellow]")
+            Panel(
+                f"[bold yellow]{stages_ok}/{stages_total} stages completed successfully[/bold yellow]"
+            )
         )
         raise typer.Exit(1)
 
@@ -549,15 +585,26 @@ def inspect(
 
     table.add_row("Documents", str(len(documents)))
     table.add_row("Chunks", str(len(chunks)))
-    table.add_row("Entities (raw)", str(store.load("entities_raw.json").__len__() if store.load("entities_raw.json") else 0))
+    table.add_row(
+        "Entities (raw)",
+        str(store.load("entities_raw.json").__len__() if store.load("entities_raw.json") else 0),
+    )
     table.add_row("Entities (canonical)", str(len(entities)))
     table.add_row("Relationships", str(len(relationships)))
-    table.add_row("Files in input dir", str(sum(1 for _ in Path(config.ingestion.input_dir).rglob("*") if _.is_file()) if Path(config.ingestion.input_dir).exists() else 0))
+    table.add_row(
+        "Files in input dir",
+        str(
+            sum(1 for _ in Path(config.ingestion.input_dir).rglob("*") if _.is_file())
+            if Path(config.ingestion.input_dir).exists()
+            else 0
+        ),
+    )
 
     console.print(table)
 
     if entities:
         from collections import Counter
+
         type_counts = Counter(e.entity_type.value for e in entities)
         type_table = Table(title="Entity Type Breakdown", box=box.SIMPLE)
         type_table.add_column("Type", style="cyan")
@@ -568,6 +615,7 @@ def inspect(
 
     if relationships:
         from collections import Counter
+
         rel_counts = Counter(r.relationship_type for r in relationships)
         rel_table = Table(title="Relationship Type Breakdown (top 10)", box=box.SIMPLE)
         rel_table.add_column("Type", style="cyan")
@@ -577,11 +625,14 @@ def inspect(
         console.print(rel_table)
 
     if not entities and not documents:
-        console.print("[yellow]No pipeline data found. Run 'graph-pipeline run-all' or 'graph-pipeline demo' first.[/yellow]")
+        console.print(
+            "[yellow]No pipeline data found. Run 'graph-pipeline run-all' or 'graph-pipeline demo' first.[/yellow]"
+        )
 
     if entities:
         try:
             import networkx as nx
+
             G = nx.DiGraph()
             for e in entities:
                 G.add_node(e.id, label=e.name, type=e.entity_type.value)
@@ -600,7 +651,9 @@ def inspect(
                     label = G.nodes[node_id].get("label", node_id)
                     degree_table.add_row(label, str(deg))
                 console.print(degree_table)
-                console.print(f"[dim]Connected components: {len(comps)}, Graph density: {nx.density(G):.4f}[/dim]")
+                console.print(
+                    f"[dim]Connected components: {len(comps)}, Graph density: {nx.density(G):.4f}[/dim]"
+                )
         except Exception:
             pass
 
@@ -645,66 +698,144 @@ def demo() -> None:
 
     synthetic_result = ExtractionResult(
         entities=[
-            {"name": "Klemens von Metternich", "entity_type": "Person",
-             "aliases": ["Metternich", "Prince Metternich"],
-             "summary": "Austrian foreign minister and central figure at the Congress of Vienna."},
-            {"name": "Alexander I", "entity_type": "Person",
-             "aliases": ["Tsar Alexander I"],
-             "summary": "Tsar of Russia who sought expanded influence at the Congress of Vienna."},
-            {"name": "Karl vom Stein", "entity_type": "Person",
-             "aliases": ["Baron Stein", "Baron vom Stein"],
-             "summary": "Prussian statesman who participated in early Congress discussions but died before its conclusion."},
-            {"name": "Congress of Vienna", "entity_type": "Event",
-             "aliases": ["The Congress"],
-             "summary": "Diplomatic conference held in 1814 to reorganize Europe after the Napoleonic Wars."},
-            {"name": "Austria", "entity_type": "Location",
-             "aliases": ["Austrian Empire"],
-             "summary": "Major European power and host nation of the Congress of Vienna."},
-            {"name": "Prussia", "entity_type": "Location", "aliases": [],
-             "summary": "German state that participated in the Congress of Vienna."},
-            {"name": "Russia", "entity_type": "Location", "aliases": [],
-             "summary": "Major European power represented at the Congress of Vienna."},
-            {"name": "Great Britain", "entity_type": "Location", "aliases": [],
-             "summary": "Major European power represented at the Congress of Vienna."},
-            {"name": "Napoleonic Wars", "entity_type": "Event", "aliases": [],
-             "summary": "Series of wars fought between France and various European coalitions that preceded the Congress of Vienna."},
-            {"name": "Concert of Europe", "entity_type": "Concept", "aliases": [],
-             "summary": "System of balance-of-power diplomacy established after the Congress of Vienna."},
-            {"name": "Treaty of Paris", "entity_type": "Event", "aliases": [],
-             "summary": "Peace treaty signed on May 30, 1814, preceding the Congress of Vienna."},
-            {"name": "Nationalism", "entity_type": "Concept", "aliases": [],
-             "summary": "Political ideology championed by liberal movements and opposed by Metternich."},
+            {
+                "name": "Klemens von Metternich",
+                "entity_type": "Person",
+                "aliases": ["Metternich", "Prince Metternich"],
+                "summary": "Austrian foreign minister and central figure at the Congress of Vienna.",
+            },
+            {
+                "name": "Alexander I",
+                "entity_type": "Person",
+                "aliases": ["Tsar Alexander I"],
+                "summary": "Tsar of Russia who sought expanded influence at the Congress of Vienna.",
+            },
+            {
+                "name": "Karl vom Stein",
+                "entity_type": "Person",
+                "aliases": ["Baron Stein", "Baron vom Stein"],
+                "summary": "Prussian statesman who participated in early Congress discussions but died before its conclusion.",
+            },
+            {
+                "name": "Congress of Vienna",
+                "entity_type": "Event",
+                "aliases": ["The Congress"],
+                "summary": "Diplomatic conference held in 1814 to reorganize Europe after the Napoleonic Wars.",
+            },
+            {
+                "name": "Austria",
+                "entity_type": "Location",
+                "aliases": ["Austrian Empire"],
+                "summary": "Major European power and host nation of the Congress of Vienna.",
+            },
+            {
+                "name": "Prussia",
+                "entity_type": "Location",
+                "aliases": [],
+                "summary": "German state that participated in the Congress of Vienna.",
+            },
+            {
+                "name": "Russia",
+                "entity_type": "Location",
+                "aliases": [],
+                "summary": "Major European power represented at the Congress of Vienna.",
+            },
+            {
+                "name": "Great Britain",
+                "entity_type": "Location",
+                "aliases": [],
+                "summary": "Major European power represented at the Congress of Vienna.",
+            },
+            {
+                "name": "Napoleonic Wars",
+                "entity_type": "Event",
+                "aliases": [],
+                "summary": "Series of wars fought between France and various European coalitions that preceded the Congress of Vienna.",
+            },
+            {
+                "name": "Concert of Europe",
+                "entity_type": "Concept",
+                "aliases": [],
+                "summary": "System of balance-of-power diplomacy established after the Congress of Vienna.",
+            },
+            {
+                "name": "Treaty of Paris",
+                "entity_type": "Event",
+                "aliases": [],
+                "summary": "Peace treaty signed on May 30, 1814, preceding the Congress of Vienna.",
+            },
+            {
+                "name": "Nationalism",
+                "entity_type": "Concept",
+                "aliases": [],
+                "summary": "Political ideology championed by liberal movements and opposed by Metternich.",
+            },
         ],
         relationships=[
-            {"source_entity": "Klemens von Metternich", "target_entity": "Congress of Vienna",
-             "relationship_type": "participated_in", "time_frame": "1814-1815",
-             "evidence_quote": "Prince Klemens von Metternich played a central role in the negotiations.",
-             "confidence_score": 0.95},
-            {"source_entity": "Alexander I", "target_entity": "Congress of Vienna",
-             "relationship_type": "participated_in", "time_frame": "1814",
-             "evidence_quote": "Tsar Alexander I of Russia sought to expand Russian influence.",
-             "confidence_score": 0.95},
-            {"source_entity": "Alexander I", "target_entity": "Russia",
-             "relationship_type": "ruled", "time_frame": "1801-1825",
-             "evidence_quote": "Tsar Alexander I of Russia", "confidence_score": 0.95},
-            {"source_entity": "Karl vom Stein", "target_entity": "Congress of Vienna",
-             "relationship_type": "participated_in", "time_frame": "1814",
-             "evidence_quote": "participated in early discussions but died before the Congress concluded.",
-             "confidence_score": 0.9},
-            {"source_entity": "Klemens von Metternich", "target_entity": "Austria",
-             "relationship_type": "served_as_foreign_minister_of", "time_frame": "1809-1848",
-             "evidence_quote": "the Austrian foreign minister", "confidence_score": 0.95},
-            {"source_entity": "Karl vom Stein", "target_entity": "Prussia",
-             "relationship_type": "was_statesman_of", "time_frame": "",
-             "evidence_quote": "a Prussian statesman", "confidence_score": 0.9},
-            {"source_entity": "Congress of Vienna", "target_entity": "Concert of Europe",
-             "relationship_type": "established", "time_frame": "1815",
-             "evidence_quote": "The resulting Concert of Europe established a balance of power",
-             "confidence_score": 0.95},
-            {"source_entity": "Concert of Europe", "target_entity": "Nationalism",
-             "relationship_type": "opposed", "time_frame": "1815-1914",
-             "evidence_quote": "championing conservatism against nationalist and liberal movements",
-             "confidence_score": 0.85},
+            {
+                "source_entity": "Klemens von Metternich",
+                "target_entity": "Congress of Vienna",
+                "relationship_type": "participated_in",
+                "time_frame": "1814-1815",
+                "evidence_quote": "Prince Klemens von Metternich played a central role in the negotiations.",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Alexander I",
+                "target_entity": "Congress of Vienna",
+                "relationship_type": "participated_in",
+                "time_frame": "1814",
+                "evidence_quote": "Tsar Alexander I of Russia sought to expand Russian influence.",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Alexander I",
+                "target_entity": "Russia",
+                "relationship_type": "ruled",
+                "time_frame": "1801-1825",
+                "evidence_quote": "Tsar Alexander I of Russia",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Karl vom Stein",
+                "target_entity": "Congress of Vienna",
+                "relationship_type": "participated_in",
+                "time_frame": "1814",
+                "evidence_quote": "participated in early discussions but died before the Congress concluded.",
+                "confidence_score": 0.9,
+            },
+            {
+                "source_entity": "Klemens von Metternich",
+                "target_entity": "Austria",
+                "relationship_type": "served_as_foreign_minister_of",
+                "time_frame": "1809-1848",
+                "evidence_quote": "the Austrian foreign minister",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Karl vom Stein",
+                "target_entity": "Prussia",
+                "relationship_type": "was_statesman_of",
+                "time_frame": "",
+                "evidence_quote": "a Prussian statesman",
+                "confidence_score": 0.9,
+            },
+            {
+                "source_entity": "Congress of Vienna",
+                "target_entity": "Concert of Europe",
+                "relationship_type": "established",
+                "time_frame": "1815",
+                "evidence_quote": "The resulting Concert of Europe established a balance of power",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Concert of Europe",
+                "target_entity": "Nationalism",
+                "relationship_type": "opposed",
+                "time_frame": "1815-1914",
+                "evidence_quote": "championing conservatism against nationalist and liberal movements",
+                "confidence_score": 0.85,
+            },
         ],
     )
 
@@ -739,7 +870,9 @@ def demo() -> None:
     vault_path = obsidian.build_vault(merged_entities, updated_rels, documents, [chunk])
 
     graph_exporter = GraphExporter(config.export)
-    graph_results = graph_exporter.export(merged_entities, updated_rels, formats=["graphml", "gexf", "json", "csv"])
+    graph_results = graph_exporter.export(
+        merged_entities, updated_rels, formats=["graphml", "gexf", "json", "csv"]
+    )
 
     console.print(Panel("[bold green]Demo complete![/bold green]", title="Done"))
     console.print(f"  Entities: {len(merged_entities)}")

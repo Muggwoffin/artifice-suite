@@ -13,47 +13,36 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
-
 from artifice_graph.config import (
     ExtractionConfig,
     PipelineConfig,
     _apply_env_overrides,
     _merge_user_config,
-    _USER_CONFIG_PATH,
     load_config,
     resolve_config_paths,
 )
-from artifice_graph.extraction.schemas import ExtractionResult
 from artifice_graph.extraction.extractor import EntityExtractor
-from artifice_graph.extraction.llm_client import LLMClient
+from artifice_graph.extraction.schemas import ExtractionResult
 from artifice_graph.models.document import TextChunk
 from artifice_graph.models.entity import Entity, EntityType
 from artifice_graph.models.relationship import Relationship
 from artifice_graph.storage.file_store import FileStore
-
 from model_harness.contract import (
-    EndpointPolicy,
-    ModelConnectorConfig,
-    ModelProvider,
     ProviderCapabilities,
     RawCompletion,
     StructuredOutputMode,
     StructuredRequest,
 )
 
-
 # ---------------------------------------------------------------------------
 # Bug 1a – ExtractionResult carries domain Entity / Relationship types
 # ---------------------------------------------------------------------------
 
-class TestBug1aExtractionResultTypes:
 
+class TestBug1aExtractionResultTypes:
     def test_extraction_result_accepts_entity_objects(self) -> None:
         """ExtractionResult must accept Entity objects (the domain type)."""
         entity = Entity(
@@ -79,7 +68,13 @@ class TestBug1aExtractionResultTypes:
     def test_extraction_result_accepts_raw_dicts(self) -> None:
         """Raw LLM dicts (as passed by _validate_or_retry) still work."""
         raw_entities = [{"name": "Vienna", "entity_type": "Location"}]
-        raw_rels = [{"source_entity": "Vienna", "target_entity": "Austria", "relationship_type": "located_in"}]
+        raw_rels = [
+            {
+                "source_entity": "Vienna",
+                "target_entity": "Austria",
+                "relationship_type": "located_in",
+            }
+        ]
         result = ExtractionResult(entities=raw_entities, relationships=raw_rels)
         assert len(result.entities) == 1
         assert isinstance(result.entities[0], Entity)
@@ -97,6 +92,7 @@ class TestBug1aExtractionResultTypes:
 # ---------------------------------------------------------------------------
 # Bug 1b – extract_batch must not silently convert total failure into success
 # ---------------------------------------------------------------------------
+
 
 class _FailingProvider:
     """A ModelProvider that raises on every ``complete`` call."""
@@ -116,7 +112,6 @@ class _PassEndpointPolicy:
 
 
 class TestBug1bLoudFailure:
-
     def test_all_chunks_fail_raises(self) -> None:
         """When every chunk raises, extract_batch must raise RuntimeError."""
         extractor = EntityExtractor(
@@ -124,7 +119,11 @@ class TestBug1bLoudFailure:
             provider=_FailingProvider(),
             endpoint_policy=_PassEndpointPolicy(),
         )
-        chunks = [TextChunk(id="c1", text="foo", document_id="d1", chunk_index=0, start_char=0, end_char=3)]
+        chunks = [
+            TextChunk(
+                id="c1", text="foo", document_id="d1", chunk_index=0, start_char=0, end_char=3
+            )
+        ]
 
         with pytest.raises(RuntimeError, match="All 1 chunks failed"):
             extractor.extract_batch(chunks)
@@ -154,8 +153,8 @@ class TestBug1bLoudFailure:
 # Bug 1c – Silent empty-overwrite protection
 # ---------------------------------------------------------------------------
 
-class TestBug1cEmptyOverwriteProtection:
 
+class TestBug1cEmptyOverwriteProtection:
     def test_safe_save_refuses_empty_overwrite(self, tmp_path: Path) -> None:
         """_safe_save_models refuses to overwrite non-empty file with empty data."""
         from artifice_graph.cli import _safe_save_models
@@ -207,14 +206,16 @@ class TestBug1cEmptyOverwriteProtection:
 # Bug 2 – load_config() can read user-saved configuration
 # ---------------------------------------------------------------------------
 
-class TestBug2LoadConfigWithUserConfig:
 
-    def test_user_config_overrides_defaults(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+class TestBug2LoadConfigWithUserConfig:
+    def test_user_config_overrides_defaults(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """load_config merges user-saved config.json on top of config.yaml."""
         user_cfg_path = tmp_path / "user_config.json"
         monkeypatch.setattr(
-            "artifice_graph.config._USER_CONFIG_PATH",
-            user_cfg_path,
+            "artifice_graph.config._get_user_config_path",
+            lambda: user_cfg_path,
         )
         user_cfg_path.parent.mkdir(parents=True, exist_ok=True)
         user_data = {
@@ -234,10 +235,12 @@ class TestBug2LoadConfigWithUserConfig:
         # Fields NOT in user config keep their config.yaml / default values
         assert config.llm.temperature == 0.1  # from config.yaml default
 
-    def test_load_config_works_without_user_config(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_load_config_works_without_user_config(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """load_config works when no user config file exists."""
         nonexistent = tmp_path / "nonexistent.json"
-        monkeypatch.setattr("artifice_graph.config._USER_CONFIG_PATH", nonexistent)
+        monkeypatch.setattr("artifice_graph.config._get_user_config_path", lambda: nonexistent)
 
         cfg = Path(__file__).parent.parent / "config.yaml"
 
@@ -245,10 +248,12 @@ class TestBug2LoadConfigWithUserConfig:
         # Should return valid config from config.yaml
         assert config.llm.model == "gemma2:27b"
 
-    def test_user_config_ignores_unknown_keys(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_user_config_ignores_unknown_keys(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Keys not in the config model are silently ignored."""
         user_cfg_path = tmp_path / "user_config.json"
-        monkeypatch.setattr("artifice_graph.config._USER_CONFIG_PATH", user_cfg_path)
+        monkeypatch.setattr("artifice_graph.config._get_user_config_path", lambda: user_cfg_path)
         user_cfg_path.parent.mkdir(parents=True, exist_ok=True)
         user_data = {
             "llm": {"model": "gemma4:12b", "nonexistent_field": "ignored"},
@@ -260,10 +265,12 @@ class TestBug2LoadConfigWithUserConfig:
         config = load_config(cfg)
         assert config.llm.model == "gemma4:12b"
 
-    def test_merge_user_config_does_nothing_for_no_file(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_merge_user_config_does_nothing_for_no_file(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """_merge_user_config is a no-op when the file doesn't exist."""
         nonexistent = tmp_path / "nonexistent.json"
-        monkeypatch.setattr("artifice_graph.config._USER_CONFIG_PATH", nonexistent)
+        monkeypatch.setattr("artifice_graph.config._get_user_config_path", lambda: nonexistent)
 
         config = PipelineConfig()
         original_model = config.llm.model
@@ -275,8 +282,8 @@ class TestBug2LoadConfigWithUserConfig:
 # Bug 3 – Relative paths resolve against the app root regardless of cwd
 # ---------------------------------------------------------------------------
 
-class TestBug3RelativePathResolution:
 
+class TestBug3RelativePathResolution:
     def test_resolve_config_paths_turns_relative_into_absolute(self, tmp_path: Path) -> None:
         """All relative-path fields become absolute after resolution."""
         config = PipelineConfig()
@@ -299,8 +306,12 @@ class TestBug3RelativePathResolution:
         assert str((app_root / "data/cache").resolve()) == config.extraction.cache_dir
         assert str((app_root / "data/output").resolve()) == config.export.output_dir
         assert str((app_root / "data/vault").resolve()) == config.export.obsidian_vault_dir
-        assert str((app_root / "data/aliases.yaml").resolve()) == config.entity_resolution.aliases_file
-        assert str((app_root / "data/output/entities.json").resolve()) == config.storage.entities_file
+        assert (
+            str((app_root / "data/aliases.yaml").resolve()) == config.entity_resolution.aliases_file
+        )
+        assert (
+            str((app_root / "data/output/entities.json").resolve()) == config.storage.entities_file
+        )
 
     def test_absolute_paths_are_preserved(self, tmp_path: Path) -> None:
         """An already-absolute path is left untouched."""
@@ -340,7 +351,9 @@ class TestBug3RelativePathResolution:
         assert output_path == app_root / "data" / "output"
         assert Path(config.ingestion.input_dir) == app_root / "data" / "input_ocr"
 
-    def test_paths_are_resolved_independent_of_cwd(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_paths_are_resolved_independent_of_cwd(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Changing working directory does NOT change resolved paths."""
         cfg = Path(__file__).parent.parent / "config.yaml"
         app_root = cfg.parent.resolve()
@@ -360,8 +373,8 @@ class TestBug3RelativePathResolution:
 # Bug 4 – Upload validation follows ingestion config
 # ---------------------------------------------------------------------------
 
-class TestBug4UploadValidation:
 
+class TestBug4UploadValidation:
     class _FakeUpload:
         def __init__(self, filename: str, payload: bytes) -> None:
             self.filename = filename
@@ -372,14 +385,16 @@ class TestBug4UploadValidation:
             if self._pos >= len(self._payload):
                 return b""
             if size < 0:
-                result = self._payload[self._pos:]
+                result = self._payload[self._pos :]
                 self._pos = len(self._payload)
                 return result
-            result = self._payload[self._pos:self._pos + size]
+            result = self._payload[self._pos : self._pos + size]
             self._pos += size
             return result
 
-    def test_upload_accepts_configured_extensions_and_builtin_handlers(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_upload_accepts_configured_extensions_and_builtin_handlers(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """api_upload_files accepts configured extensions plus PDF/HTML handlers."""
         from artifice_graph.config import PipelineConfig
         from artifice_graph.web import server as server_mod
@@ -413,12 +428,14 @@ class TestBug4UploadValidation:
 # Integration: CLI-level regression for the demo command (sanity check)
 # ---------------------------------------------------------------------------
 
-class TestDemoRegression:
 
-    def test_demo_with_resolved_paths(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+class TestDemoRegression:
+    def test_demo_with_resolved_paths(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """demo command works when cwd is not the app root, and output goes to tmp."""
-        import artifice_graph.config as cfg_mod
         import artifice_graph.cli as cli_mod
+        import artifice_graph.config as cfg_mod
 
         orig_load = cfg_mod.load_config
 
@@ -436,6 +453,7 @@ class TestDemoRegression:
         monkeypatch.chdir(tmp_path)  # different cwd from app root
 
         from artifice_graph.cli import demo
+
         demo()
 
         output = tmp_path / "data" / "output"
@@ -447,11 +465,12 @@ class TestDemoRegression:
 # Bug 1 — Plain function defaults (OptionInfo sentinel regression)
 # ---------------------------------------------------------------------------
 
-class TestBug1PlainFunctionDefaults:
 
+class TestBug1PlainFunctionDefaults:
     def test_run_ingest_has_real_defaults(self) -> None:
         """Plain function params carry real Python defaults, not OptionInfo sentinels."""
         import inspect
+
         from artifice_graph.cli import _run_ingest
 
         sig = inspect.signature(_run_ingest)
@@ -463,6 +482,7 @@ class TestBug1PlainFunctionDefaults:
     def test_run_extract_has_real_defaults(self) -> None:
         """Plain function params carry real Python defaults, not OptionInfo sentinels."""
         import inspect
+
         from artifice_graph.cli import _run_extract
 
         sig = inspect.signature(_run_extract)
@@ -472,14 +492,23 @@ class TestBug1PlainFunctionDefaults:
 
     def test_plain_functions_are_separate_from_commands(self) -> None:
         """Plain functions exist alongside @app.command() wrappers and are importable."""
-        from artifice_graph.cli import (
-            _run_ingest, _run_extract, _run_resolve_entities,
-            _run_build_vault, _run_build_graph,
-        )
         import inspect
 
-        for fn in [_run_ingest, _run_extract, _run_resolve_entities,
-                    _run_build_vault, _run_build_graph]:
+        from artifice_graph.cli import (
+            _run_build_graph,
+            _run_build_vault,
+            _run_extract,
+            _run_ingest,
+            _run_resolve_entities,
+        )
+
+        for fn in [
+            _run_ingest,
+            _run_extract,
+            _run_resolve_entities,
+            _run_build_vault,
+            _run_build_graph,
+        ]:
             assert inspect.isfunction(fn)
             assert fn.__name__.startswith("_run_")
 
@@ -488,12 +517,12 @@ class TestBug1PlainFunctionDefaults:
 # Bug 2 — Web run-all reaches all stages (stream liveness vs. continuation)
 # ---------------------------------------------------------------------------
 
-class TestBug2WebRunAllContinuation:
 
+class TestBug2WebRunAllContinuation:
     def test_run_all_reaches_all_five_stages(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """_do_run_all calls all 5 stage helpers when none fail."""
-        from artifice_graph.web.server import _do_run_all, _run_ok
         from artifice_graph.config import PipelineConfig
+        from artifice_graph.web.server import _do_run_all
 
         calls: list[str] = []
 
@@ -525,8 +554,8 @@ class TestBug2WebRunAllContinuation:
 
     def test_run_all_halt_on_stage_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """_do_run_all stops after a failing stage and does not call later stages."""
-        from artifice_graph.web.server import _do_run_all, _run_ok
         from artifice_graph.config import PipelineConfig
+        from artifice_graph.web.server import _do_run_all, _run_ok
 
         calls: list[str] = []
 
@@ -571,8 +600,8 @@ class TestBug2WebRunAllContinuation:
 # Bug 3 — Exit code non-zero on failure
 # ---------------------------------------------------------------------------
 
-class TestBug3ExitCode:
 
+class TestBug3ExitCode:
     def test_run_stage_returns_false_on_exception(self) -> None:
         """_run_stage returns False when the stage function raises."""
         from artifice_graph.cli import _run_stage
@@ -604,11 +633,12 @@ class TestBug3ExitCode:
         result = _run_stage(1, 5, "Test", _ok)
         assert result is True
 
-    def test_run_all_exits_nonzero_on_partial_failure(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_run_all_exits_nonzero_on_partial_failure(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """run_all raises typer.Exit(1) when any stage fails."""
         import typer
-        from artifice_graph.cli import _run_stage, _run_ingest
-        from artifice_graph.config import PipelineConfig, resolve_config_paths
+        from artifice_graph.cli import _run_stage
 
         # Patch _run_stage to simulate: stages 1,3,4,5 succeed; stage 2 fails
         original_run_stage = _run_stage
@@ -635,36 +665,40 @@ class TestBug3ExitCode:
 # Fix: entities_raw.json saved during resolution
 # ---------------------------------------------------------------------------
 
-class TestFixEntitiesRaw:
 
-    def test_do_resolve_saves_entities_raw(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+class TestFixEntitiesRaw:
+    def test_do_resolve_saves_entities_raw(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """_do_resolve writes the pre-resolution entities to entities_raw.json."""
-        import json
         from artifice_graph.config import PipelineConfig
         from artifice_graph.models.entity import Entity, EntityType
-        from artifice_graph.models.relationship import Relationship
 
         cfg = PipelineConfig()
         cfg.export.output_dir = str(tmp_path)
 
         # Pre-populate entities.json with two similar entities
         ents = [
-            Entity(name="Klemens von Metternich", entity_type=EntityType.PERSON,
-                   aliases=["Metternich"]),
-            Entity(name="Metternich", entity_type=EntityType.PERSON,
-                   aliases=["Prince Metternich"]),
+            Entity(
+                name="Klemens von Metternich", entity_type=EntityType.PERSON, aliases=["Metternich"]
+            ),
+            Entity(name="Metternich", entity_type=EntityType.PERSON, aliases=["Prince Metternich"]),
         ]
         rels: list[Relationship] = []
 
         import artifice_graph.storage.file_store as fs_mod
+
         store = fs_mod.FileStore(str(tmp_path))
         store.save_models("entities.json", ents)
         store.save_models("relationships.json", rels)
 
         monkeypatch.setattr("artifice_graph.web.server._load_store", lambda cfg: store)
-        monkeypatch.setattr("artifice_graph.web.server._build_resolver", lambda cfg: _NoOpResolver())
+        monkeypatch.setattr(
+            "artifice_graph.web.server._build_resolver", lambda cfg: _NoOpResolver()
+        )
 
         from artifice_graph.web.server import _do_resolve
+
         _do_resolve(cfg, "test-raw", close_stream=False)
 
         raw = store.load("entities_raw.json")
@@ -674,6 +708,7 @@ class TestFixEntitiesRaw:
 
 class _NoOpResolver:
     """Resolver that returns inputs unchanged (no dedup)."""
+
     def resolve(self, entities, relationships):
         return entities, relationships
 
@@ -682,14 +717,13 @@ class _NoOpResolver:
 # Fix: GraphExporter honours graph_formats list
 # ---------------------------------------------------------------------------
 
-class TestFixGraphFormats:
 
+class TestFixGraphFormats:
     def test_exporter_uses_graph_formats_list(self, tmp_path: Path) -> None:
         """When no explicit formats given, GraphExporter uses config.graph_formats."""
         from artifice_graph.config import ExportConfig
         from artifice_graph.exporters.graph_exporter import GraphExporter
         from artifice_graph.models.entity import Entity, EntityType
-        from artifice_graph.models.relationship import Relationship
 
         config = ExportConfig(
             output_dir=str(tmp_path),
@@ -733,7 +767,6 @@ class TestFixGraphFormats:
 
 
 class TestEnvOverrides:
-
     def test_llm_base_url_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """LLM_BASE_URL env var overrides the config file and defaults."""
         monkeypatch.setenv("LLM_BASE_URL", "http://host.docker.internal:11434/v1")
@@ -783,8 +816,8 @@ class TestEnvOverrides:
         """load_config() applies env overrides after user config merge."""
         user_cfg_path = tmp_path / "user_config.json"
         monkeypatch.setattr(
-            "artifice_graph.config._USER_CONFIG_PATH",
-            user_cfg_path,
+            "artifice_graph.config._get_user_config_path",
+            lambda: user_cfg_path,
         )
         user_cfg_path.parent.mkdir(parents=True, exist_ok=True)
         user_data = {

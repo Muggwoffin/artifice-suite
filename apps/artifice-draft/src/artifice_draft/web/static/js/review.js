@@ -76,7 +76,7 @@ const ReviewUI = (function () {
       card.style.display = "none";
       await PersonaeApp.onRunFinished(docId);
     } catch (err) {
-      PersonaeApp.logLine(`Could not finalize: ${err.message}`, "error");
+      window.ArtificeToast.error("Could not finalize: " + err.message);
     }
   });
 

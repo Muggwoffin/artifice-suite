@@ -1,6 +1,6 @@
 [project]
 name = "artifice-suite"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local-first, BYOM desktop tool suite designed around harness architecture."
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
@@ -8,11 +8,11 @@ license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]
-ocr = ["artifice-ocr", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
-ocr-web = ["artifice-ocr[web]", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
-draft = ["artifice-draft", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
-graph = ["artifice-graph", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
-transcribe = ["artifice-transcribe", "artifice-model-harness>=0.1.0", "artifice-shared-ui>=0.1.0"]
+ocr = ["artifice-ocr", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
+ocr-web = ["artifice-ocr[web]", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
+draft = ["artifice-draft", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
+graph = ["artifice-graph", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
+transcribe = ["artifice-transcribe", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
 all = [
     "artifice-ocr",
     # web extra included so that --extra all carries the packages
@@ -22,8 +22,8 @@ all = [
     "artifice-draft[web]",
     "artifice-graph",
     "artifice-transcribe",
-    "artifice-model-harness>=0.1.0",
-    "artifice-shared-ui>=0.1.0",
+    "artifice-model-harness>=0.2.0",
+    "artifice-shared-ui>=0.2.0",
 ]
 
 [build-system]

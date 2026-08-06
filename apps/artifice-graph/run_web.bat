@@ -14,7 +14,7 @@ if errorlevel 1 (
 
 echo === Starting web server ===
 echo Visit http://localhost:8766
-echo To change port: set CALLOSIP_PORT=XXXX
+echo To change port: set ARTIFICE_PORT=XXXX
 echo.
 echo.
 python -m web.server

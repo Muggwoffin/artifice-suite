@@ -1,6 +1,6 @@
 [project]
 name = "artifice-draft"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local-first copy editing: sends .docx paragraphs to an LLM and returns tracked-change edits."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -13,9 +13,9 @@ dependencies = [
     "httpx>=0.27",
     "jinja2>=3.0",
     "lxml>=5.0",
-    "artifice-model-harness>=0.1.0",
-    "artifice-secure-io>=0.1.0",
-    "artifice-shared-ui>=0.1.0",
+    "artifice-model-harness>=0.2.0",
+    "artifice-secure-io>=0.2.0",
+    "artifice-shared-ui>=0.2.0",
 ]
 authors = [
     {name = "Maurice J. Casey"},
