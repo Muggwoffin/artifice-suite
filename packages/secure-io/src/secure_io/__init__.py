@@ -97,9 +97,7 @@ def ensure_restricted(path: Path) -> None:
         if not is_restricted(path):
             restrict_to_current_user(path)
     except Exception:
-        logging.warning(
-            "Could not restrict permissions on %s — continuing anyway", path
-        )
+        logging.warning("Could not restrict permissions on %s — continuing anyway", path)
 
 
 # ---------------------------------------------------------------------------
@@ -166,9 +164,10 @@ def _restrict_windows(path: Path) -> None:
         ],
     )
     # Verify the ACL took effect before returning.
-    if not _is_restricted_windows(path):
+    ok, reason = _windows_acl_verdict(path)
+    if not ok:
         raise PermissionError(
-            f"Failed to verify ACL on {path} — the file may still be unprotected"
+            f"Failed to verify ACL on {path} — the file may still be unprotected. {reason}"
         )
 
 
@@ -181,10 +180,10 @@ def _restrict_windows(path: Path) -> None:
 # localised display names).
 _WORLD_READABLE_SIDS = frozenset(
     {
-        "S-1-1-0",        # Everyone
-        "S-1-5-32-545",   # BUILTIN\Users
-        "S-1-5-11",       # NT AUTHORITY\Authenticated Users
-        "S-1-5-32-546",   # BUILTIN\Guests
+        "S-1-1-0",  # Everyone
+        "S-1-5-32-545",  # BUILTIN\Users
+        "S-1-5-11",  # NT AUTHORITY\Authenticated Users
+        "S-1-5-32-546",  # BUILTIN\Guests
     }
 )
 
@@ -271,10 +270,35 @@ def _is_restricted_windows(path: Path) -> bool:
     because on Administrator accounts Windows retains them even after
     ``/inheritance:r``, and those principals already have full machine access.
     """
+    return _windows_acl_verdict(path)[0]
+
+
+def _format_ace(entry: dict[str, object]) -> str:
+    """Render one ACE compactly for a diagnostic message."""
+    inherited = " inherited" if entry["is_inherited"] else ""
+    return f"[{entry['access_type']} {entry['sid']} ({entry['rights']}){inherited}]"
+
+
+def _windows_acl_verdict(path: Path) -> tuple[bool, str]:
+    """Return ``(is_restricted, reason)`` for *path*'s ACL on Windows.
+
+    The reason is what makes a failure actionable.  A verification that can
+    only say "no" is indistinguishable from one that could not read the ACL
+    at all, and the caller turns both into a hard failure that stops the app
+    saving settings — so the two cases must be told apart in the message.
+    """
     try:
         entries = _get_acl_via_powershell(path)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
+    except FileNotFoundError:
+        return False, "could not run powershell (not found on PATH)."
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or "").strip().replace("\n", " ")[:300]
+        return False, f"Get-Acl failed (exit {exc.returncode}): {stderr}"
+
+    if not entries:
+        return False, "Get-Acl returned no ACEs."
+
+    seen = " ".join(_format_ace(e) for e in entries)
 
     has_explicit_allow_rw = False
     for entry in entries:
@@ -285,20 +309,23 @@ def _is_restricted_windows(path: Path) -> bool:
 
         # Inherited ACEs must not be present — we strip them in _restrict_windows.
         if is_inherited:
-            return False
+            return False, f"inherited ACE survived /inheritance:r. ACEs: {seen}"
 
         if access_type == "Deny":
             continue
 
         # Reject if a world-readable SID has any Read access.
         if sid in _WORLD_READABLE_SIDS and "Read" in rights:
-            return False
+            return False, f"world-readable SID {sid} has Read. ACEs: {seen}"
 
         # At least one Allow ACE must grant Read+Write (or FullControl).
         if "FullControl" in rights or ("Read" in rights and "Write" in rights):
             has_explicit_allow_rw = True
 
-    return has_explicit_allow_rw
+    if not has_explicit_allow_rw:
+        return False, f"no Allow ACE grants Read+Write. ACEs: {seen}"
+
+    return True, "ok"
 
 
 def _get_current_user_sid() -> str:

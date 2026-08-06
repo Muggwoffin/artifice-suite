@@ -15,7 +15,9 @@ package that:
 Import-name -> distribution-name mapping (PIL->pillow, yaml->PyYAML,
 bs4->beautifulsoup4, pyannote->pyannote-audio) is resolved via
 `importlib.metadata.packages_distributions()` so a declared dependency is
-recognised under its real distribution name.
+recognised under its real distribution name.  That only works for packages
+that are INSTALLED, so `IMPORT_ROOT_TO_DIST` below covers the ones CI does
+not install — see the comment there.
 
 Warnings (exit 0): declared-but-never-imported deps and dynamic imports
 (`importlib.import_module("literal")` / `__import__("literal")`).
@@ -29,19 +31,56 @@ from importlib.metadata import packages_distributions
 from pathlib import Path
 
 EXCLUDE_DIRS = {
-    ".venv", "build", "dist", ".git", "node_modules", "__pycache__",
-    ".mypy_cache", ".pytest_cache", ".ruff_cache", ".tox", ".nox",
+    ".venv",
+    "build",
+    "dist",
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    ".nox",
 }
 
 # Intra-repo packages: never ghost suspects.
 WORKSPACE_PACKAGES = {
-    "artifice_ocr", "artifice_draft", "artifice_graph", "artifice_transcribe",
-    "model_harness", "secure_io", "shared_ui",
+    "artifice_ocr",
+    "artifice_draft",
+    "artifice_graph",
+    "artifice_transcribe",
+    "model_harness",
+    "secure_io",
+    "shared_ui",
 }
 
 # pytest infrastructure, not a real package: `from conftest import ...` works
 # because pytest inserts the test directory on sys.path.  Never a ghost.
 PYTEST_INTERNAL = {"conftest"}
+
+# Import root -> distribution name, for packages whose import root differs
+# from the name they are declared under.
+#
+# `packages_distributions()` derives this automatically, but ONLY for packages
+# installed in the environment running this script.  An optional dependency
+# that the lint job does not install therefore has no entry, and the
+# not-installed fallback below can only compare the import root against
+# distribution names — a comparison that cannot succeed when the two differ.
+# The result is a FALSE ghost: correctly declared, correctly locked, reported
+# as hallucinated.
+#
+# `pyannote.audio` is exactly that case.  It is declared under
+# artifice-transcribe's `asr` / `asr-cuda` extras, which `--extra all` does
+# not pull in (the root `all` extra deliberately omits the ~2 GB ASR stack),
+# so CI resolves it in uv.lock but never installs it.
+#
+# Entries here are NOT exemptions: the mapped distribution still has to appear
+# in a pyproject.toml or uv.lock to pass.  This only teaches the fallback the
+# name to look for.
+IMPORT_ROOT_TO_DIST = {
+    "pyannote": "pyannote-audio",
+}
 
 
 def normalize_package_name(name: str) -> str:
@@ -80,9 +119,7 @@ def get_imported_modules(file_path: Path) -> tuple[set[str], set[str]]:
             func = node.func
             is_dynamic = (
                 isinstance(func, ast.Name) and func.id in ("__import__", "import_module")
-            ) or (
-                isinstance(func, ast.Attribute) and func.attr == "import_module"
-            )
+            ) or (isinstance(func, ast.Attribute) and func.attr == "import_module")
             if is_dynamic:
                 for arg in node.args:
                     if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
@@ -129,8 +166,7 @@ def main() -> None:
     stdlib = set(sys.stdlib_module_names)
 
     python_files = [
-        p for p in root_dir.rglob("*.py")
-        if not any(part in EXCLUDE_DIRS for part in p.parts)
+        p for p in root_dir.rglob("*.py") if not any(part in EXCLUDE_DIRS for part in p.parts)
     ]
 
     imported: set[str] = set()
@@ -172,9 +208,17 @@ def main() -> None:
             # present in env — is it declared under any of its dist names?
             if not any(d in declared for d in dists):
                 undeclared.add(module)
-        elif module not in declared and module not in locked:
-            # no distribution anywhere: prime hallucinated-package suspect
-            ghost.add(module)
+        else:
+            # Not installed, so packages_distributions() cannot tell us the
+            # distribution name.  Try the import root itself, then the known
+            # alias — a declared-but-uninstalled dep is not a ghost.
+            candidates = {normalize_package_name(module)}
+            alias = IMPORT_ROOT_TO_DIST.get(normalize_import_name(module))
+            if alias:
+                candidates.add(normalize_package_name(alias))
+            if not any(c in declared or c in locked for c in candidates):
+                # no distribution anywhere: prime hallucinated-package suspect
+                ghost.add(module)
 
     declared_but_not_locked = declared - locked
 
@@ -187,7 +231,8 @@ def main() -> None:
     # "PIL") while dist_to_imports keys are normalised ("pil").
     third_party_norm = {normalize_import_name(m) for m in third_party}
     declared_but_not_imported = {
-        d for d in declared
+        d
+        for d in declared
         if d in dist_to_imports
         and d not in {normalize_package_name(w) for w in WORKSPACE_PACKAGES}
         and not any(i in third_party_norm for i in dist_to_imports[d])
