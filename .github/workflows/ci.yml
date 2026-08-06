@@ -70,6 +70,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The format gate below diffs against the PR's base commit.
+          # actions/checkout defaults to a shallow clone (fetch-depth: 1), which
+          # fetches the merge commit and nothing else, so `git diff $BASE_SHA`
+          # dies with `fatal: bad object` and exit 128 — a gate failure that
+          # looks identical to a formatting failure but fires on every PR
+          # regardless of content.  Full history is what makes the base
+          # reachable.  (This never showed up before because the ruff and
+          # dependency-audit steps above it were failing first, so the format
+          # gate had never actually run on any PR.)
+          fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v5
         with:
