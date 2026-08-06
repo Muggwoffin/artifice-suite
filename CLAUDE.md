@@ -60,7 +60,42 @@ started from anywhere but the app root. Resolve static roots with `importlib.res
 
 ## Security & Release Protocols
 - **Zero Secrets Policy:** Never write plain-text access tokens (`hf_...`, `ghp_...`, `github_pat_...`) into code, markdown docs, or environment files. Ensure `.mcp.json` and sensitive configs remain gitignored. Verify changes with `gitleaks`.
-- **Academic Citation & DOI:** Maintain `CITATION.cff` in the repository root. All Git tags (`v*.*.*`) automatically trigger Zenodo release archiving and DOI minting.
+- **Academic Citation & DOI:** Maintain `CITATION.cff` in the repository root.
+
+  > **Corrected 2026-08-06, then corrected again the same hour. Read the second correction —
+  > the first was wrong.**
+  >
+  > This bullet used to read "All Git tags (`v*.*.*`) automatically trigger Zenodo release
+  > archiving and DOI minting." That is **half true**, and the precise half matters.
+  >
+  > **What is actually true, verified 2026-08-06 against zenodo.org and `gh release list`:**
+  >
+  > - **The Zenodo GitHub integration is installed and live, and it has already minted a DOI.**
+  >   Concept DOI `10.5281/zenodo.21621935`, version DOI `10.5281/zenodo.21707694`, published
+  >   2026-07-30 from the `v0.2.0-alpha` tree. It is public right now.
+  > - **Zenodo archives on a published GitHub *Release*, not on a bare tag.** The two releases
+  >   that exist (`v0.1.0-alpha`, and `v0.2.0-alpha` — still a **Draft**) were created by hand.
+  >   Nothing in CI created them, which is why the "automatic on tag" wording was wrong: a tag
+  >   alone fires the gate and `publish.yml`, and mints nothing.
+  > - `release.yml` now has a `github-release` job that creates the Release, so from the next tag
+  >   the claim becomes true. Until 2026-08-06 it was not.
+  >
+  > **LIVE PROBLEM — the published record misstates the licence.** Zenodo record
+  > `10.5281/zenodo.21707694` is stamped **MIT**; this codebase has been **AGPL-3.0-or-later**
+  > since the 2026-07-30 relicensing. A public, citable, archived record currently tells the world
+  > the wrong licence. Minting a corrected record on the next tag does **not** retract it — the
+  > MIT-stamped version stays unless the maintainer edits or deletes it on zenodo.org. Both
+  > `v*-alpha` tags were deleted on 2026-08-05, so that record now points at a tree that no longer
+  > has a tag.
+  >
+  > **How the first correction went wrong, because the mechanism will recur.** An audit was
+  > commissioned with an explicit file list that did not include `CHANGELOG.md` — the one file
+  > recording that a DOI already existed. The audit answered the question it was given, correctly
+  > and with citations, and concluded no Zenodo integration existed. The orchestrator then wrote
+  > that narrow answer down as a general fact. **This is the same "narrow result recorded as a
+  > general one" failure this file documents elsewhere — reached, this time, by scoping the
+  > question too tightly rather than by measuring badly.** A clean audit only certifies the
+  > surface it was pointed at.
 
 ## Orchestrator as Design Director
 
@@ -114,9 +149,21 @@ retained below only where they explain why a current placement is what it is.
 | `code-reviewer` | OpenCode | `opencode-go/minimax-m3` | Read-only correctness and architecture-conformance review of changes before they land |
 | `oss-reviewer` | OpenCode | `mistral/mistral-medium-latest` | Read-only open-source maintainability review |
 | `security-auditor` | OpenCode | `opencode-go/qwen3.7-max` (read-only) | Static analysis, secret handling, input sanitization |
-| `ui-ux` | **Claude Code** | `sonnet` | Frontend views, design tokens, accessibility |
+| `ui-ux` | OpenCode | `opencode-go/minimax-m2.7` | Frontend views, design tokens, accessibility |
 
-Definitions live in `.opencode/agents/*.md`, except `ui-ux`, which lives in `.claude/agents/ui-ux.md`.
+> **`ui-ux` moved back to OpenCode on 2026-08-06, and the fleet is now OpenCode-only again.**
+> The shared-budget risk this file predicted came true: on `sonnet` in the Claude Code runtime it
+> died mid-task on a session limit, leaving a half-written shared component. The standing
+> instruction was to move it to a paid tier rather than downgrade it, and `minimax-m2.7` is that
+> move — cheaper than `kimi-k3` per the maintainer's constraint, and **crucially not `minimax-m3`**,
+> which is `code-reviewer`'s model and reviews `ui-ux`'s output. It shares `m2.7` with
+> `arch-auditor-docs`; acceptable because neither reviews the other, but that agent's parity audits
+> do brush against UI — split them if two agents ever start agreeing with themselves about a
+> surface. Verified by `scripts/smoke-test-agents.sh`: **21 passed, 0 failed.**
+
+**All seven definitions now live in `.opencode/agents/*.md`. `.claude/agents/` is empty and must
+stay that way** — a definition there shadows the OpenCode one when the orchestrator dispatches by
+name.
 **No agent may be defined in both runtimes** — a duplicate shadows the other when the orchestrator
 dispatches by name. `scripts/smoke-test-agents.sh` asserts this in both directions.
 

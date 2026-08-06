@@ -1,6 +1,6 @@
 [project]
 name = "artifice-transcribe"
-version = "0.1.0"
+version = "0.2.0"
 description = "Speech-to-Text & Diarization API using WhisperX + PyAnnote"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -16,7 +16,8 @@ license-files = ["LICENSE"]
 # optional — the app starts, serves its UI, and runs uploads, the database,
 # summarise and cleanup without it.  Transcription features are guarded at
 # runtime by a typed AsrUnavailable error that tells the user what extra to
-# install (`uv sync --extra asr` for CPU, `--extra asr-cuda` for NVIDIA GPU).
+# install (``uv sync --extra asr``, or ``pip install artifice-transcribe[asr]``
+# outside the workspace).
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -29,10 +30,10 @@ dependencies = [
     "fpdf2>=2.8.0",
     "openai>=1.0.0",
     "jinja2>=3.0",
-    "artifice-model-harness>=0.1.0",
+    "artifice-model-harness>=0.2.0",
     "numpy>=1.26",
-    "artifice-secure-io>=0.1.0",
-    "artifice-shared-ui>=0.1.0",
+    "artifice-secure-io>=0.2.0",
+    "artifice-shared-ui>=0.2.0",
 ]
 authors = [
     {name = "Maurice J. Casey"},
@@ -58,24 +59,16 @@ Repository = "https://github.com/Muggwoffin/artifice-suite"
 Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 
 [project.optional-dependencies]
-# --extra asr pulls torch from the CPU-only PyTorch index (Linux/Windows),
-# avoiding the ~4 GB CUDA runtime.  macOS PyPI wheels carry no CUDA and
-# already give MPS — the CPU-index marker excludes macOS so those wheels
-# resolve from PyPI as before.
+# ``--extra asr`` installs WhisperX + PyAnnote for transcription and
+# diarisation.  In this workspace ``[tool.uv.sources]`` redirects torch
+# to the CPU-only PyTorch index (Linux/Windows); outside the workspace
+# (PyPI) torch resolves from default PyPI.  The CPU-vs-CUDA distinction
+# is workspace-only — there is no standardised per-extra index selection
+# in PEP 621.
 #
-# --extra asr-cuda resolves torch from default PyPI, which bundles the
-# CUDA runtime on Linux (the CUDA index could be used instead, but the
-# maintainer's constraint is that the suite is hardware-agnostic and must
-# not *default* to a GPU stack).
-#
-# whisperx>=3.8 requires pyannote-audio>=4.0, which works with current
-# torchaudio API.  Versions below 3.8 need pyannote 3.x which in turn
-# requires the removed torchaudio.AudioMetaData class.
-#
-# Torch & torchaudio are version-matched pairs and must stay within
-# whisperx's declared range (currently >=2.8.0,<2.9.dev0 across all
-# non-yanked 3.8.x releases).  Pinning the minor prevents a CPU vs CUDA
-# mismatch where uv floats torch to a version only available on one index.
+# ``--extra asr-cuda`` is a convenience alias for ``asr`` that exists so
+# that ``uv sync --extra asr-cuda`` resolves torch from default PyPI
+# rather than the CPU index.  On PyPI the two extras are identical.
 asr = [
     "whisperx>=3.8.0",
     "torch>=2.8.0,<2.9.0",
@@ -86,13 +79,7 @@ asr = [
     "transformers>=4.0",
 ]
 asr-cuda = [
-    "whisperx>=3.8.0",
-    "torch>=2.8.0,<2.9.0",
-    "torchaudio>=2.8.0,<2.9.0",
-    "torchvision>=0.23.0,<0.24.0",
-    "torchcodec>=0.11.0,<0.12.0",
-    "pyannote.audio>=4.0",
-    "transformers>=4.0",
+    "artifice-transcribe[asr]",
 ]
 
 [project.scripts]
@@ -109,7 +96,6 @@ where = ["src"]
 "artifice_transcribe.web" = ["static/**", "templates/**/*.html"]
 
 [tool.uv]
-conflicts = [[{ extra = "asr" }, { extra = "asr-cuda" }]]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

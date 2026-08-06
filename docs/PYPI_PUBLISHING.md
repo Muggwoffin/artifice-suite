@@ -5,6 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Publishing the Artifice Suite to PyPI
 
+**All seven distributions were published at `0.1.0` on 2026-08-06.** The
+record below explains how the first release was done (the pending-publisher
+waves and the constraint that forced them) and what the procedure is for
+subsequent releases.
+
 Everything that can be verified from this side has been. What remains is
 account setup on pypi.org, which needs a human with the credentials.
 
@@ -54,9 +59,13 @@ separate credentials and separate 2FA. It is not linked to the real one.
 
 ## Step 2 — Add a pending publisher for each of the seven projects
 
-None of the seven names exist on PyPI yet — confirmed 2026-08-06, all returned
-404. A *pending* publisher is how you claim a name that has never been
-uploaded: PyPI creates the project on first successful publish.
+**This step was completed for the first publish (2026-08-06).** It is kept here
+as the record of how it was done and what the constraint was.
+
+None of the seven names existed on PyPI before the first publish — confirmed
+2026-08-06, all returned 404. A *pending* publisher is how you claim a name
+that has never been uploaded: PyPI creates the project on first successful
+publish.
 
 For **each** of the seven names below: PyPI → *Your projects* →
 *Publishing* → *Add a new pending publisher* → **GitHub**.
@@ -64,7 +73,7 @@ For **each** of the seven names below: PyPI → *Your projects* →
 > **You cannot register all seven at once.** PyPI allows at most **three
 > pending publishers** per account — *"You can't register more than 3 pending
 > trusted publishers at once."* A pending publisher becomes an ordinary one as
-> soon as its project is first published, which frees the slot. So the work goes
+> soon as its project is first published, which frees the slot. So the work went
 > in three waves: register three, publish them, register the next three.
 >
 > This is why `publish.yml` has a `stage` input. **Do not register a wave until
@@ -174,12 +183,13 @@ Two ways, both already wired:
   existing `Release Gate`, which checks that tag, package versions and
   `CITATION.cff` agree, and it triggers Zenodo DOI minting.
 - **Manual, wave by wave** — Actions → *Publish to PyPI* → *Run workflow* →
-  target `pypi`, stage `wave-1-shared`. **This is the route for the first
-  release**, because the pending-publisher limit forces the waves. After each
-  wave publishes, register the next wave's publishers, then run the next stage.
+  target `pypi`, stage `wave-1-shared`. This was the route for the **first
+  release** (2026-08-06), because the pending-publisher limit forced the waves.
+  After each wave publishes, register the next wave's publishers, then run the
+  next stage.
 
-Use a tag (or `stage: all`) only once all seven publishers exist and are
-active — from the second release onward, that is always true.
+**Subsequent releases:** all seven publishers are now active. A tag (or
+`stage: all`) is sufficient — no more wave-by-wave registration.
 
 Watch that the `shared-packages` job finishes before `apps` starts. That is the
 ordering constraint doing its job.
@@ -204,9 +214,9 @@ description.
 - **Consider upper bounds on the internal pins.** `>=0.1.0` is loose once these
   names are public — nothing stops a future `artifice-model-harness` 2.0 being
   pulled into an old app. `~=0.1.0` would prevent that.
-- `README.md` still tells users to clone the workspace. Once these are on PyPI,
-  `uv tool install artifice-<app>` is the real install story and the README
-  should lead with it.
+- **Subsequent releases** (from the second release onward): all seven
+  publishers are active, so a tag push or `stage: all` is sufficient. The
+  wave-by-wave manual route is only needed when adding a *new* package name.
 
 ---
 

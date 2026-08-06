@@ -1,6 +1,6 @@
 [project]
 name = "artifice-ocr"
-version = "0.1.0"
+version = "0.2.0"
 description = "A pipeline for historical document OCR and translation."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,9 +15,9 @@ dependencies = [
     "PyMuPDF",
     "reportlab",
     "huggingface_hub",
-    "artifice-secure-io>=0.1.0",
-    "artifice-shared-ui>=0.1.0",
-    "artifice-model-harness>=0.1.0",
+    "artifice-secure-io>=0.2.0",
+    "artifice-shared-ui>=0.2.0",
+    "artifice-model-harness>=0.2.0",
     "jinja2>=3.0",
 ]
 authors = [

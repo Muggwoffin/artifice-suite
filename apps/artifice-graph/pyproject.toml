@@ -1,6 +1,6 @@
 [project]
 name = "artifice-graph"
-version = "0.1.0"
+version = "0.2.0"
 description = "Modular local-first GraphRAG & Entity Extraction pipeline for historical OCR text"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,10 +14,15 @@ dependencies = [
     "platformdirs>=4.0.0",
     "rich>=13.0",
     "pyyaml>=6.0",
-    "typer[all]>=0.12",
-    "artifice-model-harness>=0.1.0",
-    "artifice-secure-io>=0.1.0",
-    "artifice-shared-ui>=0.1.0",
+    # NOT typer[all]: that extra was removed upstream, and `uv lock` warns
+    # "typer==0.27.1 does not have an extra named 'all'" — a warning that
+    # reached every `pip install artifice-graph` at 0.1.0. Modern typer bundles
+    # rich and shellingham in the base package, and `rich` is declared above
+    # explicitly in any case. cli.py uses only typer.Typer / Option / Exit.
+    "typer>=0.12",
+    "artifice-model-harness>=0.2.0",
+    "artifice-secure-io>=0.2.0",
+    "artifice-shared-ui>=0.2.0",
 ]
 authors = [
     {name = "Maurice J. Casey"},
@@ -74,6 +79,31 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/artifice_graph"]
+
+# A hatchling sdist defaults to EVERY git-tracked file in the project directory.
+# A setuptools one does not — it takes the packages, package-data and a short
+# list of standard files, and ignores the rest of the working tree. That
+# asymmetry was measured on 2026-08-06, not assumed: graph's 0.1.0 sdist carried
+# Dockerfile, three Windows .bat launchers and scripts/README.md, while the
+# setuptools apps (ocr, draft, transcribe) shipped none of their equivalents —
+# `apps/artifice-transcribe/AGENTS.md` is git-tracked and still never reached an
+# sdist.
+#
+# So this exclusion is needed HERE and is not needed there. Do not "harmonise"
+# the four apps by copying it around; it would be inert in the setuptools three
+# and reading it there would imply a risk that does not exist.
+#
+# tests/ is deliberately NOT excluded. Shipping tests in an sdist is normal and
+# lets a downstream packager verify the build; the earlier suggestion to strip
+# them was a tidiness impulse, not a defect.
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "*.bat",
+    "*.pyw",
+    "Dockerfile",
+    "scripts/",
+    "data/",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
