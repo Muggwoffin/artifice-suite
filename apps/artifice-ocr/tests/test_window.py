@@ -55,41 +55,41 @@ class TestOpenNativeWindow:
 
     def test_returns_false_when_webview_backend_unavailable(self) -> None:
         """When pywebview imports but no backend is available, return opened=False."""
-        with mock.patch("webview.create_window") as mock_create:
-            with mock.patch("webview.start") as mock_start:
-                mock_start.side_effect = RuntimeError("No suitable webview provider found")
-                result = open_native_window("http://127.0.0.1:8765")
-                assert result.opened is False
-                assert "Native window unavailable" in result.reason
-                assert "No suitable webview provider" in result.reason
+        with mock.patch("webview.create_window"), mock.patch("webview.start") as mock_start:
+            mock_start.side_effect = RuntimeError("No suitable webview provider found")
+            result = open_native_window("http://127.0.0.1:8765")
+            assert result.opened is False
+            assert "Native window unavailable" in result.reason
+            assert "No suitable webview provider" in result.reason
 
     def test_returns_true_when_window_opens(self) -> None:
         """When the window opens and then closes cleanly, return opened=True."""
-        with mock.patch("webview.create_window") as mock_create:
-            with mock.patch("webview.start") as mock_start:
-                mock_start.return_value = None  # simulates window closed
-                result = open_native_window("http://127.0.0.1:8765")
-                assert result.opened is True
-                assert result.reason == ""
+        with mock.patch("webview.create_window"), mock.patch("webview.start") as mock_start:
+            mock_start.return_value = None  # simulates window closed
+            result = open_native_window("http://127.0.0.1:8765")
+            assert result.opened is True
+            assert result.reason == ""
 
     def test_passes_url_and_title_to_create_window(self) -> None:
         """Ensure url and title keyword args are forwarded correctly."""
-        with mock.patch("webview.create_window") as mock_create:
-            with mock.patch("webview.start"):
-                open_native_window(
-                    "http://127.0.0.1:9999",
-                    title="My OCR App",
-                    width=1024,
-                    height=768,
-                )
-                mock_create.assert_called_once_with(
-                    title="My OCR App",
-                    url="http://127.0.0.1:9999",
-                    width=1024,
-                    height=768,
-                    resizable=True,
-                    min_size=(640, 480),
-                )
+        with (
+            mock.patch("webview.create_window") as mock_create,
+            mock.patch("webview.start"),
+        ):
+            open_native_window(
+                "http://127.0.0.1:9999",
+                title="My OCR App",
+                width=1024,
+                height=768,
+            )
+            mock_create.assert_called_once_with(
+                title="My OCR App",
+                url="http://127.0.0.1:9999",
+                width=1024,
+                height=768,
+                resizable=True,
+                min_size=(640, 480),
+            )
 
 
 class TestMainNoWindowFlag:
@@ -170,16 +170,12 @@ class TestMainNoWindowFlag:
             assert "<!DOCTYPE html>" in body.lower() or "<html" in body.lower()
 
             # Check static assets
-            resp = urllib.request.urlopen(
-                f"http://127.0.0.1:{port}/shared/tokens.css"
-            )
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/shared/tokens.css")
             assert resp.status == 200
             css = resp.read().decode()
             assert "clamp" in css  # fluid typography
 
-            resp = urllib.request.urlopen(
-                f"http://127.0.0.1:{port}/static/css/app.css"
-            )
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/static/css/app.css")
             assert resp.status == 200
         finally:
             import signal
@@ -198,9 +194,7 @@ class TestMainNoWindowFlag:
         try:
             assert self._wait_for_server(port), f"Server on port {port} did not start"
 
-            resp = urllib.request.urlopen(
-                f"http://127.0.0.1:{port}/api/queue"
-            )
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/api/queue")
             assert resp.status == 200
             data = json.loads(resp.read())
             assert "items" in data or "queue" in data

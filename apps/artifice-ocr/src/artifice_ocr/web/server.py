@@ -9,6 +9,7 @@ discovery, browser launch). Individual route groups live under ``routers/``
 and are included here.
 """
 
+import contextlib
 import json
 import os
 import socket
@@ -564,10 +565,8 @@ def main() -> None:
     # ── Server-only mode (--no-window) ────────────────────────────────────
     if args.no_window:
         print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)
-        try:
+        with contextlib.suppress(KeyboardInterrupt):
             server_thread.join()
-        except KeyboardInterrupt:
-            pass
         return
 
     # ── Frozen executable: try a native window ───────────────────────────
@@ -589,19 +588,15 @@ def main() -> None:
         print(result.reason, flush=True)
         print(f"Falling back — ArtificeOCR running at {url}", flush=True)
         webbrowser.open(url)
-        try:
+        with contextlib.suppress(KeyboardInterrupt):
             server_thread.join()
-        except KeyboardInterrupt:
-            pass
         return
 
     # ── Non-frozen (dev / `uv run artifice-ocr-web`) ─────────────────────
     print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)
     webbrowser.open(url)
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         server_thread.join()
-    except KeyboardInterrupt:
-        pass
 
 
 if __name__ == "__main__":

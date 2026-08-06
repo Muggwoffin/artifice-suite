@@ -11,8 +11,6 @@ still import and run the CLI and web server without pywebview installed.
 
 from __future__ import annotations
 
-from typing import Any
-
 
 class WindowError(Exception):
     """Raised when a native window cannot be opened."""
@@ -65,7 +63,7 @@ def open_native_window(
     # bare RuntimeError / ImportError when a system dependency (pythonnet,
     # GTK, etc.) is missing at runtime.
     try:
-        window: Any = webview.create_window(
+        webview.create_window(
             title=title,
             url=url,
             width=width,
