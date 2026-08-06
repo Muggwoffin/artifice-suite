@@ -357,6 +357,38 @@ whatever else is in context.
   session start.
 - Verify the whole fleet with `bash scripts/smoke-test-agents.sh` after any config change.
 
+**`--status` is machine-wide, not repo-scoped — learned 2026-08-06.** It matches any `opencode run`
+process on the host, so an agent belonging to an *entirely different project* appears in this
+repo's status output. One did, and it was briefly diagnosed as persona bleed. Check the process
+`cmdline` before concluding a rogue agent is yours.
+
+### Agents killed mid-task, and how to prevent it — 2026-08-06
+
+Two runs died: `lead-engineer` at `exit=137` (SIGKILL) and `tester` at `exit=143` (SIGTERM). **Both
+had started a long-running server inside their shell tool with a bare `&`, then hung forever trying
+to kill it.** Neither was a model or billing failure, and neither showed the low-CPU signature of
+throttling — they were pinned at healthy CPU right up to the kill.
+
+**Brief any agent that starts a server to use `setsid nohup <cmd> > /tmp/x.log 2>&1 < /dev/null &`
+and to stop it with `pkill -f <pattern>`.** A bare `&` leaves the process holding the shell tool's
+stdout, and the tool never returns.
+
+**Their work survived and was salvaged from the logs** — the freeze build had already succeeded and
+`tester` had already established the port-fallback behaviour before it was killed. **Read the log of
+a killed agent before re-dispatching it**; `exit=137` does not mean nothing was accomplished.
+
+### `code-reviewer` returns nothing on a large brief — 2026-08-06
+
+Given nine files to review it read all of them, then produced **no report at all** and exited 0. Not
+an error, not a timeout — 45 lines of tool calls and silence. Re-dispatched against **two** files
+with one question, it produced the best review of the session, including a defect that a previous
+review and 36 tests had both missed.
+
+**Keep its briefs small and name the files explicitly.** An exit code of 0 from this agent is not
+evidence it did anything; check that a report actually exists. It also attempted a `bash` call it
+does not have — harmless, it is read-only by design, but do not write briefs that imply it can run
+things.
+
 ### Filesystem permissions
 
 `opencode.json` at the repo root is the **single source of truth** for agent filesystem access.
