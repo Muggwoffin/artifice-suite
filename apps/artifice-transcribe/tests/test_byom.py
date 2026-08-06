@@ -126,6 +126,9 @@ class TestByomState:
                 assert entry["vision"] is False, (
                     f"transcribe {tier} recommendation {entry['model_name']!r} has vision=True"
                 )
+                assert "ethos_badges" in entry
+                assert "role" in entry
+                assert "notes" in entry
 
     def test_response_is_json_serialisable(self, client):
         r = client.get("/api/byom/state")

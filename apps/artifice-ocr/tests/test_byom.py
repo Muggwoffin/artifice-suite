@@ -99,7 +99,7 @@ class TestByomState:
         assert r.json()["configured"] is True
 
     def test_recommendations_have_correct_fields(self, client):
-        """Recommendations use model_name, provider, vision, min_vram_gb."""
+        """Recommendations use model_name, provider, vision, min_vram_gb, ethos_badges, role, notes."""
         r = client.get("/api/byom/state")
         body = r.json()
         recs = body["recommendations"]
@@ -111,6 +111,9 @@ class TestByomState:
                 assert "provider" in entry
                 assert "vision" in entry
                 assert "min_vram_gb" in entry
+                assert "ethos_badges" in entry
+                assert "role" in entry
+                assert "notes" in entry
 
     def test_recommendations_is_serialisable(self, client):
         """The full response round-trips through JSON without error."""

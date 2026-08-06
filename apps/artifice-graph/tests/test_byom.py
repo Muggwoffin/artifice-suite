@@ -81,6 +81,9 @@ class TestByomState:
                 assert "provider" in entry
                 assert "vision" in entry
                 assert "min_vram_gb" in entry
+                assert "ethos_badges" in entry
+                assert "role" in entry
+                assert "notes" in entry
 
     def test_response_is_json_serialisable(self, client):
         r = client.get("/api/byom/state")
