@@ -11,6 +11,8 @@ from pathlib import Path
 
 import torch
 
+from .token_redaction import redact_token
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,9 +74,9 @@ class TranscriptionEngine:
                     use_auth_token=self._hf_token,
                 )
             except Exception as exc:
-                self._last_error = str(exc)
+                self._last_error = redact_token(str(exc))
                 self._models_ready = False
-                logger.error("Whisper model loading failed: %s", exc)
+                logger.error("Whisper model loading failed: %s", redact_token(str(exc)))
                 raise
 
         if self._diarize_model is None:
@@ -84,9 +86,9 @@ class TranscriptionEngine:
 
                 self._diarize_model = DiarizationPipeline(token=self._hf_token, device=self._device)
             except Exception as exc:
-                self._last_error = str(exc)
+                self._last_error = redact_token(str(exc))
                 self._models_ready = False
-                logger.error("Diarization model loading failed: %s", exc)
+                logger.error("Diarization model loading failed: %s", redact_token(str(exc)))
                 raise
 
         self._models_ready = True
@@ -131,8 +133,8 @@ class TranscriptionEngine:
                 self._align_models[language_code] = (model_a, metadata)
                 self._last_error = None
             except Exception as exc:
-                self._last_error = str(exc)
-                logger.error("Alignment model loading failed for %s: %s", language_code, exc)
+                self._last_error = redact_token(str(exc))
+                logger.error("Alignment model loading failed for %s: %s", language_code, redact_token(str(exc)))
                 raise
         return self._align_models[language_code]
 
@@ -207,7 +209,7 @@ class TranscriptionEngine:
                 self._get_align_model("en")
             return {"ok": True, "message": "All models loaded successfully"}
         except Exception as exc:
-            return {"ok": False, "error": str(exc)}
+            return {"ok": False, "error": redact_token(str(exc))}
 
     def transcribe(
         self,

@@ -91,6 +91,7 @@ from artifice_transcribe.services.download import (
     revoke_consent,
     total_transitive_size,
 )
+from artifice_transcribe.services.token_redaction import redact_token
 from artifice_transcribe.services.inference import (
     InferenceEngine,
     get_available_models,
@@ -438,11 +439,11 @@ async def _run_transcription(
                 logger.exception("Auto-match failed for job %s", job_id)
 
         except Exception as exc:
-            logger.exception("Job %s failed", job_id)
+            logger.error("Job %s failed: %s", job_id, redact_token(str(exc)))
             job = await db.get(TranscriptionJob, job_id)
             if job:
                 job.status = JobStatus.failed
-                job.error_message = str(exc)
+                job.error_message = redact_token(str(exc))
                 job.completed_at = datetime.now(UTC)
                 await db.commit()
 
@@ -744,7 +745,7 @@ async def summarize_job(job_id: str, db: AsyncSession = Depends(get_db)):
             async for chunk in gen:
                 yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
         except Exception as exc:
-            yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'text': redact_token(str(exc))})}\n\n"
         yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
@@ -783,7 +784,7 @@ async def cleanup_job(job_id: str, db: AsyncSession = Depends(get_db)):
             async for chunk in gen:
                 yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
         except Exception as exc:
-            yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'text': redact_token(str(exc))})}\n\n"
         yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")

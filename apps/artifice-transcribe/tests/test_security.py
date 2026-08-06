@@ -388,3 +388,130 @@ class TestLoadTimePermissionRepair:
         assert result["api_key"] == "sk-old"
 
         assert "Could not restrict permissions" in caplog.text
+
+
+# -- Token redaction in token_redaction module (F1-F5) ------------------------
+
+
+class TestTokenRedactionCoverage:
+    """The shared ``redact_token`` function covers HF tokens, OpenAI-style
+    keys (``sk-``, ``sk-ant-``), and passes through clean strings."""
+
+    def test_redact_hf_token(self):
+        from artifice_transcribe.services.token_redaction import redact_token
+
+        result = redact_token("Error: token hf_abcdefghijklmnopqrstuvwxyz123456 is invalid")
+        assert "hf_abcdefghijklmnopqrstuvwxyz123456" not in result
+        assert "[REDACTED]" in result
+
+    def test_redact_sk_token(self):
+        from artifice_transcribe.services.token_redaction import redact_token
+
+        result = redact_token("Error: 401 Invalid API key: sk-proj-abcdefghijklmnopqrstuvwxyz123456")
+        assert "sk-proj-abcdefghijklmnopqrstuvwxyz123456" not in result
+        assert "[REDACTED]" in result
+
+    def test_redact_sk_ant_token(self):
+        from artifice_transcribe.services.token_redaction import redact_token
+
+        result = redact_token("Error: Key sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890 is invalid")
+        assert "sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890" not in result
+        assert "[REDACTED]" in result
+
+    def test_redact_no_token(self):
+        from artifice_transcribe.services.token_redaction import redact_token
+
+        msg = "401 Client Error: Unauthorized for url: ..."
+        assert redact_token(msg) == msg
+
+    def test_redact_multiple(self):
+        from artifice_transcribe.services.token_redaction import redact_token
+
+        msg = "Token hf_aaaaaaaaaaaaaaaaaaaaa and sk-bbbbbbbbbbbbbbbbbbbbb failed"
+        result = redact_token(msg)
+        assert result.count("[REDACTED]") == 2
+        assert "hf_" not in result
+        assert "sk-" not in result
+
+
+# -- SSE error events must redact tokens (F4) ---------------------------------
+
+
+@pytest.mark.asyncio
+async def test_sse_summarize_redacts_token_in_error(api, tmp_path, monkeypatch):
+    """The summarise SSE endpoint must redact tokens in error events."""
+    # Save inference config with a real-looking key.
+    from artifice_transcribe.api.v1.routes import _save_inference_config
+
+    config_file = tmp_path / "inference_config.json"
+    monkeypatch.setattr(
+        "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
+        config_file,
+    )
+    _save_inference_config({
+        "base_url": "http://localhost:11434/v1",
+        "api_key": "sk-real-inference-key-12345678",
+        "model_name": "",
+        "vision_enabled": False,
+    })
+
+    # Create a completed job with a transcript segment.
+    from artifice_transcribe.db.models import JobStatus, TranscriptionJob, TranscriptSegment
+
+    async with api.session_factory() as db:
+        db.add(TranscriptionJob(
+            id="job-sse-redact", filename="test.wav",
+            status=JobStatus.completed, progress_percentage=100.0,
+        ))
+        db.add(TranscriptSegment(
+            job_id="job-sse-redact", speaker_label="SPEAKER_00",
+            start_time=0.0, end_time=1.0, text="Hello world.",
+        ))
+        await db.commit()
+
+    resp = await api.client.post("/api/v1/jobs/job-sse-redact/summarize")
+    # The request will fail because there's no real LLM server running,
+    # and the error event in the SSE stream will contain the exception
+    # message — which might include the api_key if not redacted.
+    body = resp.text
+    # The api_key should NOT appear in the SSE stream.
+    assert "sk-real-inference-key-12345678" not in body, (
+        f"Inference API key leaked into SSE summarise error: {body[:500]!r}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_sse_cleanup_redacts_token_in_error(api, tmp_path, monkeypatch):
+    """The cleanup SSE endpoint must redact tokens in error events."""
+    from artifice_transcribe.api.v1.routes import _save_inference_config
+
+    config_file = tmp_path / "inference_config.json"
+    monkeypatch.setattr(
+        "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
+        config_file,
+    )
+    _save_inference_config({
+        "base_url": "http://localhost:11434/v1",
+        "api_key": "sk-cleanup-key-abcdefghij",
+        "model_name": "",
+        "vision_enabled": False,
+    })
+
+    from artifice_transcribe.db.models import JobStatus, TranscriptionJob, TranscriptSegment
+
+    async with api.session_factory() as db:
+        db.add(TranscriptionJob(
+            id="job-sse-cln", filename="test.wav",
+            status=JobStatus.completed, progress_percentage=100.0,
+        ))
+        db.add(TranscriptSegment(
+            job_id="job-sse-cln", speaker_label="SPEAKER_00",
+            start_time=0.0, end_time=1.0, text="Hello world.",
+        ))
+        await db.commit()
+
+    resp = await api.client.post("/api/v1/jobs/job-sse-cln/cleanup")
+    body = resp.text
+    assert "sk-cleanup-key-abcdefghij" not in body, (
+        f"Inference API key leaked into SSE cleanup error: {body[:500]!r}"
+    )
