@@ -145,11 +145,11 @@
         updateSectionStates();
         
         // Show success message
-        showNotification("Models loaded successfully!", "success");
+        window.ArtificeToast.success("Models loaded successfully!");
       } else {
         updateConnectionStatus("Error fetching models: " + (response.error || "Unknown error"));
         modelState.connectionStatus = "error";
-        showNotification("Error loading models. Please check your connection.", "error");
+        window.ArtificeToast.error("Error loading models. Please check your connection.");
       }
 
       modelState.isLoading = false;
@@ -161,7 +161,7 @@
       console.error("Error fetching models:", err);
       updateConnectionStatus("Error fetching models: " + err.message);
       modelState.connectionStatus = "error";
-      showNotification("Error loading models. Please try again.", "error");
+      window.ArtificeToast.error("Error loading models. Please try again.");
       
       modelState.isLoading = false;
       if (btn) {
@@ -219,23 +219,15 @@
     }
   }
 
-  // Notification helper
+  // Notification helper — delegates to the shared ArtificeToast.
+  // "info" type passes explicit duration:3000 to mirror the old
+  // 3-second auto-dismiss; success/error use the shared defaults
+  // (success=4000, error=0/no auto-dismiss).
   function showNotification(message, type) {
     type = type || "info";
-    var notification = document.createElement("div");
-    notification.className = "notification notification-" + type;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    // Remove after 3 seconds
-    setTimeout(function() {
-      notification.style.opacity = "0";
-      setTimeout(function() {
-        if (notification.parentNode) {
-          notification.parentNode.removeChild(notification);
-        }
-      }, 300);
-    }, 3000);
+    if (type === "success") { window.ArtificeToast.success(message); }
+    else if (type === "error") { window.ArtificeToast.error(message); }
+    else { window.ArtificeToast.show(message, "info", { duration: 3000 }); }
   }
 
   function collectConfig(extra) {
@@ -857,12 +849,12 @@
           return r.json();
         }).then(function (data) {
           if (data.status === "ok") {
-            showNotification(data.message, "success");
+            window.ArtificeToast.success(data.message);
           } else {
-            showNotification(data.message || "Error saving configuration", "error");
+            window.ArtificeToast.error(data.message || "Error saving configuration");
           }
         }).catch(function (err) {
-          showNotification("Error saving configuration: " + (err && err.message ? err.message : err), "error");
+          window.ArtificeToast.error("Error saving configuration: " + (err && err.message ? err.message : err));
         }).finally(function () {
           btn.disabled = false;
           btn.textContent = prevText;
@@ -900,12 +892,12 @@
         body: JSON.stringify(config)
       }).then(function (r) { return r.json(); }).then(function (data) {
         if (data.status === "ok") {
-          showNotification("Configuration saved", "success");
+          window.ArtificeToast.success("Configuration saved");
         } else {
-          showNotification("Save failed: " + (data.message || "Unknown error"), "error");
+          window.ArtificeToast.error("Save failed: " + (data.message || "Unknown error"));
         }
       }).catch(function (err) {
-        showNotification("Save failed: " + (err && err.message ? err.message : "Network error"), "error");
+        window.ArtificeToast.error("Save failed: " + (err && err.message ? err.message : "Network error"));
       });
     });
 

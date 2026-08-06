@@ -353,8 +353,10 @@ function log(message, tag) {
   els["log"].appendChild(line);
   els["log"].scrollTop = els["log"].scrollHeight;
   // Also show toasts for non-trivial messages
-  if (window.Toast && tag && message.length > 3) {
-    window.Toast.show(message, tag, tag === "error" ? 6000 : 3000);
+  if (window.ArtificeToast && tag && message.length > 3) {
+    var tone = tag === "accent" ? "success" : (tag || "info");
+    var duration = tone === "error" ? 0 : 3000;
+    window.ArtificeToast.show(message, tone, { duration: duration });
   }
 }
 

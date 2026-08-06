@@ -14,18 +14,6 @@
 
   // ------------------------------------------------------------------ toast
 
-  function toast(message, kind = 'accent') {
-    const container = $('toast-container');
-    const el = document.createElement('div');
-    el.className = `toast ${kind}`;
-    el.textContent = message;
-    container.appendChild(el);
-    setTimeout(() => {
-      el.classList.add('toast-out');
-      setTimeout(() => el.remove(), 220);
-    }, 3600);
-  }
-
   async function api(path, options = {}) {
     const resp = await fetch(`${API}${path}`, options);
     if (!resp.ok) {
@@ -142,7 +130,7 @@
         if (!text) return;
         const label = btn.querySelector('span');
         navigator.clipboard.writeText(text).then(() => {
-          toast('Copied to clipboard', 'accent');
+          window.ArtificeToast.success('Copied to clipboard', {duration: 3600});
           if (srStatus) srStatus.textContent = 'Command copied to clipboard.';
           btn.setAttribute('data-copied', 'true');
           if (label) label.textContent = 'Copied';
@@ -153,7 +141,7 @@
         }).catch(() => {
           if (label) label.textContent = 'Copy failed';
           if (srStatus) srStatus.textContent = 'Could not copy the command — copy it manually.';
-          toast('Could not copy — copy it manually', 'warning');
+          window.ArtificeToast.warning('Could not copy — copy it manually', {duration: 3600});
           setTimeout(() => { if (label) label.textContent = 'Copy'; }, 1500);
         });
       });
@@ -365,7 +353,7 @@
       }
       btn.disabled = false;
       btn.textContent = 'Batch Upload';
-      toast(`Queued ${queued} file(s)`, 'accent');
+      window.ArtificeToast.success(`Queued ${queued} file(s)`, {duration: 3600});
       e.target.value = '';
     });
   }
@@ -397,14 +385,14 @@
       });
       if (!resp.ok) throw new Error(`Upload failed (${resp.status})`);
       const created = await resp.json();
-      toast(`Queued: ${selectedFile.name}`, 'accent');
+      window.ArtificeToast.success(`Queued: ${selectedFile.name}`, {duration: 3600});
       trackActiveJob(created.job_id, selectedFile.name);
       $('file-input').value = '';
       selectedFile = null;
       $('dropzone-text').textContent = 'Drop an audio file here, or click to browse';
       $('btn-clear-file').disabled = true;
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     } finally {
       statusEl.textContent = '';
       btnStart.disabled = !selectedFile;
@@ -435,9 +423,9 @@
           clearInterval(pollTimers.get(jobId));
           pollTimers.delete(jobId);
           if (job.status === 'completed') {
-            toast(`Finished: ${job.filename}`, 'accent');
+            window.ArtificeToast.success(`Finished: ${job.filename}`, {duration: 3600});
           } else {
-            toast(`Failed: ${job.filename} — ${job.error_message || 'unknown error'}`, 'error');
+            window.ArtificeToast.error(`Failed: ${job.filename} — ${job.error_message || 'unknown error'}`);
           }
           if ($('panel-library').classList.contains('active')) loadLibrary();
         }
@@ -523,7 +511,7 @@
         if (e.target.closest('[data-delete-job]')) return;
         const job = libraryJobs.find((j) => j.id === row.dataset.rowJob);
         if (job && job.status !== 'completed') {
-          toast(`Job is ${job.status}, not completed yet.`, 'warning');
+          window.ArtificeToast.warning(`Job is ${job.status}, not completed yet.`, {duration: 3600});
           return;
         }
         selectJob(row.dataset.rowJob);
@@ -565,7 +553,7 @@
       fillMetadataForm(job);
       loadWaveform();
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -788,7 +776,7 @@
         });
       }
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -845,10 +833,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      toast('Metadata saved', 'accent');
+      window.ArtificeToast.success('Metadata saved', {duration: 3600});
       if ($('panel-library').classList.contains('active')) loadLibrary();
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -884,7 +872,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates }),
       });
-      toast(`Saved ${updates.length} edit(s)`, 'accent');
+      window.ArtificeToast.success(`Saved ${updates.length} edit(s)`, {duration: 3600});
       for (const [idx, edit] of segmentEdits) {
         currentSegments[idx].text = edit.editedText;
       }
@@ -892,7 +880,7 @@
       updateEditToolbar();
       refreshSegmentsDisplay();
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -901,7 +889,7 @@
     segmentEdits.clear();
     updateEditToolbar();
     refreshSegmentsDisplay();
-    toast('Reverted all edits', 'accent');
+    window.ArtificeToast.success('Reverted all edits', {duration: 3600});
   }
 
   function refreshSegmentsDisplay() {
@@ -943,7 +931,7 @@
     preCaret.setEnd(range.startContainer, range.startOffset);
     const pos = preCaret.toString().length;
     if (pos <= 0 || pos >= textEl.textContent.length) {
-      toast('Move cursor inside the text to split', 'warning');
+      window.ArtificeToast.warning('Move cursor inside the text to split', {duration: 3600});
       return;
     }
     const segId = activeSeg.dataset.segId;
@@ -965,9 +953,9 @@
       renderTranscript(job, transcript, speakers);
       fillMetadataForm(job);
       loadWaveform();
-      toast('Segment split', 'accent');
+      window.ArtificeToast.success('Segment split', {duration: 3600});
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -977,7 +965,7 @@
     const segId = activeSeg.dataset.segId;
     const idx = parseInt(activeSeg.dataset.segIndex, 10);
     if (idx >= currentSegments.length - 1) {
-      toast('No next segment to merge with', 'warning');
+      window.ArtificeToast.warning('No next segment to merge with', {duration: 3600});
       return;
     }
     try {
@@ -996,9 +984,9 @@
       renderTranscript(job, transcript, speakers);
       fillMetadataForm(job);
       loadWaveform();
-      toast('Segments merged', 'accent');
+      window.ArtificeToast.success('Segments merged', {duration: 3600});
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -1031,7 +1019,7 @@
     // Check if a segment is selected
     const activeSeg = document.querySelector('.segment.active');
     if (!activeSeg) {
-      toast('Click a segment first, then open History', 'warning');
+      window.ArtificeToast.warning('Click a segment first, then open History', {duration: 3600});
       return;
     }
     const segId = activeSeg.dataset.segId;
@@ -1052,7 +1040,7 @@
       }
       panel.classList.remove('hidden');
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -1111,10 +1099,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      toast('Speaker names saved', 'accent');
+      window.ArtificeToast.success('Speaker names saved', {duration: 3600});
       selectJob(jobId);
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -1123,7 +1111,7 @@
     try {
       await api(`/jobs/${jobId}`, { method: 'DELETE' });
       activeJobs.delete(jobId);
-      toast('Job deleted', 'accent');
+      window.ArtificeToast.success('Job deleted', {duration: 3600});
       if (currentJobId === jobId) {
         currentJobId = null;
         $('transcript-card').classList.add('hidden');
@@ -1132,7 +1120,7 @@
       renderActiveJobs();
       loadLibrary();
     } catch (err) {
-      toast(err.message, 'error');
+      window.ArtificeToast.error(err.message);
     }
   }
 
@@ -1301,7 +1289,7 @@
       const data = await api(`/search?q=${encodeURIComponent(q)}`);
       showSearchResults(data, q);
     } catch (err) {
-      toast(`Search failed: ${err.message}`, 'error');
+      window.ArtificeToast.error(`Search failed: ${err.message}`);
     }
   }
 
@@ -1472,10 +1460,9 @@
     hideHealthError();
     try {
       const result = await api('/health/preload', { method: 'POST' });
-      if (result.ok) { toast('Models loaded successfully', 'accent'); }
-      else { toast(`Model load failed: ${result.error}`, 'error'); showHealthError(result.error); }
-    } catch (err) {
-      toast(`Preload failed: ${err.message}`, 'error');
+      if (result.ok) { window.ArtificeToast.success('Models loaded successfully', {duration: 3600}); }
+      else { window.ArtificeToast.error(`Model load failed: ${result.error}`); showHealthError(result.error); }
+      window.ArtificeToast.error(`Preload failed: ${err.message}`);
       showHealthError(err.message);
     } finally {
       btn.classList.remove('loading');
@@ -1545,7 +1532,7 @@
           try {
             await api(`/speakers/known/${btn.dataset.deleteKnown}`, { method: 'DELETE' });
             loadKnownSpeakers();
-          } catch (err) { toast(err.message, 'error'); }
+          } catch (err) { window.ArtificeToast.error(err.message); }
         });
       });
     } catch (_) { /* table may be empty */ }
@@ -1573,10 +1560,10 @@
   }
 
   async function enrollFromJob() {
-    if (!currentJobId) { toast('No job selected.', 'warning'); return; }
+    if (!currentJobId) { window.ArtificeToast.warning('No job selected.', {duration: 3600}); return; }
     const inputs = document.querySelectorAll('[data-speaker-label]');
     const selected = Array.from(inputs).find((inp) => inp.dataset.enrolling) || inputs[0];
-    if (!selected) { toast('No speakers in this job.', 'warning'); return; }
+    if (!selected) { window.ArtificeToast.warning('No speakers in this job.', {duration: 3600}); return; }
     const speakerLabel = selected.dataset.speakerLabel;
     const name = prompt(`Enter a name for speaker "${speakerLabel}":`);
     if (!name || !name.trim()) return;
@@ -1586,22 +1573,22 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ job_id: currentJobId, speaker_label: speakerLabel, name: name.trim() }),
       });
-      toast(`Enrolled "${name.trim()}"`, 'accent');
+      window.ArtificeToast.success(`Enrolled "${name.trim()}"`, {duration: 3600});
       loadKnownSpeakers();
-    } catch (err) { toast(err.message, 'error'); }
+    } catch (err) { window.ArtificeToast.error(err.message); }
   }
 
   async function matchSpeakers() {
-    if (!currentJobId) { toast('No job selected.', 'warning'); return; }
+    if (!currentJobId) { window.ArtificeToast.warning('No job selected.', {duration: 3600}); return; }
     const status = $('match-status');
     status.textContent = 'Matching...';
     try {
       const result = await api(`/jobs/${currentJobId}/match-speakers`, { method: 'POST' });
       const matched = result.matches.filter((m) => m.matched_name);
       if (matched.length > 0) {
-        toast(`Matched ${matched.length} speaker(s)`, 'accent');
+        window.ArtificeToast.success(`Matched ${matched.length} speaker(s)`, {duration: 3600});
       } else {
-        toast('No matches found', 'accent');
+        window.ArtificeToast.success('No matches found', {duration: 3600});
       }
       status.textContent = '';
       // Reload transcript to reflect new names
@@ -1654,11 +1641,11 @@ async function saveModelConfig() {
     });
     if (status) status.style.display = 'block';
     if (text) text.textContent = 'Model configuration applied successfully.';
-    toast('Model settings saved', 'accent');
+    window.ArtificeToast.success('Model settings saved', {duration: 3600});
   } catch (err) {
     if (status) status.style.display = 'block';
     if (text) text.textContent = `Failed to apply: ${err.message}`;
-    toast(`Failed to save model settings: ${err.message}`, 'error');
+    window.ArtificeToast.error(`Failed to save model settings: ${err.message}`);
   }
 }
 
@@ -1676,9 +1663,9 @@ async function saveInferenceConfig() {
       body: JSON.stringify(body),
     });
     localStorage.setItem('pt-inference-config', JSON.stringify(body));
-    toast('Inference settings saved successfully', 'accent');
+    window.ArtificeToast.success('Inference settings saved successfully', {duration: 3600});
   } catch (err) {
-    toast(`Failed to save settings: ${err.message}`, 'error');
+    window.ArtificeToast.error(`Failed to save settings: ${err.message}`);
   }
 }
 
@@ -1701,14 +1688,14 @@ async function fetchInferenceModels() {
         opt.textContent = m;
         select.appendChild(opt);
       });
-      toast(`Loaded ${res.models.length} model(s)`, 'accent');
+      window.ArtificeToast.success(`Loaded ${res.models.length} model(s)`, {duration: 3600});
     } else {
       select.innerHTML = '<option value="">No models found</option>';
-      toast('No models returned by server', 'warning');
+      window.ArtificeToast.warning('No models returned by server', {duration: 3600});
     }
   } catch (err) {
     select.innerHTML = '<option value="">Failed to fetch models</option>';
-    toast(`Error fetching models: ${err.message}`, 'error');
+    window.ArtificeToast.error(`Error fetching models: ${err.message}`);
   }
 }
 
@@ -1728,16 +1715,16 @@ async function testInferenceConnection() {
     if (res.success) {
       dot.style.background = '#22c55e';
       statusText.textContent = res.message;
-      toast('Connection successful!', 'accent');
+      window.ArtificeToast.success('Connection successful!', {duration: 3600});
     } else {
       dot.style.background = '#ef4444';
       statusText.textContent = res.message;
-      toast(res.message, 'error');
+      window.ArtificeToast.error(res.message);
     }
   } catch (err) {
     dot.style.background = '#ef4444';
     statusText.textContent = `Error: ${err.message}`;
-    toast(`Connection test failed: ${err.message}`, 'error');
+    window.ArtificeToast.error(`Connection test failed: ${err.message}`);
   }
 }
 
@@ -1853,7 +1840,7 @@ async function cleanupTranscript(jobId) {
 function copyAIResult() {
   const text = $('ai-modal-content').textContent;
   if (text && text !== 'Waiting for AI response...') {
-    navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard', 'accent'));
+    navigator.clipboard.writeText(text).then(() => window.ArtificeToast.success('Copied to clipboard', {duration: 3600}));
   }
 }
 
@@ -1868,7 +1855,7 @@ function downloadAIResult() {
   a.download = `${title}-${Date.now()}.txt`;
   a.click();
   URL.revokeObjectURL(url);
-  toast('Downloaded', 'accent');
+  window.ArtificeToast.success('Downloaded', {duration: 3600});
 }
 
 // ---------------------------------------------------------------- startup
