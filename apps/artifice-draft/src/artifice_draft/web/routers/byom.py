@@ -68,6 +68,9 @@ def _byom_recommendations(app_key: str) -> dict:
                 "provider": r.provider,
                 "vision": r.vision,
                 "min_vram_gb": r.min_vram_gb,
+                "ethos_badges": list(r.ethos_badges),
+                "role": r.role,
+                "notes": r.notes,
             }
             for r in recs
         ]
@@ -143,10 +146,12 @@ async def byom_test(req: TestRequest) -> dict:
     result = await probe_endpoint(req.url, policy=_policy)
 
     if result.reachable and req.api_key is not None:
-        save_settings({
-            "base_url": req.url,
-            "api_key": req.api_key,
-        })
+        save_settings(
+            {
+                "base_url": req.url,
+                "api_key": req.api_key,
+            }
+        )
 
     return {
         "reachable": result.reachable,

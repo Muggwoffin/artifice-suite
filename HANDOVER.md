@@ -5,248 +5,216 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Handover — session close, 2026-08-06
 
-**Read this, then `IMPLEMENTATION_PLAN.md` § "PICK UP HERE — Phase 6", then
-`CLAUDE.md`.** Where this file disagrees with an older block, this one wins.
+**Read this, then `IMPLEMENTATION_PLAN.md`, then `CLAUDE.md`.** Where this file
+disagrees with an older block, this one wins.
 
 ---
 
-## State at handover
+## State at handover — all verified today, 2026-08-06
 
 | | |
 |---|---|
-| `main` | **CI green** — first green run on `main` since 2026-08-05 |
-| PR #45 | **merged** — CI fixes + install-script fixes |
-| PR #46 | **merged** — draft UI, ASR test coverage, PyPI readiness |
-| PyPI | **7/7 distributions published at `0.1.0` on 2026-08-06:** `artifice-model-harness`, `artifice-secure-io`, `artifice-shared-ui`, `artifice-ocr`, `artifice-draft`, `artifice-graph`, `artifice-transcribe`. All seven trusted publishers active. |
+| `main` | CI green. PRs #45, #46, #47, #48 all merged |
+| Version | `0.2.0` in all nine files; release gate passes for `v0.2.0` |
+| Tag | **None. `v0.2.0` is NOT tagged.** No tags exist in the repo at all |
+| PyPI | `0.1.0` live for all seven distributions. `0.2.0` not yet published |
+| Zenodo | Concept DOI `10.5281/zenodo.21621935`, version `10.5281/zenodo.21707694` — public since 2026-07-30, **stamped MIT while the code is AGPL-3.0-or-later** |
 
-### Current suite baselines — these supersede every earlier figure
+---
+
+## Test baselines — these supersede every earlier figure
 
 | Suite | Count |
 |---|---|
 | `apps/artifice-ocr` | 489 passed, 1 skipped |
 | `apps/artifice-draft` | 227 passed |
-| `apps/artifice-graph` | 171 passed |
-| `apps/artifice-transcribe` | **123** passed (was 116; +7 new) |
-| `packages/model-harness` | 222 passed, 1 deselected |
+| `apps/artifice-graph` | 182 passed |
+| `apps/artifice-transcribe` | 168 passed, 4 skipped **without** the `asr` extra |
+| `packages/model-harness` | 225 passed, 1 deselected |
 | `packages/secure-io` | 18 passed, 1 skipped |
 
-Transcribe's count **depends on the environment** — without the ASR extra some
-tests skip. Check before reporting a regression that is only an install state.
+**Transcribe's number depends on the environment and this has now misled twice.**
+`uv sync --extra all` omits the `asr` extra, so `pyannote.audio` is absent and
+four tests in `tests/test_web_endpoints.py` skip with
+`ASR stack not installed (pyannote.audio unavailable)`. **Check the install state
+before reporting a regression** — a lower number may be an environment, not a
+defect.
+
+> **The `--extra asr` figure is deliberately not stated here.** It was going to
+> read "172 passed", arithmetic from 168 + 4 — but nobody ran it, and an
+> unmeasured number written down as a baseline is exactly what this file spends
+> a section below warning about. Measure it when you next install that extra,
+> then record it *with the date and the install state it was measured under*.
 
 ---
 
 ## YOUR TO-DO LIST
 
-### Only you can do these — they need credentials or a human decision
+### Maintainer-only — needs credentials or a human decision
 
-1. ~~**Review and merge PR #46.** CI should be green; check before merging.~~
-   **Done 2026-08-06.** PR #46 merged. CI was green; all draft UI, ASR test
-   coverage, and PyPI readiness items landed.
+1. **Tag `v0.2.0`.** From a WSL terminal (`gh` and `uv` are authenticated there,
+   not on the Windows side): `git checkout main && git pull`, then
+   `uv run python scripts/check-release-consistency.py --expected v0.2.0`,
+   then `git tag v0.2.0 && git push origin v0.2.0`. Run the check **before**
+   tagging — a PyPI version is burned permanently.
 
-2. ~~**Create the PyPI accounts and pending publishers.**~~
-   Full walkthrough: **`docs/PYPI_PUBLISHING.md`**. Summary below.
-   **Done 2026-08-06.** All seven trusted publishers registered and active;
-   all seven distributions published at `0.1.0`.
+2. **Correct the Zenodo record.** The published record says MIT. Add a note to
+   the old record at zenodo.org (editing metadata does not mint a new DOI);
+   the next tag mints a corrected AGPL record under the same concept DOI.
+   Zenodo does **not** backfill.
 
-3. **Decide the `curl | sh` question.** `install.sh:47` and `install.ps1:69`
-   fetch and execute the uv installer with no checksum. `security-auditor`
-   rated it MEDIUM and noted it is the standard pattern for uv, rustup and pip
-   over HTTPS. Either pin a checksum or require uv pre-installed. Deliberately
-   left to you.
+3. **Build the Windows `.exe`.** Actions → *Build standalone executables* →
+   Run workflow. This could not be done before #48 merged, because
+   `workflow_dispatch` requires the workflow file on the default branch.
 
-4. **Diarization is still unproven end to end** — it needs a HuggingFace token.
-   Transcription itself was run through the API on CPU with the `tiny` model
-   and works.
+4. **Two Dependabot PRs are open and green** (`setup-uv` 5→7,
+   `actions/checkout` 4→7). A third Dependabot run **failed** on torchaudio —
+   transcribe's torch pins are version-matched pairs, so that needs care.
 
-5. **The CUDA install path is unverified.** No NVIDIA GPU on this machine.
-   `--extra asr-cuda` resolves, but its size and whether it actually gets GPU
-   torch are unmeasured.
+5. **The `curl | sh` question is still open.** `install.sh:47` and
+   `install.ps1:69` fetch and execute the uv installer with no checksum.
 
-### Ready for the next session to pick up
+6. **Diarization is still unproven end to end** — needs a HuggingFace token.
+   Given that the token-leak fixes landed today in exactly that code path, it
+   deserves an actual run.
 
-6. **Step 5 — the ASR consent-and-download flow.** Not started. Its PyTorch
-   prerequisite is done, and the distribution decision (uv primary) unblocks
-   tier 3 runtime install, which a frozen bundle would have denied.
+7. **The CUDA install path is unverified.** No NVIDIA GPU on this machine.
 
-7. **Step 9 remainder** — favicons (no app has one) and a shared toast
-   (implemented three times, missing from draft). Draft's theme toggle,
-   shortcuts and dark accent block are **done** in PR #46.
+8. **macOS signing and notarisation.** Deliberately deferred — the maintainer
+   decided on 2026-08-06 to ship Linux and Windows first. `build-exe.yml`
+   excludes macOS on purpose, with the reasoning written into the file.
 
-8. **`typer[all]` is stale.** `uv tool install` warns that `typer==0.27.1` has
-   no extra named `all`. Something still requests it. One-line fix, not yet
-   traced to which pyproject.
+### TOMORROW'S WORK — decided by the maintainer, 2026-08-06
 
-9. **The `.callosip` migration has never run against a real directory.** The
-   `shutil.move` + `ensure_restricted` path is not hit by any test. Your own
-   `~/.callosip` is the natural first case — back it up first.
+**Freeze `artifice-draft` and `artifice-graph`, each with its own native
+application window. `artifice-transcribe` is deliberately excluded.**
 
-10. **Consider upper bounds on the internal pins.** `>=0.1.0` is loose once
-    these names are public; `~=0.1.0` would stop a future 2.0 being pulled into
-    an old app. Do this *before* first publish if you want it in 0.1.0.
+`artifice-ocr` is the working reference: `apps/artifice-ocr/artifice-ocr.spec`,
+`apps/artifice-ocr/src/artifice_ocr/web/window.py`, and `scripts/build-exe.sh`.
+Follow that pattern rather than inventing a second one.
 
-11. **`README.md` still tells users to clone the workspace.** Once published,
-    `uv tool install artifice-<app>` is the real install story.
+**Why transcribe is excluded, so nobody re-derives it:** the ASR stack is
+~5.8 GB, and **a frozen bundle has no writable `site-packages`**, so it cannot
+be installed at runtime into the bundle — the tier-3 "prompt and install"
+approach recorded in `IMPLEMENTATION_PLAN.md` is *impossible inside a freeze*.
+The only options would be baking 5.8 GB into the artifact or shipping a
+transcribe binary whose main feature does not work. **Transcribe stays a `uv`
+install.** Revisit only if the ASR stack becomes optional at runtime in a way a
+frozen bundle can satisfy.
 
-12. **Fix the agent smoke gate.** `scripts/smoke-test-agents.sh` is flaky —
-    `mode=all` failed on different agents across two runs while every direct
-    check passed. Most likely concurrent `opencode` invocations. It is the
-    check that exists to catch silent agent fallback, so it needs to be
-    trustworthy.
+What each app needs, in order:
 
----
+1. **Audit its asset paths first.** ocr's blocker was `configs/` sitting
+   *outside* the package, reached by `Path(__file__).parent.parent.parent` — so
+   it shipped in **no wheel at all**. Grep both apps for `__file__`-relative and
+   CWD-relative resolution before writing any spec, and move anything outside
+   the package inside it. **A user-supplied input/output path SHOULD stay
+   CWD-relative** — that is a different thing that merely looks similar.
+2. **A `.spec` per app**, modelled on ocr's, with the data collection its assets
+   actually need. `artifice-graph` is the awkward one: it is the only app with
+   **both** a `templates/` tree and a `static/` tree, plus vendored Leaflet
+   assets under `static/vendor/`.
+3. **A `window.py` per app**, following ocr's: `pywebview` behind a `window`
+   extra, imported *inside* the function, with a `--no-window` fallback that
+   degrades to printing the URL. **The fallback is not optional** — Linux needs
+   system GTK/Qt Python bindings that PyInstaller cannot bundle.
+4. **Add each app to `.github/workflows/build-exe.yml`'s `app` choice input**
+   and smoke-test the built binary over HTTP, as ocr's job does.
 
-## PyPI — what you need to do, in order
+**Verify by running the artifact, not the source.** Tests run against `src/`
+while the bug lives only in the built thing; this repository has shipped four
+such bugs. Serve the binary and fetch a `/shared/*` asset — that proves
+`importlib.resources` resolves from the *shared* package inside the bundle,
+which is the hardest case.
 
-Full detail in `docs/PYPI_PUBLISHING.md`. This is the short version.
+**Known rough edge inherited from ocr:** the Linux fallback prints pywebview's
+own GTK and Qt import tracebacks before its friendly message. A user
+double-clicking would see two stack traces and reasonably think it crashed.
+Worth fixing once, in the shared pattern, rather than three times.
 
-### The one thing to get right
+### Also ready to pick up
 
-Every app declares the three shared packages by name. Locally
-`[tool.uv.sources]` resolves them from the workspace; **on PyPI there is no
-workspace.** Publish the apps first and `pip install artifice-graph` fails for
-everyone, because its dependencies are not on the index yet.
+1. **Favicons — no app has one.**
 
-> **Shared packages first. Then the apps.** `publish.yml` enforces this with
-> `needs: shared-packages`, but the same order applies when you register the
-> pending publishers.
+2. **`security-auditor` finding F5 follow-ups** and the remaining "note only"
+   items from the 2026-08-06 audit.
 
-### Step 1 — accounts
+3. **Should `min_vram_gb` be split?** `lead-engineer` raised this and correctly
+   stopped rather than implementing it. The field currently answers two
+   different questions — "how much VRAM for full GPU offload" (12 GB for
+   olmOCR-2) and "will this run at all" (yes on 8 GB, with CPU fallback). A
+   split into two fields would let the per-tier ceiling test check the second
+   rather than being tuned around the first. **Maintainer's decision.**
 
-- Register at <https://pypi.org/account/register/>.
-- **Enable 2FA immediately** — required to own a project, and you cannot create
-  publishers without it.
-- **Save the recovery codes somewhere you will still have them in two years.**
-- Do the same at <https://test.pypi.org/> — a **separate account**, separate
-  2FA, not linked.
-
-### Step 2 — seven pending publishers
-
-None of the seven names exist yet (all 404, re-confirmed 2026-08-06). A
-*pending* publisher claims a name that has never been uploaded.
-
-PyPI → *Your projects* → *Publishing* → *Add a new pending publisher* →
-**GitHub**, once per name. Owner `Muggwoffin`, repository `artifice-suite`,
-workflow `publish.yml` every time — but **a different environment each time**.
-
-**Register three, publish them, then register the next three.** PyPI allows at
-most three pending publishers per account, and a pending publisher only frees
-its slot once its project has actually been published.
-
-| Wave | `stage` input | PyPI Project Name | Environment name |
-|---|---|---|---|
-| 1 | `wave-1-shared` | `artifice-model-harness` | `pypi-artifice-model-harness` |
-| 1 | | `artifice-secure-io` | `pypi-artifice-secure-io` |
-| 1 | | `artifice-shared-ui` | `pypi-artifice-shared-ui` |
-| 2 | `wave-2-apps` | `artifice-ocr` | `pypi-artifice-ocr` |
-| 2 | | `artifice-draft` | `pypi-artifice-draft` |
-| 2 | | `artifice-graph` | `pypi-artifice-graph` |
-| 3 | `wave-3-apps` | `artifice-transcribe` | `pypi-artifice-transcribe` |
-
-Wave 1 being the shared packages is not a coincidence — they must reach the
-index before any app regardless. Wave 3 has one project only because seven does
-not divide by three.
-
-**A shared environment name does not work, and the failure is silent until the
-second registration.** A pending publisher is identified only by
-`(owner, repository, workflow, environment)` until its project exists, and PyPI
-requires that tuple to be unique. Owner, repo and workflow are fixed for a
-monorepo, so the environment is the only field that can vary. Reusing one name
-fails with *"A pending trusted publisher matching this configuration has already
-been registered for a different project name."*
-
-These must match the `environment:` values in `publish.yml` exactly. A mismatch
-surfaces at publish time as what looks like a permissions error.
-
-### Step 3 — rehearse on TestPyPI
-
-Actions → *Publish to PyPI* → *Run workflow* → target `testpypi`.
-
-**Rehearse properly.** A version number on PyPI is burned permanently — you
-cannot re-upload `0.1.0` after deleting it. A bad first upload costs you the
-version, not just time.
-
-### Step 4 — publish
-
-**First release: wave by wave, manually.** Actions → *Publish to PyPI* →
-*Run workflow* → target `pypi`, stage `wave-1-shared`. When it succeeds,
-register wave 2's publishers, run `wave-2-apps`, then the same for wave 3.
-
-A tag (`git tag v0.1.0 && git push origin v0.1.0`) publishes everything at once
-and also fires the Release Gate and Zenodo DOI minting — correct from the
-**second** release onward, once all seven publishers are active.
-
-### Never
-
-**Do not create a PyPI API token.** Trusted Publishing needs no stored
-credential — the only arrangement compatible with the Zero Secrets Policy. If
-anything asks you to paste a token into an Actions secret, the setup above has
-gone wrong.
-
-### Re-check readiness any time
-
-```bash
-uv run python scripts/check-pypi-readiness.py
-```
+4. **Three dialog questions left open by `ui-ux`:** which model the ASR consent
+   dialog pre-selects on open, and whether the success toast is redundant with
+   the in-dialog "Done".
 
 ---
 
-## What changed this session, and why it matters
+## What changed today, and why it matters
 
-### Three CI failures, all pre-existing, all the same shape
+Seven distributions were published to PyPI at `0.1.0` and then verified
+installable from the real index into clean environments. This was the load-bearing
+test: the shared packages had to resolve *from PyPI*, not the local uv
+workspace. If that had failed, `pip install artifice-graph` would have broken for
+every user on the index — and only a real install into a clean environment could
+confirm it.
 
-The recent ruff work did not cause any of them — it unblocked the steps that
-expose them. **A gate that has never executed is not a passing gate.**
+A pre-tag audit sweep found four tag-blocking issues. The most serious: a
+token-redaction helper existed in `download.py` but was applied nowhere else.
+When an HF API call returns a 401, the response echoes the bearer token in
+plain text. That token was going into the logs, into **SQLite via
+`job.error_message`**, and back out through `GET /api/v1/jobs/{id}` and
+`GET /health/detailed`. It was never in a chat UI — but it was in the job
+history and the health endpoint, both reachable by design.
 
-- **Dependency audit reported a ghost that was correctly declared.**
-  `pyannote.audio` sits behind transcribe's `asr` extra, which `--extra all`
-  omits, so CI locks it but never installs it — and the fallback compared an
-  import root against distribution names. `IMPORT_ROOT_TO_DIST` teaches the
-  fallback the name; it is **not** an exemption list.
-- **The `ruff format` gate had never once run.** Shallow clone, so the PR base
-  commit was unreachable: `fatal: bad object`, on every PR, regardless of
-  content. Fixed with `fetch-depth: 0`.
-- **The Windows failures were never about admin ACEs.** The check was made to
-  say *why* it failed, and the runner answered: `Get-Acl`'s
-  `Microsoft.PowerShell.Security` module would not load, so **the ACL was never
-  read at all.** The standing test comment blaming "implicit admin ACEs the
-  runner retains" was a plausible guess and wrong.
+`artifice-ocr` now freezes into a standalone executable. The blocker was a
+live packaging bug: a `configs/` directory sat outside the package tree and was
+loaded with `Path(__file__).parent.parent.parent`, which resolved to the
+working directory at runtime and to nothing in a wheel. It shipped in no wheel
+at all in both 0.1.0 and 0.2.0. The OCR prompt templates — which users see on
+every job — were silently absent from the installed package.
 
-  This was a **live user-facing defect**, not a CI artefact: on any Windows
-  machine where that module will not autoload, the apps cannot save settings.
+An undisclosed network egress was closed. `artifice-graph` was sending entity
+names extracted from the user's documents to OpenStreetMap's Nominatim API,
+with no consent mechanism and no way to disable it. The README promised
+local-first processing. The egress is now default-off.
 
-### The install scripts had never been executed
+---
 
-Three defects, all found by running them, none visible in source review:
+## Lessons worth keeping
 
-- **`uninstall.ps1` aborted before its own disclosure.** PowerShell 5.1 wraps
-  native stderr in a terminating `ErrorRecord` under `$ErrorActionPreference =
-  "Stop"`, and uv writes its *success* message to stderr. The script died after
-  a successful removal, before printing the block that tells the user their data
-  is still on disk **and may contain an API key**.
-- **`uninstall.ps1` returned a stale exit code** — success reported as failure.
-- **`install.ps1` installed uv in response to a typo** — validation ran after
-  the uv bootstrap.
+- **A measurement is only as wide as the path you point it at.** Three separate
+  claims were refuted today, and two of the corrections were *themselves* wrong
+  for the same reason: an audit scoped to a file list that excluded
+  `CHANGELOG.md` concluded no Zenodo DOI existed (one did); a grep scoped to
+  `apps/` concluded three apps lacked the BYOM button (it was in
+  `packages/shared-ui`). When a search comes back negative, widen the path
+  before believing it.
 
-> **`2>&1` on a native command in PowerShell 5.1 is a trap.** It corrupts both
-> error handling and `$LASTEXITCODE`. It bit the scripts, and then bit the
-> test harness measuring them — a clean run reported `-1`. If you measure a
-> PowerShell exit code, do not merge stderr.
+- **A citation is not evidence of currency.** Stale plan entries cite real line
+  numbers and read as verified. The line numbers are real; the condition they
+  describe may have changed.
 
-### Lessons worth keeping
+- **Tests assert on meaning; bugs live in what is emitted.** Every SSE frame in
+  the new download endpoints was malformed — a literal backslash-n instead of a
+  newline — so no event would ever have reached a browser. A code review and 36
+  tests missed it because they all asserted on decoded JSON and object state.
+  A line-length warning caught it.
 
-- **A verification that only tests the success case proves almost nothing.**
-  Unchanged from last session and it earned its place again.
-- **Brief agents to disagree.** Both sub-agents corrected a false premise in
-  their brief this session — one found the toggle already existed and was
-  switched off; the other found graph has no keyboard shortcuts to copy. Both
-  flagged it instead of half-applying the instruction.
-- **Scope a brief tightly, but be ready to widen it.** `ui-ux` hit a boundary I
-  drew too tightly, worked around it, and flagged the workaround as worse than
-  the fix. Widening the scope was correct; accepting the workaround would have
-  left draft carrying graph's duplicated nav.
-- **The rendered page still finds what source review cannot.** The toggle
-  measured 44.00 × 44.00 with 0.00px centre offset — confirmable only in a
-  browser, and the agent correctly declined to claim it.
+- **A fix can be right and still incomplete on the path that matters.** The
+  cancel guard registered its thread only on the success path, so the cancel
+  case — the only one it existed for — was still broken.
+
+- **Agents killed mid-task still produce value.** Two runs were killed
+  (`exit=137`, `exit=143`) after starting servers inside their shell tool and
+  hanging on cleanup; their findings were salvaged from the logs. Start
+  long-running servers with `setsid nohup ... < /dev/null &`, never a bare `&`.
+
+- **`code-reviewer` returns nothing on a large brief.** It read nine files and
+  produced no report at all, exit 0. Re-scoped to two files it produced the best
+  review of the day. Keep its briefs small.
 
 ---
 
@@ -258,9 +226,17 @@ Three defects, all found by running them, none visible in source review:
   filled it, producing 148 failures that read `OSError: [Errno 28]` and looked
   exactly like a code regression.
 - **Servers:** harness-backgrounded ones get reaped; `setsid nohup` survives.
-- **uv is NOT installed on native Windows.** It was installed accidentally this
-  session by the `install.ps1` typo path, then removed at the maintainer's
-  request (~410 MB reclaimed). `install.ps1` will bootstrap it if you test
-  those scripts again.
-- Quoting across the Windows/WSL boundary breaks constantly. **Write a script
-  file and run that** rather than fighting inline quoting.
+- **Quoting across the Windows/WSL boundary breaks constantly.** Write a script
+  file and run that rather than fighting inline quoting.
+- **`gh` is authenticated inside WSL only.** Running it Windows-side fails with
+  "please run gh auth login". The Claude Code `!` prefix runs Windows-side —
+  use `!wsl.exe -d Ubuntu -- bash -lc "gh ..."`.
+- **Backticks in a heredoc are command-substituted across the boundary.** A PR
+  body written inline was silently gutted. Write the body to a file and use
+  `--body-file`.
+- **`gh pr edit` can fail on an unrelated Projects-classic GraphQL deprecation.**
+  `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -F body=@file` works.
+- **`dispatch-opencode.sh --status` is machine-wide, not repo-scoped.** It
+  reported an unrelated project's agent as if it were this repo's.
+- **GitHub Actions can fail with "The job was not acquired by Runner of type
+  hosted".** That is infrastructure, not code. `gh run rerun <id> --failed`.

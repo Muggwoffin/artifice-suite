@@ -26,6 +26,30 @@ You oversee the development of four local-first, BYOM (Bring-Your-Own-Model) aca
    > `driver.run_structured` (`5aa8619`). The mandate is real; `ocr`, `draft` and transcribe's
    > inference path remain unported — correct definition, partial implementation.
 3. **Enforce Design Philosophy.** Ensure all UI components and layout primitives strictly adhere to `Design_Philosophy.md` (The New Masses Design System: paper and ink aesthetics, warm palette, editorial typography, restrained motion).
+
+   ### Default to the most open-source choice — maintainer's instruction, 2026-08-06
+
+   **Where two models could be recommended, the default is the one with the more open
+   provenance** — open training data, published training code, an auditable dataset — even when a
+   closed-weights alternative scores better on a benchmark. This suite is built for historians, and
+   a model whose training data cannot be inspected cannot be cited honestly in a methods section.
+
+   This governs `packages/model-harness/src/model_harness/registry.py`, whose recommendations carry
+   an `ethos_badges` field for exactly this reason. The badge vocabulary is a closed
+   `PERMITTED_BADGES` frozenset with a test enforcing it — free-string badges drift into
+   near-duplicates and render as inconsistent chips.
+
+   **Badges describe provenance, not capability.** "Strict Open Data", "Auditable Dataset" and
+   "Open Source Training Code" are provenance claims a user can verify. A badge like "Cultural &
+   Linguistic Fluency" is a capability claim, belongs in `notes`, and was removed on the
+   maintainer's instruction the day it was added. If a proposed badge could not be checked by
+   reading the model's publication, it is not a badge.
+
+   **Open provenance does not excuse an unusable recommendation.** The same change replaced ocr's
+   `llava:7b` with a 12 GB-VRAM quantisation in the **LAPTOP** tier, which most research laptops
+   cannot run — trading a working recommendation for an unrunnable one is not a win. Prefer a
+   smaller quantisation of the open model over falling back to a closed one, and **assert a VRAM
+   ceiling per tier in a test**; the absence of that test is why it got through.
 4. **Maintain Monorepo Parity.** Ensure all four apps maintain identical modular `src/` directory patterns (`apps/<app>/src/artifice_<app_slug>/`), PEP 621 `pyproject.toml` definitions, and Docker configurations.
 
 ### Canonical web layout
@@ -332,6 +356,38 @@ whatever else is in context.
 - `ui-ux` is now an OpenCode agent too. New or edited agent files are still only picked up on
   session start.
 - Verify the whole fleet with `bash scripts/smoke-test-agents.sh` after any config change.
+
+**`--status` is machine-wide, not repo-scoped — learned 2026-08-06.** It matches any `opencode run`
+process on the host, so an agent belonging to an *entirely different project* appears in this
+repo's status output. One did, and it was briefly diagnosed as persona bleed. Check the process
+`cmdline` before concluding a rogue agent is yours.
+
+### Agents killed mid-task, and how to prevent it — 2026-08-06
+
+Two runs died: `lead-engineer` at `exit=137` (SIGKILL) and `tester` at `exit=143` (SIGTERM). **Both
+had started a long-running server inside their shell tool with a bare `&`, then hung forever trying
+to kill it.** Neither was a model or billing failure, and neither showed the low-CPU signature of
+throttling — they were pinned at healthy CPU right up to the kill.
+
+**Brief any agent that starts a server to use `setsid nohup <cmd> > /tmp/x.log 2>&1 < /dev/null &`
+and to stop it with `pkill -f <pattern>`.** A bare `&` leaves the process holding the shell tool's
+stdout, and the tool never returns.
+
+**Their work survived and was salvaged from the logs** — the freeze build had already succeeded and
+`tester` had already established the port-fallback behaviour before it was killed. **Read the log of
+a killed agent before re-dispatching it**; `exit=137` does not mean nothing was accomplished.
+
+### `code-reviewer` returns nothing on a large brief — 2026-08-06
+
+Given nine files to review it read all of them, then produced **no report at all** and exited 0. Not
+an error, not a timeout — 45 lines of tool calls and silence. Re-dispatched against **two** files
+with one question, it produced the best review of the session, including a defect that a previous
+review and 36 tests had both missed.
+
+**Keep its briefs small and name the files explicitly.** An exit code of 0 from this agent is not
+evidence it did anything; check that a report actually exists. It also attempted a `bash` call it
+does not have — harmless, it is read-only by design, but do not write briefs that imply it can run
+things.
 
 ### Filesystem permissions
 

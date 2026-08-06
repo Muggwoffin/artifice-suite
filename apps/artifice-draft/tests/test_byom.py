@@ -12,12 +12,10 @@ from unittest.mock import patch
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
-
-from model_harness.discovery import ProbeResult
-
 from artifice_draft.web import runtime
 from artifice_draft.web.server import app
+from fastapi.testclient import TestClient
+from model_harness.discovery import ProbeResult
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +33,6 @@ def client():
 
 
 class TestByomState:
-
     def test_returns_all_keys_in_default_state(self, client):
         r = client.get("/api/byom/state")
         assert r.status_code == 200
@@ -78,6 +75,9 @@ class TestByomState:
                 assert "provider" in entry
                 assert "vision" in entry
                 assert "min_vram_gb" in entry
+                assert "ethos_badges" in entry
+                assert "role" in entry
+                assert "notes" in entry
 
     def test_response_is_json_serialisable(self, client):
         r = client.get("/api/byom/state")
@@ -88,7 +88,6 @@ class TestByomState:
 
 
 class TestByomDetect:
-
     def test_returns_endpoints_array(self, client):
         with patch("artifice_draft.web.routers.byom.detect_local_servers") as mock_detect:
             mock_detect.return_value = [
@@ -133,7 +132,6 @@ class TestByomDetect:
 
 
 class TestByomTest:
-
     def test_rejects_empty_url(self, client):
         r = client.post("/api/byom/test", json={"url": "", "api_key": ""})
         assert r.status_code == 400
@@ -165,10 +163,13 @@ class TestByomTest:
                 hint=None,
             )
 
-            r = client.post("/api/byom/test", json={
-                "url": "http://localhost:11434/v1",
-                "api_key": "",
-            })
+            r = client.post(
+                "/api/byom/test",
+                json={
+                    "url": "http://localhost:11434/v1",
+                    "api_key": "",
+                },
+            )
             assert r.status_code == 200
             assert r.json()["reachable"] is True
 
@@ -186,10 +187,13 @@ class TestByomTest:
                 hint="Not running",
             )
 
-            r = client.post("/api/byom/test", json={
-                "url": "http://localhost:1234/v1",
-                "api_key": "sk-test",
-            })
+            r = client.post(
+                "/api/byom/test",
+                json={
+                    "url": "http://localhost:1234/v1",
+                    "api_key": "sk-test",
+                },
+            )
             assert r.json()["reachable"] is False
 
             state_r = client.get("/api/byom/state")
@@ -205,10 +209,13 @@ class TestByomTest:
                 hint=None,
             )
 
-            client.post("/api/byom/test", json={
-                "url": "http://localhost:9999/v1",
-                "api_key": "sk-secret-123",
-            })
+            client.post(
+                "/api/byom/test",
+                json={
+                    "url": "http://localhost:9999/v1",
+                    "api_key": "sk-secret-123",
+                },
+            )
 
             saved = runtime.load_settings()
             assert saved.get("api_key") == "sk-secret-123"
@@ -243,7 +250,9 @@ class TestByomContractAndSsrf:
 
     def test_detect_json_keys_all_down(self, client, httpx_mock):
         for url in ("http://localhost:11434", "http://localhost:1234", "http://localhost:8080"):
-            httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url=url + "/api/tags")
+            httpx_mock.add_exception(
+                httpx.ConnectError("Connection refused"), url=url + "/api/tags"
+            )
 
         r = client.get("/api/byom/detect")
         assert r.status_code == 200
@@ -255,10 +264,16 @@ class TestByomContractAndSsrf:
             assert ep["reachable"] is False
 
     def test_detect_json_keys_one_up(self, client, httpx_mock):
-        httpx_mock.add_response(url="http://localhost:11434/api/tags", json={"models": [{"name": "llama3.2:3b"}]})
-        httpx_mock.add_response(url="http://localhost:11434/v1/models", json={"data": [{"id": "llama3.2:3b"}]})
+        httpx_mock.add_response(
+            url="http://localhost:11434/api/tags", json={"models": [{"name": "llama3.2:3b"}]}
+        )
+        httpx_mock.add_response(
+            url="http://localhost:11434/v1/models", json={"data": [{"id": "llama3.2:3b"}]}
+        )
         for url in ("http://localhost:1234", "http://localhost:8080"):
-            httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url=url + "/api/tags")
+            httpx_mock.add_exception(
+                httpx.ConnectError("Connection refused"), url=url + "/api/tags"
+            )
 
         r = client.get("/api/byom/detect")
         assert r.status_code == 200
@@ -269,8 +284,12 @@ class TestByomContractAndSsrf:
     # -- POST /api/byom/test ---------------------------------------------
 
     def test_test_json_keys_reachable(self, client, httpx_mock):
-        httpx_mock.add_response(url="http://localhost:11434/api/tags", json={"models": [{"name": "llama3.2:3b"}]})
-        httpx_mock.add_response(url="http://localhost:11434/v1/models", json={"data": [{"id": "llama3.2:3b"}]})
+        httpx_mock.add_response(
+            url="http://localhost:11434/api/tags", json={"models": [{"name": "llama3.2:3b"}]}
+        )
+        httpx_mock.add_response(
+            url="http://localhost:11434/v1/models", json={"data": [{"id": "llama3.2:3b"}]}
+        )
 
         r = client.post("/api/byom/test", json={"url": "http://localhost:11434/v1", "api_key": ""})
         assert r.status_code == 200
@@ -279,7 +298,9 @@ class TestByomContractAndSsrf:
         assert body["reachable"] is True
 
     def test_test_json_keys_refused(self, client, httpx_mock):
-        httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags")
+        httpx_mock.add_exception(
+            httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags"
+        )
 
         r = client.post("/api/byom/test", json={"url": "http://localhost:11434/v1", "api_key": ""})
         assert r.status_code == 200
@@ -288,7 +309,9 @@ class TestByomContractAndSsrf:
         assert body["reachable"] is False
 
     def test_test_json_keys_timeout(self, client, httpx_mock):
-        httpx_mock.add_exception(httpx.TimeoutException("Timed out"), url="http://localhost:11434/api/tags")
+        httpx_mock.add_exception(
+            httpx.TimeoutException("Timed out"), url="http://localhost:11434/api/tags"
+        )
 
         r = client.post("/api/byom/test", json={"url": "http://localhost:11434/v1", "api_key": ""})
         assert r.status_code == 200
@@ -307,7 +330,10 @@ class TestByomContractAndSsrf:
         assert not httpx_mock.get_requests(), "a request was issued for a rejected URL"
 
     def test_rejects_link_local_before_network(self, client, httpx_mock):
-        r = client.post("/api/byom/test", json={"url": "http://169.254.169.254/latest/meta-data/", "api_key": ""})
+        r = client.post(
+            "/api/byom/test",
+            json={"url": "http://169.254.169.254/latest/meta-data/", "api_key": ""},
+        )
         self._assert_rejected_before_network(r, httpx_mock)
 
     def test_rejects_public_host_before_network(self, client, httpx_mock):
@@ -326,9 +352,17 @@ class TestByomContractAndSsrf:
 
     def test_root_does_not_probe_and_links_assets(self, client, httpx_mock):
         for url in ("http://localhost:11434", "http://localhost:1234", "http://localhost:8080"):
-            httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url=url + "/api/tags", is_optional=True)
-        for url in ("http://localhost:11434/v1", "http://localhost:1234/v1", "http://localhost:8080/v1"):
-            httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url=url + "/models", is_optional=True)
+            httpx_mock.add_exception(
+                httpx.ConnectError("Connection refused"), url=url + "/api/tags", is_optional=True
+            )
+        for url in (
+            "http://localhost:11434/v1",
+            "http://localhost:1234/v1",
+            "http://localhost:8080/v1",
+        ):
+            httpx_mock.add_exception(
+                httpx.ConnectError("Connection refused"), url=url + "/models", is_optional=True
+            )
 
         start = time.perf_counter()
         r = client.get("/")

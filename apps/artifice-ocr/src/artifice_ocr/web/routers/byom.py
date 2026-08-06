@@ -69,6 +69,9 @@ def _byom_recommendations(app_key: str) -> dict:
                 "provider": r.provider,
                 "vision": r.vision,
                 "min_vram_gb": r.min_vram_gb,
+                "ethos_badges": list(r.ethos_badges),
+                "role": r.role,
+                "notes": r.notes,
             }
             for r in recs
         ]

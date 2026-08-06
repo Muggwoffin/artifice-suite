@@ -18,8 +18,9 @@ its provenance.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Literal
 
 from model_harness.contract import Provider
 
@@ -177,6 +178,47 @@ here is forward-looking.  Do not imply a working code path.
 """
 
 
+# ── Open-science provenance badges ────────────────────────────────────────────
+
+
+PERMITTED_BADGES: frozenset[str] = frozenset(
+    {
+        "Strict Open Data",
+        "Transparent Training",
+        "Allen AI Open Science",
+        "Open Science Lab",
+        "Auditable Dataset",
+        "Open Source Training Code",
+    }
+)
+"""Permitted provenance labels for :attr:`ModelRecommendation.ethos_badges`.
+
+The vocabulary is closed — badges are free strings in the dataclass but
+*validation* (in tests) must reject any string not in this set.  That keeps
+the UI renderable as a small set of chips and prevents badge drift across
+entries.
+
+**Badges describe provenance, not capability.**  ``"Strict Open Data"``,
+``"Auditable Dataset"`` and ``"Open Source Training Code"`` are claims a user
+can verify by reading the model's publication.  A capability claim
+(e.g. translation fluency, benchmark scores, language coverage) belongs in
+:attr:`ModelRecommendation.notes` — prose makes no verifiable claim.  Apply
+this test to every badge proposed in future: could a user verify it from the
+model paper alone?
+"""
+
+# ── Model role ────────────────────────────────────────────────────────────────
+
+BadgeRole = Literal["vision", "chat", "translation", "embedding"]
+"""Permitted values for :attr:`ModelRecommendation.role`.
+
+- ``"vision"``  — multimodal vision-language (e.g. OCR, image-analysis)
+- ``"chat"``    — general-purpose text chat / instruction-following
+- ``"translation"``  — multilingual translation
+- ``"embedding"``    — text vector embeddings for search, similarity, retrieval
+"""
+
+
 # ── Model recommendations ────────────────────────────────────────────────────
 
 
@@ -201,6 +243,20 @@ class ModelRecommendation:
     CPU draw from the same pool.
     """
 
+    ethos_badges: list[str] = field(default_factory=list)
+    """Open-science provenance labels, e.g. ``["Strict Open Data"]``.
+
+    Every string must be a member of :data:`PERMITTED_BADGES`.
+    """
+
+    role: BadgeRole = "chat"
+    """What the model does — one of ``"vision"``, ``"chat"``, ``"translation"``,
+    or ``"embedding"``.
+    """
+
+    notes: str = ""
+    """A one-sentence plain-language description a historian would understand."""
+
 
 # App → HardwareTier → recommendations.
 # These are guidance, not requirements — the suite is BYOM, and any model the
@@ -210,44 +266,73 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
     "artifice-ocr": {
         HardwareTier.LAPTOP: [
             ModelRecommendation(
-                model_name="llava:7b",
+                model_name="richardyoung/olmocr2:7b-q8",
                 provider="ollama",
                 vision=True,
-                min_vram_gb=8.0,
+                min_vram_gb=12.0,
+                role="vision",
+                ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
+                notes=(
+                    "Allen AI's olmOCR-2: open-research document OCR. Needs ≈12 GB VRAM for full "
+                    "GPU offload; runs on 8 GB GPUs with CPU fallback (reduced throughput)."
+                ),
             ),
             ModelRecommendation(
-                model_name="minicpm-v:8b",
+                model_name="aya-expanse:8b",
                 provider="ollama",
-                vision=True,
-                min_vram_gb=8.0,
+                vision=False,
+                min_vram_gb=6.0,
+                role="translation",
+                ethos_badges=["Open Science Lab"],
+                notes=(
+                    "Cohere For AI multilingual model with strong performance across 23 languages."
+                ),
             ),
         ],
         HardwareTier.DESKTOP: [
             ModelRecommendation(
-                model_name="llava:13b",
+                model_name="richardyoung/olmocr2:7b-q8",
                 provider="ollama",
                 vision=True,
-                min_vram_gb=16.0,
+                min_vram_gb=12.0,
+                role="vision",
+                ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
+                notes=(
+                    "Allen AI's olmOCR-2: open-research document OCR, runs locally on a single GPU."
+                ),
             ),
             ModelRecommendation(
-                model_name="minicpm-v:8b",
+                model_name="aya-expanse:32b",
                 provider="ollama",
-                vision=True,
-                min_vram_gb=8.0,
+                vision=False,
+                min_vram_gb=20.0,
+                role="translation",
+                ethos_badges=["Open Science Lab"],
+                notes="Cohere For AI's 32B-parameter multilingual translation model.",
             ),
         ],
         HardwareTier.MAC_UNIFIED: [
             ModelRecommendation(
-                model_name="llava:13b",
+                model_name="richardyoung/olmocr2:7b-q8",
                 provider="ollama",
                 vision=True,
                 min_vram_gb=12.0,
+                role="vision",
+                ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
+                notes=(
+                    "Allen AI's olmOCR-2: open-research document OCR, runs locally on a single GPU."
+                ),
             ),
             ModelRecommendation(
-                model_name="llava-llama3:8b",
+                model_name="aya-expanse:8b",
                 provider="ollama",
-                vision=True,
-                min_vram_gb=8.0,
+                vision=False,
+                min_vram_gb=6.0,
+                role="translation",
+                ethos_badges=["Open Science Lab"],
+                notes=(
+                    "Cohere For AI multilingual model with strong performance across 23 languages."
+                ),
             ),
         ],
     },
@@ -258,12 +343,26 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=4.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="qwen2.5:7b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
+                role="chat",
+            ),
+            ModelRecommendation(
+                model_name="nomic-embed-text",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=1.0,
+                role="embedding",
+                ethos_badges=["Strict Open Data", "Auditable Dataset", "Open Source Training Code"],
+                notes=(
+                    "Fully transparent, open-data vector model for semantic search, document "
+                    "matching, and knowledge graph indexing."
+                ),
             ),
         ],
         HardwareTier.DESKTOP: [
@@ -272,12 +371,26 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=24.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="llama3.1:8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
+                role="chat",
+            ),
+            ModelRecommendation(
+                model_name="nomic-embed-text",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=1.0,
+                role="embedding",
+                ethos_badges=["Strict Open Data", "Auditable Dataset", "Open Source Training Code"],
+                notes=(
+                    "Fully transparent, open-data vector model for semantic search, document "
+                    "matching, and knowledge graph indexing."
+                ),
             ),
         ],
         HardwareTier.MAC_UNIFIED: [
@@ -286,12 +399,26 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=12.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="llama3.1:8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
+                role="chat",
+            ),
+            ModelRecommendation(
+                model_name="nomic-embed-text",
+                provider="ollama",
+                vision=False,
+                min_vram_gb=1.0,
+                role="embedding",
+                ethos_badges=["Strict Open Data", "Auditable Dataset", "Open Source Training Code"],
+                notes=(
+                    "Fully transparent, open-data vector model for semantic search, document "
+                    "matching, and knowledge graph indexing."
+                ),
             ),
         ],
     },
@@ -302,12 +429,14 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=4.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="qwen2.5:7b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
+                role="chat",
             ),
         ],
         HardwareTier.DESKTOP: [
@@ -316,12 +445,14 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=24.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="llama3.1:8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
+                role="chat",
             ),
         ],
         HardwareTier.MAC_UNIFIED: [
@@ -330,12 +461,14 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=12.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="llama3.1:8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
+                role="chat",
             ),
         ],
     },
@@ -346,12 +479,14 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=4.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="phi4-mini:3.8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=4.0,
+                role="chat",
             ),
         ],
         HardwareTier.DESKTOP: [
@@ -360,12 +495,14 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=24.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="llama3.1:8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
+                role="chat",
             ),
         ],
         HardwareTier.MAC_UNIFIED: [
@@ -374,12 +511,14 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 provider="ollama",
                 vision=False,
                 min_vram_gb=12.0,
+                role="chat",
             ),
             ModelRecommendation(
                 model_name="llama3.1:8b",
                 provider="ollama",
                 vision=False,
                 min_vram_gb=8.0,
+                role="chat",
             ),
         ],
     },
@@ -387,11 +526,13 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
 """
 Model recommendations by app and hardware tier.
 
-``artifice-ocr`` receives vision models; ``artifice-graph``,
-``artifice-draft``, and ``artifice-transcribe`` receive text-only models.
-``artifice-transcribe`` additionally uses :data:`ASR_MODELS` for its
-transcription engines themselves — these recommendations cover only its
-optional post-transcription inference endpoint (summarize / cleanup).
+``artifice-ocr`` receives vision models (for OCR) and translation models
+(for its optional translation prompt).  ``artifice-graph`` receives
+text-chat models (for entity extraction) and an embedding model (for vector
+search).  ``artifice-draft`` and ``artifice-transcribe`` receive text-only
+chat models.  ``artifice-transcribe`` additionally uses :data:`ASR_MODELS`
+for its transcription engines themselves — these recommendations cover only
+its optional post-transcription inference endpoint (summarize / cleanup).
 """
 
 
@@ -483,10 +624,12 @@ def is_configured(
 __all__ = [
     "ASR_MODELS",
     "AsrModelInfo",
+    "BadgeRole",
     "EndpointInfo",
     "HardwareTier",
     "KNOWN_ENDPOINTS",
     "ModelRecommendation",
+    "PERMITTED_BADGES",
     "get_asr_model",
     "get_endpoint",
     "is_configured",
