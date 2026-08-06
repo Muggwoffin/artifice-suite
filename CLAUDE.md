@@ -26,6 +26,30 @@ You oversee the development of four local-first, BYOM (Bring-Your-Own-Model) aca
    > `driver.run_structured` (`5aa8619`). The mandate is real; `ocr`, `draft` and transcribe's
    > inference path remain unported — correct definition, partial implementation.
 3. **Enforce Design Philosophy.** Ensure all UI components and layout primitives strictly adhere to `Design_Philosophy.md` (The New Masses Design System: paper and ink aesthetics, warm palette, editorial typography, restrained motion).
+
+   ### Default to the most open-source choice — maintainer's instruction, 2026-08-06
+
+   **Where two models could be recommended, the default is the one with the more open
+   provenance** — open training data, published training code, an auditable dataset — even when a
+   closed-weights alternative scores better on a benchmark. This suite is built for historians, and
+   a model whose training data cannot be inspected cannot be cited honestly in a methods section.
+
+   This governs `packages/model-harness/src/model_harness/registry.py`, whose recommendations carry
+   an `ethos_badges` field for exactly this reason. The badge vocabulary is a closed
+   `PERMITTED_BADGES` frozenset with a test enforcing it — free-string badges drift into
+   near-duplicates and render as inconsistent chips.
+
+   **Badges describe provenance, not capability.** "Strict Open Data", "Auditable Dataset" and
+   "Open Source Training Code" are provenance claims a user can verify. A badge like "Cultural &
+   Linguistic Fluency" is a capability claim, belongs in `notes`, and was removed on the
+   maintainer's instruction the day it was added. If a proposed badge could not be checked by
+   reading the model's publication, it is not a badge.
+
+   **Open provenance does not excuse an unusable recommendation.** The same change replaced ocr's
+   `llava:7b` with a 12 GB-VRAM quantisation in the **LAPTOP** tier, which most research laptops
+   cannot run — trading a working recommendation for an unrunnable one is not a win. Prefer a
+   smaller quantisation of the open model over falling back to a closed one, and **assert a VRAM
+   ceiling per tier in a test**; the absence of that test is why it got through.
 4. **Maintain Monorepo Parity.** Ensure all four apps maintain identical modular `src/` directory patterns (`apps/<app>/src/artifice_<app_slug>/`), PEP 621 `pyproject.toml` definitions, and Docker configurations.
 
 ### Canonical web layout
