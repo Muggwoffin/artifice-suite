@@ -13,14 +13,14 @@ from typing import Any
 from platformdirs import user_data_dir
 
 from artifice_graph.config import (
-    ExtractionConfig,
     EmbeddingConfig,
-    IngestionConfig,
     EntityResolutionConfig,
     ExportConfig,
-    StorageConfig,
+    ExtractionConfig,
+    IngestionConfig,
     LLMConfig,
     PipelineConfig,
+    StorageConfig,
     UserPreferences,
     load_config,
 )
@@ -67,6 +67,7 @@ def load_saved_config() -> PipelineConfig | None:
     if CONFIG_FILE.exists():
         try:
             from secure_io import ensure_restricted
+
             ensure_restricted(CONFIG_FILE)
         except Exception:
             import logging
@@ -136,12 +137,12 @@ def save_user_config(config: PipelineConfig) -> None:
         # One retry handles occasional ACL propagation delay on Windows.
         write_private_json(CONFIG_FILE, data)
         if not is_restricted(CONFIG_FILE):
-            raise PermissionError(
-                f"Failed to secure config file after retry: {CONFIG_FILE}"
-            )
+            raise PermissionError(f"Failed to secure config file after retry: {CONFIG_FILE}")
 
 
-def apply_preferences_to_config(config: PipelineConfig, preferences: UserPreferences) -> PipelineConfig:
+def apply_preferences_to_config(
+    config: PipelineConfig, preferences: UserPreferences
+) -> PipelineConfig:
     """Apply user preferences to config."""
     config.theme = preferences.theme
     config.reduce_motion = preferences.reduce_motion

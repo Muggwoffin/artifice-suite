@@ -184,6 +184,7 @@ def load_user_settings() -> dict[str, Any]:
         return {}
     try:
         from secure_io import ensure_restricted
+
         ensure_restricted(_SETTINGS_PATH)
     except Exception:
         import logging
@@ -194,6 +195,7 @@ def load_user_settings() -> dict[str, Any]:
         )
     try:
         import json
+
         with open(_SETTINGS_PATH, encoding="utf-8") as f:
             data = json.load(f)
         return {k: v for k, v in data.items() if k in PERSISTED_KEYS}
@@ -222,9 +224,7 @@ def save_user_settings(settings: dict[str, Any]) -> None:
     if not is_restricted(_SETTINGS_PATH):
         write_private_json(_SETTINGS_PATH, merged)
         if not is_restricted(_SETTINGS_PATH):
-            raise PermissionError(
-                f"Failed to secure settings file after retry: {_SETTINGS_PATH}"
-            )
+            raise PermissionError(f"Failed to secure settings file after retry: {_SETTINGS_PATH}")
 
 
 def reset():

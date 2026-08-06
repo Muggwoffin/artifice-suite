@@ -17,9 +17,7 @@ import re
 # Match ``hf_`` followed by 20+ alphanumeric / dash / underscore chars,
 # or ``sk-`` / ``sk-ant-`` style OpenAI keys (the prefix separator is a
 # hyphen, not an underscore).
-_TOKEN_RE = re.compile(
-    r"(?:hf_|sk-)[A-Za-z0-9_\-]{20,}"
-)
+_TOKEN_RE = re.compile(r"(?:hf_|sk-)[A-Za-z0-9_\-]{20,}")
 
 
 def redact_token(text: str) -> str:

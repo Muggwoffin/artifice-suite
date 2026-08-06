@@ -91,7 +91,6 @@ from artifice_transcribe.services.download import (
     revoke_consent,
     total_transitive_size,
 )
-from artifice_transcribe.services.token_redaction import redact_token
 from artifice_transcribe.services.inference import (
     InferenceEngine,
     get_available_models,
@@ -99,6 +98,7 @@ from artifice_transcribe.services.inference import (
 from artifice_transcribe.services.inference import (
     test_connection as test_inf_conn,
 )
+from artifice_transcribe.services.token_redaction import redact_token
 
 logger = logging.getLogger(__name__)
 

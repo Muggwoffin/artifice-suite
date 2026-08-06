@@ -305,7 +305,9 @@ def _merge_user_config(config: PipelineConfig) -> None:
         logger.debug("Applied user config from %s", user_cfg)
 
     # Top-level fields not inside a section.
-    if "nominatim_lookup_enabled" in user_data and isinstance(user_data["nominatim_lookup_enabled"], bool):
+    if "nominatim_lookup_enabled" in user_data and isinstance(
+        user_data["nominatim_lookup_enabled"], bool
+    ):
         config.nominatim_lookup_enabled = user_data["nominatim_lookup_enabled"]
 
 

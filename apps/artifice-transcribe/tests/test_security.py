@@ -22,9 +22,7 @@ def _assert_not_endpoint_rejection(resp) -> None:
         return
     detail = resp.json().get("detail", "")
     for marker in _ENDPOINT_REJECTION_MARKERS:
-        assert marker not in detail, (
-            f"endpoint rejection leaked: {detail!r}"
-        )
+        assert marker not in detail, f"endpoint rejection leaked: {detail!r}"
 
 
 @pytest.mark.asyncio
@@ -77,7 +75,9 @@ class TestSSRFValidation:
         )
         # 400 from URL validation means the URL was rejected.
         # 500 or 200 means it passed validation (connection may fail).
-        assert resp.status_code != 400 or "not in the local-first allowlist" not in resp.json().get("detail", "")
+        assert resp.status_code != 400 or "not in the local-first allowlist" not in resp.json().get(
+            "detail", ""
+        )
 
     async def test_test_endpoint_rejects_external_url(self, api):
         """POST /inference/test with an external base_url is rejected."""
@@ -102,9 +102,7 @@ class TestSSRFValidation:
 
     # ── Config-read validation: endpoints that load base_url from disk ────
 
-    async def test_generate_rejects_link_local_from_config(
-        self, api, tmp_path, monkeypatch
-    ):
+    async def test_generate_rejects_link_local_from_config(self, api, tmp_path, monkeypatch):
         """A link-local base_url saved in the persisted config is refused
         when the generate endpoint reads it."""
         self._save_test_config(tmp_path, monkeypatch, "http://169.254.169.254/v1")
@@ -115,9 +113,7 @@ class TestSSRFValidation:
         assert resp.status_code == 400
         assert "link-local" in resp.json()["detail"]
 
-    async def test_generate_accepts_loopback_from_config(
-        self, api, tmp_path, monkeypatch
-    ):
+    async def test_generate_accepts_loopback_from_config(self, api, tmp_path, monkeypatch):
         """A loopback base_url in the persisted config passes validation.
         The downstream connection will fail (no server is running in the
         test environment), but the URL itself must not be rejected."""
@@ -135,9 +131,7 @@ class TestSSRFValidation:
             # response, not an unhandled exception.
             pass
 
-    async def test_summarize_rejects_link_local_from_config(
-        self, api, tmp_path, monkeypatch
-    ):
+    async def test_summarize_rejects_link_local_from_config(self, api, tmp_path, monkeypatch):
         """The summarise endpoint must re-validate the base_url it reads from
         the persisted config."""
         self._save_test_config(tmp_path, monkeypatch, "http://169.254.169.254/v1")
@@ -146,9 +140,7 @@ class TestSSRFValidation:
         assert resp.status_code == 400
         assert "link-local" in resp.json()["detail"]
 
-    async def test_cleanup_rejects_link_local_from_config(
-        self, api, tmp_path, monkeypatch
-    ):
+    async def test_cleanup_rejects_link_local_from_config(self, api, tmp_path, monkeypatch):
         """The cleanup endpoint must re-validate the base_url it reads from
         the persisted config."""
         self._save_test_config(tmp_path, monkeypatch, "http://169.254.169.254/v1")
@@ -157,18 +149,14 @@ class TestSSRFValidation:
         assert resp.status_code == 400
         assert "link-local" in resp.json()["detail"]
 
-    async def test_summarize_accepts_loopback_from_config(
-        self, api, tmp_path, monkeypatch
-    ):
+    async def test_summarize_accepts_loopback_from_config(self, api, tmp_path, monkeypatch):
         """Loopback base_url in config passes summarise validation."""
         self._save_test_config(tmp_path, monkeypatch, "http://localhost:11434/v1")
         await self._create_completed_job_with_segment(api, "job-ssrf-sum-ok")
         resp = await api.client.post("/api/v1/jobs/job-ssrf-sum-ok/summarize")
         _assert_not_endpoint_rejection(resp)
 
-    async def test_cleanup_accepts_loopback_from_config(
-        self, api, tmp_path, monkeypatch
-    ):
+    async def test_cleanup_accepts_loopback_from_config(self, api, tmp_path, monkeypatch):
         """Loopback base_url in config passes cleanup validation."""
         self._save_test_config(tmp_path, monkeypatch, "http://127.0.0.1:11434/v1")
         await self._create_completed_job_with_segment(api, "job-ssrf-cln-ok")
@@ -178,9 +166,7 @@ class TestSSRFValidation:
     # ── Helpers ──────────────────────────────────────────────────────────
 
     @staticmethod
-    def _save_test_config(
-        tmp_path, monkeypatch, base_url: str
-    ) -> None:
+    def _save_test_config(tmp_path, monkeypatch, base_url: str) -> None:
         """Save an inference config to an isolated temp file."""
         config_file = tmp_path / "inference_config.json"
         monkeypatch.setattr(
@@ -189,12 +175,14 @@ class TestSSRFValidation:
         )
         from artifice_transcribe.api.v1.routes import _save_inference_config
 
-        _save_inference_config({
-            "base_url": base_url,
-            "api_key": "not-needed",
-            "model_name": "",
-            "vision_enabled": False,
-        })
+        _save_inference_config(
+            {
+                "base_url": base_url,
+                "api_key": "not-needed",
+                "model_name": "",
+                "vision_enabled": False,
+            }
+        )
 
     @staticmethod
     async def _create_completed_job_with_segment(api, job_id: str) -> None:
@@ -206,14 +194,23 @@ class TestSSRFValidation:
         )
 
         async with api.session_factory() as db:
-            db.add(TranscriptionJob(
-                id=job_id, filename="test.wav",
-                status=JobStatus.completed, progress_percentage=100.0,
-            ))
-            db.add(TranscriptSegment(
-                job_id=job_id, speaker_label="SPEAKER_00",
-                start_time=0.0, end_time=1.0, text="Hello world.",
-            ))
+            db.add(
+                TranscriptionJob(
+                    id=job_id,
+                    filename="test.wav",
+                    status=JobStatus.completed,
+                    progress_percentage=100.0,
+                )
+            )
+            db.add(
+                TranscriptSegment(
+                    job_id=job_id,
+                    speaker_label="SPEAKER_00",
+                    start_time=0.0,
+                    end_time=1.0,
+                    text="Hello world.",
+                )
+            )
             await db.commit()
 
 
@@ -271,6 +268,7 @@ class TestHfTokenRedaction:
     async def test_get_config_redacts_hf_token(self, api, monkeypatch):
         """GET /api/v1/config must not expose the real hf_token."""
         from artifice_transcribe.api.v1.routes import settings
+
         monkeypatch.setattr(settings, "hf_token", "hf_real-secret-token-12345")
         resp = await api.client.get("/api/v1/config")
         assert resp.status_code == 200
@@ -288,11 +286,10 @@ class TestHfTokenRedaction:
         # hf_token default is "" — redaction only applies to truthy values.
         assert data["hf_token"] == ""
 
-    async def test_patch_config_does_not_blank_hf_token_with_placeholder(
-        self, api, monkeypatch
-    ):
+    async def test_patch_config_does_not_blank_hf_token_with_placeholder(self, api, monkeypatch):
         """PATCH with the redacted placeholder must not overwrite the real token."""
         from artifice_transcribe.api.v1.routes import settings
+
         monkeypatch.setattr(settings, "hf_token", "hf_real-secret-token-12345")
         # Send the placeholder back — must not overwrite.
         resp = await api.client.patch(
@@ -318,9 +315,7 @@ class TestConfigFilePermissions:
         )
         from artifice_transcribe.api.v1.routes import _save_inference_config
 
-        _save_inference_config(
-            {"base_url": "http://localhost:11434/v1", "api_key": "test-key"}
-        )
+        _save_inference_config({"base_url": "http://localhost:11434/v1", "api_key": "test-key"})
         config_file = tmp_path / "inference_config.json"
         assert config_file.exists()
         assert is_restricted(config_file)
@@ -346,9 +341,7 @@ class TestLoadTimePermissionRepair:
 
         # Create a loose file.
         config_file.parent.mkdir(parents=True, exist_ok=True)
-        config_file.write_text(
-            '{"base_url": "http://localhost:11434/v1", "api_key": "sk-old"}'
-        )
+        config_file.write_text('{"base_url": "http://localhost:11434/v1", "api_key": "sk-old"}')
         os.chmod(config_file, 0o644)
         assert not is_restricted(config_file)
 
@@ -370,17 +363,13 @@ class TestLoadTimePermissionRepair:
 
         # Create a loose file.
         config_file.parent.mkdir(parents=True, exist_ok=True)
-        config_file.write_text(
-            '{"base_url": "http://localhost:11434/v1", "api_key": "sk-old"}'
-        )
+        config_file.write_text('{"base_url": "http://localhost:11434/v1", "api_key": "sk-old"}')
         os.chmod(config_file, 0o644)
 
         def _failing_restrict(_path):
             raise OSError("Simulated ACL failure — exFAT volume")
 
-        monkeypatch.setattr(
-            "secure_io.restrict_to_current_user", _failing_restrict
-        )
+        monkeypatch.setattr("secure_io.restrict_to_current_user", _failing_restrict)
 
         from artifice_transcribe.api.v1.routes import _load_inference_config
 
@@ -407,14 +396,18 @@ class TestTokenRedactionCoverage:
     def test_redact_sk_token(self):
         from artifice_transcribe.services.token_redaction import redact_token
 
-        result = redact_token("Error: 401 Invalid API key: sk-proj-abcdefghijklmnopqrstuvwxyz123456")
+        result = redact_token(
+            "Error: 401 Invalid API key: sk-proj-abcdefghijklmnopqrstuvwxyz123456"
+        )
         assert "sk-proj-abcdefghijklmnopqrstuvwxyz123456" not in result
         assert "[REDACTED]" in result
 
     def test_redact_sk_ant_token(self):
         from artifice_transcribe.services.token_redaction import redact_token
 
-        result = redact_token("Error: Key sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890 is invalid")
+        result = redact_token(
+            "Error: Key sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890 is invalid"
+        )
         assert "sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890" not in result
         assert "[REDACTED]" in result
 
@@ -448,25 +441,36 @@ async def test_sse_summarize_redacts_token_in_error(api, tmp_path, monkeypatch):
         "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
         config_file,
     )
-    _save_inference_config({
-        "base_url": "http://localhost:11434/v1",
-        "api_key": "sk-real-inference-key-12345678",
-        "model_name": "",
-        "vision_enabled": False,
-    })
+    _save_inference_config(
+        {
+            "base_url": "http://localhost:11434/v1",
+            "api_key": "sk-real-inference-key-12345678",
+            "model_name": "",
+            "vision_enabled": False,
+        }
+    )
 
     # Create a completed job with a transcript segment.
     from artifice_transcribe.db.models import JobStatus, TranscriptionJob, TranscriptSegment
 
     async with api.session_factory() as db:
-        db.add(TranscriptionJob(
-            id="job-sse-redact", filename="test.wav",
-            status=JobStatus.completed, progress_percentage=100.0,
-        ))
-        db.add(TranscriptSegment(
-            job_id="job-sse-redact", speaker_label="SPEAKER_00",
-            start_time=0.0, end_time=1.0, text="Hello world.",
-        ))
+        db.add(
+            TranscriptionJob(
+                id="job-sse-redact",
+                filename="test.wav",
+                status=JobStatus.completed,
+                progress_percentage=100.0,
+            )
+        )
+        db.add(
+            TranscriptSegment(
+                job_id="job-sse-redact",
+                speaker_label="SPEAKER_00",
+                start_time=0.0,
+                end_time=1.0,
+                text="Hello world.",
+            )
+        )
         await db.commit()
 
     resp = await api.client.post("/api/v1/jobs/job-sse-redact/summarize")
@@ -490,24 +494,35 @@ async def test_sse_cleanup_redacts_token_in_error(api, tmp_path, monkeypatch):
         "artifice_transcribe.api.v1.routes._INFERENCE_CONFIG_FILE",
         config_file,
     )
-    _save_inference_config({
-        "base_url": "http://localhost:11434/v1",
-        "api_key": "sk-cleanup-key-abcdefghij",
-        "model_name": "",
-        "vision_enabled": False,
-    })
+    _save_inference_config(
+        {
+            "base_url": "http://localhost:11434/v1",
+            "api_key": "sk-cleanup-key-abcdefghij",
+            "model_name": "",
+            "vision_enabled": False,
+        }
+    )
 
     from artifice_transcribe.db.models import JobStatus, TranscriptionJob, TranscriptSegment
 
     async with api.session_factory() as db:
-        db.add(TranscriptionJob(
-            id="job-sse-cln", filename="test.wav",
-            status=JobStatus.completed, progress_percentage=100.0,
-        ))
-        db.add(TranscriptSegment(
-            job_id="job-sse-cln", speaker_label="SPEAKER_00",
-            start_time=0.0, end_time=1.0, text="Hello world.",
-        ))
+        db.add(
+            TranscriptionJob(
+                id="job-sse-cln",
+                filename="test.wav",
+                status=JobStatus.completed,
+                progress_percentage=100.0,
+            )
+        )
+        db.add(
+            TranscriptSegment(
+                job_id="job-sse-cln",
+                speaker_label="SPEAKER_00",
+                start_time=0.0,
+                end_time=1.0,
+                text="Hello world.",
+            )
+        )
         await db.commit()
 
     resp = await api.client.post("/api/v1/jobs/job-sse-cln/cleanup")

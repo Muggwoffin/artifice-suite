@@ -134,7 +134,11 @@ class TranscriptionEngine:
                 self._last_error = None
             except Exception as exc:
                 self._last_error = redact_token(str(exc))
-                logger.error("Alignment model loading failed for %s: %s", language_code, redact_token(str(exc)))
+                logger.error(
+                    "Alignment model loading failed for %s: %s",
+                    language_code,
+                    redact_token(str(exc)),
+                )
                 raise
         return self._align_models[language_code]
 

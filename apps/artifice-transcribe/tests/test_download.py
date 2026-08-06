@@ -722,14 +722,16 @@ def test_cancel_then_restart_guards_against_two_writers(clean_manager, clean_con
     # carrying that thread.
     inner_stopped = threading.Event()
 
-    def _fake_with_inner_thread(repo_id, model_key, total_bytes, token,
-                                 cache_dir, cancel, progress_callback):
+    def _fake_with_inner_thread(
+        repo_id, model_key, total_bytes, token, cache_dir, cancel, progress_callback
+    ):
         # Create an inner thread that just sits there (simulating a real
         # snapshot_download that's still writing to disk).
         inner = threading.Thread(target=inner_stopped.wait, daemon=True)
         inner.start()
         # Give it a moment to start.
         import time
+
         time.sleep(0.1)
         # Check the cancel flag — if set, raise with the inner thread.
         if cancel.is_set():
@@ -740,6 +742,7 @@ def test_cancel_then_restart_guards_against_two_writers(clean_manager, clean_con
     with patch.object(dlmod, "_download_with_progress", _fake_with_inner_thread):
         ds1 = clean_manager.start_download("whisper-large-v3")
         import time
+
         time.sleep(0.3)
 
         # Cancel: the worker should catch _CancelledError and register
@@ -755,12 +758,9 @@ def test_cancel_then_restart_guards_against_two_writers(clean_manager, clean_con
     # Phase 2: the inner thread is still alive.
     inner = clean_manager._inner_threads.get("whisper-large-v3")
     assert inner is not None, (
-        "inner thread was not registered on cancel — "
-        "the _inner_threads dict is empty"
+        "inner thread was not registered on cancel — the _inner_threads dict is empty"
     )
-    assert inner.is_alive(), (
-        "inner thread died before the test could inspect it"
-    )
+    assert inner.is_alive(), "inner thread died before the test could inspect it"
 
     # A second start_download must return the SAME DownloadSet (not
     # create a new one) because the inner thread is still alive.
@@ -779,9 +779,7 @@ def test_cancel_then_restart_guards_against_two_writers(clean_manager, clean_con
 # -- Consent revoked while lock is held (F7) ----------------------------------
 
 
-def test_consent_revoked_after_lock_acquired_is_still_rejected(
-    clean_manager, clean_consent
-):
+def test_consent_revoked_after_lock_acquired_is_still_rejected(clean_manager, clean_consent):
     """is_consented must be checked inside the lock — if consent is recorded,
     the lock acquired, and then consent is revoked, the download must still
     be refused.
