@@ -60,6 +60,26 @@ if (-not $Apps -or $Apps.Count -eq 0) {
     exit 1
 }
 
+# ----- validate app names BEFORE anything is installed -----
+
+# This runs ahead of the uv bootstrap deliberately.  The validation used to
+# live inside the install loop below, which meant a simple typo
+# (`install.ps1 artifice-grpah`) downloaded and installed uv from the network
+# first and only then reported the unknown app — a persistent change to the
+# user's machine in response to an input the script was about to reject.
+# Measured on native Windows 11.
+foreach ($app in $Apps) {
+    if ($app -notin $ValidApps) {
+        Write-Error "Unknown app: $app (use -List to see available apps)"
+        exit 1
+    }
+
+    if (-not (Test-Path "apps\$app")) {
+        Write-Error "App directory not found: apps\$app"
+        exit 1
+    }
+}
+
 # ----- ensure uv is available -----
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
@@ -80,16 +100,9 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
 $Installed = @()
 
 foreach ($app in $Apps) {
-    if ($app -notin $ValidApps) {
-        Write-Error "Unknown app: $app (use -List to see available apps)"
-        exit 1
-    }
-
+    # Names and directories were already validated above, before uv was
+    # bootstrapped.
     $AppDir = "apps\$app"
-    if (-not (Test-Path $AppDir)) {
-        Write-Error "App directory not found: $AppDir"
-        exit 1
-    }
 
     Write-Host ""
     Write-Host "-- Installing $app --"
