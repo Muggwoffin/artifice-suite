@@ -102,14 +102,24 @@ def test_human_size_gb():
 
 def test_consent_record_and_revoke(clean_consent):
     """Consent is recorded, read back, and revoked."""
-    key = "whisper-large-v3"
-    assert not is_consented(key)
+    # Named `model_id`, deliberately avoiding the substring "key" anywhere in
+    # the identifier. gitleaks' generic-api-key rule fires on an assignment
+    # whose variable name *contains* "key" and whose value is a quoted string
+    # of some entropy, so `model_key` failed the Zero Secrets Policy gate just
+    # as `key` did — the rule matches the substring, not the whole name.
+    #
+    # This is a registry identifier, not a credential. The fix is to stop it
+    # looking like one rather than to add a gitleaks suppression: a suppression
+    # is a hole that outlives the false positive that justified it, and this
+    # gate is the only thing standing between an API key and a public index.
+    model_id = "whisper-large-v3"
+    assert not is_consented(model_id)
 
-    record_consent(key, True)
-    assert is_consented(key)
+    record_consent(model_id, True)
+    assert is_consented(model_id)
 
-    revoke_consent(key)
-    assert not is_consented(key)
+    revoke_consent(model_id)
+    assert not is_consented(model_id)
 
 
 def test_consent_missing_file_is_false(clean_consent):
