@@ -1520,12 +1520,30 @@ where things are.
 
 Four things this yields, in descending severity:
 
-1. **The BYOM screen cannot be reopened in any of the four apps.** The only `byom.open()` call in
-   each is the auto-open on `!state.configured` (`ocr/index.html:657`, `draft/index.html:256`,
-   `transcribe/index.html:537`, `graph/base.html:50`), and the instance is a `var` inside an IIFE,
-   so nothing else can reach it. A user whose endpoint later breaks — model deleted, Ollama moved,
-   port changed — has no route back to the screen built to fix exactly that. Graph is partly spared
-   because it has its own Model Configuration panel; the other three are not.
+1. **~~The BYOM screen cannot be reopened in any of the four apps.~~ SUPERSEDED — re-measured
+   2026-08-06. The JavaScript was fixed at some point and this entry was never updated.**
+
+   What is actually true: `packages/shared-ui/shared_ui/assets/byom.js` supports re-entry in full.
+   It exposes `window.ArtificeByom.open()`, and `autostart()` calls `_wireNavTrigger()`
+   (`byom.js:1086-1091`), which binds `click` on `document.getElementById("navByom")` to
+   `instance.open()`, plus a configured/unconfigured dot via `_setNavTriggerState()`.
+   **All four apps already call `autostart()`** — ocr `base.html:46`, graph `base.html:48`,
+   transcribe `base.html:38`, draft `base.html:38`.
+
+   **The real remaining gap is much smaller: only `artifice-graph` has the `#navByom` button**
+   (`graph/base.html:31-32`). ocr, draft and transcribe call `autostart()`, which looks the ID up,
+   finds nothing, and silently wires nothing. So the screen *is* reopenable in graph today and not
+   in the other three — and the fix is a markup-and-CSS control, not JavaScript.
+
+   The user-facing consequence stands for those three: someone whose endpoint later breaks — model
+   deleted, Ollama moved, port changed — has no route back to the screen built to fix exactly that.
+
+   > **This entry cost real time on 2026-08-06.** It was read as live, quoted to the maintainer as
+   > the top blocker for a community release, and a sub-agent was nearly briefed to build machinery
+   > that already existed. The old text even cited `ocr/index.html:657` and the "`var` inside an
+   > IIFE" — line numbers and a mechanism that had both stopped being true. **A citation is not
+   > evidence of currency.** Re-open the file before treating any claim in this document as a
+   > constraint; that instruction appears elsewhere in this file and was still not enough.
 
 1a. **Remove every emoji from `artifice-ocr` — maintainer's instruction, 2026-08-05.** They are not
    confined to the tips modal. Its in-page tab bar reads `☰ Main`, `👁 Preview`, `🕐 History`,
