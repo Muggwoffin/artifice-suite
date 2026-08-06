@@ -29,15 +29,41 @@ name: Publish to PyPI
 # The same environment serves TestPyPI: it is a separate index with its own
 # publisher registry, so there is no cross-index collision.
 #
+# ── WHY PUBLISHING HAPPENS IN WAVES ──────────────────────────────────────────
+#
+# PyPI allows an account at most THREE pending publishers at once:
+#
+#     You can't register more than 3 pending trusted publishers at once.
+#
+# A pending publisher converts into an ordinary one the moment its project is
+# first published, which frees the slot.  Seven projects therefore have to be
+# registered and published 3 / 3 / 1, and `stage` below selects which wave
+# actually uploads.
+#
+# The waves are ordered to respect the dependency constraint as well: wave 1 is
+# exactly the three shared packages, which must reach the index before any app.
+#
+#     wave-1-shared  model-harness, secure-io, shared-ui
+#     wave-2-apps    ocr, draft, graph
+#     wave-3-apps    transcribe
+#     all            everything — correct once every publisher is active,
+#                    which is the case for every release after the first
+#
+# A tag push always publishes everything, because by then the publishers exist
+# and the limit no longer applies.
+#
+# Every wave still BUILDS and twine-checks all seven; only the upload is gated.
+# That keeps a dry run honest — a packaging break in wave 3 surfaces in wave 1.
+#
 # ── PREREQUISITE — this workflow FAILS until it is done ──────────────────────
 #
-# For each of the seven projects, add a PyPI pending publisher
+# For each project, add a PyPI pending publisher
 # (PyPI → Your projects → Publishing) with:
 #     Owner:            Muggwoffin
 #     Repository:       artifice-suite
 #     Workflow name:    publish.yml
 #     Environment:      the `environment` value from the matrix below
-# See docs/PYPI_PUBLISHING.md for the exact per-project table.
+# Register only the current wave's three — see docs/PYPI_PUBLISHING.md.
 
 on:
   push:
@@ -53,6 +79,16 @@ on:
         options:
           - testpypi
           - pypi
+      stage:
+        description: 'Which wave to upload (PyPI allows only 3 pending publishers at a time)'
+        required: true
+        default: wave-1-shared
+        type: choice
+        options:
+          - wave-1-shared
+          - wave-2-apps
+          - wave-3-apps
+          - all
 
 jobs:
   # ── Stage 1: the three shared packages ────────────────────────────────────
@@ -73,10 +109,13 @@ jobs:
         include:
           - directory: packages/model-harness
             environment: pypi-artifice-model-harness
+            stage: wave-1-shared
           - directory: packages/secure-io
             environment: pypi-artifice-secure-io
+            stage: wave-1-shared
           - directory: packages/shared-ui
             environment: pypi-artifice-shared-ui
+            stage: wave-1-shared
 
     steps:
       - uses: actions/checkout@v4
@@ -102,14 +141,23 @@ jobs:
         working-directory: ${{ matrix.directory }}
 
       - name: Publish to TestPyPI
-        if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+        # Gated on the wave: see the pending-publisher limit at the top.
+        if: >-
+          github.event_name == 'workflow_dispatch'
+          && inputs.target == 'testpypi'
+          && (inputs.stage == 'all' || inputs.stage == matrix.stage)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
           repository-url: https://test.pypi.org/legacy/
 
       - name: Publish to PyPI
-        if: github.event_name == 'push' || inputs.target == 'pypi'
+        # A tag push publishes every wave: by then all publishers are active
+        # and the three-pending limit no longer applies.
+        if: >-
+          github.event_name == 'push'
+          || (inputs.target == 'pypi'
+              && (inputs.stage == 'all' || inputs.stage == matrix.stage))
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
@@ -127,12 +175,18 @@ jobs:
         include:
           - directory: apps/artifice-ocr
             environment: pypi-artifice-ocr
+            stage: wave-2-apps
           - directory: apps/artifice-draft
             environment: pypi-artifice-draft
+            stage: wave-2-apps
           - directory: apps/artifice-graph
             environment: pypi-artifice-graph
+            stage: wave-2-apps
+          # Fourth app, so it cannot share wave 2 — the pending-publisher limit
+          # is three.  Nothing about transcribe makes it special here.
           - directory: apps/artifice-transcribe
             environment: pypi-artifice-transcribe
+            stage: wave-3-apps
 
     steps:
       - uses: actions/checkout@v4
@@ -152,14 +206,23 @@ jobs:
         working-directory: ${{ matrix.directory }}
 
       - name: Publish to TestPyPI
-        if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+        # Gated on the wave: see the pending-publisher limit at the top.
+        if: >-
+          github.event_name == 'workflow_dispatch'
+          && inputs.target == 'testpypi'
+          && (inputs.stage == 'all' || inputs.stage == matrix.stage)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
           repository-url: https://test.pypi.org/legacy/
 
       - name: Publish to PyPI
-        if: github.event_name == 'push' || inputs.target == 'pypi'
+        # A tag push publishes every wave: by then all publishers are active
+        # and the three-pending limit no longer applies.
+        if: >-
+          github.event_name == 'push'
+          || (inputs.target == 'pypi'
+              && (inputs.stage == 'all' || inputs.stage == matrix.stage))
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist

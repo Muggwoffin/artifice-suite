@@ -61,6 +61,15 @@ uploaded: PyPI creates the project on first successful publish.
 For **each** of the seven names below: PyPI → *Your projects* →
 *Publishing* → *Add a new pending publisher* → **GitHub**.
 
+> **You cannot register all seven at once.** PyPI allows at most **three
+> pending publishers** per account — *"You can't register more than 3 pending
+> trusted publishers at once."* A pending publisher becomes an ordinary one as
+> soon as its project is first published, which frees the slot. So the work goes
+> in three waves: register three, publish them, register the next three.
+>
+> This is why `publish.yml` has a `stage` input. **Do not register a wave until
+> the previous one has actually published.**
+
 Three fields are the same every time:
 
 | Field | Value |
@@ -69,18 +78,33 @@ Three fields are the same every time:
 | Repository name | `artifice-suite` |
 | Workflow name | `publish.yml` |
 
-**The environment name is different for every project.** Use exactly these,
-**in publish order** — shared packages first:
+**The environment name is different for every project**, and the waves are in
+dependency order — the three shared packages must reach the index first:
 
-| # | PyPI Project Name | Environment name |
-|---|---|---|
-| 1 | `artifice-model-harness` | `pypi-artifice-model-harness` |
-| 2 | `artifice-secure-io` | `pypi-artifice-secure-io` |
-| 3 | `artifice-shared-ui` | `pypi-artifice-shared-ui` |
-| 4 | `artifice-ocr` | `pypi-artifice-ocr` |
-| 5 | `artifice-draft` | `pypi-artifice-draft` |
-| 6 | `artifice-graph` | `pypi-artifice-graph` |
-| 7 | `artifice-transcribe` | `pypi-artifice-transcribe` |
+#### Wave 1 — register these three now (`stage: wave-1-shared`)
+
+| PyPI Project Name | Environment name |
+|---|---|
+| `artifice-model-harness` | `pypi-artifice-model-harness` |
+| `artifice-secure-io` | `pypi-artifice-secure-io` |
+| `artifice-shared-ui` | `pypi-artifice-shared-ui` |
+
+#### Wave 2 — only after wave 1 has published (`stage: wave-2-apps`)
+
+| PyPI Project Name | Environment name |
+|---|---|
+| `artifice-ocr` | `pypi-artifice-ocr` |
+| `artifice-draft` | `pypi-artifice-draft` |
+| `artifice-graph` | `pypi-artifice-graph` |
+
+#### Wave 3 — only after wave 2 has published (`stage: wave-3-apps`)
+
+| PyPI Project Name | Environment name |
+|---|---|
+| `artifice-transcribe` | `pypi-artifice-transcribe` |
+
+Wave 3 has one project purely because seven does not divide by three. Nothing
+about `artifice-transcribe` makes it special here.
 
 ### Why the environment differs per project
 
@@ -109,15 +133,20 @@ workflow references them and GitHub creates them on first run. You may
 pre-create them under *Settings → Environments* if you want to add approval
 rules.
 
-Repeat all seven on TestPyPI if you want to rehearse (recommended, see Step 3).
-TestPyPI is a separate index with its own publisher registry, so the same
-environment names are reused there without collision.
+Rehearsing on TestPyPI (recommended, see Step 3) means repeating this
+wave-by-wave there too. TestPyPI is a separate index with its own publisher
+registry, so the same environment names are reused without collision — and the
+same three-pending limit applies.
 
 ---
 
 ## Step 3 — Rehearse on TestPyPI
 
-Actions → **Publish to PyPI** → *Run workflow* → target: `testpypi`.
+Actions → **Publish to PyPI** → *Run workflow* → target `testpypi`, stage
+`wave-1-shared` — then repeat for `wave-2-apps` and `wave-3-apps`.
+
+TestPyPI is a separate account with its own publisher registry **and its own
+three-pending limit**, so the same wave discipline applies there.
 
 Then confirm a clean machine can actually resolve it:
 
@@ -144,7 +173,13 @@ Two ways, both already wired:
 - **Tag** — `git tag v0.1.0 && git push origin v0.1.0`. This also fires the
   existing `Release Gate`, which checks that tag, package versions and
   `CITATION.cff` agree, and it triggers Zenodo DOI minting.
-- **Manual** — Actions → *Publish to PyPI* → *Run workflow* → target: `pypi`.
+- **Manual, wave by wave** — Actions → *Publish to PyPI* → *Run workflow* →
+  target `pypi`, stage `wave-1-shared`. **This is the route for the first
+  release**, because the pending-publisher limit forces the waves. After each
+  wave publishes, register the next wave's publishers, then run the next stage.
+
+Use a tag (or `stage: all`) only once all seven publishers exist and are
+active — from the second release onward, that is always true.
 
 Watch that the `shared-packages` job finishes before `apps` starts. That is the
 ordering constraint doing its job.

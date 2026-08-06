@@ -122,17 +122,25 @@ None of the seven names exist yet (all 404, re-confirmed 2026-08-06). A
 
 PyPI → *Your projects* → *Publishing* → *Add a new pending publisher* →
 **GitHub**, once per name. Owner `Muggwoffin`, repository `artifice-suite`,
-workflow `publish.yml` every time — but **a different environment each time**:
+workflow `publish.yml` every time — but **a different environment each time**.
 
-| # | PyPI Project Name | Environment name |
-|---|---|---|
-| 1 | `artifice-model-harness` | `pypi-artifice-model-harness` |
-| 2 | `artifice-secure-io` | `pypi-artifice-secure-io` |
-| 3 | `artifice-shared-ui` | `pypi-artifice-shared-ui` |
-| 4 | `artifice-ocr` | `pypi-artifice-ocr` |
-| 5 | `artifice-draft` | `pypi-artifice-draft` |
-| 6 | `artifice-graph` | `pypi-artifice-graph` |
-| 7 | `artifice-transcribe` | `pypi-artifice-transcribe` |
+**Register three, publish them, then register the next three.** PyPI allows at
+most three pending publishers per account, and a pending publisher only frees
+its slot once its project has actually been published.
+
+| Wave | `stage` input | PyPI Project Name | Environment name |
+|---|---|---|---|
+| 1 | `wave-1-shared` | `artifice-model-harness` | `pypi-artifice-model-harness` |
+| 1 | | `artifice-secure-io` | `pypi-artifice-secure-io` |
+| 1 | | `artifice-shared-ui` | `pypi-artifice-shared-ui` |
+| 2 | `wave-2-apps` | `artifice-ocr` | `pypi-artifice-ocr` |
+| 2 | | `artifice-draft` | `pypi-artifice-draft` |
+| 2 | | `artifice-graph` | `pypi-artifice-graph` |
+| 3 | `wave-3-apps` | `artifice-transcribe` | `pypi-artifice-transcribe` |
+
+Wave 1 being the shared packages is not a coincidence — they must reach the
+index before any app regardless. Wave 3 has one project only because seven does
+not divide by three.
 
 **A shared environment name does not work, and the failure is silent until the
 second registration.** A pending publisher is identified only by
@@ -155,9 +163,13 @@ version, not just time.
 
 ### Step 4 — publish
 
-`git tag v0.1.0 && git push origin v0.1.0` (this also fires the existing
-Release Gate and Zenodo DOI minting), or run the workflow manually with target
-`pypi`.
+**First release: wave by wave, manually.** Actions → *Publish to PyPI* →
+*Run workflow* → target `pypi`, stage `wave-1-shared`. When it succeeds,
+register wave 2's publishers, run `wave-2-apps`, then the same for wave 3.
+
+A tag (`git tag v0.1.0 && git push origin v0.1.0`) publishes everything at once
+and also fires the Release Gate and Zenodo DOI minting — correct from the
+**second** release onward, once all seven publishers are active.
 
 ### Never
 
