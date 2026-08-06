@@ -1,0 +1,132 @@
+name: Build standalone executables
+
+# WHY THIS WORKFLOW EXISTS
+#
+# PyInstaller cannot cross-compile. A Windows .exe must be built on Windows, a
+# macOS binary on macOS. The maintainer's machine is Windows with WSL, and uv is
+# deliberately NOT installed on the Windows side — so the only reproducible way
+# to produce a Windows build is a Windows runner.
+#
+# The build is proven on Linux locally (249 MB onedir, serves HTTP 200 and
+# resolves shared-ui assets through importlib.resources from inside the bundle).
+# This workflow does the same on the platforms the maintainer ships to.
+#
+# macOS is deliberately ABSENT. A macOS binary cannot be opened by an ordinary
+# user without notarisation — they would have to run
+# `xattr -r -d com.apple.quarantine` by hand. Producing an unsigned .app that
+# most Mac users cannot launch would look like support and would not be.
+# Add macOS here at the same time as signing and notarisation, not before.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'Which app to freeze'
+        required: true
+        default: artifice-ocr
+        type: choice
+        options:
+          - artifice-ocr
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: ${{ matrix.os }} — ${{ github.event.inputs.app || 'artifice-ocr' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false     # a Windows failure should not hide a Linux success
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install the app and PyInstaller
+        # --extra ocr rather than --extra all: freezing pulls in whatever is
+        # installed, and the ASR stack alone is ~5.8 GB. Installing only what
+        # this app needs keeps the artifact honest as well as small.
+        run: uv sync --extra ocr
+
+      - name: Freeze
+        # Run from the repo root — the spec resolves paths relative to it, and
+        # collect_data_files() needs the workspace packages importable.
+        #
+        # NOT `pyinstaller --onefile ...` ad hoc: the spec carries the data
+        # collection for prompts, fonts, static, templates, configs and the
+        # shared_ui assets. A bare invocation silently produces a binary that
+        # starts and then 404s every asset.
+        run: uv run --with pyinstaller pyinstaller --clean --noconfirm apps/${{ github.event.inputs.app || 'artifice-ocr' }}/${{ github.event.inputs.app || 'artifice-ocr' }}.spec
+
+      - name: Smoke-test the built binary (Linux)
+        if: runner.os == 'Linux'
+        # Tests cannot see packaging bugs: they run against src/, while the bug
+        # lives only in the artifact. So exercise the ARTIFACT over HTTP, and
+        # assert on an asset that resolves via importlib.resources from the
+        # shared package — the hardest case and the one this repo has shipped
+        # broken four times.
+        run: |
+          APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
+          setsid nohup "./dist/$APP/$APP" --port 18999 > /tmp/exe.log 2>&1 < /dev/null &
+          sleep 12
+          fail=0
+          for path in / /api/queue /shared/tokens.css /static/css/app.css; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:18999$path")
+            echo "  $path -> $code"
+            [ "$code" = "200" ] || fail=1
+          done
+          curl -s http://127.0.0.1:18999/ | grep -q navByom \
+            && echo "  shared masthead rendered: yes" \
+            || { echo "  shared masthead MISSING"; fail=1; }
+          pkill -f "dist/$APP/$APP" || true
+          echo "--- server log ---"; head -20 /tmp/exe.log
+          exit $fail
+
+      - name: Smoke-test the built binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # PowerShell notes, both learned the hard way in this repo:
+        #  - never merge native stderr with 2>&1; in PS 5.1 it corrupts error
+        #    handling and $LASTEXITCODE. pwsh here is 7.x, but the habit stands.
+        #  - Start-Process, not `&`, so the server does not hold this step open
+        #    — a backgrounded server holding the shell is exactly what killed
+        #    the agent that built this locally.
+        run: |
+          $app = "${{ github.event.inputs.app || 'artifice-ocr' }}"
+          $exe = ".\dist\$app\$app.exe"
+          if (-not (Test-Path $exe)) { Write-Error "no binary at $exe"; exit 1 }
+          Write-Host "binary size: $((Get-Item $exe).Length) bytes"
+          $p = Start-Process -FilePath $exe -ArgumentList "--port","18999" -PassThru
+          Start-Sleep -Seconds 20
+          $fail = 0
+          foreach ($path in @("/","/api/queue","/shared/tokens.css","/static/css/app.css")) {
+            try {
+              $r = Invoke-WebRequest -Uri "http://127.0.0.1:18999$path" -UseBasicParsing -TimeoutSec 15
+              Write-Host "  $path -> $($r.StatusCode)"
+              if ($r.StatusCode -ne 200) { $fail = 1 }
+            } catch {
+              Write-Host "  $path -> FAILED"
+              $fail = 1
+            }
+          }
+          try {
+            $body = (Invoke-WebRequest -Uri "http://127.0.0.1:18999/" -UseBasicParsing -TimeoutSec 15).Content
+            if ($body -match "navByom") { Write-Host "  shared masthead rendered: yes" }
+            else { Write-Host "  shared masthead MISSING"; $fail = 1 }
+          } catch { Write-Host "  index fetch FAILED"; $fail = 1 }
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          exit $fail
+
+      - name: Upload the bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.app || 'artifice-ocr' }}-${{ runner.os }}
+          path: dist/${{ github.event.inputs.app || 'artifice-ocr' }}/
+          if-no-files-found: error
+          retention-days: 30

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import importlib.resources
 import os
 from pathlib import Path
 from typing import Any
@@ -11,7 +12,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "configs"
+# Resolved through importlib.resources, NOT a __file__-relative path.  This
+# file is distributed as a frozen .exe/.dmg, where __file__ points inside a
+# temporary extraction directory and any ``.parent.parent.parent`` walk lands
+# somewhere meaningless.  The previous form was
+# ``Path(__file__).resolve().parent.parent.parent / "configs"``, which also
+# put configs under ``apps/artifice-ocr/configs/`` — outside the package —
+# so the example config was excluded from the wheel entirely.
+_CONFIG_DIR = importlib.resources.files("artifice_ocr") / "configs"
 
 _DEFAULTS: dict[str, Any] = {
     "lm_studio_url": "http://localhost:1234/v1",

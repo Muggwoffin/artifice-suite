@@ -70,11 +70,17 @@ app.include_router(tropy_router.router)
 app.include_router(pdf_export_router.router)
 app.include_router(ludwiglang_router.router)
 
-STATIC_DIR = Path(__file__).resolve().parent / "static"
-
-# ── Shared design system (resolved from installed shared-ui package) ───────
+# ── Static assets (resolved through importlib.resources — freeze-safe) ─────
 import importlib.resources
 import shared_ui
+
+# Resolved through importlib.resources, NOT a __file__-relative path.  This
+# app is distributed as a frozen .exe/.dmg, where __file__ points inside a
+# temporary extraction directory.  Using importlib keeps the path correct in
+# every environment — source checkout, installed wheel, and frozen bundle.
+STATIC_DIR = importlib.resources.files("artifice_ocr.web") / "static"
+
+# Shared design system (resolved from installed shared-ui package)
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
@@ -362,6 +368,16 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
+def _port_available(port: int) -> bool:
+    """Return True if the port can be bound on 127.0.0.1 right now."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", port))
+            return True
+        except OSError:
+            return False
+
+
 def _wait_for_server(port: int, *, timeout: float = 10.0) -> bool:
     import time as _time
 
@@ -431,20 +447,49 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8765,
-                        help="Port for the local server (default: 8765)")
+    parser.add_argument("--port", type=int, default=None,
+                        help="Port for the local server (default: 8765, or a free port if busy)")
     args = parser.parse_args()
 
-    port = args.port
-    url = f"http://127.0.0.1:{port}"
+    # Distinguish "user said --port 8765" from "the default happened to be 8765".
+    # An explicit port that is busy is a deliberate choice — fail, don’t fall back.
+    is_explicit_port = args.port is not None
 
-    server_thread, server_errors = _start_server_thread(port)
-    if not _wait_for_server(port):
+    # Try the requested port; fall back to a free port only when the user
+    # did NOT specify one and the default (8765) is busy.
+    for attempt in range(2):
+        if attempt == 0:
+            port = args.port if is_explicit_port else 8765
+        else:
+            port = _free_port()
+            print(f"Port 8765 is busy — using port {port} instead.", flush=True)
+
+        if not _port_available(port):
+            if is_explicit_port or attempt == 1:
+                _report_startup_failure(
+                    port, None,
+                    [OSError(f"Port {port} is already in use")])
+                return
+            continue
+
+        server_thread, server_errors = _start_server_thread(port)
+        if _wait_for_server(port):
+            break
+
+        if is_explicit_port or attempt == 1:
+            _report_startup_failure(port, server_thread, server_errors)
+            return
+
+    # Guard against the race where another process grabbed the port between
+    # our availability check and the server thread binding.
+    if server_errors or not server_thread.is_alive():
         _report_startup_failure(port, server_thread, server_errors)
         return
 
+    url = f"http://127.0.0.1:{port}"
+
+    print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)
     webbrowser.open(url)
-    print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)")
     try:
         server_thread.join()
     except KeyboardInterrupt:

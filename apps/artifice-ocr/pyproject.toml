@@ -62,6 +62,12 @@ where = ["src"]
 [tool.setuptools.package-data]
 "artifice_ocr.web" = ["static/**", "templates/**/*.html", "fonts/**"]
 "artifice_ocr.prompts" = ["*.txt"]
+"artifice_ocr.configs" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.21.0",
+]
