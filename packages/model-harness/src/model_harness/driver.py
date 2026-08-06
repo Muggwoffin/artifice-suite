@@ -138,7 +138,8 @@ async def run_structured(
             instance: SchemaT = schema_model.model_validate(parsed)
         except ValidationError:
             logger.info(
-                "mode=%s returned valid JSON that did not match schema; degrading",
+                "mode=%s returned valid JSON that did not match schema; "
+                "degrading",
                 mode.value,
             )
             repaired = True

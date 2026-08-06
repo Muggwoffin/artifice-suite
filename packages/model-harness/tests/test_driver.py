@@ -492,8 +492,8 @@ class TestModeGaps:
         """NATIVE_SCHEMA fails → skip JSON_OBJECT → PROMPTED succeeds."""
         provider = _SequenceProvider(
             [
-                "garbage (native schema failed)",  # rung 1: NATIVE_SCHEMA
-                json.dumps({"name": "Zara", "age": 90}),  # rung 2: PROMPTED (JSON_OBJECT skipped)
+                "garbage (native schema failed)",          # rung 1: NATIVE_SCHEMA
+                json.dumps({"name": "Zara", "age": 90}),   # rung 2: PROMPTED (JSON_OBJECT skipped)
             ],
             mode=M.NATIVE_SCHEMA,
             supported_modes=ANTHROPIC_LIKE,
@@ -553,8 +553,8 @@ class TestModeGaps:
         """NATIVE_SCHEMA returns valid JSON but wrong shape → skip JSON_OBJECT → PROMPTED."""
         provider = _SequenceProvider(
             [
-                json.dumps({"name": "Xen"}),  # missing "age" → schema fails
-                json.dumps({"name": "Xen", "age": 100}),  # PROMPTED works
+                json.dumps({"name": "Xen"}),                # missing "age" → schema fails
+                json.dumps({"name": "Xen", "age": 100}),    # PROMPTED works
             ],
             mode=M.NATIVE_SCHEMA,
             supported_modes=ANTHROPIC_LIKE,

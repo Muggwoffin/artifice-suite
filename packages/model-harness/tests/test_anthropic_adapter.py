@@ -463,17 +463,23 @@ class TestRobustness:
         assert json.loads(result.text) == {"name": "Bob", "age": 25}
 
     @pytest.mark.asyncio
-    async def test_native_schema_falls_back_to_text_when_no_tool_use(self, httpx_mock: HTTPXMock):
+    async def test_native_schema_falls_back_to_text_when_no_tool_use(
+        self, httpx_mock: HTTPXMock
+    ):
         """If a NATIVE_SCHEMA response lacks a tool_use block (should not
         happen, but be defensive), text blocks are joined."""
-        httpx_mock.add_response(json={"content": [{"type": "text", "text": '{"x":"fallback"}'}]})
+        httpx_mock.add_response(
+            json={"content": [{"type": "text", "text": '{"x":"fallback"}'}]}
+        )
         provider = AnthropicProvider()
         result = await provider.complete(_make_request(M.NATIVE_SCHEMA))
         assert result.text == '{"x":"fallback"}'
 
     @pytest.mark.asyncio
     async def test_http_error_raised(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(status_code=401, json={"error": "unauthorized"})
+        httpx_mock.add_response(
+            status_code=401, json={"error": "unauthorized"}
+        )
         provider = AnthropicProvider()
         with pytest.raises(Exception):
             await provider.complete(_make_request(M.PROMPTED))

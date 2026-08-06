@@ -47,13 +47,24 @@ _DEFAULT_TIMEOUT_S: float = 10.0
 _OLLAMA_TAGS_PATH: str = "/api/tags"
 _OPENAI_MODELS_PATH: str = "/models"
 
-_RUNNER_DOWN_HINT: str = "Ensure your local model runner (Ollama, LM Studio, vLLM) is running"
-_CORS_HINT: str = "If running Ollama, ensure OLLAMA_ORIGINS=* is set in your environment"
-_OLLAMA_SERVE_HINT: str = "Run 'ollama serve' to start the Ollama server"
-_LM_STUDIO_DOWN_HINT: str = "Ensure the LM Studio server is running and accessible"
-_MODEL_NOT_PULLED_HINT: str = "Use 'ollama pull <model>' to download models to this provider"
+_RUNNER_DOWN_HINT: str = (
+    "Ensure your local model runner (Ollama, LM Studio, vLLM) is running"
+)
+_CORS_HINT: str = (
+    "If running Ollama, ensure OLLAMA_ORIGINS=* is set in your environment"
+)
+_OLLAMA_SERVE_HINT: str = (
+    "Run 'ollama serve' to start the Ollama server"
+)
+_LM_STUDIO_DOWN_HINT: str = (
+    "Ensure the LM Studio server is running and accessible"
+)
+_MODEL_NOT_PULLED_HINT: str = (
+    "Use 'ollama pull <model>' to download models to this provider"
+)
 _TIMEOUT_HINT: str = (
-    "The server did not respond in time. Check that it is running and the URL is correct."
+    "The server did not respond in time. Check that it is running and "
+    "the URL is correct."
 )
 _MALFORMED_RESPONSE_HINT: str = (
     "The server responded but the body was not a valid model list. "
@@ -153,7 +164,9 @@ def _strip_v1(url: str) -> str:
     return urlunparse(parsed)
 
 
-async def _probe_ollama_tags(client: httpx.AsyncClient, base_url: str) -> list[str] | None:
+async def _probe_ollama_tags(
+    client: httpx.AsyncClient, base_url: str
+) -> list[str] | None:
     """Hit ``/api/tags`` and return the model names found.
 
     Returns *None* when the endpoint does not answer (non-200, wrong
@@ -177,7 +190,9 @@ async def _probe_ollama_tags(client: httpx.AsyncClient, base_url: str) -> list[s
     return models
 
 
-async def _probe_openai_models(client: httpx.AsyncClient, base_url: str) -> list[str] | None:
+async def _probe_openai_models(
+    client: httpx.AsyncClient, base_url: str
+) -> list[str] | None:
     """Hit ``/v1/models`` and return the model IDs found.
 
     The *base_url* is expected to include the ``/v1`` prefix (it is stripped
@@ -290,7 +305,9 @@ async def probe_endpoint(
     malformed = False
 
     try:
-        async with httpx.AsyncClient(timeout=timeout_s, follow_redirects=False) as client:
+        async with httpx.AsyncClient(
+            timeout=timeout_s, follow_redirects=False
+        ) as client:
             # Probe Ollama-native /api/tags
             try:
                 tags = await _probe_ollama_tags(client, url)
@@ -490,7 +507,9 @@ def probe_endpoint_sync(
         loop = asyncio.get_running_loop()
     except RuntimeError:
         # No running loop — we are free to create one
-        return asyncio.run(probe_endpoint(url, policy=policy, timeout_s=timeout_s))
+        return asyncio.run(
+            probe_endpoint(url, policy=policy, timeout_s=timeout_s)
+        )
     raise RuntimeError(
         "probe_endpoint_sync cannot be called from inside a running event loop. "
         "Use the async probe_endpoint() instead to avoid deadlocking."

@@ -50,12 +50,9 @@ def _make_request(mode: M, schema: dict | None = None) -> StructuredRequest:
 
 
 def _json_response(data: dict) -> httpx.Response:
-    return httpx.Response(
-        200,
-        json={
-            "choices": [{"message": {"content": json.dumps(data)}}],
-        },
-    )
+    return httpx.Response(200, json={
+        "choices": [{"message": {"content": json.dumps(data)}}],
+    })
 
 
 # ── capabilities() ────────────────────────────────────────────────────────────
@@ -120,11 +117,9 @@ class TestCompleteRequestShapes:
 
     @pytest.mark.asyncio
     async def test_native_schema_mode(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         req = _make_request(M.NATIVE_SCHEMA)
         await provider.complete(req)
@@ -138,11 +133,9 @@ class TestCompleteRequestShapes:
 
     @pytest.mark.asyncio
     async def test_json_object_mode(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         req = _make_request(M.JSON_OBJECT)
         await provider.complete(req)
@@ -156,11 +149,9 @@ class TestCompleteRequestShapes:
 
     @pytest.mark.asyncio
     async def test_prompted_mode_no_response_format(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         req = _make_request(M.PROMPTED)
         await provider.complete(req)
@@ -173,11 +164,9 @@ class TestCompleteRequestShapes:
 
     @pytest.mark.asyncio
     async def test_api_key_header(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "generic-api"))
         req = StructuredRequest(
             instructions="Hi",
@@ -193,11 +182,9 @@ class TestCompleteRequestShapes:
 
     @pytest.mark.asyncio
     async def test_no_api_key_no_auth_header(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         req = _make_request(M.JSON_OBJECT)
         await provider.complete(req)
@@ -207,11 +194,9 @@ class TestCompleteRequestShapes:
 
     @pytest.mark.asyncio
     async def test_temperature_is_zero(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         req = _make_request(M.JSON_OBJECT)
         await provider.complete(req)
@@ -222,11 +207,9 @@ class TestCompleteRequestShapes:
 
     @pytest.mark.asyncio
     async def test_model_name_from_config(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         req = _make_request(M.JSON_OBJECT)
         await provider.complete(req)
@@ -244,11 +227,9 @@ class TestCompleteResponse:
 
     @pytest.mark.asyncio
     async def test_returns_text_and_model(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         result = await provider.complete(_make_request(M.JSON_OBJECT))
         assert result.text == '{"x":"hello"}'
@@ -257,11 +238,9 @@ class TestCompleteResponse:
     @pytest.mark.asyncio
     async def test_complex_nested_response(self, httpx_mock: HTTPXMock):
         nested = json.dumps({"data": [1, 2, 3], "meta": {"count": 3}})
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": nested}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": nested}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         result = await provider.complete(_make_request(M.JSON_OBJECT))
         assert json.loads(result.text) == {"data": [1, 2, 3], "meta": {"count": 3}}
@@ -276,11 +255,9 @@ class TestEndpointResolution:
     @pytest.mark.asyncio
     async def test_stub_policy_is_called(self, httpx_mock: HTTPXMock):
         """A stub satisfying the Protocol is accepted and used."""
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
 
         class StubPolicy:
             def resolve(self, endpoint: str) -> str:
@@ -296,11 +273,9 @@ class TestEndpointResolution:
     @pytest.mark.asyncio
     async def test_stub_policy_can_rewrite_endpoint(self, httpx_mock: HTTPXMock):
         """The resolved endpoint is the one that receives the request."""
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
 
         class RewritingPolicy:
             def resolve(self, endpoint: str) -> str:
@@ -319,13 +294,13 @@ class TestEndpointResolution:
     @pytest.mark.asyncio
     async def test_endpoint_appends_chat_completions_path(self, httpx_mock: HTTPXMock):
         """The URL is constructed by appending /chat/completions."""
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
-        await provider.complete(_make_request(M.JSON_OBJECT, schema={"type": "object"}))
+        await provider.complete(
+            _make_request(M.JSON_OBJECT, schema={"type": "object"})
+        )
 
         [call] = httpx_mock.get_requests()
         assert call.url.path.endswith("/chat/completions")
@@ -339,11 +314,9 @@ class TestCompleteWithoutPolicy:
 
     @pytest.mark.asyncio
     async def test_no_policy_uses_raw_endpoint(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '{"x":"hello"}'}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '{"x":"hello"}'}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         # Custom endpoint with a port
         req = StructuredRequest(
@@ -368,22 +341,18 @@ class TestRobustness:
 
     @pytest.mark.asyncio
     async def test_empty_response_content(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": ""}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": ""}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         result = await provider.complete(_make_request(M.JSON_OBJECT))
         assert result.text == ""
 
     @pytest.mark.asyncio
     async def test_response_with_whitespace(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={
-                "choices": [{"message": {"content": '  \n{"x":"hello"}\n  '}}],
-            }
-        )
+        httpx_mock.add_response(json={
+            "choices": [{"message": {"content": '  \n{"x":"hello"}\n  '}}],
+        })
         provider = OpenAIProvider(cast(Provider, "ollama"))
         result = await provider.complete(_make_request(M.JSON_OBJECT))
         assert '"x":"hello"' in result.text
