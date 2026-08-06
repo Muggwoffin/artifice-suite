@@ -10,8 +10,6 @@ import) and that all four migration states are handled correctly.
 
 from __future__ import annotations
 
-import shutil
-from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -48,9 +46,7 @@ def test_accessor_does_not_move_when_no_legacy(tmp_path, monkeypatch):
         from artifice_graph.config import _get_user_config_path
 
         _get_user_config_path()
-        mock_move.assert_not_called(), (
-            "shutil.move() was called when no legacy directory exists"
-        )
+        mock_move.assert_not_called(), ("shutil.move() was called when no legacy directory exists")
 
 
 def test_lazy_cache_prevents_repeated_migration(tmp_path, monkeypatch):
@@ -112,9 +108,7 @@ def test_legacy_dir_migrates_on_first_access(tmp_path, monkeypatch):
     assert (target_dir / "config.json").exists(), (
         "config.json was not migrated to the platformdirs target"
     )
-    assert not legacy_dir.exists(), (
-        "legacy ~/.callosip should be moved, not copied"
-    )
+    assert not legacy_dir.exists(), "legacy ~/.callosip should be moved, not copied"
 
 
 # ── Both present → does NOT migrate ──────────────────────────────────
@@ -259,9 +253,7 @@ def test_ensure_restricted_failure_is_swallowed(tmp_path, monkeypatch, caplog):
     def _failing_restrict(path):
         raise OSError("Simulated ACL failure")
 
-    import logging
-    with mock.patch("secure_io.ensure_restricted",
-                    side_effect=_failing_restrict):
+    with mock.patch("secure_io.ensure_restricted", side_effect=_failing_restrict):
         from artifice_graph.config import _get_user_config_path
 
         cfg_path = _get_user_config_path()

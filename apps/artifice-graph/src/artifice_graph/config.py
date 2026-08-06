@@ -9,7 +9,6 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Any
 
 import yaml
 from platformdirs import user_data_dir
@@ -112,10 +111,12 @@ def load_config(config_path: str | Path | None = None) -> PipelineConfig:
         config_path = Path(config_path)
 
     config_file = config_path if config_path.is_file() else None
-    app_root = (config_file.parent if config_file else Path(__file__).parent.parent.parent).resolve()
+    app_root = (
+        config_file.parent if config_file else Path(__file__).parent.parent.parent
+    ).resolve()
 
     if config_path.exists():
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             raw = yaml.safe_load(f) or {}
         config = PipelineConfig.model_validate(raw)
     else:
@@ -141,6 +142,7 @@ def load_config(config_path: str | Path | None = None) -> PipelineConfig:
 
 
 # -- path resolution ---------------------------------------------------------
+
 
 def resolve_config_paths(config: PipelineConfig, app_root: Path) -> None:
     """Resolve every relative-path config field against *app_root* in-place.
@@ -188,9 +190,7 @@ def _resolve_user_data_dir() -> Path:
 
     if _LEGACY_CONFIG_DIR.exists() and not new_dir.exists():
         try:
-            logger.info(
-                "Migrating user data from %s to %s", _LEGACY_CONFIG_DIR, new_dir
-            )
+            logger.info("Migrating user data from %s to %s", _LEGACY_CONFIG_DIR, new_dir)
             new_dir.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(_LEGACY_CONFIG_DIR), str(new_dir))
             # Re-apply access restriction on the migrated config file
@@ -255,7 +255,7 @@ def _merge_user_config(config: PipelineConfig) -> None:
         return
 
     try:
-        with open(user_cfg, "r", encoding="utf-8") as f:
+        with open(user_cfg, encoding="utf-8") as f:
             user_data = json.load(f)
     except Exception:
         logger.debug("Failed to read user config at %s", user_cfg)
@@ -265,8 +265,13 @@ def _merge_user_config(config: PipelineConfig) -> None:
         return
 
     _section_names = (
-        "llm", "embedding", "ingestion", "extraction",
-        "entity_resolution", "export", "storage",
+        "llm",
+        "embedding",
+        "ingestion",
+        "extraction",
+        "entity_resolution",
+        "export",
+        "storage",
     )
     applied = False
     for section in _section_names:

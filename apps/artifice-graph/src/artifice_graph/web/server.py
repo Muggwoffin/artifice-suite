@@ -14,18 +14,16 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-import httpx
 import uvicorn
-from fastapi import FastAPI, Query, Request, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
-from artifice_graph.extraction.inference_engine import _VISION_INDICATORS
 
 from artifice_graph.config import LLMConfig, PipelineConfig, load_config
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
@@ -34,13 +32,14 @@ from artifice_graph.entity_resolution.semantic_resolver import SemanticEntityRes
 from artifice_graph.exporters.graph_exporter import GraphExporter
 from artifice_graph.exporters.obsidian_exporter import ObsidianExporter
 from artifice_graph.extraction.extractor import EntityExtractor
+from artifice_graph.extraction.inference_engine import _VISION_INDICATORS
 from artifice_graph.extraction.llm_client import LLMClient
 from artifice_graph.ingestion.chunker import TextChunker
 from artifice_graph.models.document import Document, TextChunk
-from artifice_graph.models.entity import Entity, EntityType
+from artifice_graph.models.entity import Entity
 from artifice_graph.models.relationship import Relationship
 from artifice_graph.storage.file_store import FileStore
-from artifice_graph.web.config_helper import load_saved_config, save_user_config
+from artifice_graph.web.config_helper import save_user_config
 
 from .routers import byom as byom_router
 
@@ -68,10 +67,12 @@ HERE = Path(__file__).resolve().parent
 # Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
 # ChoiceLoader lets templates include shared-ui’s masthead partial.
 _jinja = Environment(
-    loader=ChoiceLoader([
-        PackageLoader("artifice_graph.web", "templates"),
-        PackageLoader("shared_ui", "templates"),
-    ]),
+    loader=ChoiceLoader(
+        [
+            PackageLoader("artifice_graph.web", "templates"),
+            PackageLoader("shared_ui", "templates"),
+        ]
+    ),
     autoescape=select_autoescape(["html", "xml"]),
 )
 
@@ -80,7 +81,9 @@ app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
 
 # ── Shared design tokens (resolved from installed shared-ui package) ───────
 import importlib.resources
+
 import shared_ui
+
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
@@ -99,6 +102,7 @@ def _redact_config(model: PipelineConfig) -> PipelineConfig:
     if cfg.llm.api_key:
         cfg.llm.api_key = REDACTED_PLACEHOLDER
     return cfg
+
 
 # ── Run log broker (cross-thread SSE bridging) ─────────────────────
 # In-memory: each active run gets a log buffer + wake condition.
@@ -259,6 +263,7 @@ def _validate_base_url(raw: str, field_name: str) -> str:
 
 # ── Config from POST body ──────────────────────────────────────────
 
+
 def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
     cfg = load_config()
     if i := body.get("input_dir"):
@@ -306,7 +311,10 @@ def _load_store(cfg: PipelineConfig) -> FileStore:
 
 # ── Pipeline runner helpers (worker thread) ────────────────────────
 
-def _do_ingest(cfg: PipelineConfig, incremental: bool, run_key: str, *, close_stream: bool = True) -> None:
+
+def _do_ingest(
+    cfg: PipelineConfig, incremental: bool, run_key: str, *, close_stream: bool = True
+) -> None:
     _log_head(run_key, "▶ STAGE 1: INGEST — scanning input directory…")
     store = _load_store(cfg)
     chunker = TextChunker(cfg.ingestion)
@@ -318,7 +326,9 @@ def _do_ingest(cfg: PipelineConfig, incremental: bool, run_key: str, *, close_st
         documents, chunks, stale_ids = chunker.ingest_all_incremental(prev_hashes)
         if documents:
             new_hashes = {d.id: chunker.file_content_hash(Path(d.filepath)) for d in documents}
-            store.save("content_hashes.json", [{"id": k, "content_hash": v} for k, v in new_hashes.items()])
+            store.save(
+                "content_hashes.json", [{"id": k, "content_hash": v} for k, v in new_hashes.items()]
+            )
         _log(run_key, f"  Incremental: {len(documents)} new/changed docs → {len(chunks)} chunks")
     else:
         documents, chunks = chunker.ingest_all()
@@ -331,7 +341,9 @@ def _do_ingest(cfg: PipelineConfig, incremental: bool, run_key: str, *, close_st
     store.save_models("documents.json", documents)
     store.save_models("chunks.json", chunks)
     _log(run_key, f"  ✓ Saved to {cfg.export.output_dir}/", "success")
-    _log_done(run_key, f"Ingest: {len(documents)} docs, {len(chunks)} chunks", close_stream=close_stream)
+    _log_done(
+        run_key, f"Ingest: {len(documents)} docs, {len(chunks)} chunks", close_stream=close_stream
+    )
 
 
 def _do_extract(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -> None:
@@ -351,7 +363,7 @@ def _do_extract(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True)
     batch_size = cfg.extraction.batch_size
     total = len(chunks)
     for i in range(0, total, batch_size):
-        batch = chunks[i:i + batch_size]
+        batch = chunks[i : i + batch_size]
         end = min(i + batch_size, total)
         _log(run_key, f"  Processing chunks {i + 1}–{end}/{total}…")
         try:
@@ -367,16 +379,28 @@ def _do_extract(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True)
     existing_entities = store.load("entities.json")
     if existing_entities and not all_entities:
         _log(run_key, "  Refusing to overwrite non-empty entities.json with empty data.", "warn")
-        _log(run_key, "  Run with --force from the CLI to overwrite, or fix LLM connectivity.", "dim")
+        _log(
+            run_key, "  Run with --force from the CLI to overwrite, or fix LLM connectivity.", "dim"
+        )
     else:
         store.save_models("entities.json", all_entities)
     existing_rels = store.load("relationships.json")
     if existing_rels and not all_rels:
-        _log(run_key, "  Refusing to overwrite non-empty relationships.json with empty data.", "warn")
+        _log(
+            run_key, "  Refusing to overwrite non-empty relationships.json with empty data.", "warn"
+        )
     else:
         store.save_models("relationships.json", all_rels)
-    _log(run_key, f"  ✓ Extracted {len(all_entities)} entities, {len(all_rels)} relationships", "success")
-    _log_done(run_key, f"Extract: {len(all_entities)} entities, {len(all_rels)} relationships", close_stream=close_stream)
+    _log(
+        run_key,
+        f"  ✓ Extracted {len(all_entities)} entities, {len(all_rels)} relationships",
+        "success",
+    )
+    _log_done(
+        run_key,
+        f"Extract: {len(all_entities)} entities, {len(all_rels)} relationships",
+        close_stream=close_stream,
+    )
 
 
 def _do_resolve(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -> None:
@@ -405,19 +429,29 @@ def _do_resolve(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True)
         merged, updated = resolver.resolve(entities, relationships)
     except RuntimeError as exc:
         _log(run_key, f"  Resolution failed: {exc}", "error")
-        _mark_run_failed(run_key, f"Resolve — embedder error during resolution")
+        _mark_run_failed(run_key, "Resolve — embedder error during resolution")
         _log_done(run_key, "Resolve — failed (embedder error)", close_stream=close_stream)
         return
     if not merged:
-        _log(run_key, "  Refusing to overwrite non-empty entities.json with empty resolution result.", "warn")
+        _log(
+            run_key,
+            "  Refusing to overwrite non-empty entities.json with empty resolution result.",
+            "warn",
+        )
     else:
         store.save_models("entities.json", merged)
     if not updated:
-        _log(run_key, "  Refusing to overwrite non-empty relationships.json with empty resolution result.", "warn")
+        _log(
+            run_key,
+            "  Refusing to overwrite non-empty relationships.json with empty resolution result.",
+            "warn",
+        )
     else:
         store.save_models("relationships.json", updated)
     _log(run_key, f"  ✓ {len(entities)} → {len(merged)} canonical entities ({method})", "success")
-    _log_done(run_key, f"Resolve: {len(entities)} → {len(merged)} canonical", close_stream=close_stream)
+    _log_done(
+        run_key, f"Resolve: {len(entities)} → {len(merged)} canonical", close_stream=close_stream
+    )
 
 
 def _do_vault(cfg: PipelineConfig, run_key: str, *, close_stream: bool = True) -> None:
@@ -568,56 +602,144 @@ def _do_demo(run_key: str) -> None:
 
     synthetic = ExtractionResult(
         entities=[
-            {"name": "Klemens von Metternich", "entity_type": "Person", "aliases": ["Metternich", "Prince Metternich"],
-             "summary": "Austrian foreign minister and central figure at the Congress of Vienna."},
-            {"name": "Alexander I", "entity_type": "Person", "aliases": ["Tsar Alexander I"],
-             "summary": "Tsar of Russia who sought expanded influence at the Congress of Vienna."},
-            {"name": "Karl vom Stein", "entity_type": "Person", "aliases": ["Baron Stein", "Baron vom Stein"],
-             "summary": "Prussian statesman who participated in early Congress discussions but died before its conclusion."},
-            {"name": "Congress of Vienna", "entity_type": "Event", "aliases": ["The Congress"],
-             "summary": "Diplomatic conference held in 1814 to reorganize Europe after the Napoleonic Wars."},
-            {"name": "Austria", "entity_type": "Location", "aliases": ["Austrian Empire"],
-             "summary": "Major European power and host nation of the Congress of Vienna."},
-            {"name": "Prussia", "entity_type": "Location", "aliases": [],
-             "summary": "German state that participated in the Congress of Vienna."},
-            {"name": "Russia", "entity_type": "Location", "aliases": [],
-             "summary": "Major European power represented at the Congress of Vienna."},
-            {"name": "Great Britain", "entity_type": "Location", "aliases": [],
-             "summary": "Major European power represented at the Congress of Vienna."},
-            {"name": "Napoleonic Wars", "entity_type": "Event", "aliases": [],
-             "summary": "Series of wars fought between France and various European coalitions."},
-            {"name": "Concert of Europe", "entity_type": "Concept", "aliases": [],
-             "summary": "System of balance-of-power diplomacy established after the Congress of Vienna."},
-            {"name": "Treaty of Paris", "entity_type": "Event", "aliases": [],
-             "summary": "Peace treaty signed on May 30, 1814, preceding the Congress of Vienna."},
-            {"name": "Nationalism", "entity_type": "Concept", "aliases": [],
-             "summary": "Political ideology championed by liberal movements and opposed by Metternich."},
+            {
+                "name": "Klemens von Metternich",
+                "entity_type": "Person",
+                "aliases": ["Metternich", "Prince Metternich"],
+                "summary": "Austrian foreign minister and central figure at the Congress of Vienna.",
+            },
+            {
+                "name": "Alexander I",
+                "entity_type": "Person",
+                "aliases": ["Tsar Alexander I"],
+                "summary": "Tsar of Russia who sought expanded influence at the Congress of Vienna.",
+            },
+            {
+                "name": "Karl vom Stein",
+                "entity_type": "Person",
+                "aliases": ["Baron Stein", "Baron vom Stein"],
+                "summary": "Prussian statesman who participated in early Congress discussions but died before its conclusion.",
+            },
+            {
+                "name": "Congress of Vienna",
+                "entity_type": "Event",
+                "aliases": ["The Congress"],
+                "summary": "Diplomatic conference held in 1814 to reorganize Europe after the Napoleonic Wars.",
+            },
+            {
+                "name": "Austria",
+                "entity_type": "Location",
+                "aliases": ["Austrian Empire"],
+                "summary": "Major European power and host nation of the Congress of Vienna.",
+            },
+            {
+                "name": "Prussia",
+                "entity_type": "Location",
+                "aliases": [],
+                "summary": "German state that participated in the Congress of Vienna.",
+            },
+            {
+                "name": "Russia",
+                "entity_type": "Location",
+                "aliases": [],
+                "summary": "Major European power represented at the Congress of Vienna.",
+            },
+            {
+                "name": "Great Britain",
+                "entity_type": "Location",
+                "aliases": [],
+                "summary": "Major European power represented at the Congress of Vienna.",
+            },
+            {
+                "name": "Napoleonic Wars",
+                "entity_type": "Event",
+                "aliases": [],
+                "summary": "Series of wars fought between France and various European coalitions.",
+            },
+            {
+                "name": "Concert of Europe",
+                "entity_type": "Concept",
+                "aliases": [],
+                "summary": "System of balance-of-power diplomacy established after the Congress of Vienna.",
+            },
+            {
+                "name": "Treaty of Paris",
+                "entity_type": "Event",
+                "aliases": [],
+                "summary": "Peace treaty signed on May 30, 1814, preceding the Congress of Vienna.",
+            },
+            {
+                "name": "Nationalism",
+                "entity_type": "Concept",
+                "aliases": [],
+                "summary": "Political ideology championed by liberal movements and opposed by Metternich.",
+            },
         ],
         relationships=[
-            {"source_entity": "Klemens von Metternich", "target_entity": "Congress of Vienna",
-             "relationship_type": "participated_in", "time_frame": "1814-1815",
-             "evidence_quote": "Prince Klemens von Metternich played a central role in the negotiations.", "confidence_score": 0.95},
-            {"source_entity": "Alexander I", "target_entity": "Congress of Vienna",
-             "relationship_type": "participated_in", "time_frame": "1814",
-             "evidence_quote": "Tsar Alexander I of Russia sought to expand Russian influence.", "confidence_score": 0.95},
-            {"source_entity": "Alexander I", "target_entity": "Russia",
-             "relationship_type": "ruled", "time_frame": "1801-1825",
-             "evidence_quote": "Tsar Alexander I of Russia", "confidence_score": 0.95},
-            {"source_entity": "Karl vom Stein", "target_entity": "Congress of Vienna",
-             "relationship_type": "participated_in", "time_frame": "1814",
-             "evidence_quote": "participated in early discussions but died before the Congress concluded.", "confidence_score": 0.9},
-            {"source_entity": "Klemens von Metternich", "target_entity": "Austria",
-             "relationship_type": "served_as_foreign_minister_of", "time_frame": "1809-1848",
-             "evidence_quote": "the Austrian foreign minister", "confidence_score": 0.95},
-            {"source_entity": "Karl vom Stein", "target_entity": "Prussia",
-             "relationship_type": "was_statesman_of", "time_frame": "",
-             "evidence_quote": "a Prussian statesman", "confidence_score": 0.9},
-            {"source_entity": "Congress of Vienna", "target_entity": "Concert of Europe",
-             "relationship_type": "established", "time_frame": "1815",
-             "evidence_quote": "The resulting Concert of Europe established a balance of power", "confidence_score": 0.95},
-            {"source_entity": "Concert of Europe", "target_entity": "Nationalism",
-             "relationship_type": "opposed", "time_frame": "1815-1914",
-             "evidence_quote": "championing conservatism against nationalist and liberal movements", "confidence_score": 0.85},
+            {
+                "source_entity": "Klemens von Metternich",
+                "target_entity": "Congress of Vienna",
+                "relationship_type": "participated_in",
+                "time_frame": "1814-1815",
+                "evidence_quote": "Prince Klemens von Metternich played a central role in the negotiations.",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Alexander I",
+                "target_entity": "Congress of Vienna",
+                "relationship_type": "participated_in",
+                "time_frame": "1814",
+                "evidence_quote": "Tsar Alexander I of Russia sought to expand Russian influence.",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Alexander I",
+                "target_entity": "Russia",
+                "relationship_type": "ruled",
+                "time_frame": "1801-1825",
+                "evidence_quote": "Tsar Alexander I of Russia",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Karl vom Stein",
+                "target_entity": "Congress of Vienna",
+                "relationship_type": "participated_in",
+                "time_frame": "1814",
+                "evidence_quote": "participated in early discussions but died before the Congress concluded.",
+                "confidence_score": 0.9,
+            },
+            {
+                "source_entity": "Klemens von Metternich",
+                "target_entity": "Austria",
+                "relationship_type": "served_as_foreign_minister_of",
+                "time_frame": "1809-1848",
+                "evidence_quote": "the Austrian foreign minister",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Karl vom Stein",
+                "target_entity": "Prussia",
+                "relationship_type": "was_statesman_of",
+                "time_frame": "",
+                "evidence_quote": "a Prussian statesman",
+                "confidence_score": 0.9,
+            },
+            {
+                "source_entity": "Congress of Vienna",
+                "target_entity": "Concert of Europe",
+                "relationship_type": "established",
+                "time_frame": "1815",
+                "evidence_quote": "The resulting Concert of Europe established a balance of power",
+                "confidence_score": 0.95,
+            },
+            {
+                "source_entity": "Concert of Europe",
+                "target_entity": "Nationalism",
+                "relationship_type": "opposed",
+                "time_frame": "1815-1914",
+                "evidence_quote": "championing conservatism against nationalist and liberal movements",
+                "confidence_score": 0.85,
+            },
         ],
     )
 
@@ -658,11 +780,16 @@ def _do_demo(run_key: str) -> None:
     _log(run_key, f"  ✓ {graph_exp.summary()}", "success")
 
     _log_sep(run_key)
-    _log(run_key, f"Demo: {len(merged)} entities, {len(updated)} relationships, {note_count} vault notes", "success")
+    _log(
+        run_key,
+        f"Demo: {len(merged)} entities, {len(updated)} relationships, {note_count} vault notes",
+        "success",
+    )
     _log_done(run_key, "Demo — complete")
 
 
 # ── Run dispatcher ──────────────────────────────────────────────────
+
 
 def _dispatch_pipeline(body: dict[str, Any]) -> str:
     """Parse body, start background thread, return run_key."""
@@ -692,6 +819,7 @@ def _dispatch_pipeline(body: dict[str, Any]) -> str:
 
 
 # ── API endpoints ───────────────────────────────────────────────────
+
 
 @app.post("/api/ingest")
 async def api_ingest(body: dict[str, Any]):
@@ -795,6 +923,7 @@ async def api_load_preferences():
     """Load saved user preferences."""
     try:
         from artifice_graph.web.config_helper import load_saved_config
+
         saved_cfg = load_saved_config()
         if saved_cfg:
             redacted = _redact_config(saved_cfg)
@@ -818,15 +947,20 @@ async def api_state():
     raw_entities = store.load("entities_raw.json")
 
     from collections import Counter
+
     if entities:
         type_counts = Counter(e.get("entity_type", "?") for e in entities)
-        type_list = [{"type": t, "count": c} for t, c in sorted(type_counts.items(), key=lambda x: -x[1])]
+        type_list = [
+            {"type": t, "count": c} for t, c in sorted(type_counts.items(), key=lambda x: -x[1])
+        ]
     else:
         type_list = []
 
     if relationships:
         rel_counts = Counter(r.get("relationship_type", "?") for r in relationships)
-        rel_list = [{"type": t, "count": c} for t, c in sorted(rel_counts.items(), key=lambda x: -x[1])[:10]]
+        rel_list = [
+            {"type": t, "count": c} for t, c in sorted(rel_counts.items(), key=lambda x: -x[1])[:10]
+        ]
     else:
         rel_list = []
 
@@ -883,9 +1017,12 @@ async def api_map_entities(mode: str = Query("approx", pattern="^(approx|lookup)
             try:
                 import urllib.parse
                 import urllib.request
+
                 encoded = urllib.parse.quote(name)
                 url = f"https://nominatim.openstreetmap.org/search?q={encoded}&format=json&limit=1"
-                req = urllib.request.Request(url, headers={"User-Agent": "ArtificeGraph-HistoricalPipeline/1.0"})
+                req = urllib.request.Request(
+                    url, headers={"User-Agent": "ArtificeGraph-HistoricalPipeline/1.0"}
+                )
                 with urllib.request.urlopen(req, timeout=3) as resp:
                     data = json.loads(resp.read().decode())
                     if data:
@@ -897,20 +1034,23 @@ async def api_map_entities(mode: str = Query("approx", pattern="^(approx|lookup)
 
         if lat is not None and lng is not None:
             rels = [
-                r for r in relationships
+                r
+                for r in relationships
                 if r.get("source_entity") == name or r.get("target_entity") == name
             ]
-            result.append({
-                "id": loc.get("id"),
-                "name": name,
-                "type": loc.get("entity_type"),
-                "summary": loc.get("summary", ""),
-                "aliases": loc.get("aliases", []),
-                "lat": lat,
-                "lng": lng,
-                "source_method": source_method,
-                "relationships": rels
-            })
+            result.append(
+                {
+                    "id": loc.get("id"),
+                    "name": name,
+                    "type": loc.get("entity_type"),
+                    "summary": loc.get("summary", ""),
+                    "aliases": loc.get("aliases", []),
+                    "lat": lat,
+                    "lng": lng,
+                    "source_method": source_method,
+                    "relationships": rels,
+                }
+            )
 
     return {"locations": result, "mode": mode}
 
@@ -1062,7 +1202,7 @@ async def api_stream(run: str = Query(...)):
                 for ev in new_events:
                     yield f"data: {json.dumps(ev)}\n\n"
             if not active and idx >= len(buf):
-                yield "data: {\"gotoState\":\"done\",\"text\":\"Stream ended\"}\n\n"
+                yield 'data: {"gotoState":"done","text":"Stream ended"}\n\n'
                 break
             await asyncio.sleep(0.15)
 
@@ -1165,21 +1305,25 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
         ext = Path(safe_name).suffix.lower()
 
         if ext not in allowed_extensions:
-            results.append({
-                "filename": raw_name,
-                "status": "rejected",
-                "reason": f"Extension {ext!r} not accepted. Allowed: {sorted(allowed_extensions)}",
-            })
+            results.append(
+                {
+                    "filename": raw_name,
+                    "status": "rejected",
+                    "reason": f"Extension {ext!r} not accepted. Allowed: {sorted(allowed_extensions)}",
+                }
+            )
             continue
 
         try:
             contents = await _read_capped(upload, _MAX_UPLOAD_BYTES)
         except HTTPException:
-            results.append({
-                "filename": raw_name,
-                "status": "rejected",
-                "reason": f"File exceeds 50 MB limit",
-            })
+            results.append(
+                {
+                    "filename": raw_name,
+                    "status": "rejected",
+                    "reason": "File exceeds 50 MB limit",
+                }
+            )
             continue
 
         dest = input_dir / safe_name
@@ -1193,6 +1337,7 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
 
 # ── Page routes ─────────────────────────────────────────────────────
 
+
 def _render(template_name: str, **extra) -> str:
     cfg = load_config()
     store = _load_store(cfg)
@@ -1205,7 +1350,12 @@ def _render(template_name: str, **extra) -> str:
         "active_tab": template_name.replace(".html", "").replace("index", "pipeline"),
         "asset_v": int(time.time()),
         "config": _redact_config(cfg),
-        "state": {"entities": entities, "relationships": relationships, "documents": documents, "chunks": chunks},
+        "state": {
+            "entities": entities,
+            "relationships": relationships,
+            "documents": documents,
+            "chunks": chunks,
+        },
         "theme": "auto",
         "reduce_motion": False,
     }
@@ -1229,6 +1379,7 @@ async def about():
 
 
 # ── Main ────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     port = int(os.environ.get("ARTIFICE_PORT", os.environ.get("CALLOSIP_PORT", "8766")))

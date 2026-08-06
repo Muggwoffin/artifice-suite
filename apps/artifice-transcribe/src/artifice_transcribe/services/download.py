@@ -14,6 +14,7 @@ available before it downloads anything.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -22,7 +23,7 @@ import threading
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from queue import Empty, Full, Queue
+from queue import Full, Queue
 from typing import Any
 
 from model_harness.registry import ASR_MODELS, AsrModelInfo
@@ -244,10 +245,13 @@ class DownloadManager:
     def _emit(self, key: str, event: dict[str, Any]) -> None:
         """Push a progress event to every registered SSE queue (non-blocking)."""
         for q in self._queues.get(key, ()):
-            try:
+            # A client that is not draining its queue must never block the
+            # download worker, so a full queue drops the event rather than
+            # waiting. Progress events are advisory; the terminal `completed`
+            # or `error` state is also recorded on the DownloadSet, so a
+            # dropped event cannot lose the outcome — only intermediate ticks.
+            with contextlib.suppress(Full):
                 q.put_nowait(event)
-            except Full:
-                pass  # Client not draining — drop event rather than block.
 
     # ── Public API ────────────────────────────────────────────────────────
 
@@ -374,10 +378,8 @@ class DownloadManager:
     def unsubscribe_events(self, key: str, queue: Queue[dict[str, Any]]) -> None:
         """Remove a per-client event queue registered for *key*."""
         queues = self._queues.get(key, [])
-        try:
+        with contextlib.suppress(ValueError):
             queues.remove(queue)
-        except ValueError:
-            pass
 
     def get_status(self, key: str) -> DownloadSet | None:
         """Return the current :class:`DownloadSet` for *key*, or ``None``."""
@@ -454,19 +456,29 @@ class DownloadManager:
                     token=token if info.requires_hf_token else None,
                     cache_dir=cache_dir,
                     cancel=cancel,
-                    progress_callback=lambda pct, downloaded: self._emit(
-                        request_key,
-                        {
-                            "type": "progress",
-                            "key": request_key,
-                            "model_idx": i,
-                            "model_key": ms.key,
-                            "model_total": len(models),
-                            "hf_repo": info.hf_repo,
-                            "total_bytes": ms.total_bytes,
-                            "downloaded_bytes": downloaded,
-                            "state": "downloading",
-                        },
+                    # `i`, `ms` and `info` are bound as default arguments, not
+                    # captured by reference. This is not a style fix (ruff B023):
+                    # the callback fires from the polling loop on a background
+                    # thread, so a late event arriving after the outer loop has
+                    # advanced would report the NEXT model's index, key, repo and
+                    # total against the current model's byte count. That is the
+                    # same wrong-model progress the review flagged elsewhere,
+                    # reached by a second and independent route.
+                    progress_callback=lambda pct, downloaded, _idx=i, _ms=ms, _info=info: (
+                        self._emit(
+                            request_key,
+                            {
+                                "type": "progress",
+                                "key": request_key,
+                                "model_idx": _idx,
+                                "model_key": _ms.key,
+                                "model_total": len(models),
+                                "hf_repo": _info.hf_repo,
+                                "total_bytes": _ms.total_bytes,
+                                "downloaded_bytes": downloaded,
+                                "state": "downloading",
+                            },
+                        )
                     ),
                 )
                 # Track the inner snapshot_download thread so start_download
@@ -653,9 +665,7 @@ def _download_with_progress(
             msg = _redact_token(str(result))
             # Do *not* chain the raw exception as __cause__ — it may carry an
             # unredacted token in its message or args.
-            raise RuntimeError(
-                f"Download failed for {repo_id}: {msg}"
-            )
+            raise RuntimeError(f"Download failed for {repo_id}: {msg}")
         return result, dl_thread
 
     # If we got here, something unexpected happened.

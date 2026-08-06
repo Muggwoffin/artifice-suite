@@ -82,14 +82,10 @@ class EndpointPolicy:
         environment variable is read.
         """
         self._always_allowed: frozenset[str] = (
-            always_allowed_hosts
-            if always_allowed_hosts is not None
-            else _default_always_allowed()
+            always_allowed_hosts if always_allowed_hosts is not None else _default_always_allowed()
         )
         self._allow_public: bool = (
-            allow_public
-            if allow_public is not None
-            else _read_allow_public_env()
+            allow_public if allow_public is not None else _read_allow_public_env()
         )
 
     # -- host classification --------------------------------------------------
@@ -156,20 +152,14 @@ class EndpointPolicy:
         try:
             parsed = urlparse(raw)
         except Exception:
-            raise EndpointRejected(
-                f"{raw!r} is not a valid URL"
-            ) from None
+            raise EndpointRejected(f"{raw!r} is not a valid URL") from None
 
         if parsed.scheme not in ("http", "https"):
-            raise EndpointRejected(
-                f"scheme must be http or https, got {parsed.scheme!r}"
-            )
+            raise EndpointRejected(f"scheme must be http or https, got {parsed.scheme!r}")
 
         host = (parsed.hostname or "").lower()
         if not host:
-            raise EndpointRejected(
-                f"{raw!r} has no host"
-            )
+            raise EndpointRejected(f"{raw!r} has no host")
 
         permitted, reason = self.classify_host(host)
         if not permitted:

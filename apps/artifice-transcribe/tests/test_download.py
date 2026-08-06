@@ -11,14 +11,12 @@ temporary directories via ``monkeypatch``.
 
 from __future__ import annotations
 
-import json
+import contextlib
 import threading
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-
 from artifice_transcribe.main import app
 from artifice_transcribe.services.download import (
     DownloadManager,
@@ -31,7 +29,7 @@ from artifice_transcribe.services.download import (
     revoke_consent,
     total_transitive_size,
 )
-
+from httpx import ASGITransport, AsyncClient
 
 # -- Fixtures ----------------------------------------------------------------
 
@@ -181,6 +179,7 @@ def test_download_manager_cancel(clean_manager, clean_consent):
         started.set()
         while cancel is not None and not cancel.is_set():
             import time
+
             time.sleep(0.05)
 
     with patch.object(dlmod, "_download_with_progress", _fake_download):
@@ -193,6 +192,7 @@ def test_download_manager_cancel(clean_manager, clean_consent):
     assert cancel_flag.is_set()
     # Wait for thread to finish.
     import time
+
     deadline = time.time() + 5
     while not ds.finished and time.time() < deadline:
         time.sleep(0.1)
@@ -230,6 +230,7 @@ def test_download_worker_handles_hf_error(clean_manager, clean_consent):
         ds = clean_manager.start_download("whisper-large-v3")
 
         import time
+
         deadline = time.time() + 10
         while not ds.finished and time.time() < deadline:
             time.sleep(0.1)
@@ -252,6 +253,7 @@ def test_download_worker_handles_network_error(clean_manager, clean_consent):
         ds = clean_manager.start_download("whisper-large-v3")
 
         import time
+
         deadline = time.time() + 10
         while not ds.finished and time.time() < deadline:
             time.sleep(0.1)
@@ -274,6 +276,7 @@ def test_download_worker_handles_disk_full(clean_manager, clean_consent):
         ds = clean_manager.start_download("whisper-large-v3")
 
         import time
+
         deadline = time.time() + 10
         while not ds.finished and time.time() < deadline:
             time.sleep(0.1)
@@ -294,6 +297,7 @@ def test_download_worker_supports_cancellation(clean_manager, clean_consent):
         cancel = kwargs.get("cancel")
         while cancel is not None and not cancel.is_set():
             import time
+
             time.sleep(0.05)
         raise dlmod._CancelledError()
 
@@ -301,6 +305,7 @@ def test_download_worker_supports_cancellation(clean_manager, clean_consent):
         ds = clean_manager.start_download("whisper-large-v3")
 
         import time
+
         time.sleep(0.2)  # Let the thread start.
         clean_manager.cancel_download("whisper-large-v3")
 
@@ -309,12 +314,13 @@ def test_download_worker_supports_cancellation(clean_manager, clean_consent):
             time.sleep(0.1)
 
     assert ds.finished
-    assert any(
-        ms.state == DownloadState.CANCELLED for ms in ds.models
-    ), f"Expected CANCELLED, got states: {[ms.state for ms in ds.models]}"
+    assert any(ms.state == DownloadState.CANCELLED for ms in ds.models), (
+        f"Expected CANCELLED, got states: {[ms.state for ms in ds.models]}"
+    )
 
 
 # -- API endpoints -----------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_list_models_returns_all_keys():
@@ -462,6 +468,7 @@ def test_redact_token_error_message(clean_manager, clean_consent):
         ds = clean_manager.start_download("whisper-large-v3")
 
         import time
+
         deadline = time.time() + 10
         while not ds.finished and time.time() < deadline:
             time.sleep(0.1)
@@ -491,6 +498,7 @@ def test_cancel_is_honest_does_not_mark_finished_immediately(clean_manager, clea
         started.set()
         while cancel is not None and not cancel.is_set():
             import time
+
             time.sleep(0.05)
         # Cancel was set — signal so the test knows we saw it.
         cancel_seen.set()
@@ -519,14 +527,15 @@ def test_cancel_is_honest_does_not_mark_finished_immediately(clean_manager, clea
     # After the fake_download raises _CancelledError, the worker catches it
     # and marks the download as CANCELLED and finished.
     import time
+
     deadline = time.time() + 5
     while not ds.finished and time.time() < deadline:
         time.sleep(0.1)
 
     assert ds.finished
-    assert any(
-        ms.state == DownloadState.CANCELLED for ms in ds.models
-    ), f"Expected CANCELLED, got states: {[ms.state for ms in ds.models]}"
+    assert any(ms.state == DownloadState.CANCELLED for ms in ds.models), (
+        f"Expected CANCELLED, got states: {[ms.state for ms in ds.models]}"
+    )
 
 
 # -- Concurrent double-start protection ----------------------------------------
@@ -587,7 +596,9 @@ def test_per_client_queues_are_isolated(clean_manager, clean_consent):
 
     import artifice_transcribe.services.download as dlmod
 
-    with patch.object(dlmod, "_download_with_progress", return_value=(Path("/fake/path"), threading.Thread())):
+    with patch.object(
+        dlmod, "_download_with_progress", return_value=(Path("/fake/path"), threading.Thread())
+    ):
         clean_manager.start_download("whisper-large-v3")
 
     q1 = clean_manager.subscribe_events("whisper-large-v3")
@@ -602,7 +613,9 @@ def test_unsubscribe_removes_queue(clean_manager, clean_consent):
 
     import artifice_transcribe.services.download as dlmod
 
-    with patch.object(dlmod, "_download_with_progress", return_value=(Path("/fake/path"), threading.Thread())):
+    with patch.object(
+        dlmod, "_download_with_progress", return_value=(Path("/fake/path"), threading.Thread())
+    ):
         clean_manager.start_download("whisper-large-v3")
 
     q = clean_manager.subscribe_events("whisper-large-v3")
@@ -619,16 +632,54 @@ def test_queue_bounded(clean_manager, clean_consent):
 
     import artifice_transcribe.services.download as dlmod
 
-    with patch.object(dlmod, "_download_with_progress", return_value=(Path("/fake/path"), threading.Thread())):
+    with patch.object(
+        dlmod, "_download_with_progress", return_value=(Path("/fake/path"), threading.Thread())
+    ):
         clean_manager.start_download("whisper-large-v3")
 
     q = clean_manager.subscribe_events("whisper-large-v3")
     # Fill the queue.
     for i in range(200):
-        try:
+        with contextlib.suppress(Exception):
             q.put_nowait({"type": "test", "n": i})
-        except Exception:
-            pass
 
     # Queue should not exceed its maxsize (100).
     assert q.qsize() <= 100
+
+
+# -- SSE wire format ---------------------------------------------------------
+#
+# These exist because the download endpoints shipped with a literal
+# backslash-n escape instead of a real newline as the frame terminator. An SSE
+# event is terminated by a BLANK LINE, so every frame was malformed and a
+# browser EventSource would have received nothing at all, forever, while the
+# server reported perfectly healthy.
+#
+# None of the other tests caught it: they assert on decoded JSON payloads or on
+# manager state, never on the bytes that actually go over the wire. The
+# pre-existing summarize/cleanup endpoints in the same module were always
+# correct, so this was a silent divergence from a working pattern sitting a few
+# hundred lines above it.
+
+
+async def test_sse_error_frame_is_terminated_by_a_blank_line():
+    """An SSE frame must end with two real newlines, not an escape sequence."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/api/v1/models/whisper-large-v3/download/progress")
+
+    body = resp.text
+    assert body.endswith("\n\n"), (
+        f"SSE frame is not terminated by a blank line; body ends with {body[-8:]!r}"
+    )
+    assert "\\n" not in body, "SSE frame contains a literal backslash-n escape instead of a newline"
+
+
+async def test_sse_error_frame_interpolates_the_model_key():
+    """The error payload must name the actual model, not a literal placeholder."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/api/v1/models/whisper-large-v3/download/progress")
+
+    assert "{key}" not in resp.text, "error message contains an uninterpolated placeholder"
+    assert "whisper-large-v3" in resp.text

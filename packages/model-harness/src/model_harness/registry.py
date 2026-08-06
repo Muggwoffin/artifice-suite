@@ -416,9 +416,7 @@ def get_asr_model(key: str) -> AsrModelInfo:
     return ASR_MODELS[key]
 
 
-def recommendations_for_app(
-    app: str, tier: HardwareTier
-) -> Sequence[ModelRecommendation]:
+def recommendations_for_app(app: str, tier: HardwareTier) -> Sequence[ModelRecommendation]:
     """Return recommended models for *app* on the given *tier*.
 
     Args:

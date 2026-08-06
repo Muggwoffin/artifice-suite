@@ -83,17 +83,21 @@ async def health():
 
 # ── Shared design system (resolved from installed shared-ui package) ───────
 import importlib.resources
+
 import shared_ui
+
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
 # ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
 # ChoiceLoader lets templates include shared-ui’s masthead partial.
 _JINJA = Environment(
-    loader=ChoiceLoader([
-        PackageLoader("artifice_transcribe.web", "templates"),
-        PackageLoader("shared_ui", "templates"),
-    ]),
+    loader=ChoiceLoader(
+        [
+            PackageLoader("artifice_transcribe.web", "templates"),
+            PackageLoader("shared_ui", "templates"),
+        ]
+    ),
     autoescape=select_autoescape(["html", "xml"]),
 )
 
@@ -152,7 +156,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 def cli():
     import argparse
     import os
-    import sys
+
     import uvicorn
 
     # --host and --port defaults come from ARTIFICE_HOST / ARTIFICE_PORT,
@@ -182,19 +186,20 @@ def cli():
         "--host",
         default=_default_host,
         help="Host to bind the server to (default: 127.0.0.1, "
-             "or $ARTIFICE_HOST / $CALLOSIP_HOST if set).",
+        "or $ARTIFICE_HOST / $CALLOSIP_HOST if set).",
     )
     parser.add_argument(
         "--port",
         type=int,
         default=_default_port,
         help="Port to bind the server to (default: 8000, "
-             "or $ARTIFICE_PORT / $CALLOSIP_PORT if set).",
+        "or $ARTIFICE_PORT / $CALLOSIP_PORT if set).",
     )
     args = parser.parse_args()
 
     if args.data_dir:
         from artifice_transcribe.config import settings
+
         print(str(settings.data_path))
         return
 

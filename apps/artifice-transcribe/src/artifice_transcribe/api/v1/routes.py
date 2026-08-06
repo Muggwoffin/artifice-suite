@@ -8,15 +8,15 @@ import asyncio
 import importlib.util
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from queue import Empty
 
+import model_harness.registry as reg
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
-import model_harness.registry as reg
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -80,8 +80,6 @@ from artifice_transcribe.schemas.transcription import (
     TranscriptResponse,
 )
 from artifice_transcribe.services.download import (
-    DownloadManager,
-    DownloadState,
     find_registry_key,
     get_download_manager,
     hf_cache_dir,
@@ -122,6 +120,7 @@ async def _read_capped(upload: UploadFile, limit: int) -> bytes:
         chunks.append(chunk)
     return b"".join(chunks)
 
+
 # ── Path safety ──────────────────────────────────────────────────────────────
 
 
@@ -131,7 +130,7 @@ def _sanitise_path_component(raw: str) -> str:
     Rejects components that are empty, ``"."``, or ``".."`` after
     stripping — ``Path("..").name`` returns ``".."``, so ``.name``
     alone is not sufficient.
-    
+
     Backslashes are treated as separators (Windows path support) so that
     ``..\\\\..\\\\windows\\\\system32`` collapses to ``system32`` even on
     POSIX where ``Path.name`` would return the whole string.
@@ -199,6 +198,7 @@ def _load_hf_token() -> str:
         return token
     if _HF_TOKEN_FILE.exists():
         from secure_io import ensure_restricted
+
         ensure_restricted(_HF_TOKEN_FILE)
         try:
             data = json.loads(_HF_TOKEN_FILE.read_text(encoding="utf-8"))
@@ -218,9 +218,7 @@ def _save_hf_token(token: str) -> None:
     if not is_restricted(_HF_TOKEN_FILE):
         write_private_json(_HF_TOKEN_FILE, {"hf_token": token})
         if not is_restricted(_HF_TOKEN_FILE):
-            raise PermissionError(
-                f"Failed to secure HF token file after retry: {_HF_TOKEN_FILE}"
-            )
+            raise PermissionError(f"Failed to secure HF token file after retry: {_HF_TOKEN_FILE}")
 
 
 def _migrate_legacy_inference_config() -> None:
@@ -237,10 +235,12 @@ def _migrate_legacy_inference_config() -> None:
     if _LEGACY_INFERENCE_CONFIG.exists():
         logger.info(
             "Migrating legacy inference config from %s to %s",
-            _LEGACY_INFERENCE_CONFIG, _INFERENCE_CONFIG_FILE,
+            _LEGACY_INFERENCE_CONFIG,
+            _INFERENCE_CONFIG_FILE,
         )
         _INFERENCE_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
         import shutil
+
         shutil.move(str(_LEGACY_INFERENCE_CONFIG), str(_INFERENCE_CONFIG_FILE))
         logger.info("Migration complete — inference config is now at %s", _INFERENCE_CONFIG_FILE)
 
@@ -249,6 +249,7 @@ def _load_inference_config() -> dict:
     _migrate_legacy_inference_config()
     if _INFERENCE_CONFIG_FILE.exists():
         from secure_io import ensure_restricted
+
         ensure_restricted(_INFERENCE_CONFIG_FILE)
         try:
             return json.loads(_INFERENCE_CONFIG_FILE.read_text(encoding="utf-8"))
@@ -426,7 +427,7 @@ async def _run_transcription(
 
             job.status = JobStatus.completed
             job.progress_percentage = 100.0
-            job.completed_at = datetime.now(timezone.utc)
+            job.completed_at = datetime.now(UTC)
             await db.commit()
             logger.info("Job %s completed with %d segments", job_id, len(segments))
 
@@ -442,7 +443,7 @@ async def _run_transcription(
             if job:
                 job.status = JobStatus.failed
                 job.error_message = str(exc)
-                job.completed_at = datetime.now(timezone.utc)
+                job.completed_at = datetime.now(UTC)
                 await db.commit()
 
         finally:
@@ -665,11 +666,13 @@ async def inference_generate(body: InferenceGenerateRequest):
 async def _build_transcript_prompt(job_id: str, db: AsyncSession, action: str) -> str:
     """Fetch segments for a job and build a prompt for the AI action."""
     segs = (
-        (await db.execute(
-            select(TranscriptSegment)
-            .where(TranscriptSegment.job_id == job_id)
-            .order_by(TranscriptSegment.start_time)
-        ))
+        (
+            await db.execute(
+                select(TranscriptSegment)
+                .where(TranscriptSegment.job_id == job_id)
+                .order_by(TranscriptSegment.start_time)
+            )
+        )
         .scalars()
         .all()
     )
@@ -681,10 +684,7 @@ async def _build_transcript_prompt(job_id: str, db: AsyncSession, action: str) -
         start = int(s.start_time // 60)
         end_sec = int(s.end_time % 60)
         start_sec = int(s.start_time % 60)
-        lines.append(
-            f"[{start}:{start_sec:02d}-{start}:{end_sec:02d}] "
-            f"{s.speaker_label}: {s.text}"
-        )
+        lines.append(f"[{start}:{start_sec:02d}-{start}:{end_sec:02d}] {s.speaker_label}: {s.text}")
 
     transcript = "\n".join(lines)
 
@@ -745,7 +745,7 @@ async def summarize_job(job_id: str, db: AsyncSession = Depends(get_db)):
                 yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
-        yield "data: {\"type\": \"done\"}\n\n"
+        yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
@@ -784,7 +784,7 @@ async def cleanup_job(job_id: str, db: AsyncSession = Depends(get_db)):
                 yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'text': str(exc)})}\n\n"
-        yield "data: {\"type\": \"done\"}\n\n"
+        yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
@@ -840,9 +840,7 @@ async def capabilities():
     pyannote.audio) is missing correctly reports unavailable.
     """
     _required = ("whisperx", "torch", "torchaudio", "torchvision", "torchcodec")
-    asr_available = all(
-        importlib.util.find_spec(pkg) is not None for pkg in _required
-    )
+    asr_available = all(importlib.util.find_spec(pkg) is not None for pkg in _required)
     if asr_available:
         asr_info = {"available": True}
     else:
@@ -1445,7 +1443,7 @@ async def update_dictionary(
         db.add(row)
     else:
         row.words = body.words
-        row.updated_at = datetime.now(timezone.utc)
+        row.updated_at = datetime.now(UTC)
     await db.commit()
     return DictionaryResponse(id=row.id, words=row.words, updated_at=row.updated_at)
 
@@ -1686,9 +1684,7 @@ async def list_models() -> ModelListResponse:
     This is a cheap, read-only endpoint — no imports of the ASR stack, no
     network calls, no file I/O beyond reading the consent file.
     """
-    return ModelListResponse(
-        models=[_model_info_response(key) for key in reg.ASR_MODELS]
-    )
+    return ModelListResponse(models=[_model_info_response(key) for key in reg.ASR_MODELS])
 
 
 @router.get("/models/{key}", response_model=ModelInfoResponse)
@@ -1830,8 +1826,10 @@ async def stream_download_progress(key: str) -> StreamingResponse:
     ds = manager.get_status(key)
 
     if ds is None:
+
         async def _error_gen():
-            yield f"data: {json.dumps({'type': 'error', 'error': 'No download active for {key}'})}\\n\\n"
+            payload = {"type": "error", "error": f"No download active for {key}"}
+            yield f"data: {json.dumps(payload)}\n\n"
 
         return StreamingResponse(_error_gen(), media_type="text/event-stream")
 
@@ -1844,7 +1842,7 @@ async def stream_download_progress(key: str) -> StreamingResponse:
                 try:
                     while True:
                         event = queue.get_nowait()
-                        yield f"data: {json.dumps(event)}\\n\\n"
+                        yield f"data: {json.dumps(event)}\n\n"
                 except Empty:
                     pass
 
@@ -1855,7 +1853,7 @@ async def stream_download_progress(key: str) -> StreamingResponse:
                     while True:
                         try:
                             event = queue.get_nowait()
-                            yield f"data: {json.dumps(event)}\\n\\n"
+                            yield f"data: {json.dumps(event)}\n\n"
                         except Empty:
                             break
                     return
@@ -1863,10 +1861,10 @@ async def stream_download_progress(key: str) -> StreamingResponse:
                 # Wait for the next event.
                 try:
                     event = queue.get(timeout=1.0)
-                    yield f"data: {json.dumps(event)}\\n\\n"
+                    yield f"data: {json.dumps(event)}\n\n"
                 except Empty:
                     # Timeout — send a heartbeat so the connection stays alive.
-                    yield f"data: {json.dumps({'type': 'heartbeat', 'key': key})}\\n\\n"
+                    yield f"data: {json.dumps({'type': 'heartbeat', 'key': key})}\n\n"
         finally:
             manager.unsubscribe_events(key, queue)
 

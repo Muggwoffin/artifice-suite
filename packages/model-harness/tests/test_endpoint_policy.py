@@ -6,12 +6,10 @@
 
 from __future__ import annotations
 
-import os
 import socket
 import unittest.mock as mock
 
 import pytest
-
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy, _default_always_allowed
 
@@ -330,8 +328,7 @@ class TestDefaultAllowlist:
             except ValueError:
                 is_ip = False
             assert not is_ip, (
-                f"default allowlist contains literal IP {h!r} "
-                f"when WSL_HOST_IP is unset"
+                f"default allowlist contains literal IP {h!r} when WSL_HOST_IP is unset"
             )
 
     def test_wsl_host_ip_added_when_set(self, monkeypatch):
