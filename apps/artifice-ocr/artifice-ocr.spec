@@ -27,7 +27,8 @@
 import sys
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.compat import is_win
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
 
 # ---------------------------------------------------------------------------
 # Configuration — paths relative to the repo root
@@ -73,6 +74,38 @@ HIDDEN_IMPORTS = [
     "model_harness",
     "model_harness.contract",
     "model_harness.registry",
+    # pywebview — dynamically loads platform backends at runtime;
+    # PyInstaller's static analysis cannot discover these.
+    "webview",
+    "webview.platforms.winforms",
+    "webview.platforms.win32",
+    "webview.platforms.gtk",
+    "webview.platforms.cocoa",
+    "webview.platforms.qt",
+    "webview.platforms.cef",
+    "webview.platforms.mshtml",
+    "webview.platforms.edgechromium",
+    "webview.dom",
+    "webview.dom.element",
+    "webview.dom.event",
+    "webview.dom.dom",
+    "webview.dom.propdict",
+    "webview.dom.classlist",
+    "webview.menu",
+    "webview.http",
+    "webview.event",
+    "webview.screen",
+    "webview.localization",
+    "webview.guilib",
+    "webview.util",
+    "webview.state",
+    "webview.models",
+    "webview.errors",
+    "webview._version",
+    # pythonnet — the bridge pywebview uses to talk to
+    # WinForms / WebView2 on Windows.  Not used on Linux / macOS
+    # but harmless as a hidden import (PyInstaller ignores missing modules).
+    "clr",
 ]
 
 # ---------------------------------------------------------------------------
@@ -83,6 +116,12 @@ HIDDEN_IMPORTS = [
 datas = []
 datas.extend(collect_data_files("artifice_ocr"))
 datas.extend(collect_data_files("shared_ui"))
+
+# pywebview ships js/ and lib/ directories that its backends need at runtime.
+# On Windows we also need the WebView2 loader DLLs.
+datas.extend(collect_data_files("webview", subdir="js"))
+if is_win:
+    datas.extend(collect_data_files("webview", subdir="lib"))
 
 # ---------------------------------------------------------------------------
 # Analysis
@@ -101,6 +140,19 @@ _SPEC_DIR = Path(SPECPATH)
 _REPO_ROOT = _SPEC_DIR.parent.parent
 _FREEZE_ENTRY = str(_REPO_ROOT / "apps" / APP_NAME / "src" / PACKAGE / "_freeze_entry.py")
 
+# Hookspath: include pywebview's own PyInstaller hook so its js/ and lib/
+# data files are automatically collected on every platform.
+_WEBVIEW_HOOKSPATH = []
+try:
+    import webview as _wv
+    import os as _os
+
+    _hook_dir = _os.path.join(_os.path.dirname(_wv.__file__), "__pyinstaller")
+    if _os.path.isdir(_hook_dir):
+        _WEBVIEW_HOOKSPATH.append(_hook_dir)
+except Exception:
+    pass
+
 a = Analysis(
     [_FREEZE_ENTRY],
     pathex=[
@@ -115,7 +167,7 @@ a = Analysis(
     binaries=[],
     datas=datas,
     hiddenimports=HIDDEN_IMPORTS,
-    hookspath=[],
+    hookspath=_WEBVIEW_HOOKSPATH,
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
