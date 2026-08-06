@@ -87,6 +87,7 @@ def load_saved_config() -> PipelineConfig | None:
                 entity_resolution=EntityResolutionConfig(**data.get("entity_resolution", {})),
                 export=ExportConfig(**data.get("export", {})),
                 storage=StorageConfig(**data.get("storage", {})),
+                nominatim_lookup_enabled=data.get("nominatim_lookup_enabled", False),
             )
 
             return config
@@ -122,6 +123,7 @@ def save_user_config(config: PipelineConfig) -> None:
         "entity_resolution": config.entity_resolution.model_dump(),
         "export": config.export.model_dump(),
         "storage": config.storage.model_dump(),
+        "nominatim_lookup_enabled": config.nominatim_lookup_enabled,
     }
 
     write_private_json(CONFIG_FILE, data)

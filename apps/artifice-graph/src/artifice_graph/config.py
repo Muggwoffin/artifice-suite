@@ -89,6 +89,14 @@ class PipelineConfig(BaseModel):
     export: ExportConfig = Field(default_factory=ExportConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
 
+    # Privacy guard: entity names extracted from a user's documents —
+    # potentially unpublished research material — must never be sent to a
+    # third party without explicit consent.  Even with consent this is a
+    # separate opt-in from the LLM allowlist; an academic who permits a
+    # local Ollama instance is not consenting to transmit entity names to
+    # the OpenStreetMap Foundation.
+    nominatim_lookup_enabled: bool = False
+
 
 def load_config(config_path: str | Path | None = None) -> PipelineConfig:
     """Load pipeline configuration.
@@ -189,6 +197,13 @@ def _resolve_user_data_dir() -> Path:
     new_dir = Path(user_data_dir("artifice-graph", "ArtificeSuite"))
 
     if _LEGACY_CONFIG_DIR.exists() and not new_dir.exists():
+        if _LEGACY_CONFIG_DIR.is_symlink():
+            logger.warning(
+                "Legacy config directory %s is a symlink — refusing to move it. "
+                "Symlink targets are likely outside the app's jurisdiction.",
+                _LEGACY_CONFIG_DIR,
+            )
+            return new_dir
         try:
             logger.info("Migrating user data from %s to %s", _LEGACY_CONFIG_DIR, new_dir)
             new_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -288,6 +303,10 @@ def _merge_user_config(config: PipelineConfig) -> None:
 
     if applied:
         logger.debug("Applied user config from %s", user_cfg)
+
+    # Top-level fields not inside a section.
+    if "nominatim_lookup_enabled" in user_data and isinstance(user_data["nominatim_lookup_enabled"], bool):
+        config.nominatim_lookup_enabled = user_data["nominatim_lookup_enabled"]
 
 
 # -- environment variable overrides -------------------------------------------
