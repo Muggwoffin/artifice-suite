@@ -9,11 +9,17 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+from artifice_graph.web.server import (
+    _ALLOWED_ROOT_DIRS,
+    _MAX_UPLOAD_BYTES,
+    _read_capped,
+    _validate_base_url,
+    _validate_directory,
+)
 from fastapi import HTTPException
-
-from artifice_graph.web.server import _validate_directory, _validate_base_url, _ALLOWED_ROOT_DIRS, _read_capped, _MAX_UPLOAD_BYTES
 
 
 class TestValidateDirectory:
@@ -154,9 +160,7 @@ class TestValidateBaseUrl:
     def test_unresolvable_host_is_rejected(self):
         """A name that does not resolve fails closed rather than passing."""
         with pytest.raises(HTTPException) as exc_info:
-            _validate_base_url(
-                "http://nonexistent.invalid:11434/v1", "llm_base_url"
-            )
+            _validate_base_url("http://nonexistent.invalid:11434/v1", "llm_base_url")
         assert exc_info.value.status_code == 400
 
     def test_rejects_ftp_scheme(self):
@@ -189,6 +193,7 @@ class TestValidateBaseUrl:
 # Cause A regression — temp dir from gettempdir() is always an allowed root
 # --------------------------------------------------------------------------- #
 
+
 def test_tempfile_gettempdir_in_allowed_roots():
     """``tempfile.gettempdir()`` is always in the allowed-roots list.
 
@@ -198,6 +203,7 @@ def test_tempfile_gettempdir_in_allowed_roots():
     present regardless of platform default.
     """
     import tempfile
+
     temp_root = Path(tempfile.gettempdir()).resolve()
     resolved_roots = [r.resolve() for r in _ALLOWED_ROOT_DIRS]
     assert temp_root in resolved_roots
@@ -263,10 +269,13 @@ def test_accepts_temp_outside_tmp_and_home(monkeypatch):
 def test_read_capped_raises_during_read():
     """_read_capped raises HTTP 413 once the limit is exceeded mid-stream,
     before the full body is gathered."""
+
     class _FakeUpload:
         filename = "test.txt"
+
         def __init__(self, total: int):
             self._remain = total
+
         async def read(self, size: int = -1) -> bytes:
             if self._remain <= 0:
                 return b""
@@ -295,6 +304,7 @@ def test_upload_oversized_rejected_per_file_in_batch(monkeypatch, tmp_path):
         def __init__(self, filename: str, total: int):
             self.filename = filename
             self._remain = total
+
         async def read(self, size: int = -1) -> bytes:
             if self._remain <= 0:
                 return b""
@@ -321,3 +331,100 @@ def test_upload_oversized_rejected_per_file_in_batch(monkeypatch, tmp_path):
     assert uploaded[1]["filename"] == "big.txt"
     assert uploaded[2]["status"] == "ok"
     assert uploaded[2]["filename"] == "more.txt"
+
+
+# -- Nominatim lookup gating (F6) --------------------------------------------
+
+
+class TestNominatimGating:
+    """Nominatim geocoding is default-off — entity names must not be sent to
+    a third party without explicit consent."""
+
+    def test_map_entities_lookup_disabled_by_default(self, monkeypatch, tmp_path):
+        """When nominatim_lookup_enabled is False (the default), mode=lookup
+        returns a response with lookup_disabled=True rather than making a
+        network call to OpenStreetMap."""
+        from artifice_graph.config import PipelineConfig
+        from artifice_graph.web import server as server_mod
+
+        cfg = PipelineConfig()
+        cfg.export.output_dir = str(tmp_path / "output")
+
+        monkeypatch.setattr(server_mod, "load_config", lambda: cfg)
+
+        # Provide entities with a Location not in HISTORICAL_COORDINATES.
+        store = server_mod._load_store(cfg)
+        store.save(
+            "entities.json",
+            [
+                {
+                    "id": "loc-1",
+                    "name": "Unknown Hamlet",
+                    "entity_type": "Location",
+                    "summary": "A village not in any built-in list",
+                    "aliases": [],
+                },
+            ],
+        )
+        store.save("relationships.json", [])
+
+        result = asyncio.run(server_mod.api_map_entities(mode="lookup"))
+
+        # Must not have made a network call — the lookup_disabled flag
+        # must be present.
+        assert result.get("lookup_disabled") is True, (
+            f"lookup_disabled flag missing; got keys: {list(result.keys())}"
+        )
+        assert "message" in result
+        assert "nominatim" in result["message"].lower()
+
+    def test_map_entities_lookup_enabled_allows_call(self, monkeypatch, tmp_path):
+        """When nominatim_lookup_enabled is True, mode=lookup is permitted."""
+        from artifice_graph.config import PipelineConfig
+        from artifice_graph.web import server as server_mod
+
+        cfg = PipelineConfig(nominatim_lookup_enabled=True)
+        cfg.export.output_dir = str(tmp_path / "output")
+
+        monkeypatch.setattr(server_mod, "load_config", lambda: cfg)
+
+        store = server_mod._load_store(cfg)
+        store.save(
+            "entities.json",
+            [
+                {
+                    "id": "loc-1",
+                    "name": "Unknown Hamlet",
+                    "entity_type": "Location",
+                    "summary": "A village",
+                    "aliases": [],
+                },
+            ],
+        )
+        store.save("relationships.json", [])
+
+        # Patch urllib to avoid a real network call — we just want to
+        # confirm the endpoint doesn't short-circuit with lookup_disabled.
+        class _FakeResponse:
+            def read(self):
+                return b'[{"lat": "51.5", "lon": "-0.1"}]'
+
+            def close(self):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        with patch("urllib.request.urlopen", return_value=_FakeResponse()):
+            result = asyncio.run(server_mod.api_map_entities(mode="lookup"))
+
+        assert result.get("lookup_disabled") is not True, (
+            "lookup_disabled flag set when nominatim_lookup_enabled=True"
+        )
+        # Should have looked up the unknown hamlet
+        assert any(loc.get("source_method") == "lookup" for loc in result.get("locations", [])), (
+            f"No location had source_method=lookup: {result}"
+        )

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import importlib.resources
 import os
 from pathlib import Path
 from typing import Any
@@ -11,7 +12,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "configs"
+# Resolved through importlib.resources, NOT a __file__-relative path.  This
+# file is distributed as a frozen .exe/.dmg, where __file__ points inside a
+# temporary extraction directory and any ``.parent.parent.parent`` walk lands
+# somewhere meaningless.  The previous form was
+# ``Path(__file__).resolve().parent.parent.parent / "configs"``, which also
+# put configs under ``apps/artifice-ocr/configs/`` — outside the package —
+# so the example config was excluded from the wheel entirely.
+_CONFIG_DIR = importlib.resources.files("artifice_ocr") / "configs"
 
 _DEFAULTS: dict[str, Any] = {
     "lm_studio_url": "http://localhost:1234/v1",
@@ -176,6 +184,7 @@ def load_user_settings() -> dict[str, Any]:
         return {}
     try:
         from secure_io import ensure_restricted
+
         ensure_restricted(_SETTINGS_PATH)
     except Exception:
         import logging
@@ -186,6 +195,7 @@ def load_user_settings() -> dict[str, Any]:
         )
     try:
         import json
+
         with open(_SETTINGS_PATH, encoding="utf-8") as f:
             data = json.load(f)
         return {k: v for k, v in data.items() if k in PERSISTED_KEYS}
@@ -214,9 +224,7 @@ def save_user_settings(settings: dict[str, Any]) -> None:
     if not is_restricted(_SETTINGS_PATH):
         write_private_json(_SETTINGS_PATH, merged)
         if not is_restricted(_SETTINGS_PATH):
-            raise PermissionError(
-                f"Failed to secure settings file after retry: {_SETTINGS_PATH}"
-            )
+            raise PermissionError(f"Failed to secure settings file after retry: {_SETTINGS_PATH}")
 
 
 def reset():

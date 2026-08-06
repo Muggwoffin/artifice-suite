@@ -262,3 +262,50 @@ def test_ensure_restricted_failure_is_swallowed(tmp_path, monkeypatch, caplog):
         assert (target_dir / "config.json").exists()
 
     assert "Could not re-restrict" in caplog.text
+
+
+# -- Symlink migration rejection (F8) ---------------------------------------
+
+
+def test_legacy_dir_is_symlink_refuses_migration(tmp_path, monkeypatch, caplog):
+    """When the legacy config directory is a symlink, the migration must
+    refuse to move it.  A symlink target could be anywhere on the
+    filesystem, and ``shutil.move`` on a symlink moves the symlink itself,
+    not the target — but the principle is the same: the migration path
+    must not touch a symlink because its target is outside the app's
+    jurisdiction."""
+    target_dir = tmp_path / "artifice_config"
+    real_dir = tmp_path / "actual_config"
+    real_dir.mkdir()
+    (real_dir / "config.json").write_text('{"llm": {"model": "symlink-test"}}')
+
+    symlink_dir = tmp_path / "home" / ".callosip"
+    symlink_dir.parent.mkdir(parents=True)
+    # Create a symlink pointing to the real directory.
+    symlink_dir.symlink_to(real_dir, target_is_directory=True)
+
+    monkeypatch.setattr(
+        "artifice_graph.config._LEGACY_CONFIG_DIR",
+        symlink_dir,
+    )
+    monkeypatch.setattr(
+        "artifice_graph.config.user_data_dir",
+        lambda *a, **kw: str(target_dir),
+    )
+
+    # Force a fresh resolution.
+    monkeypatch.setattr("artifice_graph.config._USER_DATA_DIR", None)
+
+    from artifice_graph.config import _get_user_config_path
+
+    cfg_path = _get_user_config_path()
+
+    # Must NOT have migrated — returns the new (empty) dir path, not legacy.
+    assert cfg_path == target_dir / "config.json"
+    # Symlink must still exist (was not moved).
+    assert symlink_dir.exists()
+    # The target must NOT have been moved into.
+    assert not (target_dir / "config.json").exists()
+    # Must have logged a warning.
+    assert "symlink" in caplog.text.lower()
+    assert "refusing" in caplog.text.lower()

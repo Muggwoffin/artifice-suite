@@ -29,12 +29,12 @@ from .routers import analytics as analytics_router
 from .routers import byom as byom_router
 from .routers import events as events_router
 from .routers import history as history_router
+from .routers import ludwiglang as ludwiglang_router
 from .routers import pdf_export as pdf_export_router
 from .routers import queue as queue_router
 from .routers import run as run_router
 from .routers import settings as settings_router
 from .routers import tropy as tropy_router
-from .routers import ludwiglang as ludwiglang_router
 
 app = FastAPI(title="ArtificeOCR")
 
@@ -59,6 +59,7 @@ async def no_cache_static(request: Request, call_next):
         response.headers["Expires"] = "0"
     return response
 
+
 app.include_router(byom_router.router)
 app.include_router(queue_router.router)
 app.include_router(run_router.router)
@@ -70,21 +71,30 @@ app.include_router(tropy_router.router)
 app.include_router(pdf_export_router.router)
 app.include_router(ludwiglang_router.router)
 
-STATIC_DIR = Path(__file__).resolve().parent / "static"
-
-# ── Shared design system (resolved from installed shared-ui package) ───────
+# ── Static assets (resolved through importlib.resources — freeze-safe) ─────
 import importlib.resources
+
 import shared_ui
+
+# Resolved through importlib.resources, NOT a __file__-relative path.  This
+# app is distributed as a frozen .exe/.dmg, where __file__ points inside a
+# temporary extraction directory.  Using importlib keeps the path correct in
+# every environment — source checkout, installed wheel, and frozen bundle.
+STATIC_DIR = importlib.resources.files("artifice_ocr.web") / "static"
+
+# Shared design system (resolved from installed shared-ui package)
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
 # ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
 # ChoiceLoader lets templates include shared-ui’s masthead partial.
 _JINJA = Environment(
-    loader=ChoiceLoader([
-        PackageLoader("artifice_ocr.web", "templates"),
-        PackageLoader("shared_ui", "templates"),
-    ]),
+    loader=ChoiceLoader(
+        [
+            PackageLoader("artifice_ocr.web", "templates"),
+            PackageLoader("shared_ui", "templates"),
+        ]
+    ),
     autoescape=select_autoescape(["html", "xml"]),
 )
 
@@ -245,57 +255,115 @@ def _byom_preview_fixture(app: str, state: str) -> dict:
 
     not_found_detect = {
         "endpoints": [
-            {"url": "http://localhost:11434", "name": "Ollama", "provider": "ollama",
-             "reachable": False, "models": [], "hint": runner_down_hint},
-            {"url": "http://localhost:1234/v1", "name": "LM Studio", "provider": "lm-studio",
-             "reachable": False, "models": [], "hint": lm_studio_down_hint},
+            {
+                "url": "http://localhost:11434",
+                "name": "Ollama",
+                "provider": "ollama",
+                "reachable": False,
+                "models": [],
+                "hint": runner_down_hint,
+            },
+            {
+                "url": "http://localhost:1234/v1",
+                "name": "LM Studio",
+                "provider": "lm-studio",
+                "reachable": False,
+                "models": [],
+                "hint": lm_studio_down_hint,
+            },
         ]
     }
     found_detect = {
         "endpoints": [
-            {"url": "http://localhost:11434", "name": "Ollama", "provider": "ollama",
-             "reachable": True, "models": ["llava:7b"], "hint": None},
-            {"url": "http://localhost:1234/v1", "name": "LM Studio", "provider": "lm-studio",
-             "reachable": False, "models": [], "hint": lm_studio_down_hint},
+            {
+                "url": "http://localhost:11434",
+                "name": "Ollama",
+                "provider": "ollama",
+                "reachable": True,
+                "models": ["llava:7b"],
+                "hint": None,
+            },
+            {
+                "url": "http://localhost:1234/v1",
+                "name": "LM Studio",
+                "provider": "lm-studio",
+                "reachable": False,
+                "models": [],
+                "hint": lm_studio_down_hint,
+            },
         ]
     }
-    ok_test = {"reachable": True, "provider": "ollama", "models": ["llava:7b", "minicpm-v:8b"], "hint": None}
+    ok_test = {
+        "reachable": True,
+        "provider": "ollama",
+        "models": ["llava:7b", "minicpm-v:8b"],
+        "hint": None,
+    }
     fail_test = {"reachable": False, "provider": "ollama", "models": [], "hint": runner_down_hint}
     # POST /api/byom/test-embedding fixtures — graph only exercises these,
     # but they are harmless to include for every app since byom.js never
     # calls that endpoint unless state.embedding is present.
-    embedding_ok_test = {"reachable": True, "provider": "ollama", "models": ["bge-m3"], "hint": None}
-    embedding_fail_test = {"reachable": False, "provider": "ollama", "models": [], "hint": runner_down_hint}
+    embedding_ok_test = {
+        "reachable": True,
+        "provider": "ollama",
+        "models": ["bge-m3"],
+        "hint": None,
+    }
+    embedding_fail_test = {
+        "reachable": False,
+        "provider": "ollama",
+        "models": [],
+        "hint": runner_down_hint,
+    }
 
     scenarios = {
         "detecting": {
-            "state": base_state, "detect": None, "test": None, "testEmbedding": None,
-            "initialTab": None, "autoTest": None,
+            "state": base_state,
+            "detect": None,
+            "test": None,
+            "testEmbedding": None,
+            "initialTab": None,
+            "autoTest": None,
         },
         "not-found": {
-            "state": base_state, "detect": not_found_detect, "test": fail_test,
+            "state": base_state,
+            "detect": not_found_detect,
+            "test": fail_test,
             "testEmbedding": embedding_fail_test,
-            "initialTab": None, "autoTest": None,
+            "initialTab": None,
+            "autoTest": None,
         },
         "found": {
-            "state": base_state, "detect": found_detect, "test": ok_test,
+            "state": base_state,
+            "detect": found_detect,
+            "test": ok_test,
             "testEmbedding": embedding_ok_test,
-            "initialTab": None, "autoTest": None,
+            "initialTab": None,
+            "autoTest": None,
         },
         "test-ok": {
-            "state": base_state, "detect": not_found_detect, "test": ok_test,
+            "state": base_state,
+            "detect": not_found_detect,
+            "test": ok_test,
             "testEmbedding": embedding_ok_test,
-            "initialTab": None, "autoTest": {"url": "http://localhost:11434", "apiKey": ""},
+            "initialTab": None,
+            "autoTest": {"url": "http://localhost:11434", "apiKey": ""},
         },
         "test-fail": {
-            "state": base_state, "detect": not_found_detect, "test": fail_test,
+            "state": base_state,
+            "detect": not_found_detect,
+            "test": fail_test,
             "testEmbedding": embedding_fail_test,
-            "initialTab": None, "autoTest": {"url": "http://localhost:9999", "apiKey": ""},
+            "initialTab": None,
+            "autoTest": {"url": "http://localhost:9999", "apiKey": ""},
         },
         "advanced": {
-            "state": base_state, "detect": not_found_detect, "test": fail_test,
+            "state": base_state,
+            "detect": not_found_detect,
+            "test": fail_test,
             "testEmbedding": embedding_fail_test,
-            "initialTab": "advanced", "autoTest": None,
+            "initialTab": "advanced",
+            "autoTest": None,
         },
     }
     return scenarios.get(state, scenarios["not-found"])
@@ -356,10 +424,21 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # bootstrap
 # --------------------------------------------------------------------------- #
 
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
+
+
+def _port_available(port: int) -> bool:
+    """Return True if the port can be bound on 127.0.0.1 right now."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", port))
+            return True
+        except OSError:
+            return False
 
 
 def _wait_for_server(port: int, *, timeout: float = 10.0) -> bool:
@@ -402,9 +481,11 @@ def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> N
         detail = "No response within 10s, though the server thread is still running."
     else:
         detail = "The server thread exited without ever starting to listen."
-    message = (f"ArtificeOCR's local server could not start on port {port}.\n\n"
-              f"{detail}\n\n"
-              f"Close any other ArtificeOCR window and try again.")
+    message = (
+        f"ArtificeOCR's local server could not start on port {port}.\n\n"
+        f"{detail}\n\n"
+        f"Close any other ArtificeOCR window and try again."
+    )
     print(f"ERROR: {message}")
     try:
         import tkinter as tk
@@ -431,20 +512,51 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8765,
-                        help="Port for the local server (default: 8765)")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Port for the local server (default: 8765, or a free port if busy)",
+    )
     args = parser.parse_args()
 
-    port = args.port
-    url = f"http://127.0.0.1:{port}"
+    # Distinguish "user said --port 8765" from "the default happened to be 8765".
+    # An explicit port that is busy is a deliberate choice — fail, don’t fall back.
+    is_explicit_port = args.port is not None
 
-    server_thread, server_errors = _start_server_thread(port)
-    if not _wait_for_server(port):
+    # Try the requested port; fall back to a free port only when the user
+    # did NOT specify one and the default (8765) is busy.
+    for attempt in range(2):
+        if attempt == 0:
+            port = args.port if is_explicit_port else 8765
+        else:
+            port = _free_port()
+            print(f"Port 8765 is busy — using port {port} instead.", flush=True)
+
+        if not _port_available(port):
+            if is_explicit_port or attempt == 1:
+                _report_startup_failure(port, None, [OSError(f"Port {port} is already in use")])
+                return
+            continue
+
+        server_thread, server_errors = _start_server_thread(port)
+        if _wait_for_server(port):
+            break
+
+        if is_explicit_port or attempt == 1:
+            _report_startup_failure(port, server_thread, server_errors)
+            return
+
+    # Guard against the race where another process grabbed the port between
+    # our availability check and the server thread binding.
+    if server_errors or not server_thread.is_alive():
         _report_startup_failure(port, server_thread, server_errors)
         return
 
+    url = f"http://127.0.0.1:{port}"
+
+    print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)
     webbrowser.open(url)
-    print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)")
     try:
         server_thread.join()
     except KeyboardInterrupt:

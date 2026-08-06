@@ -18,7 +18,6 @@ import contextlib
 import json
 import logging
 import os
-import re
 import threading
 from dataclasses import dataclass, field
 from enum import Enum
@@ -28,21 +27,9 @@ from typing import Any
 
 from model_harness.registry import ASR_MODELS, AsrModelInfo
 
+from .token_redaction import redact_token
+
 logger = logging.getLogger(__name__)
-
-# ── Token redaction ───────────────────────────────────────────────────────────
-
-# Match ``hf_`` followed by 20+ alphanumeric / dash / underscore chars.
-_TOKEN_RE = re.compile(r"hf_[A-Za-z0-9_\-]{20,}")
-
-
-def _redact_token(text: str) -> str:
-    """Replace any Hugging Face token in *text* with ``[REDACTED]``.
-
-    Safe to call on text that does not contain a token — returns *text*
-    unchanged.
-    """
-    return _TOKEN_RE.sub("[REDACTED]", text)
 
 
 # ── Cache directory (matches huggingface_hub's default) ──────────────────────
@@ -299,13 +286,13 @@ class DownloadManager:
         consistent picture of the active set — no two observers can race into
         creating duplicate download workers for the same key.
         """
-        if not is_consented(key):
-            raise PermissionError(
-                f"Consent has not been recorded for '{key}'. "
-                f"Call POST /api/v1/models/{key}/consent first."
-            )
-
         with self._lock:
+            if not is_consented(key):
+                raise PermissionError(
+                    f"Consent has not been recorded for '{key}'. "
+                    f"Call POST /api/v1/models/{key}/consent first."
+                )
+
             existing = self._active.get(key)
             if existing is not None:
                 # Still actively downloading (not in a terminal state).
@@ -457,13 +444,11 @@ class DownloadManager:
                     cache_dir=cache_dir,
                     cancel=cancel,
                     # `i`, `ms` and `info` are bound as default arguments, not
-                    # captured by reference. This is not a style fix (ruff B023):
-                    # the callback fires from the polling loop on a background
-                    # thread, so a late event arriving after the outer loop has
-                    # advanced would report the NEXT model's index, key, repo and
-                    # total against the current model's byte count. That is the
-                    # same wrong-model progress the review flagged elsewhere,
-                    # reached by a second and independent route.
+                    # captured by reference.  This is defensive (satisfies ruff
+                    # B023): ``_download_with_progress`` returns before the
+                    # outer loop advances, so a late callback cannot fire in
+                    # practice, but binding by value costs nothing and prevents
+                    # a stray delayed callback from reporting the wrong model.
                     progress_callback=lambda pct, downloaded, _idx=i, _ms=ms, _info=info: (
                         self._emit(
                             request_key,
@@ -483,8 +468,12 @@ class DownloadManager:
                 )
                 # Track the inner snapshot_download thread so start_download
                 # can check is_alive() before starting a new download.
+                # Registered under the lock because start_download reads it
+                # under the lock — a dict write in one thread that is read in
+                # another without synchronisation is a data race.
                 if inner_thread is not None:
-                    self._inner_threads[request_key] = inner_thread
+                    with self._lock:
+                        self._inner_threads[request_key] = inner_thread
 
                 ms.downloaded_bytes = ms.total_bytes
                 ms.state = DownloadState.DONE
@@ -505,7 +494,12 @@ class DownloadManager:
                 )
                 success_count += 1
 
-            except _CancelledError:
+            except _CancelledError as exc:
+                # Register the inner thread so start_download's is_alive()
+                # check can prevent a second writer into the same cache dir.
+                if exc.inner_thread is not None:
+                    with self._lock:
+                        self._inner_threads[request_key] = exc.inner_thread
                 ms.state = DownloadState.CANCELLED
                 ds.finished = True
                 ds.error_message = "Cancelled by user"
@@ -518,7 +512,7 @@ class DownloadManager:
             except Exception as exc:
                 ms.state = DownloadState.ERROR
                 # Redact any token-bearing error messages at the source.
-                ms.error_message = _redact_token(str(exc))
+                ms.error_message = redact_token(str(exc))
                 error_occurred = True
                 self._emit(
                     request_key,
@@ -555,7 +549,17 @@ class DownloadManager:
 
 
 class _CancelledError(Exception):
-    """Raised when the user cancels the download."""
+    """Raised when the user cancels the download.
+
+    Carries *inner_thread* — the daemon thread running ``snapshot_download`` —
+    so the caller can register it for ``is_alive()`` checks even on the cancel
+    path, where ``_download_with_progress`` raises before returning the
+    thread normally.
+    """
+
+    def __init__(self, inner_thread: threading.Thread | None = None) -> None:
+        self.inner_thread = inner_thread
+        super().__init__("Download cancelled")
 
 
 def find_registry_key(info: AsrModelInfo) -> str:
@@ -643,7 +647,7 @@ def _download_with_progress(
         if cancel.is_set():
             # The inner snapshot_download has no cancel hook and will keep
             # running, but we stop polling and raise so the worker cleans up.
-            raise _CancelledError()
+            raise _CancelledError(dl_thread)
 
         # Count bytes in the snapshot directory and blobs.
         current = _count_cache_bytes(cache_dir, repo_folder)
@@ -662,7 +666,7 @@ def _download_with_progress(
     if download_result:
         result = download_result[0]
         if isinstance(result, Exception):
-            msg = _redact_token(str(result))
+            msg = redact_token(str(result))
             # Do *not* chain the raw exception as __cause__ — it may carry an
             # unredacted token in its message or args.
             raise RuntimeError(f"Download failed for {repo_id}: {msg}")

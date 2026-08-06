@@ -907,6 +907,8 @@ async def api_save_config(body: dict[str, Any]):
             cfg.embedding.base_url = _validate_base_url(ebu, "embedding_base_url")
         if em := body.get("embedding_model"):
             cfg.embedding.model = em
+        if "nominatim_lookup_enabled" in body:
+            cfg.nominatim_lookup_enabled = bool(body["nominatim_lookup_enabled"])
 
         save_user_config(cfg)
 
@@ -1014,6 +1016,22 @@ async def api_map_entities(mode: str = Query("approx", pattern="^(approx|lookup)
                 break
 
         if lat is None and mode == "lookup":
+            if not cfg.nominatim_lookup_enabled:
+                # Nominatim lookup is off by default — entity names extracted
+                # from a user's documents must not be sent to a third party
+                # without explicit consent.  The approximate mode (which
+                # matches against a built-in list of historical locations)
+                # still works.
+                return {
+                    "locations": result,
+                    "mode": "lookup",
+                    "lookup_disabled": True,
+                    "message": (
+                        "Nominatim geocoding lookup is disabled. "
+                        "Enable 'nominatim_lookup_enabled' in the configuration "
+                        "to geocode entity names via OpenStreetMap."
+                    ),
+                }
             try:
                 import urllib.parse
                 import urllib.request
