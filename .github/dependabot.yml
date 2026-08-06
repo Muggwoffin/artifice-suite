@@ -5,6 +5,46 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+
+    # ── WHY THESE ARE IGNORED ────────────────────────────────────────────────
+    #
+    # Added 2026-08-06, after Dependabot opened three PRs in one week that could
+    # not be merged and never could have been: torch 2.8.0 -> 2.13.0 (#31),
+    # torchaudio 2.8.0 -> 2.11.0 (#34), transformers 4.57.6 -> 5.14.1 (#32).
+    #
+    # THE VERSIONS OF THESE PACKAGES ARE NOT OURS TO CHOOSE. They are dictated
+    # by whisperx, which declares a narrow compatible range, and by pyannote,
+    # which follows it. apps/artifice-transcribe/pyproject.toml pins
+    #
+    #     torch>=2.8.0,<2.9.0        torchvision>=0.23.0,<0.24.0
+    #     torchaudio>=2.8.0,<2.9.0   torchcodec>=0.11.0,<0.12.0
+    #
+    # deliberately, with a comment there explaining that torch and torchaudio
+    # are version-matched pairs and that a mismatch floats torch to a version
+    # available on only one of the CPU / default indices. Dependabot's PRs
+    # touched only uv.lock, leaving a lockfile inconsistent with the very
+    # constraints above — which is why each failed CI rather than producing
+    # anything reviewable.
+    #
+    # These move when whisperx moves. That is a human decision taken by reading
+    # whisperx's release notes, not a weekly automated bump. whisperx itself is
+    # deliberately NOT ignored: watch it, and re-pin the stack when it changes.
+    #
+    # transformers has no upper bound in pyproject (>=4.0), so Dependabot is
+    # free to propose a MAJOR bump to 5.x. whisperx and pyannote both sit on
+    # transformers 4.x, so a v5 bump is a compatibility question for a human.
+    # Only the major is ignored — a 4.x point release is still worth taking.
+    #
+    # Removing any of these ignores brings back a weekly PR that cannot merge
+    # until the matching pin in artifice-transcribe is widened as well.
+    ignore:
+      - dependency-name: "torch"
+      - dependency-name: "torchaudio"
+      - dependency-name: "torchvision"
+      - dependency-name: "torchcodec"
+      - dependency-name: "transformers"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

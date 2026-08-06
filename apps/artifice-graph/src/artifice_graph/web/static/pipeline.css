@@ -280,25 +280,6 @@
 .status-strip .dot-connected { background: var(--accent) !important; }
 @keyframes dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-/* ── Notification ────────────────────────────────── */
-.notification {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-lg);
-  background: var(--paper-raised);
-  color: var(--ink);
-  font-family: var(--font-label);
-  font-size: var(--text-sm);
-  z-index: 500;
-  box-shadow: var(--shadow-lifted);
-}
-.notification-success { border-color: var(--accent); color: var(--accent-deep); }
-.notification-error { border-color: var(--error); color: var(--error); }
-.notification-info { border-color: var(--rule-dark); }
-
 /* ── Log panel ────────────────────────────────────────────── */
 .log-panel {
   background: var(--paper);

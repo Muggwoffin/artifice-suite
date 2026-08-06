@@ -47,6 +47,9 @@ web = [
     "fastapi",
     "uvicorn[standard]",
 ]
+window = [
+    "pywebview>=5.0",
+]
 
 [project.scripts]
 artifice-ocr = "artifice_ocr.cli:app"
@@ -70,4 +73,5 @@ testpaths = ["tests"]
 [dependency-groups]
 dev = [
     "pyinstaller>=6.21.0",
+    "pywebview>=5.0",
 ]

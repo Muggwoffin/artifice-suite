@@ -63,8 +63,8 @@ const Palette = (function () {
 
   function applyTemplate(name) {
     api("POST", "/api/templates/apply", { name })
-      .then(() => Toast.accent(`Template "${name}" applied.`))
-      .catch(e => Toast.error(`Template apply failed: ${e.message}`));
+      .then(() => window.ArtificeToast.success(`Template "${name}" applied.`))
+      .catch(e => window.ArtificeToast.error(`Template apply failed: ${e.message}`));
   }
 
   function activateTab(tabName) {

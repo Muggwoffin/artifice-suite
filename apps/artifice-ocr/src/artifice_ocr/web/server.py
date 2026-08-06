@@ -9,6 +9,7 @@ discovery, browser launch). Individual route groups live under ``routers/``
 and are included here.
 """
 
+import contextlib
 import json
 import os
 import socket
@@ -518,10 +519,16 @@ def main() -> None:
         default=None,
         help="Port for the local server (default: 8765, or a free port if busy)",
     )
+    parser.add_argument(
+        "--no-window",
+        action="store_true",
+        default=False,
+        help="Server-only mode: print the URL and wait, do not open a window or browser",
+    )
     args = parser.parse_args()
 
     # Distinguish "user said --port 8765" from "the default happened to be 8765".
-    # An explicit port that is busy is a deliberate choice — fail, don’t fall back.
+    # An explicit port that is busy is a deliberate choice — fail, don't fall back.
     is_explicit_port = args.port is not None
 
     # Try the requested port; fall back to a free port only when the user
@@ -555,12 +562,41 @@ def main() -> None:
 
     url = f"http://127.0.0.1:{port}"
 
+    # ── Server-only mode (--no-window) ────────────────────────────────────
+    if args.no_window:
+        print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)
+        with contextlib.suppress(KeyboardInterrupt):
+            server_thread.join()
+        return
+
+    # ── Frozen executable: try a native window ───────────────────────────
+    _frozen = bool(getattr(sys, "frozen", False))
+    if _frozen:
+        # Lazy import — pywebview must not be required at module scope
+        # for non-frozen installs (e.g. `uv tool install` users who don't
+        # have a webview backend).
+        from .window import open_native_window  # noqa: PLC0415
+
+        result = open_native_window(url, title="ArtificeOCR")
+        if result.opened:
+            # Window closed by user — exit cleanly.
+            # The daemon server thread dies with the process.
+            return
+
+        # Window failed — fall back to browser (same as non-frozen mode,
+        # but with an extra line explaining why).
+        print(result.reason, flush=True)
+        print(f"Falling back — ArtificeOCR running at {url}", flush=True)
+        webbrowser.open(url)
+        with contextlib.suppress(KeyboardInterrupt):
+            server_thread.join()
+        return
+
+    # ── Non-frozen (dev / `uv run artifice-ocr-web`) ─────────────────────
     print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)
     webbrowser.open(url)
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         server_thread.join()
-    except KeyboardInterrupt:
-        pass
 
 
 if __name__ == "__main__":
