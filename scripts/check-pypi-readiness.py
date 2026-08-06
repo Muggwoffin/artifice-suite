@@ -12,7 +12,8 @@ Checks, per distribution:
 
   1. The wheel builds at all.
   2. Core metadata is present: Name, Version, Summary, Requires-Python,
-     License-Expression (PEP 639), Description-Content-Type.
+     License-Expression (PEP 639).  These are FAIL-level: a missing field
+     causes a non-zero exit.
   3. **No workspace path leaks into Requires-Dist.**  Every app depends on
      ``artifice-model-harness`` and friends, which uv resolves from the local
      workspace via ``[tool.uv.sources]``.  If a ``file://`` or path-style
@@ -20,8 +21,11 @@ Checks, per distribution:
      machine and nowhere else.
   4. The README referenced by ``readme =`` is actually embedded, so the PyPI
      project page is not blank.
-  5. Declared package data (templates, static assets, fonts) is present in the
-     wheel.  Assets outside the package are silently excluded.
+  5. Declared package data (templates, static assets, fonts) is **noted** in
+     the output so a human can confirm presence; absence is not a FAIL.
+
+Description-Content-Type is a **WARN**, not a FAIL: missing it means PyPI may
+not render the README as Markdown, but the install will still succeed.
 
 Exits non-zero if any FAIL-level check fails.  Warnings do not gate.
 
@@ -56,7 +60,12 @@ APPS = [
 ALL_DISTS = SHARED_PACKAGES + APPS
 
 # A requirement that points at a filesystem location rather than a name.
-_PATH_REQUIREMENT = re.compile(r"(file://|@\s*/|\.\./|\bfile:)", re.IGNORECASE)
+# Matches Unix-style paths (file://, @ /…, ../) and Windows-style absolute or
+# relative paths (@ C:\…, @ D:/…, ..\).
+_PATH_REQUIREMENT = re.compile(
+    r"(file://|@\s*/|\.\./|\bfile:|@\s*[A-Za-z]:[/\\]|\.\.[\\/])",
+    re.IGNORECASE,
+)
 
 
 class Result:

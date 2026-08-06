@@ -236,9 +236,8 @@ window.PersonaeApp = { logLine, setProgress, onRunFinished };
 //
 // Same pattern and storage-key convention as artifice-graph's app.js
 // ("artifice-<app>-theme"), adapted to this file's non-IIFE, arrow-function
-// idiom. The toggle button (#themeToggle / #themeGlyph) is rendered by
-// base.html — see the comment there on why it is inlined rather than coming
-// from the shared masthead partial.
+// idiom. The toggle button (#themeToggle / #themeGlyph) is rendered by the
+// shared _masthead.html partial, included via base.html.
 
 function getThemePref() {
   try { return window.localStorage.getItem("artifice-draft-theme"); } catch (e) { return null; }
@@ -288,8 +287,10 @@ function initTheme() {
 function anyModalOpen() {
   const guideModal = document.getElementById("guide-modal");
   const modelModal = document.getElementById("model-settings-modal");
+  const byomOverlay = document.querySelector(".byom-overlay");
   return (!!guideModal && guideModal.style.display !== "none") ||
-         (!!modelModal && modelModal.style.display !== "none");
+         (!!modelModal && modelModal.style.display !== "none") ||
+         !!byomOverlay;
 }
 
 function closeOpenModals() {
