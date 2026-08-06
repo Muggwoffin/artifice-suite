@@ -1858,6 +1858,546 @@ function downloadAIResult() {
   window.ArtificeToast.success('Downloaded', {duration: 3600});
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ASR MODEL DOWNLOAD CONSENT DIALOG
+//
+// A consent surface, not a progress bar with a button. The four things it
+// must get right, per the design brief:
+//
+//   1. Show the TRUE total (transitive size), not one model's size.
+//      The API returns `total_size_human` which is already summed — use it.
+//   2. Show where files land.  `cache_directory` is an absolute, resolved
+//      path that differs per OS — display it verbatim.
+//   3. Consent must be a decision, not a formality.  POST /consent first,
+//      then POST /download.  Nothing begins until the user clicks Download.
+//   4. Cancel is honest.  The backend emits `cancelling` (still running)
+//      then `cancelled` (truly stopped).  Display "Stopping…" on cancelling
+//      and do NOT say "Cancelled" until the event actually arrives.
+// ─────────────────────────────────────────────────────────────────────────────
+
+let _dlgModelKey = null;
+let _dlgAllModels = [];
+let _dlgCurrentInfo = null;
+let _dlgSSE = null;
+let _dlgStopping = false;
+let _dlgTriggerEl = null;
+// Screen reader: announce progress at 10-point intervals, not per byte.
+let _dlgLastAnnouncedPct = -1;
+
+function _esc(s) {
+  return (s ?? '').toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Open / close ─────────────────────────────────────────────────────────────
+
+function openDownloadDialog(triggerEl) {
+  _dlgTriggerEl = triggerEl || null;
+  _dlgModelKey = null;
+  _dlgAllModels = [];
+  _dlgCurrentInfo = null;
+  _dlgStopping = false;
+  _dlgLastAnnouncedPct = -1;
+  closeDownloadSSE();
+
+  // Show overlay; seed with loading state while we fetch the model list
+  $('download-modal-overlay').classList.remove('hidden');
+  _setDlgState('loading');
+
+  api('/models').then((data) => {
+    _dlgAllModels = data && data.models ? data.models : [];
+    if (_dlgAllModels.length === 0) {
+      _setDlgError('No ASR models are registered. This may be a configuration error.');
+      return;
+    }
+    // Auto-select the first registered model (pyannote/speaker-diarization-3.0
+    // is typically the primary one; the list order is the registry order).
+    _selectModel(_dlgAllModels[0].key);
+  }).catch((err) => {
+    _setDlgError(`Could not reach the server: ${err.message}`);
+  });
+
+  // Focus the close button (a safe, always-present interactive element)
+  $('dlg-close').focus();
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDownloadDialog() {
+  closeDownloadSSE();
+  $('download-modal-overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+  // Return focus to whatever opened the dialog
+  if (_dlgTriggerEl && typeof _dlgTriggerEl.focus === 'function') {
+    _dlgTriggerEl.focus();
+  }
+  _dlgTriggerEl = null;
+}
+
+function closeDownloadSSE() {
+  if (_dlgSSE) {
+    _dlgSSE.close();
+    _dlgSSE = null;
+  }
+}
+
+// ── Model selection ─────────────────────────────────────────────────────────
+
+function _selectModel(key) {
+  _dlgModelKey = key;
+  api(`/models/${key}`).then((info) => {
+    _dlgCurrentInfo = info;
+    _renderConsentView(info);
+  }).catch((err) => {
+    _setDlgError(`Could not load details for ${key}: ${err.message}`);
+  });
+}
+
+// ── State machine ───────────────────────────────────────────────────────────
+
+// States: loading | consent-view | token-view | downloading | stopping |
+//         completed | error-view
+function _setDlgState(state, extra) {
+  const overlay     = $('download-modal-overlay');
+  const consentView = $('dlg-consent-view');
+  const progressSec = $('dlg-progress-section');
+  const stateMsg    = $('dlg-state-message');
+  const errorBox    = $('dlg-error-box');
+  const btnCancel   = $('dlg-btn-cancel');
+  const btnDownload = $('dlg-btn-download');
+
+  // Reset visibility
+  consentView.classList.add('hidden');
+  progressSec.classList.add('hidden');
+  stateMsg.classList.add('hidden');
+  stateMsg.className = '';
+  errorBox.classList.add('hidden');
+  btnCancel.classList.remove('hidden');
+  btnDownload.classList.remove('hidden');
+  btnDownload.disabled = false;
+
+  if (state === 'loading') {
+    btnDownload.disabled = true;
+    btnDownload.textContent = 'Loading…';
+    btnCancel.classList.add('hidden');
+    return;
+  }
+
+  if (state === 'consent-view') {
+    consentView.classList.remove('hidden');
+    btnDownload.textContent = 'Download';
+    btnDownload.disabled = extra && extra.tokenRequired && !extra.hasToken;
+    btnCancel.textContent = 'Close';
+    btnCancel.disabled = false;
+    return;
+  }
+
+  if (state === 'token-view') {
+    consentView.classList.remove('hidden');
+    $('dlg-token-section').classList.remove('hidden');
+    btnDownload.textContent = 'Continue';
+    btnDownload.disabled = false;
+    btnCancel.textContent = 'Close';
+    btnCancel.disabled = false;
+    return;
+  }
+
+  if (state === 'downloading') {
+    consentView.classList.add('hidden');
+    progressSec.classList.remove('hidden');
+    btnDownload.textContent = 'Stop';
+    btnDownload.disabled = false;
+    btnCancel.classList.add('hidden');
+    return;
+  }
+
+  if (state === 'stopping') {
+    consentView.classList.add('hidden');
+    progressSec.classList.remove('hidden');
+    btnDownload.textContent = 'Stop';
+    btnDownload.disabled = true;   // cannot cancel again while unwinding
+    btnCancel.classList.remove('hidden');
+    btnCancel.classList.add('hidden');  // hide cancel while stopping
+    stateMsg.classList.remove('hidden');
+    stateMsg.className = 'stopping';
+    stateMsg.textContent = 'Stopping — please wait…';
+    return;
+  }
+
+  if (state === 'completed') {
+    consentView.classList.add('hidden');
+    progressSec.classList.remove('hidden');
+    btnDownload.textContent = 'Done';
+    btnDownload.disabled = false;
+    btnCancel.classList.add('hidden');
+    stateMsg.classList.remove('hidden');
+    stateMsg.className = 'completed';
+    stateMsg.textContent = 'All models downloaded successfully.';
+    return;
+  }
+
+  if (state === 'error-view') {
+    consentView.classList.add('hidden');
+    progressSec.classList.remove('hidden');
+    btnDownload.textContent = 'Retry';
+    btnDownload.disabled = false;
+    btnCancel.classList.remove('hidden');
+    btnCancel.textContent = 'Close';
+    btnCancel.disabled = false;
+    stateMsg.classList.remove('hidden');
+    stateMsg.className = 'error-state';
+    stateMsg.textContent = extra && extra.message ? extra.message : 'An error occurred.';
+    return;
+  }
+}
+
+function _setDlgError(message) {
+  $('dlg-error-box').classList.remove('hidden');
+  $('dlg-error-text').textContent = message;
+  $('dlg-btn-download').textContent = 'Retry';
+  $('dlg-btn-download').disabled = false;
+  $('dlg-btn-cancel').textContent = 'Close';
+  $('dlg-btn-cancel').disabled = false;
+}
+
+// ── Consent view ─────────────────────────────────────────────────────────────
+
+function _renderConsentView(info) {
+  // Total size (large display) — this is the transitive total, not one model
+  const totalEl = $('dlg-total-size');
+  totalEl.textContent = info.total_size_human || '—';
+
+  // Cache directory
+  $('dlg-cache-path').textContent = info.cache_directory || '—';
+
+  // Model breakdown list
+  const listEl = $('dlg-model-list');
+  listEl.innerHTML = '';
+  (info.models || []).forEach((m, i) => {
+    const item = document.createElement('div');
+    item.className = 'dlg-model-item';
+    item.innerHTML =
+      '<span class="dlg-model-bar-label">' +
+        `<span class="dlg-model-badge ${i === 0 ? 'main' : 'dep'}">${i === 0 ? 'Main' : 'Dep'}</span>` +
+        ` <span class="dlg-model-name"><code>${_esc(m.hf_repo)}</code></span>` +
+      '</span>' +
+      `<span class="dlg-model-size">${m.size_human || '—'}</span>`;
+    listEl.appendChild(item);
+  });
+
+  // Token section: show only when required AND no token has been saved yet.
+  // The Settings panel is the authoritative token store; we check the
+  // `requires_hf_token` on the selected model key.
+  const tokenSection = $('dlg-token-section');
+  if (info.requires_hf_token) {
+    tokenSection.classList.remove('hidden');
+    $('dlg-token-input').value = '';
+    _setDlgState('token-view');
+  } else {
+    tokenSection.classList.add('hidden');
+    _setDlgState('consent-view', { tokenRequired: false, hasToken: true });
+  }
+
+  // Download button: disabled until consent is given (on click, not on open)
+  // Token-required case: disabled until token field has content
+  const tokenInput = $('dlg-token-input');
+  const updateDownloadEnabled = () => {
+    if (info.requires_hf_token) {
+      $('dlg-btn-download').disabled = tokenInput.value.trim().length === 0;
+    }
+  };
+  tokenInput.oninput = updateDownloadEnabled;
+  updateDownloadEnabled();
+}
+
+// ── Download flow ────────────────────────────────────────────────────────────
+
+async function _doDownload(key) {
+  // 1. Record consent
+  await api(`/models/${key}/consent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ consent: true }),
+  });
+
+  // 2. If a token was typed in the dialog, save it via PATCH /config
+  const tokenInput = $('dlg-token-input');
+  const typedToken = tokenInput ? tokenInput.value.trim() : '';
+  if (typedToken) {
+    await api('/config', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hf_token: typedToken }),
+    });
+  }
+
+  // 3. Start download
+  await api(`/models/${key}/download`, { method: 'POST' });
+}
+
+function _startDownload(key) {
+  _setDlgState('downloading');
+  _resetProgressBars();
+
+  _doDownload(key).then(() => {
+    // Switch to SSE listening (download is running in background on server)
+    _openProgressSSE(key);
+  }).catch((err) => {
+    // Show persistent error; do NOT switch to consent view (user must Retry)
+    _setDlgState('error-view', { message: err.message });
+    $('dlg-error-box').classList.remove('hidden');
+    $('dlg-error-text').textContent = err.message;
+    window.ArtificeToast.error(`Download failed: ${err.message}`);
+  });
+}
+
+// ── SSE progress streaming ───────────────────────────────────────────────────
+
+function _openProgressSSE(key) {
+  closeDownloadSSE();
+  _dlgSSE = new EventSource(`${API}/models/${key}/download/progress`);
+
+  _dlgSSE.onerror = () => {
+    // Network-level error or server stopped
+    _dlgSSE.close();
+    _dlgSSE = null;
+    // If we were stopping, this is the normal end-of-stream after cancelled
+    if (_dlgStopping) { return; }
+    // Otherwise show error
+    _setDlgState('error-view', { message: 'Lost connection to the download server.' });
+  };
+
+  _dlgSSE.addEventListener('message', (e) => {
+    let event;
+    try { event = JSON.parse(e.data); } catch (_) { return; }
+
+    const t = event.type;
+
+    // ── Progress ────────────────────────────────────────────────────────
+    if (t === 'progress') {
+      if (_dlgStopping) return;   // ignore ticks that arrive after cancelling
+
+      const total    = event.total_bytes    || 1;
+      const downloaded = event.downloaded_bytes || 0;
+      const pct      = Math.min(Math.round((downloaded / total) * 100), 100);
+      const modelIdx = event.model_idx      || 0;
+      const modelTot = event.model_total    || 1;
+
+      // Update overall bar
+      $('dlg-overall-fill').style.width = pct + '%';
+      $('dlg-progress-pct').textContent  = pct + '%';
+      $('dlg-overall-bar').setAttribute('aria-valuenow', pct);
+
+      // Update model bars
+      _updateModelBar(modelIdx, modelTot, pct, event.hf_repo);
+
+      // Update bytes counter
+      const downloadedMB = (downloaded / 1_000_000).toFixed(1);
+      const totalMB      = (total / 1_000_000).toFixed(1);
+      $('dlg-bytes-row').textContent =
+        `${downloadedMB} / ${totalMB} MB — Model ${modelIdx + 1} of ${modelTot}`;
+
+      // Screen reader: announce at 10-point intervals
+      const announcePct = Math.floor(pct / 10) * 10;
+      if (announcePct !== _dlgLastAnnouncedPct && announcePct > 0) {
+        _dlgLastAnnouncedPct = announcePct;
+        _announceToScreenReader(`Download ${pct}% complete`);
+      }
+      return;
+    }
+
+    // ── Cancelling ─────────────────────────────────────────────────────
+    if (t === 'cancelling') {
+      _dlgStopping = true;
+      _setDlgState('stopping');
+      _announceToScreenReader('Download stopping. This may take a moment.');
+      return;
+    }
+
+    // ── Cancelled ─────────────────────────────────────────────────────
+    if (t === 'cancelled') {
+      closeDownloadSSE();
+      _dlgStopping = false;
+      _setDlgState('error-view', { message: 'Download was cancelled. No files were saved.' });
+      $('dlg-state-message').classList.remove('hidden');
+      $('dlg-state-message').className = 'error-state';
+      $('dlg-state-message').textContent = 'Download was cancelled. No files were saved.';
+      $('dlg-btn-download').textContent = 'Close';
+      $('dlg-btn-download').disabled = false;
+      $('dlg-btn-cancel').classList.remove('hidden');
+      $('dlg-btn-cancel').textContent = 'Close';
+      return;
+    }
+
+    // ── Completed ───────────────────────────────────────────────────────
+    if (t === 'completed') {
+      closeDownloadSSE();
+      _dlgStopping = false;
+      _setDlgState('completed');
+      _announceToScreenReader('All models downloaded successfully.');
+      window.ArtificeToast.success('ASR models downloaded.', { duration: 4000 });
+      return;
+    }
+
+    // ── Error ──────────────────────────────────────────────────────────
+    if (t === 'error') {
+      closeDownloadSSE();
+      const msg = event.error || 'Download failed for an unknown reason.';
+      _setDlgState('error-view', { message: msg });
+      $('dlg-error-box').classList.remove('hidden');
+      $('dlg-error-text').textContent = msg;
+      // Announce once, not repeatedly
+      _announceToScreenReader(`Download error: ${msg}`);
+      return;
+    }
+
+    // ── Heartbeat ──────────────────────────────────────────────────────
+    // Silently ignored — keeps the connection alive; no UI update needed.
+  });
+}
+
+// ── Progress bar helpers ─────────────────────────────────────────────────────
+
+function _resetProgressBars() {
+  _dlgLastAnnouncedPct = -1;
+  $('dlg-overall-fill').style.width = '0%';
+  $('dlg-progress-pct').textContent = '0%';
+  $('dlg-overall-bar').setAttribute('aria-valuenow', 0);
+  $('dlg-bytes-row').textContent = '—';
+
+  const barsEl = $('dlg-model-bars');
+  barsEl.innerHTML = '';
+  if (_dlgCurrentInfo && _dlgCurrentInfo.models) {
+    _dlgCurrentInfo.models.forEach((m, i) => {
+      const row = document.createElement('div');
+      row.className = 'dlg-model-bar-row';
+      row.id = `dlg-model-bar-${i}`;
+      row.innerHTML =
+        '<div class="dlg-model-bar-meta">' +
+          `<span class="dlg-model-bar-label"><code>${_esc(m.hf_repo)}</code></span>` +
+          '<span class="dlg-model-bar-pct" id="dlg-model-pct-' + i + '">0%</span>' +
+        '</div>' +
+        '<div class="dlg-model-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="' + _esc(m.hf_repo) + '">' +
+          `<div class="dlg-model-bar-fill" id="dlg-model-fill-${i}" style="width:0%"></div>` +
+        '</div>';
+      barsEl.appendChild(row);
+    });
+  }
+}
+
+function _updateModelBar(modelIdx, modelTotal, pct, hfRepo) {
+  const fill = $(`dlg-model-fill-${modelIdx}`);
+  const pctEl = $(`dlg-model-pct-${modelIdx}`);
+  const row   = $(`dlg-model-bar-${modelIdx}`);
+  if (!row) return;
+  if (fill) {
+    fill.style.width = pct + '%';
+    fill.parentElement.setAttribute('aria-valuenow', pct);
+    fill.parentElement.setAttribute('aria-label', hfRepo || `Model ${modelIdx + 1}`);
+  }
+  if (pctEl) pctEl.textContent = pct + '%';
+}
+
+// ── Screen reader announcements ─────────────────────────────────────────────
+
+function _announceToScreenReader(text) {
+  const live = $('dlg-live-region');
+  if (!live) return;
+  // Zero-timeout ensures the announcement is picked up after the node is painted
+  setTimeout(() => { live.textContent = ''; }, 50);
+  setTimeout(() => { live.textContent = text; }, 100);
+}
+
+// ── Focus trap ──────────────────────────────────────────────────────────────
+
+function _handleDlgKeydown(e) {
+  if (e.key === 'Escape') {
+    e.stopPropagation();
+    closeDownloadDialog();
+  }
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+
+function initDownloadDialog() {
+  // Trigger button
+  const manageBtn = $('btn-manage-models');
+  if (manageBtn) {
+    manageBtn.addEventListener('click', (e) => {
+      openDownloadDialog(e.currentTarget);
+    });
+  }
+
+  // Close button
+  $('dlg-close').addEventListener('click', closeDownloadDialog);
+
+  // Overlay click — close only in consent/token state (not mid-download)
+  $('download-modal-overlay').addEventListener('click', (e) => {
+    if (e.target === $('download-modal-overlay')) {
+      closeDownloadDialog();
+    }
+  });
+
+  // Keyboard
+  $('download-modal-overlay').addEventListener('keydown', _handleDlgKeydown);
+
+  // Download button
+  $('dlg-btn-download').addEventListener('click', () => {
+    const state = $('dlg-btn-download').textContent.trim();
+
+    if (state === 'Download' || state === 'Continue') {
+      if (!_dlgModelKey) return;
+      _startDownload(_dlgModelKey);
+      return;
+    }
+
+    if (state === 'Stop') {
+      if (!_dlgModelKey) return;
+      // Request cancellation; UI will update when SSE emits cancelling/cancelled
+      api(`/models/${_dlgModelKey}/download/cancel`, { method: 'POST' }).catch(() => {});
+      _dlgStopping = true;
+      _setDlgState('stopping');
+      return;
+    }
+
+    if (state === 'Retry') {
+      if (!_dlgModelKey) return;
+      _dlgStopping = false;
+      _dlgLastAnnouncedPct = -1;
+      _startDownload(_dlgModelKey);
+      return;
+    }
+
+    if (state === 'Done' || state === 'Close') {
+      closeDownloadDialog();
+      return;
+    }
+  });
+
+  // Cancel button
+  $('dlg-btn-cancel').addEventListener('click', () => {
+    const state = $('dlg-btn-cancel').textContent.trim();
+    if (state === 'Cancel') {
+      // Revoke consent if it was recorded (user opened but didn't download)
+      if (_dlgModelKey && !_dlgSSE) {
+        api(`/models/${_dlgModelKey}/consent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ consent: false }),
+        }).catch(() => {});
+      }
+      closeDownloadDialog();
+      return;
+    }
+    if (state === 'Close') {
+      closeDownloadDialog();
+    }
+  });
+}
+
+
 // ---------------------------------------------------------------- startup
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -1871,6 +2411,7 @@ function downloadAIResult() {
     initGlobalSearch();
     initKeyboardShortcuts();
     initSettingsPanel();
+    initDownloadDialog();
     loadConfig();
     loadModelConfig();
     loadHealth();
