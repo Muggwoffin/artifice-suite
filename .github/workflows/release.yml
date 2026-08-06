@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: astral-sh/setup-uv@v5
@@ -64,7 +64,7 @@ jobs:
       contents: write         # required to create a Release; nothing else
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0      # release notes need history, not a shallow clone
 
