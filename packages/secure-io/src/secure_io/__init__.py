@@ -97,9 +97,7 @@ def ensure_restricted(path: Path) -> None:
         if not is_restricted(path):
             restrict_to_current_user(path)
     except Exception:
-        logging.warning(
-            "Could not restrict permissions on %s — continuing anyway", path
-        )
+        logging.warning("Could not restrict permissions on %s — continuing anyway", path)
 
 
 # ---------------------------------------------------------------------------
@@ -166,9 +164,10 @@ def _restrict_windows(path: Path) -> None:
         ],
     )
     # Verify the ACL took effect before returning.
-    if not _is_restricted_windows(path):
+    ok, reason = _windows_acl_verdict(path)
+    if not ok:
         raise PermissionError(
-            f"Failed to verify ACL on {path} — the file may still be unprotected"
+            f"Failed to verify ACL on {path} — the file may still be unprotected. {reason}"
         )
 
 
@@ -181,12 +180,61 @@ def _restrict_windows(path: Path) -> None:
 # localised display names).
 _WORLD_READABLE_SIDS = frozenset(
     {
-        "S-1-1-0",        # Everyone
-        "S-1-5-32-545",   # BUILTIN\Users
-        "S-1-5-11",       # NT AUTHORITY\Authenticated Users
-        "S-1-5-32-546",   # BUILTIN\Guests
+        "S-1-1-0",  # Everyone
+        "S-1-5-32-545",  # BUILTIN\Users
+        "S-1-5-11",  # NT AUTHORITY\Authenticated Users
+        "S-1-5-32-546",  # BUILTIN\Guests
     }
 )
+
+
+def _run_powershell(cmd: str) -> subprocess.CompletedProcess[str]:
+    """Run *cmd* under Windows PowerShell, falling back to PowerShell 7.
+
+    Three environment defences, each covering a different observed or
+    plausible reason a bare ``powershell -Command`` fails to reach ``Get-Acl``:
+
+    - **-ExecutionPolicy Bypass** — under Restricted / AllSigned, loading the
+      Microsoft.PowerShell.Security module is refused.  Execution policy
+      guards untrusted *script files* and is documented by Microsoft as not a
+      security boundary; the scope here is one inline command in one child
+      process, so this does not weaken the ACL check.
+    - **PSModulePath stripped** — the variable is inherited from the parent
+      process, and a value aimed at a different PowerShell edition (as CI
+      runners set) leaves Windows PowerShell unable to find its own bundled
+      modules.  Removing it lets PowerShell rebuild its default.
+    - **pwsh fallback** — if Windows PowerShell is absent or broken,
+      PowerShell 7 runs the identical command.
+
+    ``-NonInteractive`` guarantees no prompt can block the call.
+
+    Raises the last ``FileNotFoundError`` / ``CalledProcessError`` if every
+    candidate fails, so the caller can still report *why*.
+    """
+    env = os.environ.copy()
+    env.pop("PSModulePath", None)
+
+    last_exc: Exception | None = None
+    for exe in ("powershell", "pwsh"):
+        try:
+            return subprocess.run(
+                [
+                    exe,
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    cmd,
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                env=env,
+            )
+        except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+            last_exc = exc
+    raise last_exc  # type: ignore[misc]
 
 
 def _get_acl_via_powershell(path: Path) -> list[dict[str, object]]:
@@ -220,6 +268,16 @@ def _get_acl_via_powershell(path: Path) -> list[dict[str, object]]:
     # doubled, which is PowerShell's escape inside a single-quoted string.
     ps_path = str(path).replace("'", "''")
     cmd = (
+        # Load Get-Acl's module explicitly rather than relying on autoload.
+        # On the GitHub windows-latest runner autoload fails outright —
+        # "the module could not be loaded" — and Get-Acl then exits 1, which
+        # made every ACL verification fail and stopped the apps saving
+        # settings at all.  An explicit Import-Module is not redundant with
+        # -ExecutionPolicy below: they address different causes (a blocked
+        # load versus a PSModulePath that does not reach the module), and
+        # only together do they cover both.  SilentlyContinue because a
+        # session that already has the module loaded is fine.
+        "Import-Module Microsoft.PowerShell.Security -ErrorAction SilentlyContinue; "
         "Get-Acl -LiteralPath '" + ps_path + "' | "
         "Select-Object -ExpandProperty Access | ForEach-Object { "
         "$id = $_.IdentityReference; "
@@ -227,12 +285,7 @@ def _get_acl_via_powershell(path: Path) -> list[dict[str, object]]:
         "catch { $sid = $id.Value }; "
         "'{0}|{1}|{2}|{3}' -f $sid, $_.FileSystemRights, $_.IsInherited, $_.AccessControlType }"
     )
-    result = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", cmd],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    result = _run_powershell(cmd)
     entries: list[dict[str, object]] = []
     for line in result.stdout.strip().splitlines():
         line = line.strip()
@@ -271,10 +324,35 @@ def _is_restricted_windows(path: Path) -> bool:
     because on Administrator accounts Windows retains them even after
     ``/inheritance:r``, and those principals already have full machine access.
     """
+    return _windows_acl_verdict(path)[0]
+
+
+def _format_ace(entry: dict[str, object]) -> str:
+    """Render one ACE compactly for a diagnostic message."""
+    inherited = " inherited" if entry["is_inherited"] else ""
+    return f"[{entry['access_type']} {entry['sid']} ({entry['rights']}){inherited}]"
+
+
+def _windows_acl_verdict(path: Path) -> tuple[bool, str]:
+    """Return ``(is_restricted, reason)`` for *path*'s ACL on Windows.
+
+    The reason is what makes a failure actionable.  A verification that can
+    only say "no" is indistinguishable from one that could not read the ACL
+    at all, and the caller turns both into a hard failure that stops the app
+    saving settings — so the two cases must be told apart in the message.
+    """
     try:
         entries = _get_acl_via_powershell(path)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
+    except FileNotFoundError:
+        return False, "could not run powershell (not found on PATH)."
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or "").strip().replace("\n", " ")[:300]
+        return False, f"Get-Acl failed (exit {exc.returncode}): {stderr}"
+
+    if not entries:
+        return False, "Get-Acl returned no ACEs."
+
+    seen = " ".join(_format_ace(e) for e in entries)
 
     has_explicit_allow_rw = False
     for entry in entries:
@@ -285,20 +363,23 @@ def _is_restricted_windows(path: Path) -> bool:
 
         # Inherited ACEs must not be present — we strip them in _restrict_windows.
         if is_inherited:
-            return False
+            return False, f"inherited ACE survived /inheritance:r. ACEs: {seen}"
 
         if access_type == "Deny":
             continue
 
         # Reject if a world-readable SID has any Read access.
         if sid in _WORLD_READABLE_SIDS and "Read" in rights:
-            return False
+            return False, f"world-readable SID {sid} has Read. ACEs: {seen}"
 
         # At least one Allow ACE must grant Read+Write (or FullControl).
         if "FullControl" in rights or ("Read" in rights and "Write" in rights):
             has_explicit_allow_rw = True
 
-    return has_explicit_allow_rw
+    if not has_explicit_allow_rw:
+        return False, f"no Allow ACE grants Read+Write. ACEs: {seen}"
+
+    return True, "ok"
 
 
 def _get_current_user_sid() -> str:
