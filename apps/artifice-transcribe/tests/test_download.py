@@ -21,7 +21,6 @@ from artifice_transcribe.main import app
 from artifice_transcribe.services.download import (
     DownloadManager,
     DownloadState,
-    _redact_token,
     human_size,
     is_consented,
     record_consent,
@@ -29,6 +28,7 @@ from artifice_transcribe.services.download import (
     revoke_consent,
     total_transitive_size,
 )
+from artifice_transcribe.services.token_redaction import redact_token
 from httpx import ASGITransport, AsyncClient
 
 # -- Fixtures ----------------------------------------------------------------
@@ -430,25 +430,40 @@ async def test_consent_endpoint_unknown_key():
 # -- Token redaction -----------------------------------------------------------
 
 
-def test_redact_token_normal():
+def test_redact_token_hf():
     """hf_ token in a string is replaced."""
-    result = _redact_token("Error: token hf_abcdefghijklmnopqrstuvwxyz123456 is invalid")
+    result = redact_token("Error: token hf_abcdefghijklmnopqrstuvwxyz123456 is invalid")
     assert "hf_abcdefghijklmnopqrstuvwxyz123456" not in result
+    assert "[REDACTED]" in result
+
+
+def test_redact_token_sk():
+    """sk- token in a string is replaced."""
+    result = redact_token("Error: 401 Invalid API key: sk-proj-abcdefghijklmnopqrstuvwxyz123456")
+    assert "sk-proj-abcdefghijklmnopqrstuvwxyz123456" not in result
+    assert "[REDACTED]" in result
+
+
+def test_redact_token_sk_ant():
+    """sk-ant- token in a string is replaced."""
+    result = redact_token("Error: Key sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890 is invalid")
+    assert "sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890" not in result
     assert "[REDACTED]" in result
 
 
 def test_redact_token_no_token():
     """String without a token is returned unchanged."""
     msg = "401 Client Error: Unauthorized for url: ..."
-    assert _redact_token(msg) == msg
+    assert redact_token(msg) == msg
 
 
 def test_redact_token_multiple():
     """All tokens in a string are redacted."""
-    msg = "Token hf_aaaaaaaaaaaaaaaaaaaaa and hf_bbbbbbbbbbbbbbbbbbbbb failed"
-    result = _redact_token(msg)
+    msg = "Token hf_aaaaaaaaaaaaaaaaaaaaa and sk-bbbbbbbbbbbbbbbbbbbbb failed"
+    result = redact_token(msg)
     assert result.count("[REDACTED]") == 2
     assert "hf_" not in result
+    assert "sk-" not in result
 
 
 def test_redact_token_error_message(clean_manager, clean_consent):
@@ -683,3 +698,118 @@ async def test_sse_error_frame_interpolates_the_model_key():
 
     assert "{key}" not in resp.text, "error message contains an uninterpolated placeholder"
     assert "whisper-large-v3" in resp.text
+
+
+# -- Cancel-then-restart: two-writer protection (R1) ---------------------------
+
+
+def test_cancel_then_restart_guards_against_two_writers(clean_manager, clean_consent):
+    """Cancel a download, then immediately restart — the guard on
+    _inner_threads must prevent a second ``snapshot_download`` from
+    writing into the same cache directory while the first is still alive.
+
+    Before the fix, the cancel path never registered the inner thread,
+    so the is_alive() check returned False and a second download started
+    immediately, producing two concurrent writers.
+    """
+    record_consent("whisper-large-v3", True)
+
+    import artifice_transcribe.services.download as dlmod
+
+    # Phase 1: start a download that creates an inner thread.  We need
+    # _download_with_progress to return a fake path + a live inner thread,
+    # and we need it to check the cancel flag and raise _CancelledError
+    # carrying that thread.
+    inner_stopped = threading.Event()
+
+    def _fake_with_inner_thread(repo_id, model_key, total_bytes, token,
+                                 cache_dir, cancel, progress_callback):
+        # Create an inner thread that just sits there (simulating a real
+        # snapshot_download that's still writing to disk).
+        inner = threading.Thread(target=inner_stopped.wait, daemon=True)
+        inner.start()
+        # Give it a moment to start.
+        import time
+        time.sleep(0.1)
+        # Check the cancel flag — if set, raise with the inner thread.
+        if cancel.is_set():
+            raise dlmod._CancelledError(inner)
+        # Otherwise return normally (shouldn't happen in this test).
+        return Path("/fake/path"), inner
+
+    with patch.object(dlmod, "_download_with_progress", _fake_with_inner_thread):
+        ds1 = clean_manager.start_download("whisper-large-v3")
+        import time
+        time.sleep(0.3)
+
+        # Cancel: the worker should catch _CancelledError and register
+        # the inner thread.
+        clean_manager.cancel_download("whisper-large-v3")
+
+        deadline = time.time() + 10
+        while not ds1.finished and time.time() < deadline:
+            time.sleep(0.1)
+
+    assert ds1.finished, "download was not marked finished after cancel"
+
+    # Phase 2: the inner thread is still alive.
+    inner = clean_manager._inner_threads.get("whisper-large-v3")
+    assert inner is not None, (
+        "inner thread was not registered on cancel — "
+        "the _inner_threads dict is empty"
+    )
+    assert inner.is_alive(), (
+        "inner thread died before the test could inspect it"
+    )
+
+    # A second start_download must return the SAME DownloadSet (not
+    # create a new one) because the inner thread is still alive.
+    record_consent("whisper-large-v3", True)
+    ds2 = clean_manager.start_download("whisper-large-v3")
+    assert ds2 is ds1, (
+        "start_download returned a NEW DownloadSet while the inner "
+        "thread was still alive — a second writer is now running"
+    )
+
+    # Clean up: release the inner thread so it finishes.
+    inner_stopped.set()
+    inner.join(timeout=5)
+
+
+# -- Consent revoked while lock is held (F7) ----------------------------------
+
+
+def test_consent_revoked_after_lock_acquired_is_still_rejected(
+    clean_manager, clean_consent
+):
+    """is_consented must be checked inside the lock — if consent is recorded,
+    the lock acquired, and then consent is revoked, the download must still
+    be refused.
+
+    Before F7 the check was outside the lock, creating a window where a
+    concurrently revoked consent was ignored.
+    """
+    record_consent("whisper-large-v3", True)
+
+    import artifice_transcribe.services.download as dlmod
+
+    # Acquire the lock externally so the start_download call waits.
+    lock = clean_manager._lock
+    lock.acquire()
+
+    # Revoke consent while the lock is held.
+    revoke_consent("whisper-large-v3")
+
+    def _fake_download(*args, **kwargs):
+        return Path("/fake/path"), threading.Thread()
+
+    # Patch _download_with_progress so the actual download doesn't try
+    # to touch huggingface_hub.
+    with patch.object(dlmod, "_download_with_progress", _fake_download):
+        # Release the lock so start_download can proceed.
+        lock.release()
+
+        # start_download should now check is_consented under the lock
+        # and see that consent has been revoked.
+        with pytest.raises(PermissionError, match="Consent has not been recorded"):
+            clean_manager.start_download("whisper-large-v3")
