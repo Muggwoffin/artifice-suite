@@ -61,32 +61,57 @@ uploaded: PyPI creates the project on first successful publish.
 For **each** of the seven names below: PyPI → *Your projects* →
 *Publishing* → *Add a new pending publisher* → **GitHub**.
 
-Enter **exactly** this, for every one:
+Three fields are the same every time:
 
 | Field | Value |
 |---|---|
-| PyPI Project Name | *(the name from the list below)* |
 | Owner | `Muggwoffin` |
 | Repository name | `artifice-suite` |
 | Workflow name | `publish.yml` |
-| Environment name | `pypi` |
 
-The seven names, **in publish order**:
+**The environment name is different for every project.** Use exactly these,
+**in publish order** — shared packages first:
 
-1. `artifice-model-harness`
-2. `artifice-secure-io`
-3. `artifice-shared-ui`
-4. `artifice-ocr`
-5. `artifice-draft`
-6. `artifice-graph`
-7. `artifice-transcribe`
+| # | PyPI Project Name | Environment name |
+|---|---|---|
+| 1 | `artifice-model-harness` | `pypi-artifice-model-harness` |
+| 2 | `artifice-secure-io` | `pypi-artifice-secure-io` |
+| 3 | `artifice-shared-ui` | `pypi-artifice-shared-ui` |
+| 4 | `artifice-ocr` | `pypi-artifice-ocr` |
+| 5 | `artifice-draft` | `pypi-artifice-draft` |
+| 6 | `artifice-graph` | `pypi-artifice-graph` |
+| 7 | `artifice-transcribe` | `pypi-artifice-transcribe` |
 
-**The environment name must be `pypi`.** It matches `environment: pypi` in
-`publish.yml`. If they differ, PyPI rejects the token exchange with an error
-that reads like a permissions problem rather than a name mismatch — this is the
-single most common way this setup fails.
+### Why the environment differs per project
+
+A *pending* publisher claims a name that has never been uploaded, so until the
+project exists the only thing identifying it is the tuple
+
+```
+(owner, repository, workflow filename, environment name)
+```
+
+PyPI therefore requires that tuple to be **unique across pending publishers**.
+Owner, repository and workflow are necessarily identical for a monorepo, so the
+environment is the only field left to vary. Reuse one environment name and the
+second registration fails with:
+
+> A pending trusted publisher matching this configuration has already been
+> registered for a different project name.
+
+These values must match the `environment:` entries in `publish.yml` exactly. If
+they differ, PyPI rejects the token exchange at publish time with an error that
+reads like a permissions problem rather than a name mismatch — the single most
+common way this setup fails.
+
+You do **not** need to create these environments in GitHub beforehand; the
+workflow references them and GitHub creates them on first run. You may
+pre-create them under *Settings → Environments* if you want to add approval
+rules.
 
 Repeat all seven on TestPyPI if you want to rehearse (recommended, see Step 3).
+TestPyPI is a separate index with its own publisher registry, so the same
+environment names are reused there without collision.
 
 ---
 

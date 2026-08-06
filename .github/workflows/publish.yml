@@ -8,15 +8,36 @@ name: Publish to PyPI
 # project's Zero Secrets Policy; an API token would have to live in a secret
 # and would be a standing credential with upload rights to every project.
 #
-# PREREQUISITE — this workflow FAILS until it is done.  For each of the seven
-# projects, add a PyPI "pending publisher" (PyPI → Your projects → Publishing)
-# with exactly:
+# ── WHY EVERY PROJECT HAS ITS OWN ENVIRONMENT ────────────────────────────────
+#
+# A *pending* publisher claims a PyPI name that has never been uploaded.  Until
+# that project exists, the only thing identifying it is the tuple
+#
+#     (owner, repository, workflow filename, environment name)
+#
+# so PyPI requires that tuple to be UNIQUE across pending publishers.  Give all
+# seven projects `environment: pypi` and the first one registered claims the
+# tuple; every subsequent registration is refused with:
+#
+#     A pending trusted publisher matching this configuration has already
+#     been registered for a different project name.
+#
+# Hence one environment per project, named `pypi-<project>`.  The environment is
+# the only field that varies — owner, repository and workflow are necessarily
+# identical for a monorepo.
+#
+# The same environment serves TestPyPI: it is a separate index with its own
+# publisher registry, so there is no cross-index collision.
+#
+# ── PREREQUISITE — this workflow FAILS until it is done ──────────────────────
+#
+# For each of the seven projects, add a PyPI pending publisher
+# (PyPI → Your projects → Publishing) with:
 #     Owner:            Muggwoffin
 #     Repository:       artifice-suite
 #     Workflow name:    publish.yml
-#     Environment:      pypi
-# The environment name must match the `environment:` key below or PyPI refuses
-# the exchange.  See docs/PYPI_PUBLISHING.md for the full walkthrough.
+#     Environment:      the `environment` value from the matrix below
+# See docs/PYPI_PUBLISHING.md for the exact per-project table.
 
 on:
   push:
@@ -43,16 +64,19 @@ jobs:
   # the workspace.
   shared-packages:
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: ${{ matrix.environment }}
     permissions:
       id-token: write        # required for Trusted Publishing; nothing else
     strategy:
       fail-fast: true        # a broken shared package must stop the apps
       matrix:
-        package:
-          - packages/model-harness
-          - packages/secure-io
-          - packages/shared-ui
+        include:
+          - directory: packages/model-harness
+            environment: pypi-artifice-model-harness
+          - directory: packages/secure-io
+            environment: pypi-artifice-secure-io
+          - directory: packages/shared-ui
+            environment: pypi-artifice-shared-ui
 
     steps:
       - uses: actions/checkout@v4
@@ -68,43 +92,47 @@ jobs:
         run: |
           rm -rf build dist
           uv run --with build python -m build
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ matrix.directory }}
 
       - name: Verify metadata before upload
         # twine check is cheap and catches an unrenderable README, which PyPI
         # accepts and then displays as a blank project page — unfixable without
         # burning a version number, since a file cannot be re-uploaded.
         run: uv run --with twine twine check dist/*
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ matrix.directory }}
 
       - name: Publish to TestPyPI
         if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: ${{ matrix.package }}/dist
+          packages-dir: ${{ matrix.directory }}/dist
           repository-url: https://test.pypi.org/legacy/
 
       - name: Publish to PyPI
         if: github.event_name == 'push' || inputs.target == 'pypi'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: ${{ matrix.package }}/dist
+          packages-dir: ${{ matrix.directory }}/dist
 
   # ── Stage 2: the four apps ────────────────────────────────────────────────
   apps:
     needs: shared-packages   # enforces the ordering described above
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: ${{ matrix.environment }}
     permissions:
       id-token: write
     strategy:
       fail-fast: false       # one app failing should not block the others
       matrix:
-        app:
-          - apps/artifice-ocr
-          - apps/artifice-draft
-          - apps/artifice-graph
-          - apps/artifice-transcribe
+        include:
+          - directory: apps/artifice-ocr
+            environment: pypi-artifice-ocr
+          - directory: apps/artifice-draft
+            environment: pypi-artifice-draft
+          - directory: apps/artifice-graph
+            environment: pypi-artifice-graph
+          - directory: apps/artifice-transcribe
+            environment: pypi-artifice-transcribe
 
     steps:
       - uses: actions/checkout@v4
@@ -117,21 +145,21 @@ jobs:
         run: |
           rm -rf build dist
           uv run --with build python -m build
-        working-directory: ${{ matrix.app }}
+        working-directory: ${{ matrix.directory }}
 
       - name: Verify metadata before upload
         run: uv run --with twine twine check dist/*
-        working-directory: ${{ matrix.app }}
+        working-directory: ${{ matrix.directory }}
 
       - name: Publish to TestPyPI
         if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: ${{ matrix.app }}/dist
+          packages-dir: ${{ matrix.directory }}/dist
           repository-url: https://test.pypi.org/legacy/
 
       - name: Publish to PyPI
         if: github.event_name == 'push' || inputs.target == 'pypi'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: ${{ matrix.app }}/dist
+          packages-dir: ${{ matrix.directory }}/dist

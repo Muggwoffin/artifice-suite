@@ -121,28 +121,29 @@ None of the seven names exist yet (all 404, re-confirmed 2026-08-06). A
 *pending* publisher claims a name that has never been uploaded.
 
 PyPI → *Your projects* → *Publishing* → *Add a new pending publisher* →
-**GitHub**, once per name:
+**GitHub**, once per name. Owner `Muggwoffin`, repository `artifice-suite`,
+workflow `publish.yml` every time — but **a different environment each time**:
 
-| Field | Value |
-|---|---|
-| Owner | `Muggwoffin` |
-| Repository name | `artifice-suite` |
-| Workflow name | `publish.yml` |
-| Environment name | `pypi` |
+| # | PyPI Project Name | Environment name |
+|---|---|---|
+| 1 | `artifice-model-harness` | `pypi-artifice-model-harness` |
+| 2 | `artifice-secure-io` | `pypi-artifice-secure-io` |
+| 3 | `artifice-shared-ui` | `pypi-artifice-shared-ui` |
+| 4 | `artifice-ocr` | `pypi-artifice-ocr` |
+| 5 | `artifice-draft` | `pypi-artifice-draft` |
+| 6 | `artifice-graph` | `pypi-artifice-graph` |
+| 7 | `artifice-transcribe` | `pypi-artifice-transcribe` |
 
-In publish order:
+**A shared environment name does not work, and the failure is silent until the
+second registration.** A pending publisher is identified only by
+`(owner, repository, workflow, environment)` until its project exists, and PyPI
+requires that tuple to be unique. Owner, repo and workflow are fixed for a
+monorepo, so the environment is the only field that can vary. Reusing one name
+fails with *"A pending trusted publisher matching this configuration has already
+been registered for a different project name."*
 
-1. `artifice-model-harness`
-2. `artifice-secure-io`
-3. `artifice-shared-ui`
-4. `artifice-ocr`
-5. `artifice-draft`
-6. `artifice-graph`
-7. `artifice-transcribe`
-
-**The environment name must be `pypi`.** If it differs from `publish.yml`, PyPI
-rejects the exchange with an error that reads like a permissions problem rather
-than a name mismatch. This is the most common way the setup fails.
+These must match the `environment:` values in `publish.yml` exactly. A mismatch
+surfaces at publish time as what looks like a permissions error.
 
 ### Step 3 — rehearse on TestPyPI
 
