@@ -42,7 +42,7 @@ Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 [project.optional-dependencies]
 web = [
     "fastapi>=0.110",
-    "uvicorn[standard]>=0.29",
+    "uvicorn[standard]>=0.52.1",
     "python-multipart>=0.0.9",
     "pywebview>=4.4",
     "beautifulsoup4>=4.12",
