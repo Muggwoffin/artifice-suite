@@ -84,25 +84,71 @@ defect.
    decided on 2026-08-06 to ship Linux and Windows first. `build-exe.yml`
    excludes macOS on purpose, with the reasoning written into the file.
 
-### Ready for the next session to pick up
+### TOMORROW'S WORK — decided by the maintainer, 2026-08-06
 
-1. **Freeze the other three apps.** `artifice-ocr` is done and proven;
-   `artifice-draft`, `artifice-graph` and `artifice-transcribe` have no spec.
-   Note transcribe is the hard one: a frozen bundle has no writable
-   `site-packages`, so runtime installation of the ASR stack is impossible inside
-   it.
+**Freeze `artifice-draft` and `artifice-graph`, each with its own native
+application window. `artifice-transcribe` is deliberately excluded.**
 
-2. **Migrate the other three apps onto the shared toast** in
-   `packages/shared-ui/shared_ui/assets/toast.js`. Only `artifice-draft` uses it;
-   ocr and transcribe still have their own.
+`artifice-ocr` is the working reference: `apps/artifice-ocr/artifice-ocr.spec`,
+`apps/artifice-ocr/src/artifice_ocr/web/window.py`, and `scripts/build-exe.sh`.
+Follow that pattern rather than inventing a second one.
 
-3. **Favicons — no app has one.**
+**Why transcribe is excluded, so nobody re-derives it:** the ASR stack is
+~5.8 GB, and **a frozen bundle has no writable `site-packages`**, so it cannot
+be installed at runtime into the bundle — the tier-3 "prompt and install"
+approach recorded in `IMPLEMENTATION_PLAN.md` is *impossible inside a freeze*.
+The only options would be baking 5.8 GB into the artifact or shipping a
+transcribe binary whose main feature does not work. **Transcribe stays a `uv`
+install.** Revisit only if the ASR stack becomes optional at runtime in a way a
+frozen bundle can satisfy.
 
-4. **The ASR consent *dialog*.** The backend is complete (seven endpoints, SSE
-   progress, consent, transitive size disclosure). No UI exists for it.
+What each app needs, in order:
 
-5. **`security-auditor` finding F5 follow-ups** and the remaining "note only"
+1. **Audit its asset paths first.** ocr's blocker was `configs/` sitting
+   *outside* the package, reached by `Path(__file__).parent.parent.parent` — so
+   it shipped in **no wheel at all**. Grep both apps for `__file__`-relative and
+   CWD-relative resolution before writing any spec, and move anything outside
+   the package inside it. **A user-supplied input/output path SHOULD stay
+   CWD-relative** — that is a different thing that merely looks similar.
+2. **A `.spec` per app**, modelled on ocr's, with the data collection its assets
+   actually need. `artifice-graph` is the awkward one: it is the only app with
+   **both** a `templates/` tree and a `static/` tree, plus vendored Leaflet
+   assets under `static/vendor/`.
+3. **A `window.py` per app**, following ocr's: `pywebview` behind a `window`
+   extra, imported *inside* the function, with a `--no-window` fallback that
+   degrades to printing the URL. **The fallback is not optional** — Linux needs
+   system GTK/Qt Python bindings that PyInstaller cannot bundle.
+4. **Add each app to `.github/workflows/build-exe.yml`'s `app` choice input**
+   and smoke-test the built binary over HTTP, as ocr's job does.
+
+**Verify by running the artifact, not the source.** Tests run against `src/`
+while the bug lives only in the built thing; this repository has shipped four
+such bugs. Serve the binary and fetch a `/shared/*` asset — that proves
+`importlib.resources` resolves from the *shared* package inside the bundle,
+which is the hardest case.
+
+**Known rough edge inherited from ocr:** the Linux fallback prints pywebview's
+own GTK and Qt import tracebacks before its friendly message. A user
+double-clicking would see two stack traces and reasonably think it crashed.
+Worth fixing once, in the shared pattern, rather than three times.
+
+### Also ready to pick up
+
+1. **Favicons — no app has one.**
+
+2. **`security-auditor` finding F5 follow-ups** and the remaining "note only"
    items from the 2026-08-06 audit.
+
+3. **Should `min_vram_gb` be split?** `lead-engineer` raised this and correctly
+   stopped rather than implementing it. The field currently answers two
+   different questions — "how much VRAM for full GPU offload" (12 GB for
+   olmOCR-2) and "will this run at all" (yes on 8 GB, with CPU fallback). A
+   split into two fields would let the per-tier ceiling test check the second
+   rather than being tuned around the first. **Maintainer's decision.**
+
+4. **Three dialog questions left open by `ui-ux`:** which model the ASR consent
+   dialog pre-selects on open, and whether the success toast is redundant with
+   the in-dialog "Done".
 
 ---
 
