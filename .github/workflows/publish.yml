@@ -150,6 +150,9 @@ jobs:
         with:
           packages-dir: ${{ matrix.directory }}/dist
           repository-url: https://test.pypi.org/legacy/
+          # A rehearsal is worthless if it can only be run once.  See the note
+          # on the PyPI step below for the tradeoff this accepts.
+          skip-existing: true
 
       - name: Publish to PyPI
         # A tag push publishes every wave: by then all publishers are active
@@ -161,6 +164,27 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
+          # WHY skip-existing IS ON, AND WHAT IT COSTS
+          #
+          # PyPI refuses a duplicate upload with HTTP 400 and burns the version
+          # number permanently — it cannot be re-uploaded even after deleting
+          # the release.  Without this flag the first release, published wave by
+          # wave via workflow_dispatch on 2026-08-06, could never be tagged: the
+          # tag fires this workflow with `github.event_name == 'push'`, which
+          # re-uploads all seven and fails on every one.  It also means a
+          # partial failure — say wave 3 dying after waves 1 and 2 succeeded —
+          # cannot be retried without bumping the version for packages that
+          # published perfectly well.
+          #
+          # The cost is real and worth stating: with this on, re-running a
+          # release whose version was never bumped SUCCEEDS while uploading
+          # nothing.  A green run is therefore no longer proof that anything
+          # reached the index.  The guard against that is the Release Gate in
+          # release.yml, which holds tag, all eight pyproject versions and
+          # CITATION.cff in lockstep — so a forgotten bump fails there, before
+          # this workflow can quietly no-op.  If that gate is ever weakened,
+          # revisit this flag.
+          skip-existing: true
 
   # ── Stage 2: the four apps ────────────────────────────────────────────────
   apps:
@@ -215,6 +239,9 @@ jobs:
         with:
           packages-dir: ${{ matrix.directory }}/dist
           repository-url: https://test.pypi.org/legacy/
+          # A rehearsal is worthless if it can only be run once.  See the note
+          # on the PyPI step below for the tradeoff this accepts.
+          skip-existing: true
 
       - name: Publish to PyPI
         # A tag push publishes every wave: by then all publishers are active
@@ -226,3 +253,24 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
+          # WHY skip-existing IS ON, AND WHAT IT COSTS
+          #
+          # PyPI refuses a duplicate upload with HTTP 400 and burns the version
+          # number permanently — it cannot be re-uploaded even after deleting
+          # the release.  Without this flag the first release, published wave by
+          # wave via workflow_dispatch on 2026-08-06, could never be tagged: the
+          # tag fires this workflow with `github.event_name == 'push'`, which
+          # re-uploads all seven and fails on every one.  It also means a
+          # partial failure — say wave 3 dying after waves 1 and 2 succeeded —
+          # cannot be retried without bumping the version for packages that
+          # published perfectly well.
+          #
+          # The cost is real and worth stating: with this on, re-running a
+          # release whose version was never bumped SUCCEEDS while uploading
+          # nothing.  A green run is therefore no longer proof that anything
+          # reached the index.  The guard against that is the Release Gate in
+          # release.yml, which holds tag, all eight pyproject versions and
+          # CITATION.cff in lockstep — so a forgotten bump fails there, before
+          # this workflow can quietly no-op.  If that gate is ever weakened,
+          # revisit this flag.
+          skip-existing: true
