@@ -111,7 +111,7 @@
       populateForm(scrapedGuide);
       showReview();
     } catch (err) {
-      scrapeLog.innerHTML += `\n<div class="line error">${escapeHtml(err.message)}</div>`;
+      window.ArtificeToast.error(err.message);
     } finally {
       btnScrape.disabled = false;
       btnScrape.textContent = "Scrape & Preview";
@@ -138,7 +138,7 @@
       populateForm(scrapedGuide);
       showReview();
     } catch (err) {
-      textLog.innerHTML += `\n<div class="line error">${escapeHtml(err.message)}</div>`;
+      window.ArtificeToast.error(err.message);
     } finally {
       btnParseText.disabled = false;
       btnParseText.textContent = "Parse & Preview";
@@ -167,7 +167,7 @@
       populateForm(scrapedGuide);
       showReview();
     } catch (err) {
-      fileLog.innerHTML += `\n<div class="line error">${escapeHtml(err.message)}</div>`;
+      window.ArtificeToast.error(err.message);
     } finally {
       btnParseFile.disabled = false;
       btnParseFile.textContent = "Parse & Preview";
@@ -224,7 +224,7 @@
     const guideData = collectForm();
     const name = guideData.name;
     if (!name) {
-      alert("Guide name is required.");
+      window.ArtificeToast.warning("Guide name is required.");
       return;
     }
 
@@ -243,11 +243,9 @@
       await api("POST", "/api/settings", { style_guide: result.saved });
 
       closeModal();
-      if (window.PersonaeApp && window.PersonaeApp.logLine) {
-        window.PersonaeApp.logLine(`Style guide "${result.saved}" imported and saved.`, "success");
-      }
+      window.ArtificeToast.success("Style guide \"" + result.saved + "\" imported and saved.");
     } catch (err) {
-      alert(`Save failed: ${err.message}`);
+      window.ArtificeToast.error("Save failed: " + err.message);
     } finally {
       btnSave.disabled = false;
       btnSave.textContent = "Save Guide";
