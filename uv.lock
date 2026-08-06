@@ -382,10 +382,14 @@ web = [
     { name = "fastapi" },
     { name = "uvicorn", extra = ["standard"] },
 ]
+window = [
+    { name = "pywebview" },
+]
 
 [package.dev-dependencies]
 dev = [
     { name = "pyinstaller" },
+    { name = "pywebview" },
 ]
 
 [package.metadata]
@@ -400,15 +404,19 @@ requires-dist = [
     { name = "openai" },
     { name = "pymupdf" },
     { name = "python-dotenv" },
+    { name = "pywebview", marker = "extra == 'window'", specifier = ">=5.0" },
     { name = "pyyaml" },
     { name = "reportlab" },
     { name = "typer" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'" },
 ]
-provides-extras = ["web"]
+provides-extras = ["web", "window"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pyinstaller", specifier = ">=6.21.0" }]
+dev = [
+    { name = "pyinstaller", specifier = ">=6.21.0" },
+    { name = "pywebview", specifier = ">=5.0" },
+]
 
 [[package]]
 name = "artifice-secure-io"
