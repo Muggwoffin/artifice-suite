@@ -8,6 +8,8 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-06
+
 > **2026-08-06 — 0.1.0 published to PyPI.** Seven distributions (`artifice-model-harness`,
 > `artifice-secure-io`, `artifice-shared-ui`, `artifice-ocr`, `artifice-draft`,
 > `artifice-graph`, `artifice-transcribe`) shipped to public PyPI in three waves via
@@ -50,6 +52,23 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 - `README.md` documented the clone-and-bootstrap install as primary and stated "No
   packages are published to any index yet" — inverted the moment 0.1.0 went live.
   PyPI install is now the primary path; clone reframed as development.
+- SSE frames in the ASR download endpoints were never terminated. Every yield
+  emitted a literal backslash-n rather than a newline; an SSE event is terminated
+  by a blank line, so no frame was ever complete and a browser `EventSource`
+  received nothing while the server reported healthy. The pre-existing
+  summarize/cleanup endpoints in the same module were always correct — a silent
+  divergence from a working pattern. Neither the code review nor the 36 tests
+  caught it (they assert decoded JSON and manager state, never bytes on the wire).
+  Two tests now cover the wire format.
+- The same line left a placeholder uninterpolated, so the error told the client
+  "No download active for {key}" literally.
+- A progress callback captured its loop variables by reference (`ruff B023`) while
+  running on a background thread; an event arriving after the loop advanced reported
+  the next model's index, key and repo against the current model's byte count.
+- `artifice-graph`'s sdist no longer ships `Dockerfile`, three Windows `.bat`
+  launchers or `scripts/`. A hatchling sdist includes every git-tracked file in
+  its directory; a setuptools one does not, so only graph needed the exclusion.
+  Test suites are deliberately still included.
 
 ### Known Issues
 - `artifice-transcribe --help` starts the web server instead of printing usage.
@@ -97,3 +116,4 @@ AGPL-3.0-or-later. Tag/version consistency is now enforced by
 > remains unless edited or deleted by the maintainer on zenodo.org.
 
 [Unreleased]: https://github.com/Muggwoffin/artifice-suite/compare/main...HEAD
+[0.2.0]: https://github.com/Muggwoffin/artifice-suite/compare/0.1.0...0.2.0

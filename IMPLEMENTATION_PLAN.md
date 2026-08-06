@@ -1530,20 +1530,28 @@ Four things this yields, in descending severity:
    **All four apps already call `autostart()`** — ocr `base.html:46`, graph `base.html:48`,
    transcribe `base.html:38`, draft `base.html:38`.
 
-   **The real remaining gap is much smaller: only `artifice-graph` has the `#navByom` button**
-   (`graph/base.html:31-32`). ocr, draft and transcribe call `autostart()`, which looks the ID up,
-   finds nothing, and silently wires nothing. So the screen *is* reopenable in graph today and not
-   in the other three — and the fix is a markup-and-CSS control, not JavaScript.
+   **There is no remaining gap. The item is DONE in all four apps.** The button lives in the
+   shared masthead partial, `packages/shared-ui/shared_ui/templates/_masthead.html:66-69`, which
+   `artifice-ocr` (`base.html:23`), `artifice-transcribe` (`base.html:23`) and `artifice-draft`
+   (`base.html:24`) all `{% include %}`. `artifice-graph` carries its own copy at
+   `graph/base.html:31-32`. Styling is shared too, at `byom.css:58-102`. Verified against the
+   **served bytes** of all three apps, not the source tree.
 
-   The user-facing consequence stands for those three: someone whose endpoint later breaks — model
-   deleted, Ollama moved, port changed — has no route back to the screen built to fix exactly that.
-
-   > **This entry cost real time on 2026-08-06.** It was read as live, quoted to the maintainer as
-   > the top blocker for a community release, and a sub-agent was nearly briefed to build machinery
-   > that already existed. The old text even cited `ocr/index.html:657` and the "`var` inside an
-   > IIFE" — line numbers and a mechanism that had both stopped being true. **A citation is not
-   > evidence of currency.** Re-open the file before treating any claim in this document as a
-   > constraint; that instruction appears elsewhere in this file and was still not enough.
+   > **This entry was corrected twice on 2026-08-06, and the second correction is the instructive
+   > one.** The original text was stale. The first correction — written by the orchestrator — was
+   > *also* wrong: it grepped `apps/**/*.html` for `navByom`, found it only in graph, and concluded
+   > the other three needed the control built. **The button was never in `apps/`; it is in
+   > `packages/shared-ui`, which the grep never searched.** A sub-agent was briefed on that false
+   > premise, checked it, refused to make any edit, and reported the brief's premise as the only
+   > thing needing correction. It was right.
+   >
+   > Two lessons, and the second is the one that keeps recurring:
+   > 1. **A citation is not evidence of currency.** The stale text cited `ocr/index.html:657` and a
+   >    "`var` inside an IIFE"; both had stopped being true.
+   > 2. **A measurement is only as wide as the path you pointed it at.** Scoping a grep to `apps/`
+   >    in a monorepo whose whole point is shared packages produces a confident, cited, wrong
+   >    answer — the same shape as the audit that missed `CHANGELOG.md` and concluded no Zenodo DOI
+   >    existed. **When a search comes back negative, widen the path before believing it.**
 
 1a. **Remove every emoji from `artifice-ocr` — maintainer's instruction, 2026-08-05.** They are not
    confined to the tips modal. Its in-page tab bar reads `☰ Main`, `👁 Preview`, `🕐 History`,
