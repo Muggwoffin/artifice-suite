@@ -103,7 +103,9 @@ class AnthropicProvider:
                 supported_modes=_ANTHROPIC_SUPPORTED_MODES,
             )
 
-        self._model_capabilities: dict[str, ProviderCapabilities] = dict(model_capabilities or {})
+        self._model_capabilities: dict[str, ProviderCapabilities] = dict(
+            model_capabilities or {}
+        )
 
     # -- ModelProvider ----------------------------------------------------------
 
@@ -214,7 +216,8 @@ class AnthropicProvider:
                 {
                     "name": "respond",
                     "description": (
-                        "Return structured data that exactly matches the requested schema."
+                        "Return structured data that exactly matches "
+                        "the requested schema."
                     ),
                     "input_schema": request.schema_json,
                 }
@@ -241,7 +244,9 @@ class AnthropicProvider:
         return base
 
     @staticmethod
-    def _extract_text(data: dict, mode: StructuredOutputMode) -> str:
+    def _extract_text(
+        data: dict, mode: StructuredOutputMode
+    ) -> str:
         """Extract text from an Anthropic response.
 
         For ``NATIVE_SCHEMA`` the response is a ``tool_use`` content block
@@ -263,7 +268,11 @@ class AnthropicProvider:
 
         # Join all text blocks — the common case for PROMPTED / JSON_OBJECT
         # and the fallback for a tool_use-less NATIVE_SCHEMA response.
-        parts = [block["text"] for block in content if block.get("type") == "text"]
+        parts = [
+            block["text"]
+            for block in content
+            if block.get("type") == "text"
+        ]
         return "".join(parts)
 
 
