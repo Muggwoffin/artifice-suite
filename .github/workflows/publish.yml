@@ -1,0 +1,228 @@
+name: Publish to PyPI
+
+# Trusted Publishing (OIDC) — deliberately NOT API tokens.
+#
+# GitHub mints a short-lived OIDC token that PyPI exchanges for an upload
+# credential, so nothing long-lived is ever stored in the repository or in
+# Actions secrets.  That is the only publishing mechanism compatible with this
+# project's Zero Secrets Policy; an API token would have to live in a secret
+# and would be a standing credential with upload rights to every project.
+#
+# ── WHY EVERY PROJECT HAS ITS OWN ENVIRONMENT ────────────────────────────────
+#
+# A *pending* publisher claims a PyPI name that has never been uploaded.  Until
+# that project exists, the only thing identifying it is the tuple
+#
+#     (owner, repository, workflow filename, environment name)
+#
+# so PyPI requires that tuple to be UNIQUE across pending publishers.  Give all
+# seven projects `environment: pypi` and the first one registered claims the
+# tuple; every subsequent registration is refused with:
+#
+#     A pending trusted publisher matching this configuration has already
+#     been registered for a different project name.
+#
+# Hence one environment per project, named `pypi-<project>`.  The environment is
+# the only field that varies — owner, repository and workflow are necessarily
+# identical for a monorepo.
+#
+# The same environment serves TestPyPI: it is a separate index with its own
+# publisher registry, so there is no cross-index collision.
+#
+# ── WHY PUBLISHING HAPPENS IN WAVES ──────────────────────────────────────────
+#
+# PyPI allows an account at most THREE pending publishers at once:
+#
+#     You can't register more than 3 pending trusted publishers at once.
+#
+# A pending publisher converts into an ordinary one the moment its project is
+# first published, which frees the slot.  Seven projects therefore have to be
+# registered and published 3 / 3 / 1, and `stage` below selects which wave
+# actually uploads.
+#
+# The waves are ordered to respect the dependency constraint as well: wave 1 is
+# exactly the three shared packages, which must reach the index before any app.
+#
+#     wave-1-shared  model-harness, secure-io, shared-ui
+#     wave-2-apps    ocr, draft, graph
+#     wave-3-apps    transcribe
+#     all            everything — correct once every publisher is active,
+#                    which is the case for every release after the first
+#
+# A tag push always publishes everything, because by then the publishers exist
+# and the limit no longer applies.
+#
+# Every wave still BUILDS and twine-checks all seven; only the upload is gated.
+# That keeps a dry run honest — a packaging break in wave 3 surfaces in wave 1.
+#
+# ── PREREQUISITE — this workflow FAILS until it is done ──────────────────────
+#
+# For each project, add a PyPI pending publisher
+# (PyPI → Your projects → Publishing) with:
+#     Owner:            Muggwoffin
+#     Repository:       artifice-suite
+#     Workflow name:    publish.yml
+#     Environment:      the `environment` value from the matrix below
+# Register only the current wave's three — see docs/PYPI_PUBLISHING.md.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Where to publish'
+        required: true
+        default: testpypi
+        type: choice
+        options:
+          - testpypi
+          - pypi
+      stage:
+        description: 'Which wave to upload (PyPI allows only 3 pending publishers at a time)'
+        required: true
+        default: wave-1-shared
+        type: choice
+        options:
+          - wave-1-shared
+          - wave-2-apps
+          - wave-3-apps
+          - all
+
+jobs:
+  # ── Stage 1: the three shared packages ────────────────────────────────────
+  # ORDER IS LOAD-BEARING.  Every app declares artifice-model-harness,
+  # artifice-secure-io and artifice-shared-ui by name with `>=0.1.0`.  If the
+  # apps are published first, `pip install artifice-graph` from a clean machine
+  # cannot resolve its own dependencies — they would not exist on the index
+  # yet.  uv hides this locally because [tool.uv.sources] resolves them from
+  # the workspace.
+  shared-packages:
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.environment }}
+    permissions:
+      id-token: write        # required for Trusted Publishing; nothing else
+    strategy:
+      fail-fast: true        # a broken shared package must stop the apps
+      matrix:
+        include:
+          - directory: packages/model-harness
+            environment: pypi-artifice-model-harness
+            stage: wave-1-shared
+          - directory: packages/secure-io
+            environment: pypi-artifice-secure-io
+            stage: wave-1-shared
+          - directory: packages/shared-ui
+            environment: pypi-artifice-shared-ui
+            stage: wave-1-shared
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        # build/ and dist/ are cleared first: setuptools reuses whatever it
+        # finds under build/, which silently resurrects deleted modules into a
+        # new wheel.  This repo has shipped that bug before.
+        run: |
+          rm -rf build dist
+          uv run --with build python -m build
+        working-directory: ${{ matrix.directory }}
+
+      - name: Verify metadata before upload
+        # twine check is cheap and catches an unrenderable README, which PyPI
+        # accepts and then displays as a blank project page — unfixable without
+        # burning a version number, since a file cannot be re-uploaded.
+        run: uv run --with twine twine check dist/*
+        working-directory: ${{ matrix.directory }}
+
+      - name: Publish to TestPyPI
+        # Gated on the wave: see the pending-publisher limit at the top.
+        if: >-
+          github.event_name == 'workflow_dispatch'
+          && inputs.target == 'testpypi'
+          && (inputs.stage == 'all' || inputs.stage == matrix.stage)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.directory }}/dist
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish to PyPI
+        # A tag push publishes every wave: by then all publishers are active
+        # and the three-pending limit no longer applies.
+        if: >-
+          github.event_name == 'push'
+          || (inputs.target == 'pypi'
+              && (inputs.stage == 'all' || inputs.stage == matrix.stage))
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.directory }}/dist
+
+  # ── Stage 2: the four apps ────────────────────────────────────────────────
+  apps:
+    needs: shared-packages   # enforces the ordering described above
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.environment }}
+    permissions:
+      id-token: write
+    strategy:
+      fail-fast: false       # one app failing should not block the others
+      matrix:
+        include:
+          - directory: apps/artifice-ocr
+            environment: pypi-artifice-ocr
+            stage: wave-2-apps
+          - directory: apps/artifice-draft
+            environment: pypi-artifice-draft
+            stage: wave-2-apps
+          - directory: apps/artifice-graph
+            environment: pypi-artifice-graph
+            stage: wave-2-apps
+          # Fourth app, so it cannot share wave 2 — the pending-publisher limit
+          # is three.  Nothing about transcribe makes it special here.
+          - directory: apps/artifice-transcribe
+            environment: pypi-artifice-transcribe
+            stage: wave-3-apps
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        run: |
+          rm -rf build dist
+          uv run --with build python -m build
+        working-directory: ${{ matrix.directory }}
+
+      - name: Verify metadata before upload
+        run: uv run --with twine twine check dist/*
+        working-directory: ${{ matrix.directory }}
+
+      - name: Publish to TestPyPI
+        # Gated on the wave: see the pending-publisher limit at the top.
+        if: >-
+          github.event_name == 'workflow_dispatch'
+          && inputs.target == 'testpypi'
+          && (inputs.stage == 'all' || inputs.stage == matrix.stage)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.directory }}/dist
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish to PyPI
+        # A tag push publishes every wave: by then all publishers are active
+        # and the three-pending limit no longer applies.
+        if: >-
+          github.event_name == 'push'
+          || (inputs.target == 'pypi'
+              && (inputs.stage == 'all' || inputs.stage == matrix.stage))
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.directory }}/dist

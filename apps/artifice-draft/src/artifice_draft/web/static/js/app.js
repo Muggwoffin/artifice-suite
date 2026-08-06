@@ -232,4 +232,96 @@ async function onRunFinished(docId) {
 
 window.PersonaeApp = { logLine, setProgress, onRunFinished };
 
+// --------------------------------------------------------------- theme
+//
+// Same pattern and storage-key convention as artifice-graph's app.js
+// ("artifice-<app>-theme"), adapted to this file's non-IIFE, arrow-function
+// idiom. The toggle button (#themeToggle / #themeGlyph) is rendered by the
+// shared _masthead.html partial, included via base.html.
+
+function getThemePref() {
+  try { return window.localStorage.getItem("artifice-draft-theme"); } catch (e) { return null; }
+}
+
+function setThemePref(theme) {
+  try { window.localStorage.setItem("artifice-draft-theme", theme); } catch (e) { /* ignore */ }
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  const glyph = document.getElementById("themeGlyph");
+  if (!glyph) return;
+  const sun = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  const moon = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  glyph.innerHTML = theme === "dark" ? moon : sun;
+}
+
+function initTheme() {
+  let saved = getThemePref();
+  if (!saved) {
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    saved = prefersDark ? "dark" : "light";
+  }
+  applyTheme(saved);
+
+  const toggle = document.getElementById("themeToggle");
+  if (toggle) {
+    toggle.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme") || "light";
+      const next = current === "dark" ? "light" : "dark";
+      applyTheme(next);
+      setThemePref(next);
+    });
+  }
+}
+
+// ----------------------------------------------------- keyboard shortcuts
+//
+// Deliberately small relative to artifice-transcribe's shortcut set: this
+// app's interaction surface (upload -> run -> review -> download) is much
+// thinner than transcribe's segment editor, so only the two shortcuts that
+// map onto an existing, always-present control are bound. Both modals
+// (#guide-modal, #model-settings-modal) already close via a visible button
+// and an overlay click; Escape is the keyboard-equivalent third path.
+
+function anyModalOpen() {
+  const guideModal = document.getElementById("guide-modal");
+  const modelModal = document.getElementById("model-settings-modal");
+  const byomOverlay = document.querySelector(".byom-overlay");
+  return (!!guideModal && guideModal.style.display !== "none") ||
+         (!!modelModal && modelModal.style.display !== "none") ||
+         !!byomOverlay;
+}
+
+function closeOpenModals() {
+  const guideModal = document.getElementById("guide-modal");
+  if (guideModal && guideModal.style.display !== "none") guideModal.style.display = "none";
+  const modelModal = document.getElementById("model-settings-modal");
+  if (modelModal && modelModal.style.display !== "none") modelModal.style.display = "none";
+}
+
+function initKeyboardShortcuts() {
+  document.addEventListener("keydown", (e) => {
+    // Escape: close whichever modal is open.
+    if (e.key === "Escape") {
+      closeOpenModals();
+      return;
+    }
+    // Ctrl/Cmd+Enter: start editing the loaded document, mirroring
+    // artifice-transcribe's Ctrl+Enter-to-save. Guarded on no modal being
+    // open so it can't fire the pipeline while the guide-import or
+    // model-settings dialog is mid-edit.
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !anyModalOpen()) {
+      const btnStart = document.getElementById("btn-start");
+      if (btnStart && !btnStart.disabled) {
+        e.preventDefault();
+        btnStart.click();
+      }
+    }
+  });
+}
+
+initTheme();
+initKeyboardShortcuts();
+
 loadSettings().catch(err => logLine(`Could not load settings: ${err.message}`, "error"));
