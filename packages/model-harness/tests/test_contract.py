@@ -35,9 +35,7 @@ def caps(mode: StructuredOutputMode) -> ProviderCapabilities:
 # ── select_mode ──────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize(
-    "mode", [M.NATIVE_SCHEMA, M.JSON_OBJECT, M.PROMPTED]
-)
+@pytest.mark.parametrize("mode", [M.NATIVE_SCHEMA, M.JSON_OBJECT, M.PROMPTED])
 def test_returns_the_providers_mode_when_it_meets_the_default_floor(mode):
     assert select_mode(caps(mode)) is mode
 
@@ -68,9 +66,7 @@ def test_a_weaker_provider_than_required_is_refused(available, required):
         (M.JSON_OBJECT, M.PROMPTED),
     ],
 )
-def test_a_stronger_provider_than_required_is_accepted_at_its_own_strength(
-    available, required
-):
+def test_a_stronger_provider_than_required_is_accepted_at_its_own_strength(available, required):
     """The caller sets a floor, not a target — it must not be downgraded."""
     assert select_mode(caps(available), minimum=required) is available
 

@@ -146,10 +146,12 @@ async def byom_test(req: TestRequest) -> dict:
     result = await probe_endpoint(req.url, policy=_policy)
 
     if result.reachable and req.api_key is not None:
-        save_settings({
-            "base_url": req.url,
-            "api_key": req.api_key,
-        })
+        save_settings(
+            {
+                "base_url": req.url,
+                "api_key": req.api_key,
+            }
+        )
 
     return {
         "reachable": result.reachable,

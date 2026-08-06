@@ -118,9 +118,7 @@ class OpenAIProvider:
                 provider_type, StructuredOutputMode.PROMPTED
             )
 
-        self._model_capabilities: dict[str, StructuredOutputMode] = dict(
-            model_capabilities or {}
-        )
+        self._model_capabilities: dict[str, StructuredOutputMode] = dict(model_capabilities or {})
 
     # -- ModelProvider ----------------------------------------------------------
 

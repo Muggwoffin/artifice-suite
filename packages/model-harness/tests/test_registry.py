@@ -17,7 +17,6 @@ import types
 from typing import get_args
 
 import pytest
-
 from model_harness.contract import Provider
 from model_harness.registry import (
     ASR_MODELS,
@@ -30,7 +29,6 @@ from model_harness.registry import (
     is_configured,
     recommendations_for_app,
 )
-
 
 # ── ASR_MODELS integrity ─────────────────────────────────────────────────────
 
@@ -97,9 +95,7 @@ def test_ocr_recommendations_match_role_vision(tier: HardwareTier):
     """
     recs = recommendations_for_app("artifice-ocr", tier)
     assert len(recs) > 0, f"no OCR recommendations for {tier}"
-    assert any(r.vision is True for r in recs), (
-        f"OCR tier {tier} has no vision-capable model"
-    )
+    assert any(r.vision is True for r in recs), f"OCR tier {tier} has no vision-capable model"
     for rec in recs:
         if rec.role == "vision":
             assert rec.vision is True, (
@@ -156,7 +152,9 @@ def test_transcribe_recommendations_are_text_only():
         recs = recommendations_for_app("artifice-transcribe", tier)
         assert len(recs) > 0, f"transcribe has no recommendations for {tier}"
         for rec in recs:
-            assert rec.vision is False, f"transcribe recommendation {rec.model_name!r} has vision=True"
+            assert rec.vision is False, (
+                f"transcribe recommendation {rec.model_name!r} has vision=True"
+            )
 
 
 @pytest.mark.parametrize("app", _KNOWN_RECOMMENDATION_APPS)
@@ -247,14 +245,18 @@ def test_laptop_models_exceeding_gpu_vram_document_fallback():
     for app in _KNOWN_RECOMMENDATION_APPS:
         recs = recommendations_for_app(app, HardwareTier.LAPTOP)
         for rec in recs:
-            if rec.min_vram_gb is not None and rec.min_vram_gb > _LAPTOP_GPU_VRAM_TYPICAL_GB:
-                if "CPU" not in rec.notes and "fallback" not in rec.notes.lower():
-                    violations.append(
-                        f"{app}/{rec.model_name}: "
-                        f"min_vram_gb={rec.min_vram_gb} > "
-                        f"{_LAPTOP_GPU_VRAM_TYPICAL_GB} GB but notes "
-                        f"mention no CPU fallback: {rec.notes!r}"
-                    )
+            if (
+                rec.min_vram_gb is not None
+                and rec.min_vram_gb > _LAPTOP_GPU_VRAM_TYPICAL_GB
+                and "CPU" not in rec.notes
+                and "fallback" not in rec.notes.lower()
+            ):
+                violations.append(
+                    f"{app}/{rec.model_name}: "
+                    f"min_vram_gb={rec.min_vram_gb} > "
+                    f"{_LAPTOP_GPU_VRAM_TYPICAL_GB} GB but notes "
+                    f"mention no CPU fallback: {rec.notes!r}"
+                )
     assert not violations, (
         f"LAPTOP recommendations exceeding {_LAPTOP_GPU_VRAM_TYPICAL_GB} GB VRAM "
         f"must document CPU fallback:\n" + "\n".join(violations)
@@ -276,9 +278,7 @@ def test_every_recommendation_has_role():
         for tier in HardwareTier:
             recs = recommendations_for_app(app, tier)
             for rec in recs:
-                assert rec.role, (
-                    f"{app}/{tier.value}/{rec.model_name}: role is empty"
-                )
+                assert rec.role, f"{app}/{tier.value}/{rec.model_name}: role is empty"
 
 
 def test_every_recommendation_with_badges_has_notes():
@@ -328,8 +328,7 @@ def test_no_entry_carries_removed_cultural_linguistic_fluency_badge():
             recs = recommendations_for_app(app, tier)
             for rec in recs:
                 assert _REMOVED_BADGE not in rec.ethos_badges, (
-                    f"{app}/{tier.value}/{rec.model_name}: "
-                    f"carries removed badge {_REMOVED_BADGE!r}"
+                    f"{app}/{tier.value}/{rec.model_name}: carries removed badge {_REMOVED_BADGE!r}"
                 )
 
 
@@ -339,9 +338,7 @@ def test_every_model_name_is_non_empty():
         for tier in HardwareTier:
             recs = recommendations_for_app(app, tier)
             for rec in recs:
-                assert rec.model_name, (
-                    f"{app}/{tier.value}: empty model_name"
-                )
+                assert rec.model_name, f"{app}/{tier.value}: empty model_name"
 
 
 def test_every_tier_for_every_app_has_at_least_one_recommendation():
@@ -352,9 +349,7 @@ def test_every_tier_for_every_app_has_at_least_one_recommendation():
     for app in _KNOWN_RECOMMENDATION_APPS:
         for tier in HardwareTier:
             recs = recommendations_for_app(app, tier)
-            assert len(recs) > 0, (
-                f"{app}/{tier.value}: tier has no recommendations"
-            )
+            assert len(recs) > 0, f"{app}/{tier.value}: tier has no recommendations"
 
 
 _VALID_ROLES: frozenset[str] = frozenset({"vision", "chat", "translation", "embedding"})
@@ -413,10 +408,18 @@ def test_get_asr_model_unknown_key_raises():
 # ── No I/O at import time ────────────────────────────────────────────────────
 
 # Modules that would indicate the registry has grown I/O concerns.
-_IO_FLAGS: frozenset[str] = frozenset({
-    "httpx", "requests", "urllib", "http.client",
-    "os", "pathlib", "socket", "subprocess",
-})
+_IO_FLAGS: frozenset[str] = frozenset(
+    {
+        "httpx",
+        "requests",
+        "urllib",
+        "http.client",
+        "os",
+        "pathlib",
+        "socket",
+        "subprocess",
+    }
+)
 
 
 def test_registry_imports_no_io_libraries():
@@ -462,14 +465,28 @@ class TestIsConfigured:
         assert is_configured("", "") is False
 
     def test_base_url_not_in_defaults_is_true(self):
-        assert is_configured("http://localhost:9999/v1", defaults=("http://localhost:11434/v1",)) is True
+        assert (
+            is_configured("http://localhost:9999/v1", defaults=("http://localhost:11434/v1",))
+            is True
+        )
 
     def test_base_url_in_defaults_is_false_without_key(self):
-        assert is_configured("http://localhost:11434/v1", defaults=("http://localhost:11434/v1",)) is False
-        assert is_configured("https://api.openai.com/v1", defaults=("https://api.openai.com/v1",)) is False
+        assert (
+            is_configured("http://localhost:11434/v1", defaults=("http://localhost:11434/v1",))
+            is False
+        )
+        assert (
+            is_configured("https://api.openai.com/v1", defaults=("https://api.openai.com/v1",))
+            is False
+        )
 
     def test_base_url_in_defaults_is_true_with_key(self):
-        assert is_configured("http://localhost:11434/v1", "sk-real", defaults=("http://localhost:11434/v1",)) is True
+        assert (
+            is_configured(
+                "http://localhost:11434/v1", "sk-real", defaults=("http://localhost:11434/v1",)
+            )
+            is True
+        )
 
     def test_empty_defaults_draft_case(self):
         """Draft's load_settings returns {} — no defaults, no api_key."""
@@ -479,24 +496,35 @@ class TestIsConfigured:
     def test_two_urls_ocr_case(self):
         """OCR calls the helper once per URL.  An ollama departure alone is enough."""
         assert is_configured("http://localhost:11435", defaults=("http://localhost:11434",)) is True
-        assert is_configured("http://localhost:11434", defaults=("http://localhost:11434",)) is False
+        assert (
+            is_configured("http://localhost:11434", defaults=("http://localhost:11434",)) is False
+        )
 
     def test_transcribe_not_needed_discounted(self):
         """The ``not-needed`` placeholder must not count as configured."""
-        assert is_configured("http://localhost:11434/v1", "not-needed", defaults=("http://localhost:11434/v1",)) is False
+        assert (
+            is_configured(
+                "http://localhost:11434/v1", "not-needed", defaults=("http://localhost:11434/v1",)
+            )
+            is False
+        )
 
     def test_multiple_defaults(self):
         """If an app ships more than one possible default, all are harmless."""
-        assert is_configured("http://localhost:11434/v1", defaults=("http://localhost:11434/v1", "http://localhost:8080/v1")) is False
+        assert (
+            is_configured(
+                "http://localhost:11434/v1",
+                defaults=("http://localhost:11434/v1", "http://localhost:8080/v1"),
+            )
+            is False
+        )
 
 
 # ── Types hold their shape ───────────────────────────────────────────────────
 
 
 def test_model_recommendation_is_immutable():
-    rec = ModelRecommendation(
-        model_name="llava:7b", provider="ollama", vision=True
-    )
+    rec = ModelRecommendation(model_name="llava:7b", provider="ollama", vision=True)
     with pytest.raises((AttributeError, TypeError)):
         rec.model_name = "changed"  # type: ignore[misc]
 

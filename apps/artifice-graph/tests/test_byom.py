@@ -12,13 +12,11 @@ from unittest.mock import patch
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
-
-from model_harness.discovery import ProbeResult
-
-from artifice_graph.web.server import app
+from artifice_graph.config import EmbeddingConfig, LLMConfig, PipelineConfig
 from artifice_graph.web import config_helper
-from artifice_graph.config import LLMConfig, EmbeddingConfig, PipelineConfig
+from artifice_graph.web.server import app
+from fastapi.testclient import TestClient
+from model_harness.discovery import ProbeResult
 
 
 @pytest.fixture()
@@ -35,7 +33,6 @@ def client(tmp_path, monkeypatch):
 
 
 class TestByomState:
-
     def test_returns_all_keys_in_default_state(self, client):
         r = client.get("/api/byom/state")
         assert r.status_code == 200
@@ -94,7 +91,6 @@ class TestByomState:
 
 
 class TestByomDetect:
-
     def test_returns_endpoints_array(self, client):
         with patch("artifice_graph.web.routers.byom.detect_local_servers") as mock_detect:
             mock_detect.return_value = [
@@ -136,7 +132,6 @@ class TestByomDetect:
 
 
 class TestByomTest:
-
     def test_rejects_empty_url(self, client):
         r = client.post("/api/byom/test", json={"url": "", "api_key": ""})
         assert r.status_code == 400
@@ -168,10 +163,13 @@ class TestByomTest:
                 hint=None,
             )
 
-            r = client.post("/api/byom/test", json={
-                "url": "http://localhost:9999/v1",
-                "api_key": "sk-real",
-            })
+            r = client.post(
+                "/api/byom/test",
+                json={
+                    "url": "http://localhost:9999/v1",
+                    "api_key": "sk-real",
+                },
+            )
             assert r.status_code == 200
             assert r.json()["reachable"] is True
 
@@ -188,10 +186,13 @@ class TestByomTest:
                 hint="Not running",
             )
 
-            r = client.post("/api/byom/test", json={
-                "url": "http://localhost:1234/v1",
-                "api_key": "sk-test",
-            })
+            r = client.post(
+                "/api/byom/test",
+                json={
+                    "url": "http://localhost:1234/v1",
+                    "api_key": "sk-test",
+                },
+            )
             assert r.json()["reachable"] is False
 
             state_r = client.get("/api/byom/state")
@@ -207,10 +208,13 @@ class TestByomTest:
                 hint=None,
             )
 
-            client.post("/api/byom/test", json={
-                "url": "http://localhost:9999/v1",
-                "api_key": "sk-secret-123",
-            })
+            client.post(
+                "/api/byom/test",
+                json={
+                    "url": "http://localhost:9999/v1",
+                    "api_key": "sk-secret-123",
+                },
+            )
 
             saved = config_helper.load_saved_config()
             assert saved is not None
@@ -237,10 +241,13 @@ class TestByomTest:
                 hint=None,
             )
 
-            client.post("/api/byom/test", json={
-                "url": "http://localhost:9999/v1",
-                "api_key": "sk-new",
-            })
+            client.post(
+                "/api/byom/test",
+                json={
+                    "url": "http://localhost:9999/v1",
+                    "api_key": "sk-new",
+                },
+            )
 
         saved = config_helper.load_saved_config()
         assert saved is not None
@@ -265,7 +272,14 @@ class TestByomContractAndSsrf:
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         body = r.json()
-        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations", "embedding"}
+        assert set(body.keys()) == {
+            "app",
+            "configured",
+            "endpoint",
+            "model",
+            "recommendations",
+            "embedding",
+        }
         assert body["app"] == "artifice-graph"
         assert body["configured"] is False
         assert body["embedding"]["configured"] is False
@@ -278,14 +292,23 @@ class TestByomContractAndSsrf:
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         body = r.json()
-        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations", "embedding"}
+        assert set(body.keys()) == {
+            "app",
+            "configured",
+            "endpoint",
+            "model",
+            "recommendations",
+            "embedding",
+        }
         assert body["configured"] is True
 
     # -- GET /api/byom/detect --------------------------------------------
 
     def test_detect_json_keys_all_down(self, client, httpx_mock):
         for url in ("http://localhost:11434", "http://localhost:1234", "http://localhost:8080"):
-            httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url=url + "/api/tags")
+            httpx_mock.add_exception(
+                httpx.ConnectError("Connection refused"), url=url + "/api/tags"
+            )
 
         r = client.get("/api/byom/detect")
         assert r.status_code == 200
@@ -297,10 +320,16 @@ class TestByomContractAndSsrf:
             assert ep["reachable"] is False
 
     def test_detect_json_keys_one_up(self, client, httpx_mock):
-        httpx_mock.add_response(url="http://localhost:11434/api/tags", json={"models": [{"name": "qwen2.5:32b"}]})
-        httpx_mock.add_response(url="http://localhost:11434/v1/models", json={"data": [{"id": "qwen2.5:32b"}]})
+        httpx_mock.add_response(
+            url="http://localhost:11434/api/tags", json={"models": [{"name": "qwen2.5:32b"}]}
+        )
+        httpx_mock.add_response(
+            url="http://localhost:11434/v1/models", json={"data": [{"id": "qwen2.5:32b"}]}
+        )
         for url in ("http://localhost:1234", "http://localhost:8080"):
-            httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url=url + "/api/tags")
+            httpx_mock.add_exception(
+                httpx.ConnectError("Connection refused"), url=url + "/api/tags"
+            )
 
         r = client.get("/api/byom/detect")
         assert r.status_code == 200
@@ -311,8 +340,12 @@ class TestByomContractAndSsrf:
     # -- POST /api/byom/test ---------------------------------------------
 
     def test_test_json_keys_reachable(self, client, httpx_mock):
-        httpx_mock.add_response(url="http://localhost:11434/api/tags", json={"models": [{"name": "qwen2.5:32b"}]})
-        httpx_mock.add_response(url="http://localhost:11434/v1/models", json={"data": [{"id": "qwen2.5:32b"}]})
+        httpx_mock.add_response(
+            url="http://localhost:11434/api/tags", json={"models": [{"name": "qwen2.5:32b"}]}
+        )
+        httpx_mock.add_response(
+            url="http://localhost:11434/v1/models", json={"data": [{"id": "qwen2.5:32b"}]}
+        )
 
         r = client.post("/api/byom/test", json={"url": "http://localhost:11434/v1", "api_key": ""})
         assert r.status_code == 200
@@ -321,7 +354,9 @@ class TestByomContractAndSsrf:
         assert body["reachable"] is True
 
     def test_test_json_keys_refused(self, client, httpx_mock):
-        httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags")
+        httpx_mock.add_exception(
+            httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags"
+        )
 
         r = client.post("/api/byom/test", json={"url": "http://localhost:11434/v1", "api_key": ""})
         assert r.status_code == 200
@@ -330,7 +365,9 @@ class TestByomContractAndSsrf:
         assert body["reachable"] is False
 
     def test_test_json_keys_timeout(self, client, httpx_mock):
-        httpx_mock.add_exception(httpx.TimeoutException("Timed out"), url="http://localhost:11434/api/tags")
+        httpx_mock.add_exception(
+            httpx.TimeoutException("Timed out"), url="http://localhost:11434/api/tags"
+        )
 
         r = client.post("/api/byom/test", json={"url": "http://localhost:11434/v1", "api_key": ""})
         assert r.status_code == 200
@@ -341,10 +378,16 @@ class TestByomContractAndSsrf:
     # -- POST /api/byom/test-embedding ------------------------------------
 
     def test_test_embedding_json_keys_reachable(self, client, httpx_mock):
-        httpx_mock.add_response(url="http://localhost:11434/api/tags", json={"models": [{"name": "bge-m3"}]})
-        httpx_mock.add_response(url="http://localhost:11434/v1/models", json={"data": [{"id": "bge-m3"}]})
+        httpx_mock.add_response(
+            url="http://localhost:11434/api/tags", json={"models": [{"name": "bge-m3"}]}
+        )
+        httpx_mock.add_response(
+            url="http://localhost:11434/v1/models", json={"data": [{"id": "bge-m3"}]}
+        )
 
-        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        r = client.post(
+            "/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""}
+        )
         assert r.status_code == 200
         body = r.json()
         assert set(body.keys()) == {"reachable", "provider", "models", "hint"}
@@ -352,28 +395,42 @@ class TestByomContractAndSsrf:
         assert body["provider"] == "ollama"
 
     def test_test_embedding_json_keys_refused(self, client, httpx_mock):
-        httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags")
+        httpx_mock.add_exception(
+            httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags"
+        )
 
-        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        r = client.post(
+            "/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""}
+        )
         assert r.status_code == 200
         body = r.json()
         assert set(body.keys()) == {"reachable", "provider", "models", "hint"}
         assert body["reachable"] is False
 
     def test_test_embedding_json_keys_timeout(self, client, httpx_mock):
-        httpx_mock.add_exception(httpx.TimeoutException("Timed out"), url="http://localhost:11434/api/tags")
+        httpx_mock.add_exception(
+            httpx.TimeoutException("Timed out"), url="http://localhost:11434/api/tags"
+        )
 
-        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        r = client.post(
+            "/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""}
+        )
         assert r.status_code == 200
         body = r.json()
         assert set(body.keys()) == {"reachable", "provider", "models", "hint"}
         assert body["reachable"] is False
 
     def test_embedding_success_saves_config(self, client, httpx_mock):
-        httpx_mock.add_response(url="http://localhost:11434/api/tags", json={"models": [{"name": "bge-m3"}]})
-        httpx_mock.add_response(url="http://localhost:11434/v1/models", json={"data": [{"id": "bge-m3"}]})
+        httpx_mock.add_response(
+            url="http://localhost:11434/api/tags", json={"models": [{"name": "bge-m3"}]}
+        )
+        httpx_mock.add_response(
+            url="http://localhost:11434/v1/models", json={"data": [{"id": "bge-m3"}]}
+        )
 
-        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        r = client.post(
+            "/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""}
+        )
         assert r.status_code == 200
         assert r.json()["reachable"] is True
 
@@ -382,9 +439,13 @@ class TestByomContractAndSsrf:
         assert saved.embedding.base_url == "http://localhost:11434/v1"
 
     def test_embedding_unreachable_does_not_save(self, client, httpx_mock):
-        httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags")
+        httpx_mock.add_exception(
+            httpx.ConnectError("Connection refused"), url="http://localhost:11434/api/tags"
+        )
 
-        r = client.post("/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""})
+        r = client.post(
+            "/api/byom/test-embedding", json={"url": "http://localhost:11434/v1", "api_key": ""}
+        )
         assert r.json()["reachable"] is False
 
         saved = config_helper.load_saved_config()
@@ -398,19 +459,26 @@ class TestByomContractAndSsrf:
         assert "error" in body
 
     def test_embedding_rejects_link_local_before_network(self, client, httpx_mock):
-        r = client.post("/api/byom/test-embedding", json={"url": "http://169.254.169.254/latest/meta-data/", "api_key": ""})
+        r = client.post(
+            "/api/byom/test-embedding",
+            json={"url": "http://169.254.169.254/latest/meta-data/", "api_key": ""},
+        )
         assert r.status_code == 400
         assert "hint" in r.json()
         assert not httpx_mock.get_requests(), "a request was issued for a rejected URL"
 
     def test_embedding_rejects_public_host_before_network(self, client, httpx_mock):
-        r = client.post("/api/byom/test-embedding", json={"url": "https://api.openai.com/v1", "api_key": ""})
+        r = client.post(
+            "/api/byom/test-embedding", json={"url": "https://api.openai.com/v1", "api_key": ""}
+        )
         assert r.status_code == 400
         assert "hint" in r.json()
         assert not httpx_mock.get_requests(), "a request was issued for a rejected URL"
 
     def test_embedding_rejects_file_scheme_before_network(self, client, httpx_mock):
-        r = client.post("/api/byom/test-embedding", json={"url": "file:///etc/passwd", "api_key": ""})
+        r = client.post(
+            "/api/byom/test-embedding", json={"url": "file:///etc/passwd", "api_key": ""}
+        )
         assert r.status_code == 400
         assert "hint" in r.json()
         assert not httpx_mock.get_requests(), "a request was issued for a rejected URL"
@@ -449,7 +517,10 @@ class TestByomContractAndSsrf:
         assert not httpx_mock.get_requests(), "a request was issued for a rejected URL"
 
     def test_rejects_link_local_before_network(self, client, httpx_mock):
-        r = client.post("/api/byom/test", json={"url": "http://169.254.169.254/latest/meta-data/", "api_key": ""})
+        r = client.post(
+            "/api/byom/test",
+            json={"url": "http://169.254.169.254/latest/meta-data/", "api_key": ""},
+        )
         self._assert_rejected_before_network(r, httpx_mock)
 
     def test_rejects_public_host_before_network(self, client, httpx_mock):
@@ -468,9 +539,17 @@ class TestByomContractAndSsrf:
 
     def test_root_does_not_probe_and_links_assets(self, client, httpx_mock):
         for url in ("http://localhost:11434", "http://localhost:1234", "http://localhost:8080"):
-            httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url=url + "/api/tags", is_optional=True)
-        for url in ("http://localhost:11434/v1", "http://localhost:1234/v1", "http://localhost:8080/v1"):
-            httpx_mock.add_exception(httpx.ConnectError("Connection refused"), url=url + "/models", is_optional=True)
+            httpx_mock.add_exception(
+                httpx.ConnectError("Connection refused"), url=url + "/api/tags", is_optional=True
+            )
+        for url in (
+            "http://localhost:11434/v1",
+            "http://localhost:1234/v1",
+            "http://localhost:8080/v1",
+        ):
+            httpx_mock.add_exception(
+                httpx.ConnectError("Connection refused"), url=url + "/models", is_optional=True
+            )
 
         start = time.perf_counter()
         r = client.get("/")

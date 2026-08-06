@@ -219,9 +219,7 @@ class TestTransportFailures:
     async def test_tls_error(self, httpx_mock: HTTPXMock):
         """A TLS error is reported as unreachable."""
         httpx_mock.add_exception(
-            httpx.ConnectError(
-                "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed"
-            ),
+            httpx.ConnectError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed"),
         )
         result = await probe_endpoint(
             "http://localhost:11434/v1",
@@ -390,8 +388,7 @@ class TestConcurrency:
         # Concurrent scan should finish in under ~3.5 seconds; sequential will
         # need ~4 seconds.
         assert elapsed < 3.5, (
-            f"detect_local_servers took {elapsed:.2f}s; "
-            "endpoints appear to be probed sequentially"
+            f"detect_local_servers took {elapsed:.2f}s; endpoints appear to be probed sequentially"
         )
 
 

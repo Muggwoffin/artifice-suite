@@ -232,9 +232,7 @@ class TestProbeEndpointUnreachable:
     async def test_connection_refused_generic(self, httpx_mock: HTTPXMock):
         """Connection refused with no registry match → generic runner-down hint."""
         httpx_mock.add_exception(
-            httpx.ConnectError(
-                "[Errno 111] Connection refused"
-            ),
+            httpx.ConnectError("[Errno 111] Connection refused"),
         )
         result = await probe_endpoint(
             "http://localhost:9999/v1",

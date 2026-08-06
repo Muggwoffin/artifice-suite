@@ -243,9 +243,7 @@ def select_mode(
     quietly producing worse data than the caller believes it asked for.
     """
     if capabilities.structured_output is StructuredOutputMode.NONE:
-        raise StructuredOutputUnsupported(
-            "provider declares no machine-readable output capability"
-        )
+        raise StructuredOutputUnsupported("provider declares no machine-readable output capability")
 
     if minimum is StructuredOutputMode.NONE:
         # "I will accept anything" — and the provider offers something, since

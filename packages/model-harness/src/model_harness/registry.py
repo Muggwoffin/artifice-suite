@@ -181,14 +181,16 @@ here is forward-looking.  Do not imply a working code path.
 # ── Open-science provenance badges ────────────────────────────────────────────
 
 
-PERMITTED_BADGES: frozenset[str] = frozenset({
-    "Strict Open Data",
-    "Transparent Training",
-    "Allen AI Open Science",
-    "Open Science Lab",
-    "Auditable Dataset",
-    "Open Source Training Code",
-})
+PERMITTED_BADGES: frozenset[str] = frozenset(
+    {
+        "Strict Open Data",
+        "Transparent Training",
+        "Allen AI Open Science",
+        "Open Science Lab",
+        "Auditable Dataset",
+        "Open Source Training Code",
+    }
+)
 """Permitted provenance labels for :attr:`ModelRecommendation.ethos_badges`.
 
 The vocabulary is closed — badges are free strings in the dataclass but
@@ -270,7 +272,10 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 min_vram_gb=12.0,
                 role="vision",
                 ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
-                notes="Allen AI's olmOCR-2: open-research document OCR. Needs ≈12 GB VRAM for full GPU offload; runs on 8 GB GPUs with CPU fallback (reduced throughput).",
+                notes=(
+                    "Allen AI's olmOCR-2: open-research document OCR. Needs ≈12 GB VRAM for full "
+                    "GPU offload; runs on 8 GB GPUs with CPU fallback (reduced throughput)."
+                ),
             ),
             ModelRecommendation(
                 model_name="aya-expanse:8b",
@@ -279,7 +284,9 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 min_vram_gb=6.0,
                 role="translation",
                 ethos_badges=["Open Science Lab"],
-                notes="Cohere For AI multilingual model with strong performance across 23 languages.",
+                notes=(
+                    "Cohere For AI multilingual model with strong performance across 23 languages."
+                ),
             ),
         ],
         HardwareTier.DESKTOP: [
@@ -290,7 +297,9 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 min_vram_gb=12.0,
                 role="vision",
                 ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
-                notes="Allen AI's olmOCR-2: open-research document OCR, runs locally on a single GPU.",
+                notes=(
+                    "Allen AI's olmOCR-2: open-research document OCR, runs locally on a single GPU."
+                ),
             ),
             ModelRecommendation(
                 model_name="aya-expanse:32b",
@@ -310,7 +319,9 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 min_vram_gb=12.0,
                 role="vision",
                 ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
-                notes="Allen AI's olmOCR-2: open-research document OCR, runs locally on a single GPU.",
+                notes=(
+                    "Allen AI's olmOCR-2: open-research document OCR, runs locally on a single GPU."
+                ),
             ),
             ModelRecommendation(
                 model_name="aya-expanse:8b",
@@ -319,7 +330,9 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 min_vram_gb=6.0,
                 role="translation",
                 ethos_badges=["Open Science Lab"],
-                notes="Cohere For AI multilingual model with strong performance across 23 languages.",
+                notes=(
+                    "Cohere For AI multilingual model with strong performance across 23 languages."
+                ),
             ),
         ],
     },
@@ -346,7 +359,10 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 min_vram_gb=1.0,
                 role="embedding",
                 ethos_badges=["Strict Open Data", "Auditable Dataset", "Open Source Training Code"],
-                notes="Fully transparent, open-data vector model for semantic search, document matching, and knowledge graph indexing.",
+                notes=(
+                    "Fully transparent, open-data vector model for semantic search, document "
+                    "matching, and knowledge graph indexing."
+                ),
             ),
         ],
         HardwareTier.DESKTOP: [
@@ -371,7 +387,10 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 min_vram_gb=1.0,
                 role="embedding",
                 ethos_badges=["Strict Open Data", "Auditable Dataset", "Open Source Training Code"],
-                notes="Fully transparent, open-data vector model for semantic search, document matching, and knowledge graph indexing.",
+                notes=(
+                    "Fully transparent, open-data vector model for semantic search, document "
+                    "matching, and knowledge graph indexing."
+                ),
             ),
         ],
         HardwareTier.MAC_UNIFIED: [
@@ -396,7 +415,10 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 min_vram_gb=1.0,
                 role="embedding",
                 ethos_badges=["Strict Open Data", "Auditable Dataset", "Open Source Training Code"],
-                notes="Fully transparent, open-data vector model for semantic search, document matching, and knowledge graph indexing.",
+                notes=(
+                    "Fully transparent, open-data vector model for semantic search, document "
+                    "matching, and knowledge graph indexing."
+                ),
             ),
         ],
     },

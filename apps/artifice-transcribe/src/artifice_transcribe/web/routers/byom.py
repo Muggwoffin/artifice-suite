@@ -162,12 +162,14 @@ async def byom_test(req: TestRequest) -> dict:
     result = await probe_endpoint(req.url, policy=_policy)
 
     if result.reachable and req.api_key is not None:
-        _save_inference_config({
-            "base_url": req.url,
-            "api_key": req.api_key,
-            "model_name": _load_inference_config().get("model_name", ""),
-            "vision_enabled": _load_inference_config().get("vision_enabled", False),
-        })
+        _save_inference_config(
+            {
+                "base_url": req.url,
+                "api_key": req.api_key,
+                "model_name": _load_inference_config().get("model_name", ""),
+                "vision_enabled": _load_inference_config().get("vision_enabled", False),
+            }
+        )
 
     return {
         "reachable": result.reachable,
