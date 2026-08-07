@@ -6,10 +6,15 @@
 
 from __future__ import annotations
 
+import sys
 import time
+from pathlib import Path
 from unittest import mock
 
 from artifice_draft.web.window import WindowResult, open_native_window
+
+# apps/artifice-draft/tests/test_window.py -> repo root is three parents up.
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 class TestWindowResult:
@@ -97,23 +102,52 @@ class TestMainNoWindowFlag:
 
     @staticmethod
     def _start_server(port: int, *extra_args: str):
-        """Launch the server in a subprocess via setsid/nohup for clean cleanup."""
+        """Launch the server in a subprocess via setsid/nohup for clean cleanup.
+
+        ``preexec_fn`` (to put the child in its own process group, so
+        ``_stop_server`` can kill it and anything it spawns) is POSIX-only —
+        passing it at all on Windows raises ``ValueError`` immediately, not
+        just at call time, so it is only added to the kwargs on POSIX.
+        """
         import subprocess
+
+        kwargs: dict = {
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "cwd": str(_REPO_ROOT),
+        }
+        if sys.platform != "win32":
+            kwargs["preexec_fn"] = __import__("os").setsid
 
         return subprocess.Popen(
             [
-                "/home/mjcasey/projects/artifice-suite/.venv/bin/python",
+                sys.executable,
                 "-m",
                 "artifice_draft.web.server",
                 "--port",
                 str(port),
                 *extra_args,
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd="/home/mjcasey/projects/artifice-suite",
-            preexec_fn=__import__("os").setsid,
+            **kwargs,
         )
+
+    @staticmethod
+    def _stop_server(proc) -> None:
+        """Stop a server started by ``_start_server``, cross-platform.
+
+        POSIX: SIGTERM the whole process group (matches the setsid above).
+        Windows has no process-group equivalent here — the child was
+        launched directly (no shell layer spawning grandchildren), so
+        ``terminate()`` on the one process is sufficient.
+        """
+        if sys.platform != "win32":
+            import os
+            import signal
+
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        else:
+            proc.terminate()
+        proc.wait(timeout=5)
 
     @staticmethod
     def _free_port() -> int:
@@ -179,10 +213,7 @@ class TestMainNoWindowFlag:
             resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/static/css/app.css")
             assert resp.status == 200
         finally:
-            import signal
-
-            __import__("os").killpg(__import__("os").getpgid(proc.pid), signal.SIGTERM)
-            proc.wait(timeout=5)
+            self._stop_server(proc)
 
     def test_server_with_no_window_serves_api(self) -> None:
         """Check that /api/settings responds in --no-window mode."""
@@ -200,10 +231,7 @@ class TestMainNoWindowFlag:
             data = json.loads(resp.read())
             assert "llm_provider" in data
         finally:
-            import signal
-
-            __import__("os").killpg(__import__("os").getpgid(proc.pid), signal.SIGTERM)
-            proc.wait(timeout=5)
+            self._stop_server(proc)
 
     def test_normal_mode_serves_content(self) -> None:
         """In non-frozen mode without --no-window, server serves normally.
@@ -222,7 +250,4 @@ class TestMainNoWindowFlag:
             resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/")
             assert resp.status == 200
         finally:
-            import signal
-
-            __import__("os").killpg(__import__("os").getpgid(proc.pid), signal.SIGTERM)
-            proc.wait(timeout=5)
+            self._stop_server(proc)
