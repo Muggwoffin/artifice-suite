@@ -27,6 +27,7 @@ on:
         type: choice
         options:
           - artifice-ocr
+          - artifice-draft
   push:
     tags:
       - 'v*'
@@ -53,10 +54,16 @@ jobs:
           enable-cache: true
 
       - name: Install the app and PyInstaller
-        # --extra ocr rather than --extra all: freezing pulls in whatever is
-        # installed, and the ASR stack alone is ~5.8 GB. Installing only what
-        # this app needs keeps the artifact honest as well as small.
-        run: uv sync --extra ocr
+        # Per-app extras — avoids pulling in the ~5.8 GB ASR stack when
+        # freezing ocr, and keeps draft's build focused.  The mapping is
+        # explicit rather than derived from the app name because the extra
+        # names do not follow a strict naming convention.
+        run: |
+          APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
+          case "$APP" in
+            artifice-draft) uv sync --extra draft-web ;;
+            *)              uv sync --extra ocr ;;
+          esac
 
       - name: Freeze
         # Run from the repo root — the spec resolves paths relative to it, and
@@ -75,12 +82,19 @@ jobs:
         # assert on an asset that resolves via importlib.resources from the
         # shared package — the hardest case and the one this repo has shipped
         # broken four times.
+        #
+        # API path is per-app: /api/queue for ocr, /api/settings for draft.
+        # Static paths (/shared/tokens.css, /static/css/app.css) are shared.
         run: |
           APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
+          case "$APP" in
+            artifice-draft) API="/api/settings" ;;
+            *)              API="/api/queue" ;;
+          esac
           setsid nohup "./dist/$APP/$APP" --port 18999 > /tmp/exe.log 2>&1 < /dev/null &
           sleep 12
           fail=0
-          for path in / /api/queue /shared/tokens.css /static/css/app.css; do
+          for path in / "$API" /shared/tokens.css /static/css/app.css; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:18999$path")
             echo "  $path -> $code"
             [ "$code" = "200" ] || fail=1
@@ -103,13 +117,14 @@ jobs:
         #    the agent that built this locally.
         run: |
           $app = "${{ github.event.inputs.app || 'artifice-ocr' }}"
+          $apiPath = if ($app -eq "artifice-draft") { "/api/settings" } else { "/api/queue" }
           $exe = ".\dist\$app\$app.exe"
           if (-not (Test-Path $exe)) { Write-Error "no binary at $exe"; exit 1 }
           Write-Host "binary size: $((Get-Item $exe).Length) bytes"
           $p = Start-Process -FilePath $exe -ArgumentList "--port","18999" -PassThru
           Start-Sleep -Seconds 20
           $fail = 0
-          foreach ($path in @("/","/api/queue","/shared/tokens.css","/static/css/app.css")) {
+          foreach ($path in @("/",$apiPath,"/shared/tokens.css","/static/css/app.css")) {
             try {
               $r = Invoke-WebRequest -Uri "http://127.0.0.1:18999$path" -UseBasicParsing -TimeoutSec 15
               Write-Host "  $path -> $($r.StatusCode)"

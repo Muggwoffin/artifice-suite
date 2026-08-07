@@ -447,6 +447,11 @@ draft = [
     { name = "artifice-model-harness" },
     { name = "artifice-shared-ui" },
 ]
+draft-web = [
+    { name = "artifice-draft", extra = ["web"] },
+    { name = "artifice-model-harness" },
+    { name = "artifice-shared-ui" },
+]
 graph = [
     { name = "artifice-graph" },
     { name = "artifice-model-harness" },
@@ -483,10 +488,12 @@ dev = [
 requires-dist = [
     { name = "artifice-draft", marker = "extra == 'draft'", editable = "apps/artifice-draft" },
     { name = "artifice-draft", extras = ["web"], marker = "extra == 'all'", editable = "apps/artifice-draft" },
+    { name = "artifice-draft", extras = ["web"], marker = "extra == 'draft-web'", editable = "apps/artifice-draft" },
     { name = "artifice-graph", marker = "extra == 'all'", editable = "apps/artifice-graph" },
     { name = "artifice-graph", marker = "extra == 'graph'", editable = "apps/artifice-graph" },
     { name = "artifice-model-harness", marker = "extra == 'all'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'draft'", editable = "packages/model-harness" },
+    { name = "artifice-model-harness", marker = "extra == 'draft-web'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'graph'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'ocr'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'ocr-web'", editable = "packages/model-harness" },
@@ -496,6 +503,7 @@ requires-dist = [
     { name = "artifice-ocr", extras = ["web"], marker = "extra == 'ocr-web'", editable = "apps/artifice-ocr" },
     { name = "artifice-shared-ui", marker = "extra == 'all'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'draft'", editable = "packages/shared-ui" },
+    { name = "artifice-shared-ui", marker = "extra == 'draft-web'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'graph'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'ocr'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'ocr-web'", editable = "packages/shared-ui" },
@@ -503,7 +511,7 @@ requires-dist = [
     { name = "artifice-transcribe", marker = "extra == 'all'", editable = "apps/artifice-transcribe" },
     { name = "artifice-transcribe", marker = "extra == 'transcribe'", editable = "apps/artifice-transcribe" },
 ]
-provides-extras = ["ocr", "ocr-web", "draft", "graph", "transcribe", "all"]
+provides-extras = ["ocr", "ocr-web", "draft", "draft-web", "graph", "transcribe", "all"]
 
 [package.metadata.requires-dev]
 dev = [

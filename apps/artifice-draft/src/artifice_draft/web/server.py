@@ -26,7 +26,6 @@ import queue
 import socket
 import time
 import webbrowser
-from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
@@ -50,7 +49,14 @@ from .runtime import (
 from artifice_draft.style_guides import delete_custom_guide, list_guides, save_custom_guide
 from artifice_draft.style_guides.base import StyleGuide
 
-STATIC_DIR = Path(__file__).resolve().parent / "static"
+import importlib.resources
+import shared_ui
+
+# Resolved through importlib.resources, NOT a __file__-relative path.  This
+# app is distributed as a frozen .exe, where __file__ points inside a
+# temporary extraction directory.  Using importlib keeps the path correct in
+# every environment — source checkout, installed wheel, and frozen bundle.
+STATIC_DIR = importlib.resources.files("artifice_draft.web") / "static"
 
 # 50 MB — mirrors artifice-graph's _MAX_UPLOAD_BYTES and artifice-transcribe's
 # max_upload_size.
@@ -92,9 +98,6 @@ def _content_length_exceeds(request: Request, limit: int) -> bool:
 
 
 # ── Shared design system (resolved from installed shared-ui package) ───────
-import importlib.resources
-import shared_ui
-
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 
 # ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
@@ -477,12 +480,19 @@ def _wait_for_server(port: int, *, timeout: float = 10.0) -> bool:
 
 
 def main() -> None:
-    """Start the server and open a window onto it.
+    """Start the server and open a window onto it (see --help for modes).
 
-    Prefers a native pywebview window; falls back to the system browser if
-    pywebview is not installed or `--browser` is passed.
+    In a frozen build (``sys.frozen``) the default is a native pywebview
+    window, falling back to the system browser with an explanation if no
+    webview backend is available.  In non-frozen runs (``uv run``, dev) the
+    default is the system browser.
+
+    ``--browser`` forces the browser in both modes.  ``--no-window`` starts
+    the server only and prints the URL (server-only / headless mode).
     """
     import argparse
+    import contextlib
+    import os
     import sys as _sys
     import threading
 
@@ -499,11 +509,22 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Port for the local server (default: a free port)",
+    )
+    parser.add_argument(
         "--browser",
         action="store_true",
         help="Open in the default browser instead of a native window",
     )
-    parser.add_argument("--port", type=int, default=None)
+    parser.add_argument(
+        "--no-window",
+        action="store_true",
+        default=False,
+        help="Server-only mode: print the URL and wait, do not open a window or browser",
+    )
     args = parser.parse_args()
 
     port = args.port or _free_port()
@@ -533,26 +554,34 @@ def main() -> None:
             f"opening the window anyway, but it may show a connection error."
         )
 
-    use_browser = args.browser
-    if not use_browser:
-        try:
-            import webview  # noqa: F401
-        except ImportError:
-            use_browser = True
-
-    if use_browser:
-        webbrowser.open(url)
-        print(f"ArtificeDraft running at {url}  (Ctrl+C to stop)")
-        try:
+    # ── Server-only mode (--no-window) ─────────────────────────────────
+    if args.no_window:
+        print(f"ArtificeDraft running at {url}  (Ctrl+C to stop)", flush=True)
+        with contextlib.suppress(KeyboardInterrupt):
             server_thread.join()
-        except KeyboardInterrupt:
-            pass
         return
 
-    import webview
+    # ── Frozen executable: try a native window ─────────────────────────
+    _frozen = bool(getattr(_sys, "frozen", False))
+    if _frozen and not args.browser:
+        from .window import open_native_window  # noqa: PLC0415
 
-    window = webview.create_window("ArtificeDraft", url, width=1100, height=800)
-    webview.start()
+        result = open_native_window(url, title="ArtificeDraft")
+        if result.opened:
+            return
+
+        print(result.reason, flush=True)
+        print(f"Falling back — ArtificeDraft running at {url}", flush=True)
+        webbrowser.open(url)
+        with contextlib.suppress(KeyboardInterrupt):
+            server_thread.join()
+        return
+
+    # ── Non-frozen / --browser mode ────────────────────────────────────
+    print(f"ArtificeDraft running at {url}  (Ctrl+C to stop)", flush=True)
+    webbrowser.open(url)
+    with contextlib.suppress(KeyboardInterrupt):
+        server_thread.join()
 
 
 if __name__ == "__main__":
