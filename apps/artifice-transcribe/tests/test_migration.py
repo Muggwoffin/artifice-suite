@@ -7,8 +7,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import pytest
-
 from artifice_transcribe.config import Settings
 
 
@@ -67,8 +65,8 @@ class TestLegacyDBMigration:
         assert new_db.exists()
         assert new_db.read_text() == "interview-archive-data"
         assert not legacy.exists()
-        assert "Migrating legacy database" in caplog.text
-        assert "Migration complete" in caplog.text
+        assert "Migrating legacy file" in caplog.text
+        assert "Migration complete — file is now at" in caplog.text
 
     # ------------------------------------------------------------------
     # Both present → use new, warn
@@ -99,7 +97,7 @@ class TestLegacyDBMigration:
         assert new_db.exists()
         assert new_db.read_text() == "new-data"  # untouched
         assert legacy.exists()  # left alone for manual recovery
-        assert "Legacy database found" in caplog.text
+        assert "Legacy file found" in caplog.text
 
     # ------------------------------------------------------------------
     # Custom DATABASE_URL → skip
@@ -224,18 +222,18 @@ class TestLegacyUploadMigration:
 
         assert not legacy.exists()  # emptied and cleaned up
 
-        assert "Migrating legacy uploads" in caplog.text
         assert "Migration complete — moved 2 file(s)" in caplog.text
 
     # ------------------------------------------------------------------
-    # Both have files → warn, skip
+    # Both have files, no name collisions → migrate non-conflicting files
     # ------------------------------------------------------------------
 
-    def test_both_exist_warns_and_skips(
+    def test_default_has_unrelated_file_legacy_still_migrates(
         self, tmp_path, monkeypatch, caplog
     ):
-        """Both legacy and default upload directories have files — use
-        default, warn, leave legacy untouched."""
+        """Default upload directory has unrelated files — legacy files with
+        non-colliding names are still migrated, and the empty legacy directory
+        is cleaned up."""
         default = tmp_path / "default" / "uploads"
         default.mkdir(parents=True)
         (default / "existing.wav").write_text("new-data")
@@ -254,25 +252,26 @@ class TestLegacyUploadMigration:
         settings = Settings()
         settings.upload_dir = str(default)
 
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.INFO):
             settings._migrate_legacy_uploads()
 
         assert default.exists()
         assert (default / "existing.wav").read_text() == "new-data"  # untouched
-        assert legacy.exists()
-        assert (legacy / "old.wav").exists()  # left alone
-        assert "Legacy upload directory found" in caplog.text
-        assert "uploads already exist" in caplog.text
+        assert (default / "old.wav").exists()  # migrated — no name collision
+        assert (default / "old.wav").read_text() == "old-data"
+        assert not legacy.exists()  # emptied and cleaned up
+        assert "Migration complete — moved 1 file(s)" in caplog.text
 
     # ------------------------------------------------------------------
-    # Both have files, one name collides → warn, skip all
+    # Both have files, one name collides → skip colliding, migrate rest
     # ------------------------------------------------------------------
 
     def test_both_exist_name_collision_warns(
         self, tmp_path, monkeypatch, caplog
     ):
         """Legacy and default both have files, and one filename overlaps —
-        warns about both existing and does not move anything."""
+        the colliding file is skipped but non-colliding files are still
+        migrated."""
         default = tmp_path / "default" / "uploads"
         default.mkdir(parents=True)
         (default / "shared.wav").write_text("new-version")
@@ -292,16 +291,18 @@ class TestLegacyUploadMigration:
         settings = Settings()
         settings.upload_dir = str(default)
 
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.INFO):
             settings._migrate_legacy_uploads()
 
         assert default.exists()
-        assert (default / "shared.wav").read_text() == "new-version"
-        assert not (default / "other.mp3").exists()  # not moved
-        assert legacy.exists()
-        assert (legacy / "shared.wav").exists()  # left alone
-        assert (legacy / "other.mp3").exists()  # left alone
-        assert "Legacy upload directory found" in caplog.text
+        assert (default / "shared.wav").read_text() == "new-version"  # default wins
+        assert (default / "other.mp3").exists()  # migrated — no collision
+        assert (default / "other.mp3").read_text() == "old-other"
+        assert legacy.exists()  # still has shared.wav — not empty
+        assert (legacy / "shared.wav").exists()  # left alone (collision)
+        assert not (legacy / "other.mp3").exists()  # migrated away
+        assert "File shared.wav already exists at destination" in caplog.text
+        assert "Migration complete — moved 1 file(s)" in caplog.text
 
     # ------------------------------------------------------------------
     # Custom UPLOAD_DIR → skip
