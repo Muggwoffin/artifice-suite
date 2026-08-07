@@ -71,3 +71,4 @@ apps/*/data/obsidian_vault/
 
 # Orchestrator scratch scripts — never committed
 scratch-*.sh
+/.graymatter
