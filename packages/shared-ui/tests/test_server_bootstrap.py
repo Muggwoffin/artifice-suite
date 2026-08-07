@@ -101,9 +101,7 @@ class TestStartServerThread:
         assert isinstance(thread, threading.Thread)
         assert thread.is_alive()
         # Wait for the server to actually start listening.
-        assert wait_for_server(port, timeout=5.0), (
-            "Server did not start listening within timeout"
-        )
+        assert wait_for_server(port, timeout=5.0), "Server did not start listening within timeout"
         assert errors == []
 
     def test_failure_populates_errors(self, monkeypatch) -> None:
@@ -115,9 +113,7 @@ class TestStartServerThread:
         port = free_port()
         monkeypatch.setattr(
             "uvicorn.run",
-            lambda *a, **kw: (_ for _ in ()).throw(
-                RuntimeError("simulated uvicorn failure")
-            ),
+            lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("simulated uvicorn failure")),
         )
 
         thread, errors = start_server_thread(_minimal_asgi, port)
@@ -181,15 +177,11 @@ class TestReportStartupFailure:
         thread = threading.Thread(target=lambda: None)
         thread.start()
         try:
-            report_startup_failure(
-                "TestApp", 9999, thread, [RuntimeError("boom")]
-            )
+            report_startup_failure("TestApp", 9999, thread, [RuntimeError("boom")])
         finally:
             thread.join(timeout=1.0)
 
-    def test_detail_when_thread_still_alive(
-        self, capsys, monkeypatch
-    ) -> None:
+    def test_detail_when_thread_still_alive(self, capsys, monkeypatch) -> None:
         """When errors is empty and the thread is alive, the detail mentions
         no response within the given timeout."""
         self._mock_tkinter(monkeypatch)
@@ -211,9 +203,7 @@ class TestReportStartupFailure:
             # daemon — nothing to join
             pass
 
-    def test_detail_when_thread_exited(
-        self, capsys, monkeypatch
-    ) -> None:
+    def test_detail_when_thread_exited(self, capsys, monkeypatch) -> None:
         """When errors is empty and the thread is no longer alive, the
         detail says the thread exited without listening."""
         self._mock_tkinter(monkeypatch)

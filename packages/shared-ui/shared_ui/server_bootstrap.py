@@ -54,9 +54,7 @@ def wait_for_server(port: int, *, timeout: float = 10.0) -> bool:
     return False
 
 
-def start_server_thread(
-    app, port: int
-) -> tuple[threading.Thread, list[BaseException]]:
+def start_server_thread(app, port: int) -> tuple[threading.Thread, list[BaseException]]:
     """Start *app* via uvicorn in a daemon thread on *port*.
 
     Returns the thread and a shared ``errors`` list that callers should inspect
@@ -93,10 +91,7 @@ def report_startup_failure(
     if errors:
         detail = f"{type(errors[0]).__name__}: {errors[0]}"
     elif thread.is_alive():
-        detail = (
-            f"No response within {timeout:g}s, though the server thread "
-            f"is still running."
-        )
+        detail = f"No response within {timeout:g}s, though the server thread is still running."
     else:
         detail = "The server thread exited without ever starting to listen."
     message = (

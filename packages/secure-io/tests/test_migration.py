@@ -704,9 +704,7 @@ class TestMigrateLegacyDirectoryFilesOnly:
             Path(src).rename(Path(dst))
 
         caplog.set_level(logging.WARNING)
-        with mock.patch(
-            "secure_io.migration.shutil.move", side_effect=_move_side_effect
-        ):
+        with mock.patch("secure_io.migration.shutil.move", side_effect=_move_side_effect):
             result = migrate_legacy_directory(
                 legacy,
                 default,

@@ -168,12 +168,8 @@ class TestLegacyUploadMigration:
         default = tmp_path / "default" / "uploads"
         legacy = tmp_path / "legacy" / "uploads"
 
-        monkeypatch.setattr(
-            "artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default
-        )
-        monkeypatch.setattr(
-            "artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy
-        )
+        monkeypatch.setattr("artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default)
+        monkeypatch.setattr("artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy)
 
         settings = Settings()
         # upload_dir captured from class definition won't match patched
@@ -188,9 +184,7 @@ class TestLegacyUploadMigration:
     # Legacy present, default absent → move files
     # ------------------------------------------------------------------
 
-    def test_legacy_exists_default_absent_moves(
-        self, tmp_path, monkeypatch, caplog
-    ):
+    def test_legacy_exists_default_absent_moves(self, tmp_path, monkeypatch, caplog):
         """Legacy upload directory has files, default does not — files are
         *moved*."""
         default = tmp_path / "default" / "uploads"
@@ -199,12 +193,8 @@ class TestLegacyUploadMigration:
         (legacy / "interview1.wav").write_text("audio-data-1")
         (legacy / "interview2.mp3").write_text("audio-data-2")
 
-        monkeypatch.setattr(
-            "artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default
-        )
-        monkeypatch.setattr(
-            "artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy
-        )
+        monkeypatch.setattr("artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default)
+        monkeypatch.setattr("artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy)
 
         settings = Settings()
         settings.upload_dir = str(default)
@@ -228,9 +218,7 @@ class TestLegacyUploadMigration:
     # Both have files, no name collisions → migrate non-conflicting files
     # ------------------------------------------------------------------
 
-    def test_default_has_unrelated_file_legacy_still_migrates(
-        self, tmp_path, monkeypatch, caplog
-    ):
+    def test_default_has_unrelated_file_legacy_still_migrates(self, tmp_path, monkeypatch, caplog):
         """Default upload directory has unrelated files — legacy files with
         non-colliding names are still migrated, and the empty legacy directory
         is cleaned up."""
@@ -242,12 +230,8 @@ class TestLegacyUploadMigration:
         legacy.mkdir(parents=True)
         (legacy / "old.wav").write_text("old-data")
 
-        monkeypatch.setattr(
-            "artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default
-        )
-        monkeypatch.setattr(
-            "artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy
-        )
+        monkeypatch.setattr("artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default)
+        monkeypatch.setattr("artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy)
 
         settings = Settings()
         settings.upload_dir = str(default)
@@ -266,9 +250,7 @@ class TestLegacyUploadMigration:
     # Both have files, one name collides → skip colliding, migrate rest
     # ------------------------------------------------------------------
 
-    def test_both_exist_name_collision_warns(
-        self, tmp_path, monkeypatch, caplog
-    ):
+    def test_both_exist_name_collision_warns(self, tmp_path, monkeypatch, caplog):
         """Legacy and default both have files, and one filename overlaps —
         the colliding file is skipped but non-colliding files are still
         migrated."""
@@ -281,12 +263,8 @@ class TestLegacyUploadMigration:
         (legacy / "shared.wav").write_text("old-version")
         (legacy / "other.mp3").write_text("old-other")
 
-        monkeypatch.setattr(
-            "artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default
-        )
-        monkeypatch.setattr(
-            "artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy
-        )
+        monkeypatch.setattr("artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default)
+        monkeypatch.setattr("artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy)
 
         settings = Settings()
         settings.upload_dir = str(default)
@@ -308,9 +286,7 @@ class TestLegacyUploadMigration:
     # Custom UPLOAD_DIR → skip
     # ------------------------------------------------------------------
 
-    def test_custom_upload_dir_skips_migration(
-        self, tmp_path, monkeypatch, caplog
-    ):
+    def test_custom_upload_dir_skips_migration(self, tmp_path, monkeypatch, caplog):
         """When the user set UPLOAD_DIR, migration is skipped entirely."""
         custom_dir = tmp_path / "custom" / "uploads"
         custom_dir.mkdir(parents=True)
@@ -320,12 +296,8 @@ class TestLegacyUploadMigration:
         legacy.mkdir(parents=True)
         (legacy / "should-not-touch.wav").write_text("legacy-data")
 
-        monkeypatch.setattr(
-            "artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default
-        )
-        monkeypatch.setattr(
-            "artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy
-        )
+        monkeypatch.setattr("artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default)
+        monkeypatch.setattr("artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy)
         monkeypatch.setenv("UPLOAD_DIR", str(custom_dir))
 
         settings = Settings()
@@ -344,21 +316,15 @@ class TestLegacyUploadMigration:
     # Legacy directory empty → noop, clean up empty dir
     # ------------------------------------------------------------------
 
-    def test_legacy_empty_no_migration(
-        self, tmp_path, monkeypatch, caplog
-    ):
+    def test_legacy_empty_no_migration(self, tmp_path, monkeypatch, caplog):
         """An empty legacy ``./uploads/`` directory triggers no migration
         log line and is cleaned up silently."""
         default = tmp_path / "default" / "uploads"
         legacy = tmp_path / "legacy" / "uploads"
         legacy.mkdir(parents=True)  # empty
 
-        monkeypatch.setattr(
-            "artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default
-        )
-        monkeypatch.setattr(
-            "artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy
-        )
+        monkeypatch.setattr("artifice_transcribe.config._DEFAULT_UPLOAD_PATH", default)
+        monkeypatch.setattr("artifice_transcribe.config._LEGACY_UPLOAD_PATH", legacy)
 
         settings = Settings()
         settings.upload_dir = str(default)
@@ -380,9 +346,7 @@ class TestLegacyUploadMigration:
         upload_dir = tmp_path / "user-data" / "uploads"
         upload_dir.mkdir(parents=True)
 
-        monkeypatch.setattr(
-            "artifice_transcribe.config._DEFAULT_UPLOAD_PATH", upload_dir
-        )
+        monkeypatch.setattr("artifice_transcribe.config._DEFAULT_UPLOAD_PATH", upload_dir)
         # Prevent the migration from tripping over paths that don't exist
         monkeypatch.setattr(
             "artifice_transcribe.config._LEGACY_UPLOAD_PATH",

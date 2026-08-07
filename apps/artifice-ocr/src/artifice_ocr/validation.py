@@ -22,5 +22,7 @@ def validate_path(raw: str, field_name: str) -> str:
     ``ARTIFICE_OCR_ALLOWED_ROOTS`` as the env-var name.
     """
     return _shared_validate_path(
-        raw, field_name, allowed_roots_env_var="ARTIFICE_OCR_ALLOWED_ROOTS",
+        raw,
+        field_name,
+        allowed_roots_env_var="ARTIFICE_OCR_ALLOWED_ROOTS",
     )

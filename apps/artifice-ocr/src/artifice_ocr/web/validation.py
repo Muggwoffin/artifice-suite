@@ -94,10 +94,7 @@ def validate_contained(
         # both disclose server filesystem layout to an unauthenticated caller.
         raise HTTPException(
             status_code=400,
-            detail=(
-                f"{field_name}: path {raw!r} is not within the permitted "
-                f"output directory"
-            ),
+            detail=(f"{field_name}: path {raw!r} is not within the permitted output directory"),
         ) from None
 
     return str(p)

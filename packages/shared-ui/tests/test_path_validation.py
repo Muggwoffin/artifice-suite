@@ -62,23 +62,17 @@ class TestBuildAllowedRoots:
         roots = build_allowed_roots("TEST_EXTRA_ROOTS")
         assert extra.resolve() in roots
 
-    def test_multiple_extra_roots_split_on_pathsep(
-        self, monkeypatch, tmp_path: Path
-    ) -> None:
+    def test_multiple_extra_roots_split_on_pathsep(self, monkeypatch, tmp_path: Path) -> None:
         d1 = tmp_path / "dir1"
         d2 = tmp_path / "dir2"
         d1.mkdir()
         d2.mkdir()
-        monkeypatch.setenv(
-            "MULTI_ROOTS", f"{d1}{os.pathsep}{d2}"
-        )
+        monkeypatch.setenv("MULTI_ROOTS", f"{d1}{os.pathsep}{d2}")
         roots = build_allowed_roots("MULTI_ROOTS")
         assert d1.resolve() in roots
         assert d2.resolve() in roots
 
-    def test_env_var_selects_correct_variable(
-        self, monkeypatch, tmp_path: Path
-    ) -> None:
+    def test_env_var_selects_correct_variable(self, monkeypatch, tmp_path: Path) -> None:
         """build_allowed_roots(env_var) reads the env var whose *name* is passed."""
         dir_foo = tmp_path / "foo"
         dir_bar = tmp_path / "bar"
@@ -106,9 +100,7 @@ class TestValidatePath:
     def test_windows_drive_rejected_on_posix(self) -> None:
         if os.name != "posix":
             pytest.skip("POSIX-only check")
-        with pytest.raises(
-            ValueError, match="is not valid on this platform"
-        ):
+        with pytest.raises(ValueError, match="is not valid on this platform"):
             validate_path(
                 "C:/Windows",
                 "source",
@@ -118,9 +110,7 @@ class TestValidatePath:
     @pytest.mark.skipif(os.name != "posix", reason="POSIX-only check")
     def test_path_outside_all_roots_raises(self) -> None:
         """A path inside a directory that is NOT an allowed root must be rejected."""
-        with pytest.raises(
-            ValueError, match="is outside the directories"
-        ):
+        with pytest.raises(ValueError, match="is outside the directories"):
             validate_path(
                 "/etc/passwd",
                 "source",
@@ -143,25 +133,19 @@ class TestValidatePath:
         finally:
             file_path.unlink(missing_ok=True)
 
-    def test_hidden_component_below_matched_root_rejected(
-        self, tmp_path: Path
-    ) -> None:
+    def test_hidden_component_below_matched_root_rejected(self, tmp_path: Path) -> None:
         """A hidden directory inside an allowed root must be rejected."""
         # tmp_path is typically under /tmp, which is a default allowed root.
         hidden_dir = tmp_path / ".secret"
         hidden_dir.mkdir()
-        with pytest.raises(
-            ValueError, match="descends into a hidden directory"
-        ):
+        with pytest.raises(ValueError, match="descends into a hidden directory"):
             validate_path(
                 str(hidden_dir),
                 "source",
                 allowed_roots_env_var="NONEXISTENT",
             )
 
-    def test_visible_path_below_matched_root_accepted(
-        self, tmp_path: Path
-    ) -> None:
+    def test_visible_path_below_matched_root_accepted(self, tmp_path: Path) -> None:
         """A visible directory inside an allowed root must be accepted."""
         visible_dir = tmp_path / "visible"
         visible_dir.mkdir()
@@ -172,9 +156,7 @@ class TestValidatePath:
         )
         assert os.path.isabs(result)
 
-    def test_env_var_actually_selects_correct_roots(
-        self, monkeypatch
-    ) -> None:
+    def test_env_var_actually_selects_correct_roots(self, monkeypatch) -> None:
         """validate_path with FOO env var should honour FOO's extra root
         but not BAR's, and vice versa.
 
@@ -191,22 +173,14 @@ class TestValidatePath:
         monkeypatch.setenv("FOO_ALLOWED_ROOTS", foo_root)
         monkeypatch.setenv("BAR_ALLOWED_ROOTS", bar_root)
 
-        result_foo = validate_path(
-            foo_file, "source", allowed_roots_env_var="FOO_ALLOWED_ROOTS"
-        )
+        result_foo = validate_path(foo_file, "source", allowed_roots_env_var="FOO_ALLOWED_ROOTS")
         assert os.path.isabs(result_foo)
 
         with pytest.raises(ValueError, match="is outside the directories"):
-            validate_path(
-                bar_file, "source", allowed_roots_env_var="FOO_ALLOWED_ROOTS"
-            )
+            validate_path(bar_file, "source", allowed_roots_env_var="FOO_ALLOWED_ROOTS")
 
-        result_bar = validate_path(
-            bar_file, "source", allowed_roots_env_var="BAR_ALLOWED_ROOTS"
-        )
+        result_bar = validate_path(bar_file, "source", allowed_roots_env_var="BAR_ALLOWED_ROOTS")
         assert os.path.isabs(result_bar)
 
         with pytest.raises(ValueError, match="is outside the directories"):
-            validate_path(
-                foo_file, "source", allowed_roots_env_var="BAR_ALLOWED_ROOTS"
-            )
+            validate_path(foo_file, "source", allowed_roots_env_var="BAR_ALLOWED_ROOTS")

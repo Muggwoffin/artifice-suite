@@ -31,10 +31,7 @@ def normalise_path(raw: str, field_name: str) -> str:
     if not normalised:
         raise ValueError(f"{field_name}: path must not be empty")
     if os.name == "posix" and _WIN_DRIVE.match(normalised):
-        raise ValueError(
-            f"{field_name}: path {normalised!r} is not valid on this "
-            f"platform"
-        )
+        raise ValueError(f"{field_name}: path {normalised!r} is not valid on this platform")
     return normalised
 
 
@@ -60,9 +57,7 @@ def build_allowed_roots(env_var: str) -> list[Path]:
     return roots
 
 
-def validate_path(
-    raw: str, field_name: str, *, allowed_roots_env_var: str
-) -> str:
+def validate_path(raw: str, field_name: str, *, allowed_roots_env_var: str) -> str:
     """Return *raw* as a normalised path string after checking it resides
     within an allowed root directory.  Raises ``ValueError`` on rejection.
 
@@ -74,9 +69,7 @@ def validate_path(
     try:
         p = Path(normalised_raw).expanduser().resolve(strict=False)
     except Exception:
-        raise ValueError(
-            f"{field_name}: cannot resolve path {raw!r}"
-        ) from None
+        raise ValueError(f"{field_name}: cannot resolve path {raw!r}") from None
 
     allowed = build_allowed_roots(allowed_roots_env_var)
     for root in allowed:
@@ -96,11 +89,7 @@ def validate_path(
     # Hidden components are checked *below* the matched root rather than across
     # the whole path, so a project that happens to live under a dotted
     # directory is not rendered unusable by its own parent.
-    hidden = [
-        part
-        for part in relative.parts
-        if part.startswith(".") and part not in (".", "..")
-    ]
+    hidden = [part for part in relative.parts if part.startswith(".") and part not in (".", "..")]
     if hidden:
         raise ValueError(
             f"{field_name}: path {raw!r} descends into a hidden "

@@ -181,7 +181,9 @@ def _validate_directory(raw: str, field_name: str) -> str:
     within an allowed root directory.  Raises HTTP 400 on rejection."""
     try:
         return _shared_validate_path(
-            raw, field_name, allowed_roots_env_var="ARTIFICE_GRAPH_ALLOWED_ROOTS",
+            raw,
+            field_name,
+            allowed_roots_env_var="ARTIFICE_GRAPH_ALLOWED_ROOTS",
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from None
