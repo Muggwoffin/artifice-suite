@@ -65,7 +65,7 @@ jobs:
           case "$APP" in
             artifice-draft) uv sync --extra draft-web ;;
             artifice-graph) uv sync --extra graph-web ;;
-            *)               uv sync --extra ocr ;;
+            *)               uv sync --extra ocr-web ;;
           esac
 
       - name: Freeze
