@@ -183,12 +183,6 @@ def _migrate_whole_dir(
         default_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(legacy_path), str(default_path))
         logger.info("User data migrated successfully to %s", default_path)
-
-        if restrict_filename is not None:
-            restrict_target = default_path / restrict_filename
-            if restrict_target.exists():
-                ensure_restricted(restrict_target)
-
     except Exception:
         logger.warning(
             "Failed to migrate user data from %s to %s",
@@ -198,6 +192,21 @@ def _migrate_whole_dir(
         )
         # Fall back to the legacy location — the app must still start.
         return legacy_path
+
+    # The move has already succeeded by this point — a restrict failure
+    # must not make the function claim the migration failed, since the
+    # data is provably no longer at legacy_path.
+    if restrict_filename is not None:
+        restrict_target = default_path / restrict_filename
+        if restrict_target.exists():
+            try:
+                ensure_restricted(restrict_target)
+            except Exception:
+                logger.warning(
+                    "Could not re-restrict migrated file at %s",
+                    restrict_target,
+                    exc_info=True,
+                )
 
     return default_path
 

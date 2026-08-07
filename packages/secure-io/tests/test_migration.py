@@ -320,6 +320,45 @@ class TestMigrateLegacyDirectoryWholeDir:
         assert legacy.exists()
         assert "Failed to migrate" in caplog.text
 
+    def test_restrict_failure_does_not_revert_move(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """If ``ensure_restricted`` raises after the move has already
+        succeeded, the function must still return *default_path* — the data
+        is provably no longer at *legacy_path* and the caller must not be
+        told otherwise."""
+        legacy = tmp_path / "legacy"
+        default = tmp_path / "default"
+        legacy.mkdir()
+        (legacy / "config.json").write_text("data")
+        (legacy / "other.txt").write_text("other")
+
+        caplog.set_level(logging.WARNING)
+        with mock.patch(
+            "secure_io.migration.ensure_restricted",
+            side_effect=OSError("simulated ACL failure"),
+        ):
+            result = migrate_legacy_directory(
+                legacy,
+                default,
+                user_overrode_default=False,
+                move_mode="whole_dir",
+                collision_is_silent=True,
+                refuse_symlink=True,
+                restrict_filename="config.json",
+                logger=logging.getLogger("test"),
+            )
+
+        # The move succeeded — must return default_path, not legacy_path.
+        assert result == default
+        assert not legacy.exists()
+        assert default.exists()
+        assert (default / "config.json").read_text() == "data"
+        assert (default / "other.txt").read_text() == "other"
+        # Must log a restrict-specific warning, not the generic move-failure one.
+        assert "Could not re-restrict" in caplog.text
+        assert "Failed to migrate" not in caplog.text
+
     def test_toctou_symlink_before_mutation(self, tmp_path: Path) -> None:
         """The symlink check must happen before any filesystem mutation.
 

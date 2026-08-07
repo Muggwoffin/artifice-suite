@@ -8,12 +8,12 @@ import importlib.resources
 import json
 import logging
 import os
-import shutil
 from pathlib import Path
 
 import yaml
 from platformdirs import user_data_dir
 from pydantic import BaseModel, Field
+from secure_io.migration import migrate_legacy_directory
 
 logger = logging.getLogger(__name__)
 
@@ -202,45 +202,16 @@ def _resolve_user_data_dir() -> Path:
     failed migration must never crash the app.
     """
     new_dir = Path(user_data_dir("artifice-graph", "ArtificeSuite"))
-
-    if _LEGACY_CONFIG_DIR.exists() and not new_dir.exists():
-        if _LEGACY_CONFIG_DIR.is_symlink():
-            logger.warning(
-                "Legacy config directory %s is a symlink — refusing to move it. "
-                "Symlink targets are likely outside the app's jurisdiction.",
-                _LEGACY_CONFIG_DIR,
-            )
-            return new_dir
-        try:
-            logger.info("Migrating user data from %s to %s", _LEGACY_CONFIG_DIR, new_dir)
-            new_dir.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(_LEGACY_CONFIG_DIR), str(new_dir))
-            # Re-apply access restriction on the migrated config file
-            # (a file moved or copied into a new directory can inherit
-            # that directory's ACL on Windows, silently becoming readable).
-            try:
-                from secure_io import ensure_restricted
-
-                config_file = new_dir / "config.json"
-                if config_file.exists():
-                    ensure_restricted(config_file)
-            except Exception:
-                logger.warning(
-                    "Could not re-restrict migrated config file at %s",
-                    new_dir / "config.json",
-                )
-            logger.info("User data migrated successfully to %s", new_dir)
-        except Exception as exc:
-            logger.warning(
-                "Failed to migrate user data from %s to %s: %s",
-                _LEGACY_CONFIG_DIR,
-                new_dir,
-                exc,
-            )
-            # Fall back to the legacy location — the app must still start.
-            return _LEGACY_CONFIG_DIR
-
-    return new_dir
+    return migrate_legacy_directory(
+        _LEGACY_CONFIG_DIR,
+        new_dir,
+        user_overrode_default=False,
+        move_mode="whole_dir",
+        collision_is_silent=True,
+        refuse_symlink=True,
+        restrict_filename="config.json",
+        logger=logger,
+    )
 
 
 _USER_DATA_DIR: Path | None = None  # Lazy — resolved via _get_user_data_dir()

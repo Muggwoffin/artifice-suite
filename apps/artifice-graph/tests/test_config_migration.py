@@ -223,7 +223,7 @@ def test_ensure_restricted_called_on_migrated_file(tmp_path, monkeypatch):
     legacy_dir.mkdir(parents=True)
     (legacy_dir / "config.json").write_text('{"llm": {"model": "test"}}')
 
-    with mock.patch("secure_io.ensure_restricted") as mock_er:
+    with mock.patch("secure_io.migration.ensure_restricted") as mock_er:
         from artifice_graph.config import _get_user_config_path
 
         _get_user_config_path()
@@ -253,13 +253,17 @@ def test_ensure_restricted_failure_is_swallowed(tmp_path, monkeypatch, caplog):
     def _failing_restrict(path):
         raise OSError("Simulated ACL failure")
 
-    with mock.patch("secure_io.ensure_restricted", side_effect=_failing_restrict):
+    with mock.patch("secure_io.migration.ensure_restricted", side_effect=_failing_restrict):
         from artifice_graph.config import _get_user_config_path
 
         cfg_path = _get_user_config_path()
-        # Migration still succeeded.
-        assert cfg_path == target_dir / "config.json"
+        # The file was physically moved before ensure_restricted failed
+        # (shutil.move succeeded), so it exists at the target.  The
+        # shared migration function treats the restrict failure as a
+        # non-fatal warning — the migration itself is considered
+        # successful and the app continues with the migrated location.
         assert (target_dir / "config.json").exists()
+        assert cfg_path == target_dir / "config.json"
 
     assert "Could not re-restrict" in caplog.text
 
@@ -282,7 +286,10 @@ def test_legacy_dir_is_symlink_refuses_migration(tmp_path, monkeypatch, caplog):
     symlink_dir = tmp_path / "home" / ".callosip"
     symlink_dir.parent.mkdir(parents=True)
     # Create a symlink pointing to the real directory.
-    symlink_dir.symlink_to(real_dir, target_is_directory=True)
+    try:
+        symlink_dir.symlink_to(real_dir, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlink creation not permitted on this platform/user")
 
     monkeypatch.setattr(
         "artifice_graph.config._LEGACY_CONFIG_DIR",
