@@ -480,7 +480,7 @@ graph = [
     { name = "artifice-shared-ui" },
 ]
 graph-web = [
-    { name = "artifice-graph", extra = ["web"] },
+    { name = "artifice-graph", extra = ["web", "window"] },
     { name = "artifice-model-harness" },
     { name = "artifice-shared-ui" },
 ]
@@ -491,7 +491,7 @@ ocr = [
 ]
 ocr-web = [
     { name = "artifice-model-harness" },
-    { name = "artifice-ocr", extra = ["web"] },
+    { name = "artifice-ocr", extra = ["web", "window"] },
     { name = "artifice-shared-ui" },
 ]
 transcribe = [
@@ -518,7 +518,7 @@ requires-dist = [
     { name = "artifice-draft", extras = ["web"], marker = "extra == 'draft-web'", editable = "apps/artifice-draft" },
     { name = "artifice-graph", marker = "extra == 'all'", editable = "apps/artifice-graph" },
     { name = "artifice-graph", marker = "extra == 'graph'", editable = "apps/artifice-graph" },
-    { name = "artifice-graph", extras = ["web"], marker = "extra == 'graph-web'", editable = "apps/artifice-graph" },
+    { name = "artifice-graph", extras = ["web", "window"], marker = "extra == 'graph-web'", editable = "apps/artifice-graph" },
     { name = "artifice-model-harness", marker = "extra == 'all'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'draft'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'draft-web'", editable = "packages/model-harness" },
@@ -529,7 +529,7 @@ requires-dist = [
     { name = "artifice-model-harness", marker = "extra == 'transcribe'", editable = "packages/model-harness" },
     { name = "artifice-ocr", marker = "extra == 'all'", editable = "apps/artifice-ocr" },
     { name = "artifice-ocr", marker = "extra == 'ocr'", editable = "apps/artifice-ocr" },
-    { name = "artifice-ocr", extras = ["web"], marker = "extra == 'ocr-web'", editable = "apps/artifice-ocr" },
+    { name = "artifice-ocr", extras = ["web", "window"], marker = "extra == 'ocr-web'", editable = "apps/artifice-ocr" },
     { name = "artifice-shared-ui", marker = "extra == 'all'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'draft'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'draft-web'", editable = "packages/shared-ui" },
