@@ -1,0 +1,244 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+"""Tests for the native window module and --no-window flag."""
+
+from __future__ import annotations
+
+import sys
+import time
+from pathlib import Path
+from unittest import mock
+
+from artifice_graph.web.window import WindowResult, open_native_window
+
+# apps/artifice-graph/tests/test_window.py -> repo root is three parents up.
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+class TestWindowResult:
+    """Unit tests for the WindowResult data class."""
+
+    def test_opened_true(self) -> None:
+        result = WindowResult(opened=True)
+        assert result.opened is True
+        assert result.reason == ""
+
+    def test_opened_false_with_reason(self) -> None:
+        result = WindowResult(opened=False, reason="No display found")
+        assert result.opened is False
+        assert result.reason == "No display found"
+
+    def test_defaults(self) -> None:
+        result = WindowResult(opened=False)
+        assert result.reason == ""
+
+
+class TestOpenNativeWindow:
+    """Tests for open_native_window() with pywebview unavailable."""
+
+    def test_returns_false_when_pywebview_not_installed(self) -> None:
+        """When pywebview is not importable, return opened=False with reason."""
+        import builtins
+
+        original_import = builtins.__import__
+
+        def _fake_import(name, *a, **kw):
+            if name == "webview":
+                raise ImportError("No module named 'webview'")
+            return original_import(name, *a, **kw)
+
+        try:
+            builtins.__import__ = _fake_import
+            result = open_native_window("http://127.0.0.1:8766")
+            assert result.opened is False
+            assert "pywebview" in result.reason.lower()
+            assert "pip install" in result.reason
+        finally:
+            builtins.__import__ = original_import
+
+    def test_returns_false_when_webview_backend_unavailable(self) -> None:
+        """When pywebview imports but no backend is available, return opened=False."""
+        with mock.patch("webview.create_window"), mock.patch("webview.start") as mock_start:
+            mock_start.side_effect = RuntimeError("No suitable webview provider found")
+            result = open_native_window("http://127.0.0.1:8766")
+            assert result.opened is False
+            assert "Native window unavailable" in result.reason
+            assert "No suitable webview provider" in result.reason
+
+    def test_returns_true_when_window_opens(self) -> None:
+        """When the window opens and then closes cleanly, return opened=True."""
+        with mock.patch("webview.create_window"), mock.patch("webview.start") as mock_start:
+            mock_start.return_value = None  # simulates window closed
+            result = open_native_window("http://127.0.0.1:8766")
+            assert result.opened is True
+            assert result.reason == ""
+
+    def test_passes_url_and_title_to_create_window(self) -> None:
+        """Ensure url and title keyword args are forwarded correctly."""
+        with (
+            mock.patch("webview.create_window") as mock_create,
+            mock.patch("webview.start"),
+        ):
+            open_native_window(
+                "http://127.0.0.1:9999",
+                title="My Graph App",
+                width=1024,
+                height=768,
+            )
+            mock_create.assert_called_once_with(
+                title="My Graph App",
+                url="http://127.0.0.1:9999",
+                width=1024,
+                height=768,
+                resizable=True,
+                min_size=(640, 480),
+            )
+
+
+class TestMainNoWindowFlag:
+    """Integration tests for server.main() with the --no-window flag."""
+
+    @staticmethod
+    def _start_server(port: int, *extra_args: str):
+        """Launch the server in a subprocess via setsid/nohup for clean cleanup.
+
+        ``preexec_fn`` (to put the child in its own process group, so
+        ``_stop_server`` can kill it and anything it spawns) is POSIX-only —
+        passing it at all on Windows raises ``ValueError`` immediately, not
+        just at call time, so it is only added to the kwargs on POSIX.
+        """
+        import subprocess
+
+        kwargs: dict = {
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "cwd": str(_REPO_ROOT),
+        }
+        if sys.platform != "win32":
+            kwargs["preexec_fn"] = __import__("os").setsid
+
+        return subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "artifice_graph.web.server",
+                "--port",
+                str(port),
+                *extra_args,
+            ],
+            **kwargs,
+        )
+
+    @staticmethod
+    def _stop_server(proc) -> None:
+        """Stop a server started by ``_start_server``, cross-platform.
+
+        POSIX: SIGTERM the whole process group (matches the setsid above).
+        Windows has no process-group equivalent here — the child was
+        launched directly (no shell layer spawning grandchildren), so
+        ``terminate()`` on the one process is sufficient.
+        """
+        if sys.platform != "win32":
+            import os
+            import signal
+
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        else:
+            proc.terminate()
+        proc.wait(timeout=5)
+
+    @staticmethod
+    def _free_port() -> int:
+        """Return an available ephemeral port on localhost."""
+        import socket
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            return s.getsockname()[1]
+
+    @staticmethod
+    def _wait_for_server(port: int, timeout: float = 15.0) -> bool:
+        """Poll until the server responds on the given port."""
+        import urllib.request
+
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2)
+                return True
+            except OSError:
+                time.sleep(0.15)
+        return False
+
+    def test_no_window_flag_accepted(self) -> None:
+        """Verify that --no-window is recognized by the argument parser."""
+        import argparse
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--no-window", action="store_true", default=False)
+        args = parser.parse_args(["--no-window"])
+        assert args.no_window is True
+
+        args = parser.parse_args([])
+        assert args.no_window is False
+
+    def test_server_with_no_window_serves_content(self) -> None:
+        """End-to-end: start server with --no-window, curl / and /shared/tokens.css."""
+        import urllib.request
+
+        port = self._free_port()
+        proc = self._start_server(port, "--no-window")
+
+        try:
+            assert self._wait_for_server(port), f"Server on port {port} did not start"
+
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/")
+            assert resp.status == 200
+            body = resp.read().decode()
+            assert "<!DOCTYPE html>" in body.lower() or "<html" in body.lower()
+
+            # Check static assets
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/shared/tokens.css")
+            assert resp.status == 200
+            css = resp.read().decode()
+            assert "clamp" in css  # fluid typography
+
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/static/app.css")
+            assert resp.status == 200
+        finally:
+            self._stop_server(proc)
+
+    def test_server_with_no_window_serves_api(self) -> None:
+        """Check that /api/state responds in --no-window mode."""
+        import json
+        import urllib.request
+
+        port = self._free_port()
+        proc = self._start_server(port, "--no-window")
+
+        try:
+            assert self._wait_for_server(port), f"Server on port {port} did not start"
+
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/api/state")
+            assert resp.status == 200
+            data = json.loads(resp.read())
+            assert "entities" in data
+        finally:
+            self._stop_server(proc)
+
+    def test_normal_mode_serves_content(self) -> None:
+        """In non-frozen mode without --no-window, server serves normally."""
+        import urllib.request
+
+        port = self._free_port()
+        proc = self._start_server(port)
+
+        try:
+            assert self._wait_for_server(port), f"Server on port {port} did not start"
+
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/")
+            assert resp.status == 200
+        finally:
+            self._stop_server(proc)

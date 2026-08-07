@@ -318,6 +318,15 @@ web = [
     { name = "python-multipart" },
     { name = "uvicorn", extra = ["standard"] },
 ]
+window = [
+    { name = "pywebview" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyinstaller" },
+    { name = "pywebview" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -333,12 +342,19 @@ requires-dist = [
     { name = "platformdirs", specifier = ">=4.0.0" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "python-multipart", marker = "extra == 'web'", specifier = ">=0.0.9" },
+    { name = "pywebview", marker = "extra == 'window'", specifier = ">=5.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
     { name = "typer", specifier = ">=0.12" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.20" },
 ]
-provides-extras = ["web"]
+provides-extras = ["web", "window"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyinstaller", specifier = ">=6.21.0" },
+    { name = "pywebview", specifier = ">=5.0" },
+]
 
 [[package]]
 name = "artifice-model-harness"
@@ -457,6 +473,11 @@ graph = [
     { name = "artifice-model-harness" },
     { name = "artifice-shared-ui" },
 ]
+graph-web = [
+    { name = "artifice-graph", extra = ["web"] },
+    { name = "artifice-model-harness" },
+    { name = "artifice-shared-ui" },
+]
 ocr = [
     { name = "artifice-model-harness" },
     { name = "artifice-ocr" },
@@ -491,10 +512,12 @@ requires-dist = [
     { name = "artifice-draft", extras = ["web"], marker = "extra == 'draft-web'", editable = "apps/artifice-draft" },
     { name = "artifice-graph", marker = "extra == 'all'", editable = "apps/artifice-graph" },
     { name = "artifice-graph", marker = "extra == 'graph'", editable = "apps/artifice-graph" },
+    { name = "artifice-graph", extras = ["web"], marker = "extra == 'graph-web'", editable = "apps/artifice-graph" },
     { name = "artifice-model-harness", marker = "extra == 'all'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'draft'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'draft-web'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'graph'", editable = "packages/model-harness" },
+    { name = "artifice-model-harness", marker = "extra == 'graph-web'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'ocr'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'ocr-web'", editable = "packages/model-harness" },
     { name = "artifice-model-harness", marker = "extra == 'transcribe'", editable = "packages/model-harness" },
@@ -505,13 +528,14 @@ requires-dist = [
     { name = "artifice-shared-ui", marker = "extra == 'draft'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'draft-web'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'graph'", editable = "packages/shared-ui" },
+    { name = "artifice-shared-ui", marker = "extra == 'graph-web'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'ocr'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'ocr-web'", editable = "packages/shared-ui" },
     { name = "artifice-shared-ui", marker = "extra == 'transcribe'", editable = "packages/shared-ui" },
     { name = "artifice-transcribe", marker = "extra == 'all'", editable = "apps/artifice-transcribe" },
     { name = "artifice-transcribe", marker = "extra == 'transcribe'", editable = "apps/artifice-transcribe" },
 ]
-provides-extras = ["ocr", "ocr-web", "draft", "draft-web", "graph", "transcribe", "all"]
+provides-extras = ["ocr", "ocr-web", "draft", "draft-web", "graph", "graph-web", "transcribe", "all"]
 
 [package.metadata.requires-dev]
 dev = [

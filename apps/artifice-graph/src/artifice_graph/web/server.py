@@ -7,12 +7,17 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import importlib.resources
 import json
 import logging
 import os
+import socket
+import sys
 import tempfile
 import threading
 import time
+import webbrowser
 from pathlib import Path
 from typing import Any
 
@@ -62,10 +67,15 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-HERE = Path(__file__).resolve().parent
+# Static files resolved through importlib.resources (freeze-safe).
+# A PyInstaller onedir build compiles pure-Python modules into an embedded
+# PYZ archive, so __file__ does not reliably resolve static/ from inside a
+# frozen bundle.  Using importlib keeps the path correct in every environment.
+_STATIC_DIR = importlib.resources.files("artifice_graph.web") / "static"
+app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
-# Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
-# ChoiceLoader lets templates include shared-ui’s masthead partial.
+# ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
+# ChoiceLoader lets templates include shared-ui's masthead partial.
 _jinja = Environment(
     loader=ChoiceLoader(
         [
@@ -76,12 +86,7 @@ _jinja = Environment(
     autoescape=select_autoescape(["html", "xml"]),
 )
 
-# Static files
-app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
-
 # ── Shared design tokens (resolved from installed shared-ui package) ───────
-import importlib.resources
-
 import shared_ui
 
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
@@ -1396,13 +1401,176 @@ async def about():
     return _render("about.html", active_tab="about")
 
 
-# ── Main ────────────────────────────────────────────────────────────
+# ── Main / bootstrap ──────────────────────────────────────────────────
+
+
+def _free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def _port_available(port: int) -> bool:
+    """Return True if the port can be bound on 127.0.0.1 right now."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", port))
+            return True
+        except OSError:
+            return False
+
+
+def _wait_for_server(port: int, *, timeout: float = 10.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.settimeout(0.2)
+            try:
+                probe.connect(("127.0.0.1", port))
+                return True
+            except OSError:
+                time.sleep(0.1)
+    return False
+
+
+def _start_server_thread(port: int):
+    import uvicorn as _uvicorn
+
+    errors: list[BaseException] = []
+
+    def _serve():
+        try:
+            _uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
+        except Exception as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=_serve, daemon=True)
+    thread.start()
+    return thread, errors
+
+
+def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> None:
+    if errors:
+        detail = f"{type(errors[0]).__name__}: {errors[0]}"
+    elif thread.is_alive():
+        detail = "No response within 10s, though the server thread is still running."
+    else:
+        detail = "The server thread exited without ever starting to listen."
+    message = (
+        f"ArtificeGraph's local server could not start on port {port}.\n\n"
+        f"{detail}\n\n"
+        f"Close any other ArtificeGraph window and try again."
+    )
+    print(f"ERROR: {message}")
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror("ArtificeGraph — server did not start", message)
+        root.destroy()
+    except Exception:
+        pass
+
+
+def _ensure_std_streams() -> None:
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
 
 
 def main() -> None:
-    port = int(os.environ.get("ARTIFICE_PORT", os.environ.get("CALLOSIP_PORT", "8766")))
-    host = os.environ.get("ARTIFICE_HOST", os.environ.get("CALLOSIP_HOST", "127.0.0.1"))
-    uvicorn.run("artifice_graph.web.server:app", host=host, port=port, reload=False)
+    _ensure_std_streams()
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Port for the local server (default: 8766, or a free port if busy)",
+    )
+    parser.add_argument(
+        "--no-window",
+        action="store_true",
+        default=False,
+        help="Server-only mode: print the URL and wait, do not open a window or browser",
+    )
+    args = parser.parse_args()
+
+    # Distinguish "user said --port 8766" from "the default happened to be 8766".
+    # An explicit port that is busy is a deliberate choice — fail, don't fall back.
+    is_explicit_port = args.port is not None
+
+    # Try the requested port; fall back to a free port only when the user
+    # did NOT specify one and the default (8766) is busy.
+    for attempt in range(2):
+        if attempt == 0:
+            port = args.port if is_explicit_port else 8766
+        else:
+            port = _free_port()
+            print(f"Port 8766 is busy — using port {port} instead.", flush=True)
+
+        if not _port_available(port):
+            if is_explicit_port or attempt == 1:
+                _report_startup_failure(port, None, [OSError(f"Port {port} is already in use")])
+                return
+            continue
+
+        server_thread, server_errors = _start_server_thread(port)
+        if _wait_for_server(port):
+            break
+
+        if is_explicit_port or attempt == 1:
+            _report_startup_failure(port, server_thread, server_errors)
+            return
+
+    # Guard against the race where another process grabbed the port between
+    # our availability check and the server thread binding.
+    if server_errors or not server_thread.is_alive():
+        _report_startup_failure(port, server_thread, server_errors)
+        return
+
+    url = f"http://127.0.0.1:{port}"
+
+    # ── Server-only mode (--no-window) ────────────────────────────────────
+    if args.no_window:
+        print(f"ArtificeGraph running at {url}  (Ctrl+C to stop)", flush=True)
+        with contextlib.suppress(KeyboardInterrupt):
+            server_thread.join()
+        return
+
+    # ── Frozen executable: try a native window ───────────────────────────
+    _frozen = bool(getattr(sys, "frozen", False))
+    if _frozen:
+        # Lazy import — pywebview must not be required at module scope
+        # for non-frozen installs (e.g. `uv tool install` users who don't
+        # have a webview backend).
+        from .window import open_native_window  # noqa: PLC0415
+
+        result = open_native_window(url, title="ArtificeGraph")
+        if result.opened:
+            # Window closed by user — exit cleanly.
+            # The daemon server thread dies with the process.
+            return
+
+        # Window failed — fall back to browser (same as non-frozen mode,
+        # but with an extra line explaining why).
+        print(result.reason, flush=True)
+        print(f"Falling back — ArtificeGraph running at {url}", flush=True)
+        webbrowser.open(url)
+        with contextlib.suppress(KeyboardInterrupt):
+            server_thread.join()
+        return
+
+    # ── Non-frozen (dev / `uv run artifice-graph-web`) ───────────────────
+    print(f"ArtificeGraph running at {url}  (Ctrl+C to stop)", flush=True)
+    webbrowser.open(url)
+    with contextlib.suppress(KeyboardInterrupt):
+        server_thread.join()
 
 
 if __name__ == "__main__":

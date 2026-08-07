@@ -28,6 +28,7 @@ on:
         options:
           - artifice-ocr
           - artifice-draft
+          - artifice-graph
   push:
     tags:
       - 'v*'
@@ -55,14 +56,15 @@ jobs:
 
       - name: Install the app and PyInstaller
         # Per-app extras — avoids pulling in the ~5.8 GB ASR stack when
-        # freezing ocr, and keeps draft's build focused.  The mapping is
+        # freezing ocr, and keeps each app's build focused. The mapping is
         # explicit rather than derived from the app name because the extra
         # names do not follow a strict naming convention.
         run: |
           APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
           case "$APP" in
             artifice-draft) uv sync --extra draft-web ;;
-            *)              uv sync --extra ocr ;;
+            artifice-graph) uv sync --extra graph-web ;;
+            *)               uv sync --extra ocr ;;
           esac
 
       - name: Freeze
@@ -83,13 +85,15 @@ jobs:
         # shared package — the hardest case and the one this repo has shipped
         # broken four times.
         #
-        # API path is per-app: /api/queue for ocr, /api/settings for draft.
+        # API path is per-app: /api/queue for ocr, /api/settings for draft,
+        # /api/state for graph.
         # Static paths (/shared/tokens.css, /static/css/app.css) are shared.
         run: |
           APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
           case "$APP" in
             artifice-draft) API="/api/settings" ;;
-            *)              API="/api/queue" ;;
+            artifice-graph) API="/api/state" ;;
+            *)               API="/api/queue" ;;
           esac
           setsid nohup "./dist/$APP/$APP" --port 18999 > /tmp/exe.log 2>&1 < /dev/null &
           sleep 12
@@ -117,7 +121,11 @@ jobs:
         #    the agent that built this locally.
         run: |
           $app = "${{ github.event.inputs.app || 'artifice-ocr' }}"
-          $apiPath = if ($app -eq "artifice-draft") { "/api/settings" } else { "/api/queue" }
+          $apiPath = switch ($app) {
+            "artifice-draft" { "/api/settings" }
+            "artifice-graph" { "/api/state" }
+            default { "/api/queue" }
+          }
           $exe = ".\dist\$app\$app.exe"
           if (-not (Test-Path $exe)) { Write-Error "no binary at $exe"; exit 1 }
           Write-Host "binary size: $((Get-Item $exe).Length) bytes"

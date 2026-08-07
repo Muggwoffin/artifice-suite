@@ -142,6 +142,7 @@
     "apps/artifice-graph/src/artifice_graph/web/server.py|F841": 1,
     "apps/artifice-graph/src/artifice_graph/web/server.py|I001": 2,
     "apps/artifice-graph/src/artifice_graph/web/server.py|SIM102": 2,
+    "apps/artifice-graph/src/artifice_graph/web/server.py|SIM115": 2,
     "apps/artifice-graph/tests/test_byom.py|E501": 23,
     "apps/artifice-graph/tests/test_byom.py|I001": 1,
     "apps/artifice-graph/tests/test_config_security.py|I001": 1,

@@ -48,9 +48,6 @@ Repository = "https://github.com/Muggwoffin/artifice-suite"
 Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 
 [project.optional-dependencies]
-# No `dev` extra here: dev tooling lives in the root pyproject.toml's
-# [dependency-groups] dev, which `uv sync` installs by default and which CI
-# uses. A per-app duplicate drifts from it silently.
 web = [
     "fastapi>=0.100",
     "uvicorn[standard]>=0.20",
@@ -61,6 +58,9 @@ web = [
     # It was never declared, so the container has never served a request; no
     # test caught it because no test starts a container.
     "python-multipart>=0.0.9",
+]
+window = [
+    "pywebview>=5.0",
 ]
 
 [project.scripts]
@@ -107,3 +107,9 @@ exclude = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.21.0",
+    "pywebview>=5.0",
+]

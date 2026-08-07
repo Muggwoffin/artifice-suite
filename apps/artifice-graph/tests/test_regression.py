@@ -225,7 +225,7 @@ class TestBug2LoadConfigWithUserConfig:
         user_cfg_path.write_text(json.dumps(user_data))
 
         # Provide a temp config.yaml that our test controls
-        cfg = Path(__file__).parent.parent / "config.yaml"
+        cfg = Path(__file__).parent.parent / "src" / "artifice_graph" / "config.yaml"
 
         config = load_config(cfg)
 
@@ -242,7 +242,7 @@ class TestBug2LoadConfigWithUserConfig:
         nonexistent = tmp_path / "nonexistent.json"
         monkeypatch.setattr("artifice_graph.config._get_user_config_path", lambda: nonexistent)
 
-        cfg = Path(__file__).parent.parent / "config.yaml"
+        cfg = Path(__file__).parent.parent / "src" / "artifice_graph" / "config.yaml"
 
         config = load_config(cfg)
         # Should return valid config from config.yaml
@@ -260,7 +260,7 @@ class TestBug2LoadConfigWithUserConfig:
         }
         user_cfg_path.write_text(json.dumps(user_data))
 
-        cfg = Path(__file__).parent.parent / "config.yaml"
+        cfg = Path(__file__).parent.parent / "src" / "artifice_graph" / "config.yaml"
 
         config = load_config(cfg)
         assert config.llm.model == "gemma4:12b"
@@ -342,7 +342,7 @@ class TestBug3RelativePathResolution:
 
     def test_load_config_resolves_paths(self) -> None:
         """load_config itself resolves paths against the config-file directory."""
-        cfg = Path(__file__).parent.parent / "config.yaml"
+        cfg = Path(__file__).parent.parent / "src" / "artifice_graph" / "config.yaml"
         app_root = cfg.parent.resolve()
 
         config = load_config(cfg)
@@ -355,7 +355,7 @@ class TestBug3RelativePathResolution:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Changing working directory does NOT change resolved paths."""
-        cfg = Path(__file__).parent.parent / "config.yaml"
+        cfg = Path(__file__).parent.parent / "src" / "artifice_graph" / "config.yaml"
         app_root = cfg.parent.resolve()
 
         # Run from a completely different directory
@@ -829,7 +829,7 @@ class TestEnvOverrides:
         monkeypatch.setenv("LLM_BASE_URL", "http://env-override:11434/v1")
         monkeypatch.delenv("EMBEDDING_BASE_URL", raising=False)
 
-        cfg = Path(__file__).parent.parent / "config.yaml"
+        cfg = Path(__file__).parent.parent / "src" / "artifice_graph" / "config.yaml"
         config = load_config(cfg)
 
         # Env var should win over user config
