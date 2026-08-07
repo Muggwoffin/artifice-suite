@@ -232,14 +232,24 @@ async function refreshQueue() {
 // -------------------------------------------------------------- adding files
 
 async function pickFiles() {
-  const raw = prompt("Enter a full file path (e.g. C:\\Users\\you\\Documents\\scan.jpg):");
-  return raw ? [raw] : [];
+  try {
+    const res = await api("POST", "/api/native/pick-file");
+    return res.path ? [res.path] : [];
+  } catch {
+    const raw = prompt("Enter a full file path (e.g. C:\\Users\\you\\Documents\\scan.jpg):");
+    return raw ? [raw] : [];
+  }
 }
 
 async function pickFolder(kind) {
   const label = kind === "output" ? "output directory"
              : kind === "tropy" ? "Tropy project" : "folder";
-  return prompt(`Enter a full ${label} path (e.g. C:\\Users\\you\\Documents):`);
+  try {
+    const res = await api("POST", "/api/native/pick-folder");
+    return res.path || null;
+  } catch {
+    return prompt(`Enter a full ${label} path (e.g. C:\\Users\\you\\Documents):`);
+  }
 }
 
 async function addPaths(paths) {

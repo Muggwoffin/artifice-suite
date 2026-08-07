@@ -147,6 +147,51 @@ def about() -> HTMLResponse:
     return HTMLResponse(_render("about.html", active_tab="about"))
 
 
+@app.post("/api/native/pick-file")
+def pick_file() -> dict[str, str | None]:
+    """Open a native file picker dialog and return the selected file path.
+
+    Uses tkinter's filedialog when available (desktop/frozen builds).
+    Returns empty path on cancel or if running in a headless environment.
+    """
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        path = filedialog.askopenfilename(
+            title="Select a file",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.tiff *.gif"), ("All Files", "*.*")],
+        )
+        root.destroy()
+        return {"path": path if path else None}
+    except Exception:
+        return {"path": None}
+
+
+@app.post("/api/native/pick-folder")
+def pick_folder() -> dict[str, str | None]:
+    """Open a native folder picker dialog and return the selected folder path.
+
+    Uses tkinter's filedialog when available (desktop/frozen builds).
+    Returns empty path on cancel or if running in a headless environment.
+    """
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        path = filedialog.askdirectory(title="Select a folder")
+        root.destroy()
+        return {"path": path if path else None}
+    except Exception:
+        return {"path": None}
+
+
 # ── BYOM dev-only preview (phase6) ──────────────────────────────────────────
 #
 # Renders packages/shared-ui's byom.css/byom.js against fixture data, with
