@@ -33,25 +33,31 @@ class WindowResult:
         self.reason = reason
 
 
-def _unblock_pythonnet_assemblies(pythonnet_dir: Path) -> None:
-    """Strip the Windows Zone.Identifier (Mark-of-the-Web) from pythonnet's
-    bundled .NET assemblies.
+def _unblock_frozen_bundle(bundle_dir: Path) -> None:
+    """Strip the Windows Zone.Identifier (Mark-of-the-Web) from every file in
+    the frozen bundle.
 
     A file downloaded via a browser — or extracted from a zip that was itself
     downloaded — is tagged with a Zone.Identifier NTFS alternate-data-stream
     marking its origin as "Internet".  .NET Framework's classic assembly loader
     (netfx, which is pythonnet's default runtime on Windows) refuses to resolve
-    functions from an assembly carrying that tag, failing with "Failed to
-    resolve Python.Runtime.Loader.Initialize" — a documented
+    functions from an assembly carrying that tag — a documented
     pythonnet/clr-loader issue
     (https://github.com/pythonnet/clr-loader/issues/74), not a bundling defect.
-    This strips the tag before pythonnet ever touches the DLL.  A no-op (not an
-    error) when the stream is absent (e.g. every CI-built binary, or after a
-    user manually unblocks the download).
+
+    This affects more than pythonnet's own ``Python.Runtime.dll``: pywebview's
+    WinForms backend loads a *separate* set of .NET assemblies from
+    ``webview/lib/`` (``Microsoft.Web.WebView2.Core.dll`` and friends), and
+    clr_loader has its own native shim DLLs under ``clr_loader/ffi/dlls/``.
+    Rather than track every subdirectory that happens to need this, unblock
+    the whole bundle — at roughly a thousand files it is a negligible,
+    one-time cost at native-window startup.  A no-op (not an error) when the
+    stream is absent (e.g. every CI-built binary, or after a user manually
+    unblocks the download).
     """
-    if not pythonnet_dir.is_dir():
+    if not bundle_dir.is_dir():
         return
-    for path in pythonnet_dir.rglob("*"):
+    for path in bundle_dir.rglob("*"):
         if path.is_file():
             with contextlib.suppress(OSError):
                 os.remove(f"{path}:Zone.Identifier")
@@ -81,17 +87,19 @@ def open_native_window(
     # Zone.Identifier NTFS alternate-data-stream (Mark-of-the-Web) that tags
     # their origin as "Internet".  .NET Framework's classic assembly loader
     # (netfx, which is pythonnet's default runtime on Windows) refuses to
-    # resolve functions from assemblies carrying that tag, raising
-    # "Failed to resolve Python.Runtime.Loader.Initialize" — a documented
+    # resolve functions from assemblies carrying that tag — a documented
     # pythonnet/clr-loader issue
     # (https://github.com/pythonnet/clr-loader/issues/74), not a bundling
-    # defect.  Strip the Zone.Identifier ADS from pythonnet's bundled .NET
-    # assemblies before ``import webview`` triggers pythonnet's own
-    # ``import clr`` — doing it after is too late.
+    # defect.  This bites more than pythonnet's own DLL: pywebview's WinForms
+    # backend loads its own WebView2 interop assemblies from webview/lib/,
+    # and clr_loader has native shim DLLs under clr_loader/ffi/dlls/ — so
+    # unblock the whole frozen bundle, not just one subdirectory.  Must run
+    # before ``import webview`` triggers pythonnet's own ``import clr`` —
+    # doing it after is too late.
     if getattr(sys, "frozen", False) and sys.platform == "win32":
         base_dir = getattr(sys, "_MEIPASS", None)
         if base_dir is not None:
-            _unblock_pythonnet_assemblies(Path(base_dir) / "pythonnet")
+            _unblock_frozen_bundle(Path(base_dir))
 
     # ------------------------------------------------------------------
     # Try to import pywebview.  Both the import itself and the subsequent
