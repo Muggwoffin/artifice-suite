@@ -14,7 +14,6 @@ import logging
 import os
 import socket
 import sys
-import tempfile
 import threading
 import time
 import webbrowser
@@ -29,6 +28,7 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
+from shared_ui.path_validation import validate_path as _shared_validate_path
 
 from artifice_graph.config import LLMConfig, PipelineConfig, load_config
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
@@ -171,72 +171,22 @@ def _mark_run_failed(run_key: str, msg: str | None = None) -> None:
 
 
 # ── Input validation — directory and URL allowlists ─────────────────
-
-# Directories: only accept paths within these roots.
-# Additional roots can be added via the ARTIFICE_GRAPH_ALLOWED_ROOTS
-# env var (colon-separated).  The current working directory is always
-# permitted so that relative paths resolve as the user expects.
-_ALLOWED_ROOT_DIRS: list[Path] = [
-    Path.home(),
-    Path(tempfile.gettempdir()),
-    Path("/tmp"),
-    Path.cwd(),
-]
-
-_extra_roots = os.environ.get("ARTIFICE_GRAPH_ALLOWED_ROOTS", "")
-for _r in _extra_roots.split(os.pathsep):
-    _r = _r.strip()
-    if _r:
-        _ALLOWED_ROOT_DIRS.append(Path(_r).expanduser().resolve())
+#
+# Path validation is delegated to shared_ui.path_validation, which provides
+# backslash normalisation, Windows-drive-letter rejection on POSIX, and a
+# more conservative error message (does not leak server filesystem layout).
+# The ARTIFICE_GRAPH_ALLOWED_ROOTS env var is consumed by the shared module.
 
 
 def _validate_directory(raw: str, field_name: str) -> str:
     """Return *raw* as a normalised path string after checking it resides
     within an allowed root directory.  Raises HTTP 400 on rejection."""
-    if not raw or not raw.strip():
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name}: path must not be empty",
-        )
     try:
-        p = Path(raw).expanduser().resolve(strict=False)
-    except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name}: cannot resolve path {raw!r}",
-        ) from None
-    for root in _ALLOWED_ROOT_DIRS:
-        resolved_root = root.resolve()
-        try:
-            relative = p.relative_to(resolved_root)
-            break
-        except ValueError:
-            continue
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"{field_name}: path {str(p)!r} is outside allowed roots. "
-                f"Allowed: {[str(r) for r in _ALLOWED_ROOT_DIRS]}"
-            ),
+        return _shared_validate_path(
+            raw, field_name, allowed_roots_env_var="ARTIFICE_GRAPH_ALLOWED_ROOTS",
         )
-
-    # Home is an allowed root, which would otherwise make ~/.ssh, ~/.gnupg and
-    # ~/.config nameable as an output or vault directory.  Hidden components
-    # are checked *below* the matched root rather than across the whole path,
-    # so a project that happens to live under a dotted directory is not
-    # rendered unusable by its own parent.
-    hidden = [part for part in relative.parts if part.startswith(".") and part not in (".", "..")]
-    if hidden:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"{field_name}: path {str(p)!r} descends into a hidden "
-                f"directory ({hidden[0]!r}). Configuration and key material "
-                f"live in these; choose a visible directory."
-            ),
-        )
-    return str(p)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
 
 
 # ── Model endpoints ────────────────────────────────────────────────
