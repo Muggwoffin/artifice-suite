@@ -12,16 +12,13 @@ import importlib.resources
 import json
 import logging
 import os
-import socket
 import sys
-import tempfile
 import threading
 import time
 import webbrowser
 from pathlib import Path
 from typing import Any
 
-import uvicorn
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -29,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
+from shared_ui.path_validation import validate_path as _shared_validate_path
 
 from artifice_graph.config import LLMConfig, PipelineConfig, load_config
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
@@ -171,72 +169,24 @@ def _mark_run_failed(run_key: str, msg: str | None = None) -> None:
 
 
 # ── Input validation — directory and URL allowlists ─────────────────
-
-# Directories: only accept paths within these roots.
-# Additional roots can be added via the ARTIFICE_GRAPH_ALLOWED_ROOTS
-# env var (colon-separated).  The current working directory is always
-# permitted so that relative paths resolve as the user expects.
-_ALLOWED_ROOT_DIRS: list[Path] = [
-    Path.home(),
-    Path(tempfile.gettempdir()),
-    Path("/tmp"),
-    Path.cwd(),
-]
-
-_extra_roots = os.environ.get("ARTIFICE_GRAPH_ALLOWED_ROOTS", "")
-for _r in _extra_roots.split(os.pathsep):
-    _r = _r.strip()
-    if _r:
-        _ALLOWED_ROOT_DIRS.append(Path(_r).expanduser().resolve())
+#
+# Path validation is delegated to shared_ui.path_validation, which provides
+# backslash normalisation, Windows-drive-letter rejection on POSIX, and a
+# more conservative error message (does not leak server filesystem layout).
+# The ARTIFICE_GRAPH_ALLOWED_ROOTS env var is consumed by the shared module.
 
 
 def _validate_directory(raw: str, field_name: str) -> str:
     """Return *raw* as a normalised path string after checking it resides
     within an allowed root directory.  Raises HTTP 400 on rejection."""
-    if not raw or not raw.strip():
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name}: path must not be empty",
-        )
     try:
-        p = Path(raw).expanduser().resolve(strict=False)
-    except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name}: cannot resolve path {raw!r}",
-        ) from None
-    for root in _ALLOWED_ROOT_DIRS:
-        resolved_root = root.resolve()
-        try:
-            relative = p.relative_to(resolved_root)
-            break
-        except ValueError:
-            continue
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"{field_name}: path {str(p)!r} is outside allowed roots. "
-                f"Allowed: {[str(r) for r in _ALLOWED_ROOT_DIRS]}"
-            ),
+        return _shared_validate_path(
+            raw,
+            field_name,
+            allowed_roots_env_var="ARTIFICE_GRAPH_ALLOWED_ROOTS",
         )
-
-    # Home is an allowed root, which would otherwise make ~/.ssh, ~/.gnupg and
-    # ~/.config nameable as an output or vault directory.  Hidden components
-    # are checked *below* the matched root rather than across the whole path,
-    # so a project that happens to live under a dotted directory is not
-    # rendered unusable by its own parent.
-    hidden = [part for part in relative.parts if part.startswith(".") and part not in (".", "..")]
-    if hidden:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"{field_name}: path {str(p)!r} descends into a hidden "
-                f"directory ({hidden[0]!r}). Configuration and key material "
-                f"live in these; choose a visible directory."
-            ),
-        )
-    return str(p)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
 
 
 # ── Model endpoints ────────────────────────────────────────────────
@@ -1403,82 +1353,28 @@ async def about():
 
 # ── Main / bootstrap ──────────────────────────────────────────────────
 
+from shared_ui.server_bootstrap import (  # noqa: E402
+    ensure_std_streams,
+    free_port,
+    port_available,
+    report_startup_failure,
+    start_server_thread,
+    wait_for_server,
+)
 
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
-
-
-def _port_available(port: int) -> bool:
-    """Return True if the port can be bound on 127.0.0.1 right now."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        try:
-            s.bind(("127.0.0.1", port))
-            return True
-        except OSError:
-            return False
-
-
-def _wait_for_server(port: int, *, timeout: float = 10.0) -> bool:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
-            probe.settimeout(0.2)
-            try:
-                probe.connect(("127.0.0.1", port))
-                return True
-            except OSError:
-                time.sleep(0.1)
-    return False
+# Re-export under the private names that `main()` expects.
+_free_port = free_port
+_port_available = port_available
+_wait_for_server = wait_for_server
+_ensure_std_streams = ensure_std_streams
 
 
 def _start_server_thread(port: int):
-    import uvicorn as _uvicorn
-
-    errors: list[BaseException] = []
-
-    def _serve():
-        try:
-            _uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
-        except Exception as exc:
-            errors.append(exc)
-
-    thread = threading.Thread(target=_serve, daemon=True)
-    thread.start()
-    return thread, errors
+    return start_server_thread(app, port)
 
 
 def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> None:
-    if errors:
-        detail = f"{type(errors[0]).__name__}: {errors[0]}"
-    elif thread.is_alive():
-        detail = "No response within 10s, though the server thread is still running."
-    else:
-        detail = "The server thread exited without ever starting to listen."
-    message = (
-        f"ArtificeGraph's local server could not start on port {port}.\n\n"
-        f"{detail}\n\n"
-        f"Close any other ArtificeGraph window and try again."
-    )
-    print(f"ERROR: {message}")
-    try:
-        import tkinter as tk
-        from tkinter import messagebox
-
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror("ArtificeGraph — server did not start", message)
-        root.destroy()
-    except Exception:
-        pass
-
-
-def _ensure_std_streams() -> None:
-    if sys.stdout is None:
-        sys.stdout = open(os.devnull, "w")
-    if sys.stderr is None:
-        sys.stderr = open(os.devnull, "w")
+    report_startup_failure("ArtificeGraph", port, thread, errors)
 
 
 def main() -> None:

@@ -13,7 +13,6 @@ from unittest.mock import patch
 
 import pytest
 from artifice_graph.web.server import (
-    _ALLOWED_ROOT_DIRS,
     _MAX_UPLOAD_BYTES,
     _read_capped,
     _validate_base_url,
@@ -39,7 +38,11 @@ class TestValidateDirectory:
 
     def test_accepts_cwd(self, tmp_path, monkeypatch):
         """CWD is always in the allowlist."""
-        monkeypatch.setattr(os, "environ", {})  # clear ARTIFICE_GRAPH_ALLOWED_ROOTS
+        # Surgical removal, not a full os.environ wipe: clearing everything
+        # also removes USERPROFILE/HOME, which breaks Path.home() on Windows
+        # CI runners ("Could not determine home directory") — a failure
+        # this test has nothing to do with.
+        monkeypatch.delenv("ARTIFICE_GRAPH_ALLOWED_ROOTS", raising=False)
         result = _validate_directory(".", "input_dir")
         assert result == str(Path.cwd().resolve())
 
@@ -48,7 +51,7 @@ class TestValidateDirectory:
         with pytest.raises(HTTPException) as exc_info:
             _validate_directory("/etc", "input_dir")
         assert exc_info.value.status_code == 400
-        assert "outside allowed roots" in exc_info.value.detail
+        assert "outside" in exc_info.value.detail
 
     @pytest.mark.parametrize(
         "hidden",
@@ -84,15 +87,30 @@ class TestValidateDirectory:
             _validate_directory("/var/log", "vault_dir")
         assert exc_info.value.status_code == 400
 
-    def test_custom_root_from_env(self, tmp_path, monkeypatch):
-        """ARTIFICE_GRAPH_ALLOWED_ROOTS env var adds extra roots."""
-        extra = tmp_path / "custom-root"
-        extra.mkdir()
-        # The env var is read at module-import time in _ALLOWED_ROOT_DIRS,
-        # so we need to test within the boundaries of what's already allowed.
-        # Instead, verify that tmp_path (under /tmp) is accepted.
-        result = _validate_directory(str(tmp_path), "input_dir")
-        assert result == str(tmp_path)
+    def test_custom_root_from_env(self, monkeypatch):
+        """ARTIFICE_GRAPH_ALLOWED_ROOTS env var adds extra roots.
+
+        Uses a fabricated absolute path outside every default root (home,
+        tempdir, /tmp, cwd) so acceptance is driven purely by the env var,
+        not accidentally by a default root.  ``validate_path`` resolves
+        non-strictly, so the path does not need to exist on disk.
+
+        The env var is consumed by ``shared_ui.path_validation`` at call
+        time in ``build_allowed_roots()``, not at module-import time.
+        """
+        custom_root = "/opt/_artifice_graph_test_custom_root"
+        target = f"{custom_root}/subdir"
+
+        # -- Direction 1: with the env var set, the path is accepted --------
+        monkeypatch.setenv("ARTIFICE_GRAPH_ALLOWED_ROOTS", custom_root)
+        result = _validate_directory(target, "input_dir")
+        assert result == str(Path(target).resolve())
+
+        # -- Direction 2: unset env var, same path must be rejected ---------
+        monkeypatch.delenv("ARTIFICE_GRAPH_ALLOWED_ROOTS", raising=False)
+        with pytest.raises(HTTPException) as exc_info:
+            _validate_directory(target, "input_dir")
+        assert exc_info.value.status_code == 400
 
     def test_empty_path_rejected(self):
         """An empty string should be rejected."""
@@ -201,12 +219,27 @@ def test_tempfile_gettempdir_in_allowed_roots():
     because ``tempfile.gettempdir()`` returns ``/var/folders/…``, which is
     neither ``/tmp`` nor ``$HOME``.  This test asserts the mechanism is
     present regardless of platform default.
+
+    The validation is now delegated to ``shared_ui.path_validation``, which
+    includes ``tempfile.gettempdir()`` in its ``build_allowed_roots()`` call;
+    we verify through ``_validate_directory`` instead of inspecting the list
+    directly.
     """
     import tempfile
 
-    temp_root = Path(tempfile.gettempdir()).resolve()
-    resolved_roots = [r.resolve() for r in _ALLOWED_ROOT_DIRS]
-    assert temp_root in resolved_roots
+    temp_dir = Path(tempfile.gettempdir()) / "artifice-graph-test-tmpdir"
+    temp_dir.mkdir(exist_ok=True)
+    try:
+        result = _validate_directory(str(temp_dir), "input_dir")
+        # _validate_directory resolves the path (symlinks, short names, etc.),
+        # so compare against the resolved form too — on macOS tempfile.gettempdir()
+        # returns a path through a /var -> /private/var symlink, and on Windows
+        # CI runners the unresolved path can carry an 8.3 short name that
+        # resolve() expands, so a literal str(temp_dir) comparison is flaky.
+        assert result == str(temp_dir.resolve())
+    finally:
+        if temp_dir.exists():
+            temp_dir.rmdir()
 
 
 @pytest.mark.skipif(
@@ -225,16 +258,12 @@ def test_accepts_temp_outside_tmp_and_home(monkeypatch):
     On macOS that is the default (``/var/folders/…``); here it is reproduced by
     pointing ``TMPDIR`` at ``/var/tmp``.
 
-    ``_ALLOWED_ROOT_DIRS`` is a module-level constant evaluated at import time,
-    so the relocated temp directory is injected into that list directly.
-    **Deliberately not `importlib.reload`:** reloading the server module
-    recomputes the constant with the test's ``TMPDIR`` baked in and cannot be
-    undone by monkeypatch, leaking into every later test in the session, and it
-    would also invalidate other tests' references to ``app`` and its routers.
+    The validation is now delegated to ``shared_ui.path_validation``, which
+    calls ``build_allowed_roots()`` (and therefore ``tempfile.gettempdir()``)
+    at call time — the ``TMPDIR`` monkeypatch takes effect through the shared
+    module without needing to touch any server-module constants.
     """
     import tempfile
-
-    from artifice_graph.web import server as server_mod
 
     custom_root = Path("/var/tmp")
     if not custom_root.is_dir():
@@ -242,11 +271,6 @@ def test_accepts_temp_outside_tmp_and_home(monkeypatch):
 
     monkeypatch.setenv("TMPDIR", str(custom_root))
     monkeypatch.setattr(tempfile, "tempdir", None)
-    monkeypatch.setattr(
-        server_mod,
-        "_ALLOWED_ROOT_DIRS",
-        [*server_mod._ALLOWED_ROOT_DIRS, Path(tempfile.gettempdir())],
-    )
 
     d = Path(tempfile.mkdtemp(dir=str(custom_root)))
     try:
@@ -255,7 +279,8 @@ def test_accepts_temp_outside_tmp_and_home(monkeypatch):
         # resolve() is a no-op and either form passes — but on macOS /var is a
         # symlink to /private/var, so the unresolved form fails there and only
         # there.
-        assert server_mod._validate_directory(str(d), "input_dir") == str(d.resolve())
+        result = _validate_directory(str(d), "input_dir")
+        assert result == str(d.resolve())
     finally:
         if d.exists():
             d.rmdir()

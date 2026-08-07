@@ -27,6 +27,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pytest_httpx import HTTPXMock
 
@@ -73,6 +74,7 @@ def client(tmp_path, monkeypatch):
     # status or queued events (see test_pdf_export_download_404_before_compilation
     # which was order-dependent before this reset).
     import queue as _queue_mod
+
     pstate = runtime.pdf_export_state
     # Wait for any thread from a previous test that didn't clean up
     if pstate.thread is not None and pstate.thread.is_alive():
@@ -94,19 +96,20 @@ def client(tmp_path, monkeypatch):
 # static frontend
 # --------------------------------------------------------------------------- #
 
+
 def test_index_serves_the_frontend(client):
     res = client.get("/")
     assert res.status_code == 200
     assert "ArtificeOCR" in res.text
     assert "skip-link" in res.text
-    assert "class=\"topnav\"" in res.text
+    assert 'class="topnav"' in res.text
 
 
 def test_about_page_serves(client):
     res = client.get("/about")
     assert res.status_code == 200
     assert "About ArtificeOCR" in res.text
-    assert "class=\"topnav\"" in res.text
+    assert 'class="topnav"' in res.text
 
 
 def test_static_index_html_is_gone(client):
@@ -167,6 +170,7 @@ def events_server(tmp_path, monkeypatch):
     that the event stream sees the fresh, isolated ``RunState``.
     """
     import artifice_ocr.config as _config
+
     monkeypatch.setattr(_config, "_SETTINGS_PATH", tmp_path / "settings.json")
     _config.reset()
     _config.load_config()
@@ -223,7 +227,7 @@ def test_events_puts_data_frames_on_the_wire(events_server):
             chunk = next(resp.iter_bytes())
     assert b"data:" in chunk
     data_line = [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0]
-    payload = json.loads(data_line[len("data: "):])
+    payload = json.loads(data_line[len("data: ") :])
     assert payload["kind"] == "log"
     assert payload["message"] == "hello"
 
@@ -264,8 +268,7 @@ def test_events_item_finished_triggers_record_finished_items(events_server):
     state.run_id = run_id
 
     eq = _sync_queue.Queue()
-    event = JobEvent(kind="item_finished", stage="ocr",
-                     message="done", tag="item")
+    event = JobEvent(kind="item_finished", stage="ocr", message="done", tag="item")
     eq.put(event)
 
     state.runner = JobRunner([], ".", stages={"ocr"}, events=eq)
@@ -276,7 +279,7 @@ def test_events_item_finished_triggers_record_finished_items(events_server):
 
     assert b"data:" in chunk
     data_line = [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0]
-    payload = json.loads(data_line[len("data: "):])
+    payload = json.loads(data_line[len("data: ") :])
     assert payload["kind"] == "item_finished"
 
     # The item should now be recorded in the history.
@@ -300,8 +303,9 @@ def test_events_run_finished_triggers_finish_run(events_server):
     state.run_id = run_id
 
     eq = _sync_queue.Queue()
-    event = JobEvent(kind="run_finished", stage="",
-                     payload={"done": 3, "failed": 1, "elapsed": 12.5})
+    event = JobEvent(
+        kind="run_finished", stage="", payload={"done": 3, "failed": 1, "elapsed": 12.5}
+    )
     eq.put(event)
 
     state.runner = JobRunner([], ".", stages={"ocr"}, events=eq)
@@ -312,7 +316,7 @@ def test_events_run_finished_triggers_finish_run(events_server):
 
     assert b"data:" in chunk
     payload = json.loads(
-        [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0][len("data: "):]
+        [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0][len("data: ") :]
     )
     assert payload["kind"] == "run_finished"
     assert payload["payload"]["done"] == 3
@@ -325,8 +329,8 @@ def test_events_run_finished_triggers_finish_run(events_server):
         "SELECT succeeded, failed, elapsed FROM runs WHERE run_id = ?", (run_id,)
     ).fetchone()
     assert run is not None
-    assert run[0] == 3   # succeeded
-    assert run[1] == 1   # failed
+    assert run[0] == 3  # succeeded
+    assert run[1] == 1  # failed
     assert run[2] == 12.5  # elapsed
 
 
@@ -360,6 +364,7 @@ def test_events_client_disconnect_does_not_leave_state_broken(events_server):
 # queue
 # --------------------------------------------------------------------------- #
 
+
 def test_empty_queue_on_startup(client):
     res = client.get("/api/queue")
     assert res.status_code == 200
@@ -370,9 +375,12 @@ def test_add_paths_resolves_supported_extensions_only(client, tmp_path):
     (tmp_path / "a.png").write_bytes(b"x")
     (tmp_path / "b.txt").write_bytes(b"x")  # unsupported, must be ignored
 
-    res = client.post("/api/queue/add-paths", json={
-        "paths": [str(tmp_path / "a.png"), str(tmp_path / "b.txt")],
-    })
+    res = client.post(
+        "/api/queue/add-paths",
+        json={
+            "paths": [str(tmp_path / "a.png"), str(tmp_path / "b.txt")],
+        },
+    )
     assert res.status_code == 200
     body = res.json()
     assert body["added"] == 1
@@ -425,6 +433,7 @@ def test_clear_queue(client, tmp_path):
 # run control guardrails (no real run is started — no model calls in tests)
 # --------------------------------------------------------------------------- #
 
+
 def test_start_run_rejects_empty_queue(client):
     res = client.post("/api/run/start", json={"stages": ["ocr"]})
     assert res.status_code == 409
@@ -471,6 +480,7 @@ def test_pause_resume_cancel_are_no_ops_without_a_run(client):
 # config
 # --------------------------------------------------------------------------- #
 
+
 def test_get_config_returns_expected_keys(client):
     res = client.get("/api/config")
     body = res.json()
@@ -479,10 +489,13 @@ def test_get_config_returns_expected_keys(client):
 
 
 def test_set_config_only_persists_whitelisted_keys(client):
-    res = client.post("/api/config", json={
-        "output_dir": "somewhere",
-        "not_a_real_setting": "should be dropped",
-    })
+    res = client.post(
+        "/api/config",
+        json={
+            "output_dir": "somewhere",
+            "not_a_real_setting": "should be dropped",
+        },
+    )
     assert res.json() == {"ok": True}
     assert config.get("output_dir") == "somewhere"
     assert config.get("not_a_real_setting") is None
@@ -500,6 +513,7 @@ def test_config_reset_discards_overrides(client):
 # --------------------------------------------------------------------------- #
 # config — endpoint URL validation on save
 # --------------------------------------------------------------------------- #
+
 
 def test_set_config_rejects_link_local_ollama_url(client):
     """A link-local ollama_url is refused at save time with HTTP 400."""
@@ -527,11 +541,14 @@ def test_set_config_rejects_link_local_api_base_url(client):
 
 def test_set_config_allows_loopback_urls(client):
     """Loopback URLs are accepted at save time (no rejection)."""
-    res = client.post("/api/config", json={
-        "ollama_url": "http://localhost:11434",
-        "lm_studio_url": "http://localhost:1234/v1",
-        "api_base_url": "http://localhost:8080/v1",
-    })
+    res = client.post(
+        "/api/config",
+        json={
+            "ollama_url": "http://localhost:11434",
+            "lm_studio_url": "http://localhost:1234/v1",
+            "api_base_url": "http://localhost:8080/v1",
+        },
+    )
     assert res.status_code == 200
     assert res.json() == {"ok": True}
 
@@ -540,6 +557,7 @@ def test_set_config_rejects_public_api_base_url_without_env_var(client, monkeypa
     """A public api_base_url is refused at save time without the env var."""
     from model_harness.endpoint_policy import EndpointPolicy
     from artifice_ocr.web.routers import settings as settings_mod
+
     strict_policy = EndpointPolicy(allow_public=False)
     monkeypatch.setattr(settings_mod, "_endpoint_policy", strict_policy)
     res = client.post("/api/config", json={"api_base_url": "http://8.8.8.8/v1"})
@@ -552,6 +570,7 @@ def test_set_config_allows_public_api_base_url_with_env_var(client, monkeypatch)
     """A public api_base_url is accepted at save time when the env var is set."""
     from model_harness.endpoint_policy import EndpointPolicy
     from artifice_ocr.web.routers import settings as settings_mod
+
     permissive_policy = EndpointPolicy(allow_public=True)
     monkeypatch.setattr(settings_mod, "_endpoint_policy", permissive_policy)
     res = client.post("/api/config", json={"api_base_url": "http://8.8.8.8/v1"})
@@ -570,6 +589,7 @@ def test_set_config_passes_non_url_fields_through(client):
 # tropy (read-only endpoints; no real project on disk during tests)
 # --------------------------------------------------------------------------- #
 
+
 def test_tropy_browse_reports_a_clean_error_for_a_missing_project(client, tmp_path):
     res = client.post("/api/tropy/browse", json={"project": str(tmp_path / "nope.tropy")})
     assert res.status_code == 400
@@ -582,9 +602,14 @@ def test_tropy_add_reports_a_clean_error_for_a_missing_project(client, tmp_path)
 
 def test_tropy_add_writes_manifest_and_reports_missing(client, tropy_project, tmp_path):
     out = tmp_path / "out"
-    res = client.post("/api/tropy/add", json={
-        "project": str(tropy_project), "item_ids": [1], "output_dir": str(out),
-    })
+    res = client.post(
+        "/api/tropy/add",
+        json={
+            "project": str(tropy_project),
+            "item_ids": [1],
+            "output_dir": str(out),
+        },
+    )
     assert res.status_code == 200
     body = res.json()
     assert body["added"] >= 1
@@ -592,6 +617,7 @@ def test_tropy_add_writes_manifest_and_reports_missing(client, tropy_project, tm
     manifest = out / "tropy_manifest.json"
     assert manifest.exists()
     import json
+
     data = json.loads(manifest.read_text(encoding="utf-8"))
     assert "pages" in data
     assert "project" in data
@@ -601,10 +627,14 @@ def test_tropy_add_writes_manifest_and_reports_missing(client, tropy_project, tm
 # tropy — path validation
 # --------------------------------------------------------------------------- #
 
+
 def test_tropy_browse_refuses_project_outside_allowed_roots(client):
-    res = client.post("/api/tropy/browse", json={
-        "project": "/opt/rejected/scan.tropy",
-    })
+    res = client.post(
+        "/api/tropy/browse",
+        json={
+            "project": "/opt/rejected/scan.tropy",
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -612,9 +642,12 @@ def test_tropy_browse_refuses_project_outside_allowed_roots(client):
 
 
 def test_tropy_browse_accepts_project_in_allowed_root(client, tropy_project):
-    res = client.post("/api/tropy/browse", json={
-        "project": str(tropy_project),
-    })
+    res = client.post(
+        "/api/tropy/browse",
+        json={
+            "project": str(tropy_project),
+        },
+    )
     assert res.status_code == 200
     assert res.json()["project"] == "Archive"
 
@@ -622,10 +655,13 @@ def test_tropy_browse_accepts_project_in_allowed_root(client, tropy_project):
 def test_tropy_add_refuses_project_outside_allowed_roots(client, tmp_path):
     out = tmp_path / "out"
     out.mkdir()
-    res = client.post("/api/tropy/add", json={
-        "project": "/opt/rejected/scan.tropy",
-        "output_dir": str(out),
-    })
+    res = client.post(
+        "/api/tropy/add",
+        json={
+            "project": "/opt/rejected/scan.tropy",
+            "output_dir": str(out),
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -633,10 +669,13 @@ def test_tropy_add_refuses_project_outside_allowed_roots(client, tmp_path):
 
 
 def test_tropy_add_refuses_output_dir_outside_allowed_roots(client, tropy_project):
-    res = client.post("/api/tropy/add", json={
-        "project": str(tropy_project),
-        "output_dir": "/opt/rejected/out",
-    })
+    res = client.post(
+        "/api/tropy/add",
+        json={
+            "project": str(tropy_project),
+            "output_dir": "/opt/rejected/out",
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -644,10 +683,13 @@ def test_tropy_add_refuses_output_dir_outside_allowed_roots(client, tropy_projec
 
 
 def test_tropy_send_preview_refuses_project_outside_allowed_roots(client):
-    res = client.post("/api/tropy/send/preview", json={
-        "project": "/opt/rejected/scan.tropy",
-        "targets": ["notes"],
-    })
+    res = client.post(
+        "/api/tropy/send/preview",
+        json={
+            "project": "/opt/rejected/scan.tropy",
+            "targets": ["notes"],
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -655,10 +697,13 @@ def test_tropy_send_preview_refuses_project_outside_allowed_roots(client):
 
 
 def test_tropy_send_write_refuses_project_outside_allowed_roots(client):
-    res = client.post("/api/tropy/send/write", json={
-        "project": "/opt/rejected/scan.tropy",
-        "targets": ["notes"],
-    })
+    res = client.post(
+        "/api/tropy/send/write",
+        json={
+            "project": "/opt/rejected/scan.tropy",
+            "targets": ["notes"],
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -666,11 +711,14 @@ def test_tropy_send_write_refuses_project_outside_allowed_roots(client):
 
 
 def test_tropy_send_history_preview_refuses_project_outside_allowed_roots(client):
-    res = client.post("/api/tropy/send/history/preview", json={
-        "item_ids": [1],
-        "project": "/opt/rejected/scan.tropy",
-        "targets": ["notes"],
-    })
+    res = client.post(
+        "/api/tropy/send/history/preview",
+        json={
+            "item_ids": [1],
+            "project": "/opt/rejected/scan.tropy",
+            "targets": ["notes"],
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -678,11 +726,14 @@ def test_tropy_send_history_preview_refuses_project_outside_allowed_roots(client
 
 
 def test_tropy_send_history_write_refuses_project_outside_allowed_roots(client):
-    res = client.post("/api/tropy/send/history/write", json={
-        "item_ids": [1],
-        "project": "/opt/rejected/scan.tropy",
-        "targets": ["notes"],
-    })
+    res = client.post(
+        "/api/tropy/send/history/write",
+        json={
+            "item_ids": [1],
+            "project": "/opt/rejected/scan.tropy",
+            "targets": ["notes"],
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -692,6 +743,7 @@ def test_tropy_send_history_write_refuses_project_outside_allowed_roots(client):
 # --------------------------------------------------------------------------- #
 # preview (in-memory queue item text)
 # --------------------------------------------------------------------------- #
+
 
 def test_preview_missing_item_is_404(client):
     res = client.get("/api/queue/does-not-exist/preview")
@@ -727,6 +779,7 @@ def test_preview_returns_text_confidence_and_diff(client, tmp_path):
 # --------------------------------------------------------------------------- #
 # preview: source image (zoom/pan pane) + raw-text correction
 # --------------------------------------------------------------------------- #
+
 
 def test_image_route_404s_for_unknown_item(client):
     res = client.get("/api/queue/does-not-exist/image")
@@ -781,7 +834,7 @@ def test_image_route_renders_only_the_pdf_page_item_points_at(client, tmp_path):
     pdf_path = tmp_path / "doc.pdf"
     doc = fitz.open()
     doc.new_page(width=200, height=100)  # page 0: 2:1 landscape
-    doc.new_page(width=50, height=150)   # page 1: 1:3 portrait — the one requested
+    doc.new_page(width=50, height=150)  # page 1: 1:3 portrait — the one requested
     doc.new_page(width=300, height=100)  # page 2: 3:1 landscape
     doc.save(str(pdf_path))
     doc.close()
@@ -863,10 +916,15 @@ def test_raw_text_save_overwrites_disk_output_preserving_other_provenance(client
 
     (text_dir / f"{item.stem}.txt").write_text("garbld txt", encoding="utf-8")
     original_json = {
-        "source_file": str(f), "stage": "raw_ocr", "extracted_text": "garbld txt",
-        "engine": "lm-studio", "model": "some-vision-model",
+        "source_file": str(f),
+        "stage": "raw_ocr",
+        "extracted_text": "garbld txt",
+        "engine": "lm-studio",
+        "model": "some-vision-model",
         "ocr_prompt": "OCR: Extract all visible text...",
-        "timestamp": "2026-01-01T00:00:00+00:00", "page": 1, "total_pages": 1,
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "page": 1,
+        "total_pages": 1,
     }
     (json_dir / f"{item.stem}.json").write_text(jsonlib.dumps(original_json), encoding="utf-8")
 
@@ -901,7 +959,8 @@ def test_raw_text_save_never_touches_cleaned_or_translated_dirs(client, tmp_path
 
     (output_dir / "raw_ocr" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
     (output_dir / "raw_ocr" / "json" / f"{item.stem}.json").write_text(
-        '{"extracted_text": "orig"}', encoding="utf-8")
+        '{"extracted_text": "orig"}', encoding="utf-8"
+    )
     config.apply_overrides({"output_dir": str(output_dir)})
 
     client.post(f"/api/queue/{item_id}/raw-text", json={"text": "edited"})
@@ -913,6 +972,7 @@ def test_raw_text_save_never_touches_cleaned_or_translated_dirs(client, tmp_path
 # --------------------------------------------------------------------------- #
 # cleaned-text + translated-text
 # --------------------------------------------------------------------------- #
+
 
 def test_cleaned_text_404s_for_unknown_queue_item(client):
     res = client.post("/api/queue/does-not-exist/cleaned-text", json={"text": "x"})
@@ -949,7 +1009,9 @@ def test_translated_text_save_updates_in_memory_when_no_output_exists(client, tm
     item = runtime.state.get(item_id)
     item.results = {"translated": {"translated_text": "garbld trn"}}
 
-    res = client.post(f"/api/queue/{item_id}/translated-text", json={"text": "corrected translation"})
+    res = client.post(
+        f"/api/queue/{item_id}/translated-text", json={"text": "corrected translation"}
+    )
     assert res.status_code == 200
     body = res.json()
     assert body["translated"] == "corrected translation"
@@ -974,9 +1036,12 @@ def test_cleaned_text_save_overwrites_disk_output_preserving_provenance(client, 
 
     (text_dir / f"{item.stem}.txt").write_text("garbld cln", encoding="utf-8")
     original_json = {
-        "source_file": str(f), "stage": "cleaned", "cleaned_text": "garbld cln",
+        "source_file": str(f),
+        "stage": "cleaned",
+        "cleaned_text": "garbld cln",
         "raw_text": "raw ocr text",
-        "engine": "ollama", "model": "some-cleanup-model",
+        "engine": "ollama",
+        "model": "some-cleanup-model",
         "system_prompt": "Clean up the text...",
         "document_type": "default",
         "timestamp": "2026-01-01T00:00:00+00:00",
@@ -1016,11 +1081,14 @@ def test_translated_text_save_overwrites_disk_output_preserving_provenance(clien
 
     (text_dir / f"{item.stem}.txt").write_text("garbld trn", encoding="utf-8")
     original_json = {
-        "source_file": str(f), "stage": "translated", "translated_text": "garbld trn",
+        "source_file": str(f),
+        "stage": "translated",
+        "translated_text": "garbld trn",
         "cleaned_text": "cleaned text",
         "source_language": "fr",
         "source_language_name": "French",
-        "engine": "ollama", "model": "some-translate-model",
+        "engine": "ollama",
+        "model": "some-translate-model",
         "system_prompt": "Translate the text...",
         "document_type": "default",
         "timestamp": "2026-01-01T00:00:00+00:00",
@@ -1029,7 +1097,9 @@ def test_translated_text_save_overwrites_disk_output_preserving_provenance(clien
 
     config.apply_overrides({"output_dir": str(output_dir)})
 
-    res = client.post(f"/api/queue/{item_id}/translated-text", json={"text": "corrected translation"})
+    res = client.post(
+        f"/api/queue/{item_id}/translated-text", json={"text": "corrected translation"}
+    )
     assert res.status_code == 200
 
     assert (text_dir / f"{item.stem}.txt").read_text(encoding="utf-8") == "corrected translation"
@@ -1057,7 +1127,8 @@ def test_cleaned_text_save_never_touches_raw_or_translated_dirs(client, tmp_path
 
     (output_dir / "cleaned" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
     (output_dir / "cleaned" / "json" / f"{item.stem}.json").write_text(
-        '{"cleaned_text": "orig"}', encoding="utf-8")
+        '{"cleaned_text": "orig"}', encoding="utf-8"
+    )
     config.apply_overrides({"output_dir": str(output_dir)})
 
     client.post(f"/api/queue/{item_id}/cleaned-text", json={"text": "edited"})
@@ -1081,7 +1152,8 @@ def test_translated_text_save_never_touches_raw_or_cleaned_dirs(client, tmp_path
 
     (output_dir / "translated" / "text" / f"{item.stem}.txt").write_text("orig", encoding="utf-8")
     (output_dir / "translated" / "json" / f"{item.stem}.json").write_text(
-        '{"translated_text": "orig"}', encoding="utf-8")
+        '{"translated_text": "orig"}', encoding="utf-8"
+    )
     config.apply_overrides({"output_dir": str(output_dir)})
 
     client.post(f"/api/queue/{item_id}/translated-text", json={"text": "edited"})
@@ -1093,6 +1165,7 @@ def test_translated_text_save_never_touches_raw_or_cleaned_dirs(client, tmp_path
 # --------------------------------------------------------------------------- #
 # settings: document types + health
 # --------------------------------------------------------------------------- #
+
 
 def test_document_types_lists_known_types(client):
     res = client.get("/api/document-types")
@@ -1106,6 +1179,7 @@ def test_health_check_reports_service_status(client, monkeypatch):
 
     # Use the config model names so the per-model health check matches
     from artifice_ocr import config as ocr_config
+
     cleanup_model = ocr_config.get("cleanup_model") or "llama3.2:3b"
     translate_model = ocr_config.get("translate_model") or "llama3.2:3b"
     ocr_model = ocr_config.get("ocr_model") or "llama3.2-vision:11b"
@@ -1157,11 +1231,13 @@ def test_health_check_real_probe_returns_from_threadpool(client, httpx_mock: HTT
     """
     # Default config probes LM Studio (port 1234) and Ollama (port 11434).
     # Align the Ollama model names with the config so the per-model checks pass.
-    config.apply_overrides({
-        "ocr_model": "ollama-ocr",
-        "cleanup_model": "ollama-cleanup",
-        "translate_model": "ollama-translate",
-    })
+    config.apply_overrides(
+        {
+            "ocr_model": "ollama-ocr",
+            "cleanup_model": "ollama-cleanup",
+            "translate_model": "ollama-translate",
+        }
+    )
     httpx_mock.add_response(
         url="http://localhost:1234/api/tags",
         json={"models": []},
@@ -1172,11 +1248,13 @@ def test_health_check_real_probe_returns_from_threadpool(client, httpx_mock: HTT
     )
     httpx_mock.add_response(
         url="http://localhost:11434/api/tags",
-        json={"models": [
-            {"name": "ollama-ocr"},
-            {"name": "ollama-cleanup"},
-            {"name": "ollama-translate"},
-        ]},
+        json={
+            "models": [
+                {"name": "ollama-ocr"},
+                {"name": "ollama-cleanup"},
+                {"name": "ollama-translate"},
+            ]
+        },
     )
     httpx_mock.add_response(
         url="http://localhost:11434/v1/models",
@@ -1227,6 +1305,7 @@ def test_health_check_real_probe_unreachable_shape(client, httpx_mock: HTTPXMock
 # --------------------------------------------------------------------------- #
 # history
 # --------------------------------------------------------------------------- #
+
 
 def _seed_history_run(state, *, failed=0):
     from artifice_ocr.jobs import JobItem, State as JobState
@@ -1295,6 +1374,7 @@ def test_history_image_route_404_for_unknown_item(client):
 
 def test_history_image_route_404_when_source_file_gone(client, tmp_path):
     from artifice_ocr.jobs import JobItem, State as JobState
+
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
     item = JobItem(path=str(tmp_path / "nope.png"))
     item.state = JobState.DONE
@@ -1307,6 +1387,7 @@ def test_history_image_route_404_when_source_file_gone(client, tmp_path):
 
 def test_history_image_route_passes_jpg_through_unchanged(client, tmp_path):
     from artifice_ocr.jobs import JobItem, State as JobState
+
     f = tmp_path / "scan.jpg"
     f.write_bytes(b"\xff\xd8\xff-fake-jpeg")
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
@@ -1324,10 +1405,11 @@ def test_history_image_route_passes_jpg_through_unchanged(client, tmp_path):
 def test_history_image_route_renders_page_parsed_from_name_when_page_col_null(client, tmp_path):
     import fitz
     from artifice_ocr.jobs import JobItem, State as JobState
+
     pdf_path = tmp_path / "doc.pdf"
     doc = fitz.open()
-    doc.new_page(width=50, height=200)   # page 0 — tall
-    doc.new_page(width=200, height=50)   # page 1 — wide
+    doc.new_page(width=50, height=200)  # page 0 — tall
+    doc.new_page(width=200, height=50)  # page 1 — wide
     doc.save(str(pdf_path))
     doc.close()
 
@@ -1352,10 +1434,11 @@ def test_history_image_route_renders_page_parsed_from_name_when_page_col_null(cl
 def test_history_image_route_honours_page_column_when_set(client, tmp_path):
     import fitz
     from artifice_ocr.jobs import JobItem, State as JobState
+
     pdf_path = tmp_path / "doc.pdf"
     doc = fitz.open()
-    doc.new_page(width=200, height=50)   # page 0
-    doc.new_page(width=50, height=200)   # page 1
+    doc.new_page(width=200, height=50)  # page 0
+    doc.new_page(width=50, height=200)  # page 1
     doc.save(str(pdf_path))
     doc.close()
 
@@ -1374,6 +1457,7 @@ def test_history_image_route_honours_page_column_when_set(client, tmp_path):
 
 def test_history_raw_text_save_updates_text(client):
     from artifice_ocr.jobs import JobItem, State as JobState
+
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
     item = JobItem(path="C:/docs/report.png")
     item.state = JobState.DONE
@@ -1443,6 +1527,7 @@ def test_delete_run_removes_it_but_not_output_files(client):
 # analytics
 # --------------------------------------------------------------------------- #
 
+
 def test_analytics_stats_before_any_run(client):
     res = client.get("/api/analytics/stats")
     body = res.json()
@@ -1464,6 +1549,7 @@ def test_analytics_stats_reflects_seeded_run(client):
 # tropy send (write-back), against a synthetic project — never a real archive
 # --------------------------------------------------------------------------- #
 
+
 def _add_tropy_queue_item(client, photo_id: int = 10, text: str = "Sauberer Text"):
     from artifice_ocr.jobs import JobItem
 
@@ -1476,9 +1562,13 @@ def _add_tropy_queue_item(client, photo_id: int = 10, text: str = "Sauberer Text
 def test_tropy_send_preview_lists_an_insertable_row(client, tropy_project):
     _add_tropy_queue_item(client)
 
-    res = client.post("/api/tropy/send/preview", json={
-        "project": str(tropy_project), "targets": ["notes"],
-    })
+    res = client.post(
+        "/api/tropy/send/preview",
+        json={
+            "project": str(tropy_project),
+            "targets": ["notes"],
+        },
+    )
     body = res.json()
     assert body["blockers"] == []
     assert body["insertable"] == 1
@@ -1490,18 +1580,26 @@ def test_tropy_send_preview_ignores_non_tropy_items(client, tmp_path, tropy_proj
     f.write_bytes(b"x")
     client.post("/api/queue/add-paths", json={"paths": [str(f)]})
 
-    res = client.post("/api/tropy/send/preview", json={
-        "project": str(tropy_project), "targets": ["notes"],
-    })
+    res = client.post(
+        "/api/tropy/send/preview",
+        json={
+            "project": str(tropy_project),
+            "targets": ["notes"],
+        },
+    )
     assert res.json()["insertable"] == 0
 
 
 def test_tropy_send_write_creates_a_note_and_backs_up(client, tropy_project):
     _add_tropy_queue_item(client, text="Der Bericht ist fertig.")
 
-    res = client.post("/api/tropy/send/write", json={
-        "project": str(tropy_project), "targets": ["notes"],
-    })
+    res = client.post(
+        "/api/tropy/send/write",
+        json={
+            "project": str(tropy_project),
+            "targets": ["notes"],
+        },
+    )
     body = res.json()
     assert body["written"] == 1
     assert body["backup"] is not None
@@ -1515,21 +1613,33 @@ def test_tropy_send_write_creates_a_note_and_backs_up(client, tropy_project):
 def test_tropy_send_write_does_not_duplicate_on_rerun(client, tropy_project):
     _add_tropy_queue_item(client, text="Einmaliger Text")
 
-    first = client.post("/api/tropy/send/write", json={
-        "project": str(tropy_project), "targets": ["notes"],
-    })
-    second = client.post("/api/tropy/send/write", json={
-        "project": str(tropy_project), "targets": ["notes"],
-    })
+    first = client.post(
+        "/api/tropy/send/write",
+        json={
+            "project": str(tropy_project),
+            "targets": ["notes"],
+        },
+    )
+    second = client.post(
+        "/api/tropy/send/write",
+        json={
+            "project": str(tropy_project),
+            "targets": ["notes"],
+        },
+    )
 
     assert first.json()["written"] == 1
     assert second.json()["written"] == 0
 
 
 def test_tropy_send_write_reports_blockers_as_409(client, tropy_project):
-    res = client.post("/api/tropy/send/write", json={
-        "project": str(tropy_project), "targets": [],
-    })
+    res = client.post(
+        "/api/tropy/send/write",
+        json={
+            "project": str(tropy_project),
+            "targets": [],
+        },
+    )
     assert res.status_code == 409
 
 
@@ -1542,6 +1652,7 @@ def test_tropy_send_write_reports_blockers_as_409(client, tropy_project):
 # race and load before the socket is bound, showing a connection-refused
 # error on first launch. `_wait_for_server` is the fix; these pin the two
 # outcomes it has to get right.
+
 
 def test_wait_for_server_returns_true_once_something_is_listening():
     import threading
@@ -1558,6 +1669,7 @@ def test_wait_for_server_returns_true_once_something_is_listening():
     # lag, to prove this actually polls rather than checking once.
     def open_late():
         import time
+
         time.sleep(0.3)
         conn, _ = srv.accept()
         conn.close()
@@ -1593,13 +1705,15 @@ def test_wait_for_server_gives_up_after_timeout():
 # explanation. These pin the fix: the exception (if any) is captured off the
 # background thread and actually surfaced instead of silently discarded.
 
+
 def test_start_server_thread_captures_an_exception_from_uvicorn(monkeypatch):
     import uvicorn
 
     from artifice_ocr.web.server import _start_server_thread
 
-    monkeypatch.setattr(uvicorn, "run", lambda *a, **k: (_ for _ in ()).throw(
-        RuntimeError("port already in use")))
+    monkeypatch.setattr(
+        uvicorn, "run", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("port already in use"))
+    )
 
     thread, errors = _start_server_thread(59999)
     thread.join(timeout=2.0)
@@ -1710,6 +1824,7 @@ def test_report_startup_failure_explains_a_plain_timeout(stub_tkinter, capsys):
 # sys.stdout/stderr to None and calling logging.config.dictConfig on
 # uvicorn's own LOGGING_CONFIG.
 
+
 def test_ensure_std_streams_replaces_none_streams(monkeypatch):
     from artifice_ocr.web.server import _ensure_std_streams
 
@@ -1736,13 +1851,14 @@ def test_ensure_std_streams_leaves_real_streams_alone(monkeypatch, capsys):
 # pdf export
 # --------------------------------------------------------------------------- #
 
+
 def _make_pdf_text_folder(tmp_path, n=2):
     """Create a cleaned/text folder with n .txt files."""
     text_dir = tmp_path / "cleaned" / "text"
     text_dir.mkdir(parents=True)
     for i in range(n):
-        (text_dir / f"page{i+1}.txt").write_text(
-            f"Page {i+1} text.\nSome content here.",
+        (text_dir / f"page{i + 1}.txt").write_text(
+            f"Page {i + 1} text.\nSome content here.",
             encoding="utf-8",
         )
     return text_dir
@@ -1755,14 +1871,20 @@ def pdf_text_folder(tmp_path):
 
 def test_pdf_export_start_returns_ok(client, pdf_text_folder):
     folder = str(pdf_text_folder.parent.parent)
-    res = client.post("/api/pdf-export/start", json={
-        "folder": folder, "stage": "cleaned", "structure": False,
-    })
+    res = client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": folder,
+            "stage": "cleaned",
+            "structure": False,
+        },
+    )
     assert res.status_code == 200
     assert res.json()["ok"] is True
 
     # Wait for the thread to finish
     import time
+
     for _ in range(50):
         status = client.get("/api/pdf-export/status").json()
         if status["status"] in ("done", "error"):
@@ -1800,18 +1922,28 @@ def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder, monkeypatch
 
     monkeypatch.setattr(pdf_export_module, "compile", gated_compile)
 
-    first = client.post("/api/pdf-export/start", json={
-        "folder": folder, "stage": "cleaned", "structure": False,
-    })
+    first = client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": folder,
+            "stage": "cleaned",
+            "structure": False,
+        },
+    )
     assert first.status_code == 200
 
     # The worker is now blocked inside compile(); the export is in flight.
     assert entered.wait(timeout=5), "export worker never entered compile()"
 
     try:
-        second = client.post("/api/pdf-export/start", json={
-            "folder": folder, "stage": "cleaned", "structure": False,
-        })
+        second = client.post(
+            "/api/pdf-export/start",
+            json={
+                "folder": folder,
+                "stage": "cleaned",
+                "structure": False,
+            },
+        )
         assert second.status_code == 409
         assert "already running" in second.json()["detail"].lower()
     finally:
@@ -1819,6 +1951,7 @@ def test_pdf_export_409_on_concurrent_start(client, pdf_text_folder, monkeypatch
 
     # Wait for the first to finish so we don't leave state dirty
     import time
+
     for _ in range(50):
         status = client.get("/api/pdf-export/status").json()
         if status["status"] in ("done", "error"):
@@ -1833,13 +1966,19 @@ def test_pdf_export_400_on_missing_folder(client, tmp_path):
     error after the web layer validates."""
     empty = tmp_path / "empty_folder"
     empty.mkdir()
-    res = client.post("/api/pdf-export/start", json={
-        "folder": str(empty), "stage": "cleaned", "structure": False,
-    })
+    res = client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": str(empty),
+            "stage": "cleaned",
+            "structure": False,
+        },
+    )
     assert res.status_code == 200  # start returns ok; error surfaces on thread
     assert res.json()["ok"] is True
 
     import time
+
     for _ in range(50):
         status = client.get("/api/pdf-export/status").json()
         if status["status"] in ("done", "error"):
@@ -1855,11 +1994,17 @@ def test_pdf_export_download_404_before_compilation(client):
 
 def test_pdf_export_download_returns_pdf_after_done(client, pdf_text_folder):
     folder = str(pdf_text_folder.parent.parent)
-    client.post("/api/pdf-export/start", json={
-        "folder": folder, "stage": "cleaned", "structure": False,
-    })
+    client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": folder,
+            "stage": "cleaned",
+            "structure": False,
+        },
+    )
 
     import time
+
     for _ in range(50):
         status = client.get("/api/pdf-export/status").json()
         if status["status"] == "done":
@@ -1875,9 +2020,14 @@ def test_pdf_export_download_returns_pdf_after_done(client, pdf_text_folder):
 def test_pdf_export_events_sse_streams_log_then_done(client, pdf_text_folder):
     """SSE stream should emit log events then a done event."""
     folder = str(pdf_text_folder.parent.parent)
-    res = client.post("/api/pdf-export/start", json={
-        "folder": folder, "stage": "cleaned", "structure": False,
-    })
+    res = client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": folder,
+            "stage": "cleaned",
+            "structure": False,
+        },
+    )
     assert res.status_code == 200
 
     sse_res = client.get("/api/pdf-export/events")
@@ -1967,13 +2117,17 @@ def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_fo
 
         # --- Start export A (gated inside compile) ---
         ok = runtime_module.start_pdf_export(
-            folder, stage="cleaned", structure=False, output=None,
-            manifest_path=None, format="pdf", style="readable", bilingual=False,
+            folder,
+            stage="cleaned",
+            structure=False,
+            output=None,
+            manifest_path=None,
+            format="pdf",
+            style="readable",
+            bilingual=False,
         )
         assert ok, f"Iteration {iteration}: start_pdf_export A returned False"
-        assert entered.wait(timeout=5), (
-            f"Iteration {iteration}: A never entered compile()"
-        )
+        assert entered.wait(timeout=5), f"Iteration {iteration}: A never entered compile()"
 
         # A is blocked inside compile — it's safe to swap in our
         # SignalingQueue because the worker hasn't reached events.put() yet.
@@ -1997,8 +2151,14 @@ def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_fo
         # the fix).  Call start_pdf_export — it will block on the lock
         # until A releases, then see status="done" and create B's queue.
         ok2 = runtime_module.start_pdf_export(
-            folder, stage="cleaned", structure=False, output=None,
-            manifest_path=None, format="pdf", style="readable", bilingual=False,
+            folder,
+            stage="cleaned",
+            structure=False,
+            output=None,
+            manifest_path=None,
+            format="pdf",
+            style="readable",
+            bilingual=False,
         )
 
         if not ok2:
@@ -2012,9 +2172,7 @@ def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_fo
         # B was accepted.  B's queue must not contain A's distinctive
         # output path — that would mean A's terminal event leaked.
         b_queue = state.events
-        assert b_queue is not a_queue, (
-            f"Iteration {iteration}: B did not get a fresh queue"
-        )
+        assert b_queue is not a_queue, f"Iteration {iteration}: B did not get a fresh queue"
 
         # Drain B's queue quickly.  B's thread has just started and cannot
         # have produced a "done" event yet (compile returns instantly with
@@ -2052,10 +2210,16 @@ def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_fo
 # path validation — pdf export
 # --------------------------------------------------------------------------- #
 
+
 def test_pdf_export_refuses_folder_outside_allowed_roots(client):
-    res = client.post("/api/pdf-export/start", json={
-        "folder": "/opt/rejected/scans", "stage": "cleaned", "structure": False,
-    })
+    res = client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": "/opt/rejected/scans",
+            "stage": "cleaned",
+            "structure": False,
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -2063,10 +2227,15 @@ def test_pdf_export_refuses_folder_outside_allowed_roots(client):
 
 
 def test_pdf_export_refuses_output_outside_allowed_roots(client):
-    res = client.post("/api/pdf-export/start", json={
-        "folder": "/tmp/scans", "stage": "cleaned", "structure": False,
-        "output": "/opt/rejected/out.pdf",
-    })
+    res = client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": "/tmp/scans",
+            "stage": "cleaned",
+            "structure": False,
+            "output": "/opt/rejected/out.pdf",
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -2074,10 +2243,15 @@ def test_pdf_export_refuses_output_outside_allowed_roots(client):
 
 
 def test_pdf_export_refuses_manifest_outside_allowed_roots(client):
-    res = client.post("/api/pdf-export/start", json={
-        "folder": "/tmp/scans", "stage": "cleaned", "structure": False,
-        "manifest": "/opt/rejected/manifest.json",
-    })
+    res = client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": "/tmp/scans",
+            "stage": "cleaned",
+            "structure": False,
+            "manifest": "/opt/rejected/manifest.json",
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -2086,14 +2260,20 @@ def test_pdf_export_refuses_manifest_outside_allowed_roots(client):
 
 def test_pdf_export_accepts_valid_paths(client, pdf_text_folder):
     folder = str(pdf_text_folder.parent.parent)
-    res = client.post("/api/pdf-export/start", json={
-        "folder": folder, "stage": "cleaned", "structure": False,
-    })
+    res = client.post(
+        "/api/pdf-export/start",
+        json={
+            "folder": folder,
+            "stage": "cleaned",
+            "structure": False,
+        },
+    )
     assert res.status_code == 200
     assert res.json()["ok"] is True
 
     # Wait for the thread to finish
     import time
+
     for _ in range(50):
         status = client.get("/api/pdf-export/status").json()
         if status["status"] in ("done", "error"):
@@ -2106,6 +2286,7 @@ def test_pdf_export_accepts_valid_paths(client, pdf_text_folder):
 # path validation — ludwiglang download
 # --------------------------------------------------------------------------- #
 
+
 def test_ludwiglang_download_refuses_path_outside_output_dir(client, tmp_path):
     """A download path outside the configured output directory is refused."""
     config.apply_overrides({"output_dir": str(tmp_path / "out")})
@@ -2114,9 +2295,12 @@ def test_ludwiglang_download_refuses_path_outside_output_dir(client, tmp_path):
     sibling = tmp_path / "text.md"
     sibling.write_text("secret", encoding="utf-8")
 
-    res = client.get("/api/ludwiglang/download", params={
-        "path": str(sibling),
-    })
+    res = client.get(
+        "/api/ludwiglang/download",
+        params={
+            "path": str(sibling),
+        },
+    )
     assert res.status_code == 400
     assert "not within" in res.json()["detail"].lower()
 
@@ -2131,9 +2315,12 @@ def test_ludwiglang_download_serves_file_within_output_dir(client, tmp_path):
 
     config.apply_overrides({"output_dir": str(out)})
 
-    res = client.get("/api/ludwiglang/download", params={
-        "path": str(export_file),
-    })
+    res = client.get(
+        "/api/ludwiglang/download",
+        params={
+            "path": str(export_file),
+        },
+    )
     assert res.status_code == 200
     assert res.headers["content-type"].startswith("text/markdown")
     assert "# Test Document" in res.text
@@ -2151,9 +2338,12 @@ def test_ludwiglang_download_missing_file_returns_404(client, tmp_path):
     (out / "ludwiglang").mkdir(parents=True)
     config.apply_overrides({"output_dir": str(out)})
 
-    res = client.get("/api/ludwiglang/download", params={
-        "path": str(out / "ludwiglang" / "absent.md"),
-    })
+    res = client.get(
+        "/api/ludwiglang/download",
+        params={
+            "path": str(out / "ludwiglang" / "absent.md"),
+        },
+    )
     assert res.status_code == 404
     assert "not found" in res.json()["detail"].lower()
 
@@ -2170,9 +2360,12 @@ def test_ludwiglang_download_refuses_missing_path_outside_output_dir(client, tmp
     out.mkdir()
     config.apply_overrides({"output_dir": str(out)})
 
-    res = client.get("/api/ludwiglang/download", params={
-        "path": str(tmp_path / "elsewhere" / "absent.md"),
-    })
+    res = client.get(
+        "/api/ludwiglang/download",
+        params={
+            "path": str(tmp_path / "elsewhere" / "absent.md"),
+        },
+    )
     assert res.status_code == 400
     assert "not within" in res.json()["detail"].lower()
 
@@ -2189,9 +2382,12 @@ def test_ludwiglang_download_refuses_windows_style_escape(client, tmp_path):
     sibling.write_text("data", encoding="utf-8")
 
     # Simulate what a Windows client might send — backslashes for separators
-    res = client.get("/api/ludwiglang/download", params={
-        "path": str(sibling).replace("/", "\\"),
-    })
+    res = client.get(
+        "/api/ludwiglang/download",
+        params={
+            "path": str(sibling).replace("/", "\\"),
+        },
+    )
     assert res.status_code == 400
     assert "not within" in res.json()["detail"].lower()
 
@@ -2200,10 +2396,14 @@ def test_ludwiglang_download_refuses_windows_style_escape(client, tmp_path):
 # path validation — ludwiglang collections / export
 # --------------------------------------------------------------------------- #
 
+
 def test_ludwiglang_collections_refuses_output_dir_outside_allowed_roots(client):
-    res = client.get("/api/ludwiglang/collections", params={
-        "output_dir": "/opt/rejected/output",
-    })
+    res = client.get(
+        "/api/ludwiglang/collections",
+        params={
+            "output_dir": "/opt/rejected/output",
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -2213,17 +2413,24 @@ def test_ludwiglang_collections_refuses_output_dir_outside_allowed_roots(client)
 def test_ludwiglang_collections_accepts_valid_output_dir(client, tmp_path):
     out = tmp_path / "out"
     out.mkdir()
-    res = client.get("/api/ludwiglang/collections", params={
-        "output_dir": str(out),
-    })
+    res = client.get(
+        "/api/ludwiglang/collections",
+        params={
+            "output_dir": str(out),
+        },
+    )
     assert res.status_code == 200
     assert res.json()["collections"] == []
 
 
 def test_ludwiglang_export_refuses_output_dir_outside_allowed_roots(client):
-    res = client.post("/api/ludwiglang/export", json={
-        "collection": "test", "output_dir": "/opt/rejected/output",
-    })
+    res = client.post(
+        "/api/ludwiglang/export",
+        json={
+            "collection": "test",
+            "output_dir": "/opt/rejected/output",
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -2234,14 +2441,18 @@ def test_ludwiglang_export_refuses_output_dir_outside_allowed_roots(client):
 # path validation — add_paths
 # --------------------------------------------------------------------------- #
 
+
 def test_add_paths_refuses_path_outside_allowed_roots(client, tmp_path):
     """A path outside the permitted root directories is refused with 400."""
     # Pick a directory that is not /home, /tmp, or the working directory.
     # resolve(strict=False) does not require the path to exist, so a
     # nonexistent path under /opt is sufficient.
-    res = client.post("/api/queue/add-paths", json={
-        "paths": ["/opt/rejected/scan.png"],
-    })
+    res = client.post(
+        "/api/queue/add-paths",
+        json={
+            "paths": ["/opt/rejected/scan.png"],
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -2259,9 +2470,12 @@ def test_add_paths_refuses_hidden_directory(client, tmp_path):
     hidden.mkdir()
     (hidden / "scan.png").write_bytes(b"x")
 
-    res = client.post("/api/queue/add-paths", json={
-        "paths": [str(hidden / "scan.png")],
-    })
+    res = client.post(
+        "/api/queue/add-paths",
+        json={
+            "paths": [str(hidden / "scan.png")],
+        },
+    )
     assert res.status_code == 400
     assert "hidden" in res.json()["detail"].lower()
 
@@ -2272,9 +2486,12 @@ def test_add_paths_accepts_normal_path(client, tmp_path):
     (tmp_path / "scan.png").write_bytes(b"x")
     (tmp_path / "scan.pdf").write_bytes(b"x")
 
-    res = client.post("/api/queue/add-paths", json={
-        "paths": [str(tmp_path)],
-    })
+    res = client.post(
+        "/api/queue/add-paths",
+        json={
+            "paths": [str(tmp_path)],
+        },
+    )
     assert res.status_code == 200
     assert res.json()["added"] == 2
 
@@ -2285,16 +2502,19 @@ def test_add_paths_refuses_windows_style_path(client, tmp_path):
 
     The *reason* differs by platform and the assertion has to follow, or this
     test passes on POSIX and fails on Windows. On POSIX a drive letter is
-    refused outright by `_normalise`, because pathlib would otherwise treat
+    refused outright by `normalise_path`, because pathlib would otherwise treat
     "C:/SystemFolder" as relative and `resolve()` would prepend the cwd,
     landing it inside an allowed root. On Windows the same string is a
     perfectly valid absolute path, so it resolves and is then refused by the
     containment check instead. Either way it must be a 400 — that is the
     property under test.
     """
-    res = client.post("/api/queue/add-paths", json={
-        "paths": ["C:\\SystemFolder\\file.png"],
-    })
+    res = client.post(
+        "/api/queue/add-paths",
+        json={
+            "paths": ["C:\\SystemFolder\\file.png"],
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"].lower()
     if os.name == "posix":
@@ -2307,12 +2527,17 @@ def test_add_paths_refuses_windows_style_path(client, tmp_path):
 # path validation — output_dir
 # --------------------------------------------------------------------------- #
 
+
 def test_start_run_refuses_output_dir_outside_allowed_roots(client, tmp_path):
     """An output directory outside the permitted roots is refused before
     any run is started."""
-    res = client.post("/api/run/start", json={
-        "stages": ["ocr"], "output_dir": "/opt/rejected/output",
-    })
+    res = client.post(
+        "/api/run/start",
+        json={
+            "stages": ["ocr"],
+            "output_dir": "/opt/rejected/output",
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "outside the directories this server is permitted" in detail.lower()
@@ -2323,9 +2548,13 @@ def test_start_run_refuses_output_dir_outside_allowed_roots(client, tmp_path):
 def test_start_run_refuses_hidden_output_dir(client, tmp_path):
     """A hidden output directory is refused at validation time."""
     hidden = tmp_path / ".hidden_out"
-    res = client.post("/api/run/start", json={
-        "stages": ["ocr"], "output_dir": str(hidden),
-    })
+    res = client.post(
+        "/api/run/start",
+        json={
+            "stages": ["ocr"],
+            "output_dir": str(hidden),
+        },
+    )
     assert res.status_code == 400
     assert "hidden" in res.json()["detail"].lower()
 
@@ -2336,9 +2565,13 @@ def test_start_run_accepts_normal_output_dir(client, tmp_path):
     out = tmp_path / "out"
     out.mkdir()
 
-    res = client.post("/api/run/start", json={
-        "stages": ["ocr"], "output_dir": str(out),
-    })
+    res = client.post(
+        "/api/run/start",
+        json={
+            "stages": ["ocr"],
+            "output_dir": str(out),
+        },
+    )
     # 409 = queue is empty, but validation passed (otherwise 400)
     assert res.status_code == 409
     assert "empty" in res.json()["detail"].lower()
@@ -2351,9 +2584,13 @@ def test_start_run_refuses_windows_style_output_dir(client):
     ``test_add_paths_refuses_windows_style_path`` — see its docstring. The 400
     is the invariant; the message is not.
     """
-    res = client.post("/api/run/start", json={
-        "stages": ["ocr"], "output_dir": "C:\\SystemFolder\\output",
-    })
+    res = client.post(
+        "/api/run/start",
+        json={
+            "stages": ["ocr"],
+            "output_dir": "C:\\SystemFolder\\output",
+        },
+    )
     assert res.status_code == 400
     detail = res.json()["detail"].lower()
     if os.name == "posix":
@@ -2366,6 +2603,7 @@ def test_start_run_refuses_windows_style_output_dir(client):
 # Cause A regression — temp dir from TMPDIR is always an allowed root
 # --------------------------------------------------------------------------- #
 
+
 def test_platform_temp_dir_is_always_an_allowed_root():
     """The platform's own temp directory is an allowed root on every platform.
 
@@ -2377,10 +2615,10 @@ def test_platform_temp_dir_is_always_an_allowed_root():
     """
     import tempfile
 
-    from artifice_ocr.web.validation import _build_allowed_roots
+    from shared_ui.path_validation import build_allowed_roots
 
     temp_root = Path(tempfile.gettempdir()).resolve()
-    assert temp_root in [r.resolve() for r in _build_allowed_roots()]
+    assert temp_root in [r.resolve() for r in build_allowed_roots("ARTIFICE_OCR_ALLOWED_ROOTS")]
 
 
 @pytest.mark.skipif(
@@ -2429,6 +2667,42 @@ def test_validate_directory_accepts_temp_dir_from_custom_tmpdir(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
+# validate_contained — malformed input rejection (regression)
+# --------------------------------------------------------------------------- #
+# ``normalise_path`` raises ``ValueError`` for empty/whitespace-only strings
+# and, on POSIX, for Windows drive-letter paths.  ``validate_contained`` called
+# it outside any try/except, so those errors propagated as unhandled 500s
+# rather than 400s.  These tests assert that both failure modes now return
+# HTTP 400, matching the pattern ``validate_directory`` already follows.
+
+
+def test_validate_contained_rejects_empty_string(tmp_path):
+    """An empty raw path string must be 400, not an unhandled ValueError."""
+    from artifice_ocr.web.validation import validate_contained
+
+    container = str(tmp_path)
+    with pytest.raises(HTTPException) as exc_info:
+        validate_contained("", container, "path")
+    assert exc_info.value.status_code == 400
+    assert "must not be empty" in str(exc_info.value.detail)
+
+
+@pytest.mark.skipif(
+    os.name != "posix",
+    reason="Windows drive-letter detection only activates on POSIX",
+)
+def test_validate_contained_rejects_windows_drive_letter_on_posix(tmp_path):
+    """A Windows drive-letter path on POSIX must be 400, not 500."""
+    from artifice_ocr.web.validation import validate_contained
+
+    container = str(tmp_path)
+    with pytest.raises(HTTPException) as exc_info:
+        validate_contained("C:\\Windows", container, "path")
+    assert exc_info.value.status_code == 400
+    assert "not valid on this platform" in str(exc_info.value.detail)
+
+
+# --------------------------------------------------------------------------- #
 # ludwiglang export — collection path-traversal (platform-independent)
 # --------------------------------------------------------------------------- #
 # ``validate_contained`` decides containment after resolving the fully joined
@@ -2436,6 +2710,7 @@ def test_validate_directory_accepts_temp_dir_from_custom_tmpdir(monkeypatch):
 # with 400 regardless of platform.  Asserting on the *containment decision*
 # (400 vs 200) rather than the resolved string makes the test meaningful on
 # POSIX as well as Windows.
+
 
 def test_ludwiglang_export_rejects_traversal_collection(client, tmp_path, monkeypatch):
     """A collection name that escapes the validated output directory is 400.
@@ -2463,20 +2738,20 @@ def test_ludwiglang_export_rejects_traversal_collection(client, tmp_path, monkey
         lambda *a, **kw: tmp_path / "out.md",
     )
 
-    res = client.post("/api/ludwiglang/export", json={
-        "collection": "../../../etc",
-        "output_dir": str(out),
-    })
+    res = client.post(
+        "/api/ludwiglang/export",
+        json={
+            "collection": "../../../etc",
+            "output_dir": str(out),
+        },
+    )
     assert res.status_code == 400, (
-        f"Expected 400 for traversal collection, got {res.status_code}: "
-        f"{res.json()}"
+        f"Expected 400 for traversal collection, got {res.status_code}: {res.json()}"
     )
     # The rejection message comes from validate_contained — it must not
     # disclose the resolved path.
     detail = res.json()["detail"].lower()
-    assert "not within" in detail, (
-        f"Expected containment rejection, got: {detail}"
-    )
+    assert "not within" in detail, f"Expected containment rejection, got: {detail}"
 
 
 def test_ludwiglang_export_accepts_legitimate_collection(client, tmp_path, monkeypatch):
@@ -2491,7 +2766,8 @@ def test_ludwiglang_export_accepts_legitimate_collection(client, tmp_path, monke
     coll_dir.mkdir(parents=True)
     # export_md expects page JSON files within the collection directory.
     (coll_dir / "page0001.json").write_text(
-        '{"extracted_text": "test"}', encoding="utf-8",
+        '{"extracted_text": "test"}',
+        encoding="utf-8",
     )
 
     monkeypatch.setattr(
@@ -2503,19 +2779,22 @@ def test_ludwiglang_export_accepts_legitimate_collection(client, tmp_path, monke
         lambda *a, **kw: tmp_path / "out.md",
     )
 
-    res = client.post("/api/ludwiglang/export", json={
-        "collection": "my-collection",
-        "output_dir": str(out),
-    })
+    res = client.post(
+        "/api/ludwiglang/export",
+        json={
+            "collection": "my-collection",
+            "output_dir": str(out),
+        },
+    )
     assert res.status_code == 200, (
-        f"Expected 200 for legitimate collection, got {res.status_code}: "
-        f"{res.json()}"
+        f"Expected 200 for legitimate collection, got {res.status_code}: {res.json()}"
     )
 
 
 # --------------------------------------------------------------------------- #
 # config reset — credential redaction
 # --------------------------------------------------------------------------- #
+
 
 def test_config_reset_does_not_leak_credentials(client, monkeypatch):
     """POST /api/config/reset must not return api_key or huggingface_token
@@ -2527,10 +2806,12 @@ def test_config_reset_does_not_leak_credentials(client, monkeypatch):
     ``_redact_config`` replaces them with the shared placeholder.
     """
     # Populate secrets in the live config cache.
-    config.apply_overrides({
-        "api_key": "sk-secret-test-key",
-        "huggingface_token": "hf-secret-test-token",
-    })
+    config.apply_overrides(
+        {
+            "api_key": "sk-secret-test-key",
+            "huggingface_token": "hf-secret-test-token",
+        }
+    )
 
     # Prevent reset from clearing the cache so the secrets survive into the
     # response dict — this reproduces the leak scenario from the review.

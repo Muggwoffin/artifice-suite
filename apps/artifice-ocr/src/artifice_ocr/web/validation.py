@@ -14,8 +14,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import HTTPException
+from shared_ui.path_validation import normalise_path
 
-from ..validation import _normalise, _build_allowed_roots, validate_path
+from ..validation import validate_path
 
 
 def validate_directory(raw: str, field_name: str) -> str:
@@ -73,7 +74,10 @@ def validate_contained(
     *container* would become an existence oracle for arbitrary filesystem
     paths.
     """
-    normalised_raw = _normalise(raw, field_name)
+    try:
+        normalised_raw = normalise_path(raw, field_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
     try:
         p = Path(normalised_raw).expanduser().resolve(strict=must_exist)
     except Exception:
@@ -90,10 +94,7 @@ def validate_contained(
         # both disclose server filesystem layout to an unauthenticated caller.
         raise HTTPException(
             status_code=400,
-            detail=(
-                f"{field_name}: path {raw!r} is not within the permitted "
-                f"output directory"
-            ),
+            detail=(f"{field_name}: path {raw!r} is not within the permitted output directory"),
         ) from None
 
     return str(p)
