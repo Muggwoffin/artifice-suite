@@ -8,6 +8,50 @@
 > dispatch, on branch `refactor/oss-compliance`. Steps use checkbox (`- [ ]`)
 > syntax for tracking.
 
+> **STATUS 2026-08-07: All 9 tasks complete.** All committed on
+> `refactor/oss-compliance`, not merged to `main` — awaiting the
+> maintainer's go-ahead per this plan's own "Do not merge" rule.
+> `REFACTOR.md` (the original hand-written proposal) was never a tracked
+> file — it existed only as an untracked scratch doc in the `main`
+> checkout's working directory and never propagated into this branch's
+> worktree, so this plan document is the only tracked record of what
+> shipped. Three deviations from REFACTOR.md's literal proposal, beyond
+> the five already logged in "Verified deviations" above, emerged during
+> implementation and are worth a future reader knowing without
+> re-deriving them:
+>
+> 1. **`migrate_legacy_directory`'s two independent try/except blocks**
+>    (`_migrate_whole_dir`, fixed mid-Task-9). The first committed version
+>    put `shutil.move` and `ensure_restricted` in one try block, so a
+>    restrict-hardening failure after a successful move would make the
+>    function claim the data was still at `legacy_path` — provably false.
+>    Unreachable via the real `ensure_restricted` today (it already
+>    swallows its own exceptions by contract) but was a real latent
+>    defect. Split into two blocks; a restrict failure now returns
+>    `default_path` regardless.
+> 2. **One pre-existing, out-of-scope bug found and fixed on request**
+>    (not part of REFACTOR.md, not part of this plan's original task
+>    list): `artifice-ocr`'s `validate_contained()` called
+>    `normalise_path` outside any try/except, so a malformed path 500'd
+>    instead of 400'ing. Fixed with TDD (confirmed the regression test
+>    failed against the pre-fix code before trusting the fix).
+> 3. **Mock-patch-target corrections were a recurring theme, not a
+>    one-off.** Every app migrated to a shared module needed at least one
+>    test's `mock.patch(...)` target corrected from "where the function
+>    is defined" to "where it's looked up" — a module-level `from X import
+>    Y` in the new shared module creates a separate binding from
+>    whatever the old per-call local import bound. This bit
+>    `artifice-graph`'s `ensure_restricted` tests specifically (Task 9)
+>    and is worth watching for in any future shared-module extraction.
+>
+> **Verified clean** by an `arch-auditor-docs` dangling-reference sweep
+> covering all six deleted-name/deleted-body search patterns across all
+> four apps: no orphaned duplicate implementations, no dangling private-name
+> imports, no leftover module-level state. Full test suite green across
+> all four apps and three shared packages (3 pre-existing, unrelated
+> `artifice-draft` failures — missing optional `readability-lxml`
+> dependency, confirmed present before this branch existed).
+
 **Goal:** Consolidate three duplicated subsystems (path validation, local-server
 bootstrap, legacy-data migration) into shared packages, closing a real security
 gap in the process, with zero behavior change to any app's happy path.
