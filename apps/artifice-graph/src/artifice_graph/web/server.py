@@ -12,7 +12,6 @@ import importlib.resources
 import json
 import logging
 import os
-import socket
 import sys
 import threading
 import time
@@ -20,7 +19,6 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
-import uvicorn
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -1353,82 +1351,28 @@ async def about():
 
 # ── Main / bootstrap ──────────────────────────────────────────────────
 
+from shared_ui.server_bootstrap import (  # noqa: E402
+    ensure_std_streams,
+    free_port,
+    port_available,
+    report_startup_failure,
+    start_server_thread,
+    wait_for_server,
+)
 
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
-
-
-def _port_available(port: int) -> bool:
-    """Return True if the port can be bound on 127.0.0.1 right now."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        try:
-            s.bind(("127.0.0.1", port))
-            return True
-        except OSError:
-            return False
-
-
-def _wait_for_server(port: int, *, timeout: float = 10.0) -> bool:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
-            probe.settimeout(0.2)
-            try:
-                probe.connect(("127.0.0.1", port))
-                return True
-            except OSError:
-                time.sleep(0.1)
-    return False
+# Re-export under the private names that `main()` expects.
+_free_port = free_port
+_port_available = port_available
+_wait_for_server = wait_for_server
+_ensure_std_streams = ensure_std_streams
 
 
 def _start_server_thread(port: int):
-    import uvicorn as _uvicorn
-
-    errors: list[BaseException] = []
-
-    def _serve():
-        try:
-            _uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
-        except Exception as exc:
-            errors.append(exc)
-
-    thread = threading.Thread(target=_serve, daemon=True)
-    thread.start()
-    return thread, errors
+    return start_server_thread(app, port)
 
 
 def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> None:
-    if errors:
-        detail = f"{type(errors[0]).__name__}: {errors[0]}"
-    elif thread.is_alive():
-        detail = "No response within 10s, though the server thread is still running."
-    else:
-        detail = "The server thread exited without ever starting to listen."
-    message = (
-        f"ArtificeGraph's local server could not start on port {port}.\n\n"
-        f"{detail}\n\n"
-        f"Close any other ArtificeGraph window and try again."
-    )
-    print(f"ERROR: {message}")
-    try:
-        import tkinter as tk
-        from tkinter import messagebox
-
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror("ArtificeGraph — server did not start", message)
-        root.destroy()
-    except Exception:
-        pass
-
-
-def _ensure_std_streams() -> None:
-    if sys.stdout is None:
-        sys.stdout = open(os.devnull, "w")
-    if sys.stderr is None:
-        sys.stderr = open(os.devnull, "w")
+    report_startup_failure("ArtificeGraph", port, thread, errors)
 
 
 def main() -> None:
