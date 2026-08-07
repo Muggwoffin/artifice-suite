@@ -11,6 +11,10 @@ still import and run the CLI and web server without pywebview installed.
 
 from __future__ import annotations
 
+import os
+import sys
+from pathlib import Path
+
 
 class WindowError(Exception):
     """Raised when a native window cannot be opened."""
@@ -46,6 +50,25 @@ def open_native_window(
     This function is designed to be called *after* the local server is already
     listening, so the user sees a populated page immediately.
     """
+    # ------------------------------------------------------------------
+    # In a PyInstaller frozen build on Windows, pywebview's pythonnet backend
+    # loads Python.Runtime.dll from _internal/pythonnet/runtime/, which then
+    # needs to resolve the embedded pythonXY.dll. That DLL lives in
+    # _internal/ (== sys._MEIPASS at runtime), which is not on %PATH% and
+    # PYTHONNET_PYDLL is unset, so the .NET loader fails with "Failed to
+    # resolve Python.Runtime.Loader.Initialize" before webview.start() ever
+    # runs. Both env vars must be set before ``import webview`` triggers
+    # pythonnet's own DLL search — setting them after is too late.
+    if getattr(sys, "frozen", False):
+        base_dir = getattr(sys, "_MEIPASS", None)
+        if base_dir is not None:
+            base_dir = Path(base_dir)
+            dll_name = f"python{sys.version_info.major}{sys.version_info.minor}.dll"
+            dll_path = base_dir / dll_name
+            if dll_path.exists():
+                os.environ["PYTHONNET_PYDLL"] = str(dll_path)
+            os.environ["PATH"] = str(base_dir) + os.pathsep + os.environ.get("PATH", "")
+
     # ------------------------------------------------------------------
     # Try to import pywebview.  Both the import itself and the subsequent
     # ``webview.start()`` can fail in headless / missing-backend scenarios.
