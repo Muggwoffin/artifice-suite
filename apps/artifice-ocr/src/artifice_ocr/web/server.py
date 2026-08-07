@@ -181,10 +181,18 @@ def _byom_recommendations(app: str) -> dict:
     """Serialise model_harness.registry recommendations for *app*.
 
     Reads the real ModelRecommendation fields (model_name, provider, vision,
-    min_vram_gb) — NOT the {name, why, size_bytes} shape the phase6 brief's
-    illustrative GET /api/byom/state JSON shows, which does not match the
-    dataclass. See the KNOWN CONTRACT MISMATCH note atop
-    packages/shared-ui/shared_ui/assets/byom.js.
+    min_vram_gb, ethos_badges, role, notes) — NOT the {name, why, size_bytes}
+    shape the phase6 brief's illustrative GET /api/byom/state JSON shows,
+    which does not match the dataclass. See the KNOWN CONTRACT MISMATCH note
+    atop packages/shared-ui/shared_ui/assets/byom.js.
+
+    This is a dev-only duplicate of routers/byom.py's own
+    _byom_recommendations(), kept in sync by hand rather than imported,
+    because the preview route's fixture data lives in this file. PR #56
+    added ethos_badges/role/notes to the real router but missed this copy —
+    the exact "half-applied change" failure mode this codebase's HANDOVER
+    keeps recording. Whenever ModelRecommendation's serialised shape
+    changes, update both.
     """
     from model_harness.registry import HardwareTier, recommendations_for_app
 
@@ -200,6 +208,9 @@ def _byom_recommendations(app: str) -> dict:
                 "provider": r.provider,
                 "vision": r.vision,
                 "min_vram_gb": r.min_vram_gb,
+                "ethos_badges": list(r.ethos_badges),
+                "role": r.role,
+                "notes": r.notes,
             }
             for r in recommendations_for_app(app, tier)
         ]

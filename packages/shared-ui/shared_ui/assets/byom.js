@@ -276,6 +276,20 @@
       "this computer, so nothing you process here is ever sent anywhere else.";
   }
 
+  // ── Badges helper (§8.17 Source Badge) ────────────────────────────────
+
+  // Renders ethos_badges (array of strings, possibly empty/undefined) into
+  // badge markup, or the empty string when the array is absent or empty.
+  // Every string goes through escapeHtml() — defence in depth even though
+  // the vocabulary is server-validated (PERMITTED_BADGES, registry.py:184).
+  function _badgesHtml(badges) {
+    if (!badges || !badges.length) { return ""; }
+    var inner = badges.map(function (b) {
+      return '<span class="byom-badge">' + escapeHtml(b) + "</span>";
+    }).join("");
+    return '<div class="byom-badges">' + inner + "</div>";
+  }
+
   // ── Byom ─────────────────────────────────────────────────────────────
 
   function Byom(opts) {
@@ -740,7 +754,8 @@
       {
         title: isVisionApp ? "Pull a vision-capable model" : "Pull a model sized for your machine",
         desc: pullDesc,
-        code: pullCmd || undefined
+        code: pullCmd || undefined,
+        badges: top && top.ethos_badges
       },
       {
         title: "Test the connection",
@@ -818,7 +833,8 @@
           ? "Open a terminal and run the command below" + (whyText ? " — " + escapeHtml(whyText) : "") + "."
           : "No recommendation is available for this hardware tier yet &mdash; pull any small " +
             "instruct model from ollama.com/library.",
-        code: pullCmd || undefined
+        code: pullCmd || undefined,
+        badges: top && top.ethos_badges
       },
       {
         title: "Test the connection",
@@ -834,6 +850,7 @@
           '<button type="button" class="byom-copy" data-copy="' + escapeHtml(s.code) + '" aria-label="Copy command">' +
           ICON_COPY + "<span>Copy</span></button></div>"
         : "";
+      var badgesHtml = _badgesHtml(s.badges);
       return (
         '<li class="byom-step">' +
         '<span class="byom-step-num" aria-hidden="true">' + (idx + 1) + "</span>" +
@@ -841,6 +858,7 @@
         '<p class="byom-step-title">' + escapeHtml(s.title) + "</p>" +
         '<p class="byom-step-desc">' + s.desc + "</p>" +
         codeHtml +
+        badgesHtml +
         "</div></li>"
       );
     }).join("");
@@ -895,11 +913,13 @@
         // expected case, gets the same plain row as every other app.
         rowsHtml = recs.map(function (r) {
           var cmd = "ollama pull " + r.model_name;
+          var badges = _badgesHtml(r.ethos_badges);
           if (r.vision) {
             return (
               '<div class="byom-code-row"><pre class="byom-code"><code>' + escapeHtml(cmd) + "</code></pre>" +
               '<button type="button" class="byom-copy" data-copy="' + escapeHtml(cmd) + '" aria-label="Copy command">' +
-              ICON_COPY + "<span>Copy</span></button></div>"
+              ICON_COPY + "<span>Copy</span></button></div>" +
+              badges
             );
           }
           return (
@@ -908,16 +928,19 @@
             '<button type="button" class="byom-copy" data-copy="' + escapeHtml(cmd) + '" aria-label="Copy command">' +
             ICON_COPY + "<span>Copy</span></button></div>" +
             '<p class="byom-code-note">Text only &mdash; will not work for ' + escapeHtml(self.appName) + ".</p>" +
+            badges +
             "</div>"
           );
         }).join("");
       } else {
         rowsHtml = recs.map(function (r) {
           var cmd = "ollama pull " + r.model_name;
+          var badges = _badgesHtml(r.ethos_badges);
           return (
             '<div class="byom-code-row"><pre class="byom-code"><code>' + escapeHtml(cmd) + "</code></pre>" +
             '<button type="button" class="byom-copy" data-copy="' + escapeHtml(cmd) + '" aria-label="Copy command">' +
-            ICON_COPY + "<span>Copy</span></button></div>"
+            ICON_COPY + "<span>Copy</span></button></div>" +
+            badges
           );
         }).join("");
       }
