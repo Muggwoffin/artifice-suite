@@ -6,10 +6,15 @@
 
 from __future__ import annotations
 
+import sys
 import time
+from pathlib import Path
 from unittest import mock
 
 from artifice_ocr.web.window import WindowResult, open_native_window
+
+# apps/artifice-ocr/tests/test_window.py -> repo root is three parents up.
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 class TestWindowResult:
@@ -102,7 +107,7 @@ class TestMainNoWindowFlag:
 
         return subprocess.Popen(
             [
-                "/home/mjcasey/projects/artifice-suite/.venv/bin/python",
+                sys.executable,
                 "-m",
                 "artifice_ocr.web.server",
                 "--port",
@@ -111,7 +116,7 @@ class TestMainNoWindowFlag:
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd="/home/mjcasey/projects/artifice-suite",
+            cwd=str(_REPO_ROOT),
             preexec_fn=__import__("os").setsid,
         )
 
