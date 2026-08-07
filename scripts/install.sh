@@ -42,15 +42,19 @@ print_data_path() {
 # ── ensure uv is available ──────────────────────────────────────────────
 
 if ! command -v uv &>/dev/null; then
-    banner "Installing uv"
-    printf 'uv is not installed. Downloading the official installer…\n'
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    # shellcheck source=/dev/null
-    export PATH="$HOME/.local/bin:$PATH"
-    if ! command -v uv &>/dev/null; then
-        die 'uv was installed but is still not on PATH. Add ~/.local/bin to your PATH and re-run.'
-    fi
-    info "uv $(uv --version) installed"
+    die 'uv is required but not found on PATH.
+
+Install it manually:
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+
+Alternative methods (Homebrew, winget, pipx):
+  https://docs.astral.sh/uv/getting-started/installation/
+
+This script does not run a network-fetched installer automatically:
+piping a downloaded script into a shell interpreter with no integrity
+check is not something we will do on your behalf without you seeing
+exactly what that command looks like first.  Run the command above
+yourself, then re-run this script.'
 fi
 
 # ── parse arguments ─────────────────────────────────────────────────────
