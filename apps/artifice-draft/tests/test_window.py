@@ -11,9 +11,9 @@ import time
 from pathlib import Path
 from unittest import mock
 
-from artifice_ocr.web.window import WindowResult, open_native_window
+from artifice_draft.web.window import WindowResult, open_native_window
 
-# apps/artifice-ocr/tests/test_window.py -> repo root is three parents up.
+# apps/artifice-draft/tests/test_window.py -> repo root is three parents up.
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -83,12 +83,12 @@ class TestOpenNativeWindow:
         ):
             open_native_window(
                 "http://127.0.0.1:9999",
-                title="My OCR App",
+                title="My Draft App",
                 width=1024,
                 height=768,
             )
             mock_create.assert_called_once_with(
-                title="My OCR App",
+                title="My Draft App",
                 url="http://127.0.0.1:9999",
                 width=1024,
                 height=768,
@@ -109,7 +109,7 @@ class TestMainNoWindowFlag:
             [
                 sys.executable,
                 "-m",
-                "artifice_ocr.web.server",
+                "artifice_draft.web.server",
                 "--port",
                 str(port),
                 *extra_args,
@@ -174,12 +174,13 @@ class TestMainNoWindowFlag:
             body = resp.read().decode()
             assert "<!DOCTYPE html>" in body.lower() or "<html" in body.lower()
 
-            # Check static assets
+            # Check shared asset
             resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/shared/tokens.css")
             assert resp.status == 200
             css = resp.read().decode()
             assert "clamp" in css  # fluid typography
 
+            # Check app static asset
             resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/static/css/app.css")
             assert resp.status == 200
         finally:
@@ -189,7 +190,7 @@ class TestMainNoWindowFlag:
             proc.wait(timeout=5)
 
     def test_server_with_no_window_serves_api(self) -> None:
-        """Check that /api/queue responds in --no-window mode."""
+        """Check that /api/settings responds in --no-window mode."""
         import json
         import urllib.request
 
@@ -199,10 +200,10 @@ class TestMainNoWindowFlag:
         try:
             assert self._wait_for_server(port), f"Server on port {port} did not start"
 
-            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/api/queue")
+            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/api/settings")
             assert resp.status == 200
             data = json.loads(resp.read())
-            assert "items" in data or "queue" in data
+            assert "llm_provider" in data
         finally:
             import signal
 
@@ -212,9 +213,8 @@ class TestMainNoWindowFlag:
     def test_normal_mode_serves_content(self) -> None:
         """In non-frozen mode without --no-window, server serves normally.
 
-        We cannot verify the native window opens (WSL has no display), but
-        we verify the server is accessible — which is the fallback behavior
-        on a headless system.
+        We cannot verify the browser opens (WSL has no display), but
+        we verify the server is accessible.
         """
         import urllib.request
 
