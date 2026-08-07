@@ -88,18 +88,25 @@ jobs:
         #
         # API path is per-app: /api/queue for ocr, /api/settings for draft,
         # /api/state for graph.
-        # Static paths (/shared/tokens.css, /static/css/app.css) are shared.
+        # /shared/tokens.css is shared. The app-specific CSS path is NOT
+        # uniform: ocr and draft both serve /static/css/app.css, but graph's
+        # own base.html references /static/app.css directly (no css/
+        # subdirectory) — graph's static/ tree also holds several other
+        # top-level CSS files (entity-colors.css, pipeline.css), unlike ocr
+        # and draft's single css/ subdirectory. Checking the wrong path here
+        # doesn't test packaging, it just asserts a URL graph's own template
+        # never generates.
         run: |
           APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
           case "$APP" in
-            artifice-draft) API="/api/settings" ;;
-            artifice-graph) API="/api/state" ;;
-            *)               API="/api/queue" ;;
+            artifice-draft) API="/api/settings"; APP_CSS="/static/css/app.css" ;;
+            artifice-graph) API="/api/state"; APP_CSS="/static/app.css" ;;
+            *)               API="/api/queue"; APP_CSS="/static/css/app.css" ;;
           esac
           setsid nohup "./dist/$APP/$APP" --port 18999 > /tmp/exe.log 2>&1 < /dev/null &
           sleep 12
           fail=0
-          for path in / "$API" /shared/tokens.css /static/css/app.css; do
+          for path in / "$API" /shared/tokens.css "$APP_CSS"; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:18999$path")
             echo "  $path -> $code"
             [ "$code" = "200" ] || fail=1
@@ -127,13 +134,19 @@ jobs:
             "artifice-graph" { "/api/state" }
             default { "/api/queue" }
           }
+          # graph's base.html references /static/app.css directly (no css/
+          # subdirectory, unlike ocr and draft) - see the Linux step's comment.
+          $appCss = switch ($app) {
+            "artifice-graph" { "/static/app.css" }
+            default { "/static/css/app.css" }
+          }
           $exe = ".\dist\$app\$app.exe"
           if (-not (Test-Path $exe)) { Write-Error "no binary at $exe"; exit 1 }
           Write-Host "binary size: $((Get-Item $exe).Length) bytes"
           $p = Start-Process -FilePath $exe -ArgumentList "--port","18999" -PassThru
           Start-Sleep -Seconds 20
           $fail = 0
-          foreach ($path in @("/",$apiPath,"/shared/tokens.css","/static/css/app.css")) {
+          foreach ($path in @("/",$apiPath,"/shared/tokens.css",$appCss)) {
             try {
               $r = Invoke-WebRequest -Uri "http://127.0.0.1:18999$path" -UseBasicParsing -TimeoutSec 15
               Write-Host "  $path -> $($r.StatusCode)"
