@@ -27,6 +27,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pytest_httpx import HTTPXMock
 
@@ -2429,6 +2430,42 @@ def test_validate_directory_accepts_temp_dir_from_custom_tmpdir(monkeypatch):
     finally:
         if d.exists():
             d.rmdir()
+
+
+# --------------------------------------------------------------------------- #
+# validate_contained — malformed input rejection (regression)
+# --------------------------------------------------------------------------- #
+# ``normalise_path`` raises ``ValueError`` for empty/whitespace-only strings
+# and, on POSIX, for Windows drive-letter paths.  ``validate_contained`` called
+# it outside any try/except, so those errors propagated as unhandled 500s
+# rather than 400s.  These tests assert that both failure modes now return
+# HTTP 400, matching the pattern ``validate_directory`` already follows.
+
+
+def test_validate_contained_rejects_empty_string(tmp_path):
+    """An empty raw path string must be 400, not an unhandled ValueError."""
+    from artifice_ocr.web.validation import validate_contained
+
+    container = str(tmp_path)
+    with pytest.raises(HTTPException) as exc_info:
+        validate_contained("", container, "path")
+    assert exc_info.value.status_code == 400
+    assert "must not be empty" in str(exc_info.value.detail)
+
+
+@pytest.mark.skipif(
+    os.name != "posix",
+    reason="Windows drive-letter detection only activates on POSIX",
+)
+def test_validate_contained_rejects_windows_drive_letter_on_posix(tmp_path):
+    """A Windows drive-letter path on POSIX must be 400, not 500."""
+    from artifice_ocr.web.validation import validate_contained
+
+    container = str(tmp_path)
+    with pytest.raises(HTTPException) as exc_info:
+        validate_contained("C:\\Windows", container, "path")
+    assert exc_info.value.status_code == 400
+    assert "not valid on this platform" in str(exc_info.value.detail)
 
 
 # --------------------------------------------------------------------------- #

@@ -74,7 +74,10 @@ def validate_contained(
     *container* would become an existence oracle for arbitrary filesystem
     paths.
     """
-    normalised_raw = normalise_path(raw, field_name)
+    try:
+        normalised_raw = normalise_path(raw, field_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
     try:
         p = Path(normalised_raw).expanduser().resolve(strict=must_exist)
     except Exception:
