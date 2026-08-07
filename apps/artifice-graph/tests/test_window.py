@@ -15,7 +15,7 @@ from unittest import mock
 import pytest
 from artifice_graph.web.window import (
     WindowResult,
-    _unblock_pythonnet_assemblies,
+    _unblock_frozen_bundle,
     open_native_window,
 )
 
@@ -103,8 +103,8 @@ class TestOpenNativeWindow:
             )
 
 
-class TestUnblockPythonnetAssemblies:
-    """Tests for _unblock_pythonnet_assemblies()."""
+class TestUnblockFrozenBundle:
+    """Tests for _unblock_frozen_bundle()."""
 
     @pytest.mark.skipif(
         sys.platform != "win32",
@@ -119,7 +119,7 @@ class TestUnblockPythonnetAssemblies:
         with open(zone_stream, "w") as f:
             f.write("[ZoneTransfer]\nZoneId=3\n")
 
-        _unblock_pythonnet_assemblies(tmp_path)
+        _unblock_frozen_bundle(tmp_path)
 
         assert not os.path.exists(zone_stream)
 
@@ -132,18 +132,18 @@ class TestUnblockPythonnetAssemblies:
         dll_file = tmp_path / "Python.Runtime.dll"
         dll_file.write_text("fake dll content")
 
-        _unblock_pythonnet_assemblies(tmp_path)
+        _unblock_frozen_bundle(tmp_path)
 
     def test_unblock_noop_nonexistent_dir(self) -> None:
         """A nonexistent directory is a silent no-op, not an error."""
-        _unblock_pythonnet_assemblies(Path("/nonexistent/pythonnet/dir"))
+        _unblock_frozen_bundle(Path("/nonexistent/pythonnet/dir"))
 
     def test_unblock_noop_no_files_with_stream(self, tmp_path: Path) -> None:
         """A directory with files that have no Zone.Identifier ADS is a no-op."""
         (tmp_path / "some.dll").write_text("content")
         (tmp_path / "other.dll").write_text("content")
 
-        _unblock_pythonnet_assemblies(tmp_path)
+        _unblock_frozen_bundle(tmp_path)
 
 
 class TestMainNoWindowFlag:
