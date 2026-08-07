@@ -55,6 +55,7 @@ jobs:
           enable-cache: true
 
       - name: Install the app and PyInstaller
+        shell: bash
         # Per-app extras — avoids pulling in the ~5.8 GB ASR stack when
         # freezing ocr, and keeps each app's build focused. The mapping is
         # explicit rather than derived from the app name because the extra
