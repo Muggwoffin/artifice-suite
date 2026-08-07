@@ -1,5 +1,33 @@
 # REFACTOR: Open-Source Compliance & Maintainability Plan
 
+> **STATUS 2026-08-07 — All three items shipped, PR #62 merged to `main`.**
+>
+> Path validation (`packages/shared-ui/shared_ui/path_validation.py`), server bootstrap
+> (`packages/shared-ui/shared_ui/server_bootstrap.py`), and legacy-data migration
+> (`packages/secure-io/src/secure_io/migration.py`) are all complete and deployed.
+> Full record, every deviation from this proposal, and all review findings:
+> `docs/superpowers/plans/2026-08-07-refactor-oss-compliance.md`.
+>
+> **One deliberate structural deviation from this proposal's line 52:**
+> `migration.py` defines **two** functions — `migrate_legacy_file` and
+> `migrate_legacy_directory` — not the single `migrate_legacy_path()` this doc
+> proposes. The three real call sites split cleanly into two shapes (single file
+> vs. directory), and forcing them into one five-parameter function would have been
+> the over-engineering this refactor exists to remove. Documented as a design call
+> in the plan doc, §"Verified deviations" item 5.
+>
+> **One real security gap this refactor closed (not hypothetical — verified by a
+> `security-auditor` pass):** `artifice-graph`'s `_validate_directory()`
+> had no backslash normalisation and no POSIX Windows-drive-letter rejection before
+> this work. It passed `raw` straight to `Path(raw)`, so a POSIX-hosted graph
+> server could misinterpret `C:/Windows` as a relative path. `artifice-ocr` had
+> both checks; graph did not. Consolidation made graph the stricter of the two.
+> Plan doc §"Verified deviations" item 2.
+>
+> **Original proposal body — historical record, not current state.** The functions,
+> paths, and figures below describe what was asked for. The plan doc above describes
+> what was built and why it differs.
+
 **Objective:** Improve open-source compliance, reduce duplication, and eliminate over-engineering without breaking existing functionality.
 
 ---

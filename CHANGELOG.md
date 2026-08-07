@@ -8,6 +8,31 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 
 ## [Unreleased]
 
+### Changed
+- Consolidated three duplicated subsystems — path validation, local-server
+  bootstrap, and legacy-data migration — from per-app copies into two shared
+  packages. `packages/shared-ui/shared_ui/path_validation.py` and
+  `server_bootstrap.py`, `packages/secure-io/src/secure_io/migration.py`
+  (`migrate_legacy_file` / `migrate_legacy_directory` — two functions, not the
+  single function originally proposed in `REFACTOR.md`; the three real call
+  sites split cleanly into two shapes). Closes a real security gap:
+  `artifice-graph`'s path validator previously had no backslash normalisation
+  or POSIX Windows-drive-letter rejection. Full detail and every deviation
+  from the original proposal in
+  `docs/superpowers/plans/2026-08-07-refactor-oss-compliance.md`. PR #62.
+
+### Fixed
+- `artifice-ocr`'s `validate_contained()` 500'd on a malformed path (empty
+  string, or a Windows-style absolute path on a POSIX host) instead of
+  400'ing — the normalisation call sat outside any `try/except`. TDD-verified
+  (confirmed the regression test failed against the pre-fix code). Part of PR #62.
+- PyInstaller frozen builds on Windows failed native window init with
+  `Failed to resolve Python.Runtime.Loader.Initialize` — pywebview's
+  pythonnet backend couldn't resolve the embedded `pythonXY.dll` because
+  `PYTHONNET_PYDLL` was unset and `_internal/` (`sys._MEIPASS`) wasn't on
+  `%PATH%`. Affected `artifice-ocr`, `artifice-graph`, and `artifice-draft`
+  (byte-identical `window.py` copies). Non-frozen/dev runs unaffected. PR #63.
+
 ## [0.2.0] - 2026-08-06
 
 > **2026-08-06 — 0.1.0 published to PyPI.** Seven distributions (`artifice-model-harness`,
