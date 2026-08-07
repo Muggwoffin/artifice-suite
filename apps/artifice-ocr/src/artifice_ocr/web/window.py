@@ -32,6 +32,32 @@ class WindowResult:
         self.reason = reason
 
 
+def _unblock_pythonnet_assemblies(pythonnet_dir: Path) -> None:
+    """Strip the Windows Zone.Identifier (Mark-of-the-Web) from pythonnet's
+    bundled .NET assemblies.
+
+    A file downloaded via a browser — or extracted from a zip that was itself
+    downloaded — is tagged with a Zone.Identifier NTFS alternate-data-stream
+    marking its origin as "Internet".  .NET Framework's classic assembly loader
+    (netfx, which is pythonnet's default runtime on Windows) refuses to resolve
+    functions from an assembly carrying that tag, failing with "Failed to
+    resolve Python.Runtime.Loader.Initialize" — a documented
+    pythonnet/clr-loader issue
+    (https://github.com/pythonnet/clr-loader/issues/74), not a bundling defect.
+    This strips the tag before pythonnet ever touches the DLL.  A no-op (not an
+    error) when the stream is absent (e.g. every CI-built binary, or after a
+    user manually unblocks the download).
+    """
+    if not pythonnet_dir.is_dir():
+        return
+    for path in pythonnet_dir.rglob("*"):
+        if path.is_file():
+            try:
+                os.remove(f"{path}:Zone.Identifier")
+            except OSError:
+                pass
+
+
 def open_native_window(
     url: str,
     *,
@@ -51,23 +77,22 @@ def open_native_window(
     listening, so the user sees a populated page immediately.
     """
     # ------------------------------------------------------------------
-    # In a PyInstaller frozen build on Windows, pywebview's pythonnet backend
-    # loads Python.Runtime.dll from _internal/pythonnet/runtime/, which then
-    # needs to resolve the embedded pythonXY.dll. That DLL lives in
-    # _internal/ (== sys._MEIPASS at runtime), which is not on %PATH% and
-    # PYTHONNET_PYDLL is unset, so the .NET loader fails with "Failed to
-    # resolve Python.Runtime.Loader.Initialize" before webview.start() ever
-    # runs. Both env vars must be set before ``import webview`` triggers
-    # pythonnet's own DLL search — setting them after is too late.
-    if getattr(sys, "frozen", False):
+    # In a PyInstaller frozen build on Windows, files downloaded via a
+    # browser (or extracted from a zip that was itself downloaded) carry a
+    # Zone.Identifier NTFS alternate-data-stream (Mark-of-the-Web) that tags
+    # their origin as "Internet".  .NET Framework's classic assembly loader
+    # (netfx, which is pythonnet's default runtime on Windows) refuses to
+    # resolve functions from assemblies carrying that tag, raising
+    # "Failed to resolve Python.Runtime.Loader.Initialize" — a documented
+    # pythonnet/clr-loader issue
+    # (https://github.com/pythonnet/clr-loader/issues/74), not a bundling
+    # defect.  Strip the Zone.Identifier ADS from pythonnet's bundled .NET
+    # assemblies before ``import webview`` triggers pythonnet's own
+    # ``import clr`` — doing it after is too late.
+    if getattr(sys, "frozen", False) and sys.platform == "win32":
         base_dir = getattr(sys, "_MEIPASS", None)
         if base_dir is not None:
-            base_dir = Path(base_dir)
-            dll_name = f"python{sys.version_info.major}{sys.version_info.minor}.dll"
-            dll_path = base_dir / dll_name
-            if dll_path.exists():
-                os.environ["PYTHONNET_PYDLL"] = str(dll_path)
-            os.environ["PATH"] = str(base_dir) + os.pathsep + os.environ.get("PATH", "")
+            _unblock_pythonnet_assemblies(Path(base_dir) / "pythonnet")
 
     # ------------------------------------------------------------------
     # Try to import pywebview.  Both the import itself and the subsequent

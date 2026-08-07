@@ -6,12 +6,19 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 from pathlib import Path
 from unittest import mock
 
-from artifice_draft.web.window import WindowResult, open_native_window
+import pytest
+
+from artifice_draft.web.window import (
+    WindowResult,
+    _unblock_pythonnet_assemblies,
+    open_native_window,
+)
 
 # apps/artifice-draft/tests/test_window.py -> repo root is three parents up.
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -95,6 +102,49 @@ class TestOpenNativeWindow:
                 resizable=True,
                 min_size=(640, 480),
             )
+
+
+class TestUnblockPythonnetAssemblies:
+    """Tests for _unblock_pythonnet_assemblies()."""
+
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="Zone.Identifier ADS is an NTFS/Windows-only concept",
+    )
+    def test_unblock_strips_zone_identifier(self, tmp_path: Path) -> None:
+        """Files with a Zone.Identifier stream have it stripped."""
+        dll_file = tmp_path / "Python.Runtime.dll"
+        dll_file.write_text("fake dll content")
+
+        zone_stream = f"{dll_file}:Zone.Identifier"
+        with open(zone_stream, "w") as f:
+            f.write("[ZoneTransfer]\nZoneId=3\n")
+
+        _unblock_pythonnet_assemblies(tmp_path)
+
+        assert not os.path.exists(zone_stream)
+
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="Zone.Identifier ADS is an NTFS/Windows-only concept",
+    )
+    def test_unblock_noop_when_no_zone_identifier(self, tmp_path: Path) -> None:
+        """Files without a Zone.Identifier stream are left alone."""
+        dll_file = tmp_path / "Python.Runtime.dll"
+        dll_file.write_text("fake dll content")
+
+        _unblock_pythonnet_assemblies(tmp_path)
+
+    def test_unblock_noop_nonexistent_dir(self) -> None:
+        """A nonexistent directory is a silent no-op, not an error."""
+        _unblock_pythonnet_assemblies(Path("/nonexistent/pythonnet/dir"))
+
+    def test_unblock_noop_no_files_with_stream(self, tmp_path: Path) -> None:
+        """A directory with files that have no Zone.Identifier ADS is a no-op."""
+        (tmp_path / "some.dll").write_text("content")
+        (tmp_path / "other.dll").write_text("content")
+
+        _unblock_pythonnet_assemblies(tmp_path)
 
 
 class TestMainNoWindowFlag:
