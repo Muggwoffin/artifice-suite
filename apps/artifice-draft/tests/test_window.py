@@ -13,7 +13,6 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-
 from artifice_draft.web.window import (
     WindowResult,
     _unblock_pythonnet_assemblies,

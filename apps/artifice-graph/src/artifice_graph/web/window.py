@@ -11,6 +11,7 @@ still import and run the CLI and web server without pywebview installed.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from pathlib import Path
@@ -52,10 +53,8 @@ def _unblock_pythonnet_assemblies(pythonnet_dir: Path) -> None:
         return
     for path in pythonnet_dir.rglob("*"):
         if path.is_file():
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(f"{path}:Zone.Identifier")
-            except OSError:
-                pass
 
 
 def open_native_window(
