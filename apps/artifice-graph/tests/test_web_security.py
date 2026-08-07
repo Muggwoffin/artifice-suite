@@ -38,7 +38,11 @@ class TestValidateDirectory:
 
     def test_accepts_cwd(self, tmp_path, monkeypatch):
         """CWD is always in the allowlist."""
-        monkeypatch.setattr(os, "environ", {})  # clear ARTIFICE_GRAPH_ALLOWED_ROOTS
+        # Surgical removal, not a full os.environ wipe: clearing everything
+        # also removes USERPROFILE/HOME, which breaks Path.home() on Windows
+        # CI runners ("Could not determine home directory") — a failure
+        # this test has nothing to do with.
+        monkeypatch.delenv("ARTIFICE_GRAPH_ALLOWED_ROOTS", raising=False)
         result = _validate_directory(".", "input_dir")
         assert result == str(Path.cwd().resolve())
 
@@ -227,7 +231,12 @@ def test_tempfile_gettempdir_in_allowed_roots():
     temp_dir.mkdir(exist_ok=True)
     try:
         result = _validate_directory(str(temp_dir), "input_dir")
-        assert result == str(temp_dir)
+        # _validate_directory resolves the path (symlinks, short names, etc.),
+        # so compare against the resolved form too — on macOS tempfile.gettempdir()
+        # returns a path through a /var -> /private/var symlink, and on Windows
+        # CI runners the unresolved path can carry an 8.3 short name that
+        # resolve() expands, so a literal str(temp_dir) comparison is flaky.
+        assert result == str(temp_dir.resolve())
     finally:
         if temp_dir.exists():
             temp_dir.rmdir()
