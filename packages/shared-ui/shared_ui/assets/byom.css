@@ -533,6 +533,28 @@
   margin: 0 0 var(--space-3);
 }
 
+/* ── Ethos badges (§8.17 Source Badge — passive provenance labels, not
+   interactive chips §8.4) ──────────────────────────────────────────── */
+
+.byom-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.byom-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  background: var(--paper-recessed);
+  white-space: nowrap;
+}
+
 /* .byom-code is a static command, not editable input, and must not invite
    a click/cursor the way .byom-input does. It shares .byom-input's radius
    (4px is correct for both per §11's radius discipline) but not its fill
