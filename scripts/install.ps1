@@ -83,16 +83,27 @@ foreach ($app in $Apps) {
 # ----- ensure uv is available -----
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-    Write-Host ""
-    Write-Host "-- Installing uv --"
-    Write-Host "uv is not installed. Downloading the official installer..."
-    powershell -ExecutionPolicy ByPass -Command "irm https://astral.sh/uv/install.ps1 | iex"
-    $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
-    if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-        Write-Error "uv was installed but is still not on PATH. Add ~\.local\bin to your PATH and re-run."
-        exit 1
-    }
-    Write-Host "  uv $(uv --version) installed"
+    # A single Write-Error call, not five: $ErrorActionPreference = "Stop"
+    # (top of this file) makes Write-Error a TERMINATING error with no
+    # enclosing try/catch here, so it would abort the script after the
+    # first call — every line after it, including the actual install
+    # command the user needs, would never print.
+    Write-Error @"
+uv is required but not found on PATH.
+
+Install it manually:
+  powershell -ExecutionPolicy ByPass -Command "irm https://astral.sh/uv/install.ps1 | iex"
+
+Alternative methods (Homebrew, winget, pipx):
+  https://docs.astral.sh/uv/getting-started/installation/
+
+This script does not run a network-fetched installer automatically:
+piping a downloaded script into a shell interpreter with no integrity
+check is not something we will do on your behalf without you seeing
+exactly what that command looks like first.  Run the command above
+yourself, then re-run this script.
+"@
+    exit 1
 }
 
 # ----- install each app -----
