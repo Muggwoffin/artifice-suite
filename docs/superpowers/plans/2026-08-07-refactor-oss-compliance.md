@@ -184,6 +184,16 @@ For each task:
   a thin re-export, or delete and update its one import site — check
   `apps/artifice-ocr/src/artifice_ocr/web/server.py` and any other importer
   first with `grep -rn "from .*validation import\|from artifice_ocr.validation"`)
+- Modify: `apps/artifice-ocr/src/artifice_ocr/web/validation.py:18` — found by
+  Task 1's security-auditor pass, not in REFACTOR.md's original scope:
+  `validate_contained()` imports the *private* name `_normalise` directly
+  (bypassing `validate_path` entirely, since containment-within-an-arbitrary-directory
+  is a different check from allowed-roots validation). Once
+  `artifice_ocr/validation.py` stops defining `_normalise` locally, update this
+  import to the shared module's public `normalise_path`. `validate_directory()`
+  in the same file calls `validate_path(raw, field_name)` (2-arg) — that stays
+  compatible unchanged as long as `artifice_ocr.validation.validate_path` keeps
+  its existing 2-arg public signature as a thin wrapper (see Interfaces below).
 - Test: existing `apps/artifice-ocr/tests/test_web.py` path-validation cases
   must still pass unmodified (they exercise behavior, not the internal module
   path) — do not edit test expectations, only the import if it references

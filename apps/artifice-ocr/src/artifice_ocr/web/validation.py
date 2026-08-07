@@ -14,8 +14,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import HTTPException
+from shared_ui.path_validation import normalise_path
 
-from ..validation import _normalise, _build_allowed_roots, validate_path
+from ..validation import validate_path
 
 
 def validate_directory(raw: str, field_name: str) -> str:
@@ -73,7 +74,7 @@ def validate_contained(
     *container* would become an existence oracle for arbitrary filesystem
     paths.
     """
-    normalised_raw = _normalise(raw, field_name)
+    normalised_raw = normalise_path(raw, field_name)
     try:
         p = Path(normalised_raw).expanduser().resolve(strict=must_exist)
     except Exception:

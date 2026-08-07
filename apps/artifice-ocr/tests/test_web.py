@@ -2285,7 +2285,7 @@ def test_add_paths_refuses_windows_style_path(client, tmp_path):
 
     The *reason* differs by platform and the assertion has to follow, or this
     test passes on POSIX and fails on Windows. On POSIX a drive letter is
-    refused outright by `_normalise`, because pathlib would otherwise treat
+    refused outright by `normalise_path`, because pathlib would otherwise treat
     "C:/SystemFolder" as relative and `resolve()` would prepend the cwd,
     landing it inside an allowed root. On Windows the same string is a
     perfectly valid absolute path, so it resolves and is then refused by the
@@ -2377,10 +2377,13 @@ def test_platform_temp_dir_is_always_an_allowed_root():
     """
     import tempfile
 
-    from artifice_ocr.web.validation import _build_allowed_roots
+    from shared_ui.path_validation import build_allowed_roots
 
     temp_root = Path(tempfile.gettempdir()).resolve()
-    assert temp_root in [r.resolve() for r in _build_allowed_roots()]
+    assert temp_root in [
+        r.resolve()
+        for r in build_allowed_roots("ARTIFICE_OCR_ALLOWED_ROOTS")
+    ]
 
 
 @pytest.mark.skipif(
