@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import importlib.resources
 import json
 import logging
 import os
@@ -108,20 +109,26 @@ def load_config(config_path: str | Path | None = None) -> PipelineConfig:
          platformdirs, migrated from legacy ~/.callosip on first access)
       4. CLI arguments (applied by callers AFTER this function returns)
 
-    Relative paths declared in config.yaml are resolved against the
-    directory containing that config file (the app root).  Callers that
-    further mutate the config should call ``resolve_config_paths()``
-    afterward if they set relative path strings.
+    Relative paths declared in config.yaml are resolved against the app
+    root — deliberately NOT wherever config.yaml itself was found.  config.yaml
+    now ships inside the installed package (importlib.resources, freeze-safe),
+    but app_root governs where relative *data* paths resolve (entities.json,
+    caches, output graphs). Conflating the two would silently relocate a
+    user's existing pipeline data into wherever the package happens to be
+    installed — site-packages for a wheel, ``_internal/`` for a frozen build —
+    every time this function runs with no explicit path, which is every
+    call site outside ``cli.py``. ``cli.py``'s ``_APP_ROOT`` is computed the
+    same way, independently, for the same reason. Callers that further
+    mutate the config should call ``resolve_config_paths()`` afterward if
+    they set relative path strings.
     """
     if config_path is None:
-        config_path = Path(__file__).parent.parent.parent / "config.yaml"
+        config_path = Path(str(importlib.resources.files("artifice_graph") / "config.yaml"))
+        app_root = Path(__file__).resolve().parent.parent.parent
     else:
         config_path = Path(config_path)
-
-    config_file = config_path if config_path.is_file() else None
-    app_root = (
-        config_file.parent if config_file else Path(__file__).parent.parent.parent
-    ).resolve()
+        config_file = config_path if config_path.is_file() else None
+        app_root = (config_file.parent if config_file else Path.cwd()).resolve()
 
     if config_path.exists():
         with open(config_path, encoding="utf-8") as f:
