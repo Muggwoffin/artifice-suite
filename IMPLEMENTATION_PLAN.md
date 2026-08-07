@@ -61,6 +61,87 @@ definitions measured 2026-07-29, and `.claude/agents/` is empty measured the sam
 `opencode.json` grants the per-user data directories, after `lead-engineer` proved structurally
 unable to verify its own migration and said so rather than claiming success.
 
+### Session 5 close — 2026-08-07
+
+Two PRs merged to `main`: **PR #62** (consolidation of path validation, server bootstrap,
+and legacy-data migration into shared packages) and **PR #63** (pywebview DLL-resolution fix
+for frozen Windows builds of ocr, graph, and draft).
+
+**PR #62 — what shipped.** All 9 tasks from the plan doc completed. Three shared
+utilities created:
+- `packages/shared-ui/shared_ui/path_validation.py` — `normalise_path`, `build_allowed_roots`,
+  `validate_path` (the union of ocr's and graph's existing checks, with graph gaining
+  backslash normalisation and POSIX Windows-drive-letter rejection it previously lacked)
+- `packages/shared-ui/shared_ui/server_bootstrap.py` — `free_port`, `port_available`,
+  `wait_for_server`, `start_server_thread`, `report_startup_failure`, `ensure_std_streams`
+- `packages/secure-io/src/secure_io/migration.py` — `migrate_legacy_file` and
+  `migrate_legacy_directory` (two functions, not the single `migrate_legacy_path()`
+  proposed in `REFACTOR.md` line 52 — the three call sites split into two shapes and
+  a unified function would have been over-engineering; see plan doc §"Verified
+  deviations" item 5)
+
+Verified clean by an `arch-auditor-docs` dangling-reference sweep: no orphaned duplicate
+implementations, no dangling private-name imports, no leftover module-level state.
+Full test suite green across all four apps and both shared packages (3 pre-existing,
+unrelated `artifice-draft` failures — missing optional `readability-lxml` dependency,
+confirmed present before this branch existed).
+
+**One deliberate structural deviation from `REFACTOR.md`:** `migrate_legacy_directory`'s
+two independent `try`/`except` blocks were split mid-Task-9. The first committed version
+put `shutil.move` and `ensure_restricted` in one block, so a restrict-hardening failure
+after a successful move would have claimed the data was still at `legacy_path` — provably
+false. Unreachable via the real `ensure_restricted` today (it swallows its own exceptions
+by contract) but a real latent defect. Split into two blocks; a restrict failure now
+returns `default_path` regardless.
+
+**One pre-existing bug found and fixed out-of-scope:** `artifice-ocr`'s `validate_contained()`
+called `normalise_path` outside any `try`/`except`, so a malformed path 500'd instead
+of 400'ing. Fixed with TDD (confirmed the regression test failed against the pre-fix
+code before trusting the fix).
+
+**Mock-patch-target corrections were a recurring theme.** Every app migrated to a shared
+module needed at least one test's `mock.patch(...)` target corrected from "where the
+function is defined" to "where it's looked up" — a module-level `from X import Y` in the
+new shared module creates a separate binding from whatever the old per-call local import
+bound. Bit `artifice-graph`'s `ensure_restricted` tests specifically (Task 9) and worth
+watching in any future shared-module extraction.
+
+**The real security gap closed:** `artifice-graph`'s `_validate_directory()` had no
+backslash normalisation and no POSIX Windows-drive-letter rejection before PR #62. It
+passed `raw` straight to `Path(raw)`. Both platforms (native Windows, WSL2 Ubuntu) are
+supported per `CLAUDE.md`, so a POSIX-hosted `artifice-graph` server is a real deployment
+target and this gap was closed by consolidation, not introduced by it. Plan doc
+§"Verified deviations" item 2.
+
+**PR #63 — pywebview DLL resolution on frozen Windows builds.** `artifice-ocr`,
+`artifice-graph`, and `artifice-draft` all use pywebview for native-window mode, built
+onedir via PyInstaller. On Windows, pywebview's pythonnet backend loads
+`Python.Runtime.dll` from `_internal/pythonnet/runtime/`, which then needs to resolve
+the embedded `pythonXY.dll` living in `_internal/` (`sys._MEIPASS` at runtime) — not on
+`%PATH%`, and `PYTHONNET_PYDLL` unset, so the .NET loader failed with
+`Failed to resolve Python.Runtime.Loader.Initialize` before `webview.start()` ever ran.
+Fix: in `window.py`, set `PYTHONNET_PYDLL` and prepend `sys._MEIPASS` to `PATH`, gated
+on `sys.frozen`, strictly before `import webview` triggers pythonnet's own DLL search —
+setting them after is too late. Non-frozen/dev runs are unaffected (the `sys.frozen`
+check is `False`, so the block is skipped entirely). All three apps had byte-identical
+`window.py` copies of the affected code, so the same bug and fix applied to all three;
+`artifice-transcribe` has no `window.py` (browser-only, no pywebview dependency).
+
+**One operational incident — a shared working directory, not a shared branch.** Two
+Claude Code sessions ran in the same repo checkout at once: one doing unrelated
+build-exe fixes on `main`, the other (this one) on `refactor/oss-compliance`. Because
+"current branch" is global state in a single checkout, the `main`-side session
+transiently checked out `refactor/oss-compliance`, committed one unrelated fix there,
+then reset and moved back to `main` — visible only via `git reflog`, and only because
+this session happened to check it. No work was lost (the branch's own commit was
+intact; the other session's fix survived via cherry-pick onto `main`), but it could
+have collided destructively. The fix was moving the refactor work into its own git
+worktree so "current branch" stopped being shared state between the two sessions.
+Lesson: any two sessions working the same repo concurrently need separate worktrees,
+not just separate branches — and `git reflog` is the tool that surfaces this kind of
+collision after the fact, since neither session's own history shows the other's
+transient checkout.
+
 ### Session 4 reconciliation — 2026-07-29
 
 Re-measurement closed **six** stale Part IV items without code changes: `artifice-transcribe`
