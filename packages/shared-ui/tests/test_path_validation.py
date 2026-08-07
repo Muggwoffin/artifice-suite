@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import os
-import stat
 from pathlib import Path
 
 import pytest
@@ -117,17 +116,9 @@ class TestValidatePath:
                 allowed_roots_env_var="NONEXISTENT",
             )
 
-    def test_path_outside_all_roots_raises(
-        self, tmp_path: Path
-    ) -> None:
+    @pytest.mark.skipif(os.name != "posix", reason="POSIX-only check")
+    def test_path_outside_all_roots_raises(self) -> None:
         """A path inside a directory that is NOT an allowed root must be rejected."""
-        # tmp_path is inside /tmp, which IS a default root. Use a subdirectory
-        # that is not a default root, with a non-matching env var.
-        outside = tmp_path / "not-a-root" / "inside.txt"
-        outside.parent.mkdir(parents=True, exist_ok=True)
-        # Resolve the path but it won't be inside any default root
-        # (tmp_path is in /tmp, so we need a path truly outside).
-        # Use /etc or some other system path that's not in the defaults.
         with pytest.raises(
             ValueError, match="is outside the directories"
         ):
