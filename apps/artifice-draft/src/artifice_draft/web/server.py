@@ -23,7 +23,6 @@ from __future__ import annotations
 import asyncio
 import json
 import queue
-import socket
 import time
 import webbrowser
 from typing import Any
@@ -51,6 +50,12 @@ from artifice_draft.style_guides.base import StyleGuide
 
 import importlib.resources
 import shared_ui
+from shared_ui.server_bootstrap import (
+    ensure_std_streams,
+    free_port,
+    start_server_thread,
+    wait_for_server,
+)
 
 # Resolved through importlib.resources, NOT a __file__-relative path.  This
 # app is distributed as a frozen .exe, where __file__ points inside a
@@ -451,34 +456,6 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # --------------------------------------------------------------------------- #
 
 
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
-
-
-def _wait_for_server(port: int, *, timeout: float = 10.0) -> bool:
-    """Block until something is actually listening on `port`.
-
-    `uvicorn.run()` starts in a background thread and takes a moment to bind
-    its socket — opening a window at the target URL immediately races that.
-    Same fix, same reasoning, as the OCR Pipeline tool's web build; see that
-    project's `web/server.py` for the live bug this caught there.
-    """
-    import time as _time
-
-    deadline = _time.monotonic() + timeout
-    while _time.monotonic() < deadline:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
-            probe.settimeout(0.2)
-            try:
-                probe.connect(("127.0.0.1", port))
-                return True
-            except OSError:
-                _time.sleep(0.1)
-    return False
-
-
 def main() -> None:
     """Start the server and open a window onto it (see --help for modes).
 
@@ -492,20 +469,9 @@ def main() -> None:
     """
     import argparse
     import contextlib
-    import os
     import sys as _sys
-    import threading
 
-    # pythonw.exe has sys.stdout and sys.stderr set to None.  uvicorn's
-    # logging formatter calls sys.stdout.isatty(), which blows up with an
-    # AttributeError when stdout is None.  Seed them with /dev/null so the
-    # server can start; the browser / pywebview window is the real UI.
-    if _sys.stdout is None:
-        _sys.stdout = open(os.devnull, "w", encoding="utf-8")
-    if _sys.stderr is None:
-        _sys.stderr = open(os.devnull, "w", encoding="utf-8")
-
-    import uvicorn
+    ensure_std_streams()
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -527,7 +493,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    port = args.port or _free_port()
+    port = args.port or free_port()
     url = f"http://127.0.0.1:{port}"
 
     # CORS origins are derived from the actual port so that explicit
@@ -543,12 +509,8 @@ def main() -> None:
         allow_headers=["Content-Type", "Authorization"],
     )
 
-    server_thread = threading.Thread(
-        target=lambda: uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning"),
-        daemon=True,
-    )
-    server_thread.start()
-    if not _wait_for_server(port):
+    server_thread, server_errors = start_server_thread(app, port)
+    if not wait_for_server(port):
         print(
             f"WARNING: server did not respond on port {port} within 10s; "
             f"opening the window anyway, but it may show a connection error."
