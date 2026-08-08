@@ -21,12 +21,13 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
 from shared_ui.path_validation import validate_path as _shared_validate_path
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from artifice_graph.config import LLMConfig, PipelineConfig, load_config
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
@@ -53,6 +54,23 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="ArtificeGraph", version="0.1.0")
 
 app.include_router(byom_router.router)
+
+
+class AllowedHostsMiddleware(BaseHTTPMiddleware):
+    """Refuse requests whose Host header does not start with 127.0.0.1 or localhost.
+
+    Prevents DNS rebinding attacks on the local-only import endpoints.
+    ``testserver`` is the host the FastAPI TestClient uses.
+    """
+
+    async def dispatch(self, request, call_next):
+        host = request.headers.get("host", "")
+        if host and not any(host.startswith(h) for h in ("127.0.0.1", "localhost", "testserver")):
+            return JSONResponse({"error": "Forbidden"}, status_code=403)
+        return await call_next(request)
+
+
+app.add_middleware(AllowedHostsMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -89,6 +107,47 @@ import shared_ui
 
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
+
+# --------------------------------------------------------------------------- #
+# handoff import endpoint
+# --------------------------------------------------------------------------- #
+
+
+@app.get("/import")
+def import_handoff(handoff: str = ""):
+    """Receive a handoff token from another Artifice app.
+
+    Reads the handoff manifest, validates it, writes the body text as a
+    ``.txt`` file in the ingest input directory, and redirects to the
+    main page.  The UUID is unguessable; the URL carries no payload.
+    """
+    from fastapi.responses import RedirectResponse
+    from pathlib import Path
+
+    from shared_ui.handoff import delete_handoff, read_handoff
+
+    if not handoff:
+        return RedirectResponse("/")
+
+    result = read_handoff(handoff, expected_target="artifice-graph")
+    if result is None:
+        return RedirectResponse("/?handoff_error=invalid")
+
+    cfg = load_config()
+    input_dir = Path(cfg.ingestion.input_dir)
+    input_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write the text to a timestamped file in the input directory
+    import datetime
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    dest = input_dir / f"ocr_handoff_{ts}.txt"
+    dest.write_text(result["body"], encoding="utf-8")
+
+    delete_handoff(handoff)
+    logger.info("Handoff imported from %s → %s", result["source"], dest)
+    return RedirectResponse(f"/?handoff_ok=1&handoff_source={result['source']}")
+
 
 # ── Credential redaction ───────────────────────────────────────────
 # The ``PipelineConfig`` model is the authority on which fields hold
@@ -1398,6 +1457,7 @@ def pick_folder() -> dict[str, str | None]:
 
 # ── Main / bootstrap ──────────────────────────────────────────────────
 
+from shared_ui.handoff import cleanup_expired, write_discovery  # noqa: E402
 from shared_ui.server_bootstrap import (  # noqa: E402
     ensure_std_streams,
     free_port,
@@ -1476,6 +1536,10 @@ def main() -> None:
         return
 
     url = f"http://127.0.0.1:{port}"
+
+    # ── Discovery: register this running instance for handoff ──────────
+    write_discovery("artifice-graph", port, os.getpid())
+    cleanup_expired()
 
     # ── Server-only mode (--no-window) ────────────────────────────────────
     if args.no_window:

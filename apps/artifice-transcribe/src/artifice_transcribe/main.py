@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import time
+import webbrowser
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -155,9 +156,14 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 def cli():
     import argparse
+    import contextlib
     import os
+    import threading
+    import urllib.request
 
     import uvicorn
+
+    from shared_ui.handoff import cleanup_expired, write_discovery
 
     # --host and --port defaults come from ARTIFICE_HOST / ARTIFICE_PORT,
     # falling back to the deprecated CALLOSIP_HOST / CALLOSIP_PORT for
@@ -195,6 +201,12 @@ def cli():
         help="Port to bind the server to (default: 8000, "
         "or $ARTIFICE_PORT / $CALLOSIP_PORT if set).",
     )
+    parser.add_argument(
+        "--no-window",
+        action="store_true",
+        default=False,
+        help="Server-only mode: print the URL and wait, do not open a window or browser",
+    )
     args = parser.parse_args()
 
     if args.data_dir:
@@ -209,21 +221,80 @@ def cli():
     # and is wasteful in any production run.
     enable_reload = os.environ.get("ARTIFICE_TRANSCRIBE_RELOAD", "").strip() in ("1", "true", "yes")
 
-    uvicorn.run(
-        "artifice_transcribe.main:app",
+    if enable_reload:
+        uvicorn.run(
+            "artifice_transcribe.main:app",
+            host=args.host,
+            port=args.port,
+            reload=True,
+            reload_excludes=[
+                "data/*",
+                "data\\*",
+                "uploads/*",
+                "uploads\\*",
+                "__pycache__/*",
+                "__pycache__\\*",
+                "*.db",
+            ],
+        )
+        return
+
+    # ── Normal (non-reload) mode: threaded server ───────────────────────
+    config = uvicorn.Config(
+        app,
         host=args.host,
         port=args.port,
-        reload=enable_reload,
-        reload_excludes=[
-            "data/*",
-            "data\\*",
-            "uploads/*",
-            "uploads\\*",
-            "__pycache__/*",
-            "__pycache__\\*",
-            "*.db",
-        ],
+        log_level="info",
     )
+    server = uvicorn.Server(config)
+
+    server_thread = threading.Thread(target=server.run, daemon=True)
+    server_thread.start()
+
+    # Poll the server until it answers (up to 15 seconds).
+    # If the user bound to 0.0.0.0, the browser/window URL must use
+    # 127.0.0.1 — a browser cannot connect to 0.0.0.0.
+    url_host = "127.0.0.1" if args.host == "0.0.0.0" else args.host
+    url = f"http://{url_host}:{args.port}"
+    deadline = time.monotonic() + 15.0
+    while time.monotonic() < deadline:
+        try:
+            urllib.request.urlopen(url, timeout=1)
+            break
+        except OSError:
+            time.sleep(0.1)
+    else:
+        print(f"Warning: server on port {args.port} did not respond — continuing", flush=True)
+
+    # ── Discovery: register this running instance for handoff ──────────
+    write_discovery("artifice-transcribe", args.port, os.getpid())
+    cleanup_expired()
+
+    # ── Server-only mode (--no-window) ──────────────────────────────────
+    if args.no_window:
+        print(f"ArtificeTranscribe running at {url}  (Ctrl+C to stop)", flush=True)
+        with contextlib.suppress(KeyboardInterrupt):
+            server_thread.join()
+        return
+
+    # ── Try a native window (pywebview) ────────────────────────────────
+    try:
+        from .web.window import open_native_window  # noqa: PLC0415
+
+        result = open_native_window(url, title="ArtificeTranscribe")
+        if result.opened:
+            # Window closed by user — daemon thread dies with the process.
+            return
+        # Window failed — fall back to browser.
+        print(result.reason, flush=True)
+    except ImportError:
+        pass
+
+    # ── Fall back to browser ────────────────────────────────────────────
+    print(f"ArtificeTranscribe running at {url}  (Ctrl+C to stop)", flush=True)
+    webbrowser.open(url)
+    with contextlib.suppress(KeyboardInterrupt):
+        server_thread.join()
 
 
 if __name__ == "__main__":

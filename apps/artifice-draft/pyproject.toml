@@ -44,13 +44,14 @@ web = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
     "python-multipart>=0.0.9",
-    "pywebview>=4.4",
+    "pywebview>=5.0",
     "beautifulsoup4>=4.12",
     "readability-lxml>=0.8.1",
 ]
 
 [project.scripts]
 artifice-draft = "artifice_draft.cli:main"
+artifice-draft-web = "artifice_draft.web.server:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]

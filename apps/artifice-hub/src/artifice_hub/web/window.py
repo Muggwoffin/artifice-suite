@@ -5,8 +5,8 @@
 """Native desktop window via pywebview (WebView2 / WKWebView / WebKitGTK).
 
 All pywebview imports are local to ``open_native_window()`` so that users of
-``uv tool install artifice-draft`` (who may not have a webview backend) can
-still import and run the CLI and web server without pywebview installed.
+``uv tool install artifice-hub`` (who may not have a webview backend) can
+still import and run the server without pywebview installed.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ class _WindowApi:
     """
 
     def __init__(self) -> None:
-        self._window = None  # no webview access here — see _unblock_frozen_bundle
+        self._window = None
 
     def minimize(self) -> None:
         if self._window is not None:
@@ -86,7 +86,7 @@ def _unblock_frozen_bundle(bundle_dir: Path) -> None:
 def open_native_window(
     url: str,
     *,
-    title: str = "ArtificeDraft",
+    title: str = "ArtificeHub",
     width: int = 1280,
     height: int = 800,
 ) -> WindowResult:

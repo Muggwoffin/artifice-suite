@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+[project]
+name = "artifice-hub"
+version = "0.1.0"
+description = "Native launcher and installer for the Artifice Suite (uv GUI)."
+requires-python = ">=3.11"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pywebview>=5.0",
+    "platformdirs>=4.0.0",
+    "artifice-shared-ui>=0.2.0",
+]
+
+[project.scripts]
+artifice-hub = "artifice_hub.web.server:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"artifice_hub.web" = ["static/**"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

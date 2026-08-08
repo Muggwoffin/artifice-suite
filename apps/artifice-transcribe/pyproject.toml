@@ -81,6 +81,9 @@ asr = [
 asr-cuda = [
     "artifice-transcribe[asr]",
 ]
+window = [
+    "pywebview>=5.0",
+]
 
 [project.scripts]
 artifice-transcribe = "artifice_transcribe.main:cli"

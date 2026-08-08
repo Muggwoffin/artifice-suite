@@ -33,6 +33,26 @@ class WindowResult:
         self.reason = reason
 
 
+class _WindowApi:
+    """Exposed to JS as window.pywebview.api.* after the pywebviewready event.
+
+    Methods run on a pywebview bridge thread; Window.minimize()/destroy()
+    marshal to the GUI thread internally on every backend.  The underscore
+    attribute is invisible to pywebview's function introspection.
+    """
+
+    def __init__(self) -> None:
+        self._window = None  # no webview access here — see _unblock_frozen_bundle
+
+    def minimize(self) -> None:
+        if self._window is not None:
+            self._window.minimize()
+
+    def destroy(self) -> None:
+        if self._window is not None:
+            self._window.destroy()
+
+
 def _unblock_frozen_bundle(bundle_dir: Path) -> None:
     """Strip the Windows Zone.Identifier (Mark-of-the-Web) from every file in
     the frozen bundle.
@@ -118,13 +138,17 @@ def open_native_window(
     # bare RuntimeError / ImportError when a system dependency (pythonnet,
     # GTK, etc.) is missing at runtime.
     try:
-        webview.create_window(
+        api = _WindowApi()
+        api._window = webview.create_window(
             title=title,
             url=url,
             width=width,
             height=height,
             resizable=True,
             min_size=(640, 480),
+            frameless=True,
+            easy_drag=False,  # default is True — window-wide drag would hijack page interactions
+            js_api=api,
         )
         # webview.start() blocks until the window is closed.
         webview.start(gui=None)  # let pywebview auto-detect

@@ -219,17 +219,6 @@
     }
   }
 
-  // Notification helper — delegates to the shared ArtificeToast.
-  // "info" type passes explicit duration:3000 to mirror the old
-  // 3-second auto-dismiss; success/error use the shared defaults
-  // (success=4000, error=0/no auto-dismiss).
-  function showNotification(message, type) {
-    type = type || "info";
-    if (type === "success") { window.ArtificeToast.success(message); }
-    else if (type === "error") { window.ArtificeToast.error(message); }
-    else { window.ArtificeToast.show(message, "info", { duration: 3000 }); }
-  }
-
   function collectConfig(extra) {
     var o = {
       llm_base_url:       cfg.llmUrl ? cfg.llmUrl.value : "",
@@ -902,6 +891,29 @@
     });
 
     if (els.btnClearLog) els.btnClearLog.addEventListener("click", clearLog);
+
+    // ── Handoff: show toast if an import just completed ────────────
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get("handoff_ok") === "1") {
+        var source = params.get("handoff_source") || "another app";
+        if (window.ArtificeToast) {
+          window.ArtificeToast.success("Imported text from " + source + " — file added to input directory.");
+        }
+        // Clean URL
+        if (window.history && window.history.replaceState) {
+          var clean = window.location.pathname;
+          window.history.replaceState(null, "", clean);
+        }
+      } else if (params.get("handoff_error") === "invalid") {
+        if (window.ArtificeToast) {
+          window.ArtificeToast.error("Handoff expired or invalid.");
+        }
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      }
+    })();
   }
 
   if (document.readyState === "loading") {

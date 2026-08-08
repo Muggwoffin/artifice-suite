@@ -19,6 +19,7 @@ resolution-markers = [
 members = [
     "artifice-draft",
     "artifice-graph",
+    "artifice-hub",
     "artifice-model-harness",
     "artifice-ocr",
     "artifice-secure-io",
@@ -285,7 +286,7 @@ requires-dist = [
     { name = "lxml", specifier = ">=5.0" },
     { name = "python-docx", specifier = ">=0.8.11" },
     { name = "python-multipart", marker = "extra == 'web'", specifier = ">=0.0.9" },
-    { name = "pywebview", marker = "extra == 'web'", specifier = ">=4.4" },
+    { name = "pywebview", marker = "extra == 'web'", specifier = ">=5.0" },
     { name = "readability-lxml", marker = "extra == 'web'", specifier = ">=0.8.1" },
     { name = "requests", specifier = ">=2.31.0" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.29" },
@@ -354,6 +355,27 @@ provides-extras = ["web", "window"]
 dev = [
     { name = "pyinstaller", specifier = ">=6.21.0" },
     { name = "pywebview", specifier = ">=5.0" },
+]
+
+[[package]]
+name = "artifice-hub"
+version = "0.1.0"
+source = { editable = "apps/artifice-hub" }
+dependencies = [
+    { name = "artifice-shared-ui" },
+    { name = "fastapi" },
+    { name = "platformdirs" },
+    { name = "pywebview" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "artifice-shared-ui", editable = "packages/shared-ui" },
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "platformdirs", specifier = ">=4.0.0" },
+    { name = "pywebview", specifier = ">=5.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
 ]
 
 [[package]]
@@ -444,11 +466,15 @@ name = "artifice-shared-ui"
 version = "0.2.0"
 source = { editable = "packages/shared-ui" }
 dependencies = [
+    { name = "platformdirs" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "uvicorn", extras = ["standard"], specifier = ">=0.20" }]
+requires-dist = [
+    { name = "platformdirs", specifier = ">=4.0.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.20" },
+]
 
 [[package]]
 name = "artifice-suite"
@@ -610,6 +636,9 @@ asr-cuda = [
     { name = "whisperx", version = "3.8.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14' or platform_machine != 'aarch64' or platform_python_implementation != 'CPython' or sys_platform != 'linux'" },
     { name = "whisperx", version = "3.8.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'" },
 ]
+window = [
+    { name = "pywebview" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -628,6 +657,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "python-multipart", specifier = ">=0.0.9" },
+    { name = "pywebview", marker = "extra == 'window'", specifier = ">=5.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.0" },
     { name = "torch", marker = "(sys_platform == 'linux' and extra == 'asr') or (sys_platform == 'win32' and extra == 'asr')", specifier = ">=2.8.0,<2.9.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "artifice-transcribe", extra = "asr" } },
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32' and extra == 'asr'", specifier = ">=2.8.0,<2.9.0" },
@@ -641,7 +671,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
     { name = "whisperx", marker = "extra == 'asr'", specifier = ">=3.8.0" },
 ]
-provides-extras = ["asr", "asr-cuda"]
+provides-extras = ["asr", "asr-cuda", "window"]
 
 [[package]]
 name = "asteroid-filterbanks"

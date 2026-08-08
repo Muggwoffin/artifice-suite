@@ -22,6 +22,7 @@ A collection of local-first and open-source tools that place a user-friendly int
 
 | App | What it does | Model backends |
 |---|---|---|
+| 🖥️ **Artifice Hub** | Native GUI launcher and installer. Manages installation, updating, and launching of all four apps. Handles the PyTorch CUDA hardware probe natively. Ships frozen only (not on PyPI). | — |
 | 📷 **Artifice OCR** | Local-first OCR processing: edit raw OCR output, clean up text and translate documents in one workflow. Integrates with Tropy to import archival photographs and send transcriptions back. | Ollama, LM Studio, OpenAI-compatible, Hugging Face |
 | 🎧 **Artifice Transcribe** | Oral history transcription with a speech-to-text model of your choice, coupled with pyannote diarization for speaker labels. Produces OHMS- and TEI-compliant transcripts. | Whisper / Parakeet, pyannote |
 | 🗺️ **Artifice Graph** | Knowledge graph creator extracting entities and relationships into a variety of formats. Integrated with Obsidian for navigable graphs. | Ollama, LM Studio, OpenAI-compatible |
@@ -37,35 +38,31 @@ is required anywhere.
 All four apps are published at `0.1.0`. Install one or more with:
 
 ```bash
-uv tool install artifice-ocr        # OCR pipeline
-uv tool install artifice-draft       # copy editing
-uv tool install artifice-graph       # knowledge graph
-uv tool install artifice-transcribe  # speech-to-text
+uv tool install "artifice-ocr[web]"              # OCR pipeline
+uv tool install "artifice-draft[web]"             # copy editing
+uv tool install "artifice-graph[web]"             # knowledge graph
+uv tool install "artifice-transcribe[asr-cuda]"   # speech-to-text + CUDA
 ```
 
 On Windows PowerShell:
 
 ```powershell
-uv tool install artifice-ocr
-uv tool install artifice-transcribe
+uv tool install "artifice-ocr[web]"
+uv tool install "artifice-transcribe[asr-cuda]"
 ```
 
-**`artifice-transcribe` installs without the speech-recognition stack.** The app
-starts, serves its interface, and handles uploads, the database, summarise and
-cleanup with no PyTorch present — the ASR dependencies sit behind an `asr` extra
-and the two import sites are guarded, so a base install is small and fast.
-Transcription itself needs the extra:
+**`artifice-transcribe[asr-cuda]` includes the full CUDA-enabled PyTorch stack.**
+The `[web]` extra gates FastAPI and Uvicorn — all four apps need them. The `[asr-cuda]`
+extra gates the speech-recognition stack (Whisper/Parakeet + pyannote). Artifice Hub
+handles the CUDA hardware probe natively when launched from the Hub; on bare installs
+the first transcription attempt triggers the prompt.
 
-```bash
-uv tool install "artifice-transcribe[asr]"
-```
-
-> **Note on size.** Installed from this index, `[asr]` resolves PyTorch from
-> default PyPI, which on Linux bundles the CUDA runtime — several gigabytes.
-> The workspace pins a CPU-only PyTorch index, but that pin is uv workspace
-> configuration and **is not carried in the published package**, so it does not
-> apply to a PyPI install. If you want a CPU-only stack, select a CPU PyTorch
-> index yourself, or install from a clone (below), where the pin applies.
+> **Note on size.** `[asr-cuda]` resolves PyTorch from default PyPI, which bundles
+> the CUDA runtime — several gigabytes. The workspace pins a CPU-only PyTorch index,
+> but that pin is uv workspace configuration and **is not carried in the published
+> package**, so it does not apply to a PyPI install. If you want a CPU-only stack,
+> select a CPU PyTorch index yourself, or install from a clone (below), where the pin
+> applies.
 
 ### Install from a clone (development)
 
@@ -100,6 +97,19 @@ docker build -t artifice-ocr .
 docker run -p 8000:8000 artifice-ocr
 ```
 
+### Build Artifice Hub (frozen)
+
+Artifice Hub is a native PyWebView GUI that manages installation, updating, and
+launching of all four apps. It ships frozen only — no Dockerfile, no PyPI publish.
+
+```bash
+uv run pyinstaller apps/artifice-hub/artifice-hub.spec
+```
+
+The spec produces a single-file executable (deviation from the suite's onedir
+pattern — a GUI launcher is a single entry point). Run the resulting
+`dist/artifice-hub` directly; there is no `uv tool install` for the Hub.
+
 ### Uninstall
 
 ```bash
@@ -116,15 +126,30 @@ Each app documents its own setup and entry points in its own `README.md`.
 
 | App | Install name | Commands after install | Data directory |
 |---|---|---|---|
-| OCR | `artifice-ocr` | `artifice-ocr`, `artifice-ocr-web` | `~/.artifice_ocr/` |
-| Draft | `artifice-draft` | `artifice-draft` | `~/.artifice_draft/` |
-| Graph | `artifice-graph` | `artifice-graph`, `artifice-graph-web` | platformdirs(`artifice-graph`, `ArtificeSuite`) |
-| Transcribe | `artifice-transcribe` | `artifice-transcribe` | platform-dependent (see `artifice-transcribe --data-dir`) |
+| Hub | — (frozen only) | `artifice-hub` (after building) | — |
+| OCR | `artifice-ocr[web]` | `artifice-ocr`, `artifice-ocr-web` | `~/.artifice_ocr/` |
+| Draft | `artifice-draft[web]` | `artifice-draft`, `artifice-draft-web` | `~/.artifice_draft/` |
+| Graph | `artifice-graph[web]` | `artifice-graph`, `artifice-graph-web` | platformdirs(`artifice-graph`, `ArtificeSuite`) |
+| Transcribe | `artifice-transcribe[asr-cuda]` | `artifice-transcribe` | platform-dependent (see `artifice-transcribe --data-dir`) |
 
 > **Note:** ArtificeGraph stores its data under the platform-conventional
 > user-data directory (was `~/.callosip/` prior to v0.1.1 — migrated
 > automatically on first launch). The uninstaller reports this explicitly
 > so you do not mistake it for a directory belonging to another application.
+
+### Frameless window mode
+
+All four apps run in frameless PyWebView windows — no OS window borders or native
+title bar. The shared masthead (`_masthead.html`) acts as the draggable title bar.
+Minimize and Close buttons are inline SVG, hidden by default and revealed by the
+`pywebviewready` event. This is the expected appearance; do not report it as a
+layout bug.
+
+### Send To (inter-app handoff)
+
+Apps can send extracted text and data to each other via a file-based handoff using
+a platformdirs shared directory (e.g., OCR → Draft, OCR → Graph). The mechanism is
+documented in each app's own README.
 
 ## What makes this suite different
 
@@ -137,7 +162,8 @@ Each app documents its own setup and entry points in its own `README.md`.
 ## Repository layout
 
 ```
-apps/                        # the four desktop applications
+apps/                        # five applications (four desktop apps + Hub launcher)
+  artifice-hub/              #   native GUI launcher and installer (frozen/PyInstaller only)
   artifice-ocr/              #   OCR pipeline (Tropy integration, PDF export)
   artifice-draft/            #   copy editing with tracked changes
   artifice-graph/            #   knowledge graph + Obsidian export

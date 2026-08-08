@@ -29,10 +29,11 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .routers import byom as byom_router
 from .runtime import (
@@ -50,6 +51,7 @@ from artifice_draft.style_guides.base import StyleGuide
 
 import importlib.resources
 import shared_ui
+from shared_ui.handoff import cleanup_expired, write_discovery
 from shared_ui.server_bootstrap import (
     ensure_std_streams,
     free_port,
@@ -133,6 +135,23 @@ _MASTHEAD_CTX = {
 app = FastAPI(title="ArtificeDraft")
 
 app.include_router(byom_router.router)
+
+
+class AllowedHostsMiddleware(BaseHTTPMiddleware):
+    """Refuse requests whose Host header does not start with 127.0.0.1 or localhost.
+
+    Prevents DNS rebinding attacks on the local-only import endpoints.
+    ``testserver`` is the host the FastAPI TestClient uses.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        host = request.headers.get("host", "")
+        if host and not any(host.startswith(h) for h in ("127.0.0.1", "localhost", "testserver")):
+            return JSONResponse({"error": "Forbidden"}, status_code=403)
+        return await call_next(request)
+
+
+app.add_middleware(AllowedHostsMiddleware)
 
 
 @app.middleware("http")
@@ -452,6 +471,55 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # --------------------------------------------------------------------------- #
+# handoff import endpoint
+# --------------------------------------------------------------------------- #
+
+# Module-level storage for text received via handoff — cleared after rendering.
+_pending_handoff_text: str | None = None
+
+
+@app.get("/import")
+def import_handoff(handoff: str = ""):
+    """Receive a handoff token from another Artifice app.
+
+    Reads the handoff manifest, validates it, stores the body text,
+    and redirects to the main page.  The UUID is unguessable;
+    the URL carries no payload.
+    """
+    from fastapi.responses import RedirectResponse
+
+    from shared_ui.handoff import delete_handoff, read_handoff
+
+    global _pending_handoff_text
+    if not handoff:
+        return RedirectResponse("/")
+
+    result = read_handoff(handoff, expected_target="artifice-draft")
+    if result is None:
+        return RedirectResponse("/?handoff_error=invalid")
+
+    _pending_handoff_text = result["body"]
+    delete_handoff(handoff)
+    return RedirectResponse("/?handoff_source=" + result["source"])
+
+
+@app.get("/api/handoff-text")
+def get_handoff_text():
+    """Return pending handoff text if any, clearing it after read."""
+    global _pending_handoff_text
+    text = _pending_handoff_text
+    _pending_handoff_text = None
+    if text is not None:
+        return {"text": text}
+    return {"text": None}
+
+
+# --------------------------------------------------------------------------- #
+# static frontend
+# --------------------------------------------------------------------------- #
+
+
+# --------------------------------------------------------------------------- #
 # bootstrap
 # --------------------------------------------------------------------------- #
 
@@ -515,6 +583,12 @@ def main() -> None:
             f"WARNING: server did not respond on port {port} within 10s; "
             f"opening the window anyway, but it may show a connection error."
         )
+
+    # ── Discovery: register this running instance for handoff ──────────
+    import os
+
+    write_discovery("artifice-draft", port, os.getpid())
+    cleanup_expired()
 
     # ── Server-only mode (--no-window) ─────────────────────────────────
     if args.no_window:

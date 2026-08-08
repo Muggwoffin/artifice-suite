@@ -331,3 +331,31 @@ initTheme();
 initKeyboardShortcuts();
 
 loadSettings().catch(err => window.ArtificeToast.error("Could not load settings: " + err.message));
+
+// ── Handoff: check for text sent from another app ────────────────
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var source = params.get("handoff_source");
+  if (source) {
+    fetch("/api/handoff-text")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.text) {
+          var area = document.getElementById("handoff-area");
+          var textarea = document.getElementById("handoff-text");
+          var sourceLabel = document.getElementById("handoff-source");
+          if (area && textarea) {
+            textarea.value = data.text;
+            if (sourceLabel) sourceLabel.textContent = "from " + source;
+            area.style.display = "block";
+            els.docInfo.textContent = "Imported text from " + source + " (" + data.text.length + " chars)";
+          }
+        }
+      })
+      .catch(function () { /* silent */ });
+    // Clean URL
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }
+})();

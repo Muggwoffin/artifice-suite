@@ -538,6 +538,42 @@ def byom_preview(app: str = "artifice-ocr", state: str = "not-found") -> HTMLRes
     return HTMLResponse(html)
 
 
+# ── Handoff discovery: check if another app is running ──────────────────
+
+
+@app.get("/api/handoff/discovery/{slug}")
+def check_discovery(slug: str):
+    """Return port info for a running app, or indicate it's not running."""
+    from shared_ui.handoff import read_discovery
+
+    info = read_discovery(slug)
+    if info:
+        return {"running": True, "port": info.get("port")}
+    return {"running": False}
+
+
+@app.post("/api/handoff/create")
+async def create_handoff_route(request: Request):
+    """Create a handoff package and return its UUID token.
+
+    The body must contain ``target`` (slug) and ``body`` (text).
+    """
+    from shared_ui.handoff import create_handoff
+
+    try:
+        data = await request.json()
+        target = data.get("target", "")
+        body = data.get("body", "")
+        if not target or not body:
+            return {"error": "target and body are required"}
+        uuid_str = create_handoff("artifice-ocr", target, body)
+        return {"uuid": uuid_str}
+    except ValueError as exc:
+        return {"error": str(exc)}
+    except Exception:
+        return {"error": "Failed to create handoff"}
+
+
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -545,6 +581,7 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # bootstrap
 # --------------------------------------------------------------------------- #
 
+from shared_ui.handoff import cleanup_expired, write_discovery  # noqa: E402
 from shared_ui.server_bootstrap import (  # noqa: E402
     ensure_std_streams,
     free_port,
@@ -623,6 +660,10 @@ def main() -> None:
         return
 
     url = f"http://127.0.0.1:{port}"
+
+    # ── Discovery: register this running instance for handoff ──────────
+    write_discovery("artifice-ocr", port, os.getpid())
+    cleanup_expired()
 
     # ── Server-only mode (--no-window) ────────────────────────────────────
     if args.no_window:

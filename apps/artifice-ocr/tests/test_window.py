@@ -100,6 +100,9 @@ class TestOpenNativeWindow:
                 height=768,
                 resizable=True,
                 min_size=(640, 480),
+                frameless=True,
+                easy_drag=False,
+                js_api=mock.ANY,
             )
 
 

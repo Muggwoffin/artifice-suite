@@ -32,6 +32,15 @@
 
         <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
         <div class="log" id="log"><p class="log-empty">Nothing yet. Drop a .docx file above to begin.</p></div>
+
+        <!-- Handoff text from other apps (hidden until populated) -->
+        <div class="handoff-text-area" id="handoff-area" style="display:none; margin-top:0.8rem;">
+          <div class="card-head" style="margin-bottom:0.4rem;">
+            <h2>Received Text</h2>
+            <span class="dim" id="handoff-source"></span>
+          </div>
+          <textarea id="handoff-text" readonly style="width:100%; min-height:12rem; padding:0.6rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink); font-family:var(--font-mono,monospace); font-size:0.88rem; resize:vertical;" placeholder="No text loaded"></textarea>
+        </div>
       </div>
 
       <!-- ============================================================= REVIEW -->

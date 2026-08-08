@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<!-- SPDX-FileCopyrightText: 2026 Maurice Casey -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artifice Hub</title>
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/fonts.css">
+<link rel="stylesheet" href="/static/hub.css">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<div class="page">
+  <!-- ── Masthead ─────────────────────────────────────────────────────── -->
+  <header class="masthead">
+    <span class="masthead-kicker">ARTIFICE SUITE &middot; LAUNCHER</span>
+    <h1 class="masthead-title">Artifice Hub</h1>
+    <hr class="masthead-rule">
+  </header>
+
+  <!-- ── Dashboard ────────────────────────────────────────────────────── -->
+  <main id="main-content">
+    <section class="app-grid" id="app-grid">
+      <!-- Populated by hub.js -->
+    </section>
+
+    <!-- ── Job progress ────────────────────────────────────────────── -->
+    <section class="job-section" id="job-section" aria-live="polite">
+      <!-- Populated by hub.js when a job is active -->
+    </section>
+  </main>
+
+  <!-- ── Footer ───────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <hr class="rule-fade">
+    <p class="footer-text">Artifice Hub v<span id="hub-version">—</span> &middot; uv <span id="hub-uv">—</span></p>
+  </footer>
+</div>
+
+<!-- ── Install Modal (Transcribe ASR variant picker) ────────────────── -->
+<dialog class="modal-overlay" id="install-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Install Artifice Transcribe</h2>
+      <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">Artifice Transcribe requires an ASR (speech recognition) pack. Choose the variant that matches your hardware:</p>
+
+      <div class="hw-profile" id="hw-profile">
+        <span class="hw-label">Your hardware:</span>
+        <span class="hw-detail" id="hw-detail">—</span>
+      </div>
+
+      <div class="variant-options" id="variant-options">
+        <label class="variant-card">
+          <input type="radio" name="asr-variant" value="cuda" class="variant-radio">
+          <span class="variant-label">CUDA</span>
+          <span class="variant-size">~7 GB download</span>
+          <span class="variant-desc">NVIDIA GPU with CUDA support &mdash; fastest inference</span>
+        </label>
+        <label class="variant-card">
+          <input type="radio" name="asr-variant" value="cpu" class="variant-radio">
+          <span class="variant-label">CPU</span>
+          <span class="variant-size">~1.6 GB download</span>
+          <span class="variant-desc">CPU-only &mdash; works everywhere, slower inference</span>
+        </label>
+      </div>
+
+      <p class="modal-note">You can skip ASR packs now and install them later with <code>uv sync --extra asr</code> in the workspace.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modal-skip">Skip ASR Packs</button>
+      <button class="btn btn-primary" id="modal-confirm" disabled>Install</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="/static/hub.js"></script>
+</body>
+</html>
