@@ -3,525 +3,367 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /*
- * Both Tropy dialogs: "Add from Tropy…" (pull pages into the queue) and
- * "Send to Tropy…" (write finished results back). Loaded after app.js, whose
- * helpers (api, escapeHtml, pickFolder, setQueue, log) it reuses rather than
- * duplicating — the same relationship the tk build's TropyPicker and
- * TropySendDialog have to the App instance that opens them.
+ * Tropy JSON-LD bridge: import modal ("Import from Tropy") and export modal
+ * ("Export to Tropy"). All old SQLite-based browse/preview/write machinery
+ * is deleted. The bridge works with JSON-LD files only.
+ *
+ * Loaded after app.js — reuses api(), escapeHtml(), and the shared toast
+ * (window.ArtificeToast) from /shared/toast.js.
  */
 
 const tropyEls = {};
-["btn-add-tropy", "modal-tropy-add", "tropy-project",
- "tropy-sources", "tropy-items", "tropy-summary-text",
- "tropy-summary-warning", "btn-tropy-add-queue",
- "btn-tropy-cancel", "btn-tropy-browse-project",
- "btn-send-tropy", "modal-tropy-send", "send-tropy-project",
- "send-tropy-targets-notes", "send-tropy-targets-transcriptions",
- "send-tropy-stage", "send-tropy-backup", "send-tropy-status",
- "send-tropy-plans", "btn-send-tropy-preview", "btn-send-tropy-write",
- "btn-send-tropy-close",
- "send-tropy-history-detail", "send-tropy-history-name",
- "send-tropy-history-photo", "send-tropy-history-page"].forEach(id => {
+[
+  // Import modal
+  "btn-add-tropy", "modal-tropy-add",
+  "tropy-import-path", "btn-tropy-browse-file",
+  "tropy-import-loading", "tropy-import-loading-text",
+  "tropy-import-results", "tropy-import-count",
+  "tropy-import-list", "btn-tropy-import-select-all",
+  "tropy-import-summary-text", "tropy-import-summary-warning",
+  "btn-tropy-cancel", "btn-tropy-add-queue",
+  // Export modal
+  "btn-send-tropy", "modal-tropy-send",
+  "tropy-export-stat-items", "tropy-export-stat-photos",
+  "tropy-export-stat-transcriptions",
+  "tropy-export-stage", "tropy-export-loading",
+  "tropy-export-loading-text", "tropy-export-status",
+  "btn-send-tropy-close", "btn-send-tropy-write",
+].forEach(id => {
   tropyEls[id] = document.getElementById(id);
 });
 
-let tropyProjects = [];
-let tropyProjectData = null;
-let historySendContext = null;
-const ALL_ITEMS = "__all__";
+let tropyImportPreview = null;  // { export_name, items, warnings }
+let tropyExportContext = null;  // { itemIds, isHistory }
 
-// ------------------------------------------------------------- add from tropy
+// ------------------------------------------------------------- import modal
 
 async function openTropyAdd() {
   tropyEls["modal-tropy-add"].classList.remove("hidden");
-  tropyEls["tropy-sources"].innerHTML = "";
-  tropyEls["tropy-items"].innerHTML =
-    `<div class="empty-state">Select a list, tag, or "All items" on the left</div>`;
-  tropyProjectData = null;
-  selectedSources.clear();
-  updateTropySummary(0, 0, []);
+  resetImportState();
+}
+
+function resetImportState() {
+  tropyImportPreview = null;
+  tropyEls["tropy-import-path"].value = "";
+  tropyEls["tropy-import-loading"].classList.add("hidden");
+  tropyEls["tropy-import-results"].classList.add("hidden");
+  tropyEls["tropy-import-list"].innerHTML = "";
+  tropyEls["tropy-import-count"].textContent = "0 items found";
+  tropyEls["tropy-import-summary-text"].textContent = "No file selected";
+  tropyEls["tropy-import-summary-warning"].textContent = "";
   tropyEls["btn-tropy-add-queue"].disabled = true;
-  await ensureTropyProjectList(tropyEls["tropy-project"]);
-  if (tropyEls["tropy-project"].value) loadTropySources();
 }
 
-async function ensureTropyProjectList(selectEl) {
-  if (!tropyProjects.length) {
-    const data = await api("GET", "/api/tropy/recent");
-    tropyProjects = data.projects;
-  }
-  selectEl.innerHTML = tropyProjects
-    .map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
-}
-
-tropyEls["btn-add-tropy"].onclick = openTropyAdd;
-tropyEls["btn-tropy-cancel"].onclick = () => {
-  tropyEls["modal-tropy-add"].classList.add("hidden");
-};
-tropyEls["modal-tropy-add"].querySelector("[data-modal-close]")?.addEventListener("click", () => {
-  tropyEls["modal-tropy-add"].classList.add("hidden");
-});
-tropyEls["tropy-project"].addEventListener("change", loadTropySources);
-tropyEls["btn-tropy-browse-project"].onclick = async () => {
-  const dir = await pickFolder("tropy");
-  if (!dir) return;
-  if (!tropyProjects.includes(dir)) {
-    tropyProjects.unshift(dir);
-    const opt = document.createElement("option");
-    opt.value = dir; opt.textContent = dir;
-    tropyEls["tropy-project"].prepend(opt);
-  }
-  tropyEls["tropy-project"].value = dir;
-  loadTropySources();
-};
-
-async function loadTropySources() {
-  const project = tropyEls["tropy-project"].value;
-  if (!project) return;
-  tropyEls["tropy-sources"].innerHTML = `<p class="dim" style="padding:0.7rem;">Loading…</p>`;
-  tropyEls["tropy-items"].innerHTML =
-    `<div class="empty-state">Select a list, tag, or "All items" on the left</div>`;
-  updateTropySummary(0, 0, []);
-  tropyEls["btn-tropy-add-queue"].disabled = true;
-  try {
-    const data = await api("POST", "/api/tropy/browse", { project });
-    tropyProjectData = data;
-    renderSourceTree(data);
-    // Reset to default selection: All items
-    selectedSources.clear();
-    selectedSources.set(sourceKey(ALL_ITEMS, null), { type: ALL_ITEMS, id: null });
-    updateSourceHighlight();
-  } catch (err) {
-    tropyEls["tropy-sources"].innerHTML =
-      `<p class="dim" style="padding:0.7rem;">${escapeHtml(err.message)}</p>`;
-  }
-}
-
-function renderSourceTree(data) {
-  const el = tropyEls["tropy-sources"];
-  const frag = document.createDocumentFragment();
-
-  // "All items" section label
-  const allLabel = document.createElement("div");
-  allLabel.className = "tropy-source-section-label";
-  allLabel.textContent = "Overview";
-  frag.appendChild(allLabel);
-
-  // All items node
-  const allItems = document.createElement("div");
-  allItems.className = "tropy-source-node active";
-  allItems.dataset.type = ALL_ITEMS;
-  allItems.dataset.id = "";
-  allItems.innerHTML = `<span class="icon">&#128196;</span>All items<span class="count">${data.lists.reduce((s, l) => s + l.item_count, 0)}</span>`;
-  allItems.addEventListener("click", () => selectSource(allItems, ALL_ITEMS, null));
-  frag.appendChild(allItems);
-
-  let totalItems = data.lists.reduce((s, l) => s + l.item_count, 0);
-
-  // Lists section label
-  if (data.lists.length) {
-    const listLabel = document.createElement("div");
-    listLabel.className = "tropy-source-section-label";
-    listLabel.textContent = "Lists";
-    frag.appendChild(listLabel);
-
-    // Build hierarchy: parent_id -> children
-    const childrenOf = {};
-    for (const l of data.lists) {
-      const parentKey = l.parent_id ?? 0;
-      if (!childrenOf[parentKey]) childrenOf[parentKey] = [];
-      childrenOf[parentKey].push(l);
-    }
-
-    function renderListBranch(list, depth) {
-      const node = document.createElement("div");
-      node.className = "tropy-source-node";
-      node.style.paddingLeft = `${0.7 + depth * 1.2}rem`;
-      node.dataset.type = "list";
-      node.dataset.id = list.list_id;
-      node.innerHTML =
-        `<span class="icon">${depth === 0 ? "&#128193;" : "&#128193;"}</span>${escapeHtml(list.name)}<span class="count">${list.item_count}</span>`;
-      node.addEventListener("click", () => selectSource(node, "list", list.list_id));
-      frag.appendChild(node);
-
-      const sub = childrenOf[list.list_id];
-      if (sub) {
-        sub.sort((a, b) => a.name.localeCompare(b.name));
-        for (const child of sub) renderListBranch(child, depth + 1);
-      }
-    }
-
-    const roots = (childrenOf[0] || []).concat(childrenOf[null] || []);
-    roots.sort((a, b) => a.name.localeCompare(b.name));
-    for (const root of roots) renderListBranch(root, 0);
-  }
-
-  // Tags section label
-  if (data.tags && data.tags.length) {
-    const tagLabel = document.createElement("div");
-    tagLabel.className = "tropy-source-section-label";
-    tagLabel.textContent = "Tags";
-    frag.appendChild(tagLabel);
-
-    for (const t of data.tags) {
-      const node = document.createElement("div");
-      node.className = "tropy-source-node";
-      node.dataset.type = "tag";
-      node.dataset.id = t.name;
-      node.innerHTML =
-        `<span class="icon">&#127991;</span>${escapeHtml(t.name)}<span class="count">${t.count}</span>`;
-      node.addEventListener("click", () => selectSource(node, "tag", t.name));
-      frag.appendChild(node);
-    }
-  }
-
-  el.innerHTML = "";
-  el.appendChild(frag);
-}
-
-let currentSource = ALL_ITEMS;
-const selectedSources = new Map(); // key -> {type, id}
-
-function sourceKey(type, id) {
-  return `${type}::${id ?? ""}`;
-}
-
-function getSourceNode(type, id) {
-  const key = sourceKey(type, id);
-  return tropyEls["tropy-sources"].querySelector(
-    `.tropy-source-node[data-type="${type}"]` +
-    (id != null ? `[data-id="${id}"]` : ""));
-}
-
-function updateSourceHighlight() {
-  tropyEls["tropy-sources"].querySelectorAll(".tropy-source-node")
-    .forEach(n => {
-      const key = sourceKey(n.dataset.type, n.dataset.id);
-      n.classList.toggle("active", selectedSources.has(key));
-    });
-}
-
-async function fetchCombinedItems() {
-  const project = tropyEls["tropy-project"].value;
-  if (!project || !selectedSources.size) return;
-
-  tropyEls["tropy-items"].innerHTML =
-    `<div class="empty-state">Loading…</div>`;
-
-  try {
-    const seen = new Set();
-    const merged = [];
-
-    for (const [, src] of selectedSources) {
-      const body = { project };
-      if (src.type === "list") body.list_id = src.id;
-      else if (src.type === "tag") body.tag = src.id;
-
-      const data = await api("POST", "/api/tropy/browse", body);
-      for (const item of (data.items || [])) {
-        if (!seen.has(item.item_id)) {
-          seen.add(item.item_id);
-          merged.push(item);
-        }
-      }
-    }
-
-    renderItems(merged);
-  } catch (err) {
-    tropyEls["tropy-items"].innerHTML =
-      `<div class="empty-state">${escapeHtml(err.message)}</div>`;
-  }
-}
-
-async function selectSource(node, type, id) {
-  const ctrl = window.event ? window.event.ctrlKey || window.event.metaKey : false;
-
-  if (ctrl) {
-    const key = sourceKey(type, id);
-    if (selectedSources.has(key)) {
-      selectedSources.delete(key);
-    } else {
-      selectedSources.set(key, { type, id });
-    }
-    updateSourceHighlight();
-    await fetchCombinedItems();
+function setImportLoading(show, text) {
+  const el = tropyEls["tropy-import-loading"];
+  if (show) {
+    el.classList.remove("hidden");
+    tropyEls["tropy-import-loading-text"].textContent = text || "Parsing JSON-LD…";
   } else {
-    selectedSources.clear();
-    const key = sourceKey(type, id);
-    selectedSources.set(key, { type, id });
-    updateSourceHighlight();
-
-    const project = tropyEls["tropy-project"].value;
-    if (!project) return;
-
-    tropyEls["tropy-items"].innerHTML =
-      `<div class="empty-state">Loading…</div>`;
-
-    try {
-      const body = { project };
-      if (type === "list") body.list_id = id;
-      else if (type === "tag") body.tag = id;
-
-      const data = await api("POST", "/api/tropy/browse", body);
-      renderItems(data.items || []);
-    } catch (err) {
-      tropyEls["tropy-items"].innerHTML =
-        `<div class="empty-state">${escapeHtml(err.message)}</div>`;
-    }
+    el.classList.add("hidden");
   }
 }
 
-function renderItems(items) {
-  const el = tropyEls["tropy-items"];
-  if (!items.length) {
-    el.innerHTML = `<div class="empty-state">No items in this ${currentSource.type}.</div>`;
-    updateTropySummary(0, 0, []);
-    tropyEls["btn-tropy-add-queue"].disabled = true;
-    return;
+async function loadImportPreview(path) {
+  if (!path) return;
+  resetImportState();
+  tropyEls["tropy-import-path"].value = path;
+  setImportLoading(true, "Parsing JSON-LD…");
+
+  try {
+    const data = await api("POST", "/api/tropy/import/preview", { path });
+    tropyImportPreview = data;
+    renderImportResults(data);
+  } catch (err) {
+    tropyImportPreview = null;
+    tropyEls["tropy-import-summary-text"].textContent = "Error: " + escapeHtml(err.message);
+  } finally {
+    setImportLoading(false);
   }
+}
+
+function renderImportResults(data) {
+  const items = data.items || [];
+  tropyEls["tropy-import-results"].classList.remove("hidden");
+  tropyEls["tropy-import-count"].textContent =
+    `${items.length} item(s) found`;
 
   const frag = document.createDocumentFragment();
-  for (const i of items) {
+  for (const item of items) {
     const row = document.createElement("div");
-    row.className = "tropy-item-row";
+    row.className = "tropy-result-row";
+    const missingBadge = item.missing_count > 0
+      ? ` <span class="tropy-result-missing">${item.missing_count} missing</span>`
+      : "";
     row.innerHTML = `
-      <input type="checkbox" class="tropy-item-check" data-item-id="${i.item_id}" checked>
-      <span class="item-title">${escapeHtml(i.title || "(untitled)")}</span>
-      <span class="item-meta">${i.photo_count} page(s)</span>`;
-    row.querySelector("input[type=checkbox]").addEventListener("change", () => {
-      updateTropySummaryFromCheckboxes();
-    });
-    // clicking the row toggles the checkbox
+      <input type="checkbox" class="tropy-result-check" data-group="${escapeHtml(item.group)}" checked>
+      <span class="tropy-result-title">${escapeHtml(item.title)}</span>
+      <span class="tropy-result-meta">${item.photo_count} photo(s)${missingBadge}</span>`;
     row.addEventListener("click", (e) => {
       if (e.target.tagName !== "INPUT") {
         const cb = row.querySelector("input[type=checkbox]");
         cb.checked = !cb.checked;
-        updateTropySummaryFromCheckboxes();
+        updateImportSummary();
       }
     });
+    row.querySelector("input[type=checkbox]").addEventListener("change", updateImportSummary);
     frag.appendChild(row);
   }
 
-  el.innerHTML = "";
-  el.appendChild(frag);
-  updateTropySummaryFromCheckboxes();
+  tropyEls["tropy-import-list"].innerHTML = "";
+  tropyEls["tropy-import-list"].appendChild(frag);
+  updateImportSummary();
+
+  if (items.length > 0) {
+    tropyEls["btn-tropy-add-queue"].disabled = false;
+  }
 }
 
-function updateTropySummaryFromCheckboxes() {
-  const checkboxes = tropyEls["tropy-items"].querySelectorAll(".tropy-item-check");
-  const selected = [];
-  let totalPages = 0;
-  for (const cb of checkboxes) {
-    if (cb.checked) {
-      selected.push(Number(cb.dataset.itemId));
-      // Find the page count from the row label
-      const meta = cb.closest(".tropy-item-row").querySelector(".item-meta");
-      const match = meta.textContent.match(/(\d+)/);
-      totalPages += match ? parseInt(match[1], 10) : 0;
-    }
-  }
-  updateTropySummary(selected.length, totalPages, []);
+function updateImportSummary() {
+  const checks = tropyEls["tropy-import-list"].querySelectorAll(".tropy-result-check");
+  const selected = Array.from(checks).filter(cb => cb.checked);
+  const totalPhotos = selected.reduce((sum, cb) => {
+    const row = cb.closest(".tropy-result-row");
+    const meta = row.querySelector(".tropy-result-meta");
+    const match = meta && meta.textContent.match(/(\d+)/);
+    return sum + (match ? parseInt(match[1], 10) : 0);
+  }, 0);
+
+  tropyEls["tropy-import-summary-text"].textContent =
+    selected.length > 0
+      ? `${selected.length} of ${checks.length} item(s) — ${totalPhotos} photo(s)`
+      : "No items selected";
   tropyEls["btn-tropy-add-queue"].disabled = selected.length === 0;
 }
 
-function updateTropySummary(items, pages, missing) {
-  const parts = [];
-  if (items > 0) parts.push(`${items} item(s)`);
-  if (pages > 0) parts.push(`${pages} page(s)`);
-  tropyEls["tropy-summary-text"].textContent =
-    parts.length ? `${parts.join(", ")} to queue` : "No items selected";
-  tropyEls["tropy-summary-warning"].textContent =
-    missing.length ? `${missing.length} page(s) missing from computer — will be skipped` : "";
-}
+// Events
+tropyEls["btn-add-tropy"].onclick = openTropyAdd;
+
+tropyEls["modal-tropy-add"].querySelector("[data-modal-close]")?.addEventListener("click", () => {
+  tropyEls["modal-tropy-add"].classList.add("hidden");
+});
+
+tropyEls["btn-tropy-cancel"].onclick = () => {
+  tropyEls["modal-tropy-add"].classList.add("hidden");
+};
+
+tropyEls["modal-tropy-add"].addEventListener("click", (e) => {
+  if (e.target === tropyEls["modal-tropy-add"]) {
+    tropyEls["modal-tropy-add"].classList.add("hidden");
+  }
+});
+
+tropyEls["btn-tropy-browse-file"].onclick = async () => {
+  try {
+    const res = await fetch("/api/native/pick-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preset: "json" }),
+    });
+    const data = await res.json();
+    if (data.path) {
+      loadImportPreview(data.path);
+    }
+  } catch (err) {
+    if (window.ArtificeToast)
+      window.ArtificeToast.error("File picker not available — type the path instead.");
+  }
+};
+
+// Re-load on manual path change (if user pastes)
+tropyEls["tropy-import-path"].addEventListener("change", () => {
+  loadImportPreview(tropyEls["tropy-import-path"].value);
+});
+
+// Select all / none toggle
+let allSelected = true;
+tropyEls["btn-tropy-import-select-all"].onclick = () => {
+  allSelected = !allSelected;
+  const checks = tropyEls["tropy-import-list"].querySelectorAll(".tropy-result-check");
+  checks.forEach(cb => { cb.checked = allSelected; });
+  tropyEls["btn-tropy-import-select-all"].textContent = allSelected ? "Select all" : "Deselect all";
+  updateImportSummary();
+};
 
 tropyEls["btn-tropy-add-queue"].onclick = async () => {
-  const project = tropyEls["tropy-project"].value;
-  if (!project) return;
+  const checks = tropyEls["tropy-import-list"].querySelectorAll(".tropy-result-check:checked");
+  const groups = Array.from(checks).map(cb => cb.dataset.group);
+  if (!groups.length) return;
 
-  const checkboxes = tropyEls["tropy-items"].querySelectorAll(".tropy-item-check:checked");
-  const itemIds = Array.from(checkboxes).map(cb => Number(cb.dataset.itemId));
-  if (!itemIds.length) return;
+  const path = tropyEls["tropy-import-path"].value;
+  const outputDir = document.getElementById("output-dir")
+    ? document.getElementById("output-dir").value || "output"
+    : "output";
 
   tropyEls["btn-tropy-add-queue"].disabled = true;
   tropyEls["btn-tropy-add-queue"].textContent = "Adding…";
 
   try {
-    const data = await api("POST", "/api/tropy/add", {
-      project, item_ids: itemIds, output_dir: document.getElementById("output-dir").value || "output",
+    const data = await api("POST", "/api/tropy/import/add", {
+      path, groups, output_dir: outputDir,
     });
 
-    let note = `Added ${data.added} page(s) from Tropy`;
+    let msg = `Imported ${data.added} item(s) from Tropy`;
     if (data.missing && data.missing.length) {
-      note += `; ${data.missing.length} page(s) missing from computer and skipped`;
-      const names = data.missing.slice(0, 5).map(escapeHtml).join(", ");
-      note += data.missing.length > 5 ? ` (e.g. ${names}…)` : ` (${names})`;
+      msg += ` (${data.missing.length} file(s) missing)`;
     }
-    log(note, data.missing && data.missing.length ? "warning" : "accent");
+    if (window.ArtificeToast) window.ArtificeToast.success(msg);
     setQueue(data.items);
     tropyEls["modal-tropy-add"].classList.add("hidden");
   } catch (err) {
-    log(`Error adding from Tropy: ${err.message}`, "error");
+    if (window.ArtificeToast) window.ArtificeToast.error(`Import failed: ${err.message}`);
     tropyEls["btn-tropy-add-queue"].disabled = false;
     tropyEls["btn-tropy-add-queue"].textContent = "Add to Queue";
   }
 };
 
-// ------------------------------------------------------------- send to tropy
+// ------------------------------------------------------------- export modal
 
-let lastPreview = null;
-
-function selectedTargets() {
-  const targets = [];
-  if (tropyEls["send-tropy-targets-notes"].checked) targets.push("notes");
-  if (tropyEls["send-tropy-targets-transcriptions"].checked) targets.push("transcriptions");
-  return targets;
-}
-
-async function openTropySend(historyInfo) {
-  historySendContext = historyInfo || null;
+async function openTropyExport(context) {
+  tropyExportContext = context || null;
   tropyEls["modal-tropy-send"].classList.remove("hidden");
-  tropyEls["send-tropy-plans"].innerHTML = "";
-  tropyEls["btn-send-tropy-write"].disabled = true;
+  tropyEls["tropy-export-status"].textContent = "";
+  tropyEls["tropy-export-status"].className = "tropy-export-status dim";
+  tropyEls["tropy-export-loading"].classList.add("hidden");
 
-  // Show/hide history item detail section
-  if (historySendContext) {
-    tropyEls["send-tropy-history-detail"].classList.remove("hidden");
-    tropyEls["send-tropy-history-name"].textContent = historySendContext.name || "";
-    tropyEls["send-tropy-history-photo"].textContent = historySendContext.photoTitle || "";
-    tropyEls["send-tropy-history-page"].textContent = historySendContext.page != null ? String(historySendContext.page) : "";
-    setTropySendStatus("Preview before writing — nothing is sent to Tropy until you press Write.", "");
-  } else {
-    tropyEls["send-tropy-history-detail"].classList.add("hidden");
-    setTropySendStatus(
-      "Preview before writing — nothing is sent to Tropy until you press Write.",
-      "");
-  }
-
-  await ensureTropyProjectList(tropyEls["send-tropy-project"]);
-
-  // Pre-select project if known from history
-  if (historySendContext && historySendContext.project) {
-    const opts = tropyEls["send-tropy-project"].options;
-    for (let i = 0; i < opts.length; i++) {
-      if (opts[i].value === historySendContext.project) {
-        opts[i].selected = true;
-        break;
-      }
-    }
-  }
-}
-
-function setTropySendStatus(text, cls) {
-  tropyEls["send-tropy-status"].textContent = text;
-  tropyEls["send-tropy-status"].className = `dim ${cls}`;
-}
-
-async function previewTropySend() {
-  const project = tropyEls["send-tropy-project"].value;
-  const targets = selectedTargets();
-  if (!project) { setTropySendStatus("Choose a Tropy project first.", "warning"); return; }
-  if (!targets.length) { setTropySendStatus("Choose at least one write target.", "warning"); return; }
-
-  setTropySendStatus("Building preview…", "");
-  tropyEls["btn-send-tropy-write"].disabled = true;
-
+  // Fetch export summary counts
   try {
-    const body = { project, targets, stage: tropyEls["send-tropy-stage"].value };
-    if (historySendContext) {
-      body.item_ids = historySendContext.itemIds;
-      lastPreview = await api("POST", "/api/tropy/send/history/preview", body);
+    if (context && context.isHistory) {
+      // History: fetch the item detail to show counts
+      const data = await api("GET", `/api/history/items/${context.itemIds[0]}`);
+      const hasText = (data.cleaned || data.raw || data.translated) ? 1 : 0;
+      tropyEls["tropy-export-stat-items"].textContent = "1";
+      tropyEls["tropy-export-stat-photos"].textContent = "1";
+      tropyEls["tropy-export-stat-transcriptions"].textContent = hasText > 0 ? "1" : "0";
     } else {
-      lastPreview = await api("POST", "/api/tropy/send/preview", body);
+      // Queue: count eligible items
+      const stage = tropyEls["tropy-export-stage"].value;
+      const items = await countEligibleItems(stage);
+      tropyEls["tropy-export-stat-items"].textContent = String(items.count);
+      tropyEls["tropy-export-stat-photos"].textContent = String(items.photos);
+      tropyEls["tropy-export-stat-transcriptions"].textContent = String(items.withText);
     }
   } catch (err) {
-    setTropySendStatus(`Could not read project: ${err.message}`, "error");
-    return;
-  }
-
-  renderTropyPlans(lastPreview.plans);
-
-  if (lastPreview.blockers.length) {
-    setTropySendStatus(lastPreview.blockers.join("  •  "), "error");
-  } else if (!lastPreview.insertable) {
-    setTropySendStatus("Nothing new to write — everything is already in Tropy.", "");
-  } else {
-    setTropySendStatus(
-      `${lastPreview.insertable} row(s) will be created. Nothing is written until you press Write.`,
-      "");
-    tropyEls["btn-send-tropy-write"].disabled = false;
+    // Swallow — stats are cosmetic
+    tropyEls["tropy-export-stat-items"].textContent = "?";
+    tropyEls["tropy-export-stat-photos"].textContent = "?";
+    tropyEls["tropy-export-stat-transcriptions"].textContent = "?";
   }
 }
 
-function renderTropyPlans(plans) {
-  if (!plans.length) {
-    tropyEls["send-tropy-plans"].innerHTML =
-      `<p class="dim">No Tropy-sourced documents are finished yet.</p>`;
-    return;
+async function countEligibleItems(stage) {
+  const items = await api("GET", "/api/queue");
+  const stageMap = {
+    raw_ocr: "raw",
+    cleaned: "cleaned",
+    translated: "translated",
+  };
+  const textMap = {
+    raw_ocr: "extracted_text",
+    cleaned: "cleaned_text",
+    translated: "translated_text",
+  };
+  const stageKey = stageMap[stage] || "cleaned";
+  const textKey = textMap[stage] || "cleaned_text";
+
+  let count = 0;
+  let photos = 0;
+  let withText = 0;
+  for (const item of items) {
+    if (item.source && item.source.origin === "tropy-jsonld") {
+      count++;
+      photos++;
+      // We can't get full preview text from the queue snapshot, but
+      // we can check what's available in the item
+      if (item.state === "done") withText++;
+    }
   }
-  const rows = plans.map(p => `
-    <tr>
-      <td>${escapeHtml(p.label)}</td>
-      <td>${escapeHtml(p.target)}</td>
-      <td class="tropy-action-${p.action}">${escapeHtml(p.action)}</td>
-      <td class="dim">${escapeHtml(p.reason || "")}</td>
-    </tr>`).join("");
-  tropyEls["send-tropy-plans"].innerHTML = `
-    <table class="queue" style="font-size:0.82rem;">
-      <thead><tr><th>Page</th><th>Target</th><th>Action</th><th>Detail</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  return { count, photos, withText };
 }
 
-async function writeTropySend() {
-  if (!lastPreview || !lastPreview.insertable) return;
-  const project = tropyEls["send-tropy-project"].value;
-  const targets = selectedTargets();
-  const n = lastPreview.insertable;
+function closeTropyExport() {
+  tropyEls["modal-tropy-send"].classList.add("hidden");
+  tropyExportContext = null;
+}
 
-  if (!confirm(`Create ${n} row(s) in ${targets.join(", ")} in\n${project}?\n\n` +
-              (tropyEls["send-tropy-backup"].checked
-                ? "A backup will be taken first."
-                : "NO BACKUP will be taken."))) {
+tropyEls["btn-send-tropy"].onclick = () => openTropyExport({ isHistory: false });
+tropyEls["btn-send-tropy-close"].onclick = closeTropyExport;
+tropyEls["modal-tropy-send"].querySelector("[data-modal-close]")?.addEventListener("click", closeTropyExport);
+tropyEls["modal-tropy-send"].addEventListener("click", (e) => {
+  if (e.target === tropyEls["modal-tropy-send"]) closeTropyExport();
+});
+
+tropyEls["btn-send-tropy-write"].onclick = async () => {
+  const stage = tropyEls["tropy-export-stage"].value;
+  const endpoint = tropyExportContext && tropyExportContext.isHistory
+    ? "/api/tropy/export/history"
+    : "/api/tropy/export";
+
+  // Step 1 – ask the user where to save the file
+  tropyEls["tropy-export-loading"].classList.remove("hidden");
+  tropyEls["tropy-export-loading-text"].textContent = "Choose save location…";
+  tropyEls["tropy-export-status"].textContent = "";
+
+  let saveRes;
+  try {
+    saveRes = await fetch("/api/native/save-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preset: "json", default_name: "artifice-ocr-tropy.jsonld" }),
+    });
+  } catch (err) {
+    tropyEls["tropy-export-loading"].classList.add("hidden");
+    tropyEls["tropy-export-status"].textContent = "Save dialog not available";
+    tropyEls["tropy-export-status"].className = "tropy-export-status error";
+    if (window.ArtificeToast) window.ArtificeToast.error("Save dialog not available — try running from the desktop app");
     return;
   }
 
-  tropyEls["btn-send-tropy-write"].disabled = true;
-  setTropySendStatus("Writing…", "");
+  const pathData = await saveRes.json().catch(() => ({}));
+  const savePath = pathData.path;
+  if (!savePath) {
+    tropyEls["tropy-export-loading"].classList.add("hidden");
+    return;  // user cancelled the dialog
+  }
+
+  // Step 2 – generate the export, writing to the chosen path
+  tropyEls["tropy-export-loading-text"].textContent = "Generating Tropy export…";
+  const body = { stage, path: savePath };
+  if (tropyExportContext) {
+    body.item_ids = tropyExportContext.itemIds;
+  }
 
   try {
-    const body = {
-      project, targets, stage: tropyEls["send-tropy-stage"].value,
-      make_backup: tropyEls["send-tropy-backup"].checked,
-    };
-    const endpoint = historySendContext
-      ? "/api/tropy/send/history/write"
-      : "/api/tropy/send/write";
-    if (historySendContext) body.item_ids = historySendContext.itemIds;
-    const report = await api("POST", endpoint, body);
-    let note = `Wrote ${report.written} row(s).`;
-    if (report.backup) note += `  Backup: ${report.backup.split(/[\\/]/).pop()}`;
-    setTropySendStatus(note, "success");
-    log(note, "success");
-    await previewTropySend(); // refresh so duplicates show correctly
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      const msg = detail.detail || `Server returned ${res.status}`;
+      tropyEls["tropy-export-status"].textContent = msg;
+      tropyEls["tropy-export-status"].className = "tropy-export-status error";
+      if (window.ArtificeToast) window.ArtificeToast.error(`Export failed: ${msg}`);
+      return;
+    }
+
+    const data = await res.json();
+    const filename = data.filename || savePath.split(/[\\/]/).pop();
+    tropyEls["tropy-export-status"].textContent = "Exported to " + filename;
+    tropyEls["tropy-export-status"].className = "tropy-export-status success";
+    if (window.ArtificeToast) {
+      window.ArtificeToast.success("Exported to " + filename);
+    }
   } catch (err) {
-    setTropySendStatus(`Write failed: ${err.message}`, "error");
+    tropyEls["tropy-export-status"].textContent = err.message;
+    tropyEls["tropy-export-status"].className = "tropy-export-status error";
+    if (window.ArtificeToast) window.ArtificeToast.error(`Export failed: ${err.message}`);
+  } finally {
+    tropyEls["tropy-export-loading"].classList.add("hidden");
   }
-}
+};
 
-tropyEls["btn-send-tropy"].onclick = openTropySend;
-function closeTropySend() {
-  tropyEls["modal-tropy-send"].classList.add("hidden");
-  historySendContext = null;
-}
-tropyEls["btn-send-tropy-close"].onclick = closeTropySend;
-tropyEls["modal-tropy-send"].querySelector("[data-modal-close]")?.addEventListener("click", closeTropySend);
-tropyEls["btn-send-tropy-preview"].onclick = previewTropySend;
-tropyEls["btn-send-tropy-write"].onclick = writeTropySend;
-tropyEls["modal-tropy-send"].addEventListener("click", (e) => {
-  if (e.target === tropyEls["modal-tropy-send"]) closeTropySend();
-});
-
-// Click-outside-to-close for add modal
-tropyEls["modal-tropy-add"].addEventListener("click", (e) => {
-  if (e.target === tropyEls["modal-tropy-add"]) tropyEls["modal-tropy-add"].classList.add("hidden");
-});
+// Expose openTropyExport for history.js to call
+window.openTropyExport = openTropyExport;

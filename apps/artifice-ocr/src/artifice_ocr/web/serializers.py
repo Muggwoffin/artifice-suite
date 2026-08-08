@@ -32,6 +32,7 @@ def serialize_item(item: JobItem) -> dict[str, Any]:
         "error": item.error,
         "elapsed": round(item.elapsed, 1),
         "guard_rejected": item.guard_rejected,
+        "source": item.source,
         "stages": {
             name: {
                 "state": status.state.value,
@@ -138,5 +139,8 @@ def serialize_history_item_detail(row: sqlite3.Row) -> dict[str, Any]:
         "tropy_item_id": row["tropy_item_id"],
         "tropy_item_title": row["tropy_item_title"] or "",
         "tropy_project_path": row["tropy_project_path"] or "",
+        "tropy_group": row["tropy_group"] or "",
+        "tropy_photo_path": row["tropy_photo_path"] or "",
+        "tropy_exportable": row["tropy_item_node"] is not None,
         "diff": _diff_payload(raw, cleaned, translated),
     }

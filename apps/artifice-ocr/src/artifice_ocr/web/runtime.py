@@ -341,12 +341,13 @@ class RunState:
         return [serialize_item(i) for i in self.items]
 
     def tropy_eligible_items(self, item_ids: list[str] | None) -> list[JobItem]:
-        """Queue items that came from Tropy (carry a photo_id), for send-back."""
+        """Queue items that came from the Tropy JSON-LD bridge (carry
+        origin = 'tropy-jsonld'), for export back."""
         pool = (
             [self.get(i) for i in item_ids] if item_ids is not None
             else list(self.items)
         )
-        return [i for i in pool if i is not None and (i.source or {}).get("photo_id")]
+        return [i for i in pool if i is not None and (i.source or {}).get("origin") == "tropy-jsonld"]
 
     # --------------------------------------------------------------- running
     def start_run(self, *, stages: set[str], output_dir: str,

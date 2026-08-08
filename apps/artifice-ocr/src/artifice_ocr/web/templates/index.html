@@ -388,30 +388,44 @@
     <span id="stage-text" class="dim"></span>
   </div>
 
-  <!-- Tropy: add pages -->
+  <!-- Tropy: import from JSON-LD -->
   <div class="modal-backdrop hidden" id="modal-tropy-add">
-    <div class="modal" style="width:min(820px, 94vw);">
-      <h3>Add from Tropy</h3>
-      <button class="modal-close" data-modal-close>&times;</button>
-      <p class="dim">The project is opened read-only &mdash; nothing here can modify it.</p>
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
-        <select id="tropy-project" class="select" style="flex:1;"></select>
-        <button class="btn" id="btn-tropy-browse-project">Browse&hellip;</button>
+    <div class="modal" style="width:min(640px, 94vw);">
+      <h3>Import from Tropy</h3>
+      <button class="modal-close" data-modal-close aria-label="Close import dialog">&times;</button>
+
+      <div class="tropy-help">
+        <p>Import items from a Tropy JSON-LD export file. In Tropy, choose <strong>File &rarr; Export &rarr; JSON-LD</strong> to create this file.</p>
+        <p class="dim">Image paths inside the export are resolved relative to where the JSON-LD file is saved.</p>
       </div>
-      <div class="tropy-picker-grid">
-        <div class="tropy-source-pane" id="tropy-sources"></div>
-        <div class="tropy-item-pane" id="tropy-items">
-          <div class="empty-state">Select a list, tag, or "All items" on the left</div>
+
+      <div class="tropy-file-row">
+        <input type="text" id="tropy-import-path" class="input" placeholder="Path to Tropy JSON-LD export file" readonly>
+        <button class="btn" id="btn-tropy-browse-file" type="button">Browse&hellip;</button>
+      </div>
+
+      <div class="tropy-dropzone-loading hidden" id="tropy-import-loading">
+        <span class="tropy-spinner" aria-hidden="true"></span>
+        <span id="tropy-import-loading-text">Parsing JSON-LD&hellip;</span>
+      </div>
+
+      <div class="tropy-results hidden" id="tropy-import-results" aria-live="polite">
+        <div class="tropy-results-head">
+          <span id="tropy-import-count" class="dim">0 items found</span>
+          <button class="btn btn-small" id="btn-tropy-import-select-all" type="button">Select all</button>
         </div>
+        <div class="tropy-results-list" id="tropy-import-list"></div>
       </div>
-      <div class="tropy-summary" id="tropy-summary">
-        <span id="tropy-summary-text" class="dim">No items selected</span>
+
+      <div class="tropy-summary" id="tropy-import-summary">
+        <span id="tropy-import-summary-text" class="dim">No file selected</span>
         <span class="spacer"></span>
-        <span id="tropy-summary-warning" class="warning"></span>
+        <span id="tropy-import-summary-warning" class="warning"></span>
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.6rem;">
-        <button class="btn" id="btn-tropy-cancel">Cancel</button>
-        <button class="btn accent" id="btn-tropy-add-queue" disabled>Add to Queue</button>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+        <button class="btn" id="btn-tropy-cancel" type="button">Cancel</button>
+        <button class="btn accent" id="btn-tropy-add-queue" type="button" disabled>Add to Queue</button>
       </div>
     </div>
   </div>
@@ -472,44 +486,52 @@
     </div>
   </div>
 
-  <!-- Tropy: send results back -->
+  <!-- Tropy: export results as JSON-LD -->
   <div class="modal-backdrop hidden" id="modal-tropy-send">
-    <div class="modal" style="width:min(820px, 94vw);">
-      <h3>Send results to Tropy</h3>
-      <button class="modal-close" data-modal-close>&times;</button>
-      <p class="dim">Only documents added via "Add from Tropy&hellip;" can be sent. Nothing is written until you press Write.</p>
+    <div class="modal" style="width:min(560px, 94vw);">
+      <h3>Export to Tropy</h3>
+      <button class="modal-close" data-modal-close aria-label="Close export dialog">&times;</button>
 
-      <div id="send-tropy-history-detail" class="hidden" style="margin-bottom:0.6rem; padding:0.5rem; background:var(--paper-recessed); border-radius:var(--radius-sm);">
-        <div class="dim" style="margin-bottom:0.3rem;">Sending from History:</div>
-        <div><strong>Item:</strong> <span id="send-tropy-history-name"></span></div>
-        <div><strong>Photo:</strong> <span id="send-tropy-history-photo"></span></div>
-        <div><strong>Page:</strong> <span id="send-tropy-history-page"></span></div>
+      <div class="tropy-help">
+        <p>Generate a Tropy JSON-LD file containing your OCR results. Import it back into Tropy with <strong>File &rarr; Import</strong>.</p>
+        <p class="dim">Downloads a file. In Tropy: File &rarr; Import Items&hellip; and choose it. Tropy creates new items — your originals are untouched.</p>
       </div>
 
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
-        <select id="send-tropy-project" class="select" style="flex:1;"></select>
+      <div class="tropy-export-summary" id="tropy-export-summary">
+        <div class="tropy-export-stat">
+          <span class="tropy-export-stat-n" id="tropy-export-stat-items">0</span>
+          <span class="tropy-export-stat-l">Items</span>
+        </div>
+        <div class="tropy-export-stat">
+          <span class="tropy-export-stat-n" id="tropy-export-stat-photos">0</span>
+          <span class="tropy-export-stat-l">Photos</span>
+        </div>
+        <div class="tropy-export-stat">
+          <span class="tropy-export-stat-n" id="tropy-export-stat-transcriptions">0</span>
+          <span class="tropy-export-stat-l">Transcriptions</span>
+        </div>
       </div>
 
-      <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
-        <label class="check"><input type="checkbox" id="send-tropy-targets-notes" checked> Notes</label>
-        <label class="check"><input type="checkbox" id="send-tropy-targets-transcriptions"> Transcriptions</label>
-        <label>Text:
-          <select id="send-tropy-stage">
+      <div class="tropy-export-options">
+        <label>Text to export
+          <select id="tropy-export-stage">
             <option value="cleaned">Cleaned text</option>
             <option value="raw_ocr">Raw OCR text</option>
             <option value="translated">Translation</option>
           </select>
         </label>
-        <label class="check"><input type="checkbox" id="send-tropy-backup" checked> Back up first</label>
       </div>
 
-      <p class="dim" id="send-tropy-status"></p>
-      <div id="send-tropy-plans" style="max-height:34vh; overflow:auto;"></div>
+      <div class="tropy-export-loading hidden" id="tropy-export-loading">
+        <span class="tropy-spinner" aria-hidden="true"></span>
+        <span id="tropy-export-loading-text">Generating Tropy export&hellip;</span>
+      </div>
+
+      <div class="tropy-export-status dim" id="tropy-export-status"></div>
 
       <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
-        <button class="btn" id="btn-send-tropy-close">Close</button>
-        <button class="btn" id="btn-send-tropy-preview">Preview</button>
-        <button class="btn accent" id="btn-send-tropy-write" disabled>Write to Tropy</button>
+        <button class="btn" id="btn-send-tropy-close" type="button">Close</button>
+        <button class="btn accent" id="btn-send-tropy-write" type="button">Generate &amp; Export</button>
       </div>
     </div>
   </div>

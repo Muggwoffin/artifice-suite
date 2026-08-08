@@ -33,39 +33,26 @@ class RawTextRequest(BaseModel):
     text: str
 
 
-class TropyBrowseRequest(BaseModel):
-    project: str
-    list_id: int | None = None
-    tag: str | None = None
-    item_ids: list[int] | None = None
+class TropyImportRequest(BaseModel):
+    path: str
 
 
-class TropyAddRequest(BaseModel):
-    project: str
-    item_ids: list[int] | None = None
+class TropyImportAddRequest(BaseModel):
+    path: str
+    groups: list[str] | None = None
     output_dir: str = "output"
 
 
-class TropySendRequest(BaseModel):
-    project: str
+class TropyExportRequest(BaseModel):
     item_ids: list[str] | None = None
-    targets: list[str]
     stage: str = "cleaned"
+    path: str | None = None
 
 
-class TropySendWriteRequest(TropySendRequest):
-    make_backup: bool = True
-
-
-class TropySendHistoryRequest(BaseModel):
+class TropyExportHistoryRequest(BaseModel):
     item_ids: list[int]
-    project: str
-    targets: list[str]
     stage: str = "cleaned"
-
-
-class TropySendHistoryWriteRequest(TropySendHistoryRequest):
-    make_backup: bool = True
+    path: str | None = None
 
 
 class PdfExportRequest(BaseModel):

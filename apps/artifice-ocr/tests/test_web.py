@@ -31,8 +31,6 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pytest_httpx import HTTPXMock
 
-from conftest import TROPY_SCHEMA
-
 from artifice_ocr import config
 from artifice_ocr.web import server
 from artifice_ocr.web import runtime
@@ -44,7 +42,7 @@ from artifice_ocr.web.routers import (
     pdf_export as _pdf_export_router,
     queue as _queue_router,
     run as _run_router,
-    tropy as _tropy_router,
+    tropy_bridge as _tropy_router,
 )
 
 
@@ -586,158 +584,300 @@ def test_set_config_passes_non_url_fields_through(client):
 
 
 # --------------------------------------------------------------------------- #
-# tropy (read-only endpoints; no real project on disk during tests)
+# --------------------------------------------------------------------------- #
+# tropy json-ld bridge — import preview
 # --------------------------------------------------------------------------- #
 
 
-def test_tropy_browse_reports_a_clean_error_for_a_missing_project(client, tmp_path):
-    res = client.post("/api/tropy/browse", json={"project": str(tmp_path / "nope.tropy")})
+def test_tropy_import_preview_rejects_bad_suffix(client, tmp_path):
+    f = tmp_path / "export.txt"
+    f.write_text("{}", encoding="utf-8")
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
     assert res.status_code == 400
 
 
-def test_tropy_add_reports_a_clean_error_for_a_missing_project(client, tmp_path):
-    res = client.post("/api/tropy/add", json={"project": str(tmp_path / "nope.tropy")})
+def test_tropy_import_preview_reports_missing_file(client, tmp_path):
+    f = tmp_path / "gone.jsonld"
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
     assert res.status_code == 400
 
 
-def test_tropy_add_writes_manifest_and_reports_missing(client, tropy_project, tmp_path):
-    out = tmp_path / "out"
+def test_tropy_import_preview_accepts_valid_jsonld(client, tmp_path):
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"}
+                ],
+            }
+        ]
+    }
+    f = tmp_path / "export.json"
+    (tmp_path / "a.png").write_bytes(b"x")
+    f.write_text(json.dumps(export), encoding="utf-8")
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["export_name"] == "export.json"
+    assert len(body["items"]) == 1
+    assert body["items"][0]["photo_count"] == 1
+
+
+def test_tropy_import_preview_accepts_bare_list(client, tmp_path):
+    export = [
+        {
+            "@type": "Item",
+            "title": "Test Item",
+            "photo": [
+                {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"}
+            ],
+        }
+    ]
+    f = tmp_path / "export.json"
+    (tmp_path / "a.png").write_bytes(b"x")
+    f.write_text(json.dumps(export), encoding="utf-8")
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
+    assert res.status_code == 200
+    assert len(res.json()["items"]) == 1
+
+
+def test_tropy_import_preview_skips_non_item_nodes(client, tmp_path):
+    export = {
+        "@graph": [
+            {"@type": "Template", "name": "Generic"},
+            {
+                "@type": "Item",
+                "title": "Doc 1",
+                "photo": [
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"}
+                ],
+            },
+        ]
+    }
+    f = tmp_path / "export.json"
+    (tmp_path / "a.png").write_bytes(b"x")
+    f.write_text(json.dumps(export), encoding="utf-8")
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
+    assert res.status_code == 200
+    assert len(res.json()["items"]) == 1
+
+
+def test_tropy_import_preview_reports_missing_photos(client, tmp_path):
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [
+                    {"@type": "Photo", "path": "missing.jpg", "checksum": "abc", "mimetype": "image/jpeg"}
+                ],
+            }
+        ]
+    }
+    f = tmp_path / "export.json"
+    f.write_text(json.dumps(export), encoding="utf-8")
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
+    assert res.status_code == 200
+    assert res.json()["items"][0]["missing_count"] == 1
+
+
+def test_tropy_import_preview_rejects_absolute_paths(client, tmp_path):
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [{"@type": "Photo", "path": "/etc/passwd", "checksum": "x", "mimetype": "text"}],
+            }
+        ]
+    }
+    f = tmp_path / "export.json"
+    f.write_text(json.dumps(export), encoding="utf-8")
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
+    assert res.status_code == 400
+
+
+def test_tropy_import_preview_rejects_dotdot_segments(client, tmp_path):
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [{"@type": "Photo", "path": "../secret", "checksum": "x", "mimetype": "text"}],
+            }
+        ]
+    }
+    f = tmp_path / "export.json"
+    f.write_text(json.dumps(export), encoding="utf-8")
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
+    assert res.status_code == 400
+
+
+def test_tropy_import_preview_error_message_does_not_leak_paths(client, tmp_path):
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [{"@type": "Photo", "path": "../secret", "checksum": "x", "mimetype": "text"}],
+            }
+        ]
+    }
+    f = tmp_path / "export.json"
+    f.write_text(json.dumps(export), encoding="utf-8")
+    res = client.post("/api/tropy/import/preview", json={"path": str(f)})
+    detail = res.json()["detail"]
+    assert str(tmp_path) not in detail
+    assert str(Path.home()) not in detail
+
+
+# --------------------------------------------------------------------------- #
+# tropy json-ld bridge — import add
+# --------------------------------------------------------------------------- #
+
+
+def test_tropy_import_add_adds_to_queue(client, tmp_path):
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"}
+                ],
+            }
+        ]
+    }
+    f = tmp_path / "export.json"
+    (tmp_path / "a.png").write_bytes(b"x")
+    f.write_text(json.dumps(export), encoding="utf-8")
     res = client.post(
-        "/api/tropy/add",
-        json={
-            "project": str(tropy_project),
-            "item_ids": [1],
-            "output_dir": str(out),
-        },
+        "/api/tropy/import/add",
+        json={"path": str(f), "output_dir": str(tmp_path / "out")},
     )
     assert res.status_code == 200
     body = res.json()
     assert body["added"] >= 1
-    assert body["missing"] == ["doc.pdf  p.1"]
-    manifest = out / "tropy_manifest.json"
-    assert manifest.exists()
-    import json
-
-    data = json.loads(manifest.read_text(encoding="utf-8"))
-    assert "pages" in data
-    assert "project" in data
 
 
-# --------------------------------------------------------------------------- #
-# tropy — path validation
-# --------------------------------------------------------------------------- #
-
-
-def test_tropy_browse_refuses_project_outside_allowed_roots(client):
+def test_tropy_import_add_reports_missing(client, tmp_path):
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Missing Photos",
+                "photo": [
+                    {"@type": "Photo", "path": "gone.pdf", "checksum": "x", "mimetype": "application/pdf", "page": 0}
+                ],
+            }
+        ]
+    }
+    f = tmp_path / "export.json"
+    f.write_text(json.dumps(export), encoding="utf-8")
     res = client.post(
-        "/api/tropy/browse",
-        json={
-            "project": "/opt/rejected/scan.tropy",
-        },
-    )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
-
-
-def test_tropy_browse_accepts_project_in_allowed_root(client, tropy_project):
-    res = client.post(
-        "/api/tropy/browse",
-        json={
-            "project": str(tropy_project),
-        },
+        "/api/tropy/import/add",
+        json={"path": str(f), "output_dir": str(tmp_path / "out")},
     )
     assert res.status_code == 200
-    assert res.json()["project"] == "Archive"
+    assert "gone.pdf  p.1" in res.json()["missing"]
 
 
-def test_tropy_add_refuses_project_outside_allowed_roots(client, tmp_path):
-    out = tmp_path / "out"
-    out.mkdir()
-    res = client.post(
-        "/api/tropy/add",
-        json={
-            "project": "/opt/rejected/scan.tropy",
-            "output_dir": str(out),
+# --------------------------------------------------------------------------- #
+# tropy json-ld bridge — export
+# --------------------------------------------------------------------------- #
+
+
+def test_tropy_export_requires_tropy_origin(client, tmp_path):
+    f = tmp_path / "plain.png"
+    f.write_bytes(b"x")
+    client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+
+    res = client.post("/api/tropy/export", json={"stage": "cleaned"})
+    assert res.status_code == 409
+
+
+def test_tropy_export_produces_jsonld(client, tmp_path):
+    # Add an item with tropy-jsonld origin
+    from artifice_ocr.jobs import JobItem
+
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"x")
+    item = JobItem(
+        path=str(f),
+        label="doc.pdf  p.1",
+        source={
+            "origin": "tropy-jsonld",
+            "tropy_group": "abc:0",
+            "item_node": {"@type": "Item", "title": "Doc"},
+            "photo_index": 0,
+            "photo_path_rel": "doc.pdf",
+            "checksum": "abc",
+            "mimetype": "application/pdf",
+            "item_title": "Doc",
+            "orientation": 1,
         },
     )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
+    item.results = {"cleaned": {"cleaned_text": "Some cleaned text"}}
+    runtime.state.add_items([item])
+
+    res = client.post("/api/tropy/export", json={"stage": "cleaned"})
+    assert res.status_code == 200
+    assert "application/ld+json" in res.headers["content-type"]
 
 
-def test_tropy_add_refuses_output_dir_outside_allowed_roots(client, tropy_project):
-    res = client.post(
-        "/api/tropy/add",
-        json={
-            "project": str(tropy_project),
-            "output_dir": "/opt/rejected/out",
+def test_tropy_export_writes_to_disk_when_path_given(client, tmp_path):
+    """When a `path` is provided the export writes to disk and returns JSON."""
+    from artifice_ocr.jobs import JobItem
+
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"x")
+    item = JobItem(
+        path=str(f),
+        label="doc.pdf  p.1",
+        source={
+            "origin": "tropy-jsonld",
+            "tropy_group": "abc:0",
+            "item_node": {"@type": "Item", "title": "Doc"},
+            "photo_index": 0,
+            "photo_path_rel": "doc.pdf",
+            "checksum": "abc",
+            "mimetype": "application/pdf",
+            "item_title": "Doc",
+            "orientation": 1,
         },
     )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
+    item.results = {"cleaned": {"cleaned_text": "Some cleaned text"}}
+    runtime.state.add_items([item])
 
-
-def test_tropy_send_preview_refuses_project_outside_allowed_roots(client):
+    out = tmp_path / "my-export.jsonld"
     res = client.post(
-        "/api/tropy/send/preview",
-        json={
-            "project": "/opt/rejected/scan.tropy",
-            "targets": ["notes"],
-        },
+        "/api/tropy/export",
+        json={"stage": "cleaned", "path": str(out)},
     )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
+    assert res.status_code == 200
+    body = res.json()
+    assert body["filename"] == "my-export.jsonld"
+    assert out.exists()
+    content = out.read_text(encoding="utf-8")
+    data = json.loads(content)
+    assert "generator" in data
+    assert "@graph" in data
 
 
-def test_tropy_send_write_refuses_project_outside_allowed_roots(client):
-    res = client.post(
-        "/api/tropy/send/write",
-        json={
-            "project": "/opt/rejected/scan.tropy",
-            "targets": ["notes"],
-        },
-    )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
+def test_tropy_export_history_requires_item_node(client, tmp_path):
+    run_id = _seed_history_run(runtime.state)
+    rows = runtime.state.history.list_items(run_id)
 
-
-def test_tropy_send_history_preview_refuses_project_outside_allowed_roots(client):
-    res = client.post(
-        "/api/tropy/send/history/preview",
-        json={
-            "item_ids": [1],
-            "project": "/opt/rejected/scan.tropy",
-            "targets": ["notes"],
-        },
-    )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
-
-
-def test_tropy_send_history_write_refuses_project_outside_allowed_roots(client):
-    res = client.post(
-        "/api/tropy/send/history/write",
-        json={
-            "item_ids": [1],
-            "project": "/opt/rejected/scan.tropy",
-            "targets": ["notes"],
-        },
-    )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
+    # History items seeded by _seed_history_run won't have tropy_item_node,
+    # so they should be non-exportable
+    if rows:
+        item_id = rows[0]["item_id"]
+        res = client.post(
+            "/api/tropy/export/history", json={"item_ids": [item_id], "stage": "cleaned"}
+        )
+        assert res.status_code == 409
 
 
 # --------------------------------------------------------------------------- #
@@ -1546,101 +1686,22 @@ def test_analytics_stats_reflects_seeded_run(client):
 
 
 # --------------------------------------------------------------------------- #
-# tropy send (write-back), against a synthetic project — never a real archive
+# tropy json-ld bridge — serialiser fields
 # --------------------------------------------------------------------------- #
 
 
-def _add_tropy_queue_item(client, photo_id: int = 10, text: str = "Sauberer Text"):
-    from artifice_ocr.jobs import JobItem
-
-    item = JobItem(path="assets/a.pdf", source={"photo_id": photo_id}, label="doc.pdf p.1")
-    item.results = {"cleaned": {"cleaned_text": text}}
-    runtime.state.add_items([item])
-    return item
-
-
-def test_tropy_send_preview_lists_an_insertable_row(client, tropy_project):
-    _add_tropy_queue_item(client)
-
-    res = client.post(
-        "/api/tropy/send/preview",
-        json={
-            "project": str(tropy_project),
-            "targets": ["notes"],
-        },
-    )
-    body = res.json()
-    assert body["blockers"] == []
-    assert body["insertable"] == 1
-    assert body["plans"][0]["action"] == "insert"
+def test_history_detail_includes_tropy_exportable(client):
+    run_id = _seed_history_run(runtime.state)
+    rows = runtime.state.history.list_items(run_id)
+    if rows:
+        item_id = rows[0]["item_id"]
+        res = client.get(f"/api/history/items/{item_id}")
+        data = res.json()
+        assert "tropy_exportable" in data
+        assert "tropy_group" in data
+        assert "tropy_photo_path" in data
 
 
-def test_tropy_send_preview_ignores_non_tropy_items(client, tmp_path, tropy_project):
-    f = tmp_path / "plain.png"
-    f.write_bytes(b"x")
-    client.post("/api/queue/add-paths", json={"paths": [str(f)]})
-
-    res = client.post(
-        "/api/tropy/send/preview",
-        json={
-            "project": str(tropy_project),
-            "targets": ["notes"],
-        },
-    )
-    assert res.json()["insertable"] == 0
-
-
-def test_tropy_send_write_creates_a_note_and_backs_up(client, tropy_project):
-    _add_tropy_queue_item(client, text="Der Bericht ist fertig.")
-
-    res = client.post(
-        "/api/tropy/send/write",
-        json={
-            "project": str(tropy_project),
-            "targets": ["notes"],
-        },
-    )
-    body = res.json()
-    assert body["written"] == 1
-    assert body["backup"] is not None
-
-    con_check = __import__("sqlite3").connect(tropy_project / "project.tpy")
-    row = con_check.execute("SELECT text FROM notes").fetchone()
-    assert row[0] == "Der Bericht ist fertig."
-    con_check.close()
-
-
-def test_tropy_send_write_does_not_duplicate_on_rerun(client, tropy_project):
-    _add_tropy_queue_item(client, text="Einmaliger Text")
-
-    first = client.post(
-        "/api/tropy/send/write",
-        json={
-            "project": str(tropy_project),
-            "targets": ["notes"],
-        },
-    )
-    second = client.post(
-        "/api/tropy/send/write",
-        json={
-            "project": str(tropy_project),
-            "targets": ["notes"],
-        },
-    )
-
-    assert first.json()["written"] == 1
-    assert second.json()["written"] == 0
-
-
-def test_tropy_send_write_reports_blockers_as_409(client, tropy_project):
-    res = client.post(
-        "/api/tropy/send/write",
-        json={
-            "project": str(tropy_project),
-            "targets": [],
-        },
-    )
-    assert res.status_code == 409
 
 
 # --------------------------------------------------------------------------- #

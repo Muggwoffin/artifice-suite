@@ -42,7 +42,7 @@ def client(tmp_path, monkeypatch):
         run as _run_router,
     )
     from artifice_ocr.web.routers import (
-        tropy as _tropy_router,
+        tropy_bridge as _tropy_router,
     )
     from artifice_ocr.web.runtime import RunState
 

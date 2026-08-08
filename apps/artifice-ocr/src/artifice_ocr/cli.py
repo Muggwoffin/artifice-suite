@@ -321,192 +321,96 @@ def pipeline(
         typer.echo(f"Output: {output_dir}/")
 
 
-@app.command("tropy-browse")
-def tropy_browse(
-    project: str = typer.Argument(
-        None, help="Path to a .tropy project (omit to list recent projects)"
-    ),
+@app.command("tropy-import")
+def tropy_import(
+    export_path: str = typer.Argument(help="Path to a Tropy JSON-LD export file (.jsonld or .json)"),
+    output_dir: str = typer.Option("output", help="Output directory"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview without adding to the queue"),
 ):
-    """Browse a Tropy project: its lists, tags and items.
+    """Import items from a Tropy JSON-LD export file.
 
-    Read-only — this never writes to the Tropy database.
+    In Tropy, use File → Export → JSON-LD to create the export file.
+    Photos are resolved relative to where the JSON-LD file is saved.
     """
-    from artifice_ocr.tropy import TropyProject, recent_projects
+    from artifice_ocr.tropy_jsonld import load_export, photos_to_job_items
 
-    if project is None:
-        found = recent_projects()
-        if not found:
-            typer.echo("No recent Tropy projects found.")
-            raise typer.Exit(code=1)
-        typer.echo("Recent Tropy projects:")
-        for p in found:
-            typer.echo(f"  {p}")
+    preview = load_export(export_path)
+
+    typer.echo(f"Export: {preview.export_name}")
+    typer.echo(f"Items:  {len(preview.items)}")
+    total_photos = sum(len(i.photos) for i in preview.items)
+    total_missing = sum(1 for i in preview.items for p in i.photos if p.missing)
+    typer.echo(f"Photos: {total_photos}" + (f"  ({total_missing} missing)" if total_missing else ""))
+
+    if preview.warnings:
+        for w in preview.warnings:
+            typer.echo(f"  Warning: {w}")
+
+    if dry_run:
+        for item in preview.items:
+            typer.echo(f"\n  {item.title}")
+            for photo in item.photos:
+                status = "MISSING" if photo.missing else "ok"
+                typer.echo(f"    [{status}] {photo.path_rel}")
+        typer.echo("\nDry run — nothing was added to the queue.")
         return
 
-    with TropyProject(project) as proj:
-        typer.echo(f"Project: {proj.name}   ({proj.db_path})")
+    items = photos_to_job_items(preview)
+    typer.echo(f"\n{len(items)} photo(s) queued:")
+    for item in items:
+        typer.echo(f"  {item.label}  ->  {item.output_stem}")
 
-        typer.echo("\nLists:")
-        for lst in proj.lists():
-            typer.echo(f"  [{lst.list_id:3}] {lst.label}")
-
-        tags = [t for t in proj.tags() if t[1]]
-        if tags:
-            typer.echo("\nTags:")
-            for name, count in tags:
-                typer.echo(f"  {count:5}  {name}")
-
-        items = proj.items()
-        total_pages = sum(i.photo_count for i in items)
-        typer.echo(f"\nItems: {len(items)}  ({total_pages} pages total)")
-        for item in items[:40]:
-            typer.echo(f"  [{item.item_id:5}] {item.title}  ({item.photo_count}p)")
-        if len(items) > 40:
-            typer.echo(f"  ... and {len(items) - 40} more")
+    typer.echo(f"\nUse the web UI or 'artifice_ocr pipeline' to OCR these.")
 
 
-@app.command("repair-tropy-notes")
-def repair_tropy_notes(
-    project: str = typer.Argument(help="Path to a .tropy project"),
-    no_backup: bool = typer.Option(False, "--no-backup", help="Skip the safety backup (not recommended)"),
+@app.command("tropy-export")
+def tropy_export(
+    output: str = typer.Option("artifice-ocr-tropy.jsonld", "--output", "-o",
+                                help="Output file path for the JSON-LD export"),
+    stage: str = typer.Option("cleaned", "--stage", help="Text stage: raw_ocr, cleaned, translated"),
 ):
-    """Fix notes written before a `_prosemirror_state()` bug was caught.
+    """Generate a Tropy JSON-LD export file from eligible queue items.
 
-    Every note this tool wrote before the fix was missing a `selection` key,
-    which crashes Tropy's own note editor on open (a minified React error,
-    #520) instead of displaying the note — the write itself always
-    succeeded, so nothing caught it at the time. This only touches the
-    `state` column of affected rows; text, doc content, and language are
-    left exactly as they were. Tropy must be closed first.
+    Only items imported via the Tropy JSON-LD bridge are included.
+    Import the resulting file back into Tropy with File → Import Items…
     """
-    from artifice_ocr.tropy_write import TropyWriter
+    from artifice_ocr.tropy_jsonld import ExportPhoto, export_json
+    from artifice_ocr.web.runtime import state as run_state
 
-    with TropyWriter(project) as writer:
-        try:
-            repaired = writer.repair_missing_selections(make_backup=not no_backup)
-        except RuntimeError as exc:
-            typer.echo(f"Cannot repair: {exc}", err=True)
-            raise typer.Exit(code=1)
+    stage_key, text_key = {
+        "raw_ocr": ("raw", "extracted_text"),
+        "cleaned": ("cleaned", "cleaned_text"),
+        "translated": ("translated", "translated_text"),
+    }.get(stage, ("cleaned", "cleaned_text"))
 
-    if repaired == 0:
-        typer.echo("No notes needed repair — every note already had a selection.")
-    else:
-        typer.echo(f"Repaired {repaired} note(s) missing a selection.")
+    photos: list = []
+    for item in run_state.items:
+        src = item.source or {}
+        if src.get("origin") != "tropy-jsonld":
+            continue
+        text = (item.results.get(stage_key) or {}).get(text_key, "") or ""
+        photos.append(
+            ExportPhoto(
+                abs_path=Path(item.path),
+                text=text,
+                label=item.name,
+                language=item.language or "de",
+                item_node=src.get("item_node"),
+                group=src.get("tropy_group"),
+                photo_index=src.get("photo_index"),
+                path_rel=src.get("photo_path_rel"),
+                checksum=src.get("checksum", ""),
+                mimetype=src.get("mimetype", ""),
+            )
+        )
 
+    if not any(p.text.strip() for p in photos):
+        typer.echo("No eligible photos with text — run the pipeline first.", err=True)
+        raise typer.Exit(code=1)
 
-@app.command("tropy")
-def tropy(
-    project: str = typer.Argument(help="Path to a .tropy project"),
-    output_dir: str = typer.Option("output", help="Output directory"),
-    list_id: int = typer.Option(None, "--list-id", help="Process one list (and its sub-lists)"),
-    tag: str = typer.Option(None, "--tag", help="Process items carrying this tag"),
-    item_id: list[int] = typer.Option(None, "--item-id", help="Process specific item(s)"),
-    limit: int = typer.Option(None, "--limit", help="Stop after N pages (useful for a trial run)"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="List the work without running it"),
-    skip_cleanup: bool = typer.Option(False, "--skip-cleanup", help="Skip the cleanup stage"),
-    skip_translate: bool = typer.Option(True, "--skip-translate/--translate",
-                                        help="Skip translation (default: skipped)"),
-    force: bool = typer.Option(False, "--force", help="Re-process even if outputs exist"),
-    document_type: str = typer.Option("default", "--doc-type", help="Document type"),
-):
-    """OCR a Tropy project into a folder.
-
-    Outputs land in the normal `<output_dir>/<stage>/text/` tree, keyed by
-    item title and page (`Max Hodann KV File Part 1/KV-2-2339_01_p0002`),
-    plus a `tropy_manifest.json` mapping every output back to its photo.
-
-    The Tropy project is opened read-only and is never modified.
-    """
-    import queue as _queue
-
-    from artifice_ocr import config
-    from artifice_ocr.jobs import JobRunner
-    from artifice_ocr.tropy import TropyProject, pages_to_job_items, write_manifest
-
-    config.apply_overrides({"document_type": document_type})
-
-    with TropyProject(project) as proj:
-        if list_id is not None:
-            ids = proj.item_ids_in_list(list_id)
-            scope = f"list {list_id}"
-        elif tag:
-            ids = proj.item_ids_with_tag(tag)
-            scope = f"tag '{tag}'"
-        elif item_id:
-            ids = list(item_id)
-            scope = f"{len(ids)} item(s)"
-        else:
-            ids = None
-            scope = "whole project"
-
-        if ids is not None and not ids:
-            typer.echo(f"No items matched {scope}.", err=True)
-            raise typer.Exit(code=1)
-
-        pages = proj.pages(ids)
-        if not pages:
-            typer.echo(f"No pages found for {scope}.", err=True)
-            raise typer.Exit(code=1)
-
-        missing = proj.missing_assets(pages)
-        if missing:
-            typer.echo(f"WARNING: {len(missing)} page(s) have no file on disk "
-                       f"(e.g. {missing[0].path.name}) — they will fail.")
-
-        if limit:
-            pages = pages[:limit]
-
-        typer.echo(f"{proj.name}: {scope} -> {len(pages)} page(s)")
-
-        if dry_run:
-            for page in pages[:60]:
-                typer.echo(f"  {page.label:34} -> {page.output_stem}")
-            if len(pages) > 60:
-                typer.echo(f"  ... and {len(pages) - 60} more")
-            typer.echo("\nDry run — nothing was processed.")
-            return
-
-        if not skip_cleanup:
-            errors = check_ollama([cfg("cleanup_model")])
-            if any("Cannot reach" in e for e in errors):
-                typer.echo(f"ERROR: {errors[0]}", err=True)
-                raise typer.Exit(code=1)
-        lm_err = check_lm_studio()
-        if lm_err:
-            typer.echo(f"ERROR: {lm_err}", err=True)
-            raise typer.Exit(code=1)
-
-        manifest = write_manifest(output_dir, proj, pages)
-        typer.echo(f"Manifest: {manifest}")
-
-        stages = {"ocr"}
-        if not skip_cleanup:
-            stages.add("cleanup")
-        if not skip_translate:
-            stages.add("translate")
-
-        items = pages_to_job_items(pages, project_path=proj.db_path)
-        events: _queue.Queue = _queue.Queue()
-        runner = JobRunner(items, output_dir, stages=stages, force=force,
-                           events=events)
-        runner.start()
-
-        done = 0
-        while True:
-            event = events.get()
-            if event.message:
-                typer.echo(f"  {event.message}")
-            if event.kind == "item_finished":
-                done += 1
-                typer.echo(f"  --- {done}/{len(items)} ---")
-            if event.kind == "run_finished":
-                break
-
-        failed = [i for i in items if i.state.value == "failed"]
-        typer.echo(f"\nComplete: {len(items) - len(failed)} ok, {len(failed)} failed")
-        typer.echo(f"Output: {output_dir}/")
-        if failed:
-            raise typer.Exit(code=1)
+    content = export_json(photos)
+    Path(output).write_text(content, encoding="utf-8")
+    typer.echo(f"Exported {len(photos)} photo(s) to {output}")
 
 
 @app.command("compile-pdf")

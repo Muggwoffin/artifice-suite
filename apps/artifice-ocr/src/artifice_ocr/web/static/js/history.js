@@ -313,17 +313,20 @@ const HistoryTab = (function () {
     if (!currentItemId) { if (window.ArtificeToast) window.ArtificeToast.warning("Select a document first."); return; }
     try {
       const data = await api("GET", `/api/history/items/${currentItemId}`);
-      if (!data.photo_id) {
-        if (window.ArtificeToast) window.ArtificeToast.warning("This document was not added from Tropy — no photo to send to.");
+      if (!data.tropy_exportable) {
+        if (window.ArtificeToast) {
+          window.ArtificeToast.warning(
+            data.photo_id || data.tropy_group
+              ? "This document was imported before the JSON-LD bridge — re-export it from Tropy to send results back."
+              : "This document was not added from Tropy — nothing to send."
+          );
+        }
         return;
       }
-      openTropySend({
-        itemIds: [currentItemId],
-        project: data.tropy_project_path || "",
-        name: data.name,
-        photoTitle: data.tropy_item_title || "",
-        page: data.page,
-      });
+      // Open the export modal and pre-fill the summary stat fetch
+      if (typeof openTropyExport === "function") {
+        openTropyExport({ itemIds: [currentItemId], isHistory: true });
+      }
     } catch (err) {
       if (window.ArtificeToast) window.ArtificeToast.error(`Could not load item: ${err.message}`);
     }

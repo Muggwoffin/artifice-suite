@@ -34,7 +34,7 @@ from .routers import pdf_export as pdf_export_router
 from .routers import queue as queue_router
 from .routers import run as run_router
 from .routers import settings as settings_router
-from .routers import tropy as tropy_router
+from .routers import tropy_bridge as tropy_router
 
 app = FastAPI(title="ArtificeOCR")
 
@@ -148,12 +148,31 @@ def about() -> HTMLResponse:
 
 
 @app.post("/api/native/pick-file")
-def pick_file() -> dict[str, str | None]:
+async def pick_file(request: Request) -> dict[str, str | None]:
     """Open a native file picker dialog and return the selected file path.
 
     Uses tkinter's filedialog when available (desktop/frozen builds).
     Returns empty path on cancel or if running in a headless environment.
+
+    An optional JSON body ``{"preset": "images"|"json"}`` switches the
+    file-type filter — ``"json"`` selects ``*.jsonld *.json`` files.
+    Defaults to ``"images"`` for backward compatibility.
     """
+    preset = "images"
+    try:
+        raw_body = await request.body()
+        if raw_body:
+            body = json.loads(raw_body)
+            if isinstance(body, dict):
+                preset = body.get("preset", "images")
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        pass
+
+    if preset == "json":
+        filetypes = [("JSON-LD export", "*.jsonld *.json"), ("All Files", "*.*")]
+    else:
+        filetypes = [("Images", "*.jpg *.jpeg *.png *.tiff *.gif"), ("All Files", "*.*")]
+
     try:
         import tkinter as tk
         from tkinter import filedialog
@@ -163,7 +182,7 @@ def pick_file() -> dict[str, str | None]:
         root.attributes("-topmost", True)
         path = filedialog.askopenfilename(
             title="Select a file",
-            filetypes=[("Images", "*.jpg *.jpeg *.png *.tiff *.gif"), ("All Files", "*.*")],
+            filetypes=filetypes,
         )
         root.destroy()
         return {"path": path if path else None}
@@ -186,6 +205,52 @@ def pick_folder() -> dict[str, str | None]:
         root.withdraw()
         root.attributes("-topmost", True)
         path = filedialog.askdirectory(title="Select a folder")
+        root.destroy()
+        return {"path": path if path else None}
+    except Exception:
+        return {"path": None}
+
+
+@app.post("/api/native/save-file")
+async def save_file(request: Request) -> dict[str, str | None]:
+    """Open a native save-file dialog and return the chosen path.
+
+    Uses tkinter's filedialog when available (desktop/frozen builds).
+    Returns empty path on cancel or if running in a headless environment.
+
+    An optional JSON body ``{"preset": "json", "default_name": "<name>"}``
+    switches the file-type filter — ``"json"`` selects ``*.jsonld`` files.
+    """
+    preset = "json"
+    default_name = "artifice-ocr-tropy.jsonld"
+    try:
+        raw_body = await request.body()
+        if raw_body:
+            body = json.loads(raw_body)
+            if isinstance(body, dict):
+                preset = body.get("preset", "json")
+                default_name = body.get("default_name", default_name)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        pass
+
+    if preset == "json":
+        filetypes = [("JSON-LD", "*.jsonld"), ("JSON", "*.json"), ("All Files", "*.*")]
+    else:
+        filetypes = [("All Files", "*.*")]
+
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        path = filedialog.asksaveasfilename(
+            title="Save Tropy export",
+            defaultextension=".jsonld",
+            initialfile=default_name,
+            filetypes=filetypes,
+        )
         root.destroy()
         return {"path": path if path else None}
     except Exception:

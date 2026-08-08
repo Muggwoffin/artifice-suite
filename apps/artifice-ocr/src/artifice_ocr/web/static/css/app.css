@@ -1036,8 +1036,8 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .tropy-summary {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0 0.2rem;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
   font-size: var(--text-sm);
   color: var(--ink-soft);
 }
@@ -1045,7 +1045,7 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .tropy-summary .spacer { flex: 1; }
 
 .tropy-summary .warning {
-  color: var(--gold);
+  color: var(--warning);
   font-weight: 600;
 }
 
@@ -1060,6 +1060,121 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .tropy-action-insert { color: var(--accent); }
 .tropy-action-duplicate { color: var(--ink-faint); }
 .tropy-action-missing-photo, .tropy-action-empty { color: var(--error); }
+
+/* ------------------------------------------------------ tropy json-ld bridge */
+
+.tropy-help {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--paper-recessed);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.tropy-help p { margin: 0 0 var(--space-3); }
+.tropy-help p:last-child { margin-bottom: 0; }
+.tropy-help strong { color: var(--ink); font-weight: 700; }
+
+.tropy-file-row {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.tropy-file-row .input {
+  flex: 1;
+  min-height: var(--control-height);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--paper-recessed);
+  color: var(--ink);
+  padding: 0.7rem 1rem;
+  font-size: var(--text-sm);
+}
+
+.tropy-dropzone-loading, .tropy-export-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: var(--space-3); padding: var(--space-4);
+  color: var(--ink-soft); font-size: var(--text-sm);
+}
+.tropy-dropzone-loading.hidden, .tropy-export-loading.hidden { display: none; }
+
+.tropy-spinner {
+  display: inline-block; width: 1.25rem; height: 1.25rem;
+  border: 2px solid var(--rule); border-top-color: var(--accent);
+  border-radius: var(--radius-full);
+  animation: tropy-spin 1s linear infinite;
+}
+@keyframes tropy-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .tropy-spinner { animation: none; border-color: var(--accent); opacity: 0.6; }
+}
+
+.tropy-results {
+  margin-top: var(--space-5);
+  border: 1px solid var(--rule); border-radius: var(--radius-lg);
+  background: var(--paper-raised); overflow: hidden;
+}
+.tropy-results.hidden { display: none; }
+.tropy-results-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3); padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--rule); background: var(--paper);
+}
+.tropy-results-head .btn-small { padding: 0.35rem 0.7rem; font-size: var(--text-xs); min-height: unset; }
+.tropy-results-list { max-height: 30vh; overflow-y: auto; }
+.tropy-result-row {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 0.45rem var(--space-4); border-bottom: 1px solid var(--rule);
+  font-size: var(--text-sm); cursor: pointer;
+  transition: background-color var(--duration-instant) ease;
+}
+.tropy-result-row:last-child { border-bottom: none; }
+.tropy-result-row:hover { background: var(--accent-wash); }
+.tropy-result-row input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; flex-shrink: 0; }
+.tropy-result-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.tropy-result-meta { color: var(--ink-faint); font-size: var(--text-xs); flex-shrink: 0; }
+.tropy-result-missing { color: var(--error); font-size: var(--text-xs); font-weight: 600; }
+
+.tropy-export-summary {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4); margin-bottom: var(--space-5);
+}
+.tropy-export-stat {
+  text-align: center; padding: var(--space-4) var(--space-3);
+  background: var(--paper-raised); border: 1px solid var(--rule);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-paper);
+}
+.tropy-export-stat-n {
+  display: block; font-family: var(--font-display);
+  font-size: var(--text-h3); color: var(--ink); line-height: 1.1;
+}
+.tropy-export-stat-l {
+  display: block; margin-top: var(--space-2);
+  font-family: var(--font-label); font-size: var(--text-xs);
+  font-weight: 600; letter-spacing: var(--label-tracking);
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.tropy-export-options { margin-bottom: var(--space-5); }
+.tropy-export-options label {
+  display: flex; align-items: center; gap: var(--space-3);
+  font-family: var(--font-label); font-weight: 600;
+  letter-spacing: var(--label-tracking); text-transform: uppercase;
+  font-size: var(--text-sm); color: var(--ink-soft);
+}
+.tropy-export-options select {
+  flex: 1; min-height: var(--control-height);
+  border: 1px solid var(--rule); border-radius: var(--radius-sm);
+  background: var(--paper-recessed); color: var(--ink);
+  padding: 0.7rem 1rem; font-weight: 400; letter-spacing: normal; text-transform: none;
+}
+.tropy-export-status { min-height: 1.5rem; margin-top: var(--space-3); font-size: var(--text-sm); }
+.tropy-export-status.error { color: var(--error); font-weight: 600; }
+.tropy-export-status.success { color: var(--success); }
+
+@media (max-width: 600px) { .tropy-export-summary { grid-template-columns: 1fr; } }
 
 /* ============================================================ DARK MODE TOGGLE
    Manual override: [data-theme="dark"] forces dark, [data-theme="light"] forces

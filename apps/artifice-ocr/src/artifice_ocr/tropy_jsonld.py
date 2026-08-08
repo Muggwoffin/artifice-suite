@@ -1,0 +1,672 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+"""Bi-directional Tropy JSON-LD file bridge.
+
+Replaces the 7-route SQLite read/write integration (``tropy_read.py`` +
+``tropy_write.py`` + ``tropy.py``) with a frictionless file-based workflow:
+
+1. **Import**: User exports from Tropy (File → Export → JSON-LD), provides
+   the file to artifice-ocr. Photos are resolved relative to the JSON-LD
+   file's directory. No path-roots validation — the user designating this
+   file IS the authorisation.
+
+2. **Export**: artifice-ocr generates a JSON-LD file the user imports back
+   into Tropy (File → Import Items…). The item envelope preserves Tropy's
+   own ``photo`` / ``note`` / ``template`` structure so the round-trip is
+   transparent.
+
+This module is library-level — no FastAPI imports, same discipline as the
+old ``tropy_read.py``.
+"""
+
+import copy
+import hashlib
+import json
+import re
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from html import escape
+from os import urandom
+from pathlib import Path
+from typing import Any
+
+from ._logging import get_logger
+
+log = get_logger("tropy_jsonld")
+
+# --------------------------------------------------------------------------- #
+# constants
+# --------------------------------------------------------------------------- #
+
+MAX_FILE_BYTES = 64 * 1024 * 1024  # 64 MB
+MAX_DEPTH = 32
+MAX_NODES = 50_000
+ALLOWED_SUFFIXES = frozenset({".json", ".jsonld"})
+
+TROPY_CONTEXT = {
+    "@version": "1.1",
+    "@vocab": "https://tropy.org/v1/tropy#",
+    "template": {"@type": "@id"},
+    "photo": {"@id": "tropy:photo", "@container": "@list"},
+    "note": {"@id": "tropy:note", "@container": "@list"},
+    "selection": {"@id": "tropy:selection", "@container": "@list"},
+}
+
+TITLE_PROPERTY = "http://purl.org/dc/elements/1.1/title"
+
+# Characters Windows forbids in a path segment, plus the separators.
+_UNSAFE = '<>:"/\\|?*'
+
+
+class TropyImportError(ValueError):
+    """User-facing parse/validation failure.
+
+    Message must NEVER contain a resolved absolute path — it may be
+    returned to the browser as a 400 detail.
+    """
+
+
+# --------------------------------------------------------------------------- #
+# data classes
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class ImportedPhoto:
+    """One resolved photo from a Tropy JSON-LD export."""
+
+    group: str
+    item_node: dict
+    photo_index: int
+    path_rel: str
+    resolved: Path
+    mimetype: str
+    checksum: str
+    page: int | None
+    missing: bool
+
+
+@dataclass(frozen=True)
+class ImportedItem:
+    """One item from a Tropy JSON-LD export, plus its resolved photos."""
+
+    group: str
+    title: str
+    photos: list  # list[ImportedPhoto]
+
+    @property
+    def label(self) -> str:
+        n = len(self.photos)
+        return f"{self.title}  —  {n} page(s)"
+
+
+@dataclass(frozen=True)
+class ImportPreview:
+    """Result of calling :func:`load_export`."""
+
+    export_name: str  # file NAME only, never full path
+    items: list  # list[ImportedItem]
+    warnings: list  # list[str]
+
+
+# --------------------------------------------------------------------------- #
+# path naming utilities (moved from tropy_read.py)
+# --------------------------------------------------------------------------- #
+
+
+def safe_name(name: str, fallback: str = "untitled") -> str:
+    """Make a string usable as a single path segment."""
+    cleaned = "".join("_" if c in _UNSAFE else c for c in (name or "")).strip(" .")
+    cleaned = " ".join(cleaned.split())
+    return cleaned[:120] or fallback
+
+
+def page_stem(
+    item_title: str,
+    filename: str,
+    page: int | None,
+    mimetype: str,
+    resolved: Path,
+) -> str:
+    """Output key for one page: ``<Item Title>/<file>_p0002``.
+
+    The subdirectory groups an item's pages together; the page suffix is
+    what stops every page of a PDF from colliding on the checksum stem.
+    """
+    is_pdf = mimetype == "application/pdf" or resolved.suffix.lower() == ".pdf"
+    base = safe_name(Path(filename).stem, fallback="page")
+    folder = safe_name(item_title, fallback="untitled")
+    if is_pdf:
+        return f"{folder}/{base}_p{(page or 0) + 1:04d}"
+    return f"{folder}/{base}"
+
+
+# --------------------------------------------------------------------------- #
+# import
+# --------------------------------------------------------------------------- #
+
+
+def _batch_uuid4_hex() -> str:
+    return urandom(16).hex()
+
+
+def _as_list(value: Any) -> list:
+    """Normalise a scalar or list into a list."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
+def load_export(raw: str | Path) -> ImportPreview:
+    """Parse and validate a Tropy JSON-LD export file.
+
+    Each step raises :class:`TropyImportError` on failure. Messages are
+    sanitised — they never contain a resolved absolute path.
+    """
+    # 1. Path gate
+    p = Path(raw).expanduser()
+    suffix = p.suffix.lower()
+    if suffix not in ALLOWED_SUFFIXES:
+        raise TropyImportError(
+            f"File '{p.name}' is not a JSON-LD file (expected .json or .jsonld)"
+        )
+    p = p.resolve(strict=False)
+    if not p.is_file():
+        raise TropyImportError(f"'{p.name}' is not a file")
+    if p.stat().st_size > MAX_FILE_BYTES:
+        raise TropyImportError(
+            f"File '{p.name}' is too large ({p.stat().st_size} bytes; max {MAX_FILE_BYTES})"
+        )
+    export_dir = p.parent
+
+    # 2. Parse
+    try:
+        data = json.loads(p.read_bytes())
+    except RecursionError:
+        raise TropyImportError("JSON-LD file is too deeply nested to parse") from None
+    except (json.JSONDecodeError, OSError) as exc:
+        raise TropyImportError(f"Could not parse JSON-LD file: {exc}") from None
+
+    # 3. Depth and node budget
+    _check_budget(data)
+
+    # 4. Shape validation — unwrap envelope
+    graph: list[dict] = []
+    if isinstance(data, dict):
+        if "@graph" in data:
+            graph = _as_list(data["@graph"])
+        else:
+            graph = [data]
+    elif isinstance(data, list):
+        graph = data
+    else:
+        raise TropyImportError("JSON-LD root must be an object or array, not a scalar")
+
+    # 5. Walk graph members
+    batch_id = _batch_uuid4_hex()
+    items: list[ImportedItem] = []
+    warnings: list[str] = []
+    photo_count_total = 0
+
+    for idx, node in enumerate(graph):
+        if not isinstance(node, dict):
+            continue
+        ntype = _as_list(node.get("@type", []))
+
+        is_item = "Item" in ntype or any(
+            isinstance(t, str) and t.endswith("#Item") for t in ntype
+        )
+        if not is_item:
+            continue  # skip Template, Field, List without complaint
+
+        # Extract title
+        title = None
+        for key in (
+            TITLE_PROPERTY,
+            "title",
+            "dc:title",
+            "http://purl.org/dc/terms/title",
+        ):
+            if key in node:
+                val = node[key]
+                if isinstance(val, list):
+                    val = val[0] if val else None
+                if isinstance(val, dict) and "@value" in val:
+                    val = val["@value"]
+                if isinstance(val, str) and val.strip():
+                    title = val.strip()
+                    break
+        if title is None:
+            title = f"Item {idx + 1}"
+
+        # Extract photos
+        raw_photos = node.get("photo", [])
+        if isinstance(raw_photos, dict):
+            raw_photos = [raw_photos]
+        elif not isinstance(raw_photos, list):
+            raw_photos = []
+
+        group = f"{batch_id[:8]}:{idx}"
+        imported_photos: list[ImportedPhoto] = []
+
+        for pi, pnode in enumerate(raw_photos):
+            if not isinstance(pnode, dict):
+                warnings.append(
+                    f"Photo entry {pi + 1} in item '{title}' is not a dict — skipped"
+                )
+                continue
+            raw_path = pnode.get("path")
+            if not isinstance(raw_path, str) or not raw_path.strip():
+                warnings.append(
+                    f"Photo entry {pi + 1} in item '{title}' has no path — skipped"
+                )
+                continue
+
+            # 5a. Photo path safety
+            path_rel = raw_path.replace("\\", "/")
+
+            # Reject UNC paths (must check before POSIX absolute, since // starts with /)
+            if path_rel.startswith("//"):
+                raise TropyImportError(
+                    f"Photo path '{path_rel}' in item '{title}' is a UNC path — "
+                    f"all paths must be relative to the export file's folder"
+                )
+
+            # Reject absolute paths
+            if path_rel.startswith("/"):
+                raise TropyImportError(
+                    f"Photo path '{path_rel}' in item '{title}' is absolute — "
+                    f"all paths must be relative to the export file's folder"
+                )
+            # Windows drive letter
+            if re.match(r"^[A-Za-z]:/", path_rel):
+                raise TropyImportError(
+                    f"Photo path '{path_rel}' in item '{title}' is absolute — "
+                    f"all paths must be relative to the export file's folder"
+                )
+            # UNC
+            if path_rel.startswith("//"):
+                raise TropyImportError(
+                    f"Photo path '{path_rel}' in item '{title}' is a UNC path — "
+                    f"all paths must be relative to the export file's folder"
+                )
+            # .. segments
+            segments = path_rel.replace("\\", "/").split("/")
+            if ".." in segments:
+                raise TropyImportError(
+                    f"Photo path '{path_rel}' in item '{title}' escapes the export folder"
+                )
+
+            # Resolve and containment
+            resolved = (export_dir / path_rel).resolve()
+
+            try:
+                resolved.relative_to(export_dir)
+            except ValueError:
+                raise TropyImportError(
+                    f"Photo path '{path_rel}' in item '{title}' escapes the export folder"
+                )
+
+            missing = not resolved.exists()
+
+            mimetype = pnode.get("mimetype", "")
+            checksum = pnode.get("checksum", "")
+            page = pnode.get("page")
+            if page is not None and isinstance(page, (int, float)):
+                page = int(page)
+            else:
+                page = 0 if mimetype == "application/pdf" else None
+
+            imported_photos.append(
+                ImportedPhoto(
+                    group=group,
+                    item_node=node,
+                    photo_index=pi,
+                    path_rel=path_rel,
+                    resolved=resolved,
+                    mimetype=mimetype,
+                    checksum=checksum,
+                    page=page,
+                    missing=missing,
+                )
+            )
+            photo_count_total += 1
+
+        if imported_photos:
+            items.append(
+                ImportedItem(group=group, title=title, photos=imported_photos)
+            )
+
+    if photo_count_total == 0:
+        warnings.append("No photos with valid paths found in the export")
+
+    return ImportPreview(export_name=p.name, items=items, warnings=warnings)
+
+
+def _check_budget(data: Any) -> None:
+    """Iterative depth/node budget check — no recursion, so deeply nested
+    JSON doesn't overflow the call stack."""
+    stack: list[tuple[Any, int]] = [(data, 0)]
+    visited = 0
+    while stack:
+        node, depth = stack.pop()
+        if depth > MAX_DEPTH:
+            raise TropyImportError(
+                f"JSON-LD nesting exceeds maximum depth of {MAX_DEPTH}"
+            )
+        visited += 1
+        if visited > MAX_NODES:
+            raise TropyImportError(
+                f"JSON-LD exceeds maximum node count of {MAX_NODES}"
+            )
+        if isinstance(node, dict):
+            for v in node.values():
+                if isinstance(v, (dict, list)):
+                    stack.append((v, depth + 1))
+        elif isinstance(node, list):
+            for v in node:
+                if isinstance(v, (dict, list)):
+                    stack.append((v, depth + 1))
+
+
+# --------------------------------------------------------------------------- #
+# photos → JobItem mapping
+# --------------------------------------------------------------------------- #
+
+
+def photos_to_job_items(
+    preview: ImportPreview, groups: list[str] | None = None
+) -> list:
+    """Map :class:`ImportedPhoto` objects to :class:`JobItem` objects.
+
+    The resulting ``source`` dict uses ``"tropy-jsonld"`` as the origin
+    discriminator, replacing the old ``photo_id`` truthiness check.
+    """
+    from .jobs import JobItem
+
+    group_set = None if groups is None else set(groups)
+    result: list = []
+
+    for item in preview.items:
+        if group_set is not None and item.group not in group_set:
+            continue
+        for photo in item.photos:
+            stem = page_stem(
+                item.title,
+                Path(photo.path_rel).name,
+                photo.page,
+                photo.mimetype,
+                photo.resolved,
+            )
+            is_pdf = (
+                photo.mimetype == "application/pdf"
+                or photo.resolved.suffix.lower() == ".pdf"
+            )
+            parts = [Path(photo.path_rel).name]
+            if is_pdf and photo.page is not None:
+                parts.append(f"p.{photo.page + 1}")
+            label = "  ".join(parts)
+
+            result.append(
+                JobItem(
+                    path=str(photo.resolved),
+                    page=photo.page if is_pdf else None,
+                    output_stem=stem,
+                    label=label,
+                    source={
+                        "origin": "tropy-jsonld",
+                        "tropy_group": photo.group,
+                        "item_node": photo.item_node,
+                        "photo_index": photo.photo_index,
+                        "photo_path_rel": photo.path_rel,
+                        "checksum": photo.checksum,
+                        "mimetype": photo.mimetype,
+                        "item_title": item.title,
+                        "orientation": 1,
+                    },
+                )
+            )
+    return result
+
+
+# --------------------------------------------------------------------------- #
+# export
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class ExportPhoto:
+    """One photo to include in a Tropy export."""
+
+    abs_path: Path
+    text: str
+    label: str
+    language: str
+    item_node: dict | None
+    group: str | None
+    photo_index: int | None
+    path_rel: str | None
+    checksum: str
+    mimetype: str
+
+
+def _note_html(text: str) -> str:
+    """Build HTML note content from plain text."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if lines:
+        paras = "".join(f"<p>{escape(line)}</p>" for line in lines)
+    else:
+        paras = f"<p>{escape(text.strip())}</p>"
+    return paras
+
+
+def _md5_checksum(path: Path) -> str | None:
+    """Stream the file and compute its MD5 checksum."""
+    try:
+        h = hashlib.md5()
+        with open(path, "rb") as f:
+            while chunk := f.read(8192):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError:
+        return None
+
+
+def _mimetype_from_suffix(path: Path) -> str:
+    suffix = path.suffix.lower()
+    return {
+        ".pdf": "application/pdf",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".tif": "image/tiff",
+        ".tiff": "image/tiff",
+        ".gif": "image/gif",
+    }.get(suffix, "application/octet-stream")
+
+
+def _generator_string() -> str:
+    """Return 'artifice-ocr <version>' without importing the package at module level."""
+    try:
+        from importlib.metadata import version
+        return f"artifice-ocr {version('artifice-ocr')}"
+    except Exception:
+        return "artifice-ocr"
+
+
+def build_export(photos: list[ExportPhoto]) -> dict:
+    """Build a Tropy JSON-LD export document from :class:`ExportPhoto` objects.
+
+    Photos are grouped by *group* (Tropy-sourced) or by *abs_path* (ad-hoc,
+    one item per file). Tropy-sourced groups deep-copy the original
+    ``item_node`` and rebuild the ``photo`` list to contain only photos
+    that carry text.
+    """
+    # Partition into Tropy-sourced and ad-hoc
+    tropy_groups: dict[str, list[ExportPhoto]] = {}  # group -> photos
+    ad_hoc: list[ExportPhoto] = []
+
+    for ep in photos:
+        if ep.group is not None:
+            tropy_groups.setdefault(ep.group, []).append(ep)
+        else:
+            ad_hoc.append(ep)
+
+    graph: list[dict] = []
+
+    # Tropy-sourced groups
+    for group, eps in tropy_groups.items():
+        eps_with_text = [ep for ep in eps if ep.text.strip()]
+        if not eps_with_text:
+            continue
+        # All eps in a group share the same item_node — deep-copy the first
+        base_node = eps_with_text[0].item_node or {}
+        item = copy.deepcopy(base_node)
+
+        # Rebuild photo list
+        photo_list: list[dict] = []
+        for ep in eps_with_text:
+            photo_entry: dict = {
+                "@type": "Photo",
+                "path": str(ep.abs_path),
+                "checksum": ep.checksum,
+                "mimetype": ep.mimetype,
+            }
+            # Build note
+            note = {
+                "@type": "Note",
+                "text": ep.text,
+                "html": _note_html(ep.text),
+            }
+            photo_entry["note"] = [note]
+            photo_list.append(photo_entry)
+
+        item["photo"] = photo_list
+        graph.append(item)
+
+    # Ad-hoc groups (one item per file)
+    seen_files: set[str] = set()
+    for ep in ad_hoc:
+        if not ep.text.strip():
+            continue
+        abs_str = str(ep.abs_path)
+        stem = ep.abs_path.stem
+        if abs_str in seen_files:
+            continue
+        seen_files.add(abs_str)
+
+        checksum = ep.checksum or _md5_checksum(ep.abs_path)
+        mimetype = ep.mimetype or _mimetype_from_suffix(ep.abs_path)
+
+        photo_entry: dict = {
+            "@type": "Photo",
+            "path": abs_str,
+            "mimetype": mimetype,
+            "note": [
+                {
+                    "@type": "Note",
+                    "text": ep.text,
+                    "html": _note_html(ep.text),
+                }
+            ],
+        }
+        if checksum:
+            photo_entry["checksum"] = checksum
+
+        item = {
+            "@type": "Item",
+            "title": stem,
+            "template": "https://tropy.org/v1/templates/generic#item",
+            "photo": [photo_entry],
+        }
+        graph.append(item)
+
+    return {
+        "@context": TROPY_CONTEXT,
+        "@graph": graph,
+        "generator": _generator_string(),
+    }
+
+
+def export_json(photos: list[ExportPhoto]) -> str:
+    """Return the Tropy JSON-LD export as a formatted string."""
+    return json.dumps(build_export(photos), indent=2, ensure_ascii=False)
+
+
+# --------------------------------------------------------------------------- #
+# manifest writer (moved from tropy_write.py)
+# --------------------------------------------------------------------------- #
+
+
+def write_manifest(
+    output_dir: str | Path,
+    preview: ImportPreview,
+    *,
+    filename: str = "tropy_manifest.json",
+) -> Path | None:
+    """Write a manifest mapping output stems back to their source photos.
+
+    Written into *output_dir*. Swallows failure silently — the manifest is
+    a convenience, never a blocker for a running pipeline.
+    """
+    out_dir = Path(output_dir)
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return None
+    target = out_dir / filename
+
+    existing: dict = {}
+    if target.exists():
+        try:
+            existing = json.loads(target.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            existing = {}
+
+    entries = existing.get("pages", {}) if isinstance(existing, dict) else {}
+
+    for item in preview.items:
+        for photo in item.photos:
+            stem = page_stem(
+                item.title,
+                Path(photo.path_rel).name,
+                photo.page,
+                photo.mimetype,
+                photo.resolved,
+            )
+            entries[stem] = {
+                "photo_id": None,
+                "page": photo.page,
+                "page_number": (photo.page + 1) if photo.page is not None else 1,
+                "source_path": str(photo.resolved),
+                "mimetype": photo.mimetype,
+                "orientation": 1,
+                "filename": Path(photo.path_rel).name,
+                "item_title": item.title,
+                "checksum": photo.checksum,
+                "photo_path_rel": photo.path_rel,
+                "tropy_group": photo.group,
+            }
+
+    export_stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    payload = {
+        "export": {
+            "name": preview.export_name,
+            "imported": export_stamp,
+        },
+        "output_layout": "<stage>/text/<item title>/<file>_p<page>.txt",
+        "pages": entries,
+    }
+    try:
+        target.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+    except OSError:
+        return None
+
+    log.info("Wrote manifest for %d page(s) to %s", len(entries), target)
+    return target

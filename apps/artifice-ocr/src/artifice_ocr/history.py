@@ -79,7 +79,12 @@ _MIGRATED_COLUMNS = {
     "tropy_item_id": "INTEGER",
     "tropy_item_title": "TEXT",
     "tropy_project_path": "TEXT",
+    "tropy_group": "TEXT",
+    "tropy_photo_path": "TEXT",
+    "tropy_item_node": "TEXT",
 }
+
+_ITEM_NODE_MAX_BYTES = 256 * 1024  # 256 KB
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
@@ -154,14 +159,31 @@ class HistoryStore:
         })
         results = item.results
         src = item.source or {}
+
+        # Tropy JSON-LD bridge columns (additive — do not drop old columns)
+        tropy_group = src.get("tropy_group")
+        tropy_photo_path = src.get("photo_path_rel")
+        item_node = src.get("item_node")
+        if item_node is not None:
+            item_node_json = json.dumps(item_node, ensure_ascii=False)
+            if len(item_node_json.encode("utf-8")) > _ITEM_NODE_MAX_BYTES:
+                log.warning(
+                    "Item node for '%s' exceeds %d KB — storing as non-exportable",
+                    item.name, _ITEM_NODE_MAX_BYTES // 1024,
+                )
+                item_node_json = None
+        else:
+            item_node_json = None
+
         with self._lock:
             self._conn.execute(
                 """INSERT INTO run_items
                    (run_id, source_file, name, state, language, confidence,
                     error, stage_json, raw_text, cleaned_text, translated_text,
                     page, photo_id, tropy_item_id, tropy_item_title,
-                    tropy_project_path, created)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    tropy_project_path, tropy_group, tropy_photo_path,
+                    tropy_item_node, created)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     run_id, item.path, item.name, item.state.value, item.language,
                     item.confidence, item.error, stage_json,
@@ -173,6 +195,9 @@ class HistoryStore:
                     src.get("item_id"),
                     src.get("item_title"),
                     src.get("project_path"),
+                    tropy_group,
+                    tropy_photo_path,
+                    item_node_json,
                     _now(),
                 ),
             )
