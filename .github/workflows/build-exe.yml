@@ -29,6 +29,7 @@ on:
           - artifice-ocr
           - artifice-draft
           - artifice-graph
+          - artifice-hub
   push:
     tags:
       - 'v*'
@@ -60,11 +61,18 @@ jobs:
         # freezing ocr, and keeps each app's build focused. The mapping is
         # explicit rather than derived from the app name because the extra
         # names do not follow a strict naming convention.
+        #
+        # The Hub is NOT in the root `all` extra (it ships frozen, not via
+        # PyPI), so it needs an explicit editable install after syncing the
+        # workspace — `uv sync --extra all` pulls in shared-ui and the other
+        # workspace packages the Hub depends on; the separate pip install is
+        # the Hub package itself.
         run: |
           APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
           case "$APP" in
             artifice-draft) uv sync --extra draft-web ;;
             artifice-graph) uv sync --extra graph-web ;;
+            artifice-hub)   uv sync --extra all && uv pip install -e apps/artifice-hub ;;
             *)               uv sync --extra ocr-web ;;
           esac
 
@@ -87,7 +95,7 @@ jobs:
         # broken four times.
         #
         # API path is per-app: /api/queue for ocr, /api/settings for draft,
-        # /api/state for graph.
+        # /api/state for graph, /api/health for hub.
         # /shared/tokens.css is shared. The app-specific CSS path is NOT
         # uniform: ocr and draft both serve /static/css/app.css, but graph's
         # own base.html references /static/app.css directly (no css/
@@ -96,25 +104,52 @@ jobs:
         # and draft's single css/ subdirectory. Checking the wrong path here
         # doesn't test packaging, it just asserts a URL graph's own template
         # never generates.
+        #
+        # The Hub is a onefile bundle (not onedir), so:
+        #  - The binary is at ./dist/artifice-hub, not ./dist/artifice-hub/artifice-hub
+        #  - It needs --no-window to prevent PyWebView from opening a GUI
+        #  - It needs longer startup time for self-extraction (sleep 15)
+        #  - It has no shared masthead (no navByom); check for appGrid instead
+        #  - pkill pattern uses dist/$APP to match both onedir and onefile paths
         run: |
           APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
           case "$APP" in
             artifice-draft) API="/api/settings"; APP_CSS="/static/css/app.css" ;;
             artifice-graph) API="/api/state"; APP_CSS="/static/app.css" ;;
+            artifice-hub)   API="/api/health"; APP_CSS="/static/hub.css" ;;
             *)               API="/api/queue"; APP_CSS="/static/css/app.css" ;;
           esac
-          setsid nohup "./dist/$APP/$APP" --port 18999 > /tmp/exe.log 2>&1 < /dev/null &
-          sleep 12
+          # Hub is onefile — binary is a single file, not a directory
+          if [ "$APP" = "artifice-hub" ]; then
+            BINARY="./dist/$APP"
+            EXTRA_ARGS="--no-window"
+            WAIT=15
+          else
+            BINARY="./dist/$APP/$APP"
+            EXTRA_ARGS=""
+            WAIT=12
+          fi
+          setsid nohup "$BINARY" --port 18999 $EXTRA_ARGS > /tmp/exe.log 2>&1 < /dev/null &
+          sleep $WAIT
           fail=0
           for path in / "$API" /shared/tokens.css "$APP_CSS"; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:18999$path")
             echo "  $path -> $code"
             [ "$code" = "200" ] || fail=1
           done
-          curl -s http://127.0.0.1:18999/ | grep -q navByom \
-            && echo "  shared masthead rendered: yes" \
-            || { echo "  shared masthead MISSING"; fail=1; }
-          pkill -f "dist/$APP/$APP" || true
+          # Hub has its own editorial masthead with appGrid; shared-masthead
+          # apps use navByom. The Hub is the only app without the shared
+          # masthead — it loads hub.css and its own layout.
+          if [ "$APP" = "artifice-hub" ]; then
+            curl -s http://127.0.0.1:18999/ | grep -q appGrid \
+              && echo "  hub dashboard rendered: yes" \
+              || { echo "  hub dashboard MISSING"; fail=1; }
+          else
+            curl -s http://127.0.0.1:18999/ | grep -q navByom \
+              && echo "  shared masthead rendered: yes" \
+              || { echo "  shared masthead MISSING"; fail=1; }
+          fi
+          pkill -f "dist/$APP" || true
           echo "--- server log ---"; head -20 /tmp/exe.log
           exit $fail
 
@@ -127,24 +162,42 @@ jobs:
         #  - Start-Process, not `&`, so the server does not hold this step open
         #    — a backgrounded server holding the shell is exactly what killed
         #    the agent that built this locally.
+        #
+        # The Hub is a onefile bundle (not onedir), so:
+        #  - The binary is at .\dist\artifice-hub.exe, not .\dist\artifice-hub\artifice-hub.exe
+        #  - It needs --no-window to prevent PyWebView from opening a GUI
+        #  - It needs longer startup time for self-extraction (Start-Sleep 25)
+        #  - It has no shared masthead (no navByom); check for appGrid instead
         run: |
           $app = "${{ github.event.inputs.app || 'artifice-ocr' }}"
           $apiPath = switch ($app) {
             "artifice-draft" { "/api/settings" }
             "artifice-graph" { "/api/state" }
+            "artifice-hub" { "/api/health" }
             default { "/api/queue" }
           }
           # graph's base.html references /static/app.css directly (no css/
           # subdirectory, unlike ocr and draft) - see the Linux step's comment.
+          # Hub serves hub.css from its own static tree.
           $appCss = switch ($app) {
             "artifice-graph" { "/static/app.css" }
+            "artifice-hub" { "/static/hub.css" }
             default { "/static/css/app.css" }
           }
-          $exe = ".\dist\$app\$app.exe"
+          # Hub is onefile — binary is a single .exe, not in a subdirectory
+          if ($app -eq "artifice-hub") {
+            $exe = ".\dist\$app.exe"
+            $extraArgs = @("--no-window","--port","18999")
+            $waitSec = 25
+          } else {
+            $exe = ".\dist\$app\$app.exe"
+            $extraArgs = @("--port","18999")
+            $waitSec = 20
+          }
           if (-not (Test-Path $exe)) { Write-Error "no binary at $exe"; exit 1 }
           Write-Host "binary size: $((Get-Item $exe).Length) bytes"
-          $p = Start-Process -FilePath $exe -ArgumentList "--port","18999" -PassThru
-          Start-Sleep -Seconds 20
+          $p = Start-Process -FilePath $exe -ArgumentList $extraArgs -PassThru
+          Start-Sleep -Seconds $waitSec
           $fail = 0
           foreach ($path in @("/",$apiPath,"/shared/tokens.css",$appCss)) {
             try {
@@ -156,10 +209,18 @@ jobs:
               $fail = 1
             }
           }
+          # Hub has its own editorial masthead with appGrid; shared-masthead
+          # apps use navByom. The Hub is the only app without the shared
+          # masthead — it loads hub.css and its own layout.
           try {
             $body = (Invoke-WebRequest -Uri "http://127.0.0.1:18999/" -UseBasicParsing -TimeoutSec 15).Content
-            if ($body -match "navByom") { Write-Host "  shared masthead rendered: yes" }
-            else { Write-Host "  shared masthead MISSING"; $fail = 1 }
+            if ($app -eq "artifice-hub") {
+              if ($body -match "appGrid") { Write-Host "  hub dashboard rendered: yes" }
+              else { Write-Host "  hub dashboard MISSING"; $fail = 1 }
+            } else {
+              if ($body -match "navByom") { Write-Host "  shared masthead rendered: yes" }
+              else { Write-Host "  shared masthead MISSING"; $fail = 1 }
+            }
           } catch { Write-Host "  index fetch FAILED"; $fail = 1 }
           Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
           exit $fail
@@ -168,6 +229,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.inputs.app || 'artifice-ocr' }}-${{ runner.os }}
-          path: dist/${{ github.event.inputs.app || 'artifice-ocr' }}/
+          # Three paths cover both packaging modes without per-app conditionals:
+          #   dist/$APP/       — onedir subdirectory (ocr, draft, graph)
+          #   dist/$APP        — onefile bare binary (hub on Linux)
+          #   dist/$APP.exe    — onefile .exe (hub on Windows)
+          # upload-artifact includes whichever paths exist; if-no-files-found
+          # only triggers when NONE of them match.
+          path: |
+            dist/${{ github.event.inputs.app || 'artifice-ocr' }}/
+            dist/${{ github.event.inputs.app || 'artifice-ocr' }}
+            dist/${{ github.event.inputs.app || 'artifice-ocr' }}.exe
           if-no-files-found: error
           retention-days: 30
