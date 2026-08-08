@@ -21,29 +21,39 @@ import os
 import queue as _sync_queue
 import socket
 import sys
+import threading
+import time
 import types
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import httpx
 import pytest
+import uvicorn
+from artifice_ocr import config
+from artifice_ocr.web import runtime, server
+from artifice_ocr.web.routers import (
+    analytics as _analytics_router,
+)
+from artifice_ocr.web.routers import (
+    events as _events_router,
+)
+from artifice_ocr.web.routers import (
+    history as _history_router,
+)
+from artifice_ocr.web.routers import (
+    queue as _queue_router,
+)
+from artifice_ocr.web.routers import (
+    run as _run_router,
+)
+from artifice_ocr.web.routers import (
+    tropy_bridge as _tropy_router,
+)
+from artifice_ocr.web.runtime import RunState
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pytest_httpx import HTTPXMock
-
-from artifice_ocr import config
-from artifice_ocr.web import server
-from artifice_ocr.web import runtime
-from artifice_ocr.web.runtime import RunState
-from artifice_ocr.web.routers import (
-    analytics as _analytics_router,
-    events as _events_router,
-    history as _history_router,
-    pdf_export as _pdf_export_router,
-    queue as _queue_router,
-    run as _run_router,
-    tropy_bridge as _tropy_router,
-)
 
 
 @pytest.fixture
@@ -100,14 +110,14 @@ def test_index_serves_the_frontend(client):
     assert res.status_code == 200
     assert "ArtificeOCR" in res.text
     assert "skip-link" in res.text
-    assert 'class="topnav"' in res.text
+    assert "topnav" in res.text
 
 
 def test_about_page_serves(client):
     res = client.get("/about")
     assert res.status_code == 200
     assert "About ArtificeOCR" in res.text
-    assert 'class="topnav"' in res.text
+    assert "topnav" in res.text
 
 
 def test_static_index_html_is_gone(client):
@@ -134,12 +144,6 @@ def test_static_assets_are_mounted(client):
 # `_wait_for_server` tests use.  No new dependency is required: both uvicorn
 # and httpx are already transitive deps of FastAPI/Starlette and are present
 # in the lockfile.
-
-import threading
-import time
-
-import httpx
-import uvicorn
 
 
 def _start_test_server(app, *, host="127.0.0.1", port=0):
@@ -192,19 +196,19 @@ def events_server(tmp_path, monkeypatch):
 def test_events_stream_has_correct_headers(events_server):
     """`text/event-stream` content-type and both cache-control headers."""
     base, _ = events_server
-    with httpx.Client() as client:
-        with client.stream("GET", f"{base}/api/events") as resp:
-            assert resp.headers["content-type"].startswith("text/event-stream")
-            assert resp.headers["cache-control"] == "no-cache"
-            assert resp.headers["x-accel-buffering"] == "no"
+    with httpx.Client() as client, client.stream("GET", f"{base}/api/events") as resp:
+        assert resp.headers["content-type"].startswith("text/event-stream")
+        assert resp.headers["cache-control"] == "no-cache"
+        assert resp.headers["x-accel-buffering"] == "no"
 
 
 def test_events_no_runner_yields_waiting_message(events_server):
     """With no run in progress the stream yields the `: waiting ...` comment."""
     base, _ = events_server
-    with httpx.Client() as client:
-        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
-            chunk = next(resp.iter_bytes())
+    with httpx.Client() as client, client.stream(
+        "GET", f"{base}/api/events", timeout=5
+    ) as resp:
+        chunk = next(resp.iter_bytes())
     assert b": waiting for a run to start" in chunk
 
 
@@ -220,8 +224,9 @@ def test_events_puts_data_frames_on_the_wire(events_server):
 
     state.runner = fake
 
-    with httpx.Client() as client:
-        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+    with httpx.Client() as client, client.stream(
+        "GET", f"{base}/api/events", timeout=5
+    ) as resp:
             chunk = next(resp.iter_bytes())
     assert b"data:" in chunk
     data_line = [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0]
@@ -242,8 +247,9 @@ def test_events_heartbeat_when_queue_is_empty(events_server):
 
     state.runner = JobRunner([], ".", stages={"ocr"})
 
-    with httpx.Client() as client:
-        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+    with httpx.Client() as client, client.stream(
+        "GET", f"{base}/api/events", timeout=5
+    ) as resp:
             chunk = next(resp.iter_bytes())
     assert b": heartbeat" in chunk
 
@@ -271,8 +277,9 @@ def test_events_item_finished_triggers_record_finished_items(events_server):
 
     state.runner = JobRunner([], ".", stages={"ocr"}, events=eq)
 
-    with httpx.Client() as client:
-        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+    with httpx.Client() as client, client.stream(
+        "GET", f"{base}/api/events", timeout=5
+    ) as resp:
             chunk = next(resp.iter_bytes())
 
     assert b"data:" in chunk
@@ -308,8 +315,9 @@ def test_events_run_finished_triggers_finish_run(events_server):
 
     state.runner = JobRunner([], ".", stages={"ocr"}, events=eq)
 
-    with httpx.Client() as client:
-        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+    with httpx.Client() as client, client.stream(
+        "GET", f"{base}/api/events", timeout=5
+    ) as resp:
             chunk = next(resp.iter_bytes())
 
     assert b"data:" in chunk
@@ -343,8 +351,9 @@ def test_events_client_disconnect_does_not_leave_state_broken(events_server):
 
     state.runner = JobRunner([], ".", stages={"ocr"})
 
-    with httpx.Client() as client:
-        with client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+    with httpx.Client() as client, client.stream(
+        "GET", f"{base}/api/events", timeout=5
+    ) as resp:
             # Consume one frame and then exit the context — the stream closes.
             _ = next(resp.iter_bytes())
 
@@ -352,8 +361,9 @@ def test_events_client_disconnect_does_not_leave_state_broken(events_server):
     assert state.runner is not None
     assert state.items == []
     # Heartbeat path works again — the state is intact.
-    with httpx.Client() as client2:
-        with client2.stream("GET", f"{base}/api/events", timeout=5) as resp:
+    with httpx.Client() as client2, client2.stream(
+        "GET", f"{base}/api/events", timeout=5
+    ) as resp:
             chunk = next(resp.iter_bytes())
     assert b": heartbeat" in chunk
 
@@ -553,8 +563,8 @@ def test_set_config_allows_loopback_urls(client):
 
 def test_set_config_rejects_public_api_base_url_without_env_var(client, monkeypatch):
     """A public api_base_url is refused at save time without the env var."""
-    from model_harness.endpoint_policy import EndpointPolicy
     from artifice_ocr.web.routers import settings as settings_mod
+    from model_harness.endpoint_policy import EndpointPolicy
 
     strict_policy = EndpointPolicy(allow_public=False)
     monkeypatch.setattr(settings_mod, "_endpoint_policy", strict_policy)
@@ -566,8 +576,8 @@ def test_set_config_rejects_public_api_base_url_without_env_var(client, monkeypa
 
 def test_set_config_allows_public_api_base_url_with_env_var(client, monkeypatch):
     """A public api_base_url is accepted at save time when the env var is set."""
-    from model_harness.endpoint_policy import EndpointPolicy
     from artifice_ocr.web.routers import settings as settings_mod
+    from model_harness.endpoint_policy import EndpointPolicy
 
     permissive_policy = EndpointPolicy(allow_public=True)
     monkeypatch.setattr(settings_mod, "_endpoint_policy", permissive_policy)
@@ -671,7 +681,8 @@ def test_tropy_import_preview_reports_missing_photos(client, tmp_path):
                 "@type": "Item",
                 "title": "Test Item",
                 "photo": [
-                    {"@type": "Photo", "path": "missing.jpg", "checksum": "abc", "mimetype": "image/jpeg"}
+                    {"@type": "Photo", "path": "missing.jpg",
+                     "checksum": "abc", "mimetype": "image/jpeg"}
                 ],
             }
         ]
@@ -689,7 +700,10 @@ def test_tropy_import_preview_rejects_absolute_paths(client, tmp_path):
             {
                 "@type": "Item",
                 "title": "Test Item",
-                "photo": [{"@type": "Photo", "path": "/etc/passwd", "checksum": "x", "mimetype": "text"}],
+                "photo": [
+                    {"@type": "Photo", "path": "/etc/passwd",
+                     "checksum": "x", "mimetype": "text"},
+                ],
             }
         ]
     }
@@ -705,7 +719,10 @@ def test_tropy_import_preview_rejects_dotdot_segments(client, tmp_path):
             {
                 "@type": "Item",
                 "title": "Test Item",
-                "photo": [{"@type": "Photo", "path": "../secret", "checksum": "x", "mimetype": "text"}],
+                "photo": [
+                    {"@type": "Photo", "path": "../secret",
+                     "checksum": "x", "mimetype": "text"},
+                ],
             }
         ]
     }
@@ -721,7 +738,10 @@ def test_tropy_import_preview_error_message_does_not_leak_paths(client, tmp_path
             {
                 "@type": "Item",
                 "title": "Test Item",
-                "photo": [{"@type": "Photo", "path": "../secret", "checksum": "x", "mimetype": "text"}],
+                "photo": [
+                    {"@type": "Photo", "path": "../secret",
+                     "checksum": "x", "mimetype": "text"},
+                ],
             }
         ]
     }
@@ -769,7 +789,8 @@ def test_tropy_import_add_reports_missing(client, tmp_path):
                 "@type": "Item",
                 "title": "Missing Photos",
                 "photo": [
-                    {"@type": "Photo", "path": "gone.pdf", "checksum": "x", "mimetype": "application/pdf", "page": 0}
+                    {"@type": "Photo", "path": "gone.pdf",
+                     "checksum": "x", "mimetype": "application/pdf", "page": 0}
                 ],
             }
         ]
@@ -968,7 +989,6 @@ def test_image_route_converts_tiff_to_png(client, tmp_path, monkeypatch):
 
 def test_image_route_renders_only_the_pdf_page_item_points_at(client, tmp_path):
     import fitz
-
     from artifice_ocr.jobs import JobItem
 
     pdf_path = tmp_path / "doc.pdf"
@@ -996,7 +1016,6 @@ def test_image_route_renders_only_the_pdf_page_item_points_at(client, tmp_path):
 
 def test_image_route_caps_an_oversized_pdf_page(client, tmp_path):
     import fitz
-
     from artifice_ocr.jobs import JobItem
     from artifice_ocr.web.runtime import IMAGE_MAX_LONG_EDGE
 
@@ -1315,10 +1334,9 @@ def test_document_types_lists_known_types(client):
 
 
 def test_health_check_reports_service_status(client, monkeypatch):
-    from model_harness.discovery import ProbeResult
-
     # Use the config model names so the per-model health check matches
     from artifice_ocr import config as ocr_config
+    from model_harness.discovery import ProbeResult
 
     cleanup_model = ocr_config.get("cleanup_model") or "llama3.2:3b"
     translate_model = ocr_config.get("translate_model") or "llama3.2:3b"
@@ -1448,7 +1466,8 @@ def test_health_check_real_probe_unreachable_shape(client, httpx_mock: HTTPXMock
 
 
 def _seed_history_run(state, *, failed=0):
-    from artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import State as JobState
 
     run_id = state.history.start_run(stages=["ocr", "cleanup"], output_dir="out", total=1)
     item = JobItem(path="C:/docs/letter.png")
@@ -1513,7 +1532,8 @@ def test_history_image_route_404_for_unknown_item(client):
 
 
 def test_history_image_route_404_when_source_file_gone(client, tmp_path):
-    from artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import State as JobState
 
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
     item = JobItem(path=str(tmp_path / "nope.png"))
@@ -1526,7 +1546,8 @@ def test_history_image_route_404_when_source_file_gone(client, tmp_path):
 
 
 def test_history_image_route_passes_jpg_through_unchanged(client, tmp_path):
-    from artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import State as JobState
 
     f = tmp_path / "scan.jpg"
     f.write_bytes(b"\xff\xd8\xff-fake-jpeg")
@@ -1544,7 +1565,8 @@ def test_history_image_route_passes_jpg_through_unchanged(client, tmp_path):
 
 def test_history_image_route_renders_page_parsed_from_name_when_page_col_null(client, tmp_path):
     import fitz
-    from artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import State as JobState
 
     pdf_path = tmp_path / "doc.pdf"
     doc = fitz.open()
@@ -1573,7 +1595,8 @@ def test_history_image_route_renders_page_parsed_from_name_when_page_col_null(cl
 
 def test_history_image_route_honours_page_column_when_set(client, tmp_path):
     import fitz
-    from artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import State as JobState
 
     pdf_path = tmp_path / "doc.pdf"
     doc = fitz.open()
@@ -1596,7 +1619,8 @@ def test_history_image_route_honours_page_column_when_set(client, tmp_path):
 
 
 def test_history_raw_text_save_updates_text(client):
-    from artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import State as JobState
 
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
     item = JobItem(path="C:/docs/report.png")
@@ -1631,7 +1655,8 @@ def test_history_search_finds_by_filename(client):
 
 
 def test_history_fulltext_search_finds_text(client):
-    from artifice_ocr.jobs import JobItem, State as JobState
+    from artifice_ocr.jobs import JobItem
+    from artifice_ocr.jobs import State as JobState
 
     run_id = runtime.state.history.start_run(stages=["ocr"], output_dir="out", total=1)
     item = JobItem(path="C:/docs/report.png")
@@ -1769,7 +1794,6 @@ def test_wait_for_server_gives_up_after_timeout():
 
 def test_start_server_thread_captures_an_exception_from_uvicorn(monkeypatch):
     import uvicorn
-
     from artifice_ocr.web.server import _start_server_thread
 
     monkeypatch.setattr(
@@ -2118,7 +2142,10 @@ def test_pdf_export_terminal_event_not_leaked_to_next_stream(client, pdf_text_fo
     or timing tolerances in the critical path — all coordination is via Events
     and the lock itself.
     """
-    import queue, threading, time
+    import queue
+    import threading
+    import time
+
     from artifice_ocr import pdf_export as pdf_export_module
     from artifice_ocr.web import runtime as runtime_module
 

@@ -46,31 +46,41 @@
    #  looks the element up by ID and wires it itself; no per-app script is
    #  needed here. artifice-graph does not include this partial (its own
    #  inline <nav class="topnav"> in base.html carries the identical markup)
-   #  — keep the two in sync by hand.
+   #  — keep the two in sync by hand, including the pywebview drag-region
+   #  classes and the window-controls script tag below.
    ───────────────────────────────────────────────────────────────────── #}
 
-<nav class="topnav">
+<nav class="topnav pywebview-drag-region">
   <div class="brand-group">
-    <a class="brand" href="/">Artifice<span class="brand-accent">{{ brand_accent }}</span></a>
+    <a class="brand pywebview-drag-region-exclude" href="/">Artifice<span class="brand-accent">{{ brand_accent }}</span></a>
     {%- if brand_tagline %}
     <span class="brand-tagline">{{ brand_tagline }}</span>
     {%- endif %}
   </div>
   <div class="navlinks">
   {%- for item in nav_items %}
-    <a href="{{ item.href }}"
+    <a class="pywebview-drag-region-exclude" href="{{ item.href }}"
        {%- if item.key == active_tab %} aria-current="page"{% endif -%}
     >{{ item.label }}</a>
   {%- endfor %}
   </div>
-  <button type="button" class="nav-byom" id="navByom" aria-haspopup="dialog" aria-label="Connect a local model">
+  <button type="button" class="nav-byom pywebview-drag-region-exclude" id="navByom" aria-haspopup="dialog" aria-label="Connect a local model">
     <span class="nav-byom-dot" id="navByomDot" aria-hidden="true"></span>
     <span class="nav-byom-label">Model</span>
   </button>
   {%- if show_theme_toggle %}
-  <button type="button" class="nav-theme" id="themeToggle" aria-label="Toggle colour theme">
+  <button type="button" class="nav-theme pywebview-drag-region-exclude" id="themeToggle" aria-label="Toggle colour theme">
     <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="themeGlyph"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     <span class="sr-only">Theme</span>
   </button>
   {%- endif %}
+  <div class="window-controls" aria-label="Window controls">
+    <button type="button" class="window-control window-control-minimize" id="windowMinimize" aria-label="Minimize">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/></svg>
+    </button>
+    <button type="button" class="window-control window-control-close" id="windowClose" aria-label="Close">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
 </nav>
+<script src="/shared/window-controls.js?v={{ asset_v }}"></script>

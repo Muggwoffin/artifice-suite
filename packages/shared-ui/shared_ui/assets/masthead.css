@@ -168,3 +168,66 @@ body {
   border-color: var(--accent);
   color: var(--accent-deep);
 }
+
+/* ── PyWebView drag region (frameless window title bar) ───────────────── */
+
+/* The nav itself becomes the draggable title bar in frameless PyWebView
+ * windows.  Interactive children are explicitly excluded so links and
+ * buttons keep working; the CSS -webkit-app-region fallback matches the
+ * class convention pywebview uses internally. */
+.pywebview-drag-region {
+  -webkit-app-region: drag;
+}
+
+.pywebview-drag-region-exclude {
+  -webkit-app-region: no-drag;
+}
+
+/* ── Window controls (frameless PyWebView only) ───────────────────────── */
+
+/* Hidden by default; the window-controls.js IIFE adds .pywebview-active to
+ * <html> once the pywebviewready event fires, revealing these buttons. */
+.window-controls {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pywebview-active .window-controls {
+  display: inline-flex;
+}
+
+.window-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height);
+  min-width: var(--control-height);
+  background: none;
+  border: 1px solid var(--rule-dark);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  cursor: pointer;
+  color: var(--ink);
+  transition: background-color var(--duration-fast) ease,
+              border-color var(--duration-fast) ease,
+              color var(--duration-fast) ease;
+}
+
+.window-control:hover {
+  background-color: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+
+/* Destructive action: a muted warm-red wash rather than a cold, jarring red. */
+.window-control-close:hover {
+  background-color: color-mix(in srgb, var(--error) 12%, transparent);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.window-control svg {
+  display: block;
+  pointer-events: none;
+}

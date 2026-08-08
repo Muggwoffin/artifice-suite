@@ -4,12 +4,21 @@
 
 """Tropy JSON-LD bridge routes: import preview, import add, export, export history."""
 
+import contextlib
 import json
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Response
-from fastapi.responses import PlainTextResponse
 
+from ..._logging import get_logger
+from ...tropy_jsonld import (
+    ExportPhoto,
+    TropyImportError,
+    export_json,
+    load_export,
+    photos_to_job_items,
+    write_manifest,
+)
 from ..models import (
     TropyExportHistoryRequest,
     TropyExportRequest,
@@ -17,17 +26,6 @@ from ..models import (
     TropyImportRequest,
 )
 from ..runtime import state
-from ...tropy_jsonld import (
-    ExportPhoto,
-    ImportPreview,
-    TropyImportError,
-    build_export,
-    export_json,
-    load_export,
-    photos_to_job_items,
-    write_manifest,
-)
-from ..._logging import get_logger
 
 log = get_logger("tropy_bridge")
 
@@ -105,10 +103,8 @@ def tropy_import_add(req: TropyImportAddRequest) -> dict:
                     missing_labels.append(name)
 
     # Write manifest (swallow failure)
-    try:
+    with contextlib.suppress(Exception):
         write_manifest(req.output_dir, preview)
-    except Exception:
-        pass
 
     added = state.add_items(items)
     return {

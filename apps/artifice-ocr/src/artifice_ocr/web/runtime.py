@@ -16,17 +16,15 @@ addresses treeview rows — a stable string key that survives across SSE
 messages without the client needing to understand JobItem internals.
 """
 
+import contextlib
 import json
 import queue
-import sqlite3
 import threading
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from .. import config
-from .._diff import confidence_tier, diff_ranges, marker_ranges
 from ..history import HistoryStore
 from ..jobs import STAGES, JobItem, JobRunner, State
 from ..pipeline import run_cleanup_step, run_translate_step
@@ -150,7 +148,7 @@ def _save_stage_text(item: JobItem, stage: str, text: str) -> dict[str, Any]:
                 data[orig_key] = current
             data[cfg["text_key"]] = text
             data["edited"] = True
-            data["edited_at"] = datetime.now(timezone.utc).isoformat()
+            data["edited_at"] = datetime.now(UTC).isoformat()
             json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     return serialize_item_preview(item)
@@ -213,7 +211,9 @@ def reprocess_item(item: JobItem, from_stage: str, stages: list[str]) -> dict[st
                 resume=False, force=True,
             )
             item.results["translated"] = translated
-            item.results.setdefault("translated", {})["translated_text"] = translated.get("translated_text", "")
+            item.results.setdefault("translated", {})["translated_text"] = translated.get(
+                "translated_text", ""
+            )
             item.language = translated.get("source_language_name", "")
             conf = translated.get("confidence") or {}
             item.confidence = conf.get("overall_score")
@@ -221,7 +221,9 @@ def reprocess_item(item: JobItem, from_stage: str, stages: list[str]) -> dict[st
     return serialize_item_preview(item)
 
 
-def batch_replace(find: str, replace: str, stages: list[str], item_ids: list[str] | None = None) -> dict:
+def batch_replace(
+    find: str, replace: str, stages: list[str], item_ids: list[str] | None = None
+) -> dict:
     """Apply a find/replace correction to one or more queue items.
 
     ``stages`` lists which text stages to modify (``"raw"``, ``"cleaned"``,
@@ -274,6 +276,12 @@ class RunState:
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------- history
+    @staticmethod
+    def _record_safe(history: HistoryStore, run_id: int, item: JobItem) -> None:
+        """Record an item to history, swallowing any exception."""
+        with contextlib.suppress(Exception):
+            history.record_item(run_id, item)
+
     @property
     def history(self) -> HistoryStore:
         if self._history is None:
@@ -347,7 +355,10 @@ class RunState:
             [self.get(i) for i in item_ids] if item_ids is not None
             else list(self.items)
         )
-        return [i for i in pool if i is not None and (i.source or {}).get("origin") == "tropy-jsonld"]
+        return [
+            i for i in pool
+            if i is not None and (i.source or {}).get("origin") == "tropy-jsonld"
+        ]
 
     # --------------------------------------------------------------- running
     def start_run(self, *, stages: set[str], output_dir: str,
@@ -379,10 +390,8 @@ class RunState:
             return
         for item in self.items:
             if item.state in (State.DONE, State.FAILED):
-                try:
+                with contextlib.suppress(Exception):
                     self.history.record_item(self.run_id, item)
-                except Exception:
-                    pass  # history must never break a run
 
     def finish_run(self, payload: dict) -> None:
         if self.run_id is not None:
@@ -482,7 +491,10 @@ class PdfExportState:
 pdf_export_state = PdfExportState()
 
 
-def start_pdf_export(folder, *, stage, structure, output, manifest_path, format="pdf", style="readable", bilingual=False) -> bool:
+def start_pdf_export(
+    folder, *, stage, structure, output, manifest_path,
+    format="pdf", style="readable", bilingual=False,
+) -> bool:
     """Returns False (caller should 409) if one is already running."""
     with pdf_export_state.lock:
         if pdf_export_state.status == "running":

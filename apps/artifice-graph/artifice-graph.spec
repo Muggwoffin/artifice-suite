@@ -197,6 +197,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=True,          # user sees the server-startup banner
+    icon='../../packages/shared-ui/shared_ui/assets/logos/artifice-graph.png',
 )
 
 coll = COLLECT(

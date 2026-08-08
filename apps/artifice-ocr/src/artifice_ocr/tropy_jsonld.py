@@ -26,7 +26,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import escape
 from os import urandom
 from pathlib import Path
@@ -195,12 +195,10 @@ def load_export(raw: str | Path) -> ImportPreview:
     _check_budget(data)
 
     # 4. Shape validation — unwrap envelope
-    graph: list[dict] = []
     if isinstance(data, dict):
-        if "@graph" in data:
-            graph = _as_list(data["@graph"])
-        else:
-            graph = [data]
+        graph: list[dict] = (
+            _as_list(data["@graph"]) if "@graph" in data else [data]
+        )
     elif isinstance(data, list):
         graph = data
     else:
@@ -306,10 +304,10 @@ def load_export(raw: str | Path) -> ImportPreview:
 
             try:
                 resolved.relative_to(export_dir)
-            except ValueError:
+            except ValueError as err:
                 raise TropyImportError(
                     f"Photo path '{path_rel}' in item '{title}' escapes the export folder"
-                )
+                ) from err
 
             missing = not resolved.exists()
 
@@ -519,7 +517,7 @@ def build_export(photos: list[ExportPhoto]) -> dict:
     graph: list[dict] = []
 
     # Tropy-sourced groups
-    for group, eps in tropy_groups.items():
+    for _group, eps in tropy_groups.items():
         eps_with_text = [ep for ep in eps if ep.text.strip()]
         if not eps_with_text:
             continue
@@ -652,7 +650,7 @@ def write_manifest(
                 "tropy_group": photo.group,
             }
 
-    export_stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    export_stamp = datetime.now(UTC).isoformat(timespec="seconds")
     payload = {
         "export": {
             "name": preview.export_name,

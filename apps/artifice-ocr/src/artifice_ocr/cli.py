@@ -7,9 +7,10 @@ from pathlib import Path
 import typer
 
 from artifice_ocr._logging import get_logger, setup_logging
-from artifice_ocr.config import _USER_DIR, get as cfg
-from artifice_ocr.stages import ocr as ocr_stage
+from artifice_ocr.config import _USER_DIR
+from artifice_ocr.config import get as cfg
 from artifice_ocr.stages import cleanup as cleanup_stage
+from artifice_ocr.stages import ocr as ocr_stage
 from artifice_ocr.stages import translate as translate_stage
 from artifice_ocr.utils import check_lm_studio, check_ollama
 
@@ -159,7 +160,10 @@ def translate(
         source_file=str(p),
         output_dir=output_dir,
     )
-    typer.echo(f"Translated {len(result['translated_text'])} characters (was {len(result['cleaned_text'])}).")
+    typer.echo(
+        f"Translated {len(result['translated_text'])} characters"
+        f" (was {len(result['cleaned_text'])})."
+    )
     typer.echo(f"Text written to {output_dir}/translated/text/")
     typer.echo(f"JSON written to {output_dir}/translated/json/")
 
@@ -167,7 +171,9 @@ def translate(
 @app.command("audit-translations")
 def audit_translations(
     output_dir: str = typer.Option("output", help="Output directory to scan"),
-    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable JSON instead of a table"),
+    as_json: bool = typer.Option(
+        False, "--json", help="Emit machine-readable JSON instead of a table"
+    ),
 ):
     """Find already-produced translations likely corrupted by the
     already-English mistranslation bug.
@@ -221,9 +227,9 @@ def audit_translations(
             typer.echo(f"      source: {entry['source_file']}")
 
     typer.echo(
-        f"\nRe-run these with --force (or the GUI/web \"Force re-run\" option) "
-        f"so the fixed translate stage regenerates them instead of reusing "
-        f"the existing output."
+        "\nRe-run these with --force (or the GUI/web \"Force re-run\" option) "
+        "so the fixed translate stage regenerates them instead of reusing "
+        "the existing output."
     )
 
 
@@ -235,9 +241,17 @@ def pipeline(
     output_dir: str = typer.Option("output", help="Output directory"),
     skip_ocr: bool = typer.Option(False, "--skip-ocr", help="Skip the OCR stage"),
     skip_cleanup: bool = typer.Option(False, "--skip-cleanup", help="Skip the cleanup stage"),
-    skip_translate: bool = typer.Option(False, "--skip-translate", help="Skip the translation stage"),
-    force: bool = typer.Option(False, "--force", help="Re-process even if outputs exist"),
-    document_type: str = typer.Option("default", "--doc-type", help="Document type (default, handwritten, typed_clean, technical, formal, casual, multi_lang)"),
+    skip_translate: bool = typer.Option(
+        False, "--skip-translate", help="Skip the translation stage"
+    ),
+    force: bool = typer.Option(
+        False, "--force", help="Re-process even if outputs exist"
+    ),
+    document_type: str = typer.Option(
+        "default", "--doc-type",
+        help="Document type (default, handwritten, typed_clean,"
+             " technical, formal, casual, multi_lang)",
+    ),
     no_confidence: bool = typer.Option(False, "--no-confidence", help="Disable confidence scoring"),
 ):
     """Run the full pipeline: OCR -> Cleanup -> Translate.
@@ -323,7 +337,9 @@ def pipeline(
 
 @app.command("tropy-import")
 def tropy_import(
-    export_path: str = typer.Argument(help="Path to a Tropy JSON-LD export file (.jsonld or .json)"),
+    export_path: str = typer.Argument(
+        help="Path to a Tropy JSON-LD export file (.jsonld or .json)"
+    ),
     output_dir: str = typer.Option("output", help="Output directory"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview without adding to the queue"),
 ):
@@ -340,7 +356,10 @@ def tropy_import(
     typer.echo(f"Items:  {len(preview.items)}")
     total_photos = sum(len(i.photos) for i in preview.items)
     total_missing = sum(1 for i in preview.items for p in i.photos if p.missing)
-    typer.echo(f"Photos: {total_photos}" + (f"  ({total_missing} missing)" if total_missing else ""))
+    typer.echo(
+        f"Photos: {total_photos}"
+        + (f"  ({total_missing} missing)" if total_missing else "")
+    )
 
     if preview.warnings:
         for w in preview.warnings:
@@ -360,14 +379,16 @@ def tropy_import(
     for item in items:
         typer.echo(f"  {item.label}  ->  {item.output_stem}")
 
-    typer.echo(f"\nUse the web UI or 'artifice_ocr pipeline' to OCR these.")
+    typer.echo("\nUse the web UI or 'artifice_ocr pipeline' to OCR these.")
 
 
 @app.command("tropy-export")
 def tropy_export(
     output: str = typer.Option("artifice-ocr-tropy.jsonld", "--output", "-o",
                                 help="Output file path for the JSON-LD export"),
-    stage: str = typer.Option("cleaned", "--stage", help="Text stage: raw_ocr, cleaned, translated"),
+    stage: str = typer.Option(
+        "cleaned", "--stage", help="Text stage: raw_ocr, cleaned, translated"
+    ),
 ):
     """Generate a Tropy JSON-LD export file from eligible queue items.
 
@@ -418,11 +439,25 @@ def compile_pdf(
     folder: str = typer.Argument(help="Folder of processed .txt output"),
     stage: str = typer.Option("cleaned", "--stage", help="cleaned|raw_ocr|translated"),
     output: str = typer.Option(None, "--output", help="Output PDF/MD path"),
-    structure: bool = typer.Option(None, "--structure/--no-structure", help="Apply structuring pass (bilingual defaults to off)"),
-    manifest: str = typer.Option(None, "--manifest", help="Explicit tropy_manifest.json path"),
-    format: str = typer.Option("pdf", "--format", help="Output format: pdf or md"),
-    style: str = typer.Option("readable", "--style", help="PDF style preset: readable, academic, compact"),
-    bilingual: bool = typer.Option(False, "--bilingual", help="Two-column original + translation (uses cleaned + translated stages)"),
+    structure: bool = typer.Option(
+        None, "--structure/--no-structure",
+        help="Apply structuring pass (bilingual defaults to off)",
+    ),
+    manifest: str = typer.Option(
+        None, "--manifest", help="Explicit tropy_manifest.json path"
+    ),
+    format: str = typer.Option(
+        "pdf", "--format", help="Output format: pdf or md"
+    ),
+    style: str = typer.Option(
+        "readable", "--style",
+        help="PDF style preset: readable, academic, compact",
+    ),
+    bilingual: bool = typer.Option(
+        False, "--bilingual",
+        help="Two-column original + translation"
+             " (uses cleaned + translated stages)",
+    ),
 ):
     """Compile processed text files into a single readable PDF or Markdown file.
 
@@ -447,10 +482,7 @@ def compile_pdf(
     if not folder_path.exists():
         raise typer.BadParameter(f"Folder not found: {folder}")
 
-    if structure is None:
-        structure_flag = not bilingual
-    else:
-        structure_flag = structure
+    structure_flag = not bilingual if structure is None else structure
 
     try:
         result_path = pdf_export.compile(
@@ -489,7 +521,9 @@ def export_ludwiglang(
         False, "--skip-language-gate", help="Skip the German-language check"
     ),
     output: str = typer.Option(
-        None, "--output", help="Explicit output .md path (default: output/ludwiglang/<collection>/text.md)"
+        None, "--output",
+        help="Explicit output .md path"
+             " (default: output/ludwiglang/<collection>/text.md)",
     ),
 ):
     """Export a cleaned collection as a LudwigLang-importable .md file.
@@ -498,7 +532,7 @@ def export_ludwiglang(
     and writes a frontmatter .md that can be dropped onto LudwigLang's
     Import Text page at http://localhost:8765/import.
     """
-    from artifice_ocr.export_ludwiglang import export_md, _read_manifest
+    from artifice_ocr.export_ludwiglang import _read_manifest, export_md
 
     cleaned_root = Path(output_dir) / "cleaned" / "text" / collection
     if not cleaned_root.exists():
@@ -525,7 +559,7 @@ def export_ludwiglang(
         )
     except ValueError as exc:
         typer.echo(f"ERROR: {exc}", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
     typer.echo(f"Exported to {result_path}")
 
