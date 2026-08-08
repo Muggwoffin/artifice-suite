@@ -50,6 +50,7 @@ WORKSPACE_PACKAGES = {
     "artifice_draft",
     "artifice_graph",
     "artifice_transcribe",
+    "artifice_hub",
     "model_harness",
     "secure_io",
     "shared_ui",

@@ -270,6 +270,7 @@ web = [
     { name = "python-multipart" },
     { name = "pywebview" },
     { name = "readability-lxml" },
+    { name = "starlette" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -289,6 +290,7 @@ requires-dist = [
     { name = "pywebview", marker = "extra == 'web'", specifier = ">=5.0" },
     { name = "readability-lxml", marker = "extra == 'web'", specifier = ">=0.8.1" },
     { name = "requests", specifier = ">=2.31.0" },
+    { name = "starlette", marker = "extra == 'web'", specifier = ">=0.37" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.29" },
 ]
 provides-extras = ["web"]
@@ -317,6 +319,7 @@ web = [
     { name = "fastapi" },
     { name = "jinja2" },
     { name = "python-multipart" },
+    { name = "starlette" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 window = [
@@ -346,6 +349,7 @@ requires-dist = [
     { name = "pywebview", marker = "extra == 'window'", specifier = ">=5.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
+    { name = "starlette", marker = "extra == 'web'", specifier = ">=0.37" },
     { name = "typer", specifier = ">=0.12" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.20" },
 ]
@@ -366,6 +370,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "platformdirs" },
     { name = "pywebview" },
+    { name = "starlette" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -375,6 +380,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "platformdirs", specifier = ">=4.0.0" },
     { name = "pywebview", specifier = ">=5.0" },
+    { name = "starlette", specifier = ">=0.37" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
 ]
 

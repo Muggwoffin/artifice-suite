@@ -43,6 +43,9 @@ Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 web = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
+    # Imported directly at web/server.py:36 (BaseHTTPMiddleware) — the
+    # dependency audit fails on undeclared direct imports.
+    "starlette>=0.37",
     "python-multipart>=0.0.9",
     "pywebview>=5.0",
     "beautifulsoup4>=4.12",

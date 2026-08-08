@@ -12,6 +12,9 @@ license-files = ["LICENSE"]
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
+    # Imported directly at web/server.py:35 (BaseHTTPMiddleware) — the
+    # dependency audit fails on undeclared direct imports.
+    "starlette>=0.37",
     "pywebview>=5.0",
     "platformdirs>=4.0.0",
     "artifice-shared-ui>=0.2.0",
