@@ -695,6 +695,11 @@ def test_tropy_import_preview_reports_missing_photos(client, tmp_path):
 
 
 def test_tropy_import_preview_rejects_absolute_paths(client, tmp_path):
+    """``/etc/passwd`` is still a 400 — now rejected by the blocklist.
+
+    The detail string must reflect the actual blocklist rejection, not a
+    generic "absolute" message.
+    """
     export = {
         "@graph": [
             {
@@ -711,6 +716,7 @@ def test_tropy_import_preview_rejects_absolute_paths(client, tmp_path):
     f.write_text(json.dumps(export), encoding="utf-8")
     res = client.post("/api/tropy/import/preview", json={"path": str(f)})
     assert res.status_code == 400
+    assert "protected" in res.json()["detail"].lower()
 
 
 def test_tropy_import_preview_rejects_dotdot_segments(client, tmp_path):
@@ -803,6 +809,162 @@ def test_tropy_import_add_reports_missing(client, tmp_path):
     )
     assert res.status_code == 200
     assert "gone.pdf  p.1" in res.json()["missing"]
+
+
+# --------------------------------------------------------------------------- #
+# tropy json-ld bridge — content-based import
+# --------------------------------------------------------------------------- #
+
+
+def test_tropy_import_preview_via_content(client, tmp_path):
+    """Preview via ``content`` field round-trips correctly."""
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Content Item",
+                "photo": [
+                    {"@type": "Photo", "path": "a.png",
+                     "checksum": "abc", "mimetype": "image/png"},
+                ],
+            }
+        ]
+    }
+    (tmp_path / "a.png").write_bytes(b"x")
+    f = tmp_path / "export.json"
+    f.write_text(json.dumps(export), encoding="utf-8")
+
+    # via content (with relative photos, yields nothing)
+    text = f.read_text(encoding="utf-8")
+    res = client.post(
+        "/api/tropy/import/preview",
+        json={"content": text, "filename": "export.json"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["export_name"] == "export.json"
+
+
+def test_tropy_import_add_via_content_with_groups(client, tmp_path):
+    """``import/add`` via ``content`` adds items and respects ``groups``
+    filtering — uses absolute paths in the export so content import can
+    resolve photos."""
+    photo_a = tmp_path / "a.png"
+    photo_a.write_bytes(b"x")
+    photo_b = tmp_path / "b.png"
+    photo_b.write_bytes(b"x")
+
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Group A Item",
+                "photo": [
+                    {"@type": "Photo", "path": str(photo_a),
+                     "checksum": "abc", "mimetype": "image/png"},
+                ],
+            },
+            {
+                "@type": "Item",
+                "title": "Group B Item",
+                "photo": [
+                    {"@type": "Photo", "path": str(photo_b),
+                     "checksum": "xyz", "mimetype": "image/png"},
+                ],
+            },
+        ]
+    }
+    f = tmp_path / "export.json"
+    f.write_text(json.dumps(export), encoding="utf-8")
+
+    # First, import via path to get group IDs (path import resolves everything)
+    res_preview = client.post(
+        "/api/tropy/import/preview",
+        json={"path": str(f)},
+    )
+    groups = [item["group"] for item in res_preview.json()["items"]]
+    assert len(groups) == 2
+
+    # Now import/add via content with only the second group
+    text = f.read_text(encoding="utf-8")
+    res = client.post(
+        "/api/tropy/import/add",
+        json={
+            "content": text,
+            "filename": "export.json",
+            "groups": groups[1:],
+            "output_dir": str(tmp_path / "out"),
+        },
+    )
+    assert res.status_code == 200
+    # Only the second item should be added
+    assert res.json()["added"] == 1
+
+
+# --------------------------------------------------------------------------- #
+# tropy json-ld bridge — request validation (422s)
+# --------------------------------------------------------------------------- #
+
+
+def test_tropy_import_rejects_both_path_and_content(client):
+    """Providing both ``path`` and ``content`` → 422."""
+    res = client.post(
+        "/api/tropy/import/preview",
+        json={"path": "/tmp/e.json", "content": "{}"},
+    )
+    assert res.status_code == 422
+
+
+def test_tropy_import_rejects_neither_path_nor_content(client):
+    """Providing neither ``path`` nor ``content`` → 422."""
+    res = client.post(
+        "/api/tropy/import/preview",
+        json={},
+    )
+    assert res.status_code == 422
+
+
+def test_tropy_import_rejects_filename_without_content(client):
+    """``filename`` is only valid with ``content`` → 422."""
+    res = client.post(
+        "/api/tropy/import/preview",
+        json={"path": "/tmp/e.json", "filename": "e.json"},
+    )
+    assert res.status_code == 422
+
+
+def test_tropy_import_rejects_oversized_content(client, tmp_path):
+    """Content exceeding ``MAX_FILE_BYTES`` → 422 from the Pydantic max_length
+    constraint."""
+    from artifice_ocr.tropy_jsonld import MAX_FILE_BYTES
+
+    # Build a JSON string whose length exceeds MAX_FILE_BYTES
+    big_str = "x" * (MAX_FILE_BYTES + 1)
+    res = client.post(
+        "/api/tropy/import/preview",
+        json={"content": big_str},
+    )
+    assert res.status_code == 422
+
+
+def test_tropy_import_rejects_content_byte_limit_exceeded(client, tmp_path):
+    """Content whose char count is under ``MAX_FILE_BYTES`` but UTF-8 byte
+    count exceeds it → 400 from the loader.
+
+    Uses a direct call to ``load_export_content`` rather than a massive
+    HTTP body that can hit TestClient size limits.
+    """
+    from artifice_ocr.tropy_jsonld import MAX_FILE_BYTES, TropyImportError, load_export_content
+
+    # Each → is a 3-byte UTF-8 character.  Build a string whose char count
+    # is under MAX_FILE_BYTES but whose encoded byte count exceeds it.
+    chunk_size = MAX_FILE_BYTES // 3 + 10
+    big_content = "→" * chunk_size
+    assert len(big_content) < MAX_FILE_BYTES, "char count should be under limit"
+    assert len(big_content.encode("utf-8")) > MAX_FILE_BYTES, "byte count should exceed limit"
+
+    with pytest.raises(TropyImportError, match="too large"):
+        load_export_content(big_content, filename="test.jsonld")
 
 
 # --------------------------------------------------------------------------- #

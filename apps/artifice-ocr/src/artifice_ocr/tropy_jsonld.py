@@ -8,9 +8,10 @@ Replaces the 7-route SQLite read/write integration (``tropy_read.py`` +
 ``tropy_write.py`` + ``tropy.py``) with a frictionless file-based workflow:
 
 1. **Import**: User exports from Tropy (File → Export → JSON-LD), provides
-   the file to artifice-ocr. Photos are resolved relative to the JSON-LD
-   file's directory. No path-roots validation — the user designating this
-   file IS the authorisation.
+   the file to artifice-ocr.  Relative photos are resolved relative to the
+   JSON-LD file's directory.  Absolute photos are validated by
+   ``_tropy_pathcheck`` against a blocklist of system directories — NAS
+   mounts, external drives and research archives are explicitly permitted.
 
 2. **Export**: artifice-ocr generates a JSON-LD file the user imports back
    into Tropy (File → Import Items…). The item envelope preserves Tropy's
@@ -24,11 +25,11 @@ old ``tropy_read.py``.
 import copy
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from html import escape
-from os import urandom
 from pathlib import Path
 from typing import Any
 
@@ -58,6 +59,10 @@ TITLE_PROPERTY = "http://purl.org/dc/elements/1.1/title"
 
 # Characters Windows forbids in a path segment, plus the separators.
 _UNSAFE = '<>:"/\\|?*'
+
+# Rollback feature flag: when set, absolute photo paths hit the old
+# raise-on-absolute branch instead of the pathcheck pathway.  Off by default.
+_RELATIVE_ONLY = os.environ.get("ARTIFICE_OCR_TROPY_RELATIVE_ONLY", "0") == "1"
 
 
 class TropyImportError(ValueError):
@@ -144,12 +149,8 @@ def page_stem(
 
 
 # --------------------------------------------------------------------------- #
-# import
+# helpers
 # --------------------------------------------------------------------------- #
-
-
-def _batch_uuid4_hex() -> str:
-    return urandom(16).hex()
 
 
 def _as_list(value: Any) -> list:
@@ -161,8 +162,20 @@ def _as_list(value: Any) -> list:
     return [value]
 
 
+def _canonical_json(node: dict) -> bytes:
+    """Deterministic byte-serialisation for stable group-id hashing."""
+    return json.dumps(
+        node, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+
+
+# --------------------------------------------------------------------------- #
+# import — public entry points
+# --------------------------------------------------------------------------- #
+
+
 def load_export(raw: str | Path) -> ImportPreview:
-    """Parse and validate a Tropy JSON-LD export file.
+    """Parse and validate a Tropy JSON-LD export file from a filesystem path.
 
     Each step raises :class:`TropyImportError` on failure. Messages are
     sanitised — they never contain a resolved absolute path.
@@ -191,10 +204,75 @@ def load_export(raw: str | Path) -> ImportPreview:
     except (json.JSONDecodeError, OSError) as exc:
         raise TropyImportError(f"Could not parse JSON-LD file: {exc}") from None
 
-    # 3. Depth and node budget
+    return _parse_graph(data, export_dir=export_dir, export_name=p.name)
+
+
+def load_export_content(
+    text: str,
+    *,
+    filename: str | None = None,
+) -> ImportPreview:
+    """Parse and validate Tropy JSON-LD export content (drag-and-drop).
+
+    Parameters
+    ----------
+    text : str
+        The raw JSON-LD text content.
+    filename : str | None
+        Display name for error messages — **never** joined into a filesystem
+        path.  Defaults to ``"dropped-export.jsonld"``.
+    """
+    # Encode to UTF-8 bytes for size check (chars != bytes)
+    try:
+        raw_bytes = text.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise TropyImportError(
+            f"Could not encode export content as UTF-8: {exc}"
+        ) from exc
+    if len(raw_bytes) > MAX_FILE_BYTES:
+        raise TropyImportError(
+            f"Export content is too large ({len(raw_bytes)} bytes; "
+            f"max {MAX_FILE_BYTES})"
+        )
+
+    # Parse from bytes (handles BOM)
+    try:
+        data = json.loads(raw_bytes)
+    except RecursionError:
+        raise TropyImportError(
+            "JSON-LD content is too deeply nested to parse"
+        ) from None
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise TropyImportError(
+            f"Could not parse JSON-LD content: {exc}"
+        ) from None
+
+    export_name = (
+        Path(filename).name
+        if filename
+        else "dropped-export.jsonld"
+    )
+
+    return _parse_graph(data, export_dir=None, export_name=export_name)
+
+
+# --------------------------------------------------------------------------- #
+# import — shared core
+# --------------------------------------------------------------------------- #
+
+
+def _parse_graph(
+    data: Any,
+    *,
+    export_dir: Path | None,
+    export_name: str,
+) -> ImportPreview:
+    """Shared core: budget check, envelope unwrap, graph walk, per-photo
+    validation."""
+    # 1. Depth and node budget
     _check_budget(data)
 
-    # 4. Shape validation — unwrap envelope
+    # 2. Shape validation — unwrap envelope
     if isinstance(data, dict):
         graph: list[dict] = (
             _as_list(data["@graph"]) if "@graph" in data else [data]
@@ -204,8 +282,7 @@ def load_export(raw: str | Path) -> ImportPreview:
     else:
         raise TropyImportError("JSON-LD root must be an object or array, not a scalar")
 
-    # 5. Walk graph members
-    batch_id = _batch_uuid4_hex()
+    # 3. Walk graph members
     items: list[ImportedItem] = []
     warnings: list[str] = []
     photo_count_total = 0
@@ -248,7 +325,8 @@ def load_export(raw: str | Path) -> ImportPreview:
         elif not isinstance(raw_photos, list):
             raw_photos = []
 
-        group = f"{batch_id[:8]}:{idx}"
+        # Deterministic group-id — stable across re-parses
+        group = f"{hashlib.sha256(_canonical_json(node)).hexdigest()[:12]}:{idx}"
         imported_photos: list[ImportedPhoto] = []
 
         for pi, pnode in enumerate(raw_photos):
@@ -264,52 +342,69 @@ def load_export(raw: str | Path) -> ImportPreview:
                 )
                 continue
 
-            # 5a. Photo path safety
+            # ---- photo path handling ------------------------------------
             path_rel = raw_path.replace("\\", "/")
 
-            # Reject UNC paths (must check before POSIX absolute, since // starts with /)
+            # UNC paths — reject unconditionally (must check before
+            # POSIX-absolute, since // starts with /)
             if path_rel.startswith("//"):
                 raise TropyImportError(
                     f"Photo path '{path_rel}' in item '{title}' is a UNC path — "
                     f"all paths must be relative to the export file's folder"
                 )
 
-            # Reject absolute paths
-            if path_rel.startswith("/"):
-                raise TropyImportError(
-                    f"Photo path '{path_rel}' in item '{title}' is absolute — "
-                    f"all paths must be relative to the export file's folder"
-                )
             # Windows drive letter
-            if re.match(r"^[A-Za-z]:/", path_rel):
-                raise TropyImportError(
-                    f"Photo path '{path_rel}' in item '{title}' is absolute — "
-                    f"all paths must be relative to the export file's folder"
-                )
-            # UNC
-            if path_rel.startswith("//"):
-                raise TropyImportError(
-                    f"Photo path '{path_rel}' in item '{title}' is a UNC path — "
-                    f"all paths must be relative to the export file's folder"
-                )
-            # .. segments
-            segments = path_rel.replace("\\", "/").split("/")
-            if ".." in segments:
-                raise TropyImportError(
-                    f"Photo path '{path_rel}' in item '{title}' escapes the export folder"
-                )
+            windows_abs = bool(re.match(r"^[A-Za-z]:/", path_rel))
+            is_absolute = path_rel.startswith("/") or windows_abs
 
-            # Resolve and containment
-            resolved = (export_dir / path_rel).resolve()
+            if is_absolute:
+                _handle_absolute_photo(
+                    raw_path, path_rel, title, warnings,
+                )
+                # _handle_absolute_photo either raises or returns nothing;
+                # the resolved path and missing flag come from the pathcheck
+                # module.  However, to avoid restructuring the entire loop,
+                # we inline the pathcheck call here after the function
+                # validates.
+                resolved, missing, is_symlink = _validate_and_resolve_absolute(
+                    raw_path, title,
+                )
+                if is_symlink:
+                    warnings.append(
+                        f"Photo '{Path(path_rel).name}' in item '{title}' "
+                        f"is a symbolic link — followed to its target"
+                    )
+            else:
+                # ---- relative path --------------------------------------
+                if export_dir is None:
+                    # Content import — cannot resolve relative paths
+                    warnings.append(
+                        f"Photo '{path_rel}' in item '{title}' uses a "
+                        f"relative path — save the export to disk and "
+                        f"import by path to resolve it"
+                    )
+                    continue
 
-            try:
-                resolved.relative_to(export_dir)
-            except ValueError as err:
-                raise TropyImportError(
-                    f"Photo path '{path_rel}' in item '{title}' escapes the export folder"
-                ) from err
+                # .. segments
+                segments = path_rel.split("/")
+                if ".." in segments:
+                    raise TropyImportError(
+                        f"Photo path '{path_rel}' in item '{title}' "
+                        f"escapes the export folder"
+                    )
 
-            missing = not resolved.exists()
+                # Resolve and containment
+                resolved = (export_dir / path_rel).resolve()
+
+                try:
+                    resolved.relative_to(export_dir)
+                except ValueError as err:
+                    raise TropyImportError(
+                        f"Photo path '{path_rel}' in item '{title}' "
+                        f"escapes the export folder"
+                    ) from err
+
+                missing = not resolved.exists()
 
             mimetype = pnode.get("mimetype", "")
             checksum = pnode.get("checksum", "")
@@ -342,7 +437,48 @@ def load_export(raw: str | Path) -> ImportPreview:
     if photo_count_total == 0:
         warnings.append("No photos with valid paths found in the export")
 
-    return ImportPreview(export_name=p.name, items=items, warnings=warnings)
+    return ImportPreview(export_name=export_name, items=items, warnings=warnings)
+
+
+def _handle_absolute_photo(
+    raw_path: str,
+    path_rel: str,
+    title: str,
+    warnings: list[str],
+) -> None:
+    """Handle the rollback flag check for an absolute photo path.
+
+    Raises :class:`TropyImportError` when the rollback flag is active.
+    Otherwise returns silently — the caller proceeds with pathcheck.
+    """
+    if _RELATIVE_ONLY:
+        raise TropyImportError(
+            f"Photo path '{path_rel}' in item '{title}' is absolute — "
+            f"all paths must be relative to the export file's folder"
+        )
+
+
+def _validate_and_resolve_absolute(
+    raw_path: str,
+    title: str,
+) -> tuple[Path, bool, bool]:
+    """Call the pathcheck module and return (resolved, missing, is_symlink).
+
+    Translates ``ValueError`` from the pathcheck module into
+    ``TropyImportError``, **preserving the message exactly** — the
+    pathcheck module guarantees sanitised messages.
+    """
+    from ._tropy_pathcheck import (
+        PhotoPathResult,
+        validate_absolute_photo,
+    )
+
+    try:
+        result: PhotoPathResult = validate_absolute_photo(raw_path)
+    except ValueError as exc:
+        raise TropyImportError(str(exc)) from exc
+
+    return result.resolved, result.missing, result.is_symlink
 
 
 def _check_budget(data: Any) -> None:

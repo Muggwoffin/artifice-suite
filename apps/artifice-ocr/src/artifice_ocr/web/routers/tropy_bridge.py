@@ -16,6 +16,7 @@ from ...tropy_jsonld import (
     TropyImportError,
     export_json,
     load_export,
+    load_export_content,
     photos_to_job_items,
     write_manifest,
 )
@@ -41,7 +42,11 @@ router = APIRouter(tags=["tropy"])
 def tropy_import_preview(req: TropyImportRequest) -> dict:
     """Parse a Tropy JSON-LD export and return a summary of what's in it."""
     try:
-        preview = load_export(req.path)
+        preview = (
+            load_export(req.path)
+            if req.path is not None
+            else load_export_content(req.content, filename=req.filename)
+        )
     except TropyImportError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception:
@@ -74,7 +79,11 @@ def tropy_import_preview(req: TropyImportRequest) -> dict:
 def tropy_import_add(req: TropyImportAddRequest) -> dict:
     """Add photos from a Tropy JSON-LD export to the processing queue."""
     try:
-        preview = load_export(req.path)
+        preview = (
+            load_export(req.path)
+            if req.path is not None
+            else load_export_content(req.content, filename=req.filename)
+        )
     except TropyImportError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception:

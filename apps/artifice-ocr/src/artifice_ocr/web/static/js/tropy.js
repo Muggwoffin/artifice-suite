@@ -15,8 +15,12 @@ const tropyEls = {};
 [
   // Import modal
   "btn-add-tropy", "modal-tropy-add",
+  "tropy-dropzone",
+  "tropy-dropzone-idle", "tropy-dropzone-parsing",
+  "tropy-dropzone-success", "tropy-dropzone-error",
+  "tropy-dropzone-success-text", "tropy-dropzone-error-text",
+  "tropy-dropzone-live",
   "tropy-import-path", "btn-tropy-browse-file",
-  "tropy-import-loading", "tropy-import-loading-text",
   "tropy-import-results", "tropy-import-count",
   "tropy-import-list", "btn-tropy-import-select-all",
   "tropy-import-summary-text", "tropy-import-summary-warning",
@@ -33,6 +37,7 @@ const tropyEls = {};
 });
 
 let tropyImportPreview = null;  // { export_name, items, warnings }
+let tropyImportSource = null;   // { type: "path" | "content", value: string, name?: string }
 let tropyExportContext = null;  // { itemIds, isHistory }
 
 // ------------------------------------------------------------- import modal
@@ -44,41 +49,66 @@ async function openTropyAdd() {
 
 function resetImportState() {
   tropyImportPreview = null;
+  tropyImportSource = null;
   tropyEls["tropy-import-path"].value = "";
-  tropyEls["tropy-import-loading"].classList.add("hidden");
+  showDropzoneState("idle");
   tropyEls["tropy-import-results"].classList.add("hidden");
   tropyEls["tropy-import-list"].innerHTML = "";
   tropyEls["tropy-import-count"].textContent = "0 items found";
   tropyEls["tropy-import-summary-text"].textContent = "No file selected";
   tropyEls["tropy-import-summary-warning"].textContent = "";
   tropyEls["btn-tropy-add-queue"].disabled = true;
+  tropyEls["btn-tropy-add-queue"].textContent = "Add to Queue";
 }
 
-function setImportLoading(show, text) {
-  const el = tropyEls["tropy-import-loading"];
-  if (show) {
-    el.classList.remove("hidden");
-    tropyEls["tropy-import-loading-text"].textContent = text || "Parsing JSON-LD…";
-  } else {
-    el.classList.add("hidden");
+function showDropzoneState(state, message) {
+  const states = ["idle", "parsing", "success", "error"];
+  states.forEach(s => {
+    const el = tropyEls["tropy-dropzone-" + s];
+    if (el) el.classList.toggle("hidden", s !== state);
+  });
+  if (state === "success" && tropyEls["tropy-dropzone-success-text"]) {
+    tropyEls["tropy-dropzone-success-text"].textContent = message || "Ready to import";
+  }
+  if (state === "error" && tropyEls["tropy-dropzone-error-text"]) {
+    tropyEls["tropy-dropzone-error-text"].textContent = message || "Import failed";
+  }
+  if (tropyEls["tropy-dropzone-live"]) {
+    const liveMsg = state === "idle"
+      ? "Drop a Tropy JSON-LD file here, or press Enter to browse"
+      : (message || state);
+    tropyEls["tropy-dropzone-live"].textContent = liveMsg;
   }
 }
 
-async function loadImportPreview(path) {
-  if (!path) return;
+async function loadImportPreview(opts) {
+  if (!opts || (!opts.path && !opts.content)) return;
   resetImportState();
-  tropyEls["tropy-import-path"].value = path;
-  setImportLoading(true, "Parsing JSON-LD…");
+
+  tropyImportSource = opts.path
+    ? { type: "path", value: opts.path }
+    : { type: "content", value: opts.content, name: opts.name || "" };
+
+  if (opts.path) {
+    tropyEls["tropy-import-path"].value = opts.path;
+  } else if (opts.name) {
+    tropyEls["tropy-import-path"].value = opts.name;
+  }
+
+  showDropzoneState("parsing");
 
   try {
-    const data = await api("POST", "/api/tropy/import/preview", { path });
+    const payload = opts.path ? { path: opts.path } : { content: opts.content };
+    const data = await api("POST", "/api/tropy/import/preview", payload);
     tropyImportPreview = data;
+    const photoCount = (data.items || []).reduce((sum, it) => sum + (it.photo_count || 0), 0);
+    showDropzoneState("success", `${data.items.length} item(s), ${photoCount} photo(s) ready`);
     renderImportResults(data);
   } catch (err) {
     tropyImportPreview = null;
+    tropyImportSource = null;
+    showDropzoneState("error", escapeHtml(err.message));
     tropyEls["tropy-import-summary-text"].textContent = "Error: " + escapeHtml(err.message);
-  } finally {
-    setImportLoading(false);
   }
 }
 
@@ -153,7 +183,7 @@ tropyEls["modal-tropy-add"].addEventListener("click", (e) => {
   }
 });
 
-tropyEls["btn-tropy-browse-file"].onclick = async () => {
+async function browseTropyFile() {
   try {
     const res = await fetch("/api/native/pick-file", {
       method: "POST",
@@ -162,17 +192,144 @@ tropyEls["btn-tropy-browse-file"].onclick = async () => {
     });
     const data = await res.json();
     if (data.path) {
-      loadImportPreview(data.path);
+      loadImportPreview({ path: data.path });
     }
   } catch (err) {
     if (window.ArtificeToast)
       window.ArtificeToast.error("File picker not available — type the path instead.");
   }
-};
+}
 
-// Re-load on manual path change (if user pastes)
+tropyEls["btn-tropy-browse-file"].onclick = browseTropyFile;
+
+// Dropzone click / keyboard activation triggers the same file picker
+tropyEls["tropy-dropzone"].onclick = browseTropyFile;
+tropyEls["tropy-dropzone"].addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    browseTropyFile();
+  }
+});
+
+// Drag-and-drop handling for the dropzone
+let tropyDragCounter = 0;
+
+["dragenter", "dragover"].forEach(evt => {
+  tropyEls["tropy-dropzone"].addEventListener(evt, (e) => {
+    e.preventDefault();
+    if (evt === "dragenter") tropyDragCounter++;
+    tropyEls["tropy-dropzone"].classList.add("dragover");
+  });
+});
+
+tropyEls["tropy-dropzone"].addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  tropyDragCounter--;
+  if (tropyDragCounter <= 0) {
+    tropyDragCounter = 0;
+    tropyEls["tropy-dropzone"].classList.remove("dragover");
+  }
+});
+
+tropyEls["tropy-dropzone"].addEventListener("drop", (e) => {
+  e.preventDefault();
+  tropyDragCounter = 0;
+  tropyEls["tropy-dropzone"].classList.remove("dragover");
+  const files = e.dataTransfer && e.dataTransfer.files;
+  if (!files || !files.length) return;
+  const file = Array.from(files).find(isTropyFile) || files[0];
+  handleTropyDroppedFile(file);
+});
+
+function isTropyFile(file) {
+  const name = (file.name || "").toLowerCase();
+  return name.endsWith(".json") || name.endsWith(".jsonld");
+}
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read the dropped file"));
+    reader.readAsText(file);
+  });
+}
+
+function countPhotosInTropyItem(item) {
+  if (!item || typeof item !== "object") return 0;
+  const photoKeys = ["photo", "photos", "http://schema.org/photo", "https://schema.org/photo"];
+  for (const key of photoKeys) {
+    const val = item[key];
+    if (Array.isArray(val)) return val.length;
+    if (val && typeof val === "object") return 1;
+  }
+  for (const key of Object.keys(item)) {
+    if (key.toLowerCase().indexOf("photo") !== -1 && Array.isArray(item[key])) {
+      return item[key].length;
+    }
+  }
+  return 0;
+}
+
+function quickCountTropyExport(json) {
+  let itemCount = 0;
+  let photoCount = 0;
+  if (json && Array.isArray(json["@graph"])) {
+    itemCount = json["@graph"].length;
+    for (const item of json["@graph"]) {
+      photoCount += countPhotosInTropyItem(item);
+    }
+  } else if (Array.isArray(json)) {
+    itemCount = json.length;
+    for (const item of json) {
+      photoCount += countPhotosInTropyItem(item);
+    }
+  }
+  return { itemCount, photoCount };
+}
+
+async function handleTropyDroppedFile(file) {
+  if (!isTropyFile(file)) {
+    showDropzoneState("error", "Please drop a .json or .jsonld Tropy export file.");
+    return;
+  }
+
+  resetImportState();
+  tropyEls["tropy-import-path"].value = file.name;
+  showDropzoneState("parsing");
+
+  let content;
+  let parsed;
+  try {
+    content = await readFileAsText(file);
+    parsed = JSON.parse(content);
+  } catch (err) {
+    showDropzoneState("error", "Could not parse the file as JSON: " + err.message);
+    return;
+  }
+
+  const quick = quickCountTropyExport(parsed);
+  showDropzoneState("success", `Found ${quick.itemCount} item(s), ${quick.photoCount} photo(s)`);
+
+  // Send the full content to the backend for validation and item details
+  try {
+    const data = await api("POST", "/api/tropy/import/preview", { content });
+    tropyImportPreview = data;
+    tropyImportSource = { type: "content", value: content, name: file.name };
+    const photoCount = (data.items || []).reduce((sum, it) => sum + (it.photo_count || 0), 0);
+    showDropzoneState("success", `${data.items.length} item(s), ${photoCount} photo(s) ready`);
+    renderImportResults(data);
+  } catch (err) {
+    tropyImportPreview = null;
+    tropyImportSource = null;
+    showDropzoneState("error", escapeHtml(err.message));
+    tropyEls["tropy-import-summary-text"].textContent = "Error: " + escapeHtml(err.message);
+  }
+}
+
+// Re-load on manual path change (if user pastes into the status field)
 tropyEls["tropy-import-path"].addEventListener("change", () => {
-  loadImportPreview(tropyEls["tropy-import-path"].value);
+  loadImportPreview({ path: tropyEls["tropy-import-path"].value });
 });
 
 // Select all / none toggle
@@ -190,18 +347,27 @@ tropyEls["btn-tropy-add-queue"].onclick = async () => {
   const groups = Array.from(checks).map(cb => cb.dataset.group);
   if (!groups.length) return;
 
-  const path = tropyEls["tropy-import-path"].value;
+  if (!tropyImportSource) {
+    if (window.ArtificeToast) window.ArtificeToast.error("No Tropy export loaded");
+    return;
+  }
+
   const outputDir = document.getElementById("output-dir")
     ? document.getElementById("output-dir").value || "output"
     : "output";
+
+  const body = { groups, output_dir: outputDir };
+  if (tropyImportSource.type === "path") {
+    body.path = tropyImportSource.value;
+  } else {
+    body.content = tropyImportSource.value;
+  }
 
   tropyEls["btn-tropy-add-queue"].disabled = true;
   tropyEls["btn-tropy-add-queue"].textContent = "Adding…";
 
   try {
-    const data = await api("POST", "/api/tropy/import/add", {
-      path, groups, output_dir: outputDir,
-    });
+    const data = await api("POST", "/api/tropy/import/add", body);
 
     let msg = `Imported ${data.added} item(s) from Tropy`;
     if (data.missing && data.missing.length) {

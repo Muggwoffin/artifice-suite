@@ -9,6 +9,7 @@ temp directory, with or without backing images as needed.
 """
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -357,6 +358,11 @@ def test_rejects_too_many_nodes(tmp_path):
 
 
 def test_rejects_absolute_posix_path(tmp_path):
+    """``/etc/passwd`` is rejected by the POSIX blocked-root list.
+
+    The specific rejection reason is a protected system directory (blocklist),
+    not the generic "absolute" message from the pre-pathcheck days.
+    """
     export = {
         "@graph": [
             {"@type": "Item", "title": "X",
@@ -364,11 +370,13 @@ def test_rejects_absolute_posix_path(tmp_path):
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
-    with pytest.raises(TropyImportError, match="absolute"):
+    with pytest.raises(TropyImportError, match="protected"):
         load_export(f)
 
 
 def test_rejects_windows_drive_path(tmp_path):
+    """``C:/Windows/secret`` is rejected by the form-driven Windows blocked-root
+    list — runs on any host (POSIX or Windows)."""
     export = {
         "@graph": [
             {"@type": "Item", "title": "X",
@@ -376,7 +384,7 @@ def test_rejects_windows_drive_path(tmp_path):
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
-    with pytest.raises(TropyImportError, match="absolute"):
+    with pytest.raises(TropyImportError, match="protected"):
         load_export(f)
 
 
@@ -425,6 +433,11 @@ def test_rejects_symlink_escape(tmp_path):
 
 
 def test_error_message_never_contains_resolved_path(tmp_path):
+    """Error messages must never leak a resolved absolute filesystem path.
+
+    Covers both relative-escape and absolute-blocklisted cases.
+    """
+    # Relative escape — the original case
     export = {
         "@graph": [
             {"@type": "Item", "title": "X",
@@ -440,6 +453,486 @@ def test_error_message_never_contains_resolved_path(tmp_path):
         assert str(Path.home()) not in msg
     else:
         pytest.fail("Expected TropyImportError")
+
+    # Absolute blocklisted — must also not leak the resolved path
+    export2 = {
+        "@graph": [
+            {"@type": "Item", "title": "Y",
+             "photo": [{"@type": "Photo", "path": "/etc/shadow"}]},
+        ]
+    }
+    f2 = _make_export(tmp_path / "e2.json", export2)
+    try:
+        load_export(f2)
+    except TropyImportError as exc:
+        msg2 = str(exc)
+        assert str(tmp_path.resolve()) not in msg2
+        assert str(Path.home()) not in msg2
+    else:
+        pytest.fail("Expected TropyImportError for absolute blocklisted path")
+
+
+# --------------------------------------------------------------------------- #
+# parser: absolute photo path acceptance
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX absolute test")
+def test_accepts_posix_absolute_path(tmp_path):
+    """A POSIX absolute photo path under *tmp_path* imports successfully
+    with ``missing=False`` and correct ``resolved``."""
+    (tmp_path / "scan.tif").write_bytes(b"TIFF\x00\x00")
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [
+                    {"@type": "Photo", "path": str(tmp_path / "scan.tif"),
+                     "checksum": "abc", "mimetype": "image/tiff"},
+                ],
+            }
+        ]
+    }
+    f = _make_export(tmp_path / "e.json", export)
+    preview = load_export(f)
+    assert len(preview.items) == 1
+    photo = preview.items[0].photos[0]
+    assert not photo.missing
+    assert photo.resolved == (tmp_path / "scan.tif").resolve()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX absolute test")
+def test_accepts_absolute_missing_file(tmp_path):
+    """An absolute path passing all security checks but pointing to a
+    non-existent file yields ``missing=True`` — import succeeds, cross-machine
+    exports are the primary use case."""
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Missing Remote",
+                "photo": [
+                    {"@type": "Photo", "path": str(tmp_path / "nowhere.pdf"),
+                     "checksum": "x", "mimetype": "application/pdf"},
+                ],
+            }
+        ]
+    }
+    f = _make_export(tmp_path / "e.json", export)
+    preview = load_export(f)
+    assert len(preview.items) == 1
+    assert preview.items[0].photos[0].missing is True
+
+
+# --------------------------------------------------------------------------- #
+# parser: absolute blocked roots — parametrised
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    "blocked_root",
+    [
+        "/etc",
+        "/usr",
+        "/bin",
+        "/sbin",
+        "/lib",
+        "/lib64",
+        "/var",
+        "/sys",
+        "/proc",
+        "/dev",
+        "/boot",
+        "/root",
+        "/run",
+        "/private/etc",
+        "/private/var",
+    ],
+)
+def test_rejects_each_posix_blocked_root(tmp_path, blocked_root):
+    """Every member of ``POSIX_BLOCKED_ROOTS`` with a ``.tif`` suffix is
+    rejected."""
+    photo_path = f"{blocked_root}/secret.tif"
+    export = {
+        "@graph": [
+            {"@type": "Item", "title": "X",
+             "photo": [{"@type": "Photo", "path": photo_path}]},
+        ]
+    }
+    f = _make_export(tmp_path / "e.json", export)
+    with pytest.raises(TropyImportError, match="protected"):
+        load_export(f)
+
+
+@pytest.mark.parametrize(
+    "blocked_root",
+    [
+        "c:/windows",
+        "c:/program files",
+        "c:/program files (x86)",
+        "c:/programdata",
+        "c:/$recycle.bin",
+        "c:/system volume information",
+    ],
+)
+def test_rejects_each_windows_blocked_root(tmp_path, blocked_root):
+    """Every member of ``WINDOWS_BLOCKED_ROOTS`` with a ``.tif`` suffix is
+    rejected — runs on any host (form-driven)."""
+    photo_path = f"{blocked_root}/secret.tif"
+    export = {
+        "@graph": [
+            {"@type": "Item", "title": "X",
+             "photo": [{"@type": "Photo", "path": photo_path}]},
+        ]
+    }
+    f = _make_export(tmp_path / "e.json", export)
+    with pytest.raises(TropyImportError, match="protected"):
+        load_export(f)
+
+
+# --------------------------------------------------------------------------- #
+# parser: blocked home children
+# --------------------------------------------------------------------------- #
+
+
+def test_rejects_credential_store_in_home(tmp_path):
+    """Paths under ``~/.ssh/`` etc. are rejected via the home-children
+    check, using the injectable *home* parameter."""
+    from artifice_ocr._tropy_pathcheck import validate_absolute_photo
+
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+    (fake_home / ".ssh").mkdir()
+    credential = fake_home / ".ssh" / "id_rsa.png"
+    credential.write_bytes(b"x")
+
+    with pytest.raises(ValueError, match="protected directory"):
+        validate_absolute_photo(str(credential), home=fake_home)
+
+
+def test_rejects_blocked_home_children_parametrized(tmp_path):
+    """A sampling of ``BLOCKED_HOME_CHILDREN`` entries."""
+    from artifice_ocr._tropy_pathcheck import validate_absolute_photo
+
+    fake_home = tmp_path / "fakehome"
+    fake_home.mkdir()
+
+    for child in (".aws", ".azure", ".kube", "AppData"):
+        (fake_home / child).mkdir(exist_ok=True)
+        bad = fake_home / child / "secret.png"
+        bad.write_bytes(b"x")
+        with pytest.raises(ValueError, match="protected directory"):
+            validate_absolute_photo(str(bad), home=fake_home)
+
+
+# --------------------------------------------------------------------------- #
+# parser: unsupported extensions
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX absolute test")
+@pytest.mark.parametrize(
+    "suffix",
+    [".pem", ".txt", ""],
+)
+def test_rejects_unsupported_extension(tmp_path, suffix):
+    """Absolute photo paths with ``.pem``, ``.txt`` or no suffix are
+    rejected by the extension allowlist."""
+    filename = f"file{suffix}"
+    (tmp_path / filename).write_bytes(b"x")
+    export = {
+        "@graph": [
+            {"@type": "Item", "title": "X",
+             "photo": [{"@type": "Photo", "path": str(tmp_path / filename)}]},
+        ]
+    }
+    f = _make_export(tmp_path / "e.json", export)
+    with pytest.raises(TropyImportError, match="Unsupported file type"):
+        load_export(f)
+
+
+# --------------------------------------------------------------------------- #
+# parser: null byte / max chars
+# --------------------------------------------------------------------------- #
+
+
+def test_rejects_null_byte_in_path(tmp_path):
+    """A photo path containing ``\\x00`` is rejected immediately."""
+    export = {
+        "@graph": [
+            {"@type": "Item", "title": "X",
+             "photo": [{"@type": "Photo", "path": "/tmp/x\x00.png"}]},
+        ]
+    }
+    f = _make_export(tmp_path / "e.json", export)
+    with pytest.raises(TropyImportError, match="null byte"):
+        load_export(f)
+
+
+def test_rejects_overlong_path(tmp_path):
+    """A photo path exceeding ``MAX_PATH_CHARS`` is rejected immediately."""
+    from artifice_ocr._tropy_pathcheck import MAX_PATH_CHARS
+
+    long_path = "/tmp/" + "a" * (MAX_PATH_CHARS - 4) + ".tif"
+    export = {
+        "@graph": [
+            {"@type": "Item", "title": "X",
+             "photo": [{"@type": "Photo", "path": long_path}]},
+        ]
+    }
+    f = _make_export(tmp_path / "e.json", export)
+    with pytest.raises(TropyImportError, match="too long"):
+        load_export(f)
+
+
+# --------------------------------------------------------------------------- #
+# parser: symlink policy
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symlink test")
+def test_rejects_symlink_to_blocked_root(tmp_path):
+    """A symlink pointing to ``/etc/...`` is rejected by the re-validation
+    of the resolved target against the blocklist."""
+    # Create a file in a legit location, then symlink it to the blocked target
+    export_dir = tmp_path / "exports"
+    export_dir.mkdir()
+    legit = tmp_path / "legit" / "photo.tif"
+    legit.parent.mkdir(parents=True, exist_ok=True)
+    legit.write_bytes(b"TIFF\x00\x00")
+
+    # Create a symlink that points into /etc (blocked)
+    evil_link = tmp_path / "evil_link"
+    evil_link.symlink_to(Path("/etc/shadow"))
+
+    export = {
+        "@graph": [
+            {"@type": "Item", "title": "X",
+             "photo": [{"@type": "Photo", "path": str(evil_link)}]},
+        ]
+    }
+    f = _make_export(export_dir / "e.json", export)
+    with pytest.raises(TropyImportError, match="protected"):
+        load_export(f)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symlink test")
+def test_accepts_symlink_to_legit_file_with_warning(tmp_path):
+    """A symlink pointing to a legitimate file under *tmp_path* is accepted
+    WITH a followed-symlink warning in ``preview.warnings``."""
+    export_dir = tmp_path / "exports"
+    export_dir.mkdir()
+    real = tmp_path / "real" / "image.tif"
+    real.parent.mkdir(parents=True, exist_ok=True)
+    real.write_bytes(b"TIFF\x00\x00")
+
+    link = tmp_path / "link"
+    link.symlink_to(real)
+
+    export = {
+        "@graph": [
+            {"@type": "Item", "title": "Symlink Test",
+             "photo": [{"@type": "Photo", "path": str(link),
+                        "checksum": "abc", "mimetype": "image/tiff"}]},
+        ]
+    }
+    f = _make_export(export_dir / "e.json", export)
+    preview = load_export(f)
+    assert len(preview.items) == 1
+    photo = preview.items[0].photos[0]
+    assert not photo.missing
+    assert photo.resolved == real.resolve()
+    assert any("symbolic link" in w for w in preview.warnings), (
+        f"Expected symlink warning in: {preview.warnings}"
+    )
+
+
+# --------------------------------------------------------------------------- #
+# closed-vocabulary tests
+# --------------------------------------------------------------------------- #
+
+
+def test_pathcheck_frozensets_closed():
+    """Assert exact membership of all four frozensets in ``_tropy_pathcheck``.
+    Mirrors the ``PERMITTED_BADGES`` discipline."""
+    from artifice_ocr._tropy_pathcheck import (
+        BLOCKED_HOME_CHILDREN,
+        MEDIA_SUFFIXES,
+        POSIX_BLOCKED_ROOTS,
+        WINDOWS_BLOCKED_ROOTS,
+    )
+
+    assert MEDIA_SUFFIXES == frozenset(
+        {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
+    )
+
+    assert POSIX_BLOCKED_ROOTS == frozenset(
+        {
+            "/etc", "/usr", "/bin", "/sbin", "/lib", "/lib64",
+            "/var", "/sys", "/proc", "/dev", "/boot", "/root", "/run",
+            "/private/etc", "/private/var",
+        }
+    )
+
+    assert WINDOWS_BLOCKED_ROOTS == frozenset(
+        {
+            "c:/windows",
+            "c:/program files",
+            "c:/program files (x86)",
+            "c:/programdata",
+            "c:/$recycle.bin",
+            "c:/system volume information",
+        }
+    )
+
+    assert BLOCKED_HOME_CHILDREN == frozenset(
+        {".ssh", ".gnupg", ".aws", ".azure", ".kube", ".docker", "AppData"}
+    )
+
+
+# --------------------------------------------------------------------------- #
+# parser: content-based import (drag-and-drop)
+# --------------------------------------------------------------------------- #
+
+
+def test_content_import_round_trips_same_as_path_import(tmp_path):
+    """Preview via ``content`` yields the same items/warnings as the same
+    payload imported via ``path`` — when using absolute photo paths so both
+    imports can resolve them."""
+    from artifice_ocr.tropy_jsonld import load_export_content
+
+    photo = tmp_path / "a.png"
+    photo.write_bytes(b"x")
+
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [
+                    {"@type": "Photo", "path": str(photo),
+                     "checksum": "abc", "mimetype": "image/png"},
+                ],
+            }
+        ]
+    }
+    f = tmp_path / "e.json"
+    _make_export(f, export)
+
+    # via path
+    preview_path = load_export(f)
+
+    # via content
+    text = f.read_text(encoding="utf-8")
+    preview_content = load_export_content(text, filename="e.json")
+
+    assert preview_path.export_name == preview_content.export_name
+    assert len(preview_path.items) == len(preview_content.items)
+    for pi, ci in zip(preview_path.items, preview_content.items):
+        assert pi.title == ci.title
+        assert len(pi.photos) == len(ci.photos)
+        for pp, cp in zip(pi.photos, ci.photos):
+            assert pp.path_rel == cp.path_rel
+            assert pp.mimetype == cp.mimetype
+            assert pp.checksum == cp.checksum
+            assert pp.resolved == cp.resolved
+            assert pp.missing == cp.missing
+
+
+def test_content_import_skips_relative_photos(tmp_path):
+    """When ``export_dir=None`` (content import), relative photo paths are
+    skipped with a warning."""
+    from artifice_ocr.tropy_jsonld import load_export_content
+
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Test Item",
+                "photo": [
+                    {"@type": "Photo", "path": "relative_photo.jpg",
+                     "checksum": "abc", "mimetype": "image/jpeg"},
+                ],
+            }
+        ]
+    }
+    text = json.dumps(export)
+    preview = load_export_content(text, filename="export.json")
+
+    assert len(preview.items) == 0
+    assert any(
+        "relative path" in w and "save the export to disk" in w
+        for w in preview.warnings
+    ), f"Expected relative-path warning in: {preview.warnings}"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX absolute test")
+def test_content_import_accepts_absolute_photos(tmp_path):
+    """Content import accepts absolute photo paths — validated by pathcheck."""
+    from artifice_ocr.tropy_jsonld import load_export_content
+
+    photo = tmp_path / "scan.tif"
+    photo.write_bytes(b"TIFF\x00\x00")
+
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Abs Photo",
+                "photo": [
+                    {"@type": "Photo", "path": str(photo),
+                     "checksum": "abc", "mimetype": "image/tiff"},
+                ],
+            }
+        ]
+    }
+    text = json.dumps(export)
+    preview = load_export_content(text, filename="dropped-export.jsonld")
+
+    assert len(preview.items) == 1
+    assert not preview.items[0].photos[0].missing
+    assert preview.items[0].photos[0].resolved == photo.resolve()
+
+
+# --------------------------------------------------------------------------- #
+# parser: group-id determinism
+# --------------------------------------------------------------------------- #
+
+
+def test_group_ids_are_stable_across_reparses(tmp_path):
+    """Group IDs based on SHA-256 are stable across re-parses — the same
+    export file yields the same group IDs every time."""
+    f = _simple_export(tmp_path)
+    p1 = load_export(f)
+    p2 = load_export(f)
+    assert p1.items[0].group == p2.items[0].group
+
+
+# --------------------------------------------------------------------------- #
+# parser: rollback feature flag
+# --------------------------------------------------------------------------- #
+
+
+def test_relative_only_flag_rejects_absolute(monkeypatch, tmp_path):
+    """When ``ARTIFICE_OCR_TROPY_RELATIVE_ONLY=1``, absolute photo paths
+    hit the old raise-on-absolute branch."""
+    import artifice_ocr.tropy_jsonld as tjl
+
+    # Patch the module-level constant directly — importlib.reload would
+    # create a new TropyImportError class, breaking except clauses in
+    # other modules that already imported from tropy_jsonld.
+    monkeypatch.setattr(tjl, "_RELATIVE_ONLY", True)
+
+    export = {
+        "@graph": [
+            {"@type": "Item", "title": "X",
+             "photo": [{"@type": "Photo", "path": "/tmp/x.tif"}]},
+        ]
+    }
+    f = _make_export(tmp_path / "e.json", export)
+    with pytest.raises(TropyImportError, match="absolute"):
+        tjl.load_export(f)
 
 
 # --------------------------------------------------------------------------- #

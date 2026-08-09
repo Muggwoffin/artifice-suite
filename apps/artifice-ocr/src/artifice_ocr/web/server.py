@@ -717,6 +717,13 @@ def main() -> None:
         with contextlib.suppress(KeyboardInterrupt):
             server_thread.join()
         return
+    except Exception as exc:
+        print(f"Native window failed: {exc}", flush=True)
+        print(f"Falling back — ArtificeOCR running at {url}", flush=True)
+        webbrowser.open(url)
+        with contextlib.suppress(KeyboardInterrupt):
+            server_thread.join()
+        return
 
     # ── Non-frozen (dev / `uv run artifice-ocr-web`) ─────────────────────
     print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)

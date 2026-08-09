@@ -8,7 +8,9 @@ Consolidated here so every router file can import them without circular
 references or duplicating model definitions across modules.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
+
+from ..tropy_jsonld import MAX_FILE_BYTES
 
 
 class AddPathsRequest(BaseModel):
@@ -34,11 +36,31 @@ class RawTextRequest(BaseModel):
 
 
 class TropyImportRequest(BaseModel):
-    path: str
+    path: str | None = None
+    content: str | None = Field(default=None, max_length=MAX_FILE_BYTES)
+    filename: str | None = None  # display name; only meaningful with content
+
+    @model_validator(mode="after")
+    def _check_exactly_one_source(self) -> "TropyImportRequest":
+        has_path = self.path is not None
+        has_content = self.content is not None
+
+        if has_path and has_content:
+            raise ValueError(
+                "Provide either 'path' or 'content', not both"
+            )
+        if not has_path and not has_content:
+            raise ValueError(
+                "Provide either 'path' or 'content'"
+            )
+        if self.filename is not None and not has_content:
+            raise ValueError(
+                "'filename' is only valid with 'content'"
+            )
+        return self
 
 
-class TropyImportAddRequest(BaseModel):
-    path: str
+class TropyImportAddRequest(TropyImportRequest):
     groups: list[str] | None = None
     output_dir: str = "output"
 

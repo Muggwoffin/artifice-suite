@@ -399,17 +399,33 @@
 
       <div class="tropy-help">
         <p>Import items from a Tropy JSON-LD export file. In Tropy, choose <strong>File &rarr; Export &rarr; JSON-LD</strong> to create this file.</p>
-        <p class="dim">Image paths inside the export are resolved relative to where the JSON-LD file is saved.</p>
+        <p class="dim">Tropy exports absolute paths to your original photos. Those paths are preserved when the images are queued for OCR.</p>
       </div>
 
-      <div class="tropy-file-row">
-        <input type="text" id="tropy-import-path" class="input" placeholder="Path to Tropy JSON-LD export file" readonly>
-        <button class="btn" id="btn-tropy-browse-file" type="button">Browse&hellip;</button>
+      <div class="tropy-dropzone" id="tropy-dropzone" tabindex="0" role="button" aria-label="Drop a Tropy JSON-LD file here, or press Enter to browse">
+        <div class="tropy-dropzone-state" id="tropy-dropzone-idle">
+          <svg class="tropy-dropzone-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="tropy-dropzone-title">Drop a Tropy JSON-LD file here</span>
+          <span class="tropy-dropzone-hint">or press Enter to browse</span>
+        </div>
+        <div class="tropy-dropzone-state hidden" id="tropy-dropzone-parsing">
+          <span class="tropy-spinner" aria-hidden="true"></span>
+          <span class="tropy-dropzone-title">Parsing JSON-LD&hellip;</span>
+        </div>
+        <div class="tropy-dropzone-state tropy-dropzone-state--success hidden" id="tropy-dropzone-success">
+          <svg class="tropy-dropzone-icon tropy-dropzone-check" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          <span class="tropy-dropzone-title" id="tropy-dropzone-success-text">Ready to import</span>
+        </div>
+        <div class="tropy-dropzone-state tropy-dropzone-state--error hidden" id="tropy-dropzone-error">
+          <svg class="tropy-dropzone-icon tropy-dropzone-error-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span class="tropy-dropzone-title" id="tropy-dropzone-error-text"></span>
+        </div>
+        <div class="tropy-dropzone-live" id="tropy-dropzone-live" aria-live="polite" aria-atomic="true"></div>
       </div>
 
-      <div class="tropy-dropzone-loading hidden" id="tropy-import-loading">
-        <span class="tropy-spinner" aria-hidden="true"></span>
-        <span id="tropy-import-loading-text">Parsing JSON-LD&hellip;</span>
+      <div class="tropy-dropzone-actions">
+        <input type="text" id="tropy-import-path" class="input" placeholder="No file selected" readonly aria-label="Selected file">
+        <button class="btn btn-small" id="btn-tropy-browse-file" type="button">Browse&hellip;</button>
       </div>
 
       <div class="tropy-results hidden" id="tropy-import-results" aria-live="polite">
