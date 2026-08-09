@@ -205,9 +205,7 @@ def test_events_stream_has_correct_headers(events_server):
 def test_events_no_runner_yields_waiting_message(events_server):
     """With no run in progress the stream yields the `: waiting ...` comment."""
     base, _ = events_server
-    with httpx.Client() as client, client.stream(
-        "GET", f"{base}/api/events", timeout=5
-    ) as resp:
+    with httpx.Client() as client, client.stream("GET", f"{base}/api/events", timeout=5) as resp:
         chunk = next(resp.iter_bytes())
     assert b": waiting for a run to start" in chunk
 
@@ -224,10 +222,8 @@ def test_events_puts_data_frames_on_the_wire(events_server):
 
     state.runner = fake
 
-    with httpx.Client() as client, client.stream(
-        "GET", f"{base}/api/events", timeout=5
-    ) as resp:
-            chunk = next(resp.iter_bytes())
+    with httpx.Client() as client, client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+        chunk = next(resp.iter_bytes())
     assert b"data:" in chunk
     data_line = [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0]
     payload = json.loads(data_line[len("data: ") :])
@@ -247,10 +243,8 @@ def test_events_heartbeat_when_queue_is_empty(events_server):
 
     state.runner = JobRunner([], ".", stages={"ocr"})
 
-    with httpx.Client() as client, client.stream(
-        "GET", f"{base}/api/events", timeout=5
-    ) as resp:
-            chunk = next(resp.iter_bytes())
+    with httpx.Client() as client, client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+        chunk = next(resp.iter_bytes())
     assert b": heartbeat" in chunk
 
 
@@ -277,10 +271,8 @@ def test_events_item_finished_triggers_record_finished_items(events_server):
 
     state.runner = JobRunner([], ".", stages={"ocr"}, events=eq)
 
-    with httpx.Client() as client, client.stream(
-        "GET", f"{base}/api/events", timeout=5
-    ) as resp:
-            chunk = next(resp.iter_bytes())
+    with httpx.Client() as client, client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+        chunk = next(resp.iter_bytes())
 
     assert b"data:" in chunk
     data_line = [ln for ln in chunk.decode().split("\n") if ln.startswith("data:")][0]
@@ -315,10 +307,8 @@ def test_events_run_finished_triggers_finish_run(events_server):
 
     state.runner = JobRunner([], ".", stages={"ocr"}, events=eq)
 
-    with httpx.Client() as client, client.stream(
-        "GET", f"{base}/api/events", timeout=5
-    ) as resp:
-            chunk = next(resp.iter_bytes())
+    with httpx.Client() as client, client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+        chunk = next(resp.iter_bytes())
 
     assert b"data:" in chunk
     payload = json.loads(
@@ -351,20 +341,16 @@ def test_events_client_disconnect_does_not_leave_state_broken(events_server):
 
     state.runner = JobRunner([], ".", stages={"ocr"})
 
-    with httpx.Client() as client, client.stream(
-        "GET", f"{base}/api/events", timeout=5
-    ) as resp:
-            # Consume one frame and then exit the context — the stream closes.
-            _ = next(resp.iter_bytes())
+    with httpx.Client() as client, client.stream("GET", f"{base}/api/events", timeout=5) as resp:
+        # Consume one frame and then exit the context — the stream closes.
+        _ = next(resp.iter_bytes())
 
     # State must still be cleanly usable: no exception on access.
     assert state.runner is not None
     assert state.items == []
     # Heartbeat path works again — the state is intact.
-    with httpx.Client() as client2, client2.stream(
-        "GET", f"{base}/api/events", timeout=5
-    ) as resp:
-            chunk = next(resp.iter_bytes())
+    with httpx.Client() as client2, client2.stream("GET", f"{base}/api/events", timeout=5) as resp:
+        chunk = next(resp.iter_bytes())
     assert b": heartbeat" in chunk
 
 
@@ -681,8 +667,12 @@ def test_tropy_import_preview_reports_missing_photos(client, tmp_path):
                 "@type": "Item",
                 "title": "Test Item",
                 "photo": [
-                    {"@type": "Photo", "path": "missing.jpg",
-                     "checksum": "abc", "mimetype": "image/jpeg"}
+                    {
+                        "@type": "Photo",
+                        "path": "missing.jpg",
+                        "checksum": "abc",
+                        "mimetype": "image/jpeg",
+                    }
                 ],
             }
         ]
@@ -706,8 +696,7 @@ def test_tropy_import_preview_rejects_absolute_paths(client, tmp_path):
                 "@type": "Item",
                 "title": "Test Item",
                 "photo": [
-                    {"@type": "Photo", "path": "/etc/passwd",
-                     "checksum": "x", "mimetype": "text"},
+                    {"@type": "Photo", "path": "/etc/passwd", "checksum": "x", "mimetype": "text"},
                 ],
             }
         ]
@@ -726,8 +715,7 @@ def test_tropy_import_preview_rejects_dotdot_segments(client, tmp_path):
                 "@type": "Item",
                 "title": "Test Item",
                 "photo": [
-                    {"@type": "Photo", "path": "../secret",
-                     "checksum": "x", "mimetype": "text"},
+                    {"@type": "Photo", "path": "../secret", "checksum": "x", "mimetype": "text"},
                 ],
             }
         ]
@@ -745,8 +733,7 @@ def test_tropy_import_preview_error_message_does_not_leak_paths(client, tmp_path
                 "@type": "Item",
                 "title": "Test Item",
                 "photo": [
-                    {"@type": "Photo", "path": "../secret",
-                     "checksum": "x", "mimetype": "text"},
+                    {"@type": "Photo", "path": "../secret", "checksum": "x", "mimetype": "text"},
                 ],
             }
         ]
@@ -795,8 +782,13 @@ def test_tropy_import_add_reports_missing(client, tmp_path):
                 "@type": "Item",
                 "title": "Missing Photos",
                 "photo": [
-                    {"@type": "Photo", "path": "gone.pdf",
-                     "checksum": "x", "mimetype": "application/pdf", "page": 0}
+                    {
+                        "@type": "Photo",
+                        "path": "gone.pdf",
+                        "checksum": "x",
+                        "mimetype": "application/pdf",
+                        "page": 0,
+                    }
                 ],
             }
         ]
@@ -824,8 +816,7 @@ def test_tropy_import_preview_via_content(client, tmp_path):
                 "@type": "Item",
                 "title": "Content Item",
                 "photo": [
-                    {"@type": "Photo", "path": "a.png",
-                     "checksum": "abc", "mimetype": "image/png"},
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
                 ],
             }
         ]
@@ -845,13 +836,13 @@ def test_tropy_import_preview_via_content(client, tmp_path):
     assert body["export_name"] == "export.json"
 
 
-def test_tropy_import_add_via_content_with_groups(client, tmp_path):
+def test_tropy_import_add_via_content_with_groups(client, safe_tmp_path):
     """``import/add`` via ``content`` adds items and respects ``groups``
     filtering — uses absolute paths in the export so content import can
     resolve photos."""
-    photo_a = tmp_path / "a.png"
+    photo_a = safe_tmp_path / "a.png"
     photo_a.write_bytes(b"x")
-    photo_b = tmp_path / "b.png"
+    photo_b = safe_tmp_path / "b.png"
     photo_b.write_bytes(b"x")
 
     export = {
@@ -860,21 +851,29 @@ def test_tropy_import_add_via_content_with_groups(client, tmp_path):
                 "@type": "Item",
                 "title": "Group A Item",
                 "photo": [
-                    {"@type": "Photo", "path": str(photo_a),
-                     "checksum": "abc", "mimetype": "image/png"},
+                    {
+                        "@type": "Photo",
+                        "path": str(photo_a),
+                        "checksum": "abc",
+                        "mimetype": "image/png",
+                    },
                 ],
             },
             {
                 "@type": "Item",
                 "title": "Group B Item",
                 "photo": [
-                    {"@type": "Photo", "path": str(photo_b),
-                     "checksum": "xyz", "mimetype": "image/png"},
+                    {
+                        "@type": "Photo",
+                        "path": str(photo_b),
+                        "checksum": "xyz",
+                        "mimetype": "image/png",
+                    },
                 ],
             },
         ]
     }
-    f = tmp_path / "export.json"
+    f = safe_tmp_path / "export.json"
     f.write_text(json.dumps(export), encoding="utf-8")
 
     # First, import via path to get group IDs (path import resolves everything)
@@ -893,7 +892,7 @@ def test_tropy_import_add_via_content_with_groups(client, tmp_path):
             "content": text,
             "filename": "export.json",
             "groups": groups[1:],
-            "output_dir": str(tmp_path / "out"),
+            "output_dir": str(safe_tmp_path / "out"),
         },
     )
     assert res.status_code == 200
@@ -1887,8 +1886,6 @@ def test_history_detail_includes_tropy_exportable(client):
         assert "tropy_exportable" in data
         assert "tropy_group" in data
         assert "tropy_photo_path" in data
-
-
 
 
 # --------------------------------------------------------------------------- #
