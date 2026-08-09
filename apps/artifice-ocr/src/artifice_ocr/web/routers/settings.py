@@ -43,6 +43,7 @@ _CONFIG_KEYS = (
     "output_dir", "cleanup_model", "translate_model",
     "ocr_model", "document_type", "max_ocr_workers", "chunk_max_tokens",
     "resume", "confidence_enabled", "ollama_think",
+    "tropy_last_path", "tropy_last_export_path",
 )
 
 # Keys whose values must not be returned verbatim in API responses.

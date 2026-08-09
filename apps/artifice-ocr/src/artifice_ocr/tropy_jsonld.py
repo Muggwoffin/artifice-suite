@@ -42,6 +42,8 @@ log = get_logger("tropy_jsonld")
 # --------------------------------------------------------------------------- #
 
 MAX_FILE_BYTES = 64 * 1024 * 1024  # 64 MB
+
+MANIFEST_SCHEMA_VERSION = "1.0"
 MAX_DEPTH = 32
 MAX_NODES = 50_000
 ALLOWED_SUFFIXES = frozenset({".json", ".jsonld"})
@@ -742,7 +744,43 @@ def write_manifest(
     *,
     filename: str = "tropy_manifest.json",
 ) -> Path | None:
-    """Write a manifest mapping output stems back to their source photos.
+    """Write a versioned manifest mapping output stems back to their source photos.
+
+    This is the documented contract between artifice-ocr and downstream
+    consumers (artifice-graph, artificial analysis tools, hand-curated
+    archival pipelines).  The manifest is a JSON file at
+    ``<output_dir>/tropy_manifest.json`` with the following shape::
+
+        {
+            "schema_version": "1.0",
+            "export": { "name": "<filename>", "imported": "<ISO-8601>" },
+            "output_layout": "<stage>/text/<item title>/<file>_p<page>.txt",
+            "pages": {
+                "<output_stem>": {
+                    "photo_id": null,
+                    "page": <int|null>,
+                    "page_number": <int>,
+                    "source_path": "<absolute path>",
+                    "mimetype": "<string>",
+                    "orientation": 1,
+                    "filename": "<basename>",
+                    "item_title": "<Tropy item title>",
+                    "checksum": "<hex>",
+                    "photo_path_rel": "<path relative to export>",
+                    "tropy_group": "<hash:idx identifier>"
+                },
+                ...
+            }
+        }
+
+    - ``schema_version`` — "1.0" (current).  Consumers MUST refuse to
+      process a manifest whose version they do not recognise.
+    - ``export`` — the source export file name and UTC import timestamp.
+    - ``output_layout`` — a human-readable description of the directory
+      structure the output stem maps into.
+    - ``pages`` — dict keyed by output stem (as produced by
+      :func:`page_stem`).  Each value carries the provenance fields
+      needed to trace an OCR result back to its Tropy photo.
 
     Written into *output_dir*. Swallows failure silently — the manifest is
     a convenience, never a blocker for a running pipeline.
@@ -788,6 +826,7 @@ def write_manifest(
 
     export_stamp = datetime.now(UTC).isoformat(timespec="seconds")
     payload = {
+        "schema_version": MANIFEST_SCHEMA_VERSION,
         "export": {
             "name": preview.export_name,
             "imported": export_stamp,

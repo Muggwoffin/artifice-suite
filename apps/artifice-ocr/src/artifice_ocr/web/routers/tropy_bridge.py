@@ -25,6 +25,7 @@ from ..models import (
     TropyExportRequest,
     TropyImportAddRequest,
     TropyImportRequest,
+    TropyImportToTropyRequest,
 )
 from ..runtime import state
 
@@ -188,7 +189,7 @@ def tropy_export(req: TropyExportRequest):
         out = Path(req.path)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")
-        return {"path": str(out), "filename": out.name}
+        return {"path": str(out), "filename": out.name, "jsonld": content}
 
     return Response(
         content=content,
@@ -271,7 +272,7 @@ def tropy_export_history(req: TropyExportHistoryRequest):
         out = Path(req.path)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")
-        return {"path": str(out), "filename": out.name}
+        return {"path": str(out), "filename": out.name, "jsonld": content}
 
     return Response(
         content=content,
@@ -280,3 +281,43 @@ def tropy_export_history(req: TropyExportHistoryRequest):
             "Content-Disposition": 'attachment; filename="artifice-ocr-tropy.jsonld"',
         },
     )
+
+
+# --------------------------------------------------------------------------- #
+# proxy: import into Tropy via local HTTP API
+# --------------------------------------------------------------------------- #
+
+
+@router.post("/api/tropy/import-to-tropy")
+def import_to_tropy(req: TropyImportToTropyRequest) -> dict:
+    """Proxy a JSON-LD import to Tropy's local HTTP API (port 2029).
+
+    Tropy ships a built-in HTTP server enabled via Preferences → API
+    toggle or `--port` flag. When it is running, this route POSTs the
+    JSON-LD content to ``http://127.0.0.1:2029/project/import`` (with
+    ``Content-Type: application/x-www-form-urlencoded`` and body
+    ``data=<jsonld>``).
+
+    Returns ``{ ok: True }`` on success, ``{ ok: False, reason: "..." }``
+    on failure. Never exposes the Tropy API URL to the browser — the
+    import is proxied server-side to avoid CORS.
+    """
+    import httpx
+
+    try:
+        response = httpx.post(
+            "http://127.0.0.1:2029/project/import",
+            data={"data": req.jsonld},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=5.0,
+        )
+        if response.status_code == 200:
+            return {"ok": True}
+        return {"ok": False, "reason": f"Tropy returned {response.status_code}"}
+    except httpx.ConnectError:
+        return {
+            "ok": False,
+            "reason": "Tropy API not available — enable API in Tropy Preferences",
+        }
+    except Exception:
+        return {"ok": False, "reason": "Import failed"}

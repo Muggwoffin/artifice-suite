@@ -50,7 +50,7 @@ def ludwiglang_export(req: LudwigLangExportRequest) -> dict:
     if not cleaned_root.exists():
         raise HTTPException(
             status_code=404,
-            detail=f"Collection '{req.collection}' not found at {cleaned_root}",
+            detail=f"Collection '{req.collection}' not found",
         )
 
     manifest = _read_manifest(Path(safe_output_dir))

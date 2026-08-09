@@ -45,6 +45,7 @@ from .routers import queue as queue_router
 from .routers import run as run_router
 from .routers import settings as settings_router
 from .routers import tropy_bridge as tropy_router
+from .routers import tropy_browse as tropy_browse_router
 
 app = FastAPI(title="ArtificeOCR")
 
@@ -78,6 +79,7 @@ app.include_router(settings_router.router)
 app.include_router(history_router.router)
 app.include_router(analytics_router.router)
 app.include_router(tropy_router.router)
+app.include_router(tropy_browse_router.router)
 app.include_router(pdf_export_router.router)
 app.include_router(ludwiglang_router.router)
 
@@ -263,6 +265,42 @@ async def save_file(request: Request) -> dict[str, str | None]:
         return {"path": path if path else None}
     except Exception:
         return {"path": None}
+
+
+@app.post("/api/native/reveal")
+async def reveal_file(request: Request) -> dict:
+    """Reveal a file in the OS file manager.
+
+    Uses platform-specific commands:
+    - macOS: ``open -R <path>``
+    - Windows: ``explorer /select,<path>``
+    - Linux: ``xdg-open <parent_dir>``
+    """
+    import platform
+    import subprocess
+
+    data = await request.json()
+    path = data.get("path", "")
+    if not path:
+        return {"ok": False, "error": "No path provided"}
+    try:
+        from .validation import validate_directory
+
+        resolved = validate_directory(path, "path")
+    except HTTPException:
+        return {"ok": False, "error": "Path not permitted"}
+    try:
+        p = Path(resolved)
+        system = platform.system()
+        if system == "Darwin":
+            subprocess.Popen(["open", "-R", "--", str(p)])
+        elif system == "Windows":
+            subprocess.Popen(["explorer", f"/select,{p}"])
+        else:
+            subprocess.Popen(["xdg-open", str(p.parent)])
+        return {"ok": True}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
 
 
 # ── BYOM dev-only preview (phase6) ──────────────────────────────────────────
@@ -595,6 +633,28 @@ _port_available = port_available
 _wait_for_server = wait_for_server
 _ensure_std_streams = ensure_std_streams
 
+# ── Loopback-only guard ──────────────────────────────────────────────
+# Security item 5.2b: Tropy routes would be reachable without auth in a
+# deployed instance if the server bound to a non-loopback address.
+
+_LOOPBACK_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "localhost", "::1", "[::1]"})
+
+
+def _assert_loopback_host() -> None:
+    """Refuse to start if the server binds to a non-loopback address.
+    This is a defense-in-depth guard — start_server_thread() hardcodes
+    127.0.0.1 today, but if a future change adds a configurable host
+    this check catches it before the server listens.
+    """
+    host = "127.0.0.1"  # current value in shared_ui.server_bootstrap.start_server_thread
+    if host not in _LOOPBACK_HOSTS:
+        print(
+            f"artifice-ocr binds to loopback only for security; "
+            f"refusing to start on {host}. Set host to 127.0.0.1.",
+            flush=True,
+        )
+        raise SystemExit(1)
+
 
 def _start_server_thread(port: int):
     return start_server_thread(app, port)
@@ -606,6 +666,7 @@ def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> N
 
 def main() -> None:
     _ensure_std_streams()
+    _assert_loopback_host()
 
     import argparse
 

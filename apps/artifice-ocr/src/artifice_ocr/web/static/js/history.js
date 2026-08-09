@@ -71,6 +71,7 @@ const HistoryTab = (function () {
     itemsById.clear();
     currentItemIds = [];
     clearCompare(compareContainer);
+    clearProvenanceChips();
     if (window.HistoryImage) window.HistoryImage.clear();
     if (thumbStrip) thumbStrip.innerHTML = "";
   }
@@ -100,6 +101,7 @@ const HistoryTab = (function () {
       tr.addEventListener("click", () => selectItem(tr));
     });
     clearCompare(compareContainer);
+    clearProvenanceChips();
     if (window.HistoryImage) window.HistoryImage.clear();
     if (thumbStrip) thumbStrip.innerHTML = "";
   }
@@ -230,6 +232,48 @@ const HistoryTab = (function () {
     });
   }
 
+  // ---- provenance chips ----
+
+
+  function renderProvenanceChips(data) {
+    const existing = compareContainer.querySelector(".compare-provenance");
+    if (existing) existing.remove();
+
+    const chips = [];
+    if (data.tropy_item_title && data.tropy_item_title.trim()) {
+      chips.push(`Tropy: ${escapeHtml(data.tropy_item_title)}`);
+    }
+    if (data.tropy_group && data.tropy_group.trim()) {
+      chips.push(`Group: ${escapeHtml(data.tropy_group)}`);
+    }
+    if (data.tropy_photo_path && data.tropy_photo_path.trim()) {
+      chips.push(`Photo: ${escapeHtml(data.tropy_photo_path)}`);
+    }
+    if (chips.length === 0) return;
+
+    const row = document.createElement("div");
+    row.className = "compare-provenance dim";
+    row.style.cssText = "display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.2rem var(--space-5) 0;margin-top:-0.3rem;";
+    chips.forEach((text) => {
+      const chip = document.createElement("span");
+      chip.className = "tropy-result-meta";
+      chip.style.cssText =
+        "display:inline-block;background:var(--rule);border-radius:3px;padding:0.15rem 0.45rem;" +
+        "font-size:var(--text-xs);color:var(--ink-faint);";
+      chip.textContent = text;
+      row.appendChild(chip);
+    });
+    const bar = compareContainer.querySelector(".compare-bar");
+    if (bar) bar.after(row);
+  }
+
+
+  function clearProvenanceChips() {
+    const existing = compareContainer.querySelector(".compare-provenance");
+    if (existing) existing.remove();
+  }
+
+
   // ---- item selection ----
 
   async function selectItem(tr) {
@@ -248,6 +292,7 @@ const HistoryTab = (function () {
     }, { editableStages: new Set(["raw", "cleaned", "translated"]) });
     wireAllPanes();
     wireOriginalToggles(compareContainer);
+    renderProvenanceChips(data);
 
     if (window.HistoryImage) window.HistoryImage.load(`/api/history/items/${currentItemId}/image`);
     renderThumbnails(currentItemId);
@@ -279,6 +324,7 @@ const HistoryTab = (function () {
       if (window.HistoryImage) window.HistoryImage.fitToPane();
     } else if (e.key === "Escape") {
       clearCompare(compareContainer);
+      clearProvenanceChips();
       if (window.HistoryImage) window.HistoryImage.clear();
       if (thumbStrip) thumbStrip.innerHTML = "";
       selectedItemRow?.classList.remove("selected");

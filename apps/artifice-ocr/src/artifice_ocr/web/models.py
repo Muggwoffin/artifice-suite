@@ -106,6 +106,16 @@ class BatchReplaceRequest(BaseModel):
     item_ids: list[str] | None = None
 
 
+class TropyBrowseRequest(BaseModel):
+    path: str
+
+
+class TropyEnqueueRequest(BaseModel):
+    path: str
+    item_ids: list[int]
+    output_dir: str = "output"
+
+
 class LudwigLangExportRequest(BaseModel):
     collection: str
     output_dir: str = "output"
@@ -114,3 +124,7 @@ class LudwigLangExportRequest(BaseModel):
     date: str = ""
     page_markers: bool = False
     skip_language_gate: bool = False
+
+
+class TropyImportToTropyRequest(BaseModel):
+    jsonld: str

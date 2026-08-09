@@ -96,9 +96,9 @@ def _read_manifest(output_dir: Path) -> dict[str, Any] | None:
 def _resolve_author_date(
     collection_name: str,
     manifest: dict[str, Any] | None,
-) -> tuple[str, str]:
+) -> tuple[str, str, str, str, int | None]:
     if manifest is None:
-        return ("", "")
+        return ("", "", "", "", None)
     pages = manifest.get("pages", {})
     for stem, info in pages.items():
         prefix = collection_name + "/"
@@ -107,8 +107,11 @@ def _resolve_author_date(
             return (
                 item.get("item_title", ""),
                 "",
+                item.get("tropy_group", ""),
+                item.get("source_path", ""),
+                item.get("orientation"),
             )
-    return ("", "")
+    return ("", "", "", "", None)
 
 
 def _detect_language(text: str) -> str:
@@ -223,10 +226,13 @@ def export_md(
         if lang_error:
             raise ValueError(lang_error)
 
-    # Resolve author/date from manifest if not provided
+    # Resolve author/date/tropy provenance from manifest if not provided
+    manifest_author, manifest_date, tropy_group, archive_ref, orientation = (
+        "", "", "", "", None
+    )
     if not author or not date:
-        manifest_author, manifest_date = _resolve_author_date(
-            result.title, manifest
+        manifest_author, manifest_date, tropy_group, archive_ref, orientation = (
+            _resolve_author_date(result.title, manifest)
         )
         if not author:
             author = manifest_author
@@ -239,6 +245,14 @@ def export_md(
         author=author,
         date=date,
     )
+
+    # Extend frontmatter with Tropy provenance when available
+    if tropy_group:
+        fm["tropy_item_id"] = tropy_group
+    if archive_ref:
+        fm["archive_ref"] = archive_ref
+    if orientation is not None:
+        fm["orientation"] = str(orientation)
 
     if output_path is None:
         output_path = (

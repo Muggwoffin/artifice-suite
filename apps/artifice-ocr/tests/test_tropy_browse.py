@@ -1,0 +1,914 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+"""Tests for the live read-only .tpy SQLite browse feature.
+
+Uses the **real** Tropy ``.tpy`` schema (``subjects``, ``metadata``,
+``metadata_values``, ``photos`` with base-relative paths, ``project``,
+``trash``, ``taggings``).
+"""
+
+import sqlite3
+from pathlib import Path
+
+import pytest
+from artifice_ocr import config
+from artifice_ocr.jobs import JobItem
+from artifice_ocr.tropy_db import (
+    TropyDBError,
+    TropyItem,
+    TropyPhoto,
+    _resolve_photo_path,
+    get_item,
+    items_to_job_items,
+    list_items,
+    list_lists,
+    list_projects,
+    list_tags,
+)
+from artifice_ocr.web import runtime
+from artifice_ocr.web.routers import (
+    analytics as _analytics_router,
+)
+from artifice_ocr.web.routers import (
+    events as _events_router,
+)
+from artifice_ocr.web.routers import (
+    history as _history_router,
+)
+from artifice_ocr.web.routers import (
+    queue as _queue_router,
+)
+from artifice_ocr.web.routers import (
+    run as _run_router,
+)
+from artifice_ocr.web.routers import (
+    tropy_bridge as _tropy_router,
+)
+from artifice_ocr.web.routers import (
+    tropy_browse as _tropy_browse_router,
+)
+from artifice_ocr.web.runtime import RunState
+from fastapi.testclient import TestClient
+
+# --------------------------------------------------------------------------- #
+# helpers — build a mock .tpy database (REAL Tropy schema)
+# --------------------------------------------------------------------------- #
+
+_TROPY_SCHEMA = """
+CREATE TABLE subjects (
+    id INTEGER PRIMARY KEY,
+    template TEXT,
+    type TEXT,
+    created TEXT,
+    modified TEXT
+);
+
+CREATE TABLE items (
+    id INTEGER PRIMARY KEY REFERENCES subjects(id) ON DELETE CASCADE,
+    cover_image_id INTEGER
+);
+
+CREATE TABLE images (
+    id INTEGER PRIMARY KEY REFERENCES subjects(id),
+    width INTEGER,
+    height INTEGER,
+    angle INTEGER,
+    mirror INTEGER,
+    brightness INTEGER,
+    contrast INTEGER,
+    hue INTEGER,
+    saturation INTEGER,
+    negative INTEGER,
+    sharpen INTEGER
+);
+
+CREATE TABLE photos (
+    id INTEGER PRIMARY KEY REFERENCES images(id),
+    item_id INTEGER REFERENCES items(id),
+    position INTEGER,
+    path TEXT NOT NULL,
+    protocol TEXT DEFAULT 'file',
+    mimetype TEXT,
+    checksum TEXT,
+    orientation INTEGER DEFAULT 1,
+    metadata TEXT,
+    size INTEGER,
+    page INTEGER,
+    color TEXT,
+    density INTEGER,
+    filename TEXT
+);
+
+CREATE TABLE metadata (
+    id INTEGER REFERENCES subjects(id),
+    property TEXT NOT NULL,
+    value_id INTEGER REFERENCES metadata_values(value_id),
+    language TEXT,
+    created TEXT,
+    PRIMARY KEY (id, property)
+);
+
+CREATE TABLE metadata_values (
+    value_id INTEGER PRIMARY KEY,
+    datatype TEXT,
+    text TEXT,
+    data BLOB,
+    UNIQUE(datatype, text)
+);
+
+CREATE TABLE lists (
+    list_id INTEGER PRIMARY KEY,
+    name TEXT,
+    parent_list_id INTEGER DEFAULT 0,
+    position INTEGER,
+    created TEXT,
+    modified TEXT
+);
+
+CREATE TABLE list_items (
+    list_id INTEGER REFERENCES lists(list_id),
+    id INTEGER REFERENCES items(id),
+    position INTEGER,
+    added TEXT,
+    deleted TEXT,
+    PRIMARY KEY (list_id, id)
+);
+
+CREATE TABLE tags (
+    tag_id INTEGER PRIMARY KEY,
+    name TEXT UNIQUE COLLATE NOCASE,
+    color TEXT,
+    created TEXT,
+    modified TEXT
+);
+
+CREATE TABLE taggings (
+    tag_id INTEGER REFERENCES tags(tag_id),
+    id INTEGER REFERENCES subjects(id),
+    created TEXT,
+    PRIMARY KEY (id, tag_id)
+);
+
+CREATE TABLE trash (
+    id INTEGER REFERENCES subjects(id),
+    deleted TEXT,
+    reason TEXT
+);
+
+CREATE TABLE project (
+    project_id INTEGER PRIMARY KEY,
+    name TEXT,
+    created TEXT,
+    base TEXT,
+    store TEXT
+);
+"""
+
+
+def _create_tpy(
+    path: Path,
+    *,
+    with_tags: bool = False,
+    with_trash: bool = False,
+    with_title: bool = True,
+    empty_photos: bool = False,
+) -> Path:
+    """Create a .tpy database with the real Tropy schema and test data.
+
+    Items:
+    - 1: title via dc:elements metadata, 2 photos (png + jpg), in list 1
+    - 2: title via dc:terms metadata, 1 photo (pdf), in list 1
+    - 3: no title metadata (falls back to photo filename), 0 photos
+    - 4: in trash (soft-deleted) when ``with_trash=True``
+
+    Photos use base-relative paths; ``project.base = 'project'``.
+    """
+    conn = sqlite3.connect(str(path))
+    conn.executescript(_TROPY_SCHEMA)
+
+    # Seed ROOT list (list_id=0)
+    conn.execute("INSERT INTO lists (list_id, name) VALUES (0, 'ROOT')")
+
+    # Lists
+    conn.execute("INSERT INTO lists (list_id, name) VALUES (1, 'Inbox')")
+    conn.execute("INSERT INTO lists (list_id, name) VALUES (2, 'Research')")
+
+    # Project
+    conn.execute(
+        "INSERT INTO project (project_id, name, base) "
+        "VALUES (1, 'Test Project', 'project')",
+    )
+
+    # ---- subjects for items ----
+    conn.execute(
+        "INSERT INTO subjects (id, template, type) "
+        "VALUES (1, 'https://tropy.org/v1/templates/item', 'item')",
+    )
+    conn.execute(
+        "INSERT INTO subjects (id, template, type) "
+        "VALUES (2, 'https://tropy.org/v1/templates/item', 'item')",
+    )
+    conn.execute(
+        "INSERT INTO subjects (id, template, type) "
+        "VALUES (3, 'https://tropy.org/v1/templates/item', 'item')",
+    )
+    if with_trash:
+        conn.execute(
+            "INSERT INTO subjects (id, template, type) "
+            "VALUES (4, 'https://tropy.org/v1/templates/item', 'item')",
+        )
+
+    # ---- items ----
+    conn.execute("INSERT INTO items (id) VALUES (1)")
+    conn.execute("INSERT INTO items (id) VALUES (2)")
+    conn.execute("INSERT INTO items (id) VALUES (3)")
+    if with_trash:
+        conn.execute("INSERT INTO items (id) VALUES (4)")
+
+    # ---- metadata for items 1 and 2 ----
+    if with_title:
+        # Item 1: dc:elements title
+        conn.execute(
+            "INSERT INTO metadata_values (value_id, datatype, text) "
+            "VALUES (1, 'http://www.w3.org/2001/XMLSchema#string', "
+            "'Letter from 1943')",
+        )
+        conn.execute(
+            "INSERT INTO metadata (id, property, value_id) "
+            "VALUES (1, 'http://purl.org/dc/elements/1.1/title', 1)",
+        )
+        # Item 2: dc:terms title
+        conn.execute(
+            "INSERT INTO metadata_values (value_id, datatype, text) "
+            "VALUES (2, 'http://www.w3.org/2001/XMLSchema#string', "
+            "'War Diary')",
+        )
+        conn.execute(
+            "INSERT INTO metadata (id, property, value_id) "
+            "VALUES (2, 'http://purl.org/dc/terms/title', 2)",
+        )
+
+    # ---- photos (base-relative paths, resolved via project.base='project') ----
+    if not empty_photos:
+        # Subject rows for images/photos
+        for img_id in (11, 12, 13):
+            conn.execute(
+                "INSERT INTO subjects (id, template, type) "
+                "VALUES (?, 'https://tropy.org/v1/templates/photo', 'photo')",
+                (img_id,),
+            )
+            conn.execute(
+                "INSERT INTO images (id) VALUES (?)", (img_id,),
+            )
+
+        conn.execute(
+            "INSERT INTO photos "
+            "(id, item_id, path, checksum, mimetype, page, orientation, "
+            "filename) "
+            "VALUES (11, 1, 'fake_photo_1.png', 'abc123', 'image/png', "
+            "NULL, 1, 'fake_photo_1.png')",
+        )
+        conn.execute(
+            "INSERT INTO photos "
+            "(id, item_id, path, checksum, mimetype, page, orientation, "
+            "filename) "
+            "VALUES (12, 1, 'fake_photo_2.jpg', 'def456', 'image/jpeg', "
+            "NULL, 1, 'fake_photo_2.jpg')",
+        )
+        conn.execute(
+            "INSERT INTO photos "
+            "(id, item_id, path, checksum, mimetype, page, orientation, "
+            "filename) "
+            "VALUES (13, 2, 'fake_diary.pdf', 'ghi789', 'application/pdf', "
+            "0, 1, 'fake_diary.pdf')",
+        )
+
+    # ---- list memberships ----
+    conn.execute(
+        "INSERT INTO list_items (list_id, id, position) VALUES (1, 1, 0)",
+    )
+    conn.execute(
+        "INSERT INTO list_items (list_id, id, position) VALUES (1, 2, 1)",
+    )
+
+    # ---- tags ----
+    if with_tags:
+        conn.execute(
+            "INSERT INTO tags (tag_id, name) VALUES (1, 'personal')",
+        )
+        conn.execute(
+            "INSERT INTO tags (tag_id, name) VALUES (2, 'military')",
+        )
+        # taggings reference subjects.id (not items.id directly, but same
+        # value)
+        conn.execute(
+            "INSERT INTO taggings (tag_id, id) VALUES (1, 1)",
+        )
+        conn.execute(
+            "INSERT INTO taggings (tag_id, id) VALUES (2, 2)",
+        )
+
+    # ---- trash ----
+    if with_trash:
+        conn.execute(
+            "INSERT INTO trash (id, deleted, reason) VALUES (4, "
+            "datetime('now'), 'user')",
+        )
+
+    conn.commit()
+    conn.close()
+    return path
+
+
+def _client_with_state(tmp_path, monkeypatch) -> TestClient:
+    """Build a TestClient with a fresh RunState wired to all routers."""
+    monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
+    config.reset()
+    config.load_config()
+    config.apply_overrides({"history_db": str(tmp_path / "history.db")})
+
+    fresh = RunState()
+    monkeypatch.setattr(_queue_router, "state", fresh)
+    monkeypatch.setattr(_run_router, "state", fresh)
+    monkeypatch.setattr(_events_router, "state", fresh)
+    monkeypatch.setattr(_history_router, "state", fresh)
+    monkeypatch.setattr(_analytics_router, "state", fresh)
+    monkeypatch.setattr(_tropy_router, "state", fresh)
+    monkeypatch.setattr(_tropy_browse_router, "state", fresh)
+    monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
+
+    # Reset pdf_export_state
+    import queue as _queue_mod
+    pstate = runtime.pdf_export_state
+    if pstate.thread is not None and pstate.thread.is_alive():
+        pstate.thread.join(timeout=5)
+    pstate.status = "idle"
+    pstate.error = None
+    pstate.output_path = None
+    while True:
+        try:
+            pstate.events.get_nowait()
+        except _queue_mod.Empty:
+            break
+
+    from artifice_ocr.web import server
+    return TestClient(server.app)
+
+
+# --------------------------------------------------------------------------- #
+# pathcheck mock — returns a successful PhotoPathResult
+# --------------------------------------------------------------------------- #
+
+
+def _mock_pathcheck(raw_path: str, **kwargs):
+    """Mock validate_absolute_photo that accepts any path."""
+    from artifice_ocr._tropy_pathcheck import PhotoPathResult
+    p = Path(raw_path)
+    exists = p.exists()
+    return PhotoPathResult(resolved=p, missing=not exists, is_symlink=False)
+
+
+# --------------------------------------------------------------------------- #
+# tests: photo path resolution (unit)
+# --------------------------------------------------------------------------- #
+
+
+class TestResolvePhotoPath:
+    """Unit tests for _resolve_photo_path()."""
+
+    def test_project_base(self, tmp_path):
+        db = tmp_path / "test.tpy"
+        db.write_text("")
+        result = _resolve_photo_path("photo.jpg", db, "project")
+        assert result == (tmp_path / "photo.jpg").resolve()
+
+    def test_home_base(self, tmp_path, monkeypatch):
+        db = tmp_path / "test.tpy"
+        db.write_text("")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.Path.home",
+            lambda: tmp_path / "fakehome",
+        )
+        result = _resolve_photo_path("photo.jpg", db, "home")
+        assert result == (tmp_path / "fakehome" / "photo.jpg").resolve()
+
+    def test_absolute_base(self, tmp_path):
+        db = tmp_path / "test.tpy"
+        db.write_text("")
+        result = _resolve_photo_path(
+            "photo.jpg", db, "/absolute/base",
+        )
+        assert result == Path("/absolute/base/photo.jpg").resolve()
+
+    def test_none_base(self, tmp_path):
+        db = tmp_path / "sub" / "test.tpy"
+        db.parent.mkdir(parents=True, exist_ok=True)
+        db.write_text("")
+        result = _resolve_photo_path("photo.jpg", db, None)
+        assert result == (db.parent / "photo.jpg").resolve()
+
+    def test_relative_base_string(self, tmp_path):
+        db = tmp_path / "data" / "test.tpy"
+        db.parent.mkdir(parents=True, exist_ok=True)
+        db.write_text("")
+        result = _resolve_photo_path("photo.jpg", db, "images")
+        assert result == (db.parent / "images" / "photo.jpg").resolve()
+
+
+# --------------------------------------------------------------------------- #
+# tests: tropy_db library functions
+# --------------------------------------------------------------------------- #
+
+
+class TestListProjects:
+    """Tests for list_projects()."""
+
+    def test_returns_projects(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        projects = list_projects(tpy)
+        assert len(projects) == 1
+        assert projects[0]["name"] == "Test Project"
+        assert projects[0]["base"] == "project"
+
+    def test_file_not_found(self):
+        with pytest.raises(TropyDBError, match="not found"):
+            list_projects(Path("/nonexistent/file.tpy"))
+
+    def test_locked_database(self, tmp_path, monkeypatch):
+        """Verify TropyDBError with 'close Tropy' message on locked DB."""
+        tpy = _create_tpy(tmp_path / "locked.tpy")
+        orig_connect = sqlite3.connect
+
+        def _mock_connect(*args, **kwargs):
+            if args and isinstance(args[0], str) and "?mode=ro" in args[0]:
+                raise sqlite3.OperationalError("database is locked")
+            return orig_connect(*args, **kwargs)
+
+        monkeypatch.setattr(sqlite3, "connect", _mock_connect)
+        with pytest.raises(TropyDBError, match="close Tropy"):
+            list_projects(tpy)
+
+
+class TestListLists:
+    """Tests for list_lists()."""
+
+    def test_returns_lists_excluding_root(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        lists = list_lists(tpy)
+        assert len(lists) == 2
+        names = {row["name"] for row in lists}
+        assert names == {"Inbox", "Research"}
+        # ROOT row (list_id=0) must be excluded
+        ids = {row["list_id"] for row in lists}
+        assert 0 not in ids
+
+
+class TestListTags:
+    """Tests for list_tags()."""
+
+    def test_returns_tags(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy", with_tags=True)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        tags = list_tags(tpy)
+        assert len(tags) == 2
+        names = {row["name"] for row in tags}
+        assert names == {"personal", "military"}
+
+    def test_empty_when_no_tags(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy", with_tags=False)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        tags = list_tags(tpy)
+        assert tags == []
+
+
+class TestListItems:
+    """Tests for list_items()."""
+
+    def test_returns_all_items(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        # Create actual photo files so pathcheck doesn't mark them missing.
+        (tmp_path / "fake_photo_1.png").write_bytes(b"x")
+        (tmp_path / "fake_photo_2.jpg").write_bytes(b"x")
+
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy)
+        assert len(items) == 3
+        titles = {it.title for it in items}
+        assert titles == {"Letter from 1943", "War Diary", "Item 3"}
+
+    def test_filter_by_list_id(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy, list_id=1)
+        assert len(items) == 2
+        titles = {it.title for it in items}
+        assert titles == {"Letter from 1943", "War Diary"}
+
+    def test_filter_by_tag(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy", with_tags=True)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy, tag="personal")
+        assert len(items) == 1
+        assert items[0].title == "Letter from 1943"
+
+    def test_photos_attached(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy)
+        item1 = next(it for it in items if it.item_id == 1)
+        assert len(item1.photos) == 2
+        assert {p.photo_id for p in item1.photos} == {11, 12}
+
+    def test_photo_missing_when_pathcheck_rejects(self, tmp_path, monkeypatch):
+        """Photos that fail pathcheck are marked missing=True but NOT excluded."""
+        tpy = _create_tpy(tmp_path / "test.tpy")
+
+        def _rejecting_pathcheck(raw_path: str, **kwargs):
+            raise ValueError("blocked root")
+
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _rejecting_pathcheck,
+        )
+        items = list_items(tpy)
+        item1 = next(it for it in items if it.item_id == 1)
+        assert len(item1.photos) == 2  # not excluded
+        assert all(p.missing for p in item1.photos)
+
+    def test_title_via_metadata_join(self, tmp_path, monkeypatch):
+        """Item with dc:elements title metadata returns that title."""
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy)
+        item1 = next(it for it in items if it.item_id == 1)
+        assert item1.title == "Letter from 1943"
+
+    def test_title_via_dc_terms(self, tmp_path, monkeypatch):
+        """Item with dc:terms title metadata returns that title."""
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy)
+        item2 = next(it for it in items if it.item_id == 2)
+        assert item2.title == "War Diary"
+
+    def test_title_falls_back_to_photo_filename(self, tmp_path, monkeypatch):
+        """Item with no title metadata and no photos falls back to 'Item {id}'."""
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy)
+        item3 = next(it for it in items if it.item_id == 3)
+        assert item3.title == "Item 3"
+
+
+class TestSoftDelete:
+    """Tests for trash (soft-delete) filtering."""
+
+    def test_soft_deleted_excluded(self, tmp_path, monkeypatch):
+        """Item 4 is in trash and should be excluded from list_items."""
+        tpy = _create_tpy(tmp_path / "test.tpy", with_trash=True)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy)
+        item_ids = {it.item_id for it in items}
+        assert 4 not in item_ids
+
+    def test_soft_deleted_not_in_get_item(self, tmp_path, monkeypatch):
+        """get_item returns None for soft-deleted items."""
+        tpy = _create_tpy(tmp_path / "test.tpy", with_trash=True)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        item = get_item(tpy, 4)
+        assert item is None
+
+
+class TestGetItem:
+    """Tests for get_item()."""
+
+    def test_returns_single_item(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        item = get_item(tpy, 1)
+        assert item is not None
+        assert item.title == "Letter from 1943"
+        assert len(item.photos) == 2
+
+    def test_returns_none_for_missing(self, tmp_path, monkeypatch):
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        item = get_item(tpy, 999)
+        assert item is None
+
+    def test_title_falls_back_to_id(self, tmp_path, monkeypatch):
+        """Item with no title metadata and no photos uses 'Item {id}' fallback."""
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        item = get_item(tpy, 3)
+        assert item is not None
+        assert item.title == "Item 3"
+
+
+class TestFilenameFallback:
+    """Title fallback to photo filename."""
+
+    def test_title_from_photo_filename(self, tmp_path, monkeypatch):
+        """Item without title metadata but with photos uses the first photo's
+        filename as title."""
+        tpy = tmp_path / "test.tpy"
+        conn = sqlite3.connect(str(tpy))
+        conn.executescript(_TROPY_SCHEMA)
+        # ROOT list
+        conn.execute("INSERT INTO lists (list_id, name) VALUES (0, 'ROOT')")
+        conn.execute("INSERT INTO lists (list_id, name) VALUES (1, 'Inbox')")
+        conn.execute(
+            "INSERT INTO project (project_id, name, base) "
+            "VALUES (1, 'Test Project', 'project')",
+        )
+        # Item 1 — no metadata
+        conn.execute(
+            "INSERT INTO subjects (id, template, type) "
+            "VALUES (1, 'https://tropy.org/v1/templates/item', 'item')",
+        )
+        conn.execute("INSERT INTO items (id) VALUES (1)")
+        # Photo with filename
+        conn.execute(
+            "INSERT INTO subjects (id, template, type) "
+            "VALUES (11, 'https://tropy.org/v1/templates/photo', 'photo')",
+        )
+        conn.execute("INSERT INTO images (id) VALUES (11)")
+        conn.execute(
+            "INSERT INTO photos (id, item_id, path, checksum, mimetype, "
+            "filename) "
+            "VALUES (11, 1, 'scan_1943.tiff', 'aaa', 'image/tiff', "
+            "'scan_1943.tiff')",
+        )
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        item = get_item(tpy, 1)
+        assert item is not None
+        assert item.title == "scan_1943.tiff"
+
+
+class TestItemsToJobItems:
+    """Tests for items_to_job_items()."""
+
+    def test_produces_job_items(self):
+        photos = [
+            TropyPhoto(
+                photo_id=1,
+                path="/tmp/photo.png",
+                item_id=1,
+                page=None,
+                mimetype="image/png",
+                checksum="abc",
+                orientation=1,
+                missing=False,
+            ),
+        ]
+        item = TropyItem(item_id=1, title="Test", photos=photos)
+        job_items = items_to_job_items([item], output_dir="/tmp/output")
+
+        assert len(job_items) == 1
+        ji = job_items[0]
+        assert isinstance(ji, JobItem)
+        assert ji.path == "/tmp/photo.png"
+        assert ji.source["origin"] == "tropy-live"
+        assert ji.source["tropy_item_id"] == 1
+        assert ji.source["item_title"] == "Test"
+        assert ji.page is None
+
+    def test_pdf_page_stem(self):
+        """PDF photos get page-stem naming and page index."""
+        photos = [
+            TropyPhoto(
+                photo_id=3,
+                path="/tmp/diary.pdf",
+                item_id=2,
+                page=2,
+                mimetype="application/pdf",
+                checksum="ghi",
+                orientation=1,
+                missing=False,
+            ),
+        ]
+        item = TropyItem(item_id=2, title="War Diary", photos=photos)
+        job_items = items_to_job_items([item], output_dir="/tmp/output")
+
+        assert len(job_items) == 1
+        ji = job_items[0]
+        assert ji.page == 2  # PDF, so page is carried through
+        assert "_p0003" in ji.output_stem
+
+
+class TestPhotoOrientation:
+    """Orientation is read from DB and passed through to JobItem source."""
+
+    def test_orientation_in_job_item(self, tmp_path, monkeypatch):
+        from artifice_ocr._tropy_pathcheck import PhotoPathResult
+
+        def _mock(raw_path: str, **kwargs):
+            return PhotoPathResult(
+                resolved=Path(raw_path), missing=False, is_symlink=False,
+            )
+
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo", _mock,
+        )
+
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        items = list_items(tpy)
+        ji = items_to_job_items(items, output_dir="/tmp/output")
+        # All test data uses orientation=1
+        for j in ji:
+            assert j.source["orientation"] == 1
+
+
+# --------------------------------------------------------------------------- #
+# tests: feature-flagged API routes
+# --------------------------------------------------------------------------- #
+
+
+class TestFeatureFlag:
+    """Feature flag off by default — all routes return 404."""
+
+    @pytest.fixture(autouse=True)
+    def _ensure_flag_off(self, monkeypatch):
+        monkeypatch.delenv("ARTIFICE_OCR_TROPY_LIVE_READ", raising=False)
+
+    def test_projects_404_when_disabled(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        resp = client.post(
+            "/api/tropy/browse/projects",
+            json={"path": "/nonexistent.tpy"},
+        )
+        assert resp.status_code == 404
+        assert "not enabled" in resp.json()["detail"].lower()
+
+    def test_items_404_when_disabled(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        resp = client.post(
+            "/api/tropy/browse/items",
+            json={"path": "/nonexistent.tpy"},
+        )
+        assert resp.status_code == 404
+
+    def test_enqueue_404_when_disabled(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        resp = client.post(
+            "/api/tropy/browse/enqueue",
+            json={"path": "/nonexistent.tpy", "item_ids": [1]},
+        )
+        assert resp.status_code == 404
+
+
+class TestBrowseRoutesEnabled:
+    """Routes work when ARTIFICE_OCR_TROPY_LIVE_READ=1."""
+
+    @pytest.fixture(autouse=True)
+    def _enable_flag(self, monkeypatch):
+        monkeypatch.setenv("ARTIFICE_OCR_TROPY_LIVE_READ", "1")
+        import importlib
+
+        import artifice_ocr.web.routers.tropy_browse as browse_mod
+
+        importlib.reload(browse_mod)
+        self._browse_mod = browse_mod
+
+    def test_projects_returns_data(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        monkeypatch.setattr(
+            self._browse_mod, "_LIVE_READ_ENABLED", True
+        )
+
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        resp = client.post(
+            "/api/tropy/browse/projects",
+            json={"path": str(tpy)},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["projects"]) == 1
+        assert data["projects"][0]["name"] == "Test Project"
+
+    def test_items_returns_data(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        monkeypatch.setattr(self._browse_mod, "_LIVE_READ_ENABLED", True)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        resp = client.post(
+            "/api/tropy/browse/items",
+            json={"path": str(tpy)},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["items"]) == 3
+
+    def test_enqueue_adds_items(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        monkeypatch.setattr(self._browse_mod, "_LIVE_READ_ENABLED", True)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        resp = client.post(
+            "/api/tropy/browse/enqueue",
+            json={
+                "path": str(tpy),
+                "item_ids": [1],
+                "output_dir": "/tmp/output",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["added"] == 2  # item 1 has 2 photos
+
+    def test_invalid_path_rejected(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        monkeypatch.setattr(self._browse_mod, "_LIVE_READ_ENABLED", True)
+
+        resp = client.post(
+            "/api/tropy/browse/projects",
+            json={"path": "/etc/passwd.tpy"},
+        )
+        assert resp.status_code == 400
+
+
+class TestSchemaMissingTables:
+    """Missing tables are handled gracefully — return empty lists, no crash."""
+
+    def test_empty_db_returns_empty(self, tmp_path, monkeypatch):
+        """An empty SQLite file (no tables) returns empty lists."""
+        empty = tmp_path / "empty.tpy"
+        conn = sqlite3.connect(str(empty))
+        conn.close()
+
+        for fn in (list_projects, list_lists, list_tags):
+            result = fn(empty)
+            assert result == [], f"{fn.__name__} should return empty list"
+
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(empty)
+        assert items == []

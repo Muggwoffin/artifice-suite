@@ -441,6 +441,61 @@ def download(doc_id: str):
 
 
 # --------------------------------------------------------------------------- #
+# Tropy notes: pull (import) and push (export) round-trip
+# --------------------------------------------------------------------------- #
+
+
+class TropyNotesImportRequest(BaseModel):
+    path: str
+
+
+class TropyNotesExportRequest(BaseModel):
+    original_path: str
+    notes: list[dict]
+
+
+@app.post("/api/tropy/notes/import")
+def tropy_notes_import(req: TropyNotesImportRequest) -> dict:
+    """Pull notes from a Tropy JSON-LD export file.
+
+    Returns a list of { item_title, photo_path, note_text, note_html }
+    dicts — one per note-bearing photo in the export.
+    """
+    from artifice_draft.tropy_notes import NoteImportError, extract_notes
+
+    try:
+        notes = extract_notes(req.path)
+    except NoteImportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        raise HTTPException(
+            status_code=400, detail="Could not parse the Tropy export file"
+        ) from None
+
+    return {"notes": notes, "count": len(notes)}
+
+
+@app.post("/api/tropy/notes/export")
+def tropy_notes_export(req: TropyNotesExportRequest) -> dict:
+    """Push edited notes back into a Tropy JSON-LD file.
+
+    Writes the modified export to the given path and returns a summary.
+    """
+    from artifice_draft.tropy_notes import NoteImportError, build_note_export
+
+    try:
+        content = build_note_export(req.original_path, req.notes)
+    except NoteImportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        raise HTTPException(
+            status_code=500, detail="Could not build note export"
+        ) from None
+
+    return {"jsonld": content, "note_count": len(req.notes)}
+
+
+# --------------------------------------------------------------------------- #
 # static frontend
 # --------------------------------------------------------------------------- #
 

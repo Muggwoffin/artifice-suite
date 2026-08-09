@@ -1149,13 +1149,13 @@ async def api_get_models():
             "error": f"Endpoint rejected: {e}",
         }
     except Exception as e:
-        logger.error(f"Error fetching models: {e}")
+        logger.error("Error fetching models: %s", e)
         return {
             "models": [],
             "vision_models": [],
             "ollama_base": "",
             "openai_base": "",
-            "error": str(e),
+            "error": "Failed to fetch models from the configured endpoint",
         }
 
 
@@ -1368,6 +1368,49 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
     return {"uploaded": results}
 
 
+# ── Tropy manifest import ─────────────────────────────────────────────
+
+
+@app.post("/api/tropy/import-manifest")
+def api_tropy_import_manifest(body: dict[str, Any]):
+    """Import a tropy_manifest.json and return graph nodes with provenance.
+
+    Accepts ``{"manifest_path": "<path>"}``. Validates the path against the
+    allowed-roots directory guard, then delegates to
+    :func:`artifice_graph.tropy_import.load_manifest` and
+    :func:`artifice_graph.tropy_import.manifest_to_graph_nodes`.
+    """
+    from artifice_graph.tropy_import import ManifestError, load_manifest, manifest_to_graph_nodes
+
+    raw_path = body.get("manifest_path", "")
+    if not raw_path:
+        raise HTTPException(status_code=400, detail="manifest_path is required")
+
+    try:
+        resolved = _validate_directory(raw_path, "manifest_path")
+    except HTTPException:
+        raise HTTPException(
+            status_code=400,
+            detail="Manifest path is outside allowed directories",
+        ) from None
+
+    try:
+        manifest = load_manifest(resolved)
+    except ManifestError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    nodes = manifest_to_graph_nodes(manifest)
+    return {
+        "ok": True,
+        "manifest": {
+            "export": manifest.get("export", {}),
+            "output_layout": manifest.get("output_layout", ""),
+        },
+        "nodes": nodes,
+        "count": len(nodes),
+    }
+
+
 # ── Page routes ─────────────────────────────────────────────────────
 
 
@@ -1474,6 +1517,28 @@ _port_available = port_available
 _wait_for_server = wait_for_server
 _ensure_std_streams = ensure_std_streams
 
+# ── Loopback-only guard ──────────────────────────────────────────────
+# Security item 5.2b: Tropy routes would be reachable without auth in a
+# deployed instance if the server bound to a non-loopback address.
+
+_LOOPBACK_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "localhost", "::1", "[::1]"})
+
+
+def _assert_loopback_host() -> None:
+    """Refuse to start if the server binds to a non-loopback address.
+    This is a defense-in-depth guard — start_server_thread() hardcodes
+    127.0.0.1 today, but if a future change adds a configurable host
+    this check catches it before the server listens.
+    """
+    host = "127.0.0.1"  # current value in shared_ui.server_bootstrap.start_server_thread
+    if host not in _LOOPBACK_HOSTS:
+        print(
+            f"artifice-graph binds to loopback only for security; "
+            f"refusing to start on {host}. Set host to 127.0.0.1.",
+            flush=True,
+        )
+        raise SystemExit(1)
+
 
 def _start_server_thread(port: int):
     return start_server_thread(app, port)
@@ -1485,6 +1550,7 @@ def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> N
 
 def main() -> None:
     _ensure_std_streams()
+    _assert_loopback_host()
 
     import argparse
 

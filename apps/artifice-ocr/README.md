@@ -37,10 +37,10 @@ Runs entirely on local GPU hardware with complete JSON metadata outputs (prompts
 * **Stage 4 — Historical Translation:** Optional translation (e.g., German to English) using specialized models (`translategemma:4b`) via Ollama.
 
 ### 2. Deep Tropy Archive Integration
-Directly connects to [Tropy](https://tropy.org) historical research archives:
-* **Read-Only Browsing:** Inspect Tropy projects, lists, tags, items, and photos directly from the CLI or UI without modifying database state.
-* **Manifest Processing:** Ingest items by list ID, tag, or item ID, mirroring Tropy's item/page structure on disk.
-* **Safe Writeback:** Writes cleaned, structured, or translated texts back into Tropy as *notes* or native *transcriptions* with preview verification and automatic timestamped project backups.
+Connects to [Tropy](https://tropy.org) historical research archives via a **JSON-LD file bridge** — export from Tropy, import into ArtificeOCR, process, export back:
+* **Import Preview:** `tropy-import` scans a Tropy JSON-LD export and surfaces groups (`@type: Collection`), items, and photo paths before any file is touched. Path validation (`_tropy_pathcheck`) rejects entries whose absolute paths fall outside the configured allow-list root.
+* **Import Add:** Selected items are imported as pipeline-eligible job items with full provenance (`origin: "tropy-jsonld"`, `tropy_group`, `tropy_item_id`), mirroring Tropy's item/page structure on disk.
+* **Export & Export History:** `tropy-export` writes processed OCR text (structured, cleaned, or translated) into a new JSON-LD envelope as Tropy notes. `tropy-export-history` exports only items that already exist in the local run history, enabling incremental re-export.
 
 ### 3. Multi-Format Publishing Exports
 * **Typeset PDF Compilation:** Generates continuous reading PDFs with section headings per item, provenance page markers (`[page1]`), and Playfair/Libre Baskerville typography.
@@ -80,8 +80,8 @@ artifice-suite/
 │       │   ├── pipeline.py            # Stage orchestration (shared by CLI/GUI/Web)
 │       │   ├── jobs.py                # Threaded JobRunner with pause/cancel
 │       │   ├── history.py             # SQLite run history
-│       │   ├── tropy.py               # Read-only Tropy archive parser
-│       │   ├── tropy_write.py         # Tropy notes/transcriptions writeback
+│       │   ├── tropy_jsonld.py        # JSON-LD file bridge (import + export)
+│       │   ├── _tropy_pathcheck.py    # Photo-path safety validation
 │       │   ├── pdf_export.py          # PDF compilation with structuring
 │       │   ├── export_ludwiglang.py   # LudwigLang Markdown export
 │       │   ├── _guard.py              # Content preservation guards
@@ -142,9 +142,9 @@ artifice-ocr cleanup output/raw_ocr/text/file.txt
 artifice-ocr structure output/structured/text/file.txt
 artifice-ocr translate output/structured/text/file.txt
 
-# Tropy Archive Workflows:
-artifice-ocr tropy-browse "path/To/Archive.tropy"
-artifice-ocr tropy "path/To/Archive.tropy" --list-id 3 --tag resistance
+# Tropy JSON-LD Workflows:
+artifice-ocr tropy-import "path/To/Export.jsonld"
+artifice-ocr tropy-export --output tropy-notes.jsonld
 
 # Export Compilation:
 artifice-ocr compile-pdf output/cleaned/text/Collection --stage cleaned
@@ -188,7 +188,7 @@ We welcome contributions from historians, archivists, and software engineers!
 
 ## 🧪 Testing
 
-Run the full pytest suite covering CLI commands, guard validation logic, Tropy read/write, and export compilers:
+Run the full pytest suite covering CLI commands, guard validation logic, Tropy JSON-LD bridge, and export compilers:
 ```bash
 pytest apps/artifice-ocr/tests/
 ```

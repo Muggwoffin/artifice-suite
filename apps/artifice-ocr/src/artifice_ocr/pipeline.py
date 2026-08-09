@@ -2,14 +2,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import json
 import time
 from pathlib import Path
 from typing import Any
 
 from ._logging import get_logger
 from .config import get as cfg
-from .stages import ocr, cleanup, translate
+from .stages import cleanup, ocr, title, translate
 
 log = get_logger("pipeline")
 
@@ -72,6 +71,14 @@ def run_ocr_step(
             "_skipped": True,
         }
     else:
+        # Pre-flight: a Tropy-imported photo may have passed pathcheck but
+        # not exist on disk (the import sets a 'missing' flag but still
+        # queues the item). Failing here with an actionable message beats
+        # a raw FileNotFoundError from inside the OCR backend.
+        if not f.exists():
+            raise FileNotFoundError(
+                f"Source file not found on disk: {f.name}"
+            )
         data = ocr.perform(str(f), output_dir=output_dir, page=page, stem=stem,
                            orientation=orientation)
 
@@ -113,6 +120,46 @@ def run_cleanup_step(
         data = cleanup.perform(
             raw_data["extracted_text"],
             source_file=raw_data["source_file"],
+            output_dir=output_dir,
+            stem=stem,
+        )
+
+    data["_elapsed"] = time.monotonic() - t0
+    return data
+
+
+def run_title_step(
+    cleaned_data: dict,
+    stem: str,
+    output_dir: str,
+    *,
+    skip_title: bool = False,
+    resume: bool = True,
+    force: bool = False,
+) -> dict:
+    """Run the title stage for one file, or resolve it from existing output."""
+    t0 = time.monotonic()
+
+    if skip_title:
+        log.info("Title %s [skipped by user]", stem)
+        data = {
+            "source_file": cleaned_data["source_file"],
+            "stage": "title",
+            "title": Path(cleaned_data["source_file"]).stem,
+            "_skipped": True,
+        }
+    elif resume and not force and _output_exists("title", stem, output_dir):
+        log.info("Title %s [skip — already done]", stem)
+        data = {
+            "source_file": cleaned_data["source_file"],
+            "stage": "title",
+            "title": _load_existing_text("title", stem, output_dir),
+            "_skipped": True,
+        }
+    else:
+        data = title.perform(
+            cleaned_data["cleaned_text"],
+            source_file=cleaned_data["source_file"],
             output_dir=output_dir,
             stem=stem,
         )
@@ -234,6 +281,12 @@ def _run_single(
         "cleaned": cleaned_data,
     }
 
+    if cfg("title_enabled"):
+        result["title"] = run_title_step(
+            cleaned_data, stem, output_dir,
+            resume=resume, force=force,
+        )
+
     if not skip_translate:
         result["translated"] = run_translate_step(
             cleaned_data, stem, output_dir,
@@ -306,7 +359,26 @@ def run_pipeline_batch(
         cleanup_results[fpath] = cleaned_data
         cleanup_timings[fpath] = elapsed if not cleaned_data.get("_skipped") else 0
 
-    # Phase 3: Sequential translate
+    # Phase 3: Sequential title (opt-in)
+    title_enabled = cfg("title_enabled")
+    title_results: dict[str, dict] = {}
+    title_timings: dict[str, float] = {}
+
+    if title_enabled:
+        for f in files:
+            fpath = str(f)
+            stem = f.stem
+            cleaned_data = cleanup_results[fpath]
+            t0 = time.monotonic()
+            title_data = run_title_step(
+                cleaned_data, stem, output_dir,
+                resume=resume, force=force,
+            )
+            elapsed = time.monotonic() - t0
+            title_results[fpath] = title_data
+            title_timings[fpath] = elapsed if not title_data.get("_skipped") else 0
+
+    # Phase 4: Sequential translate
     translate_results: dict[str, dict] = {}
     translate_timings: dict[str, float] = {}
 
@@ -337,6 +409,10 @@ def run_pipeline_batch(
         }
         if cleanup_timings.get(fpath, 0):
             file_timings["cleanup"] = cleanup_timings[fpath]
+        if title_enabled:
+            result["title"] = title_results[fpath]
+            if title_timings.get(fpath, 0):
+                file_timings["title"] = title_timings[fpath]
         if not skip_translate:
             result["translated"] = translate_results[fpath]
             if translate_timings.get(fpath, 0):

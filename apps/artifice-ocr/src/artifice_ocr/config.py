@@ -28,6 +28,8 @@ _DEFAULTS: dict[str, Any] = {
     "translate_model": "translategemma:4b",
     "output_dir": "output",
     "translate_enabled": True,
+    "title_enabled": False,  # opt-in stage
+    "title_max_chars": 120,
     "resume": True,
     "max_ocr_workers": 2,
     # P4: Pipeline optimization & robustness
@@ -103,12 +105,16 @@ PERSISTED_KEYS = (
     "run_templates",
     "onboarding_dismissed",
     "ocr_backend",
+    "title_enabled",
+    "title_max_chars",
     "cleanup_backend",
     "translate_backend",
     "ollama_url",
     "huggingface_token",
     "api_key",
     "api_base_url",
+    "tropy_last_path",
+    "tropy_last_export_path",
 )
 
 _config_cache: dict[str, Any] | None = None

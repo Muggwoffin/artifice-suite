@@ -45,6 +45,13 @@ let tropyExportContext = null;  // { itemIds, isHistory }
 async function openTropyAdd() {
   tropyEls["modal-tropy-add"].classList.remove("hidden");
   resetImportState();
+  // Restore last-used Tropy import path
+  try {
+    const cfg = await api("GET", "/api/config");
+    if (cfg.tropy_last_path) {
+      tropyEls["tropy-import-path"].value = cfg.tropy_last_path;
+    }
+  } catch { /* settings are optional */ }
 }
 
 function resetImportState() {
@@ -123,20 +130,38 @@ function renderImportResults(data) {
     const row = document.createElement("div");
     row.className = "tropy-result-row";
     const missingBadge = item.missing_count > 0
-      ? ` <span class="tropy-result-missing">${item.missing_count} missing</span>`
+      ? ` <span class="tropy-result-missing" data-missing="${item.missing_count}" title="${item.missing_count} photo(s) not found on disk">${item.missing_count} missing</span>`
       : "";
     row.innerHTML = `
       <input type="checkbox" class="tropy-result-check" data-group="${escapeHtml(item.group)}" checked>
       <span class="tropy-result-title">${escapeHtml(item.title)}</span>
       <span class="tropy-result-meta">${item.photo_count} photo(s)${missingBadge}</span>`;
     row.addEventListener("click", (e) => {
-      if (e.target.tagName !== "INPUT") {
+      if (e.target.tagName !== "INPUT" && !e.target.closest(".tropy-result-missing")) {
         const cb = row.querySelector("input[type=checkbox]");
         cb.checked = !cb.checked;
         updateImportSummary();
       }
     });
     row.querySelector("input[type=checkbox]").addEventListener("change", updateImportSummary);
+    // Missing badge tooltip toggle
+    const badge = row.querySelector(".tropy-result-missing");
+    if (badge) {
+      badge.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const existing = row.querySelector(".tropy-missing-tooltip");
+        if (existing) {
+          existing.remove();
+          return;
+        }
+        const tip = document.createElement("div");
+        tip.className = "tropy-missing-tooltip dim";
+        tip.textContent = `${badge.dataset.missing} photo(s) not found on disk`;
+        row.appendChild(tip);
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => { if (tip.parentNode) tip.remove(); }, 5000);
+      });
+    }
     frag.appendChild(row);
   }
 
@@ -147,6 +172,9 @@ function renderImportResults(data) {
   if (items.length > 0) {
     tropyEls["btn-tropy-add-queue"].disabled = false;
   }
+
+  // Render warnings below the list
+  renderTropyWarnings(data.warnings);
 }
 
 function updateImportSummary() {
@@ -164,6 +192,24 @@ function updateImportSummary() {
       ? `${selected.length} of ${checks.length} item(s) — ${totalPhotos} photo(s)`
       : "No items selected";
   tropyEls["btn-tropy-add-queue"].disabled = selected.length === 0;
+}
+
+function renderTropyWarnings(warnings) {
+  // Remove any existing warnings section
+  const existing = tropyEls["tropy-import-results"].querySelector(".tropy-warnings");
+  if (existing) existing.remove();
+
+  if (!warnings || !warnings.length) return;
+
+  const section = document.createElement("div");
+  section.className = "tropy-warnings dim";
+  for (const warning of warnings) {
+    const line = document.createElement("div");
+    line.className = "tropy-warning-line";
+    line.textContent = "\u26A0 " + warning;
+    section.appendChild(line);
+  }
+  tropyEls["tropy-import-results"].appendChild(section);
 }
 
 // Events
@@ -374,6 +420,10 @@ tropyEls["btn-tropy-add-queue"].onclick = async () => {
       msg += ` (${data.missing.length} file(s) missing)`;
     }
     if (window.ArtificeToast) window.ArtificeToast.success(msg);
+    // Persist last-used Tropy import path
+    if (tropyImportSource && tropyImportSource.type === "path" && tropyImportSource.value) {
+      api("POST", "/api/config", { tropy_last_path: tropyImportSource.value }).catch(() => {});
+    }
     setQueue(data.items);
     tropyEls["modal-tropy-add"].classList.add("hidden");
   } catch (err) {
@@ -517,11 +567,100 @@ tropyEls["btn-send-tropy-write"].onclick = async () => {
 
     const data = await res.json();
     const filename = data.filename || savePath.split(/[\\/]/).pop();
-    tropyEls["tropy-export-status"].textContent = "Exported to " + filename;
+    const jsonldContent = data.jsonld || null;
+
+    // Step 3 – try direct import into Tropy via local HTTP API
+    if (jsonldContent) {
+      tropyEls["tropy-export-loading-text"].textContent = "Importing into Tropy…";
+      try {
+        const importRes = await api("POST", "/api/tropy/import-to-tropy", { jsonld: jsonldContent });
+        if (importRes.ok) {
+          tropyEls["tropy-export-status"].textContent = "Imported into Tropy via API";
+          tropyEls["tropy-export-status"].className = "tropy-export-status success";
+          if (window.ArtificeToast) {
+            window.ArtificeToast.success("Imported into Tropy via API");
+          }
+          tropyEls["tropy-export-loading"].classList.add("hidden");
+          // Persist last-used Tropy export path
+          api("POST", "/api/config", { tropy_last_export_path: savePath }).catch(() => {});
+          return;
+        }
+        // API import failed — fall through to file-based flow with a note
+        const reason = importRes.reason || "Tropy API not reachable";
+        tropyEls["tropy-export-status"].textContent = reason + " — file saved at " + filename;
+        tropyEls["tropy-export-status"].className = "tropy-export-status dim";
+      } catch (err) {
+        // Network error to our own backend — fall through to file-based flow
+        tropyEls["tropy-export-status"].textContent = "Tropy API not available — file saved at " + filename;
+        tropyEls["tropy-export-status"].className = "tropy-export-status dim";
+      }
+    }
+
+    // Build multi-line success block with actions
+    const statusBlock = document.createElement("div");
+
+    const statusLine = document.createElement("div");
+    statusLine.textContent = "Exported to " + filename;
+    statusBlock.appendChild(statusLine);
+
+    // Re-import instructions
+    const stepsLine = document.createElement("div");
+    stepsLine.className = "dim";
+    stepsLine.textContent = "In Tropy: File → Import Items\u2026 → Select the exported file";
+    statusBlock.appendChild(stepsLine);
+
+    // Action buttons row
+    const actionsRow = document.createElement("div");
+    actionsRow.className = "tropy-export-actions";
+
+    const btnReveal = document.createElement("button");
+    btnReveal.type = "button";
+    btnReveal.className = "btn";
+    btnReveal.textContent = "Reveal in file manager";
+    btnReveal.onclick = async () => {
+      btnReveal.disabled = true;
+      btnReveal.textContent = "Opening\u2026";
+      try {
+        const rev = await api("POST", "/api/native/reveal", { path: savePath });
+        if (!rev.ok) {
+          if (window.ArtificeToast) window.ArtificeToast.error("Reveal failed: " + (rev.error || "unknown"));
+        }
+      } catch (err) {
+        if (window.ArtificeToast) window.ArtificeToast.error("Reveal failed: " + err.message);
+      }
+      btnReveal.disabled = false;
+      btnReveal.textContent = "Reveal in file manager";
+    };
+    actionsRow.appendChild(btnReveal);
+
+    const btnCopyPath = document.createElement("button");
+    btnCopyPath.type = "button";
+    btnCopyPath.className = "btn";
+    btnCopyPath.textContent = "Copy path";
+    btnCopyPath.onclick = () => {
+      navigator.clipboard.writeText(savePath).then(() => {
+        const orig = btnCopyPath.textContent;
+        btnCopyPath.textContent = "Copied!";
+        setTimeout(() => { btnCopyPath.textContent = orig; }, 2000);
+      }).catch(() => {
+        if (window.ArtificeToast) window.ArtificeToast.error("Could not copy to clipboard");
+      });
+    };
+    actionsRow.appendChild(btnCopyPath);
+
+    statusBlock.appendChild(actionsRow);
+
+    // Replace the status element's content and set success class
+    tropyEls["tropy-export-status"].innerHTML = "";
     tropyEls["tropy-export-status"].className = "tropy-export-status success";
+    tropyEls["tropy-export-status"].appendChild(statusBlock);
+
     if (window.ArtificeToast) {
       window.ArtificeToast.success("Exported to " + filename);
     }
+
+    // Persist last-used Tropy export path
+    api("POST", "/api/config", { tropy_last_export_path: savePath }).catch(() => {});
   } catch (err) {
     tropyEls["tropy-export-status"].textContent = err.message;
     tropyEls["tropy-export-status"].className = "tropy-export-status error";

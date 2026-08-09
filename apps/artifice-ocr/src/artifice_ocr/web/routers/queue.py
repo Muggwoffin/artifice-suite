@@ -58,6 +58,16 @@ def queue_item_image(item_id: str):
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found in the queue")
 
+    # A Tropy-imported photo may have passed pathcheck but not exist on disk
+    # (the import sets a 'missing' flag). FileResponse on a non-existent path
+    # produces a raw Starlette 404 with no useful detail; check first so the
+    # client gets an actionable message and the preview pane can show it.
+    if not Path(item.path).exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Source file not found on disk: {Path(item.path).name}",
+        )
+
     suffix = Path(item.path).suffix.lower()
     media_type = _IMAGE_PASSTHROUGH_TYPES.get(suffix)
     if media_type:
