@@ -49,6 +49,12 @@ Beyond basic grammar and typos, ArtificeDraft executes deterministic Python chec
 - **Interactive Review Mode (Web UI)**: Side-by-side card review powered by `packages/shared-ui`. Approve, reject, or edit individual changes before generating the final file.
 - **Statistical Changelogs**: Generates change summaries tracking edit rates, word count deltas, estimated page counts, and categorized breakdowns (grammar, spelling, clarity, style).
 
+### 4. Tropy Notes Round-Trip
+Pull Tropy item notes from a JSON-LD export, run them through ArtificeDraft's copy-editing pipeline, and push corrected notes back as a re-importable JSON-LD file:
+- **Import**: `POST /api/tropy/notes/import` — accepts a Tropy JSON-LD export path, extracts note text from each item, and loads it for editing.
+- **Export**: `POST /api/tropy/notes/export` — writes edited notes back into a new JSON-LD envelope with preserved item structure, ready for re-import into Tropy.
+- **Module**: `artifice_draft/tropy_notes.py`.
+
 ---
 
 ## 🎨 Design System (`packages/shared-ui`)

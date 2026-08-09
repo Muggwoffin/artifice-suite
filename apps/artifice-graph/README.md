@@ -37,7 +37,13 @@ Each stage operates independently and can be executed separately or resumed at a
 - **Obsidian Vault Exporter**: Generates a hyperlinked vault containing source documents (`01_Sources/`) and entity notes (`02_Entities/{Persons,Organizations,...}/`) with Dataview metadata, `[[wikilinks]]`, evidence quotes, and source backlinks.
 - **Graph Exporters**: Generates NetworkX directed graphs exported as **GraphML** (Gephi/yEd), **GEXF** (Gephi-native with visual attributes), **JSON** (Node-link format), **CSV** (Node/Edge tables), and **Cypher** (Neo4j import scripts).
 
-### 2. Demo Mode (No Model Required)
+### 2. Tropy Provenance Import
+Reads `artifice-ocr`'s `tropy_manifest.json` (`schema_version: "1.0"`) to build knowledge-graph nodes enriched with archival provenance:
+- **Entity provenance**: item title, group, source photo path, orientation, and checksum attached to every graph node derived from a Tropy-imported OCR job.
+- **Route**: `POST /api/tropy/import-manifest` — accepts a manifest path, validates the schema version, and merges provenance into the active graph.
+- **Module**: `artifice_graph/tropy_import.py`.
+
+### 3. Demo Mode (No Model Required)
 Includes a built-in synthetic dataset on the Congress of Vienna (12 entities, 8 relationships) to test the graph exporters and Obsidian vault generators without requiring a running local LLM:
 ```bash
 artifice-graph demo

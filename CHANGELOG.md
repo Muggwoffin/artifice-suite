@@ -8,6 +8,49 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 
 ## [Unreleased]
 
+### Added
+- **Auto-generated page titles in `artifice-ocr`.** New optional pipeline stage
+  (`stages/title.py`) generates short archival titles (≤120 chars) for each OCR'd
+  page using the configured `cleanup_model` via `model_harness.contract` — the
+  first OCR-side inference call through the harness contract with a required
+  Pydantic schema. Opt-in via `title_enabled` config (default off); length cap
+  plus truncation, accent warning, repetition rejection, and provenance marker
+  (`generated_by_model: true`) guard every output. Falls back to basename on any
+  failure. Titles written to `title/text/` and `title/json/`. The pipeline now
+  runs 5 stages: OCR → Cleanup → Title (optional) → Structure → Translate.
+- **Live read-only `.tpy` browse in `artifice-ocr`.** New `tropy_db.py` opens
+  Tropy `.tpy` SQLite databases in read-only mode (`file:<path>?mode=ro`) with
+  short-lived per-query connections. Browse projects, lists, tags, items, and
+  photos without modifying database state. Feature-flagged via
+  `ARTIFICE_OCR_TROPY_LIVE_READ` env var (off by default). Corrected against the
+  actual Tropy schema: titles via `metadata`/`metadata_values` join, photo paths
+  base-relative, soft-delete filtering via `trash` table. Browse→enqueue maps
+  browsed items directly to `JobItem` instances, bypassing manual JSON-LD export.
+  Routes: `/api/tropy/browse/projects`, `/lists`, `/tags`, `/items`, `/items/{id}`,
+  `/enqueue`.
+- **File-bridge UX improvements in `artifice-ocr`.** Inline warning rendering for
+  missing photos and pathcheck rejections in the import modal. One-click write-back
+  upgraded: tries Tropy's local HTTP import API (`POST /project/import` on port
+  2029) first, falls back to "reveal in file manager" plus re-import instructions.
+  New `/api/native/reveal` route opens the OS file manager at the exported file's
+  location. Workflow memory persists the last Tropy import path and export path in
+  user settings.
+- **Provenance continuity across `artifice-ocr`, `artifice-graph`, and
+  `artifice-draft`.** History UI provenance chips show Tropy item title, group,
+  and photo path per history row. LudwigLang export frontmatter extended with
+  `tropy_item_id`, `archive_ref`, and `orientation` when Tropy provenance is
+  available. Versioned manifest contract: `tropy_manifest.json` carries
+  `schema_version: "1.0"` with a documented field shape. Graph manifest consumption
+  via new `tropy_import.py` module and `POST /api/tropy/import-manifest` route in
+  `artifice-graph`. Draft notes round-trip via new `tropy_notes.py` module and
+  `POST /api/tropy/notes/import` and `/export` routes in `artifice-draft`.
+- **Security hardening.** `artifice-ocr` and `artifice-graph` servers refuse to
+  start when bound to a non-loopback address. `str(e)` reflection fix in graph's
+  `api_get_models` returns a generic message and logs detail server-side.
+  Resolved-path echo fix in `ludwiglang.py` 404 handler. `tropy_db.py` error
+  messages sanitised — never echoes resolved paths or SQLite URI connection
+  strings.
+
 ### Changed
 - Consolidated three duplicated subsystems — path validation, local-server
   bootstrap, and legacy-data migration — from per-app copies into two shared
@@ -32,6 +75,12 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   `PYTHONNET_PYDLL` was unset and `_internal/` (`sys._MEIPASS`) wasn't on
   `%PATH%`. Affected `artifice-ocr`, `artifice-graph`, and `artifice-draft`
   (byte-identical `window.py` copies). Non-frozen/dev runs unaffected. PR #63.
+- `artifice-ocr` queue image route returned an opaque 404 and the OCR stage
+  raised `FileNotFoundError` for Tropy-imported photos that passed pathcheck
+  but did not exist on disk. Both now check file existence first and return
+  actionable messages using `Path.name` only (never the resolved path).
+- Removed references to retired `tropy.py`, `tropy_read.py`, and
+  `tropy_write.py` from the OCR README and ruff baseline.
 
 ## [0.2.0] - 2026-08-06
 

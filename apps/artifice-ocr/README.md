@@ -16,8 +16,9 @@ ArtificeOCR is a local-first pipeline built specifically for processing, cleanin
 │   1. Vision OCR Extraction (olmocr-2-7b via LM Studio)                     │
 │   2. Guarded Text Cleanup (Gemma 4 via Ollama - Capitalisation/Umlaut Guard)│
 │   3. Guarded Text Structuring (Gemma 4 via Ollama - Word-for-Word Guard)   │
-│   4. Historical Translation (TranslateGemma via Ollama - German to English)│
-│   5. Multi-Format Export (PDF / LudwigLang Markdown / Tropy Writeback)     │
+│   4. Auto-Generated Page Titles (optional, via cleanup model)              │
+│   5. Historical Translation (TranslateGemma via Ollama - German to English)│
+│   6. Multi-Format Export (PDF / LudwigLang Markdown / Tropy Writeback)     │
 └────────────────────────────────────────────────────────────────────────────┘
 
 1. **Deterministic Execution, No Conversational Noise:** ArtificeOCR never "chats" about documents. It processes images or archival manifests through a strict multi-stage pipeline and outputs structured JSON, Markdown, or PDF assets.
@@ -29,18 +30,23 @@ ArtificeOCR is a local-first pipeline built specifically for processing, cleanin
 
 ## ✨ Core Capabilities
 
-### 1. Guarded 4-Stage Processing Pipeline
+### 1. Guarded 5-Stage Processing Pipeline
 Runs entirely on local GPU hardware with complete JSON metadata outputs (prompts, confidence, guard results, timings) at every stage:
 * **Stage 1 — Vision OCR:** Converts document scans and photos into raw text using `allenai/olmocr-2-7b` via LM Studio.
 * **Stage 2 — Guarded Cleanup:** Repairs OCR artifacts using `gemma4:12b` via Ollama. Guarded against word deletions, umlaut transliteration corruptions (`ueber` $\rightarrow$ `über`), and loss of capitalized German nouns.
 * **Stage 3 — Guarded Structuring:** Adds paragraph breaks for human readability using `gemma4:12b` via Ollama. Guarded by **word-for-word equality**—only newline insertions are allowed.
-* **Stage 4 — Historical Translation:** Optional translation (e.g., German to English) using specialized models (`translategemma:4b`) via Ollama.
+* **Stage 4 — Auto-Generated Page Titles (optional):** Generates short archival titles (≤120 chars) per page using the configured `cleanup_model` via `model_harness.contract`. Opt-in via `title_enabled` config (default off). Guarded by length cap + truncation, accent warnings, and repetition rejection; falls back to basename on any failure. Outputs to `title/text/` and `title/json/`.
+* **Stage 5 — Historical Translation:** Optional translation (e.g., German to English) using specialized models (`translategemma:4b`) via Ollama.
 
 ### 2. Deep Tropy Archive Integration
 Connects to [Tropy](https://tropy.org) historical research archives via a **JSON-LD file bridge** — export from Tropy, import into ArtificeOCR, process, export back:
 * **Import Preview:** `tropy-import` scans a Tropy JSON-LD export and surfaces groups (`@type: Collection`), items, and photo paths before any file is touched. Path validation (`_tropy_pathcheck`) rejects entries whose absolute paths fall outside the configured allow-list root.
 * **Import Add:** Selected items are imported as pipeline-eligible job items with full provenance (`origin: "tropy-jsonld"`, `tropy_group`, `tropy_item_id`), mirroring Tropy's item/page structure on disk.
 * **Export & Export History:** `tropy-export` writes processed OCR text (structured, cleaned, or translated) into a new JSON-LD envelope as Tropy notes. `tropy-export-history` exports only items that already exist in the local run history, enabling incremental re-export.
+* **Live Read-Only `.tpy` Browse:** Opens Tropy `.tpy` SQLite databases directly in read-only mode (feature-flagged via `ARTIFICE_OCR_TROPY_LIVE_READ`). Browse projects, lists, tags, items, and photos — then enqueue directly into the OCR pipeline without manual JSON-LD export.
+* **One-Click Write-Back:** Tries Tropy's local HTTP import API (`POST /project/import` on port 2029) first; falls back to "reveal in file manager" plus re-import instructions.
+* **Inline Warning Surfacing:** Missing photos and pathcheck rejections render as inline warnings in the import modal, giving immediate feedback before enqueue.
+* **Workflow Memory:** Persists last Tropy import path and export path in user settings across sessions.
 
 ### 3. Multi-Format Publishing Exports
 * **Typeset PDF Compilation:** Generates continuous reading PDFs with section headings per item, provenance page markers (`[page1]`), and Playfair/Libre Baskerville typography.
@@ -55,6 +61,7 @@ Connects to [Tropy](https://tropy.org) historical research archives via a **JSON
 | :--- | :--- | :--- |
 | **Cleanup** | `_guard.check_cleanup` | Protects German capitalized nouns, forbids umlaut transliteration (`ueber` $\rightarrow$ `über`), enforces word deletion thresholds (default $\le$ 2 words), and maintains length ratios ($\ge$ 97% letters retained). |
 | **Structure** | `_guard.check_structure_only` | Enforces **word-for-word equality**—only newlines may be added. Any word alteration triggers a rejection, retaining raw text and saving the attempt as `rejected_structured_text`. |
+| **Title** | Length cap + truncation, accent warning, repetition rejection, provenance marker | Cap at `title_max_chars` (default 120); warns on replaced non-ASCII accents; rejects repeated-phrase fill; records `generated_by_model: true` with model name. Falls back to basename on any failure. |
 
 ---
 
@@ -81,13 +88,16 @@ artifice-suite/
 │       │   ├── jobs.py                # Threaded JobRunner with pause/cancel
 │       │   ├── history.py             # SQLite run history
 │       │   ├── tropy_jsonld.py        # JSON-LD file bridge (import + export)
+│       │   ├── tropy_db.py            # Live read-only .tpy browser (feature-flagged)
 │       │   ├── _tropy_pathcheck.py    # Photo-path safety validation
 │       │   ├── pdf_export.py          # PDF compilation with structuring
 │       │   ├── export_ludwiglang.py   # LudwigLang Markdown export
 │       │   ├── _guard.py              # Content preservation guards
 │       │   ├── _diff.py               # Diff & marker highlighting
-│       │   ├── stages/                # OCR, Cleanup, Structure, Translate modules
+│       │   ├── stages/                # OCR, Cleanup, Title, Structure, Translate
 │       │   └── web/                   # FastAPI server & vanilla JS SPA
+│       │       └── routers/
+│       │           └── tropy_browse.py
 │       ├── tests/                     # Pytest suite
 │       └── README.md
 └── packages/
