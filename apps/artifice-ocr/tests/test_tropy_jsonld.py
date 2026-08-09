@@ -60,11 +60,13 @@ def _simple_export(tmp_path, photos=None):
 def test_accepts_graph_envelope(tmp_path):
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [
-                 {"@type": "Photo", "path": "a.png",
-                  "checksum": "abc", "mimetype": "image/png"},
-             ]}
+            {
+                "@type": "Item",
+                "title": "X",
+                "photo": [
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
+                ],
+            }
         ]
     }
     f = tmp_path / "e.json"
@@ -76,11 +78,13 @@ def test_accepts_graph_envelope(tmp_path):
 
 def test_accepts_bare_list(tmp_path):
     export = [
-        {"@type": "Item", "title": "X",
-         "photo": [
-             {"@type": "Photo", "path": "a.png",
-              "checksum": "abc", "mimetype": "image/png"},
-         ]}
+        {
+            "@type": "Item",
+            "title": "X",
+            "photo": [
+                {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
+            ],
+        }
     ]
     f = tmp_path / "e.json"
     (tmp_path / "a.png").write_bytes(b"x")
@@ -90,11 +94,13 @@ def test_accepts_bare_list(tmp_path):
 
 
 def test_accepts_single_object(tmp_path):
-    export = {"@type": "Item", "title": "X",
-              "photo": [
-                  {"@type": "Photo", "path": "a.png",
-                   "checksum": "abc", "mimetype": "image/png"},
-              ]}
+    export = {
+        "@type": "Item",
+        "title": "X",
+        "photo": [
+            {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
+        ],
+    }
     f = tmp_path / "e.json"
     (tmp_path / "a.png").write_bytes(b"x")
     _make_export(f, export)
@@ -105,11 +111,13 @@ def test_accepts_single_object(tmp_path):
 def test_accepts_jsonld_suffix(tmp_path):
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [
-                 {"@type": "Photo", "path": "a.png",
-                  "checksum": "abc", "mimetype": "image/png"},
-             ]}
+            {
+                "@type": "Item",
+                "title": "X",
+                "photo": [
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
+                ],
+            }
         ]
     }
     f = tmp_path / "e.jsonld"
@@ -137,8 +145,7 @@ def test_extracts_expanded_title(tmp_path):
                 "@type": "Item",
                 "http://purl.org/dc/elements/1.1/title": "Expanded Title",
                 "photo": [
-                    {"@type": "Photo", "path": "a.png",
-                     "checksum": "abc", "mimetype": "image/png"},
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
                 ],
             }
         ]
@@ -153,11 +160,12 @@ def test_extracts_expanded_title(tmp_path):
 def test_title_falls_back_to_index(tmp_path):
     export = {
         "@graph": [
-            {"@type": "Item",
-             "photo": [
-                 {"@type": "Photo", "path": "a.png",
-                  "checksum": "abc", "mimetype": "image/png"},
-             ]}
+            {
+                "@type": "Item",
+                "photo": [
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
+                ],
+            }
         ]
     }
     f = tmp_path / "e.json"
@@ -174,8 +182,7 @@ def test_extracts_title_from_dc_terms(tmp_path):
                 "@type": "Item",
                 "http://purl.org/dc/terms/title": "DC Title",
                 "photo": [
-                    {"@type": "Photo", "path": "a.png",
-                     "checksum": "abc", "mimetype": "image/png"},
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
                 ],
             }
         ]
@@ -210,8 +217,10 @@ def test_normalises_single_photo_dict(tmp_path):
                 "@type": "Item",
                 "title": "X",
                 "photo": {
-                    "@type": "Photo", "path": "a.png",
-                    "checksum": "abc", "mimetype": "image/png",
+                    "@type": "Photo",
+                    "path": "a.png",
+                    "checksum": "abc",
+                    "mimetype": "image/png",
                 },
             }
         ]
@@ -270,11 +279,13 @@ def test_skips_template_and_list_nodes(tmp_path):
         "@graph": [
             {"@type": "Template", "name": "Generic"},
             {"@type": "List", "name": "My List"},
-            {"@type": "Item", "title": "Doc 1",
-             "photo": [
-                 {"@type": "Photo", "path": "a.png",
-                  "checksum": "abc", "mimetype": "image/png"},
-             ]},
+            {
+                "@type": "Item",
+                "title": "Doc 1",
+                "photo": [
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
+                ],
+            },
         ]
     }
     f = tmp_path / "e.json"
@@ -291,8 +302,12 @@ def test_reports_missing_files(tmp_path):
                 "@type": "Item",
                 "title": "Missing",
                 "photo": [
-                    {"@type": "Photo", "path": "gone.jpg",
-                     "checksum": "x", "mimetype": "image/jpeg"},
+                    {
+                        "@type": "Photo",
+                        "path": "gone.jpg",
+                        "checksum": "x",
+                        "mimetype": "image/jpeg",
+                    },
                 ],
             }
         ]
@@ -365,8 +380,7 @@ def test_rejects_absolute_posix_path(tmp_path):
     """
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": "/etc/passwd"}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": "/etc/passwd"}]},
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -379,8 +393,11 @@ def test_rejects_windows_drive_path(tmp_path):
     list — runs on any host (POSIX or Windows)."""
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": "C:/Windows/secret"}]},
+            {
+                "@type": "Item",
+                "title": "X",
+                "photo": [{"@type": "Photo", "path": "C:/Windows/secret"}],
+            },
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -391,8 +408,11 @@ def test_rejects_windows_drive_path(tmp_path):
 def test_rejects_unc_path(tmp_path):
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": "//server/share/file"}]},
+            {
+                "@type": "Item",
+                "title": "X",
+                "photo": [{"@type": "Photo", "path": "//server/share/file"}],
+            },
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -403,8 +423,7 @@ def test_rejects_unc_path(tmp_path):
 def test_rejects_dotdot_escape(tmp_path):
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": "../secret"}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": "../secret"}]},
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -415,8 +434,7 @@ def test_rejects_dotdot_escape(tmp_path):
 def test_rejects_symlink_escape(tmp_path):
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": "link"}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": "link"}]},
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -440,8 +458,7 @@ def test_error_message_never_contains_resolved_path(tmp_path):
     # Relative escape — the original case
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": "../secret"}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": "../secret"}]},
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -457,8 +474,7 @@ def test_error_message_never_contains_resolved_path(tmp_path):
     # Absolute blocklisted — must also not leak the resolved path
     export2 = {
         "@graph": [
-            {"@type": "Item", "title": "Y",
-             "photo": [{"@type": "Photo", "path": "/etc/shadow"}]},
+            {"@type": "Item", "title": "Y", "photo": [{"@type": "Photo", "path": "/etc/shadow"}]},
         ]
     }
     f2 = _make_export(tmp_path / "e2.json", export2)
@@ -488,8 +504,12 @@ def test_accepts_posix_absolute_path(tmp_path):
                 "@type": "Item",
                 "title": "Test Item",
                 "photo": [
-                    {"@type": "Photo", "path": str(tmp_path / "scan.tif"),
-                     "checksum": "abc", "mimetype": "image/tiff"},
+                    {
+                        "@type": "Photo",
+                        "path": str(tmp_path / "scan.tif"),
+                        "checksum": "abc",
+                        "mimetype": "image/tiff",
+                    },
                 ],
             }
         ]
@@ -513,8 +533,12 @@ def test_accepts_absolute_missing_file(tmp_path):
                 "@type": "Item",
                 "title": "Missing Remote",
                 "photo": [
-                    {"@type": "Photo", "path": str(tmp_path / "nowhere.pdf"),
-                     "checksum": "x", "mimetype": "application/pdf"},
+                    {
+                        "@type": "Photo",
+                        "path": str(tmp_path / "nowhere.pdf"),
+                        "checksum": "x",
+                        "mimetype": "application/pdf",
+                    },
                 ],
             }
         ]
@@ -556,8 +580,7 @@ def test_rejects_each_posix_blocked_root(tmp_path, blocked_root):
     photo_path = f"{blocked_root}/secret.tif"
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": photo_path}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": photo_path}]},
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -582,8 +605,7 @@ def test_rejects_each_windows_blocked_root(tmp_path, blocked_root):
     photo_path = f"{blocked_root}/secret.tif"
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": photo_path}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": photo_path}]},
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -643,8 +665,11 @@ def test_rejects_unsupported_extension(tmp_path, suffix):
     (tmp_path / filename).write_bytes(b"x")
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": str(tmp_path / filename)}]},
+            {
+                "@type": "Item",
+                "title": "X",
+                "photo": [{"@type": "Photo", "path": str(tmp_path / filename)}],
+            },
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -661,8 +686,11 @@ def test_rejects_null_byte_in_path(tmp_path):
     """A photo path containing ``\\x00`` is rejected immediately."""
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": "/tmp/x\x00.png"}]},
+            {
+                "@type": "Item",
+                "title": "X",
+                "photo": [{"@type": "Photo", "path": "/tmp/x\x00.png"}],
+            },
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -677,8 +705,7 @@ def test_rejects_overlong_path(tmp_path):
     long_path = "/tmp/" + "a" * (MAX_PATH_CHARS - 4) + ".tif"
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": long_path}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": long_path}]},
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -708,8 +735,7 @@ def test_rejects_symlink_to_blocked_root(tmp_path):
 
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": str(evil_link)}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": str(evil_link)}]},
         ]
     }
     f = _make_export(export_dir / "e.json", export)
@@ -732,9 +758,18 @@ def test_accepts_symlink_to_legit_file_with_warning(tmp_path):
 
     export = {
         "@graph": [
-            {"@type": "Item", "title": "Symlink Test",
-             "photo": [{"@type": "Photo", "path": str(link),
-                        "checksum": "abc", "mimetype": "image/tiff"}]},
+            {
+                "@type": "Item",
+                "title": "Symlink Test",
+                "photo": [
+                    {
+                        "@type": "Photo",
+                        "path": str(link),
+                        "checksum": "abc",
+                        "mimetype": "image/tiff",
+                    }
+                ],
+            },
         ]
     }
     f = _make_export(export_dir / "e.json", export)
@@ -763,31 +798,48 @@ def test_pathcheck_frozensets_closed():
         WINDOWS_BLOCKED_ROOTS,
     )
 
-    assert MEDIA_SUFFIXES == frozenset(
-        {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
+    assert frozenset({".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}) == MEDIA_SUFFIXES
+
+    assert (
+        frozenset(
+            {
+                "/etc",
+                "/usr",
+                "/bin",
+                "/sbin",
+                "/lib",
+                "/lib64",
+                "/var",
+                "/sys",
+                "/proc",
+                "/dev",
+                "/boot",
+                "/root",
+                "/run",
+                "/private/etc",
+                "/private/var",
+            }
+        )
+        == POSIX_BLOCKED_ROOTS
     )
 
-    assert POSIX_BLOCKED_ROOTS == frozenset(
-        {
-            "/etc", "/usr", "/bin", "/sbin", "/lib", "/lib64",
-            "/var", "/sys", "/proc", "/dev", "/boot", "/root", "/run",
-            "/private/etc", "/private/var",
-        }
+    assert (
+        frozenset(
+            {
+                "c:/windows",
+                "c:/program files",
+                "c:/program files (x86)",
+                "c:/programdata",
+                "c:/$recycle.bin",
+                "c:/system volume information",
+            }
+        )
+        == WINDOWS_BLOCKED_ROOTS
     )
 
-    assert WINDOWS_BLOCKED_ROOTS == frozenset(
-        {
-            "c:/windows",
-            "c:/program files",
-            "c:/program files (x86)",
-            "c:/programdata",
-            "c:/$recycle.bin",
-            "c:/system volume information",
-        }
-    )
-
-    assert BLOCKED_HOME_CHILDREN == frozenset(
-        {".ssh", ".gnupg", ".aws", ".azure", ".kube", ".docker", "AppData"}
+    assert (
+        frozenset({".ssh", ".gnupg", ".aws", ".azure", ".kube", ".docker", "AppData"})
+        == BLOCKED_HOME_CHILDREN
     )
 
 
@@ -811,8 +863,12 @@ def test_content_import_round_trips_same_as_path_import(tmp_path):
                 "@type": "Item",
                 "title": "Test Item",
                 "photo": [
-                    {"@type": "Photo", "path": str(photo),
-                     "checksum": "abc", "mimetype": "image/png"},
+                    {
+                        "@type": "Photo",
+                        "path": str(photo),
+                        "checksum": "abc",
+                        "mimetype": "image/png",
+                    },
                 ],
             }
         ]
@@ -829,10 +885,10 @@ def test_content_import_round_trips_same_as_path_import(tmp_path):
 
     assert preview_path.export_name == preview_content.export_name
     assert len(preview_path.items) == len(preview_content.items)
-    for pi, ci in zip(preview_path.items, preview_content.items):
+    for pi, ci in zip(preview_path.items, preview_content.items, strict=True):
         assert pi.title == ci.title
         assert len(pi.photos) == len(ci.photos)
-        for pp, cp in zip(pi.photos, ci.photos):
+        for pp, cp in zip(pi.photos, ci.photos, strict=True):
             assert pp.path_rel == cp.path_rel
             assert pp.mimetype == cp.mimetype
             assert pp.checksum == cp.checksum
@@ -851,8 +907,12 @@ def test_content_import_skips_relative_photos(tmp_path):
                 "@type": "Item",
                 "title": "Test Item",
                 "photo": [
-                    {"@type": "Photo", "path": "relative_photo.jpg",
-                     "checksum": "abc", "mimetype": "image/jpeg"},
+                    {
+                        "@type": "Photo",
+                        "path": "relative_photo.jpg",
+                        "checksum": "abc",
+                        "mimetype": "image/jpeg",
+                    },
                 ],
             }
         ]
@@ -861,10 +921,9 @@ def test_content_import_skips_relative_photos(tmp_path):
     preview = load_export_content(text, filename="export.json")
 
     assert len(preview.items) == 0
-    assert any(
-        "relative path" in w and "save the export to disk" in w
-        for w in preview.warnings
-    ), f"Expected relative-path warning in: {preview.warnings}"
+    assert any("relative path" in w and "save the export to disk" in w for w in preview.warnings), (
+        f"Expected relative-path warning in: {preview.warnings}"
+    )
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX absolute test")
@@ -881,8 +940,12 @@ def test_content_import_accepts_absolute_photos(tmp_path):
                 "@type": "Item",
                 "title": "Abs Photo",
                 "photo": [
-                    {"@type": "Photo", "path": str(photo),
-                     "checksum": "abc", "mimetype": "image/tiff"},
+                    {
+                        "@type": "Photo",
+                        "path": str(photo),
+                        "checksum": "abc",
+                        "mimetype": "image/tiff",
+                    },
                 ],
             }
         ]
@@ -926,8 +989,7 @@ def test_relative_only_flag_rejects_absolute(monkeypatch, tmp_path):
 
     export = {
         "@graph": [
-            {"@type": "Item", "title": "X",
-             "photo": [{"@type": "Photo", "path": "/tmp/x.tif"}]},
+            {"@type": "Item", "title": "X", "photo": [{"@type": "Photo", "path": "/tmp/x.tif"}]},
         ]
     }
     f = _make_export(tmp_path / "e.json", export)
@@ -947,8 +1009,12 @@ def test_normalises_backslash_paths(tmp_path):
                 "@type": "Item",
                 "title": "Backslash",
                 "photo": [
-                    {"@type": "Photo", "path": r"assets\a.png",
-                     "checksum": "abc", "mimetype": "image/png"},
+                    {
+                        "@type": "Photo",
+                        "path": r"assets\a.png",
+                        "checksum": "abc",
+                        "mimetype": "image/png",
+                    },
                 ],
             }
         ]
@@ -974,8 +1040,13 @@ def test_pdf_page_is_non_null(tmp_path):
                 "@type": "Item",
                 "title": "PDF Item",
                 "photo": [
-                    {"@type": "Photo", "path": "doc.pdf", "checksum": "x",
-                     "mimetype": "application/pdf", "page": 2}
+                    {
+                        "@type": "Photo",
+                        "path": "doc.pdf",
+                        "checksum": "x",
+                        "mimetype": "application/pdf",
+                        "page": 2,
+                    }
                 ],
             }
         ]
@@ -1034,17 +1105,17 @@ def test_pages_to_job_items_can_filter_by_group(tmp_path):
     export = {
         "@graph": [
             {
-                "@type": "Item", "title": "Keep",
+                "@type": "Item",
+                "title": "Keep",
                 "photo": [
-                    {"@type": "Photo", "path": "a.png",
-                     "checksum": "abc", "mimetype": "image/png"},
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
                 ],
             },
             {
-                "@type": "Item", "title": "Skip",
+                "@type": "Item",
+                "title": "Skip",
                 "photo": [
-                    {"@type": "Photo", "path": "a.png",
-                     "checksum": "abc", "mimetype": "image/png"},
+                    {"@type": "Photo", "path": "a.png", "checksum": "abc", "mimetype": "image/png"},
                 ],
             },
         ]
@@ -1098,7 +1169,8 @@ def test_build_export_produces_valid_structure(tmp_path):
             label="doc.pdf  p.1",
             language="de",
             item_node={
-                "@type": "Item", "title": "Doc",
+                "@type": "Item",
+                "title": "Doc",
                 "photo": [{"@type": "Photo", "path": "doc.pdf"}],
             },
             group="abc:0",
@@ -1205,9 +1277,16 @@ def test_export_json_produces_indented_json(tmp_path):
     f.write_bytes(b"%PDF")
     photos = [
         ExportPhoto(
-            abs_path=f, text="text", label="l", language="de",
+            abs_path=f,
+            text="text",
+            label="l",
+            language="de",
             item_node={"@type": "Item", "title": "Doc"},
-            group="g", photo_index=0, path_rel="d", checksum="c", mimetype="m",
+            group="g",
+            photo_index=0,
+            path_rel="d",
+            checksum="c",
+            mimetype="m",
         ),
     ]
     s = export_json(photos)

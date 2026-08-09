@@ -12,7 +12,6 @@ and are included here.
 import contextlib
 import json
 import os
-import sys
 import time
 import webbrowser
 from html import escape
@@ -84,8 +83,6 @@ app.include_router(ludwiglang_router.router)
 
 # ── Static assets (resolved through importlib.resources — freeze-safe) ─────
 import importlib.resources
-
-import shared_ui
 
 # Resolved through importlib.resources, NOT a __file__-relative path.  This
 # app is distributed as a frozen .exe/.dmg, where __file__ points inside a
@@ -591,16 +588,6 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # --------------------------------------------------------------------------- #
 # bootstrap
 # --------------------------------------------------------------------------- #
-
-from shared_ui.handoff import cleanup_expired, write_discovery  # noqa: E402
-from shared_ui.server_bootstrap import (  # noqa: E402
-    ensure_std_streams,
-    free_port,
-    port_available,
-    report_startup_failure,
-    start_server_thread,
-    wait_for_server,
-)
 
 # Re-export under the private names that `main()` and the test suite expect.
 _free_port = free_port

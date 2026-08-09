@@ -8,7 +8,6 @@ Form-driven classification (NOT ``os.name`` branching).  Every check is
 segment-based — ``/etc`` must not match ``/etcfoo``.
 """
 
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,9 +15,7 @@ from pathlib import Path
 # closed-vocabulary frozensets
 # --------------------------------------------------------------------------- #
 
-MEDIA_SUFFIXES: frozenset[str] = frozenset(
-    {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
-)
+MEDIA_SUFFIXES: frozenset[str] = frozenset({".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"})
 # NOTE: .gif is EXCLUDED — the pipeline's SUPPORTED_EXTENSIONS doesn't include
 # it; admitting it means items that die at OCR.
 
@@ -115,13 +112,10 @@ def validate_absolute_photo(
     """
     # ---- step 1: null byte / max chars ----------------------------------
     if "\x00" in raw_path:
-        raise ValueError(
-            f"Photo path contains a null byte: '{Path(raw_path).name}'"
-        )
+        raise ValueError(f"Photo path contains a null byte: '{Path(raw_path).name}'")
     if len(raw_path) > MAX_PATH_CHARS:
         raise ValueError(
-            f"Photo path is too long ({len(raw_path)} characters; "
-            f"max {MAX_PATH_CHARS})"
+            f"Photo path is too long ({len(raw_path)} characters; max {MAX_PATH_CHARS})"
         )
 
     # ---- step 2: form classification (done by caller with UNC already
@@ -134,9 +128,7 @@ def validate_absolute_photo(
     try:
         expanded = normalised.expanduser()
     except (OSError, RuntimeError) as exc:
-        raise ValueError(
-            f"Could not expand user in path '{normalised.name}': {exc}"
-        ) from exc
+        raise ValueError(f"Could not expand user in path '{normalised.name}': {exc}") from exc
 
     # Symlink detection before resolve (may fail for inaccessible paths)
     try:
@@ -154,9 +146,7 @@ def validate_absolute_photo(
     try:
         resolved = expanded.resolve(strict=False)
     except OSError as exc:
-        raise ValueError(
-            f"Could not resolve path '{normalised.name}': {exc}"
-        ) from exc
+        raise ValueError(f"Could not resolve path '{normalised.name}': {exc}") from exc
 
     # ---- step 4: blocked-root check on resolved form ---------------------
     # Catches symlink-collapse targets (e.g. /etc → /private/etc on macOS)
@@ -214,9 +204,7 @@ def _check_blocked_roots(path: Path, is_windows: bool) -> None:
 
     Raises ``ValueError`` on match.
     """
-    blocked_roots: frozenset[str] = (
-        WINDOWS_BLOCKED_ROOTS if is_windows else POSIX_BLOCKED_ROOTS
-    )
+    blocked_roots: frozenset[str] = WINDOWS_BLOCKED_ROOTS if is_windows else POSIX_BLOCKED_ROOTS
     pparts = _path_parts(path, is_windows)
 
     for root_str in blocked_roots:
@@ -224,10 +212,7 @@ def _check_blocked_roots(path: Path, is_windows: bool) -> None:
         rparts = _path_parts(root_path, is_windows)
 
         if len(pparts) >= len(rparts) and pparts[: len(rparts)] == rparts:
-            raise ValueError(
-                f"Photo path '{path.name}' points into a protected "
-                f"system directory"
-            )
+            raise ValueError(f"Photo path '{path.name}' points into a protected system directory")
 
 
 def _check_home_children(path: Path, *, home: Path | None = None) -> None:
@@ -246,8 +231,7 @@ def _check_home_children(path: Path, *, home: Path | None = None) -> None:
     parts_below_home = rel.parts
     if parts_below_home and parts_below_home[0] in BLOCKED_HOME_CHILDREN:
         raise ValueError(
-            f"Photo path '{path.name}' points into a protected directory "
-            f"under your home folder"
+            f"Photo path '{path.name}' points into a protected directory under your home folder"
         )
 
 

@@ -537,7 +537,6 @@ def main() -> None:
     """
     import argparse
     import contextlib
-    import sys as _sys
 
     ensure_std_streams()
 
@@ -597,34 +596,23 @@ def main() -> None:
             server_thread.join()
         return
 
-    # ── Frozen executable: try a native window ─────────────────────────
-    # Always attempt native window
+    # ── Always attempt a native window, fall back to browser ────────────
+    # Lazy import — pywebview must not be required at module scope
+    # for non-frozen installs (e.g. `uv tool install` users who don't
+    # have a webview backend).  ``open_native_window`` swallows every
+    # backend/import failure internally and returns a ``WindowResult``,
+    # so no try/except is needed here.
     from .window import open_native_window  # noqa: PLC0415
 
-    try:
-        result = open_native_window(url, title="ArtificeDraft")
-        if result.opened:
-            return
-
-        # Window failed — fall back to browser (same as non-frozen mode,
-        # but with an extra line explaining why).
-        print(result.reason, flush=True)
-        print(f"Falling back — ArtificeDraft running at {url}", flush=True)
-        from .window import open_native_window  # noqa: PLC0415
-
-        result = open_native_window(url, title="ArtificeDraft")
-        if result.opened:
-            return
-
-        print(result.reason, flush=True)
-        print(f"Falling back — ArtificeDraft running at {url}", flush=True)
-        webbrowser.open(url)
-        with contextlib.suppress(KeyboardInterrupt):
-            server_thread.join()
+    result = open_native_window(url, title="ArtificeDraft")
+    if result.opened:
+        # Window closed by user — exit cleanly.
+        # The daemon server thread dies with the process.
         return
 
-    # ── Non-frozen / --browser mode ────────────────────────────────────
-    print(f"ArtificeDraft running at {url}  (Ctrl+C to stop)", flush=True)
+    # Window unavailable — fall back to the system browser.
+    print(result.reason, flush=True)
+    print(f"Falling back — ArtificeDraft running at {url}", flush=True)
     webbrowser.open(url)
     with contextlib.suppress(KeyboardInterrupt):
         server_thread.join()
