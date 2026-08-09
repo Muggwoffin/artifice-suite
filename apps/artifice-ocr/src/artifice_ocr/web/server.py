@@ -25,6 +25,17 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 
+import shared_ui
+from shared_ui.handoff import cleanup_expired, write_discovery
+from shared_ui.server_bootstrap import (
+    ensure_std_streams,
+    free_port,
+    port_available,
+    report_startup_failure,
+    start_server_thread,
+    wait_for_server,
+)
+
 from .routers import analytics as analytics_router
 from .routers import byom as byom_router
 from .routers import events as events_router
@@ -673,8 +684,20 @@ def main() -> None:
         return
 
     # ── Frozen executable: try a native window ───────────────────────────
-    _frozen = bool(getattr(sys, "frozen", False))
-    if _frozen:
+    # Always attempt native window
+    from .window import open_native_window  # noqa: PLC0415
+
+    try:
+        result = open_native_window(url, title="ArtificeOCR")
+        if result.opened:
+            # Window closed by user — exit cleanly.
+            # The daemon server thread dies with the process.
+            return
+
+        # Window failed — fall back to browser (same as non-frozen mode,
+        # but with an extra line explaining why).
+        print(result.reason, flush=True)
+        print(f"Falling back — ArtificeOCR running at {url}", flush=True)
         # Lazy import — pywebview must not be required at module scope
         # for non-frozen installs (e.g. `uv tool install` users who don't
         # have a webview backend).

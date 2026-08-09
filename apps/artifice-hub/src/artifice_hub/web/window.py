@@ -43,10 +43,32 @@ class _WindowApi:
 
     def __init__(self) -> None:
         self._window = None
+        self._maximized = False
 
     def minimize(self) -> None:
         if self._window is not None:
             self._window.minimize()
+
+    def maximize(self) -> None:
+        if self._window is not None:
+            self._window.maximize()
+            self._maximized = True
+
+    def restore(self) -> None:
+        if self._window is not None:
+            self._window.restore()
+            self._maximized = False
+
+    def toggle_maximize(self) -> None:
+        if self._window is not None:
+            if self._maximized:
+                self.restore()
+            else:
+                self.maximize()
+
+    def resize(self, width: int, height: int) -> None:
+        if self._window is not None:
+            self._window.resize(width, height)
 
     def destroy(self) -> None:
         if self._window is not None:
@@ -139,6 +161,7 @@ def open_native_window(
     # GTK, etc.) is missing at runtime.
     try:
         api = _WindowApi()
+        webview.settings['DRAG_REGION_DIRECT_TARGET_ONLY'] = True
         api._window = webview.create_window(
             title=title,
             url=url,

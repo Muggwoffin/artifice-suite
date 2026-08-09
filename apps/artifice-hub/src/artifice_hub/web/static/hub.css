@@ -63,6 +63,51 @@ html, body {
   border-bottom: 1px solid var(--rule);
   padding-top: var(--space-5);
   margin-bottom: var(--space-9);
+  position: relative;
+}
+
+/* ── Window controls (pywebview) ────────────────────────────────────── */
+.window-controls {
+  position: absolute;
+  top: var(--space-4);
+  right: 0;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.window-control {
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease,
+              color var(--duration-fast) ease;
+}
+
+.window-control:hover {
+  background-color: var(--paper-recessed);
+  color: var(--ink);
+}
+
+.window-close:hover {
+  background-color: var(--error);
+  color: var(--paper-raised);
+}
+
+/* Hide window controls in browser mode */
+@media not (--pywebview) {
+  .window-controls {
+    display: none;
+  }
 }
 .masthead-kicker {
   font-family: var(--font-label);
@@ -588,5 +633,39 @@ html, body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Resize grip (pywebview) ───────────────────────────────────────── */
+.resize-grip {
+  position: fixed;
+  bottom: var(--space-4);
+  right: var(--space-4);
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  z-index: 300;
+}
+
+.resize-grip::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--ink-faint);
+  border-bottom: 2px solid var(--ink-faint);
+  transition: opacity var(--duration-fast) ease;
+}
+
+.resize-grip:hover::after {
+  opacity: 0.7;
+}
+
+/* Hide resize grip in browser mode */
+@media not (--pywebview) {
+  .resize-grip {
+    display: none;
   }
 }

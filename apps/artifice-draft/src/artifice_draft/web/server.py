@@ -598,8 +598,18 @@ def main() -> None:
         return
 
     # ── Frozen executable: try a native window ─────────────────────────
-    _frozen = bool(getattr(_sys, "frozen", False))
-    if _frozen and not args.browser:
+    # Always attempt native window
+    from .window import open_native_window  # noqa: PLC0415
+
+    try:
+        result = open_native_window(url, title="ArtificeDraft")
+        if result.opened:
+            return
+
+        # Window failed — fall back to browser (same as non-frozen mode,
+        # but with an extra line explaining why).
+        print(result.reason, flush=True)
+        print(f"Falling back — ArtificeDraft running at {url}", flush=True)
         from .window import open_native_window  # noqa: PLC0415
 
         result = open_native_window(url, title="ArtificeDraft")

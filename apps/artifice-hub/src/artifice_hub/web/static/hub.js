@@ -49,43 +49,6 @@
         });
     }
 
-    /* ── Stream job SSE ──────────────────────────────────────────────── */
-    function streamJob(jobId, logEl) {
-        var es = new EventSource("/api/jobs/" + jobId + "/events");
-
-        es.addEventListener("log", function (e) {
-            var data = JSON.parse(e.data);
-            logEl.textContent += data.line + "\n";
-            logEl.scrollTop = logEl.scrollHeight;
-        });
-
-        es.addEventListener("heartbeat", function () {
-            // keep-alive, no action needed
-        });
-
-        es.addEventListener("done", function (e) {
-            var data = e.data ? JSON.parse(e.data) : {};
-            es.close();
-            if (data.returncode === 0) {
-                loadApps(); // refresh dashboard
-            } else {
-                logEl.textContent += "\n[FAILED: " + (data.error_detail || "unknown error") + "]\n";
-                logEl.scrollTop = logEl.scrollHeight;
-                // Mark job card as error
-                var card = logEl.closest(".job-card");
-                if (card) {
-                    var statusEl = card.querySelector(".job-status");
-                    if (statusEl) { statusEl.textContent = "FAILED"; statusEl.style.color = "var(--error)"; }
-                }
-            }
-        });
-
-        es.onerror = function () {
-            es.close();
-            logEl.textContent += "\n[Connection lost]\n";
-        };
-    }
-
     /* ── Job UI ──────────────────────────────────────────────────────── */
     function showJob(jobId, slug, action) {
         var app = null;
@@ -320,7 +283,142 @@
         closeModal();
     });
 
+    /* ── Window controls (pywebview) ────────────────────────────────── */
+    function wireWindowControls() {
+        // Wait for pywebviewready event (or run immediately if already fired)
+        function setupControls() {
+            var minimizeBtn = document.querySelector('.window-minimize');
+            var maximizeBtn = document.querySelector('.window-maximize');
+            var closeBtn = document.querySelector('.window-close');
+            var resizeGrip = document.querySelector('.resize-grip');
+            
+            // Wire window controls
+            if (minimizeBtn) {
+                minimizeBtn.addEventListener('mousedown', function(e) {
+                    e.stopPropagation(); // Prevent drag
+                });
+                minimizeBtn.addEventListener('click', function() {
+                    window.pywebview.api.minimize();
+                });
+            }
+            
+            if (maximizeBtn) {
+                maximizeBtn.addEventListener('mousedown', function(e) {
+                    e.stopPropagation(); // Prevent drag
+                });
+                maximizeBtn.addEventListener('click', function() {
+                    window.pywebview.api.toggle_maximize();
+                });
+            }
+            
+            if (closeBtn) {
+                closeBtn.addEventListener('mousedown', function(e) {
+                    e.stopPropagation(); // Prevent drag
+                });
+                closeBtn.addEventListener('click', function() {
+                    window.pywebview.api.destroy();
+                });
+            }
+            
+            // Wire resize grip
+            if (resizeGrip) {
+                var startX, startY, startW, startH;
+                
+                resizeGrip.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startW = window.innerWidth;
+                    startH = window.innerHeight;
+                    document.addEventListener('mousemove', resizeMouseMove);
+                    document.addEventListener('mouseup', resizeMouseUp);
+                });
+                
+                function resizeMouseMove(e) {
+                    var w = startW + (e.clientX - startX);
+                    var h = startH + (e.clientY - startY);
+                    window.pywebview.api.resize(w, h);
+                }
+                
+                function resizeMouseUp() {
+                    document.removeEventListener('mousemove', resizeMouseMove);
+                    document.removeEventListener('mouseup', resizeMouseUp);
+                }
+            }
+        }
+        
+        // Listen for pywebviewready event
+        window.addEventListener('pywebviewready', setupControls);
+        
+        // If pywebviewready already fired, run immediately
+        if (window.pywebview && window.pywebview.api) {
+            setupControls();
+        }
+    }
+    
+    /* ── Stream job SSE ──────────────────────────────────────────────── */
+    function streamJob(jobId, logEl) {
+        var es = new EventSource("/api/jobs/" + jobId + "/events");
+        var jobCard = null;
+        var statusEl = null;
+        var progressTrack = null;
+        
+        // Find job card and status elements
+        function updateJobUI() {
+            jobCard = logEl.closest(".job-card");
+            if (jobCard) {
+                statusEl = jobCard.querySelector(".job-status");
+                progressTrack = jobCard.querySelector(".progress-track");
+            }
+        }
+        
+        es.addEventListener("log", function (e) {
+            var data = JSON.parse(e.data);
+            logEl.textContent += data.line + "\n";
+            logEl.scrollTop = logEl.scrollHeight;
+            updateJobUI();
+        });
+
+        es.addEventListener("heartbeat", function () {
+            // keep-alive, no action needed
+        });
+
+        es.addEventListener("done", function (e) {
+            var data = e.data ? JSON.parse(e.data) : {};
+            es.close();
+            updateJobUI();
+            
+            if (data.returncode === 0) {
+                logEl.textContent += "\n[COMPLETED]\n";
+                if (statusEl) statusEl.textContent = "COMPLETED";
+                if (progressTrack) progressTrack.hidden = true;
+                loadApps(); // refresh dashboard
+            } else {
+                logEl.textContent += "\n[FAILED: " + (data.error_detail || "unknown error") + "]\n";
+                if (statusEl) {
+                    statusEl.textContent = "FAILED";
+                    statusEl.style.color = "var(--error)";
+                }
+                if (progressTrack) progressTrack.hidden = true;
+            }
+            logEl.scrollTop = logEl.scrollHeight;
+        });
+
+        es.onerror = function () {
+            es.close();
+            updateJobUI();
+            logEl.textContent += "\n[Connection lost - job may have completed]\n";
+            if (statusEl) {
+                statusEl.textContent = "FAILED";
+                statusEl.style.color = "var(--error)";
+            }
+            if (progressTrack) progressTrack.hidden = true;
+            logEl.scrollTop = logEl.scrollHeight;
+        };
+    }
+    
     /* ── Bootstrap ──────────────────────────────────────────────────── */
+    wireWindowControls();
     /* ── Engine Modal ───────────────────────────────────────────────────── */
     var elEngineModal = $("#engine-modal");
     var elEngineModalTitle = $("#engine-modal-title");

@@ -30,6 +30,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -285,8 +286,14 @@ def _run_subprocess(
 ) -> CommandResult:
     """Run *cmd* as a subprocess, streaming output to *job* for SSE.
 
-    ``uv`` uses ``\r`` for progress bars, so we split on ``\r`` at write time
-    rather than waiting for line-buffered ``\n``.
+    ``uv`` uses ``\r`` for progress bars, so ``job.push()`` splits on
+    ``\r`` at write time rather than waiting for line-buffered ``\n``.
+
+    A daemon reader thread consumes stdout line-by-line.  The main thread
+    calls ``proc.wait()`` as the primary completion signal — this avoids
+    the bug where a grandchild holding the stdout pipe prevents EOF from
+    ever arriving and ``job.finish()`` (called by the caller after we
+    return) is therefore never reached.
     """
     try:
         proc = subprocess.Popen(
@@ -294,26 +301,35 @@ def _run_subprocess(
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=0,  # unbuffered — we read character-by-character
+            bufsize=1,  # line-buffered — reader thread consumes line-by-line
             env=_scrubbed_env(),
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
         )
         captured: list[str] = []
-        buf = ""
-        while True:
-            ch = proc.stdout.read(1)  # type: ignore[union-attr]
-            if not ch:
-                break
-            captured.append(ch)
-            if ch in ("\r", "\n"):
-                job.push(buf + ch)
-                buf = ""
-            else:
-                buf += ch
-        if buf:
-            job.push(buf)
 
+        def _reader() -> None:
+            """Read stdout line-by-line, push to job, accumulate."""
+            assert proc.stdout is not None
+            for line in proc.stdout:
+                captured.append(line)
+                job.push(line)
+
+        reader = threading.Thread(target=_reader, daemon=True)
+        reader.start()
+
+        # Primary completion signal — does not depend on stdout EOF
         proc.wait(timeout=timeout)
+
+        # Give the reader thread a chance to drain remaining buffered output
+        reader.join(timeout=5.0)
+
+        if reader.is_alive():
+            # Pipe held open by a grandchild — force-close to unblock the
+            # reader's blocking read so it hits EOF and exits.
+            assert proc.stdout is not None
+            proc.stdout.close()
+            reader.join(timeout=2.0)
+
         full_output = "".join(captured)
 
         if proc.returncode == 0:
@@ -380,7 +396,8 @@ def install_app(
     elif variant == "cpu":
         asr_variant = AsrVariant.CPU
 
-    install_spec = get_install_spec(slug, asr_variant)
+    repo_root = os.environ.get("ARTIFICE_SUITE_ROOT", "").strip() or None
+    install_spec = get_install_spec(slug, asr_variant, repo_root=repo_root)
 
     cmd = [uv, "tool", "install", install_spec]
     # Add torch backend hints for transcribe ASR installs

@@ -15,9 +15,14 @@
 
 <div class="page">
   <!-- ── Masthead ─────────────────────────────────────────────────────── -->
-  <header class="masthead">
+  <header class="masthead pywebview-drag-region">
     <span class="masthead-kicker">ARTIFICE SUITE &middot; LAUNCHER</span>
     <h1 class="masthead-title">Artifice Hub</h1>
+    <div class="window-controls">
+      <button class="window-control window-minimize" aria-label="Minimize">—</button>
+      <button class="window-control window-maximize" aria-label="Maximize">□</button>
+      <button class="window-control window-close" aria-label="Close">×</button>
+    </div>
     <hr class="masthead-rule">
   </header>
 
@@ -38,6 +43,7 @@
     <hr class="rule-fade">
     <p class="footer-text">Artifice Hub v<span id="hub-version">—</span> &middot; uv <span id="hub-uv">—</span></p>
   </footer>
+  <div class="resize-grip"></div>
 </div>
 
 <!-- ── Install Modal (Transcribe ASR variant picker) ────────────────── -->

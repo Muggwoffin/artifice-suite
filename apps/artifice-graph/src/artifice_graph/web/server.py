@@ -1549,8 +1549,20 @@ def main() -> None:
         return
 
     # ── Frozen executable: try a native window ───────────────────────────
-    _frozen = bool(getattr(sys, "frozen", False))
-    if _frozen:
+    # Always attempt native window
+    from .window import open_native_window  # noqa: PLC0415
+
+    try:
+        result = open_native_window(url, title="ArtificeGraph")
+        if result.opened:
+            # Window closed by user — exit cleanly.
+            # The daemon server thread dies with the process.
+            return
+
+        # Window failed — fall back to browser (same as non-frozen mode,
+        # but with an extra line explaining why).
+        print(result.reason, flush=True)
+        print(f"Falling back — ArtificeGraph running at {url}", flush=True)
         # Lazy import — pywebview must not be required at module scope
         # for non-frozen installs (e.g. `uv tool install` users who don't
         # have a webview backend).
