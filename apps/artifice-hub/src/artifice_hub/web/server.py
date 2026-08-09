@@ -15,15 +15,18 @@ from __future__ import annotations
 import contextlib
 import importlib.resources
 import json
+import re
 import sys
 import threading
 import webbrowser
 from datetime import UTC, datetime
+from typing import Any
 
 import shared_ui
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from model_harness.registry import HardwareTier
 from shared_ui.server_bootstrap import (
     ensure_std_streams,
     free_port,
@@ -35,6 +38,8 @@ from shared_ui.server_bootstrap import (
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .. import __version__
+from ..engine import get_engine_status, pull_model_command
+from ..hardware import GpuKind
 from ..hardware import probe as probe_hardware
 from ..registry import APPS
 from ..state import HubState
@@ -107,6 +112,20 @@ async def index():
 # ---------------------------------------------------------------------------
 # API routes
 # ---------------------------------------------------------------------------
+
+# Tier mapping from GpuKind to HardwareTier
+def _gpu_kind_to_tier(gpu_kind: GpuKind) -> HardwareTier:
+    if gpu_kind == GpuKind.CUDA:
+        return HardwareTier.DESKTOP
+    if gpu_kind == GpuKind.APPLE_SILICON:
+        return HardwareTier.MAC_UNIFIED
+    return HardwareTier.LAPTOP
+
+# Helper function to parse progress from ollama output
+def _parse_progress(line: str) -> dict[str, Any]:
+    match = re.search(r'(\d{1,3})%', line)
+    progress = int(match.group(1)) if match else None
+    return {"line": line, "progress": progress} if progress is not None else {"line": line}
 
 
 @app.get("/api/health")
@@ -273,6 +292,21 @@ async def api_launch(slug: str):
     if uv is None:
         return JSONResponse({"error": "uv not installed"}, status_code=400)
 
+    hardware_profile = probe_hardware()
+    tier = _gpu_kind_to_tier(hardware_profile.gpu)
+
+    try:
+        engine_status = await get_engine_status(slug, tier)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=404)
+
+    if not engine_status["all_satisfied"]:
+        return {
+            "ok": True,
+            "engine_required": True,
+            "message": "Engine requirements not satisfied",
+        }
+
     spec = APPS[slug]
     ok, msg = launch_app(uv, slug)
     if ok:
@@ -318,7 +352,11 @@ async def api_job_events(job_id: str):
                 else:
                     yield "event: done\ndata: {}\n\n"
                 break
-            yield f"event: log\ndata: {json.dumps({'line': line})}\n\n"
+            if job.action == "pull":
+                progress_data = _parse_progress(line)
+                yield f"event: log\ndata: {json.dumps(progress_data)}\n\n"
+            else:
+                yield f"event: log\ndata: {json.dumps({'line': line})}\n\n"
 
     return StreamingResponse(
         _stream(),
@@ -344,6 +382,64 @@ async def api_jobs():
             "started_at": datetime.fromtimestamp(job.started_at, tz=UTC).isoformat(),
         }
     return {"jobs": jobs}
+
+
+@app.get("/api/engine/{slug}")
+async def api_engine_status(slug: str):
+    """Get the engine status for the given app slug."""
+    if slug not in APPS:
+        return JSONResponse({"error": f"Unknown app: {slug}"}, status_code=404)
+
+    hardware_profile = probe_hardware()
+    tier = _gpu_kind_to_tier(hardware_profile.gpu)
+
+    try:
+        status = await get_engine_status(slug, tier)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=404)
+
+    return status
+
+@app.post("/api/engine/{slug}/pull")
+async def api_pull_model(slug: str, request: Request):
+    """Pull a model for the given app slug."""
+    if slug not in APPS:
+        return JSONResponse({"error": f"Unknown app: {slug}"}, status_code=404)
+
+    try:
+        body = await request.json()
+        model_name = body.get("model")
+    except Exception:
+        return JSONResponse({"error": "Invalid request body"}, status_code=400)
+
+    if not model_name:
+        return JSONResponse({"error": "Model name is required"}, status_code=400)
+
+    hardware_profile = probe_hardware()
+    tier = _gpu_kind_to_tier(hardware_profile.gpu)
+
+    try:
+        cmd = pull_model_command(slug, tier, model_name)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    except RuntimeError as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+    import uuid
+
+    job_id = str(uuid.uuid4())
+    job = JobState(job_id=job_id, slug=slug, action="pull")
+    _jobs[job_id] = job
+
+    def _run():
+        from ..uv_backend import _run_subprocess
+        result = _run_subprocess(cmd, job)
+        job.finish(result)
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+
+    return JSONResponse({"job_id": job_id}, status_code=202)
 
 
 # ---------------------------------------------------------------------------

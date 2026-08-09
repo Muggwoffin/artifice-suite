@@ -79,6 +79,54 @@
   </div>
 </dialog>
 
+<!-- ── Missing AI Engine Modal ──────────────────────────────────────── -->
+<dialog class="modal-overlay" id="engine-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="engine-modal-title">Checking AI Engine</h2>
+      <button class="modal-close" id="engine-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="engine-checking" id="engine-checking">
+        <p class="modal-desc">Checking Ollama and required models…</p>
+        <div class="progress-track">
+          <div class="progress-indeterminate"></div>
+        </div>
+      </div>
+      
+      <div class="engine-error" id="engine-error" hidden>
+        <p class="modal-desc">Could not check AI engine status. Please try again.</p>
+      </div>
+      
+      <div class="engine-missing" id="engine-missing" hidden>
+        <p class="modal-desc">Ollama is not installed. It is required to run this app.</p>
+        <p class="modal-note">Ollama provides the local AI engine that powers Artifice OCR and other apps. It runs entirely on your machine — no data leaves your computer.</p>
+      </div>
+      
+      <div class="engine-stopped" id="engine-stopped" hidden>
+        <p class="modal-desc">Ollama is installed but not running. Start Ollama and try again.</p>
+        <p class="modal-note">Ollama must be running in the background. You can start it from your applications menu or by running <code>ollama serve</code> in a terminal.</p>
+      </div>
+      
+      <div class="models-missing" id="models-missing" hidden>
+        <p class="modal-desc" id="models-missing-desc">The following AI models are required:</p>
+        <div class="model-list" id="model-list"></div>
+        <div class="progress-track" id="pull-progress" hidden>
+          <div class="progress-fill" id="pull-fill"></div>
+        </div>
+        <p class="modal-note" id="pull-note">Models are downloaded from Ollama and stored on your machine. This may take several minutes depending on your connection.</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="engine-modal-cancel">Not Now</button>
+      <button class="btn btn-primary" id="engine-modal-primary">Download Ollama</button>
+      <button class="btn btn-primary" id="engine-modal-retry" hidden>Retry</button>
+      <button class="btn btn-primary" id="engine-modal-install" hidden>Download & Install Models</button>
+      <button class="btn btn-launch" id="engine-modal-launch" hidden>Launch App</button>
+    </div>
+  </div>
+</dialog>
+
 <script src="/static/hub.js"></script>
 </body>
 </html>

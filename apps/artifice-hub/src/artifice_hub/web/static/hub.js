@@ -321,6 +321,281 @@
     });
 
     /* ── Bootstrap ──────────────────────────────────────────────────── */
+    /* ── Engine Modal ───────────────────────────────────────────────────── */
+    var elEngineModal = $("#engine-modal");
+    var elEngineModalTitle = $("#engine-modal-title");
+    var elEngineModalClose = $("#engine-modal-close");
+    var elEngineModalCancel = $("#engine-modal-cancel");
+    var elEngineModalPrimary = $("#engine-modal-primary");
+    var elEngineModalRetry = $("#engine-modal-retry");
+    var elEngineModalInstall = $("#engine-modal-install");
+    var elEngineModalLaunch = $("#engine-modal-launch");
+    var elEngineChecking = $("#engine-checking");
+    var elEngineError = $("#engine-error");
+    var elEngineMissing = $("#engine-missing");
+    var elEngineStopped = $("#engine-stopped");
+    var elModelsMissing = $("#models-missing");
+    var elModelsMissingDesc = $("#models-missing-desc");
+    var elModelList = $("#model-list");
+    var elPullProgress = $("#pull-progress");
+    var elPullFill = $("#pull-fill");
+    var elPullNote = $("#pull-note");
+    
+    var currentEngineSlug = null;
+    var currentPullJobId = null;
+    var currentPullModel = null;
+    
+    function openEngineModal(slug) {
+        currentEngineSlug = slug;
+        resetEngineModal();
+        elEngineModal.showModal();
+        
+        // Fetch engine status
+        apiGet("/api/engine/" + slug).then(function (data) {
+            showEngineState(data);
+        }).catch(function () {
+            elEngineChecking.hidden = true;
+            elEngineError.hidden = false;
+            elEngineModalRetry.hidden = false;
+        });
+    }
+    
+    function resetEngineModal() {
+        elEngineModalTitle.textContent = "Checking AI Engine";
+        elEngineChecking.hidden = false;
+        elEngineError.hidden = true;
+        elEngineMissing.hidden = true;
+        elEngineStopped.hidden = true;
+        elModelsMissing.hidden = true;
+        elEngineModalPrimary.hidden = false;
+        elEngineModalRetry.hidden = true;
+        elEngineModalInstall.hidden = true;
+        elEngineModalLaunch.hidden = true;
+        elPullProgress.hidden = true;
+        elPullNote.textContent = "Models are downloaded from Ollama and stored on your machine. This may take several minutes depending on your connection.";
+    }
+    
+    function showEngineState(data) {
+        elEngineChecking.hidden = true;
+        
+        if (!data.ollama.installed) {
+            elEngineModalTitle.textContent = "Ollama Not Installed";
+            elEngineMissing.hidden = false;
+            elEngineModalPrimary.textContent = "Download Ollama";
+            elEngineModalPrimary.onclick = function () {
+                window.open("https://ollama.com/download", "_blank");
+            };
+            return;
+        }
+        
+        if (!data.ollama.running) {
+            elEngineModalTitle.textContent = "Ollama Not Running";
+            elEngineStopped.hidden = false;
+            elEngineModalPrimary.hidden = true;
+            elEngineModalRetry.hidden = false;
+            return;
+        }
+        
+        if (data.missing.length > 0) {
+            elEngineModalTitle.textContent = "AI Models Required";
+            elModelsMissing.hidden = false;
+            elModelsMissingDesc.textContent = "The following AI models are required:";
+            renderModelList(data.models);
+            elEngineModalInstall.hidden = false;
+            return;
+        }
+        
+        // All satisfied - this should not happen via openEngineModal, but handle it
+        elEngineModal.close();
+    }
+    
+    function renderModelList(models) {
+        elModelList.innerHTML = "";
+        var missingModels = models.filter(function (m) { return !m.installed; });
+        
+        missingModels.forEach(function (model) {
+            var item = document.createElement("div");
+            item.className = "model-item";
+            
+            var header = document.createElement("div");
+            header.className = "model-header";
+            
+            var name = document.createElement("div");
+            name.className = "model-name";
+            name.textContent = model.name;
+            
+            var role = document.createElement("div");
+            var roleChip = document.createElement("span");
+            roleChip.className = "model-role";
+            roleChip.textContent = model.role;
+            if (model.vision) {
+                roleChip.textContent += " (Vision)";
+            }
+            role.appendChild(roleChip);
+            
+            if (model.min_vram_gb) {
+                var vram = document.createElement("span");
+                vram.className = "model-vram";
+                vram.textContent = "VRAM: " + model.min_vram_gb + " GB";
+                role.appendChild(vram);
+            }
+            
+            header.appendChild(name);
+            header.appendChild(role);
+            item.appendChild(header);
+            
+            if (model.notes) {
+                var notes = document.createElement("div");
+                notes.className = "model-notes";
+                notes.textContent = model.notes;
+                item.appendChild(notes);
+            }
+            
+            if (model.badges && model.badges.length > 0) {
+                var badges = document.createElement("div");
+                badges.className = "model-badges";
+                model.badges.forEach(function (badge) {
+                    var badgeEl = document.createElement("span");
+                    badgeEl.className = "model-badge";
+                    badgeEl.textContent = badge;
+                    badges.appendChild(badgeEl);
+                });
+                item.appendChild(badges);
+            }
+            
+            elModelList.appendChild(item);
+        });
+    }
+    
+    function wireEngineModal() {
+        elEngineModalClose.addEventListener("click", function () {
+            elEngineModal.close();
+            currentEngineSlug = null;
+        });
+        
+        elEngineModal.addEventListener("click", function (e) {
+            if (e.target === elEngineModal) {
+                elEngineModal.close();
+                currentEngineSlug = null;
+            }
+        });
+        
+        elEngineModalCancel.addEventListener("click", function () {
+            elEngineModal.close();
+            currentEngineSlug = null;
+        });
+        
+        elEngineModalRetry.addEventListener("click", function () {
+            resetEngineModal();
+            openEngineModal(currentEngineSlug);
+        });
+        
+        elEngineModalInstall.addEventListener("click", function () {
+            elEngineModalInstall.disabled = true;
+            elEngineModalCancel.disabled = true;
+            elPullProgress.hidden = false;
+            elPullNote.textContent = "Downloading models…";
+            pullNextModel();
+        });
+    }
+    
+    function pullNextModel() {
+        apiGet("/api/engine/" + currentEngineSlug).then(function (data) {
+            var missingModels = data.models.filter(function (m) { return !m.installed; });
+            if (missingModels.length === 0) {
+                onEnginePullDone(currentEngineSlug);
+                return;
+            }
+            
+            currentPullModel = missingModels[0].name;
+            return apiPost("/api/engine/" + currentEngineSlug + "/pull", { model: currentPullModel });
+        }).then(function (resp) {
+            if (!resp) return; // All models installed
+            currentPullJobId = resp.job_id;
+            streamEnginePull(currentPullJobId);
+        }).catch(function (e) {
+            console.error(e);
+            elPullNote.textContent = "Download failed. Retry or check Ollama.";
+            elEngineModalInstall.disabled = false;
+            elEngineModalCancel.disabled = false;
+        });
+    }
+    
+    function streamEnginePull(jobId) {
+        var es = new EventSource("/api/jobs/" + jobId + "/events");
+        
+        es.addEventListener("log", function (e) {
+            var data = JSON.parse(e.data);
+            if (data.progress) {
+                elPullFill.style.width = data.progress + "%";
+            }
+            if (data.line) {
+                elPullNote.textContent = data.line;
+            }
+        });
+        
+        es.addEventListener("done", function (e) {
+            var data = e.data ? JSON.parse(e.data) : {};
+            es.close();
+            if (data.returncode === 0) {
+                pullNextModel(); // Pull next model or finish
+            } else {
+                elPullNote.textContent = "Download failed for " + currentPullModel + ". Retry or check Ollama.";
+                elEngineModalInstall.disabled = false;
+                elEngineModalCancel.disabled = false;
+            }
+        });
+        
+        es.onerror = function () {
+            es.close();
+            elPullNote.textContent = "Connection lost. Retry or check Ollama.";
+            elEngineModalInstall.disabled = false;
+            elEngineModalCancel.disabled = false;
+        };
+    }
+    
+    function onEnginePullDone(slug) {
+        apiGet("/api/engine/" + slug).then(function (data) {
+            if (data.all_satisfied) {
+                elEngineModalTitle.textContent = "All Set";
+                elModelsMissing.hidden = true;
+                elPullProgress.hidden = true;
+                elEngineModalInstall.hidden = true;
+                elEngineModalLaunch.hidden = false;
+                elEngineModalCancel.textContent = "Close";
+                elPullNote.textContent = "All required models are installed. You can now launch the app.";
+            } else {
+                elPullNote.textContent = "Some models could not be installed. Retry or check Ollama.";
+                elEngineModalInstall.disabled = false;
+                elEngineModalCancel.disabled = false;
+            }
+        }).catch(function () {
+            elPullNote.textContent = "Could not verify model status. Retry or check Ollama.";
+            elEngineModalInstall.disabled = false;
+            elEngineModalCancel.disabled = false;
+        });
+    }
+    
+    elEngineModalLaunch.addEventListener("click", function () {
+        launchApp(currentEngineSlug);
+        elEngineModal.close();
+    });
+    
+    /* ── Hook into launch flow ────────────────────────────────────────── */
+    function launchApp(slug) {
+        apiPost("/api/apps/" + slug + "/launch").then(function (resp) {
+            if (resp.ok && resp.engine_required) {
+                openEngineModal(slug);
+            } else if (resp.url) {
+                window.open(resp.url, "_blank");
+            }
+        }).catch(function (e) {
+            console.error(e);
+        });
+    }
+    
+    wireEngineModal();
+    
     loadVersion();
     loadHardware();
     loadApps();

@@ -18,6 +18,7 @@ dependencies = [
     "pywebview>=5.0",
     "platformdirs>=4.0.0",
     "artifice-shared-ui>=0.2.0",
+    "artifice-model-harness>=0.2.0",
 ]
 
 [project.scripts]
