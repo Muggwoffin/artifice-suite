@@ -197,7 +197,9 @@ function rowFor(item) {
     const insertBefore = e.clientY < rect.top + rect.height / 2;
     await api("POST", "/api/queue/reorder", {
       drag_id: dragId, drop_id: dropId, before: insertBefore,
-    }).catch(() => {});
+    }).catch(function(err) {
+      window.ArtificeToast.error("Could not reorder: " + err.message);
+    });
     await refreshQueue();
   });
   const viewBtn = tr.querySelector(".row-view");

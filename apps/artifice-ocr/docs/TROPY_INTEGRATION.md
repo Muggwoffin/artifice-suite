@@ -1,184 +1,283 @@
-Tropy Integration
-=================
+# Tropy Integration
 
-Status: **implemented — read-only ingest, folder output, and opt-in write-back.**
+**Status: implemented — JSON-LD file bridge (primary), optional live read-only `.tpy` browse.**
 
-The original decision of 2026-07-21 was folder-output-only. That was revisited
-later the same day and write-back was added, with the safeguards this document
-had already set as the price of doing it: Tropy closed, automatic backup,
-preview before any change. Reading is still provably separate from writing —
-`tropy.py` opens `mode=ro` and never imports the writer.
+The architecture described in this document is the one actually in source as of
+commit `3d91e7c` ("Redone Tropy integration", 2026-08-09). The old SQLite
+read/write modules (`tropy.py`, `tropy_read.py`, `tropy_write.py`) were removed
+in that change. What they described — direct live database writes to Tropy's
+`notes` and `transcriptions` tables — does not exist in current source.
 
-
-WHAT IT DOES
-------------
-
-Pull documents out of a Tropy archive, OCR them, and write the results to a
-folder. Selection is by list, by tag, by item, or the whole project.
-
-    # browse a project (or list recent ones with no argument)
-    artifice_ocr tropy-browse "E:/Tropy/ISK Project Primary Sources.tropy"
-
-    # see what a run would do, without doing it
-    artifice_ocr tropy "E:/Tropy/ISK Project Primary Sources.tropy" \
-        --list-id 8 --dry-run
-
-    # OCR one list into ./output
-    artifice_ocr tropy "E:/Tropy/ISK Project Primary Sources.tropy" \
-        --list-id 8 --output-dir output --limit 50
-
-In the GUI: **Main → Add from Tropy…** opens a picker (recent projects, the
-list/tag tree, item selection with page counts) and drops the chosen pages
-into the normal queue, where pause / skip / retry / history all work as usual.
-
-Translation is off by default for Tropy runs (`--translate` to enable) —
-these archives are large and translating 1,960 pages by accident is expensive.
+There are two independent read paths and one export path. No code path ever
+writes to a Tropy `.tpy` database file.
 
 
-READ-ONLY GUARANTEE
--------------------
+## Overview
 
-The connection is opened `file:...?mode=ro`. This is enforced by SQLite, not
-by convention: an attempted `INSERT` raises
-`sqlite3.OperationalError: attempt to write a readonly database`.
+```
+Tropy (File → Export)
+         │
+         ▼ JSON-LD file
+    artifice-ocr ──────────────────────────► OCR pipeline
+                                              output directory
+                                              (tropy_manifest.json)
+         │                                          │
+         │         artifice-ocr                     │
+         │    (JSON-LD export file)                 │
+         ▼                           Tropy (File → Import Items…)
+  "Send to Tropy…"                  or
+  modal ───────────────────────────► Tropy local HTTP API (port 2029)
+```
 
-**Do not use `immutable=1`.** An earlier draft of this document recommended
-it; that was wrong. `immutable=1` makes SQLite ignore the write-ahead log, so
-any edit made in a running Tropy would be invisible, and the file changing
-underneath can produce corrupt reads. `mode=ro` respects the WAL and works
-while Tropy is open.
+There are **two ways** to read from a Tropy project:
 
+| Mode | Module | Writes to `.tpy`? | Feature flag |
+|---|---|---|---|
+| JSON-LD file bridge | `tropy_jsonld.py` | Never | None — always available |
+| Live read-only browse | `tropy_db.py` | Never | Settings toggle `tropy_live_browse_enabled` |
 
-THE ARCHIVE, AS VERIFIED
-------------------------
-
-Tropy records recent projects in `%APPDATA%/Tropy/state.json`. A `.tropy`
-"managed" project is a directory:
-
-    ISK Project Primary Sources.tropy/
-      project.tpy      SQLite database
-      assets/          content-addressed originals, <checksum>.pdf / .jpg
-
-    ISK Project        72 items    6,070 photos    1,101 notes
-    Alpenpost          93 items      552 photos
-
-Both use `base='project'` (paths relative to the bundle) and `store='assets'`.
-
-Four facts drove the design:
-
-1. **Photos are pages, not files.** A 275-page item is 275 rows sharing one
-   `assets/<checksum>.pdf`, differing only by the `page` column.
-
-2. **Both path separators occur.** 868 rows in the ISK project use
-   backslashes, the rest forward slashes. `resolve_path()` normalises before
-   resolving; there is a test for it.
-
-3. **Lists nest.** "KV Files" sits under "National Archives UK". Selecting a
-   parent list means everything beneath it, via a recursive CTE.
-
-4. **Mixed media.** 2,333 PDF pages and 3,737 JPEGs. Images are not
-   paginated; PDFs are.
+Both map to the same `JobItem` pipeline entry. The manifest (`tropy_manifest.json`)
+is written by the JSON-LD import path and documents provenance for downstream
+consumers.
 
 
-THE COLLISION HAZARD
---------------------
+## JSON-LD File Bridge (`tropy_jsonld.py`)
 
-This is the thing that would have silently destroyed a run.
+**Primary integration.** User-initiated, frictionless, requires no feature flag.
 
-`pipeline._output_exists()` keys on `Path(x).stem`. Every page of a Tropy PDF
-shares the checksum stem, so all 275 pages of an item would have written to
-`output/raw_ocr/text/89bf563c….txt`, each overwriting the last, and `resume`
-would have reported pages 2–275 as "already done" after page 1.
+### Import: Tropy → artifice-ocr
 
-The fix is an explicit output key threaded through the stages:
+1. In Tropy: **File → Export → JSON-LD** (or **File → Export → JSON**).
+   Save the file somewhere accessible to artifice-ocr.
+2. In artifice-ocr: **Main → Add from Tropy…** opens the import modal.
+   Either drop the exported file onto the dropzone, or type/paste a path.
+3. artifice-ocr parses the JSON-LD, resolves photo paths, and displays a
+   preview. Relative paths are resolved against the export file's directory.
+   Absolute paths are validated by `_tropy_pathcheck` before use.
+4. The user selects which items to enqueue; missing photos are flagged inline.
+5. Items drop into the normal queue. Pause / skip / retry / history all work
+   as usual.
 
-    Max Hodann KV File Part 1/KV-2-2339_01_p0002
+### Export: artifice-ocr → Tropy ("Send to Tropy…")
 
-`ocr.perform()`, `cleanup.perform()` and `translate.perform()` all accept an
-optional `stem` that overrides the filename-derived one and may contain a
-subdirectory. `run_ocr_step()` additionally takes `page` to render a single
-PDF page rather than all 144. Both are covered by tests
-(`test_each_pdf_page_writes_its_own_output`,
-`test_page_outputs_resume_independently`).
+**Main → Send to Tropy…**, available after a run. Only pages processed by
+artifice-ocr are eligible.
+
+Two export routes exist:
+
+- **`POST /api/tropy/export`** — exports items currently in the queue.
+- **`POST /api/tropy/export/history`** — exports items from the History database
+  (for runs already completed and recorded).
+
+Both generate a Tropy-compatible JSON-LD file. The UI flow:
+
+1. User picks a save location via the OS native file dialog.
+2. artifice-ocr generates the JSON-LD and **first tries Tropy's local HTTP API**
+   (`http://127.0.0.1:2029/project/import`) as a proxy import. This requires
+   Tropy to be running with its HTTP API enabled (**Preferences → API** or
+   `--port 2029`).
+3. If the API import succeeds → items appear directly in Tropy, no file left
+   behind.
+4. If the API import fails (Tropy not running, API not enabled, or Tropy
+   rejects the payload) → the JSON-LD file is saved at the location the user
+   picked, and the UI shows the file path and re-import instructions:
+   **Tropy → File → Import Items… → select the exported file**.
+
+There is no preview dialog listing rows before write, no "duplicate detection",
+and no write to Tropy's `notes` or `transcriptions` tables. The closest thing
+to a write-back is the JSON-LD round-trip through Tropy's own import machinery.
+The old direct-insert mechanism (with `BEGIN IMMEDIATE`, timestamped backup,
+Tropy-must-be-closed probe, and separate Notes/Transcriptions targets) was
+removed in the 2026-08-09 rewrite.
+
+### Path validation (`_tropy_pathcheck.py`)
+
+Absolute photo paths in a JSON-LD export (including Windows drive-letter paths)
+are validated before the import proceeds. The validator:
+
+- Rejects UNC paths (`//…`) unconditionally.
+- Rejects paths under protected system directories: `/etc`, `/usr`, `/bin`,
+  `/sbin`, `/lib`, `/var`, `/sys`, `/proc`, `/dev`, `/boot`, `/root`, `/run`,
+  `/private/etc`, `/private/var` on POSIX; `C:/Windows`, `C:/Program Files`,
+  `C:/Program Files (x86)`, `C:/ProgramData`, `C:/$Recycle.Bin`,
+  `C:/System Volume Information` on Windows.
+- Rejects paths resolving into protected subdirectories under `$HOME`:
+  `.ssh`, `.gnupg`, `.aws`, `.azure`, `.kube`, `.docker`, `AppData`.
+- Allows only `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`, `.pdf` suffixes.
+- Follows symlinks (the resolved target is checked against the blocklist);
+  a warning is added when a symlink was followed so the user knows.
+- Reports a missing file rather than failing — the photo is flagged as missing
+  and the import continues.
+
+The `ARTIFICE_OCR_TROPY_RELATIVE_ONLY=1` environment variable reverts to rejecting
+all absolute paths outright (the pre-pathcheck behaviour).
+
+### Manifest (`tropy_manifest.json`)
+
+Written to the output directory after every JSON-LD import. Maps each output
+stem back to its source photo. This is the documented contract for
+`artifice-graph` and any other downstream consumer.
+
+Schema version: `1.0`. The manifest merges across runs (it is never overwritten;
+existing entries are updated or preserved).
+
+    {
+      "schema_version": "1.0",
+      "export": { "name": "export.jsonld", "imported": "2026-08-09T…" },
+      "output_layout": "<stage>/text/<item title>/<file>_p<page>.txt",
+      "pages": {
+        "Max Hodann KV File Part 1/KV-2-2339_01_p0002": {
+          "photo_id": null,
+          "page": 1,
+          "page_number": 2,
+          "source_path": "…/assets/89bf563c….pdf",
+          "mimetype": "application/pdf",
+          "orientation": 1,
+          "filename": "KV-2-2339_01.pdf",
+          "item_title": "Max Hodann KV File Part 1",
+          "checksum": "89bf563c…",
+          "photo_path_rel": "KV-2-2339_01.pdf",
+          "tropy_group": "a1b2c3d4e5f6:0"
+        }
+      }
+    }
+
+`photo_id` is `null` for JSON-LD imports (Tropy IDs are not preserved in the
+export format). It is populated only for live-read items.
 
 
-OUTPUT LAYOUT
--------------
+## Live Read-Only Browse (`tropy_db.py`)
 
-This deviates from the original plan, deliberately. The first sketch proposed
-a per-page directory (`out/<Item>/<file>_p0003/raw_ocr.txt`), which would have
-forked the output contract that the CLI, resume logic and History tab already
-understand. Instead the standard stage-first tree is kept and the *key* is
-made unique:
+**Opt-in, feature-flagged.** Enable via the Settings UI toggle
+`tropy_live_browse_enabled` (takes effect immediately, no restart required).
+The environment variable `ARTIFICE_OCR_TROPY_LIVE_READ=1` also works as a
+fallback override for advanced/CI use. When disabled, the browse routes
+return 404.
+
+Opens `.tpy` SQLite databases in `file:<path>?mode=ro` — SQLite enforces
+read-only at the connection level. A running Tropy instance holds a write
+lock; `tropy_db` handles `SQLITE_BUSY` with a clean error message telling the
+user to close Tropy and retry. Connections are short-lived and per-query.
+
+### Browse routes
+
+All mounted at `/api/tropy/browse/` when enabled:
+
+| Route | What it returns |
+|---|---|
+| `POST /projects` | The single `project` row (name, base path) |
+| `POST /lists` | All lists except ROOT (`list_id != 0`) |
+| `POST /tags` | All tags |
+| `POST /items?list_id=N` | Items in a list (recursive via join on `list_items`) |
+| `POST /items?tag=name` | Items with a given tag |
+| `POST /items` | All non-trashed items |
+| `POST /items/{item_id}` | Single item with its photos |
+| `POST /enqueue` | Map selected items to `JobItem` and add to queue |
+
+The **Add from Tropy…** modal shows a live-browse tab when the
+settings toggle `tropy_live_browse_enabled` is on (or
+`ARTIFICE_OCR_TROPY_LIVE_READ=1` is set). Selecting items and clicking
+**Add to Queue** bypasses the JSON-LD export/import round-trip entirely.
+
+
+## Output Layout
+
+All output goes into the standard stage-first tree. The unique output key
+prevents PDF page collision:
 
     output/
       raw_ocr/text/Max Hodann KV File Part 1/KV-2-2339_01_p0001.txt
       raw_ocr/json/Max Hodann KV File Part 1/KV-2-2339_01_p0001.json
       cleaned/text/Max Hodann KV File Part 1/KV-2-2339_01_p0001.txt
-      translated/...
+      translated/…
       tropy_manifest.json
 
-`tropy_manifest.json` maps every output key back to its origin, so the link
-from a text file to photo 4 of item 1 survives outside anyone's memory:
+The key format is `<Item Title>/<file>_p<page:04d>` for PDFs, or
+`<Item Title>/<file>` for images. This is the same naming used by `tropy_db`.
 
-    "Max Hodann KV File Part 1/KV-2-2339_01_p0003": {
-      "photo_id": 4, "item_id": 1, "page": 2, "page_number": 3,
-      "filename": "KV-2-2339_01.pdf",
-      "item_title": "Max Hodann KV File Part 1",
-      "source_path": "…/assets/89bf563c….pdf"
-    }
-
-The manifest merges across runs rather than being overwritten.
+`ocr.perform()`, `cleanup.perform()` and `translate.perform()` all accept an
+optional `stem` parameter that overrides the filename-derived key and may contain
+a subdirectory. `run_ocr_step()` additionally takes `page` to render a single
+PDF page rather than all pages of an item.
 
 
-WRITING BACK INTO TROPY
------------------------
+## The Tropy Archive, As Verified
 
-**Main tab -> "Send to Tropy…"**, after a run. Only pages that came from Tropy
-can be sent; the button says so if none of the queue did.
+These are properties of Tropy's own data model, confirmed by the schema
+comments in `tropy_db.py`.
 
-The dialog previews before it writes. It lists every row it would create, and
-the write button stays disabled until that preview is clean:
+**A `.tropy` "managed" project is a directory:**
 
-    PAGE                     TARGET  ACTION         DETAIL
-    KV-2-2339_01.pdf  p.1    notes   insert
-    KV-2-2339_01.pdf  p.2    notes   duplicate      identical text already attached
-    KV-2-2339_01.pdf  p.3    notes   missing-photo  photo 4021 is not in this project
+    ISK Project Primary Sources.tropy/
+      project.tpy      SQLite database
+      assets/          content-addressed originals, <checksum>.pdf / .jpg
 
-Two targets, selectable per run:
+The `project` table holds `base='project'` (paths relative to the bundle) and
+`store='assets'`.
 
-* **Notes** — one note per photo, stored exactly as Tropy's own editor stores
-  them: plain `text` plus a ProseMirror document in `state`. Appears in the
-  normal note pane.
-* **Transcriptions** — rows in Tropy's native `transcriptions` table, tagged
-  `config.generator = "artifice_ocr"` so they are always identifiable as ours.
+Four structural facts shaped the design:
 
-Both tables carry `AFTER INSERT` triggers maintaining the FTS index, so
-inserting is enough to keep Tropy's search working.
+1. **Photos are pages, not files.** A 275-page item is 275 rows sharing one
+   `assets/<checksum>.pdf`, differing only by the `page` column. The output
+   key's per-page suffix (`_p0001`, `_p0002`, …) prevents all 275 pages from
+   writing to the same `.txt` file.
 
-Safeguards, all enforced in `tropy_write.py`:
+2. **Both path separators occur.** Tropy stores paths as-is; backslash and
+   forward-slash both appear in the database. `tropy_jsonld` normalises
+   backslashes to forward slashes before resolving; `_resolve_photo_path`
+   in `tropy_db` does the same.
 
-1. **Tropy must be closed.** Checked by process name, plus a `BEGIN IMMEDIATE`
-   probe for a held write lock. Writing under a running Tropy means its
-   in-memory state diverges and can overwrite what was just written.
-2. **Backup first.** A timestamped `project.<stamp>.backup.tpy` beside the
-   original, including WAL sidecars. Skippable, but on by default.
-3. **One transaction.** Any failure rolls the whole batch back — there is no
-   half-written state.
-4. **Re-running is safe.** An entry whose text is already attached to that
-   photo is reported as a duplicate and skipped.
+3. **Lists nest.** A parent list includes everything beneath it via a
+   recursive CTE-style join on `list_items`.
+
+4. **Mixed media.** Photos may be PDFs (paginated, one row per page) or images
+   (JPEG, PNG, TIFF — unpaginated, one row per file). The `mimetype` column
+   distinguishes them.
 
 
-KNOWN LIMITS
-------------
+## What Was Removed
 
-* **Missing assets.** iCloud-backed projects may hold placeholders rather than
-  files. `missing_assets()` reports these up front; the CLI warns and the GUI
-  offers to skip them.
-* **Selections and notes are ignored.** Tropy selections (crops) and existing
-  notes are not read. The 1,101 notes in the ISK project are untouched.
-* **Write-back creates, never updates.** Sending the same page twice with
-  *different* text adds a second note rather than replacing the first. Editing
-  or removing what was written is done in Tropy.
-* **Transcriptions are an internal schema.** The table shape can change
-  between Tropy releases. Notes are the safer of the two targets.
+The 2026-08-09 rewrite deleted:
+
+- **`tropy.py`** — `mode=ro` live database reader. Replaced by `tropy_db.py`
+  (still read-only, but a separate, simpler library module).
+- **`tropy_write.py`** — direct insert into Tropy's `notes` and `transcriptions`
+  tables. Nothing replaces it. Write-back is now exclusively the JSON-LD
+  round-trip.
+- **`tropy_read.py`** — the old 7-route import/preview/browse/write FastAPI
+  module. Replaced by `tropy_bridge.py` (import/export, JSON-LD only) and
+  `tropy_browse.py` (live browse, read-only).
+
+The following capabilities from the old doc **do not exist** in current source:
+
+- **Notes and Transcriptions as separate write targets.** There is no
+  `transcriptions` table insert, no `config.generator = "artifice_ocr"` tagging,
+  and no "duplicate detection" comparing new text against existing notes.
+- **Tropy-must-be-closed probe.** The live-read connection uses `mode=ro`
+  and catches `SQLITE_BUSY` at the library level; there is no proactive probe.
+- **Automatic timestamped backup.** The JSON-LD export is a new file the user
+  owns; artifice-ocr never touches the `.tpy` file.
+- **`immutable=1` connection flag.** The current `mode=ro` is correct; the old
+  doc warned against `immutable=1` and that warning still applies if anyone
+  tried it, but the current code uses `mode=ro` only.
+- **Inline pre-write preview dialog.** The export modal shows item/photo
+  statistics but does not enumerate rows or flag duplicates before writing.
+
+
+## Known Limits
+
+- **Selections (crops) are not read.** Tropy's `selections` table is not
+  queried by either `tropy_db` or `tropy_jsonld`.
+- **Existing notes are not read.** Neither module reads the `notes` table.
+- **Write-back creates, never updates.** Re-exporting the same item with
+  changed text and re-importing into Tropy adds a second Note rather than
+  replacing the first. Edit or remove notes in Tropy.
+- **Missing assets.** iCloud-backed projects may hold placeholder paths
+  rather than files. Both modules mark missing photos and report them in the
+  import preview. For JSON-LD imports the user can see which items are
+  affected before enqueueing; for live browse the `missing` flag is surfaced
+  in the items response.
+- **Live browse requires Tropy to not be open** for write operations, because
+  Tropy holds a write lock. Read operations get `SQLITE_BUSY` and ask the user
+  to close Tropy. This is unavoidable for live read — it is why the
+  JSON-LD file bridge is the default.

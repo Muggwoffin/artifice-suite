@@ -48,6 +48,9 @@ jobs:
       - name: Token parity check
         run: python3 scripts/token-parity-check.py
 
+      - name: Frontend footgun check
+        run: python3 scripts/frontend-footgun-check.py
+
       - name: Audit controls
         run: python3 scripts/audit-controls.py
 

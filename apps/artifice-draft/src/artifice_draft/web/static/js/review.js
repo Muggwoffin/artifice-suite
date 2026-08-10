@@ -43,7 +43,7 @@ const ReviewUI = (function () {
     `).join("");
   }
 
-  list.addEventListener("click", (e) => {
+  if (list) list.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
     if (!btn) return;
     const i = parseInt(btn.dataset.i, 10);
@@ -51,21 +51,21 @@ const ReviewUI = (function () {
     render();
   });
 
-  list.addEventListener("input", (e) => {
+  if (list) list.addEventListener("input", (e) => {
     if (!e.target.classList.contains("edited-text")) return;
     items[parseInt(e.target.dataset.i, 10)].edited_text = e.target.value;
   });
 
-  document.getElementById("btn-approve-all").addEventListener("click", () => {
+  window.ArtificeBind.bindIfPresent("btn-approve-all", "click", function () {
     items.forEach(i => { i.approved = true; });
     render();
   });
-  document.getElementById("btn-reject-all").addEventListener("click", () => {
+  window.ArtificeBind.bindIfPresent("btn-reject-all", "click", function () {
     items.forEach(i => { i.approved = false; });
     render();
   });
 
-  document.getElementById("btn-finalize").addEventListener("click", async () => {
+  window.ArtificeBind.bindIfPresent("btn-finalize", "click", async function () {
     const decisions = items.map(i => ({
       paragraph_index: i.paragraph_index,
       approved: i.approved,

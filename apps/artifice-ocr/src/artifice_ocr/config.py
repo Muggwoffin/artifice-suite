@@ -29,6 +29,7 @@ _DEFAULTS: dict[str, Any] = {
     "output_dir": "output",
     "translate_enabled": True,
     "title_enabled": False,  # opt-in stage
+    "tropy_live_browse_enabled": False,
     "title_max_chars": 120,
     "resume": True,
     "max_ocr_workers": 2,
@@ -115,6 +116,7 @@ PERSISTED_KEYS = (
     "api_base_url",
     "tropy_last_path",
     "tropy_last_export_path",
+    "tropy_live_browse_enabled",
 )
 
 _config_cache: dict[str, Any] | None = None

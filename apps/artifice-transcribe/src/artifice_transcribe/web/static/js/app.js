@@ -1669,6 +1669,24 @@ async function saveInferenceConfig() {
   }
 }
 
+function loadInferenceConfig() {
+  try {
+    const raw = localStorage.getItem('pt-inference-config');
+    if (!raw) return;
+    const cfg = JSON.parse(raw);
+    const baseUrl = $('setting-base-url');
+    if (baseUrl) baseUrl.value = cfg.base_url || '';
+    const apiKey = $('setting-api-key');
+    if (apiKey) apiKey.value = cfg.api_key && cfg.api_key !== 'not-needed' ? cfg.api_key : '';
+    const modelSelect = $('setting-model-select');
+    if (modelSelect && cfg.model_name) modelSelect.value = cfg.model_name;
+    const vision = $('setting-vision');
+    if (vision) vision.checked = !!cfg.vision_enabled;
+  } catch (err) {
+    console.warn('Failed to load cached inference config:', err);
+  }
+}
+
 async function fetchInferenceModels() {
   const base_url = $('setting-base-url').value.trim();
   const api_key = $('setting-api-key').value.trim() || 'not-needed';
@@ -2356,7 +2374,9 @@ function initDownloadDialog() {
     if (state === 'Stop') {
       if (!_dlgModelKey) return;
       // Request cancellation; UI will update when SSE emits cancelling/cancelled
-      api(`/models/${_dlgModelKey}/download/cancel`, { method: 'POST' }).catch(() => {});
+      api(`/models/${_dlgModelKey}/download/cancel`, { method: 'POST' }).catch(function(err) {
+        if (window.ArtificeToast) window.ArtificeToast.error("Could not cancel download: " + err.message);
+      });
       _dlgStopping = true;
       _setDlgState('stopping');
       return;
@@ -2386,7 +2406,9 @@ function initDownloadDialog() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ consent: false }),
-        }).catch(() => {});
+        }).catch(function(err) {
+          if (window.ArtificeToast) window.ArtificeToast.error("Could not revoke consent: " + err.message);
+        });
       }
       closeDownloadDialog();
       return;

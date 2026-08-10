@@ -50,7 +50,9 @@ async def test_missing_model_computation():
         status = await get_engine_status("artifice-draft", HardwareTier.LAPTOP)
 
     assert status["missing"] == []
+    assert status["engine_ready"] is True
     assert status["all_satisfied"] is True
+    assert status["installed_models"] == ["llama3.2:3b"]
     assert status["models"][0]["installed"] is True
 
     # No models installed → everything is missing
@@ -64,7 +66,9 @@ async def test_missing_model_computation():
         status = await get_engine_status("test", HardwareTier.DESKTOP)
 
     assert status["missing"] == ["llama3.2:3b"]
-    assert status["all_satisfied"] is False
+    assert status["engine_ready"] is True
+    assert status["all_satisfied"] is True  # engine_ready is True; models are advisory
+    assert status["installed_models"] == []
 
 
 @pytest.mark.asyncio
@@ -81,7 +85,11 @@ async def test_engine_status_dict_shape():
     ):
         status = await get_engine_status("artifice-draft", HardwareTier.DESKTOP)
 
-    assert set(status.keys()) == {"ollama", "models", "missing", "all_satisfied"}
+    expected_keys = {
+        "ollama", "engine_ready", "models", "missing",
+        "installed_models", "all_satisfied",
+    }
+    assert set(status.keys()) == expected_keys
     assert status["ollama"] == {"installed": True, "running": True}
     assert set(status["models"][0].keys()) == {
         "name", "role", "vision", "min_vram_gb", "notes", "badges", "installed",

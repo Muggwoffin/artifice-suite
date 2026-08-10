@@ -9,6 +9,7 @@
 
 (function () {
   const modal = document.getElementById("guide-modal");
+  if (!modal) return;
   const panels = {
     url: document.getElementById("panel-url"),
     text: document.getElementById("panel-text"),

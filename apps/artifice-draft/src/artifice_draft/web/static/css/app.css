@@ -448,7 +448,7 @@ button.btn.danger:hover:not(:disabled) {
 .settings-card input, .settings-card select, .settings-card textarea {
   font-family: var(--font-label);
   font-size: var(--text-base);
-  padding: 0.7rem 1rem;
+  padding: var(--space-4) var(--space-5);
   background-color: var(--paper-recessed);
   border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
@@ -651,7 +651,7 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; }
 
 .import-tab {
   flex: 1;
-  padding: 0.7rem;
+  padding: var(--space-4);
   border: none;
   background: transparent;
   color: var(--ink-soft);
@@ -691,7 +691,7 @@ mark.hl-marker { background: var(--marker-bg); color: inherit; }
   border: 1px solid var(--rule);
   background: var(--paper-recessed);
   border-radius: var(--radius-sm);
-  padding: 0.7rem 1rem;
+  padding: var(--space-4) var(--space-5);
   color: var(--ink);
   text-transform: none;
   letter-spacing: normal;

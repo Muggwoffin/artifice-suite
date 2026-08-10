@@ -79,7 +79,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   appearance: none;
   background: none;
   border: none;
-  padding: 0.7rem var(--space-6);
+  padding: var(--space-4) var(--space-6);
   font-family: var(--font-label);
   font-weight: 600;
   font-size: var(--text-sm);
@@ -333,7 +333,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   border-radius: var(--radius-sm);
   background: var(--paper-recessed);
   color: var(--ink);
-  padding: 0.7rem 1rem;
+  padding: var(--space-4) var(--space-5);
   font-family: var(--font-body);
   font-size: var(--text-base);
   /* Reset the label's uppercase/tracking so it doesn't bleed into the
@@ -365,7 +365,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 .input {
   font-family: var(--font-body);
   font-size: var(--text-base);
-  padding: 0.7rem 1rem;
+  padding: var(--space-4) var(--space-5);
   background-color: var(--paper-recessed);
   border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
@@ -485,7 +485,7 @@ table.queue thead th {
   text-transform: uppercase;
   font-size: var(--text-xs);
   text-align: left;
-  padding: 0.7rem 0.9rem;
+  padding: var(--space-4) 0.9rem;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -1535,7 +1535,7 @@ table.queue td.meta-cell {
 
 #dlg-token-input {
   width: 100%;
-  padding: 0.7rem 1rem;
+  padding: var(--space-4) var(--space-5);
   background: var(--paper);
   border: 1px solid var(--rule);
   border-radius: var(--radius-sm);

@@ -115,20 +115,24 @@
       </div>
       
       <div class="models-missing" id="models-missing" hidden>
-        <p class="modal-desc" id="models-missing-desc">The following AI models are required:</p>
+        <p class="modal-desc" id="models-missing-desc">The following AI models are recommended for this app. They are suggestions — you can use any model installed in Ollama.</p>
         <div class="model-list" id="model-list"></div>
         <div class="progress-track" id="pull-progress" hidden>
           <div class="progress-fill" id="pull-fill"></div>
         </div>
         <p class="modal-note" id="pull-note">Models are downloaded from Ollama and stored on your machine. This may take several minutes depending on your connection.</p>
+        <hr class="masthead-rule" style="margin: var(--space-5) 0;">
+        <p class="modal-desc" id="models-picker-desc">Choose which installed model to use for each role:</p>
+        <div class="model-picker-list" id="model-picker-list"></div>
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-secondary" id="engine-modal-cancel">Not Now</button>
+      <button class="btn btn-secondary" id="engine-modal-cancel">Close</button>
       <button class="btn btn-primary" id="engine-modal-primary">Download Ollama</button>
       <button class="btn btn-primary" id="engine-modal-retry" hidden>Retry</button>
-      <button class="btn btn-primary" id="engine-modal-install" hidden>Download & Install Models</button>
+      <button class="btn btn-secondary" id="engine-modal-install" hidden>Download Recommended</button>
       <button class="btn btn-launch" id="engine-modal-launch" hidden>Launch App</button>
+      <button class="btn btn-primary" id="engine-modal-save" hidden>Save Model Choices</button>
     </div>
   </div>
 </dialog>

@@ -69,8 +69,15 @@ async def get_engine_status(slug: str, tier: HardwareTier) -> dict[str, Any]:
 
     The shape is the fixed frontend contract consumed by ``hub.js``:
 
-    ``{"ollama": {"installed", "running"}, "models": [...], "missing": [...],
+    ``{"ollama": {"installed", "running"}, "engine_ready": bool,
+    "models": [...], "missing": [...], "installed_models": [...],
     "all_satisfied": bool}``
+
+    ``engine_ready`` is ``True`` when the Ollama binary is installed and the
+    server is reachable — model availability is advisory only.  ``missing``
+    and ``models`` surface the registry's recommended set for convenience;
+    ``installed_models`` is the full list of models the user *already* has,
+    not just the registry intersection.
 
     Raises:
         ValueError: if *slug* has no recommendations registered.
@@ -89,12 +96,14 @@ async def get_engine_status(slug: str, tier: HardwareTier) -> dict[str, Any]:
         installed_models = set(probe_result.models)
 
     missing = sorted(recommended - installed_models)
+    engine_ready = installed and running
 
     return {
         "ollama": {
             "installed": installed,
             "running": running,
         },
+        "engine_ready": engine_ready,
         "models": [
             {
                 "name": r.model_name,
@@ -108,7 +117,8 @@ async def get_engine_status(slug: str, tier: HardwareTier) -> dict[str, Any]:
             for r in ollama_recs
         ],
         "missing": missing,
-        "all_satisfied": installed and running and not missing,
+        "installed_models": sorted(installed_models),
+        "all_satisfied": engine_ready,
     }
 
 

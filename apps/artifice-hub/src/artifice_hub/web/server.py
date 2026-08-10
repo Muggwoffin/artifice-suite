@@ -38,6 +38,7 @@ from shared_ui.server_bootstrap import (
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .. import __version__
+from ..config_bridge import write_model_choice
 from ..engine import get_engine_status, pull_model_command
 from ..hardware import GpuKind
 from ..hardware import probe as probe_hardware
@@ -300,11 +301,11 @@ async def api_launch(slug: str):
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=404)
 
-    if not engine_status["all_satisfied"]:
+    if not engine_status["engine_ready"]:
         return {
             "ok": True,
             "engine_required": True,
-            "message": "Engine requirements not satisfied",
+            "message": "Ollama is not installed or not running",
         }
 
     spec = APPS[slug]
@@ -440,6 +441,43 @@ async def api_pull_model(slug: str, request: Request):
     thread.start()
 
     return JSONResponse({"job_id": job_id}, status_code=202)
+
+
+@app.post("/api/engine/{slug}/models")
+async def api_set_model_choices(slug: str, request: Request):
+    """Persist the user's model choices into the target app's config.
+
+    Accepts ``{"choices": {"vision": "model-name", "chat": "model-name", ...}}``.
+    Writes each role→model mapping into the appropriate config key for *slug*.
+    """
+    if slug not in APPS:
+        return JSONResponse({"error": f"Unknown app: {slug}"}, status_code=404)
+
+    try:
+        body = await request.json()
+        choices: dict[str, str] = body.get("choices", {})
+    except Exception:
+        return JSONResponse({"error": "Invalid request body"}, status_code=400)
+
+    if not choices or not isinstance(choices, dict):
+        return JSONResponse({"error": "choices must be a non-empty dict"}, status_code=400)
+
+    errors = []
+    for role, model_name in choices.items():
+        if not isinstance(model_name, str) or not model_name.strip():
+            errors.append(f"invalid model_name for role {role!r}")
+            continue
+        try:
+            write_model_choice(slug, role, model_name.strip())
+        except ValueError as e:
+            errors.append(str(e))
+        except OSError as e:
+            errors.append(f"could not write config for {role!r}: {e}")
+
+    if errors:
+        return JSONResponse({"ok": False, "errors": errors}, status_code=400)
+
+    return {"ok": True, "message": f"Model choices saved for {slug}"}
 
 
 # ---------------------------------------------------------------------------
