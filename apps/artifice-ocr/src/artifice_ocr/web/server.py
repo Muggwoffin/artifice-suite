@@ -11,6 +11,7 @@ and are included here.
 
 import contextlib
 import json
+import logging
 import os
 import sys
 import time
@@ -47,6 +48,9 @@ from .routers import run as run_router
 from .routers import settings as settings_router
 from .routers import tropy_bridge as tropy_router
 from .routers import tropy_browse as tropy_browse_router
+
+logger = logging.getLogger(__name__)
+
 
 app = FastAPI(title="ArtificeOCR")
 
@@ -300,8 +304,9 @@ async def reveal_file(request: Request) -> dict:
         else:
             subprocess.Popen(["xdg-open", str(p.parent)])
         return {"ok": True}
-    except Exception as exc:
-        return {"ok": False, "error": str(exc)}
+    except Exception:
+        logger.exception("Failed to reveal file: %s", resolved)
+        return {"ok": False, "error": "Could not reveal file in system file manager"}
 
 
 # ── BYOM dev-only preview (phase6) ──────────────────────────────────────────
@@ -605,7 +610,7 @@ async def create_handoff_route(request: Request):
 
     The body must contain ``target`` (slug) and ``body`` (text).
     """
-    from shared_ui.handoff import create_handoff
+    from shared_ui.handoff import HandoffError, create_handoff
 
     try:
         data = await request.json()
@@ -615,8 +620,8 @@ async def create_handoff_route(request: Request):
             return {"error": "target and body are required"}
         uuid_str = create_handoff("artifice-ocr", target, body)
         return {"uuid": uuid_str}
-    except ValueError as exc:
-        return {"error": str(exc)}
+    except HandoffError as exc:
+        return {"error": exc.public_message}
     except Exception:
         return {"error": "Failed to create handoff"}
 

@@ -28,6 +28,7 @@ from ..models import (
     TropyImportToTropyRequest,
 )
 from ..runtime import state
+from ..validation import validate_directory
 
 log = get_logger("tropy_bridge")
 
@@ -52,9 +53,7 @@ def tropy_import_preview(req: TropyImportRequest) -> dict:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception:
         log.exception("Unexpected error parsing Tropy export")
-        raise HTTPException(
-            status_code=400, detail="Could not parse the export file"
-        ) from None
+        raise HTTPException(status_code=400, detail="Could not parse the export file") from None
 
     return {
         "export_name": preview.export_name,
@@ -89,9 +88,7 @@ def tropy_import_add(req: TropyImportAddRequest) -> dict:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception:
         log.exception("Unexpected error parsing Tropy export")
-        raise HTTPException(
-            status_code=400, detail="Could not parse the export file"
-        ) from None
+        raise HTTPException(status_code=400, detail="Could not parse the export file") from None
 
     items = photos_to_job_items(preview, groups=req.groups)
 
@@ -103,8 +100,7 @@ def tropy_import_add(req: TropyImportAddRequest) -> dict:
         for photo in item.photos:
             if photo.missing:
                 is_pdf = (
-                    photo.mimetype == "application/pdf"
-                    or photo.resolved.suffix.lower() == ".pdf"
+                    photo.mimetype == "application/pdf" or photo.resolved.suffix.lower() == ".pdf"
                 )
                 name = Path(photo.path_rel).name
                 if is_pdf and photo.page is not None:
@@ -112,9 +108,11 @@ def tropy_import_add(req: TropyImportAddRequest) -> dict:
                 else:
                     missing_labels.append(name)
 
-    # Write manifest (swallow failure)
+    # Write manifest (swallow failure, including an output_dir outside the
+    # allowed roots — this write is best-effort, so the existing behaviour
+    # for a bad path is to skip it silently, same as any other failure here)
     with contextlib.suppress(Exception):
-        write_manifest(req.output_dir, preview)
+        write_manifest(validate_directory(req.output_dir, "output_dir"), preview)
 
     added = state.add_items(items)
     return {
@@ -136,9 +134,7 @@ _STAGE_COLUMNS = {
 }
 
 
-def _eligible_photos_for_export(
-    item_ids: list[str] | None, stage: str
-) -> list[ExportPhoto]:
+def _eligible_photos_for_export(item_ids: list[str] | None, stage: str) -> list[ExportPhoto]:
     """Walk eligible queue items and build :class:`ExportPhoto` objects."""
     items = state.tropy_eligible_items(item_ids)
     stage_key, text_key = _STAGE_COLUMNS.get(stage, ("cleaned", "cleaned_text"))
@@ -186,7 +182,11 @@ def tropy_export(req: TropyExportRequest):
     content = export_json(photos)
 
     if req.path:
-        out = Path(req.path)
+        try:
+            resolved = validate_directory(req.path, "path")
+        except HTTPException as exc:
+            raise exc
+        out = Path(resolved)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")
         return {"path": str(out), "filename": out.name, "jsonld": content}
@@ -205,9 +205,7 @@ def tropy_export(req: TropyExportRequest):
 # --------------------------------------------------------------------------- #
 
 
-def _eligible_photos_from_history(
-    item_ids: list[int], stage: str
-) -> list[ExportPhoto]:
+def _eligible_photos_from_history(item_ids: list[int], stage: str) -> list[ExportPhoto]:
     """Build :class:`ExportPhoto` objects from history DB rows."""
     text_col = {
         "raw_ocr": "raw_text",
@@ -269,7 +267,11 @@ def tropy_export_history(req: TropyExportHistoryRequest):
     content = export_json(photos)
 
     if req.path:
-        out = Path(req.path)
+        try:
+            resolved = validate_directory(req.path, "path")
+        except HTTPException as exc:
+            raise exc
+        out = Path(resolved)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")
         return {"path": str(out), "filename": out.name, "jsonld": content}

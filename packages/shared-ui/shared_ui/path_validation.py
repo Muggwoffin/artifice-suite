@@ -23,15 +23,44 @@ from pathlib import Path
 _WIN_DRIVE = re.compile(r"^[A-Za-z]:")
 
 
+class PathValidationError(ValueError):
+    """A user-supplied path failed validation, with a safe public message.
+
+    ``public_message`` is set from a string literal at each raise site — it
+    is never derived from a wrapped third-party exception — so a caller can
+    read it directly instead of calling ``str(e)``/``repr(e)``, which
+    CodeQL's stack-trace-exposure query treats as an information leak
+    regardless of whether the message is actually sensitive. Subclasses
+    ``ValueError`` so existing ``except ValueError`` call sites keep working
+    unchanged.
+    """
+
+    def __init__(self, public_message: str) -> None:
+        self.public_message = public_message
+        super().__init__(public_message)
+
+
+class OutsideAllowedRootsError(PathValidationError):
+    """The path resolved outside every allowed root.
+
+    Split out from :class:`PathValidationError` because at least one caller
+    (the OCR web layer) needs to react specifically to this case — e.g. to
+    add an app-specific hint about the allowed-roots env var — without
+    string-matching the message text.
+    """
+
+
 def normalise_path(raw: str, field_name: str) -> str:
     """Normalise a raw path string: strip, replace backslashes, and — on
     POSIX — reject Windows absolute paths before they can be misinterpreted
-    as relative.  Raises ``ValueError`` on rejection."""
+    as relative.  Raises :class:`PathValidationError` on rejection."""
     normalised = raw.replace("\\", "/").strip()
     if not normalised:
-        raise ValueError(f"{field_name}: path must not be empty")
+        raise PathValidationError(f"{field_name}: path must not be empty")
     if os.name == "posix" and _WIN_DRIVE.match(normalised):
-        raise ValueError(f"{field_name}: path {normalised!r} is not valid on this platform")
+        raise PathValidationError(
+            f"{field_name}: path {normalised!r} is not valid on this platform"
+        )
     return normalised
 
 
@@ -69,7 +98,7 @@ def validate_path(raw: str, field_name: str, *, allowed_roots_env_var: str) -> s
     try:
         p = Path(normalised_raw).expanduser().resolve(strict=False)
     except Exception:
-        raise ValueError(f"{field_name}: cannot resolve path {raw!r}") from None
+        raise PathValidationError(f"{field_name}: cannot resolve path {raw!r}") from None
 
     allowed = build_allowed_roots(allowed_roots_env_var)
     for root in allowed:
@@ -81,7 +110,7 @@ def validate_path(raw: str, field_name: str, *, allowed_roots_env_var: str) -> s
             continue
     else:
         # Does NOT name the allowed roots; they include Path.home().
-        raise ValueError(
+        raise OutsideAllowedRootsError(
             f"{field_name}: path {raw!r} is outside the directories this "
             f"server is permitted to access"
         )
@@ -91,7 +120,7 @@ def validate_path(raw: str, field_name: str, *, allowed_roots_env_var: str) -> s
     # directory is not rendered unusable by its own parent.
     hidden = [part for part in relative.parts if part.startswith(".") and part not in (".", "..")]
     if hidden:
-        raise ValueError(
+        raise PathValidationError(
             f"{field_name}: path {raw!r} descends into a hidden "
             f"directory ({hidden[0]!r}). Choose a visible directory."
         )

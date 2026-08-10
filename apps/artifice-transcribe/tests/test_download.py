@@ -393,7 +393,7 @@ async def test_download_refused_without_consent():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp = await client.post("/api/v1/models/whisper-large-v3/download")
     assert resp.status_code == 403
-    assert "Consent has not been recorded" in resp.json()["detail"]
+    assert "Consent has not been granted" in resp.json()["detail"]
 
 
 @pytest.mark.asyncio
