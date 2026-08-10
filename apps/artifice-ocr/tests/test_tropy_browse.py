@@ -821,18 +821,9 @@ class TestBrowseRoutesEnabled:
     @pytest.fixture(autouse=True)
     def _enable_flag(self, monkeypatch):
         monkeypatch.setenv("ARTIFICE_OCR_TROPY_LIVE_READ", "1")
-        import importlib
-
-        import artifice_ocr.web.routers.tropy_browse as browse_mod
-
-        importlib.reload(browse_mod)
-        self._browse_mod = browse_mod
 
     def test_projects_returns_data(self, tmp_path, monkeypatch):
         client = _client_with_state(tmp_path, monkeypatch)
-        monkeypatch.setattr(
-            self._browse_mod, "_LIVE_READ_ENABLED", True
-        )
 
         tpy = _create_tpy(tmp_path / "test.tpy")
         resp = client.post(
@@ -846,7 +837,6 @@ class TestBrowseRoutesEnabled:
 
     def test_items_returns_data(self, tmp_path, monkeypatch):
         client = _client_with_state(tmp_path, monkeypatch)
-        monkeypatch.setattr(self._browse_mod, "_LIVE_READ_ENABLED", True)
         monkeypatch.setattr(
             "artifice_ocr.tropy_db.validate_absolute_photo",
             _mock_pathcheck,
@@ -863,7 +853,6 @@ class TestBrowseRoutesEnabled:
 
     def test_enqueue_adds_items(self, tmp_path, monkeypatch):
         client = _client_with_state(tmp_path, monkeypatch)
-        monkeypatch.setattr(self._browse_mod, "_LIVE_READ_ENABLED", True)
         monkeypatch.setattr(
             "artifice_ocr.tropy_db.validate_absolute_photo",
             _mock_pathcheck,
@@ -884,13 +873,84 @@ class TestBrowseRoutesEnabled:
 
     def test_invalid_path_rejected(self, tmp_path, monkeypatch):
         client = _client_with_state(tmp_path, monkeypatch)
-        monkeypatch.setattr(self._browse_mod, "_LIVE_READ_ENABLED", True)
 
         resp = client.post(
             "/api/tropy/browse/projects",
             json={"path": "/etc/passwd.tpy"},
         )
         assert resp.status_code == 400
+
+
+class TestBrowseRoutesEnabledViaConfig:
+    """Routes work when tropy_live_browse_enabled=True via config (no env var)."""
+
+    @pytest.fixture(autouse=True)
+    def _ensure_env_unset(self, monkeypatch):
+        """Ensure the env var is NOT set — we're testing the config path."""
+        monkeypatch.delenv("ARTIFICE_OCR_TROPY_LIVE_READ", raising=False)
+
+    def test_projects_enabled_via_config(self, tmp_path, monkeypatch):
+        """Config-based toggle enables browse routes without touching env var."""
+        client = _client_with_state(tmp_path, monkeypatch)
+        config.apply_overrides({"tropy_live_browse_enabled": True})
+
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        resp = client.post(
+            "/api/tropy/browse/projects",
+            json={"path": str(tpy)},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["projects"]) == 1
+
+    def test_disabled_by_default_when_env_unset(self, tmp_path, monkeypatch):
+        """Routes return 404 when neither env var nor config toggle is set."""
+        client = _client_with_state(tmp_path, monkeypatch)
+        # config defaults to False, and env var is unset
+
+        resp = client.post(
+            "/api/tropy/browse/projects",
+            json={"path": "/nonexistent.tpy"},
+        )
+        assert resp.status_code == 404
+        assert "not enabled" in resp.json()["detail"].lower()
+
+    def test_flip_then_call_without_restart(self, tmp_path, monkeypatch):
+        """Demonstrate: flip via POST /api/config, then immediately call a
+        browse route — it must work with no server restart."""
+        client = _client_with_state(tmp_path, monkeypatch)
+
+        # Initially disabled (config default is False, env var is unset)
+        resp = client.post(
+            "/api/tropy/browse/projects",
+            json={"path": "/nonexistent.tpy"},
+        )
+        assert resp.status_code == 404
+
+        # Flip the toggle via the same POST /api/config route the UI uses
+        resp = client.post("/api/config", json={"tropy_live_browse_enabled": True})
+        assert resp.status_code == 200
+        assert resp.json()["ok"] is True
+
+        # Immediately (same server process, no restart) the browse route works
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        resp = client.post(
+            "/api/tropy/browse/projects",
+            json={"path": str(tpy)},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["projects"]) == 1
+
+        # Flip back off — route should 404 again
+        resp = client.post("/api/config", json={"tropy_live_browse_enabled": False})
+        assert resp.status_code == 200
+
+        resp = client.post(
+            "/api/tropy/browse/projects",
+            json={"path": str(tpy)},
+        )
+        assert resp.status_code == 404
 
 
 class TestSchemaMissingTables:

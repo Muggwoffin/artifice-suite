@@ -25,6 +25,18 @@ const tropyEls = {};
   "tropy-import-list", "btn-tropy-import-select-all",
   "tropy-import-summary-text", "tropy-import-summary-warning",
   "btn-tropy-cancel", "btn-tropy-add-queue",
+  // Browse-project mode
+  "tropy-tab-jsonld", "tropy-tab-browse",
+  "tropy-mode-jsonld", "tropy-mode-browse",
+  "tropy-browse-path", "btn-tropy-browse-pick", "btn-tropy-browse-load",
+  "tropy-browse-project-info", "tropy-browse-project-name",
+  "tropy-browse-loading", "tropy-browse-error", "tropy-browse-error-text",
+  "tropy-browse-picker", "tropy-browse-source-pane",
+  "tropy-browse-lists", "tropy-browse-tags",
+  "tropy-browse-item-pane", "tropy-browse-item-empty", "tropy-browse-item-list",
+  "tropy-browse-summary", "tropy-browse-summary-text",
+  "tropy-footer-jsonld", "tropy-footer-browse",
+  "btn-tropy-cancel-browse", "btn-tropy-browse-enqueue",
   // Export modal
   "btn-send-tropy", "modal-tropy-send",
   "tropy-export-stat-items", "tropy-export-stat-photos",
@@ -40,6 +52,15 @@ let tropyImportPreview = null;  // { export_name, items, warnings }
 let tropyImportSource = null;   // { type: "path" | "content", value: string, name?: string }
 let tropyExportContext = null;  // { itemIds, isHistory }
 
+// Browse-project state
+let tropyBrowseActive = false;   // current mode: false=jsonld, true=browse
+let tropyBrowseProject = null;   // { path, project_id, name }
+let tropyBrowseLists = [];       // flat list rows from /browse/lists
+let tropyBrowseTags = [];        // flat tag rows from /browse/tags
+let tropyBrowseItems = [];      // items from /browse/items for current filter
+let tropyBrowseSelected = new Map(); // item_id -> true for checked items
+let tropyBrowseFilter = null;    // { list_id?, tag? } current filter
+
 // ------------------------------------------------------------- import modal
 
 async function openTropyAdd() {
@@ -50,6 +71,14 @@ async function openTropyAdd() {
     const cfg = await api("GET", "/api/config");
     if (cfg.tropy_last_path) {
       tropyEls["tropy-import-path"].value = cfg.tropy_last_path;
+    }
+    // Show or hide the browse-project tab based on the setting
+    if (tropyEls["tropy-tab-browse"]) {
+      if (cfg.tropy_live_browse_enabled) {
+        tropyEls["tropy-tab-browse"].style.display = "";
+      } else {
+        tropyEls["tropy-tab-browse"].style.display = "none";
+      }
     }
   } catch { /* settings are optional */ }
 }
@@ -66,6 +95,29 @@ function resetImportState() {
   tropyEls["tropy-import-summary-warning"].textContent = "";
   tropyEls["btn-tropy-add-queue"].disabled = true;
   tropyEls["btn-tropy-add-queue"].textContent = "Add to Queue";
+  // Reset browse mode
+  tropyBrowseProject = null;
+  tropyBrowseLists = [];
+  tropyBrowseTags = [];
+  tropyBrowseItems = [];
+  tropyBrowseSelected = new Map();
+  tropyBrowseFilter = null;
+  if (tropyEls["tropy-browse-path"]) tropyEls["tropy-browse-path"].value = "";
+  if (tropyEls["tropy-browse-project-info"]) tropyEls["tropy-browse-project-info"].classList.add("hidden");
+  if (tropyEls["tropy-browse-loading"]) tropyEls["tropy-browse-loading"].classList.add("hidden");
+  if (tropyEls["tropy-browse-error"]) tropyEls["tropy-browse-error"].classList.add("hidden");
+  if (tropyEls["tropy-browse-picker"]) tropyEls["tropy-browse-picker"].classList.add("hidden");
+  if (tropyEls["tropy-browse-summary"]) tropyEls["tropy-browse-summary"].classList.add("hidden");
+  if (tropyEls["tropy-browse-item-list"]) tropyEls["tropy-browse-item-list"].innerHTML = "";
+  if (tropyEls["tropy-browse-lists"]) tropyEls["tropy-browse-lists"].innerHTML = '<span class="dim" style="padding:0.35rem 0.7rem;display:block;">No lists</span>';
+  if (tropyEls["tropy-browse-tags"]) tropyEls["tropy-browse-tags"].innerHTML = "";
+  if (tropyEls["tropy-browse-item-empty"]) {
+    tropyEls["tropy-browse-item-empty"].style.display = "";
+  }
+  if (tropyEls["btn-tropy-browse-enqueue"]) {
+    tropyEls["btn-tropy-browse-enqueue"].disabled = true;
+    tropyEls["btn-tropy-browse-enqueue"].textContent = "Add to Queue";
+  }
 }
 
 function showDropzoneState(state, message) {
@@ -422,7 +474,9 @@ tropyEls["btn-tropy-add-queue"].onclick = async () => {
     if (window.ArtificeToast) window.ArtificeToast.success(msg);
     // Persist last-used Tropy import path
     if (tropyImportSource && tropyImportSource.type === "path" && tropyImportSource.value) {
-      api("POST", "/api/config", { tropy_last_path: tropyImportSource.value }).catch(() => {});
+      api("POST", "/api/config", { tropy_last_path: tropyImportSource.value }).catch(function(err) {
+        if (window.ArtificeToast) window.ArtificeToast.error("Could not save import path: " + err.message);
+      });
     }
     setQueue(data.items);
     tropyEls["modal-tropy-add"].classList.add("hidden");
@@ -431,6 +485,191 @@ tropyEls["btn-tropy-add-queue"].onclick = async () => {
     tropyEls["btn-tropy-add-queue"].disabled = false;
     tropyEls["btn-tropy-add-queue"].textContent = "Add to Queue";
   }
+};
+
+function switchTropyMode(mode) {
+  tropyBrowseActive = (mode === "browse");
+  tropyEls["tropy-tab-jsonld"].classList.toggle("active", mode === "jsonld");
+  tropyEls["tropy-tab-jsonld"].setAttribute("aria-selected", mode === "jsonld" ? "true" : "false");
+  tropyEls["tropy-tab-browse"].classList.toggle("active", mode === "browse");
+  tropyEls["tropy-tab-browse"].setAttribute("aria-selected", mode === "browse" ? "true" : "false");
+  tropyEls["tropy-mode-jsonld"].classList.toggle("hidden", mode !== "jsonld");
+  tropyEls["tropy-mode-browse"].classList.toggle("hidden", mode !== "browse");
+  tropyEls["tropy-footer-jsonld"].classList.toggle("hidden", mode !== "jsonld");
+  tropyEls["tropy-footer-browse"].classList.toggle("hidden", mode !== "browse");
+}
+tropyEls["tropy-tab-jsonld"].onclick = () => switchTropyMode("jsonld");
+tropyEls["tropy-tab-browse"].onclick = () => switchTropyMode("browse");
+
+tropyEls["btn-tropy-browse-pick"].onclick = async () => {
+  try {
+    const res = await fetch("/api/native/pick-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (data.path) tropyEls["tropy-browse-path"].value = data.path;
+  } catch (err) {
+    if (window.ArtificeToast) window.ArtificeToast.error("File picker not available — type the path instead.");
+  }
+};
+
+tropyEls["btn-tropy-browse-load"].onclick = async () => {
+  const path = tropyEls["tropy-browse-path"].value.trim();
+  if (!path) {
+    if (window.ArtificeToast) window.ArtificeToast.error("Enter a path to a .tropy project file");
+    return;
+  }
+  tropyEls["tropy-browse-loading"].classList.remove("hidden");
+  tropyEls["tropy-browse-error"].classList.add("hidden");
+  tropyEls["tropy-browse-project-info"].classList.add("hidden");
+  try {
+    const data = await window.ArtificeBind.apiFetch("/api/tropy/browse/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    const proj = data.projects[0];
+    tropyBrowseProject = Object.assign({ path }, proj);
+    tropyEls["tropy-browse-project-name"].textContent = proj.name || path;
+    tropyEls["tropy-browse-loading"].classList.add("hidden");
+    tropyEls["tropy-browse-project-info"].classList.remove("hidden");
+    await loadTropyBrowseSources();
+    tropyEls["tropy-browse-picker"].classList.remove("hidden");
+  } catch (err) {
+    tropyEls["tropy-browse-loading"].classList.add("hidden");
+    tropyEls["tropy-browse-error"].classList.remove("hidden");
+    tropyEls["tropy-browse-error-text"].textContent = err.message;
+  }
+};
+
+async function loadTropyBrowseSources() {
+  const body = JSON.stringify({ path: tropyBrowseProject.path });
+  const headers = { "Content-Type": "application/json" };
+  const [listsData, tagsData] = await Promise.all([
+    window.ArtificeBind.apiFetch("/api/tropy/browse/lists", { method: "POST", headers, body }),
+    window.ArtificeBind.apiFetch("/api/tropy/browse/tags", { method: "POST", headers, body }),
+  ]);
+  tropyBrowseLists = listsData.lists || [];
+  tropyBrowseTags = tagsData.tags || [];
+  renderTropyBrowseLists();
+  renderTropyBrowseTags();
+}
+
+function renderTropyBrowseLists() {
+  const container = tropyEls["tropy-browse-lists"];
+  if (!tropyBrowseLists.length) {
+    container.innerHTML = '<span class="dim" style="padding:0.35rem 0.7rem;display:block;">No lists</span>';
+    return;
+  }
+  function buildTree(parentId) {
+    return tropyBrowseLists
+      .filter(l => l.parent_list_id === parentId)
+      .map(l => {
+        const children = buildTree(l.list_id);
+        return `<div class="tropy-browse-list-node" data-list-id="${l.list_id}" style="padding-left:${parentId === 0 ? 0 : 12}px;">`
+          + `<span class="tropy-browse-list-link" data-list-id="${l.list_id}" style="cursor:pointer;">${escapeHtml(l.name || "")}</span>`
+          + children
+          + `</div>`;
+      })
+      .join("");
+  }
+  container.innerHTML = `<div class="tropy-browse-list-node" data-list-id="all" style="padding-bottom:0.3rem;"><span class="tropy-browse-list-link" data-list-id="all" style="cursor:pointer;font-weight:600;">All items</span></div>` + buildTree(0);
+  container.querySelectorAll(".tropy-browse-list-link").forEach(el => {
+    el.onclick = () => {
+      const id = el.dataset.listId;
+      tropyBrowseFilter = id === "all" ? null : { list_id: parseInt(id, 10) };
+      loadTropyBrowseItems();
+    };
+  });
+}
+
+function renderTropyBrowseTags() {
+  const container = tropyEls["tropy-browse-tags"];
+  container.innerHTML = tropyBrowseTags.map(t =>
+    `<span class="tropy-browse-tag-link" data-tag="${escapeHtml(t.name)}" style="cursor:pointer;display:inline-block;margin:0.15rem 0.3rem 0.15rem 0;">${escapeHtml(t.name)}</span>`
+  ).join("");
+  container.querySelectorAll(".tropy-browse-tag-link").forEach(el => {
+    el.onclick = () => {
+      tropyBrowseFilter = { tag: el.dataset.tag };
+      loadTropyBrowseItems();
+    };
+  });
+}
+
+async function loadTropyBrowseItems() {
+  const params = new URLSearchParams();
+  if (tropyBrowseFilter) {
+    if (tropyBrowseFilter.list_id !== undefined) params.set("list_id", tropyBrowseFilter.list_id);
+    if (tropyBrowseFilter.tag !== undefined) params.set("tag", tropyBrowseFilter.tag);
+  }
+  const qs = params.toString() ? "?" + params.toString() : "";
+  try {
+    const data = await window.ArtificeBind.apiFetch("/api/tropy/browse/items" + qs, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: tropyBrowseProject.path }),
+    });
+    tropyBrowseItems = data.items || [];
+    renderTropyBrowseItems();
+  } catch (err) {
+    if (window.ArtificeToast) window.ArtificeToast.error(err.message);
+  }
+}
+
+function renderTropyBrowseItems() {
+  tropyEls["tropy-browse-item-empty"].style.display = tropyBrowseItems.length ? "none" : "";
+  tropyEls["tropy-browse-item-list"].innerHTML = tropyBrowseItems.map(it => {
+    const missing = it.missing_count > 0
+      ? `<span class="tropy-result-missing-badge">${it.missing_count} missing</span>`
+      : "";
+    return `<label class="tropy-browse-item-row" style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;">`
+      + `<input type="checkbox" class="tropy-browse-item-check" data-item-id="${it.item_id}" ${tropyBrowseSelected.has(it.item_id) ? "checked" : ""}>`
+      + `<span>${escapeHtml(it.title || "(untitled)")}</span>`
+      + `<span class="dim">${it.photo_count} photo(s)</span>`
+      + missing
+      + `</label>`;
+  }).join("");
+  tropyEls["tropy-browse-item-list"].querySelectorAll(".tropy-browse-item-check").forEach(cb => {
+    cb.onchange = () => {
+      const id = parseInt(cb.dataset.itemId, 10);
+      if (cb.checked) tropyBrowseSelected.set(id, true); else tropyBrowseSelected.delete(id);
+      tropyEls["tropy-browse-summary-text"].textContent = tropyBrowseSelected.size + " item(s) selected";
+      tropyEls["tropy-browse-summary"].classList.toggle("hidden", tropyBrowseSelected.size === 0);
+      tropyEls["btn-tropy-browse-enqueue"].disabled = tropyBrowseSelected.size === 0;
+    };
+  });
+}
+
+tropyEls["btn-tropy-browse-enqueue"].onclick = async () => {
+  const outputDir = document.getElementById("output-dir")
+    ? document.getElementById("output-dir").value || "output"
+    : "output";
+  tropyEls["btn-tropy-browse-enqueue"].disabled = true;
+  tropyEls["btn-tropy-browse-enqueue"].textContent = "Adding…";
+  try {
+    const data = await window.ArtificeBind.apiFetch("/api/tropy/browse/enqueue", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: tropyBrowseProject.path,
+        output_dir: outputDir,
+        item_ids: Array.from(tropyBrowseSelected.keys()),
+      }),
+    });
+    if (window.ArtificeToast) window.ArtificeToast.success(`Added ${data.added} item(s) from Tropy`);
+    setQueue(data.items);
+    tropyEls["modal-tropy-add"].classList.add("hidden");
+  } catch (err) {
+    if (window.ArtificeToast) window.ArtificeToast.error(`Enqueue failed: ${err.message}`);
+    tropyEls["btn-tropy-browse-enqueue"].disabled = false;
+    tropyEls["btn-tropy-browse-enqueue"].textContent = "Add to Queue";
+  }
+};
+
+tropyEls["btn-tropy-cancel-browse"].onclick = () => {
+  tropyEls["modal-tropy-add"].classList.add("hidden");
 };
 
 // ------------------------------------------------------------- export modal
@@ -582,7 +821,9 @@ tropyEls["btn-send-tropy-write"].onclick = async () => {
           }
           tropyEls["tropy-export-loading"].classList.add("hidden");
           // Persist last-used Tropy export path
-          api("POST", "/api/config", { tropy_last_export_path: savePath }).catch(() => {});
+          api("POST", "/api/config", { tropy_last_export_path: savePath }).catch(function(err) {
+            if (window.ArtificeToast) window.ArtificeToast.error("Could not save export path: " + err.message);
+          });
           return;
         }
         // API import failed — fall through to file-based flow with a note
@@ -660,7 +901,9 @@ tropyEls["btn-send-tropy-write"].onclick = async () => {
     }
 
     // Persist last-used Tropy export path
-    api("POST", "/api/config", { tropy_last_export_path: savePath }).catch(() => {});
+    api("POST", "/api/config", { tropy_last_export_path: savePath }).catch(function(err) {
+      if (window.ArtificeToast) window.ArtificeToast.error("Could not save export path: " + err.message);
+    });
   } catch (err) {
     tropyEls["tropy-export-status"].textContent = err.message;
     tropyEls["tropy-export-status"].className = "tropy-export-status error";

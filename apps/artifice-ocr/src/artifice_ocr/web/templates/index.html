@@ -344,6 +344,7 @@
           <label>Parallel OCR readers <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
           <label>Resume (skip existing outputs) <input type="checkbox" id="set-resume"></label>
           <label>Enable confidence scoring <input type="checkbox" id="set-confidence_enabled"></label>
+          <label>Enable Tropy project browsing <input type="checkbox" id="set-tropy_live_browse_enabled"></label>
           <details style="margin-top:0.5rem;">
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>
             <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.4rem;">
@@ -397,31 +398,37 @@
       <h3>Import from Tropy</h3>
       <button class="modal-close" data-modal-close aria-label="Close import dialog">&times;</button>
 
-      <div class="tropy-help">
-        <p>Import items from a Tropy JSON-LD export file. In Tropy, choose <strong>File &rarr; Export &rarr; JSON-LD</strong> to create this file.</p>
-        <p class="dim">Tropy exports absolute paths to your original photos. Those paths are preserved when the images are queued for OCR.</p>
+      <div class="tropy-mode-tabs" id="tropy-mode-tabs" role="tablist" aria-label="Import mode">
+        <button class="tropy-mode-tab active" id="tropy-tab-jsonld" role="tab" aria-selected="true" aria-controls="tropy-mode-jsonld" data-mode="jsonld">From file</button>
+        <button class="tropy-mode-tab" id="tropy-tab-browse" role="tab" aria-selected="false" aria-controls="tropy-mode-browse" data-mode="browse">Browse project</button>
       </div>
 
-      <div class="tropy-dropzone" id="tropy-dropzone" tabindex="0" role="button" aria-label="Drop a Tropy JSON-LD file here, or press Enter to browse">
-        <div class="tropy-dropzone-state" id="tropy-dropzone-idle">
-          <svg class="tropy-dropzone-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span class="tropy-dropzone-title">Drop a Tropy JSON-LD file here</span>
-          <span class="tropy-dropzone-hint">or press Enter to browse</span>
+      <div id="tropy-mode-jsonld">
+        <div class="tropy-help">
+          <p>Import items from a Tropy JSON-LD export file. In Tropy, choose <strong>File &rarr; Export &rarr; JSON-LD</strong> to create this file.</p>
+          <p class="dim">Tropy exports absolute paths to your original photos. Those paths are preserved when the images are queued for OCR.</p>
         </div>
-        <div class="tropy-dropzone-state hidden" id="tropy-dropzone-parsing">
-          <span class="tropy-spinner" aria-hidden="true"></span>
-          <span class="tropy-dropzone-title">Parsing JSON-LD&hellip;</span>
+
+        <div class="tropy-dropzone" id="tropy-dropzone" tabindex="0" role="button" aria-label="Drop a Tropy JSON-LD file here, or press Enter to browse">
+          <div class="tropy-dropzone-state" id="tropy-dropzone-idle">
+            <svg class="tropy-dropzone-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span class="tropy-dropzone-title">Drop a Tropy JSON-LD file here</span>
+            <span class="tropy-dropzone-hint">or press Enter to browse</span>
+          </div>
+          <div class="tropy-dropzone-state hidden" id="tropy-dropzone-parsing">
+            <span class="tropy-spinner" aria-hidden="true"></span>
+            <span class="tropy-dropzone-title">Parsing JSON-LD&hellip;</span>
+          </div>
+          <div class="tropy-dropzone-state tropy-dropzone-state--success hidden" id="tropy-dropzone-success">
+            <svg class="tropy-dropzone-icon tropy-dropzone-check" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            <span class="tropy-dropzone-title" id="tropy-dropzone-success-text">Ready to import</span>
+          </div>
+          <div class="tropy-dropzone-state tropy-dropzone-state--error hidden" id="tropy-dropzone-error">
+            <svg class="tropy-dropzone-icon tropy-dropzone-error-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span class="tropy-dropzone-title" id="tropy-dropzone-error-text"></span>
+          </div>
+          <div class="tropy-dropzone-live" id="tropy-dropzone-live" aria-live="polite" aria-atomic="true"></div>
         </div>
-        <div class="tropy-dropzone-state tropy-dropzone-state--success hidden" id="tropy-dropzone-success">
-          <svg class="tropy-dropzone-icon tropy-dropzone-check" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          <span class="tropy-dropzone-title" id="tropy-dropzone-success-text">Ready to import</span>
-        </div>
-        <div class="tropy-dropzone-state tropy-dropzone-state--error hidden" id="tropy-dropzone-error">
-          <svg class="tropy-dropzone-icon tropy-dropzone-error-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span class="tropy-dropzone-title" id="tropy-dropzone-error-text"></span>
-        </div>
-        <div class="tropy-dropzone-live" id="tropy-dropzone-live" aria-live="polite" aria-atomic="true"></div>
-      </div>
 
       <div class="tropy-dropzone-actions">
         <input type="text" id="tropy-import-path" class="input" placeholder="No file selected" readonly aria-label="Selected file">
@@ -441,10 +448,56 @@
         <span class="spacer"></span>
         <span id="tropy-import-summary-warning" class="warning"></span>
       </div>
+      </div><!-- /tropy-mode-jsonld -->
 
-      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <!-- Browse-project mode -->
+      <div id="tropy-mode-browse" class="hidden">
+        <div class="tropy-browse-header">
+          <div class="tropy-browse-path-row">
+            <input type="text" id="tropy-browse-path" class="input" placeholder="Path to a .tropy project file" aria-label="Tropy project file path">
+            <button class="btn btn-small" id="btn-tropy-browse-pick" type="button">Pick&hellip;</button>
+            <button class="btn btn-small accent" id="btn-tropy-browse-load" type="button">Load Project</button>
+          </div>
+          <div class="tropy-browse-project-info hidden" id="tropy-browse-project-info">
+            <span class="tropy-browse-project-name dim" id="tropy-browse-project-name"></span>
+          </div>
+          <div class="tropy-browse-project-info hidden" id="tropy-browse-loading">
+            <span class="tropy-browse-loading-text dim">Loading&hellip;</span>
+          </div>
+          <div class="tropy-browse-project-info hidden" id="tropy-browse-error">
+            <span class="tropy-browse-error-text error" id="tropy-browse-error-text"></span>
+          </div>
+        </div>
+
+        <!-- Two-pane: source tree (lists + tags) | item list -->
+        <div class="tropy-browse-picker-grid hidden" id="tropy-browse-picker">
+          <!-- Left: lists + tags -->
+          <div class="tropy-source-pane" id="tropy-browse-source-pane" aria-label="Lists and tags">
+            <div class="tropy-source-section-label">Lists</div>
+            <div id="tropy-browse-lists"><span class="dim" style="padding:0.35rem 0.7rem;display:block;">No lists</span></div>
+            <div class="tropy-source-section-label">Tags</div>
+            <div id="tropy-browse-tags"></div>
+          </div>
+          <!-- Right: item list -->
+          <div class="tropy-item-pane" id="tropy-browse-item-pane" aria-live="polite">
+            <div class="empty-state" id="tropy-browse-item-empty">Select a list or tag to browse items</div>
+            <div id="tropy-browse-item-list"></div>
+          </div>
+        </div>
+
+        <div class="tropy-browse-summary hidden" id="tropy-browse-summary">
+          <span id="tropy-browse-summary-text" class="dim">No items selected</span>
+          <span class="spacer"></span>
+        </div>
+      </div><!-- /tropy-mode-browse -->
+
+      <div id="tropy-footer-jsonld">
         <button class="btn" id="btn-tropy-cancel" type="button">Cancel</button>
         <button class="btn accent" id="btn-tropy-add-queue" type="button" disabled>Add to Queue</button>
+      </div>
+      <div id="tropy-footer-browse" class="hidden">
+        <button class="btn" id="btn-tropy-cancel-browse" type="button">Cancel</button>
+        <button class="btn accent" id="btn-tropy-browse-enqueue" type="button" disabled>Add to Queue</button>
       </div>
     </div>
   </div>

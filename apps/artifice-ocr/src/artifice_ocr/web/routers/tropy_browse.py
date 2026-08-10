@@ -4,9 +4,11 @@
 
 """Live read-only .tpy browse routes — feature-flagged.
 
-Only mounted when ARTIFICE_OCR_TROPY_LIVE_READ=1. Provides browsing of
-Tropy projects, lists, tags, items, and photos directly from a .tpy file,
-plus enqueueing items for OCR without a manual JSON-LD export.
+Enabled via the Settings toggle ``tropy_live_browse_enabled`` (persisted, no
+restart required) or the environment variable ``ARTIFICE_OCR_TROPY_LIVE_READ=1``
+(fallback override for advanced/CI use). Provides browsing of Tropy projects,
+lists, tags, items, and photos directly from a .tpy file, plus enqueueing
+items for OCR without a manual JSON-LD export.
 """
 
 import os
@@ -14,6 +16,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 
+from ... import config
 from ..._logging import get_logger
 from ...tropy_db import (
     TropyDBError,
@@ -32,11 +35,20 @@ log = get_logger("tropy_browse")
 
 router = APIRouter(tags=["tropy-browse"])
 
-_LIVE_READ_ENABLED = os.environ.get("ARTIFICE_OCR_TROPY_LIVE_READ", "0") == "1"
+def _live_browse_enabled() -> bool:
+    """Return True if live Tropy .tpy browsing is enabled.
+
+    Checks the environment variable first (fallback override for advanced/CI
+    use), then the persisted config setting (GUI toggle, takes effect without
+    a server restart).
+    """
+    if os.environ.get("ARTIFICE_OCR_TROPY_LIVE_READ", "0") == "1":
+        return True
+    return config.get("tropy_live_browse_enabled", False)
 
 
 def _check_enabled() -> None:
-    if not _LIVE_READ_ENABLED:
+    if not _live_browse_enabled():
         raise HTTPException(
             status_code=404, detail="Live Tropy browse is not enabled"
         )

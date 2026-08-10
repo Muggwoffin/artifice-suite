@@ -44,6 +44,7 @@ _CONFIG_KEYS = (
     "ocr_model", "document_type", "max_ocr_workers", "chunk_max_tokens",
     "resume", "confidence_enabled", "ollama_think",
     "tropy_last_path", "tropy_last_export_path",
+    "tropy_live_browse_enabled",
 )
 
 # Keys whose values must not be returned verbatim in API responses.
