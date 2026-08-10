@@ -127,7 +127,8 @@ def apply_track_changes_to_docx(
             logger.debug("Loading original document: %s", input_path)
             rdoc = RevisionDocument(input_path)
         else:
-            tmp_path = tempfile.mktemp(suffix=".docx")
+            fd, tmp_path = tempfile.mkstemp(suffix=".docx")
+            os.close(fd)  # write_plain_docx opens the path itself
             logger.debug("No input_path; writing temp plain docx to %s", tmp_path)
             write_plain_docx(paragraphs, tmp_path)
             rdoc = RevisionDocument(tmp_path)
@@ -139,11 +140,12 @@ def apply_track_changes_to_docx(
             if edited_text is not None:
                 has_imgs = bool(entry.get("images"))
                 if has_imgs and input_path:
-                    logger.debug(
-                        "Applying edit with image preservation on paragraph %d", i
-                    )
+                    logger.debug("Applying edit with image preservation on paragraph %d", i)
                     _apply_edit_preserving_images(
-                        rdoc, original, edited_text, author,
+                        rdoc,
+                        original,
+                        edited_text,
+                        author,
                     )
                 else:
                     logger.debug(

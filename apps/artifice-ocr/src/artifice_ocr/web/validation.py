@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import HTTPException
-from shared_ui.path_validation import normalise_path
+from shared_ui.path_validation import OutsideAllowedRootsError, PathValidationError, normalise_path
 
 from ..validation import validate_path
 
@@ -31,22 +31,22 @@ def validate_directory(raw: str, field_name: str) -> str:
     """
     try:
         return validate_path(raw, field_name)
-    except ValueError as exc:
-        msg = str(exc)
-        # The library-level message for "outside roots" deliberately omits the
-        # env-var hint that the web layer includes.  Reconstruct it so the
-        # caller sees the full guidance.
-        if "outside the directories this server is permitted" in msg:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"{field_name}: path {raw!r} is outside the directories "
-                    f"this server is permitted to access. The operator can "
-                    f"widen them with the ARTIFICE_OCR_ALLOWED_ROOTS "
-                    f"environment variable."
-                ),
-            )
-        raise HTTPException(status_code=400, detail=msg)
+    except OutsideAllowedRootsError:
+        # The library-level message deliberately omits the env-var hint that
+        # the web layer includes. Reconstruct it so the caller sees the full
+        # guidance — distinguished by exception TYPE, not by string-matching
+        # the message text.
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_name}: path {raw!r} is outside the directories "
+                f"this server is permitted to access. The operator can "
+                f"widen them with the ARTIFICE_OCR_ALLOWED_ROOTS "
+                f"environment variable."
+            ),
+        ) from None
+    except PathValidationError as exc:
+        raise HTTPException(status_code=400, detail=exc.public_message) from None
 
 
 def validate_contained(
@@ -76,8 +76,8 @@ def validate_contained(
     """
     try:
         normalised_raw = normalise_path(raw, field_name)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from None
+    except PathValidationError as exc:
+        raise HTTPException(status_code=400, detail=exc.public_message) from None
     try:
         p = Path(normalised_raw).expanduser().resolve(strict=must_exist)
     except Exception:

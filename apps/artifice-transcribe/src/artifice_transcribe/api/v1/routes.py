@@ -288,14 +288,21 @@ _INSTALL_HINT_CUDA = "uv sync --extra asr-cuda"
 
 
 class AsrUnavailable(Exception):
-    """Raised when the ASR stack (torch, whisperx, pyannote) is not installed."""
+    """Raised when the ASR stack (torch, whisperx, pyannote) is not installed.
+
+    The ``public_message`` attribute is set from string literals — it is
+    never derived from a wrapped third-party exception.  Catch sites should
+    read ``public_message`` for the response body rather than calling
+    ``str(e)``, which CodeQL's taint tracker treats as unsafe.
+    """
 
     def __init__(self, extra: str = "asr") -> None:
         hint = _INSTALL_HINT_CUDA if extra == "asr-cuda" else _INSTALL_HINT
-        super().__init__(
+        self.public_message = (
             f"The transcription stack is not installed. "
             f"Run `{hint}` to install it, then restart the server."
         )
+        super().__init__(self.public_message)
 
 
 async def _reload_engine_with_new_model(new_model: str):
@@ -567,7 +574,7 @@ async def update_config(body: ModelConfigRequest):
         try:
             await _reload_engine_with_new_model(settings.whisper_model)
         except AsrUnavailable as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
+            raise HTTPException(status_code=503, detail=exc.public_message) from exc
 
     return {"status": "updated", "changes": list(updates.keys())}
 
@@ -618,8 +625,11 @@ async def fetch_inference_models(body: InferenceModelsRequest):
     try:
         models = await get_available_models(body.base_url, body.api_key)
         return {"models": models}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception:
+        logger.exception("Failed to fetch inference models from %s", body.base_url)
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch models from the configured endpoint"
+        ) from None
 
 
 @router.post("/inference/test")
@@ -827,7 +837,7 @@ async def health_preload():
         result = await asyncio.to_thread(engine.preload)
         return result
     except AsrUnavailable as exc:
-        return {"ok": False, "error": str(exc), "install_hint": _INSTALL_HINT}
+        return {"ok": False, "error": exc.public_message, "install_hint": _INSTALL_HINT}
 
 
 @router.get("/capabilities")
@@ -1471,7 +1481,7 @@ async def enroll_speaker(
     try:
         engine = _get_engine()
     except AsrUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise HTTPException(status_code=503, detail=exc.public_message) from exc
 
     engine._ensure_models()
 
@@ -1751,8 +1761,9 @@ async def start_model_download(key: str) -> DownloadStartResponse:
     # route is a thin caller.
     try:
         ds = manager.start_download(key, token=hf_token)
-    except PermissionError as exc:
-        raise HTTPException(403, str(exc)) from exc
+    except PermissionError:
+        logger.exception("Download permission denied for model key=%s", key)
+        raise HTTPException(403, "Consent has not been granted for this model download") from None
 
     total = total_transitive_size(key)
     return DownloadStartResponse(

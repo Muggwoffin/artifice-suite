@@ -33,6 +33,20 @@ _OLLAMA_PORT = 11434
 _SOCKET_TIMEOUT_S = 2.0
 
 
+class EngineError(Exception):
+    """Engine operation failed with a user-facing message.
+
+    The ``public_message`` attribute is set from a string literal at each
+    raise site — it is never derived from a wrapped third-party exception.
+    Catch sites should read ``public_message`` for the response body rather
+    than calling ``str(e)``, which CodeQL's taint tracker treats as unsafe.
+    """
+
+    def __init__(self, public_message: str) -> None:
+        self.public_message = public_message
+        super().__init__(public_message)
+
+
 def _ollama_installed() -> bool:
     """Return ``True`` when the ``ollama`` binary is on ``PATH``."""
     return shutil.which("ollama") is not None
@@ -51,12 +65,12 @@ def _recommended_ollama_models(slug: str, tier: HardwareTier) -> list[Any]:
     """Return the registry's Ollama recommendations for *slug* on *tier*.
 
     Raises:
-        ValueError: if *slug* has no recommendations registered.
+        EngineError: if *slug* has no recommendations registered.
     """
     try:
         recs = recommendations_for_app(slug, tier)
-    except KeyError as exc:
-        raise ValueError(f"No model recommendations for app {slug}") from exc
+    except KeyError:
+        raise EngineError(f"No model recommendations for app {slug}") from None
     return [r for r in recs if r.provider == "ollama"]
 
 
@@ -76,7 +90,7 @@ async def get_engine_status(slug: str, tier: HardwareTier) -> dict[str, Any]:
     not just the registry intersection.
 
     Raises:
-        ValueError: if *slug* has no recommendations registered.
+        EngineError: if *slug* has no recommendations registered.
     """
     ollama_recs = _recommended_ollama_models(slug, tier)
     recommended = {r.model_name for r in ollama_recs}
@@ -126,18 +140,18 @@ def pull_model_command(slug: str, tier: HardwareTier, model_name: str) -> list[s
     never reach the subprocess.
 
     Raises:
-        ValueError: if *slug* has no recommendations, or *model_name* is not
-            a recommended Ollama model for *slug* on *tier*.
-        RuntimeError: if the ``ollama`` binary is not installed.
+        EngineError: if *slug* has no recommendations, or *model_name* is not
+            a recommended Ollama model for *slug* on *tier*, or the ``ollama``
+            binary is not installed.
     """
     ollama_recs = _recommended_ollama_models(slug, tier)
     recommended = {r.model_name for r in ollama_recs}
 
     if model_name not in recommended:
-        raise ValueError(f"Model {model_name!r} is not recommended for {slug} on {tier.value}")
+        raise EngineError(f"Model {model_name!r} is not recommended for {slug} on {tier.value}")
 
     ollama_bin = shutil.which("ollama")
     if not ollama_bin:
-        raise RuntimeError("Ollama is not installed")
+        raise EngineError("Ollama is not installed")
 
     return [ollama_bin, "pull", model_name]

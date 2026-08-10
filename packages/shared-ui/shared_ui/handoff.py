@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -69,17 +70,33 @@ def read_discovery(slug: str) -> dict[str, object] | None:
         return None
 
 
-def create_handoff(
-    source: str, target: str, body: str, kind: str = "plain-text"
-) -> str:
+_UUID_HEX_RE = re.compile(r"^[0-9a-f]{32}$")
+
+
+class HandoffError(ValueError):
+    """A handoff request was rejected, with a safe public message.
+
+    ``public_message`` is set from a string literal at each raise site — it
+    is never derived from a wrapped third-party exception — so a caller can
+    read it directly instead of calling ``str(e)``, which CodeQL's
+    stack-trace-exposure query treats as unsafe. Subclasses ``ValueError``
+    so existing ``except ValueError`` call sites keep working unchanged.
+    """
+
+    def __init__(self, public_message: str) -> None:
+        self.public_message = public_message
+        super().__init__(public_message)
+
+
+def create_handoff(source: str, target: str, body: str, kind: str = "plain-text") -> str:
     """Write a manifest + body file to the handoff directory.
 
     Returns the UUID token the sender should pass to the receiver.
     """
     if source not in _ALLOWED_SOURCES:
-        raise ValueError(f"Unknown source app: {source}")
+        raise HandoffError(f"Unknown source app: {source}")
     if target not in _ALLOWED_SOURCES:
-        raise ValueError(f"Unknown target app: {target}")
+        raise HandoffError(f"Unknown target app: {target}")
 
     uid = uuid.uuid4().hex
     d = handoff_dir()
@@ -103,6 +120,9 @@ def read_handoff(uuid_str: str, expected_target: str) -> dict[str, str] | None:
     Returns ``{"source": ..., "kind": ..., "body": ...}`` on success,
     or ``None`` if the handoff is missing, expired, or invalid.
     """
+    if not _UUID_HEX_RE.match(uuid_str):
+        return None
+
     d = handoff_dir()
     manifest_path = d / f"{uuid_str}.json"
     if not manifest_path.exists():
@@ -150,6 +170,8 @@ def read_handoff(uuid_str: str, expected_target: str) -> dict[str, str] | None:
 
 def delete_handoff(uuid_str: str) -> None:
     """Delete the manifest and body files for a handoff."""
+    if not _UUID_HEX_RE.match(uuid_str):
+        return
     d = handoff_dir()
     manifest_path = d / f"{uuid_str}.json"
     body_path = d / f"{uuid_str}.txt"

@@ -15,6 +15,7 @@ from __future__ import annotations
 import contextlib
 import importlib.resources
 import json
+import logging
 import re
 import sys
 import threading
@@ -39,7 +40,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from .. import __version__
 from ..config_bridge import write_model_choice
-from ..engine import get_engine_status, pull_model_command
+from ..engine import EngineError, get_engine_status, pull_model_command
 from ..hardware import GpuKind
 from ..hardware import probe as probe_hardware
 from ..registry import APPS
@@ -58,6 +59,8 @@ from ..uv_backend import (
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ArtificeHub")
 
@@ -304,8 +307,8 @@ async def api_launch(slug: str):
 
     try:
         engine_status = await get_engine_status(slug, tier)
-    except ValueError as e:
-        return JSONResponse({"error": str(e)}, status_code=404)
+    except EngineError as e:
+        return JSONResponse({"error": e.public_message}, status_code=404)
 
     if not engine_status["engine_ready"]:
         return {
@@ -402,8 +405,8 @@ async def api_engine_status(slug: str):
 
     try:
         status = await get_engine_status(slug, tier)
-    except ValueError as e:
-        return JSONResponse({"error": str(e)}, status_code=404)
+    except EngineError as e:
+        return JSONResponse({"error": e.public_message}, status_code=404)
 
     return status
 
@@ -428,10 +431,8 @@ async def api_pull_model(slug: str, request: Request):
 
     try:
         cmd = pull_model_command(slug, tier, model_name)
-    except ValueError as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
-    except RuntimeError as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+    except EngineError as e:
+        return JSONResponse({"error": e.public_message}, status_code=400)
 
     import uuid
 
@@ -477,10 +478,11 @@ async def api_set_model_choices(slug: str, request: Request):
             continue
         try:
             write_model_choice(slug, role, model_name.strip())
-        except ValueError as e:
-            errors.append(str(e))
-        except OSError as e:
-            errors.append(f"could not write config for {role!r}: {e}")
+        except ValueError:
+            errors.append(f"Invalid model role {role!r} for app {slug}")
+        except OSError:
+            logger.exception("Could not write config for slug=%s role=%s", slug, role)
+            errors.append(f"Could not write config for role {role!r}")
 
     if errors:
         return JSONResponse({"ok": False, "errors": errors}, status_code=400)

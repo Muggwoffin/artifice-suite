@@ -20,6 +20,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from pydantic import BaseModel, Field
+from requests.adapters import HTTPAdapter
 
 from artifice_draft.config import AppConfig
 from artifice_draft.models import LLMProvider
@@ -44,18 +45,17 @@ logger = logging.getLogger(__name__)
 _MAX_RESPONSE_BYTES = 5 * 1024 * 1024  # 5 MB — journal guidelines are small
 _REQUEST_TIMEOUT = 30  # seconds
 _MAX_REDIRECTS = 5  # prevent redirect loops
-_USER_AGENT = (
-    "ArtificeDraft/1.0 (+https://github.com/anomalyco/opencode) "
-    "style-guide-scraper"
-)
+_USER_AGENT = "ArtificeDraft/1.0 (+https://github.com/anomalyco/opencode) style-guide-scraper"
 
 # --- Wire schema for harness extraction ------------------------------------ #
+
 
 class _GuideExtractionShape(BaseModel):
     """Pydantic model mirroring :class:`StyleGuide` for harness validation.
 
     Every field has a default so the harness can validate partial responses.
     """
+
     name: str = ""
     edition: str = ""
     citation_style: str = ""
@@ -70,6 +70,7 @@ class _GuideExtractionShape(BaseModel):
     url_format: str = ""
     system_prompt_addendum: str = ""
     custom_rules: list[str] = Field(default_factory=list)
+
 
 # The LLM prompt that asks it to parse extracted text into StyleGuide JSON.
 _EXTRACTION_SYSTEM_PROMPT = """\
@@ -123,6 +124,19 @@ def _validate_public_url(url: str) -> str:
 
     Returns *url* unchanged on success; raises ``ValueError`` otherwise.
     """
+    _resolve_public_host(url)
+    return url
+
+
+def _resolve_public_host(url: str) -> tuple[str, str]:
+    """Validate *url* as public and return (hostname, pinned_ip_address).
+
+    Performs DNS resolution, rejects non-global addresses, and returns one
+    validated public IP so the caller can pin the follow-on TCP connection.
+    Separating resolution from the connection closes the TOCTOU race where
+    a short-TTL DNS record presents a public address at validation time and
+    a private one at connect time.
+    """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError(f"URL must use http or https, got: {parsed.scheme or '(none)'}")
@@ -147,7 +161,51 @@ def _validate_public_url(url: str) -> str:
                 f"Only public web pages are supported."
             )
 
-    return url
+    return host, str(next(iter(addresses)))
+
+
+class _PinnedDNSAdapter(HTTPAdapter):
+    """HTTPAdapter that connects to a pinned IP address.
+
+    DNS pinning prevents the TOCTOU race where ``_resolve_public_host``
+    validates a public address and the connection pool independently
+    re-resolves the hostname moments later — an attacker with a short-TTL
+    DNS record can swap the address after validation.
+
+    The adapter sets ``server_hostname`` and ``assert_hostname`` so that
+    TLS SNI and certificate verification still use the original hostname
+    even though the TCP connection targets a raw IP.
+    """
+
+    def __init__(self, server_hostname: str, *args, **kwargs):
+        self._assert_host = server_hostname
+        super().__init__(*args, **kwargs)
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs["server_hostname"] = self._assert_host
+        kwargs["assert_hostname"] = self._assert_host
+        super().init_poolmanager(*args, **kwargs)
+
+
+def _pinned_url(url: str, hostname: str, ip_address: str) -> str:
+    """Return *url* with its host component replaced by *ip_address*.
+
+    Rebuilds the netloc from parsed components rather than doing a
+    substring replace: ``urlparse().hostname`` is always lowercased, so a
+    text ``url.replace(hostname, ...)`` silently no-ops on any URL whose
+    host isn't already all-lowercase (e.g. ``https://Example.com/``) —
+    the original hostname would then reach ``requests``, which re-resolves
+    DNS at connect time and reopens the exact TOCTOU gap this pin exists
+    to close. Preserves userinfo and port; brackets IPv6 literals.
+    """
+    parsed = urlparse(url)
+    userinfo = ""
+    if "@" in parsed.netloc:
+        userinfo = parsed.netloc.rsplit("@", 1)[0] + "@"
+    host_literal = f"[{ip_address}]" if ":" in ip_address else ip_address
+    port = f":{parsed.port}" if parsed.port else ""
+    netloc = f"{userinfo}{host_literal}{port}"
+    return parsed._replace(netloc=netloc).geturl()
 
 
 def fetch_and_extract(url: str) -> str:
@@ -158,20 +216,25 @@ def fetch_and_extract(url: str) -> str:
     failures.
 
     Redirects are followed manually — each hop is validated through
-    :func:`_validate_public_url` so a public host that redirects to an
-    internal address is refused.
+    :func:`_resolve_public_host` and the TCP connection is pinned to the
+    specific IP returned by that validation, so a public host that
+    redirects to an internal address is refused and a DNS-rebinding
+    attack cannot swap the address between validation and connect time.
     """
-    _validate_public_url(url)
-
-    session = requests.Session()
-    session.headers.update({"User-Agent": _USER_AGENT})
-
     current_url: str = url
 
     for hop in range(_MAX_REDIRECTS + 1):
+        hostname, pinned_ip = _resolve_public_host(current_url)
+
+        adapter = _PinnedDNSAdapter(hostname)
+        session = requests.Session()
+        session.headers.update({"User-Agent": _USER_AGENT})
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+
         try:
             resp = session.get(
-                current_url,
+                _pinned_url(current_url, hostname, pinned_ip),
                 timeout=_REQUEST_TIMEOUT,
                 allow_redirects=False,
             )
@@ -189,7 +252,6 @@ def fetch_and_extract(url: str) -> str:
             if not location:
                 raise ValueError(f"Redirect from {current_url} with no Location header")
             current_url = urljoin(current_url, location)
-            _validate_public_url(current_url)
             continue
 
         try:
@@ -203,15 +265,14 @@ def fetch_and_extract(url: str) -> str:
 
     content_type = resp.headers.get("Content-Type", "")
     if "pdf" in content_type.lower():
-        raise ValueError(
-            "The URL points to a PDF file. Please provide a link to an HTML page."
-        )
+        raise ValueError("The URL points to a PDF file. Please provide a link to an HTML page.")
 
     raw = resp.content[:_MAX_RESPONSE_BYTES]
     if len(resp.content) > _MAX_RESPONSE_BYTES:
         logger.warning(
             "Response from %s exceeded %d bytes; truncated",
-            current_url, _MAX_RESPONSE_BYTES,
+            current_url,
+            _MAX_RESPONSE_BYTES,
         )
 
     try:
@@ -232,8 +293,7 @@ def fetch_and_extract(url: str) -> str:
         from bs4 import BeautifulSoup
     except ImportError:
         raise ImportError(
-            "beautifulsoup4 is required for URL import. "
-            "Install it with: pip install beautifulsoup4"
+            "beautifulsoup4 is required for URL import. Install it with: pip install beautifulsoup4"
         )
 
     soup = BeautifulSoup(html_content, "html.parser")
@@ -250,9 +310,7 @@ def fetch_and_extract(url: str) -> str:
     return text
 
 
-def parse_guide_with_llm(
-    extracted_text: str, config: AppConfig | None = None
-) -> StyleGuide:
+def parse_guide_with_llm(extracted_text: str, config: AppConfig | None = None) -> StyleGuide:
     """Send extracted text to the LLM and parse the response into a StyleGuide.
 
     Routes through :func:`model_harness.driver.run_structured` so the
@@ -277,9 +335,7 @@ def parse_guide_with_llm(
     )
 
 
-def preview_guide_from_url(
-    url: str, config: AppConfig | None = None
-) -> StyleGuide:
+def preview_guide_from_url(url: str, config: AppConfig | None = None) -> StyleGuide:
     """Fetch a URL, extract content, and parse it into a StyleGuide.
 
     This is the main entry point: it orchestrates fetch → extract → LLM parse.
@@ -333,8 +389,7 @@ def extract_text_from_pdf(path: str) -> str:
         import fitz
     except ImportError:
         raise ImportError(
-            "PyMuPDF is required to import from PDF files. "
-            "Install it with: pip install PyMuPDF"
+            "PyMuPDF is required to import from PDF files. Install it with: pip install PyMuPDF"
         )
 
     try:
@@ -358,9 +413,7 @@ def extract_text_from_pdf(path: str) -> str:
     return text
 
 
-def preview_guide_from_text(
-    text: str, config: AppConfig | None = None
-) -> StyleGuide:
+def preview_guide_from_text(text: str, config: AppConfig | None = None) -> StyleGuide:
     """Parse raw text directly into a StyleGuide via LLM.
 
     The result is NOT saved; the caller is responsible for showing a review
@@ -375,9 +428,7 @@ def preview_guide_from_text(
     return parse_guide_with_llm(text, config)
 
 
-def preview_guide_from_file(
-    path: str, config: AppConfig | None = None
-) -> StyleGuide:
+def preview_guide_from_file(path: str, config: AppConfig | None = None) -> StyleGuide:
     """Read a .docx or .pdf file, extract text, and parse into a StyleGuide.
 
     The result is NOT saved; the caller is responsible for showing a review
@@ -389,9 +440,7 @@ def preview_guide_from_file(
     elif lower.endswith(".pdf"):
         text = extract_text_from_pdf(path)
     else:
-        raise ValueError(
-            f"Unsupported file type: {path}. Please provide a .docx or .pdf file."
-        )
+        raise ValueError(f"Unsupported file type: {path}. Please provide a .docx or .pdf file.")
     return parse_guide_with_llm(text, config)
 
 
@@ -400,9 +449,7 @@ def preview_guide_from_file(
 # ---------------------------------------------------------------------------
 
 
-def _parse_guide_via_harness(
-    system_prompt: str, user_prompt: str, config: AppConfig
-) -> StyleGuide:
+def _parse_guide_via_harness(system_prompt: str, user_prompt: str, config: AppConfig) -> StyleGuide:
     """Send a structured extraction request through the model harness.
 
     Replaces the old :func:`_send_llm_request` / :func:`_send_ollama` /
@@ -446,13 +493,9 @@ def _parse_guide_via_harness(
                 endpoint_policy=policy,
             )
         except (StructuredOutputUnsupported, SchemaValidationFailed) as exc:
-            raise ValueError(
-                f"The LLM could not produce a valid style guide: {exc}"
-            ) from exc
+            raise ValueError(f"The LLM could not produce a valid style guide: {exc}") from exc
         except Exception as exc:
-            raise ValueError(
-                f"Unexpected error during style guide extraction: {exc}"
-            ) from exc
+            raise ValueError(f"Unexpected error during style guide extraction: {exc}") from exc
 
         logger.info(
             "Style guide extraction: mode_used=%s repaired=%s",

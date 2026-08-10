@@ -1662,7 +1662,13 @@ async function saveInferenceConfig() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    localStorage.setItem('pt-inference-config', JSON.stringify(body));
+    // Persist only the non-secret fields needed to restore UI state.
+    // The api_key is already stored server-side via POST /inference/config;
+    // keeping it in localStorage exposes the plaintext key to any JS running
+    // at localhost (a documented attack class against loopback servers).
+    localStorage.setItem('pt-inference-config', JSON.stringify({
+      base_url, model_name, vision_enabled,
+    }));
     window.ArtificeToast.success('Inference settings saved successfully', {duration: 3600});
   } catch (err) {
     window.ArtificeToast.error(`Failed to save settings: ${err.message}`);
@@ -1676,8 +1682,9 @@ function loadInferenceConfig() {
     const cfg = JSON.parse(raw);
     const baseUrl = $('setting-base-url');
     if (baseUrl) baseUrl.value = cfg.base_url || '';
-    const apiKey = $('setting-api-key');
-    if (apiKey) apiKey.value = cfg.api_key && cfg.api_key !== 'not-needed' ? cfg.api_key : '';
+    // api_key is NOT restored from localStorage — it is only stored
+    // server-side (POST /inference/config).  If the UI needs to show
+    // whether a key is configured, that should come from the server.
     const modelSelect = $('setting-model-select');
     if (modelSelect && cfg.model_name) modelSelect.value = cfg.model_name;
     const vision = $('setting-vision');

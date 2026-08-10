@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
+from shared_ui.path_validation import PathValidationError
 from shared_ui.path_validation import validate_path as _shared_validate_path
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -48,6 +49,7 @@ from artifice_graph.web.config_helper import save_user_config
 from .routers import byom as byom_router
 
 logger = logging.getLogger(__name__)
+
 
 # ── App setup ──────────────────────────────────────────────────────
 
@@ -245,8 +247,8 @@ def _validate_directory(raw: str, field_name: str) -> str:
             field_name,
             allowed_roots_env_var="ARTIFICE_GRAPH_ALLOWED_ROOTS",
         )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from None
+    except PathValidationError as exc:
+        raise HTTPException(status_code=400, detail=exc.public_message) from None
 
 
 # ── Model endpoints ────────────────────────────────────────────────
@@ -930,9 +932,9 @@ async def api_save_config(body: dict[str, Any]):
         return {"status": "ok", "message": "Configuration saved successfully"}
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error saving config: {e}")
-        return {"status": "error", "message": f"Error saving configuration: {str(e)}"}
+    except Exception:
+        logger.exception("Error saving configuration")
+        return {"status": "error", "message": "Error saving configuration"}
 
 
 @app.post("/api/load-preferences")
@@ -1206,11 +1208,11 @@ async def api_test_connection(body: dict[str, Any] | None = None):
             "url": llm_cfg.base_url,
             "model": llm_cfg.model,
         }
-    except Exception as e:
-        logger.error(f"Error testing connection: {e}")
+    except Exception:
+        logger.exception("Error testing connection to %s", llm_cfg.base_url)
         return {
             "status": "error",
-            "error": str(e),
+            "error": "Failed to test connection to the configured endpoint",
             "suggestions": ["Check if the URL is correct and accessible"],
             "url": llm_cfg.base_url,
             "model": llm_cfg.model,
@@ -1396,8 +1398,9 @@ def api_tropy_import_manifest(body: dict[str, Any]):
 
     try:
         manifest = load_manifest(resolved)
-    except ManifestError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ManifestError:
+        logger.exception("Failed to load Tropy manifest: %s", resolved)
+        raise HTTPException(status_code=400, detail="Could not parse Tropy manifest") from None
 
     nodes = manifest_to_graph_nodes(manifest)
     return {

@@ -18,6 +18,7 @@ from artifice_draft.style_guides.base import StyleGuide
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _mock_session_for_fetch(mock_session_cls, resp=None, side_effect=None):
     """Configure a mocked ``requests.Session`` for ``fetch_and_extract`` tests."""
     mock_session = MagicMock()
@@ -34,6 +35,7 @@ def _mock_session_for_fetch(mock_session_cls, resp=None, side_effect=None):
 # _validate_public_url
 # ---------------------------------------------------------------------------
 
+
 class TestValidatePublicUrl:
     """Tests for the user-supplied URL validation rule.
 
@@ -44,6 +46,7 @@ class TestValidatePublicUrl:
     @patch("artifice_draft.style_guides.scraper.socket.getaddrinfo")
     def test_allows_public_host(self, mock_getaddrinfo):
         from artifice_draft.style_guides.scraper import _validate_public_url
+
         mock_getaddrinfo.return_value = [
             (2, 1, 6, "", ("93.184.216.34", 0)),
         ]
@@ -53,6 +56,7 @@ class TestValidatePublicUrl:
     @patch("artifice_draft.style_guides.scraper.socket.getaddrinfo")
     def test_rejects_loopback(self, mock_getaddrinfo):
         from artifice_draft.style_guides.scraper import _validate_public_url
+
         mock_getaddrinfo.return_value = [
             (2, 1, 6, "", ("127.0.0.1", 0)),
         ]
@@ -62,6 +66,7 @@ class TestValidatePublicUrl:
     @patch("artifice_draft.style_guides.scraper.socket.getaddrinfo")
     def test_rejects_link_local(self, mock_getaddrinfo):
         from artifice_draft.style_guides.scraper import _validate_public_url
+
         mock_getaddrinfo.return_value = [
             (2, 1, 6, "", ("169.254.169.254", 0)),
         ]
@@ -71,6 +76,7 @@ class TestValidatePublicUrl:
     @patch("artifice_draft.style_guides.scraper.socket.getaddrinfo")
     def test_rejects_private_rfc1918(self, mock_getaddrinfo):
         from artifice_draft.style_guides.scraper import _validate_public_url
+
         mock_getaddrinfo.return_value = [
             (2, 1, 6, "", ("192.168.1.1", 0)),
         ]
@@ -81,6 +87,7 @@ class TestValidatePublicUrl:
     def test_rejects_mixed_addresses(self, mock_getaddrinfo):
         """A host that resolves to both public and private addresses is denied."""
         from artifice_draft.style_guides.scraper import _validate_public_url
+
         mock_getaddrinfo.return_value = [
             (2, 1, 6, "", ("93.184.216.34", 0)),
             (2, 1, 6, "", ("10.0.0.1", 0)),
@@ -90,71 +97,260 @@ class TestValidatePublicUrl:
 
     def test_rejects_non_http_scheme(self):
         from artifice_draft.style_guides.scraper import _validate_public_url
+
         with pytest.raises(ValueError, match="http or https"):
             _validate_public_url("ftp://example.com")
 
     def test_rejects_no_host(self):
         from artifice_draft.style_guides.scraper import _validate_public_url
+
         with pytest.raises(ValueError, match="has no host"):
             _validate_public_url("http:///path-only")
+
+
+# ---------------------------------------------------------------------------
+# _resolve_public_host (DNS pinning)
+# ---------------------------------------------------------------------------
+
+
+class TestResolvePublicHost:
+    """Tests for the DNS resolution + validation + IP-pinning function."""
+
+    @patch("artifice_draft.style_guides.scraper.socket.getaddrinfo")
+    def test_returns_host_and_ip(self, mock_getaddrinfo):
+        from artifice_draft.style_guides.scraper import _resolve_public_host
+
+        mock_getaddrinfo.return_value = [
+            (2, 1, 6, "", ("93.184.216.34", 0)),
+        ]
+        host, ip = _resolve_public_host("https://www.example.com/style")
+        assert host == "www.example.com"
+        assert ip == "93.184.216.34"
+
+    @patch("artifice_draft.style_guides.scraper.socket.getaddrinfo")
+    def test_rejects_mixed_addresses(self, mock_getaddrinfo):
+        """A host that resolves to both public and private addresses is denied."""
+        from artifice_draft.style_guides.scraper import _resolve_public_host
+
+        mock_getaddrinfo.return_value = [
+            (2, 1, 6, "", ("93.184.216.34", 0)),
+            (2, 1, 6, "", ("10.0.0.1", 0)),
+        ]
+        with pytest.raises(ValueError, match="non-public"):
+            _resolve_public_host("http://dual-resolve.example.com/")
+
+
+# ---------------------------------------------------------------------------
+# _pinned_url — the DNS pin must survive URL shapes a text substring can miss
+# ---------------------------------------------------------------------------
+
+
+class TestPinnedUrl:
+    """``_pinned_url`` rebuilds the netloc from parsed components.
+
+    A prior version did ``url.replace(hostname, ip_address, 1)``, which
+    silently no-ops whenever the URL's host isn't already lowercase (since
+    ``urlparse().hostname`` always lowercases) — the request then goes out
+    to the ORIGINAL hostname, unpinned, defeating the whole DNS-pinning
+    defense with no error. These pin every shape that broke that version.
+    """
+
+    def test_mixed_case_hostname_is_still_pinned(self):
+        from artifice_draft.style_guides.scraper import _pinned_url
+
+        result = _pinned_url("https://EXAMPLE.com/page", "example.com", "93.184.216.34")
+        assert result == "https://93.184.216.34/page"
+        assert "EXAMPLE.com" not in result
+        assert "example.com" not in result
+
+    def test_port_is_preserved(self):
+        from artifice_draft.style_guides.scraper import _pinned_url
+
+        result = _pinned_url("https://example.com:8443/page?x=1", "example.com", "93.184.216.34")
+        assert result == "https://93.184.216.34:8443/page?x=1"
+
+    def test_userinfo_is_preserved(self):
+        from artifice_draft.style_guides.scraper import _pinned_url
+
+        result = _pinned_url("https://user:pass@Example.COM/path", "example.com", "93.184.216.34")
+        assert result == "https://user:pass@93.184.216.34/path"
+
+    def test_ipv6_address_is_bracketed(self):
+        from artifice_draft.style_guides.scraper import _pinned_url
+
+        result = _pinned_url(
+            "https://example.com/page",
+            "example.com",
+            "2606:2800:220:1:248:1893:25c8:1946",
+        )
+        assert result == "https://[2606:2800:220:1:248:1893:25c8:1946]/page"
+
+
+# ---------------------------------------------------------------------------
+# DNS rebinding test
+# ---------------------------------------------------------------------------
+
+
+class TestDnsRebinding:
+    """The DNS-pinning adapter prevents a TOCTOU rebinding attack."""
+
+    @patch("artifice_draft.style_guides.scraper.socket.getaddrinfo")
+    @patch("artifice_draft.style_guides.scraper.requests.Session")
+    def test_pins_connection_to_validated_ip(
+        self,
+        mock_session_cls,
+        mock_getaddrinfo,
+    ):
+        """When DNS resolves differently on a second call, the pinned
+        IP from the first resolution is what the connection uses."""
+        from artifice_draft.style_guides.scraper import fetch_and_extract
+
+        # First resolution: public IP.
+        mock_getaddrinfo.return_value = [
+            (2, 1, 6, "", ("93.184.216.34", 0)),
+        ]
+
+        resp = MagicMock()
+        resp.is_redirect = False
+        resp.headers = {"Content-Type": "text/html"}
+        html = (
+            "<html><body><article><h1>Style Guide</h1>"
+            "<p>Use Chicago style for all citations and references.</p>"
+            "<p>Footnotes must follow the notes-bibliography system.</p>"
+            "<p>All abbreviations should be spelled out on first use.</p>"
+            "</article></body></html>"
+        )
+        resp.content = html.encode()
+        resp.raise_for_status = MagicMock()
+
+        mock_session = MagicMock()
+        mock_session.get.return_value = resp
+        mock_session_cls.return_value = mock_session
+
+        text = fetch_and_extract("http://journal.example.com/guidelines")
+        assert "Chicago" in text or "chicago" in text.lower()
+
+        # The session.get call received the pinned (IP-address) URL,
+        # not the original hostname.
+        called_url = mock_session.get.call_args[0][0]
+        assert "93.184.216.34" in called_url
+
+    @patch("artifice_draft.style_guides.scraper.socket.getaddrinfo")
+    @patch("artifice_draft.style_guides.scraper.requests.Session")
+    def test_second_resolution_returns_loopback_but_never_reaches_it(
+        self,
+        mock_session_cls,
+        mock_getaddrinfo,
+    ):
+        """If a second DNS call (simulating connect-time re-resolution)
+        returns 127.0.0.1, the code never connects to that address because
+        only the first (validated) IP was used for the actual TCP connection.
+        """
+        from artifice_draft.style_guides.scraper import fetch_and_extract
+
+        # Set up a call counter to simulate DNS changing between calls.
+        call_count = [0]
+
+        def dns_side_effect(host, *args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                # Validation-time: public IP.
+                return [(2, 1, 6, "", ("93.184.216.34", 0))]
+            else:
+                # Connect-time (rebind attempt): loopback.
+                return [(2, 1, 6, "", ("127.0.0.1", 0))]
+
+        mock_getaddrinfo.side_effect = dns_side_effect
+
+        resp = MagicMock()
+        resp.is_redirect = False
+        resp.headers = {"Content-Type": "text/html"}
+        html = (
+            "<html><body><article><h1>Style Guide</h1>"
+            "<p>Use Chicago style for all citations and references.</p>"
+            "</article></body></html>"
+        )
+        resp.content = html.encode()
+        resp.raise_for_status = MagicMock()
+
+        mock_session = MagicMock()
+        mock_session.get.return_value = resp
+        mock_session_cls.return_value = mock_session
+
+        # This should succeed — the pinned IP (93.184.216.34) is used for
+        # the connection, not the second resolution's 127.0.0.1.
+        text = fetch_and_extract("http://journal.example.com/guidelines")
+        assert "Chicago" in text or "chicago" in text.lower()
+
+        # The URL passed to session.get must contain the pinned IP, not
+        # the hostname (which would have triggered a second DNS lookup).
+        called_url = mock_session.get.call_args[0][0]
+        assert "93.184.216.34" in called_url
+        assert "127.0.0.1" not in called_url
 
 
 # ---------------------------------------------------------------------------
 # fetch_and_extract
 # ---------------------------------------------------------------------------
 
+
 class TestFetchAndExtract:
     """Tests for the HTML fetching and content extraction."""
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_rejects_non_http_scheme(self, mock_validate, _mock_session_cls):
-        mock_validate.side_effect = ValueError(
-            "URL must use http or https, got: ftp"
-        )
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_rejects_non_http_scheme(self, mock_resolve, _mock_session_cls):
+        mock_resolve.side_effect = ValueError("URL must use http or https, got: ftp")
         from artifice_draft.style_guides.scraper import fetch_and_extract
+
         with pytest.raises(ValueError, match="http or https"):
             fetch_and_extract("ftp://example.com/guide")
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_rejects_non_public_url(self, mock_validate, _mock_session_cls):
-        """fetch_and_extract delegates to _validate_public_url for host checks."""
-        mock_validate.side_effect = ValueError("non-public")
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_rejects_non_public_url(self, mock_resolve, _mock_session_cls):
+        """fetch_and_extract delegates to _resolve_public_host for host checks."""
+        mock_resolve.side_effect = ValueError("non-public")
         from artifice_draft.style_guides.scraper import fetch_and_extract
+
         with pytest.raises(ValueError, match="non-public"):
             fetch_and_extract("http://127.0.0.1/secret")
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_handles_connection_error(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_handles_connection_error(self, mock_resolve, mock_session_cls):
         import requests as _requests
         from artifice_draft.style_guides.scraper import fetch_and_extract
-        mock_validate.return_value = "http://example.com"
+
+        mock_resolve.return_value = ("example.com", "93.184.216.34")
         _mock_session_for_fetch(
-            mock_session_cls, side_effect=_requests.ConnectionError("refused"),
+            mock_session_cls,
+            side_effect=_requests.ConnectionError("refused"),
         )
         with pytest.raises(ValueError, match="Could not connect"):
             fetch_and_extract("http://example.com")
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_handles_timeout(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_handles_timeout(self, mock_resolve, mock_session_cls):
         import requests as _requests
         from artifice_draft.style_guides.scraper import fetch_and_extract
-        mock_validate.return_value = "http://example.com"
+
+        mock_resolve.return_value = ("example.com", "93.184.216.34")
         _mock_session_for_fetch(
-            mock_session_cls, side_effect=_requests.Timeout("timed out"),
+            mock_session_cls,
+            side_effect=_requests.Timeout("timed out"),
         )
         with pytest.raises(ValueError, match="timed out"):
             fetch_and_extract("http://example.com/slow")
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_handles_http_error(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_handles_http_error(self, mock_resolve, mock_session_cls):
         import requests as _requests
         from artifice_draft.style_guides.scraper import fetch_and_extract
-        mock_validate.return_value = "http://example.com"
+
+        mock_resolve.return_value = ("example.com", "93.184.216.34")
         resp = MagicMock()
         resp.is_redirect = False
         resp.raise_for_status.side_effect = _requests.HTTPError("404")
@@ -163,10 +359,11 @@ class TestFetchAndExtract:
             fetch_and_extract("http://example.com/missing")
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_rejects_pdf_content_type(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_rejects_pdf_content_type(self, mock_resolve, mock_session_cls):
         from artifice_draft.style_guides.scraper import fetch_and_extract
-        mock_validate.return_value = "http://example.com"
+
+        mock_resolve.return_value = ("example.com", "93.184.216.34")
         resp = MagicMock()
         resp.is_redirect = False
         resp.headers = {"Content-Type": "application/pdf"}
@@ -177,10 +374,11 @@ class TestFetchAndExtract:
             fetch_and_extract("http://example.com/guide.pdf")
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_rejects_too_little_text(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_rejects_too_little_text(self, mock_resolve, mock_session_cls):
         from artifice_draft.style_guides.scraper import fetch_and_extract
-        mock_validate.return_value = "http://example.com"
+
+        mock_resolve.return_value = ("example.com", "93.184.216.34")
         resp = MagicMock()
         resp.is_redirect = False
         resp.headers = {"Content-Type": "text/html"}
@@ -191,10 +389,11 @@ class TestFetchAndExtract:
             fetch_and_extract("http://example.com/empty")
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_extracts_readability_content(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_extracts_readability_content(self, mock_resolve, mock_session_cls):
         from artifice_draft.style_guides.scraper import fetch_and_extract
-        mock_validate.return_value = "http://journal.example.com"
+
+        mock_resolve.return_value = ("journal.example.com", "93.184.216.34")
         html = (
             "<html><body>"
             "<nav>Navigation bar</nav>"
@@ -216,15 +415,15 @@ class TestFetchAndExtract:
         assert "Footnotes" in text or "footnotes" in text.lower()
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_refuses_redirect_to_internal(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_refuses_redirect_to_internal(self, mock_resolve, mock_session_cls):
         """A public host that redirects to an internal address is refused."""
         from artifice_draft.style_guides.scraper import fetch_and_extract
 
-        # First call to _validate_public_url: the original public URL passes.
+        # First call to _resolve_public_host: the original public URL passes.
         # Second call (redirect to localhost): fails.
-        mock_validate.side_effect = [
-            "http://public.example.com",
+        mock_resolve.side_effect = [
+            ("public.example.com", "93.184.216.34"),
             ValueError("non-public"),
         ]
 
@@ -238,15 +437,15 @@ class TestFetchAndExtract:
             fetch_and_extract("http://public.example.com/guide")
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_follows_valid_redirect(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_follows_valid_redirect(self, mock_resolve, mock_session_cls):
         """A public→public redirect is followed normally."""
         from artifice_draft.style_guides.scraper import fetch_and_extract
 
         # Both URLs pass validation
-        mock_validate.side_effect = [
-            "http://example.com/old",
-            "https://example.com/new",
+        mock_resolve.side_effect = [
+            ("example.com", "93.184.216.34"),
+            ("example.com", "93.184.216.34"),
         ]
 
         redirect_resp = MagicMock()
@@ -266,20 +465,23 @@ class TestFetchAndExtract:
         final_resp.content = html.encode()
         final_resp.raise_for_status = MagicMock()
 
-        mock_session = MagicMock()
-        mock_session.get.side_effect = [redirect_resp, final_resp]
-        mock_session_cls.return_value = mock_session
+        # fetch_and_extract creates a new session per hop, so need two mock sessions
+        mock_session1 = MagicMock()
+        mock_session2 = MagicMock()
+        mock_session1.get.return_value = redirect_resp
+        mock_session2.get.return_value = final_resp
+        mock_session_cls.side_effect = [mock_session1, mock_session2]
 
         text = fetch_and_extract("http://example.com/old")
         assert "Chicago" in text or "chicago" in text.lower()
 
     @patch("artifice_draft.style_guides.scraper.requests.Session")
-    @patch("artifice_draft.style_guides.scraper._validate_public_url")
-    def test_redirects_too_many(self, mock_validate, mock_session_cls):
+    @patch("artifice_draft.style_guides.scraper._resolve_public_host")
+    def test_redirects_too_many(self, mock_resolve, mock_session_cls):
         """Too many redirects raises ValueError."""
         from artifice_draft.style_guides.scraper import fetch_and_extract
 
-        mock_validate.return_value = "http://example.com"
+        mock_resolve.return_value = ("example.com", "93.184.216.34")
 
         redirect_resp = MagicMock()
         redirect_resp.is_redirect = True
@@ -295,6 +497,7 @@ class TestFetchAndExtract:
 # parse_guide_with_llm (harness-mocked)
 # ---------------------------------------------------------------------------
 
+
 class TestParseGuideWithLlm:
     """Tests for LLM-based guide parsing via the harness."""
 
@@ -302,6 +505,7 @@ class TestParseGuideWithLlm:
         """Build a HarnessResult with the given guide fields."""
         from model_harness.contract import HarnessResult, StructuredOutputMode
         from artifice_draft.style_guides.scraper import _GuideExtractionShape
+
         data = _GuideExtractionShape(**kwargs)
         return HarnessResult(
             data=data,
@@ -314,6 +518,7 @@ class TestParseGuideWithLlm:
     @patch("artifice_draft.style_guides.scraper.run_structured", new_callable=AsyncMock)
     def test_parses_valid_guide(self, mock_run):
         from artifice_draft.style_guides.scraper import parse_guide_with_llm
+
         mock_run.return_value = self._harness_result(
             name="Test Journal",
             edition="2nd",
@@ -332,6 +537,7 @@ class TestParseGuideWithLlm:
     def test_handles_harness_unsupported(self, mock_run):
         from artifice_draft.style_guides.scraper import parse_guide_with_llm
         from model_harness.contract import StructuredOutputUnsupported
+
         mock_run.side_effect = StructuredOutputUnsupported("no structured output")
         with pytest.raises(ValueError, match="could not produce a valid style guide"):
             parse_guide_with_llm("Some text")
@@ -343,6 +549,7 @@ class TestParseGuideWithLlm:
             SchemaValidationFailed,
             StructuredOutputMode,
         )
+
         mock_run.side_effect = SchemaValidationFailed(
             "schema mismatch",
             raw="{}",
@@ -354,6 +561,7 @@ class TestParseGuideWithLlm:
     @patch("artifice_draft.style_guides.scraper.run_structured", new_callable=AsyncMock)
     def test_handles_unexpected_error(self, mock_run):
         from artifice_draft.style_guides.scraper import parse_guide_with_llm
+
         mock_run.side_effect = RuntimeError("transport failure")
         with pytest.raises(ValueError, match="Unexpected error"):
             parse_guide_with_llm("Some text")
@@ -363,6 +571,7 @@ class TestParseGuideWithLlm:
 # _build_harness_adapter / helpers
 # ---------------------------------------------------------------------------
 
+
 class TestHarnessHelpers:
     """Tests for the adapter-construction helpers."""
 
@@ -371,6 +580,7 @@ class TestHarnessHelpers:
         from artifice_draft.models import LLMProvider
         from artifice_draft.style_guides.scraper import _build_harness_adapter
         from model_harness.openai_adapter import OpenAIProvider
+
         cfg = AppConfig()
         cfg.llm_provider = LLMProvider.OLLAMA
         adapter = _build_harness_adapter(cfg)
@@ -381,6 +591,7 @@ class TestHarnessHelpers:
         from artifice_draft.models import LLMProvider
         from artifice_draft.style_guides.scraper import _build_harness_adapter
         from model_harness.openai_adapter import OpenAIProvider
+
         cfg = AppConfig()
         cfg.llm_provider = LLMProvider.OPENAI
         adapter = _build_harness_adapter(cfg)
@@ -391,6 +602,7 @@ class TestHarnessHelpers:
         from artifice_draft.models import LLMProvider
         from artifice_draft.style_guides.scraper import _build_harness_adapter
         from model_harness.anthropic_adapter import AnthropicProvider
+
         cfg = AppConfig()
         cfg.llm_provider = LLMProvider.ANTHROPIC
         cfg.anthropic_api_key = "test-key"
@@ -402,6 +614,7 @@ class TestHarnessHelpers:
         from artifice_draft.config import AppConfig
         from artifice_draft.models import LLMProvider
         from artifice_draft.style_guides.scraper import _provider_string
+
         cfg = AppConfig()
         cfg.llm_provider = LLMProvider.OLLAMA
         assert _provider_string(cfg) == "ollama"
@@ -410,6 +623,7 @@ class TestHarnessHelpers:
         from artifice_draft.config import AppConfig
         from artifice_draft.models import LLMProvider
         from artifice_draft.style_guides.scraper import _provider_string
+
         cfg = AppConfig()
         cfg.llm_provider = LLMProvider.OPENAI
         assert _provider_string(cfg) == "generic-api"
@@ -418,6 +632,7 @@ class TestHarnessHelpers:
         from artifice_draft.config import AppConfig
         from artifice_draft.models import LLMProvider
         from artifice_draft.style_guides.scraper import _provider_string
+
         cfg = AppConfig()
         cfg.llm_provider = LLMProvider.ANTHROPIC
         assert _provider_string(cfg) == "anthropic"
@@ -427,6 +642,7 @@ class TestHarnessHelpers:
 # preview_guide_from_url
 # ---------------------------------------------------------------------------
 
+
 class TestPreviewGuideFromUrl:
     """Tests for the full preview pipeline."""
 
@@ -434,6 +650,7 @@ class TestPreviewGuideFromUrl:
     @patch("artifice_draft.style_guides.scraper.fetch_and_extract")
     def test_calls_fetch_then_parse(self, mock_fetch, mock_parse):
         from artifice_draft.style_guides.scraper import preview_guide_from_url
+
         mock_fetch.return_value = "Extracted author guidelines text"
         expected = StyleGuide(name="Previewed Guide")
         mock_parse.return_value = expected
@@ -447,11 +664,13 @@ class TestPreviewGuideFromUrl:
 # delete_custom_guide
 # ---------------------------------------------------------------------------
 
+
 class TestDeleteCustomGuide:
     """Tests for the delete helper."""
 
     def test_delete_existing(self, tmp_path, monkeypatch):
         from artifice_draft.style_guides import delete_custom_guide, save_custom_guide
+
         monkeypatch.setattr("artifice_draft.style_guides._CUSTOM_DIR", tmp_path)
         guide = StyleGuide(name="To Delete")
         save_custom_guide("to_delete", guide)
@@ -460,6 +679,7 @@ class TestDeleteCustomGuide:
 
     def test_delete_nonexistent(self, tmp_path, monkeypatch):
         from artifice_draft.style_guides import delete_custom_guide
+
         monkeypatch.setattr("artifice_draft.style_guides._CUSTOM_DIR", tmp_path)
         assert delete_custom_guide("no_such_guide") is False
 
@@ -468,12 +688,14 @@ class TestDeleteCustomGuide:
 # preview_guide_from_text and file
 # ---------------------------------------------------------------------------
 
+
 class TestTextAndFileImport:
     """Tests for text paste and file import preview functions."""
 
     @patch("artifice_draft.style_guides.scraper.parse_guide_with_llm")
     def test_preview_guide_from_text_valid(self, mock_parse):
         from artifice_draft.style_guides.scraper import preview_guide_from_text
+
         mock_parse.return_value = StyleGuide(name="Text Guide")
         long_text = "A" * 60
         result = preview_guide_from_text(long_text)
@@ -482,6 +704,7 @@ class TestTextAndFileImport:
 
     def test_preview_guide_from_text_too_short(self):
         from artifice_draft.style_guides.scraper import preview_guide_from_text
+
         with pytest.raises(ValueError, match="too short"):
             preview_guide_from_text("Short text")
 
@@ -489,6 +712,7 @@ class TestTextAndFileImport:
     @patch("artifice_draft.style_guides.scraper.extract_text_from_docx")
     def test_preview_guide_from_file_docx(self, mock_extract, mock_parse):
         from artifice_draft.style_guides.scraper import preview_guide_from_file
+
         mock_extract.return_value = "A" * 60
         mock_parse.return_value = StyleGuide(name="Docx Guide")
         result = preview_guide_from_file("guidelines.docx")
@@ -497,5 +721,6 @@ class TestTextAndFileImport:
 
     def test_preview_guide_from_file_unsupported(self):
         from artifice_draft.style_guides.scraper import preview_guide_from_file
+
         with pytest.raises(ValueError, match="Unsupported file type"):
             preview_guide_from_file("guidelines.txt")

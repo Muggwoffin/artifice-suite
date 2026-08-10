@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from typing import AsyncGenerator
+from urllib.parse import urlparse
 
 from artifice_graph.config import LLMConfig
 from artifice_graph.extraction.inference_engine import InferenceEngine, ModelInfo
@@ -26,24 +27,22 @@ class LLMClient:
     ) -> None:
         if config is None:
             from artifice_graph.config import load_config
+
             config = load_config().llm
 
         self.config = config
 
         api_key = ""
-        if config.base_url.startswith("https://api.openai.com"):
+        if urlparse(config.base_url).hostname == "api.openai.com":
             api_key = config.api_key if hasattr(config, "api_key") else ""
 
-        self.inference_engine = (
-            inference_engine
-            or InferenceEngine(
-                base_url=config.base_url,
-                api_key=api_key,
-                model=config.model,
-                timeout=config.timeout,
-                enable_streaming=True,
-                endpoint_policy=endpoint_policy,
-            )
+        self.inference_engine = inference_engine or InferenceEngine(
+            base_url=config.base_url,
+            api_key=api_key,
+            model=config.model,
+            timeout=config.timeout,
+            enable_streaming=True,
+            endpoint_policy=endpoint_policy,
         )
 
     async def chat(self, system: str, user: str) -> str:
@@ -56,7 +55,9 @@ class LLMClient:
 
     async def chat_stream(self, system: str, user: str) -> AsyncGenerator[str, None]:
         """Chat with streaming support."""
-        async for chunk in self.inference_engine.chat_completion(system, user, self.config.model, stream=True):
+        async for chunk in self.inference_engine.chat_completion(
+            system, user, self.config.model, stream=True
+        ):
             yield chunk
 
     async def get_models(self) -> tuple[list[ModelInfo], list[ModelInfo]]:

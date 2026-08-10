@@ -7,7 +7,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from artifice_hub.engine import get_engine_status, pull_model_command
+from artifice_hub.engine import EngineError, get_engine_status, pull_model_command
 from artifice_hub.hardware import GpuKind
 from model_harness.registry import HardwareTier, ModelRecommendation
 
@@ -121,25 +121,25 @@ def test_pull_model_rejects_unrecommended():
     """A model outside the frozen registry is rejected before any argv."""
     with (
         patch("artifice_hub.engine.recommendations_for_app", return_value=[_mock_rec()]),
-        pytest.raises(ValueError),
+        pytest.raises(EngineError),
     ):
         pull_model_command("artifice-draft", HardwareTier.DESKTOP, "evil; rm -rf /")
 
 
 def test_pull_model_requires_ollama_binary():
-    """Pulling without the ollama binary raises RuntimeError."""
+    """Pulling without the ollama binary raises EngineError."""
     with (
         patch("artifice_hub.engine.recommendations_for_app", return_value=[_mock_rec()]),
         patch("shutil.which", return_value=None),
-        pytest.raises(RuntimeError),
+        pytest.raises(EngineError),
     ):
         pull_model_command("artifice-draft", HardwareTier.DESKTOP, "llama3.2:3b")
 
 
-def test_unknown_app_raises_value_error():
-    """An app with no registry recommendations raises ValueError."""
+def test_unknown_app_raises_engine_error():
+    """An app with no registry recommendations raises EngineError."""
     with (
         patch("artifice_hub.engine.recommendations_for_app", side_effect=KeyError("nope")),
-        pytest.raises(ValueError),
+        pytest.raises(EngineError),
     ):
         pull_model_command("artifice-draft", HardwareTier.DESKTOP, "llama3.2:3b")

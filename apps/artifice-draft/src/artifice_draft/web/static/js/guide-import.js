@@ -158,7 +158,13 @@
     btnParseFile.disabled = true;
     btnParseFile.textContent = "Parsing…";
     fileLog.style.display = "block";
-    fileLog.innerHTML = `<div class="line accent">Uploading and parsing ${file.name}…</div>`;
+    // Build via DOM APIs — innerHTML with an unescaped user-supplied
+    // filename (file.name) is an XSS sink.
+    fileLog.textContent = "";
+    const fileLogLine = document.createElement("div");
+    fileLogLine.className = "line accent";
+    fileLogLine.textContent = `Uploading and parsing ${file.name}…`;
+    fileLog.appendChild(fileLogLine);
 
     try {
       const formData = new FormData();
