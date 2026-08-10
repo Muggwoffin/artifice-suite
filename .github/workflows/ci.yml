@@ -6,6 +6,12 @@ on:
   push:
     branches: [main]
 
+# Least-privilege default for every job below: none of them push commits,
+# create releases, or comment on PRs — they only checkout and run local
+# scripts/tests, so read-only access to repo contents is sufficient.
+permissions:
+  contents: read
+
 jobs:
   # ── Static gates ──────────────────────────────────────────────────────────
   # Every gate here exits non-zero on failure.  If any of these are red the

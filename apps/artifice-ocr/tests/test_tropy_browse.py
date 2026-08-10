@@ -197,8 +197,7 @@ def _create_tpy(
 
     # Project
     conn.execute(
-        "INSERT INTO project (project_id, name, base) "
-        "VALUES (1, 'Test Project', 'project')",
+        "INSERT INTO project (project_id, name, base) VALUES (1, 'Test Project', 'project')",
     )
 
     # ---- subjects for items ----
@@ -260,7 +259,8 @@ def _create_tpy(
                 (img_id,),
             )
             conn.execute(
-                "INSERT INTO images (id) VALUES (?)", (img_id,),
+                "INSERT INTO images (id) VALUES (?)",
+                (img_id,),
             )
 
         conn.execute(
@@ -313,8 +313,7 @@ def _create_tpy(
     # ---- trash ----
     if with_trash:
         conn.execute(
-            "INSERT INTO trash (id, deleted, reason) VALUES (4, "
-            "datetime('now'), 'user')",
+            "INSERT INTO trash (id, deleted, reason) VALUES (4, datetime('now'), 'user')",
         )
 
     conn.commit()
@@ -341,6 +340,7 @@ def _client_with_state(tmp_path, monkeypatch) -> TestClient:
 
     # Reset pdf_export_state
     import queue as _queue_mod
+
     pstate = runtime.pdf_export_state
     if pstate.thread is not None and pstate.thread.is_alive():
         pstate.thread.join(timeout=5)
@@ -354,6 +354,7 @@ def _client_with_state(tmp_path, monkeypatch) -> TestClient:
             break
 
     from artifice_ocr.web import server
+
     return TestClient(server.app)
 
 
@@ -365,6 +366,7 @@ def _client_with_state(tmp_path, monkeypatch) -> TestClient:
 def _mock_pathcheck(raw_path: str, **kwargs):
     """Mock validate_absolute_photo that accepts any path."""
     from artifice_ocr._tropy_pathcheck import PhotoPathResult
+
     p = Path(raw_path)
     exists = p.exists()
     return PhotoPathResult(resolved=p, missing=not exists, is_symlink=False)
@@ -398,7 +400,9 @@ class TestResolvePhotoPath:
         db = tmp_path / "test.tpy"
         db.write_text("")
         result = _resolve_photo_path(
-            "photo.jpg", db, "/absolute/base",
+            "photo.jpg",
+            db,
+            "/absolute/base",
         )
         assert result == Path("/absolute/base/photo.jpg").resolve()
 
@@ -670,8 +674,7 @@ class TestFilenameFallback:
         conn.execute("INSERT INTO lists (list_id, name) VALUES (0, 'ROOT')")
         conn.execute("INSERT INTO lists (list_id, name) VALUES (1, 'Inbox')")
         conn.execute(
-            "INSERT INTO project (project_id, name, base) "
-            "VALUES (1, 'Test Project', 'project')",
+            "INSERT INTO project (project_id, name, base) VALUES (1, 'Test Project', 'project')",
         )
         # Item 1 — no metadata
         conn.execute(
@@ -762,11 +765,14 @@ class TestPhotoOrientation:
 
         def _mock(raw_path: str, **kwargs):
             return PhotoPathResult(
-                resolved=Path(raw_path), missing=False, is_symlink=False,
+                resolved=Path(raw_path),
+                missing=False,
+                is_symlink=False,
             )
 
         monkeypatch.setattr(
-            "artifice_ocr.tropy_db.validate_absolute_photo", _mock,
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock,
         )
 
         tpy = _create_tpy(tmp_path / "test.tpy")

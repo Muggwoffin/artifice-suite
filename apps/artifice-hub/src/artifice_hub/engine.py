@@ -41,17 +41,13 @@ def _ollama_installed() -> bool:
 def _ollama_running() -> bool:
     """Return ``True`` when something listens on the Ollama port."""
     try:
-        with socket.create_connection(
-            (_OLLAMA_HOST, _OLLAMA_PORT), timeout=_SOCKET_TIMEOUT_S
-        ):
+        with socket.create_connection((_OLLAMA_HOST, _OLLAMA_PORT), timeout=_SOCKET_TIMEOUT_S):
             return True
     except OSError:
         return False
 
 
-def _recommended_ollama_models(
-    slug: str, tier: HardwareTier
-) -> list[Any]:
+def _recommended_ollama_models(slug: str, tier: HardwareTier) -> list[Any]:
     """Return the registry's Ollama recommendations for *slug* on *tier*.
 
     Raises:
@@ -138,9 +134,7 @@ def pull_model_command(slug: str, tier: HardwareTier, model_name: str) -> list[s
     recommended = {r.model_name for r in ollama_recs}
 
     if model_name not in recommended:
-        raise ValueError(
-            f"Model {model_name!r} is not recommended for {slug} on {tier.value}"
-        )
+        raise ValueError(f"Model {model_name!r} is not recommended for {slug} on {tier.value}")
 
     ollama_bin = shutil.which("ollama")
     if not ollama_bin:

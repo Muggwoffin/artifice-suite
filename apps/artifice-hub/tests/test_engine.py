@@ -86,13 +86,23 @@ async def test_engine_status_dict_shape():
         status = await get_engine_status("artifice-draft", HardwareTier.DESKTOP)
 
     expected_keys = {
-        "ollama", "engine_ready", "models", "missing",
-        "installed_models", "all_satisfied",
+        "ollama",
+        "engine_ready",
+        "models",
+        "missing",
+        "installed_models",
+        "all_satisfied",
     }
     assert set(status.keys()) == expected_keys
     assert status["ollama"] == {"installed": True, "running": True}
     assert set(status["models"][0].keys()) == {
-        "name", "role", "vision", "min_vram_gb", "notes", "badges", "installed",
+        "name",
+        "role",
+        "vision",
+        "min_vram_gb",
+        "notes",
+        "badges",
+        "installed",
     }
 
 

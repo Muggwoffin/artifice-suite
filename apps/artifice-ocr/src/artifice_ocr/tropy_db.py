@@ -25,7 +25,7 @@ Schema is the real Tropy ``.tpy`` schema:
 
 import sqlite3
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from ._logging import get_logger
 from ._tropy_pathcheck import PhotoPathResult, validate_absolute_photo
@@ -84,9 +84,7 @@ def _connect(db_path: Path) -> sqlite3.Connection:
     except sqlite3.OperationalError as exc:
         msg = str(exc).lower()
         if "locked" in msg or "busy" in msg:
-            raise TropyDBError(
-                "Tropy database is locked — close Tropy and try again"
-            ) from exc
+            raise TropyDBError("Tropy database is locked — close Tropy and try again") from exc
         raise TropyDBError(f"Could not open database: {db_path.name}") from exc
 
 
@@ -110,7 +108,9 @@ def _get_project_base(conn: sqlite3.Connection) -> str | None:
 
 
 def _resolve_photo_path(
-    photo_path: str, db_path: Path, base: str | None,
+    photo_path: str,
+    db_path: Path,
+    base: str | None,
 ) -> Path:
     """Resolve a base-relative photo path to an absolute :class:`Path`.
 
@@ -127,10 +127,23 @@ def _resolve_photo_path(
         return (db_path.parent / photo_path).resolve()
     if base == "home":
         return (Path.home() / photo_path).resolve()
-    if Path(base).is_absolute():
+    if _is_absolute_base(base):
         return (Path(base) / photo_path).resolve()
     # Relative base string — resolve relative to DB folder
     return (db_path.parent / base / photo_path).resolve()
+
+
+def _is_absolute_base(base: str) -> bool:
+    """True if ``base`` is absolute in either POSIX or Windows path syntax.
+
+    Tropy databases are cross-platform: a .tpy file created on macOS/Linux
+    stores POSIX-style absolute paths (e.g. ``/Users/name/Pictures``).
+    ``Path(base).is_absolute()`` reports that as NOT absolute on Windows —
+    pathlib requires both a drive and a root there — which would fall
+    through to the DB-relative branch and silently resolve against the
+    wrong drive (the .tpy file's, not the process's).
+    """
+    return PurePosixPath(base).is_absolute() or PureWindowsPath(base).is_absolute()
 
 
 # --------------------------------------------------------------------------- #
@@ -167,21 +180,24 @@ def _get_item_title(conn: sqlite3.Connection, item_id: int) -> str:
             return str(row[0]).strip()
     except sqlite3.OperationalError as exc:
         log.warning(
-            "Could not read metadata for item %d: %s", item_id, exc,
+            "Could not read metadata for item %d: %s",
+            item_id,
+            exc,
         )
 
     # 2. Fall back to first photo filename
     try:
         photo_row = conn.execute(
-            "SELECT filename FROM photos "
-            "WHERE item_id = ? ORDER BY position, id LIMIT 1",
+            "SELECT filename FROM photos WHERE item_id = ? ORDER BY position, id LIMIT 1",
             (item_id,),
         ).fetchone()
         if photo_row and photo_row[0] and str(photo_row[0]).strip():
             return str(photo_row[0]).strip()
     except sqlite3.OperationalError as exc:
         log.warning(
-            "Could not read photos for item %d title: %s", item_id, exc,
+            "Could not read photos for item %d title: %s",
+            item_id,
+            exc,
         )
 
     # 3. Ultimate fallback
@@ -225,7 +241,9 @@ def _read_photos(
         except Exception as exc:
             log.warning(
                 "Photo %d (item %d) path resolution failed: %s — marking missing",
-                photo_id, item_id, exc,
+                photo_id,
+                item_id,
+                exc,
             )
             photos.append(
                 TropyPhoto(
@@ -250,7 +268,9 @@ def _read_photos(
         except ValueError as exc:
             log.warning(
                 "Photo %d (item %d) path rejected: %s — marking missing",
-                photo_id, item_id, exc,
+                photo_id,
+                item_id,
+                exc,
             )
             resolved_path = str(absolute)
             missing = True
@@ -459,10 +479,7 @@ def items_to_job_items(
                 photo.mimetype,
                 resolved,
             )
-            is_pdf = (
-                photo.mimetype == "application/pdf"
-                or resolved.suffix.lower() == ".pdf"
-            )
+            is_pdf = photo.mimetype == "application/pdf" or resolved.suffix.lower() == ".pdf"
             parts = [photo_name]
             if is_pdf and photo.page is not None:
                 parts.append(f"p.{photo.page + 1}")
