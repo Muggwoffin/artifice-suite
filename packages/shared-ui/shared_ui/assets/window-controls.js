@@ -9,14 +9,20 @@
  * The buttons are rendered with display:none by masthead.css.  When PyWebView
  * fires the pywebviewready event, this IIFE adds the .pywebview-active class
  * to <html> (which the CSS keys off to show the controls) and wires the
- * Minimize / Close buttons to the JS-Python bridge.
+ * Minimize / Maximize / Close buttons to the JS-Python bridge.
  *
- * Expected Python-side API (to be exposed via webview.create_window(...,
- * js_api=api_instance)):
+ * Expected Python-side API (exposed via webview.create_window(...,
+ * js_api=api_instance) — see packages/shared-ui/shared_ui/window.py's
+ * WindowApi class, which all five apps now share):
  *
  *   class Api:
  *       def minimize(self):
  *           webview.windows[0].minimize()
+ *
+ *       def toggle_maximize(self):
+ *           # WindowApi tracks maximized state internally and calls
+ *           # maximize()/restore() as appropriate — no state passed from JS.
+ *           ...
  *
  *       def destroy(self):
  *           webview.windows[0].destroy()
@@ -59,12 +65,20 @@
     }
 
     var minimizeBtn = document.getElementById("windowMinimize");
+    var maximizeBtn = document.getElementById("windowMaximize");
     var closeBtn = document.getElementById("windowClose");
 
     if (minimizeBtn) {
       minimizeBtn.onmousedown = stopDrag;
       minimizeBtn.onclick = function () {
         callPywebview("minimize");
+      };
+    }
+
+    if (maximizeBtn) {
+      maximizeBtn.onmousedown = stopDrag;
+      maximizeBtn.onclick = function () {
+        callPywebview("toggle_maximize");
       };
     }
 

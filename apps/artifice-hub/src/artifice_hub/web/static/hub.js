@@ -227,7 +227,9 @@
         apiGet("/api/health").then(function (data) {
             elHubVersion.textContent = data.version || "—";
             elHubUv.textContent = data.uv ? "found" : "not found";
-        }).catch(function () {});
+        }).catch(function (err) {
+            console.warn("Failed to load Hub version info:", err);
+        });
     }
 
     /* ── Transcribe modal ───────────────────────────────────────────── */
@@ -428,13 +430,16 @@
     var elEngineModalRetry = $("#engine-modal-retry");
     var elEngineModalInstall = $("#engine-modal-install");
     var elEngineModalLaunch = $("#engine-modal-launch");
+    var elEngineModalSave = $("#engine-modal-save");
     var elEngineChecking = $("#engine-checking");
     var elEngineError = $("#engine-error");
     var elEngineMissing = $("#engine-missing");
     var elEngineStopped = $("#engine-stopped");
     var elModelsMissing = $("#models-missing");
     var elModelsMissingDesc = $("#models-missing-desc");
+    var elModelsPickerDesc = $("#models-picker-desc");
     var elModelList = $("#model-list");
+    var elModelPickerList = $("#model-picker-list");
     var elPullProgress = $("#pull-progress");
     var elPullFill = $("#pull-fill");
     var elPullNote = $("#pull-note");
@@ -442,6 +447,7 @@
     var currentEngineSlug = null;
     var currentPullJobId = null;
     var currentPullModel = null;
+    var currentModelChoices = {};  // role → model_name
     
     function openEngineModal(slug) {
         currentEngineSlug = slug;
@@ -465,17 +471,22 @@
         elEngineMissing.hidden = true;
         elEngineStopped.hidden = true;
         elModelsMissing.hidden = true;
+        elModelsPickerDesc.hidden = true;
+        elModelPickerList.innerHTML = "";
         elEngineModalPrimary.hidden = false;
         elEngineModalRetry.hidden = true;
         elEngineModalInstall.hidden = true;
         elEngineModalLaunch.hidden = true;
+        elEngineModalSave.hidden = true;
+        elEngineModalCancel.textContent = "Close";
         elPullProgress.hidden = true;
+        currentModelChoices = {};
         elPullNote.textContent = "Models are downloaded from Ollama and stored on your machine. This may take several minutes depending on your connection.";
     }
     
     function showEngineState(data) {
         elEngineChecking.hidden = true;
-        
+
         if (!data.ollama.installed) {
             elEngineModalTitle.textContent = "Ollama Not Installed";
             elEngineMissing.hidden = false;
@@ -485,7 +496,7 @@
             };
             return;
         }
-        
+
         if (!data.ollama.running) {
             elEngineModalTitle.textContent = "Ollama Not Running";
             elEngineStopped.hidden = false;
@@ -493,62 +504,81 @@
             elEngineModalRetry.hidden = false;
             return;
         }
-        
-        if (data.missing.length > 0) {
-            elEngineModalTitle.textContent = "AI Models Required";
-            elModelsMissing.hidden = false;
-            elModelsMissingDesc.textContent = "The following AI models are required:";
-            renderModelList(data.models);
-            elEngineModalInstall.hidden = false;
-            return;
-        }
-        
-        // All satisfied - this should not happen via openEngineModal, but handle it
-        elEngineModal.close();
+
+        // Engine is ready — models are advisory.
+        elEngineModalTitle.textContent = "AI Models";
+        elEngineModalPrimary.hidden = true;
+        elModelsMissing.hidden = false;
+        elModelsMissingDesc.textContent = "The following models are recommended for this app. They are suggestions — you can use any model you already have installed in Ollama.";
+
+        // Show recommended models with pull buttons for uninstalled ones
+        renderModelList(data.models, data.installed_models);
+
+        // Show model picker for installed models per role
+        elModelsPickerDesc.hidden = false;
+        renderModelPicker(data.models, data.installed_models);
+
+        // Launch button always available when engine is ready
+        elEngineModalLaunch.hidden = false;
     }
     
-    function renderModelList(models) {
+    function renderModelList(models, installedModels) {
         elModelList.innerHTML = "";
-        var missingModels = models.filter(function (m) { return !m.installed; });
-        
-        missingModels.forEach(function (model) {
+        installedModels = installedModels || [];
+
+        models.forEach(function (model) {
             var item = document.createElement("div");
             item.className = "model-item";
-            
+
             var header = document.createElement("div");
             header.className = "model-header";
-            
+
             var name = document.createElement("div");
             name.className = "model-name";
             name.textContent = model.name;
-            
-            var role = document.createElement("div");
-            var roleChip = document.createElement("span");
-            roleChip.className = "model-role";
-            roleChip.textContent = model.role;
+
+            var rightSide = document.createElement("div");
+            rightSide.className = "model-header-right";
+
+            var role = document.createElement("span");
+            role.className = "model-role";
+            role.textContent = model.role;
             if (model.vision) {
-                roleChip.textContent += " (Vision)";
+                role.textContent += " (Vision)";
             }
-            role.appendChild(roleChip);
-            
+            rightSide.appendChild(role);
+
             if (model.min_vram_gb) {
                 var vram = document.createElement("span");
                 vram.className = "model-vram";
                 vram.textContent = "VRAM: " + model.min_vram_gb + " GB";
-                role.appendChild(vram);
+                rightSide.appendChild(vram);
             }
-            
+
+            // Status badge: installed vs recommended
+            if (model.installed) {
+                var installedBadge = document.createElement("span");
+                installedBadge.className = "model-status model-status-installed";
+                installedBadge.textContent = "INSTALLED";
+                rightSide.appendChild(installedBadge);
+            } else {
+                var notInstalledBadge = document.createElement("span");
+                notInstalledBadge.className = "model-status model-status-missing";
+                notInstalledBadge.textContent = "NOT INSTALLED";
+                rightSide.appendChild(notInstalledBadge);
+            }
+
             header.appendChild(name);
-            header.appendChild(role);
+            header.appendChild(rightSide);
             item.appendChild(header);
-            
+
             if (model.notes) {
                 var notes = document.createElement("div");
                 notes.className = "model-notes";
                 notes.textContent = model.notes;
                 item.appendChild(notes);
             }
-            
+
             if (model.badges && model.badges.length > 0) {
                 var badges = document.createElement("div");
                 badges.className = "model-badges";
@@ -560,8 +590,196 @@
                 });
                 item.appendChild(badges);
             }
-            
+
+            // Pull button for uninstalled models
+            if (!model.installed) {
+                var pullBtn = document.createElement("button");
+                pullBtn.className = "btn btn-secondary model-pull-btn";
+                pullBtn.textContent = "Pull This Model";
+                pullBtn.addEventListener("click", (function (modelName) {
+                    return function () {
+                        pullSingleModel(modelName);
+                    };
+                })(model.name));
+                item.appendChild(pullBtn);
+            }
+
             elModelList.appendChild(item);
+        });
+
+        // Show pull-all button if any recommended models are missing
+        var missingCount = models.filter(function (m) { return !m.installed; }).length;
+        if (missingCount > 0) {
+            elEngineModalInstall.hidden = false;
+            elEngineModalInstall.textContent = "Download All Recommended (" + missingCount + ")";
+        } else {
+            elEngineModalInstall.hidden = true;
+        }
+    }
+    
+    function renderModelPicker(models, installedModels) {
+        elModelPickerList.innerHTML = "";
+        installedModels = installedModels || [];
+
+        if (installedModels.length === 0) {
+            elModelPickerList.innerHTML = '<p class="modal-note">No models are currently installed in Ollama. Pull a recommended model above, or use <code>ollama pull</code> to install models manually.</p>';
+            elEngineModalSave.hidden = true;
+            elModelsPickerDesc.hidden = true;
+            return;
+        }
+
+        // Group unique roles from the recommendations
+        var roles = [];
+        var seenRoles = {};
+        models.forEach(function (m) {
+            var r = m.role || "chat";
+            if (!seenRoles[r]) {
+                seenRoles[r] = true;
+                roles.push({
+                    role: r,
+                    recommended: m.name,
+                    installed: m.installed,
+                    vision: m.vision
+                });
+            }
+        });
+
+        roles.forEach(function (roleInfo) {
+            var row = document.createElement("div");
+            row.className = "picker-row";
+
+            var label = document.createElement("label");
+            label.className = "picker-label";
+            label.textContent = roleInfo.role.charAt(0).toUpperCase() + roleInfo.role.slice(1) + " model";
+            if (roleInfo.vision) label.textContent += " (vision)";
+            row.appendChild(label);
+
+            var select = document.createElement("select");
+            select.className = "picker-select";
+            select.setAttribute("data-role", roleInfo.role);
+
+            // Add installed models as options
+            installedModels.forEach(function (instName) {
+                var opt = document.createElement("option");
+                opt.value = instName;
+                opt.textContent = instName;
+                if (instName === roleInfo.recommended && roleInfo.installed) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+
+            select.addEventListener("change", function () {
+                onModelChoiceChanged();
+            });
+
+            row.appendChild(select);
+            elModelPickerList.appendChild(row);
+        });
+
+        if (roles.length > 0) {
+            elEngineModalSave.hidden = false;
+        }
+    }
+
+    function onModelChoiceChanged() {
+        var selects = elModelPickerList.querySelectorAll("select");
+        currentModelChoices = {};
+        selects.forEach(function (sel) {
+            currentModelChoices[sel.getAttribute("data-role")] = sel.value;
+        });
+    }
+
+    function pullSingleModel(modelName) {
+        currentPullModel = modelName;
+        elPullProgress.hidden = false;
+        elPullFill.style.width = "0%";
+        elPullNote.textContent = "Downloading " + modelName + "…";
+        elEngineModalInstall.disabled = true;
+        elEngineModalCancel.disabled = true;
+
+        apiPost("/api/engine/" + currentEngineSlug + "/pull", { model: modelName }).then(function (resp) {
+            currentPullJobId = resp.job_id;
+            streamSinglePull(currentPullJobId, modelName);
+        }).catch(function (e) {
+            console.error(e);
+            elPullNote.textContent = "Download failed. Retry or check Ollama.";
+            elEngineModalInstall.disabled = false;
+            elEngineModalCancel.disabled = false;
+        });
+    }
+
+    function streamSinglePull(jobId, modelName) {
+        var es = new EventSource("/api/jobs/" + jobId + "/events");
+
+        es.addEventListener("log", function (e) {
+            var data = JSON.parse(e.data);
+            if (data.progress) {
+                elPullFill.style.width = data.progress + "%";
+            }
+            if (data.line) {
+                elPullNote.textContent = data.line;
+            }
+        });
+
+        es.addEventListener("done", function (e) {
+            var data = e.data ? JSON.parse(e.data) : {};
+            es.close();
+            elPullProgress.hidden = true;
+            elEngineModalInstall.disabled = false;
+            elEngineModalCancel.disabled = false;
+
+            if (data.returncode === 0) {
+                elPullNote.textContent = modelName + " downloaded. Refreshing…";
+                refreshEngineStatus();
+            } else {
+                elPullNote.textContent = "Download failed for " + modelName + ". Retry or check Ollama.";
+            }
+        });
+
+        es.onerror = function () {
+            es.close();
+            elPullNote.textContent = "Connection lost. Retry or check Ollama.";
+            elEngineModalInstall.disabled = false;
+            elEngineModalCancel.disabled = false;
+        };
+    }
+
+    function refreshEngineStatus() {
+        apiGet("/api/engine/" + currentEngineSlug).then(function (data) {
+            elEngineChecking.hidden = true;
+            elModelsMissing.hidden = false;
+            elModelsMissingDesc.textContent = "The following models are recommended for this app. They are suggestions — you can use any model you already have installed in Ollama.";
+            renderModelList(data.models, data.installed_models);
+            renderModelPicker(data.models, data.installed_models);
+            onModelChoiceChanged();
+        }).catch(function () {
+            elPullNote.textContent = "Could not refresh model status. Close and reopen the modal.";
+        });
+    }
+
+    function saveModelChoices() {
+        if (Object.keys(currentModelChoices).length === 0) {
+            onModelChoiceChanged(); // capture from DOM
+        }
+        if (Object.keys(currentModelChoices).length === 0) return;
+
+        elEngineModalSave.disabled = true;
+        elEngineModalSave.textContent = "Saving…";
+
+        apiPost("/api/engine/" + currentEngineSlug + "/models", { choices: currentModelChoices }).then(function (resp) {
+            elEngineModalSave.textContent = "Saved ✓";
+            elEngineModalSave.disabled = false;
+            setTimeout(function () {
+                elEngineModalSave.textContent = "Save Model Choices";
+            }, 2000);
+        }).catch(function (e) {
+            console.error(e);
+            elEngineModalSave.textContent = "Save Failed";
+            elEngineModalSave.disabled = false;
+            setTimeout(function () {
+                elEngineModalSave.textContent = "Save Model Choices";
+            }, 2000);
         });
     }
     
@@ -595,16 +813,20 @@
             elPullNote.textContent = "Downloading models…";
             pullNextModel();
         });
+
+        elEngineModalSave.addEventListener("click", function () {
+            saveModelChoices();
+        });
     }
     
     function pullNextModel() {
         apiGet("/api/engine/" + currentEngineSlug).then(function (data) {
             var missingModels = data.models.filter(function (m) { return !m.installed; });
             if (missingModels.length === 0) {
-                onEnginePullDone(currentEngineSlug);
+                onAllPullsDone();
                 return;
             }
-            
+
             currentPullModel = missingModels[0].name;
             return apiPost("/api/engine/" + currentEngineSlug + "/pull", { model: currentPullModel });
         }).then(function (resp) {
@@ -617,6 +839,14 @@
             elEngineModalInstall.disabled = false;
             elEngineModalCancel.disabled = false;
         });
+    }
+
+    function onAllPullsDone() {
+        elPullProgress.hidden = true;
+        elPullNote.textContent = "All recommended models are downloaded.";
+        elEngineModalInstall.hidden = true;
+        elEngineModalCancel.disabled = false;
+        refreshEngineStatus();
     }
     
     function streamEnginePull(jobId) {
@@ -650,28 +880,6 @@
             elEngineModalInstall.disabled = false;
             elEngineModalCancel.disabled = false;
         };
-    }
-    
-    function onEnginePullDone(slug) {
-        apiGet("/api/engine/" + slug).then(function (data) {
-            if (data.all_satisfied) {
-                elEngineModalTitle.textContent = "All Set";
-                elModelsMissing.hidden = true;
-                elPullProgress.hidden = true;
-                elEngineModalInstall.hidden = true;
-                elEngineModalLaunch.hidden = false;
-                elEngineModalCancel.textContent = "Close";
-                elPullNote.textContent = "All required models are installed. You can now launch the app.";
-            } else {
-                elPullNote.textContent = "Some models could not be installed. Retry or check Ollama.";
-                elEngineModalInstall.disabled = false;
-                elEngineModalCancel.disabled = false;
-            }
-        }).catch(function () {
-            elPullNote.textContent = "Could not verify model status. Retry or check Ollama.";
-            elEngineModalInstall.disabled = false;
-            elEngineModalCancel.disabled = false;
-        });
     }
     
     elEngineModalLaunch.addEventListener("click", function () {
