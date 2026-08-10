@@ -126,13 +126,13 @@ document.querySelectorAll(".settings-card input, .settings-card select, #model-s
   });
 });
 
-document.getElementById("btn-model-settings").addEventListener("click", () => {
+window.ArtificeBind.bindIfPresent("btn-model-settings", "click", function () {
   document.getElementById("model-settings-modal").style.display = "flex";
 });
-document.getElementById("btn-model-close").addEventListener("click", () => {
+window.ArtificeBind.bindIfPresent("btn-model-close", "click", function () {
   document.getElementById("model-settings-modal").style.display = "none";
 });
-document.getElementById("model-settings-modal").addEventListener("click", e => {
+window.ArtificeBind.bindIfPresent("model-settings-modal", "click", function (e) {
   if (e.target === e.currentTarget) e.currentTarget.style.display = "none";
 });
 
@@ -167,6 +167,7 @@ async function handleFile(file) {
   }
 }
 
+if (els.dropzone && els.fileInput && els.btnBrowse && els.btnStart) {
 els.dropzone.addEventListener("click", () => els.fileInput.click());
 els.btnBrowse.addEventListener("click", () => els.fileInput.click());
 els.fileInput.addEventListener("change", () => {
@@ -199,6 +200,7 @@ els.btnStart.addEventListener("click", async () => {
     els.btnStart.disabled = false;
   }
 });
+}
 
 function listenForProgress(docId) {
   const source = new EventSource(`/api/run/${docId}/events`);
@@ -330,7 +332,9 @@ function initKeyboardShortcuts() {
 initTheme();
 initKeyboardShortcuts();
 
-loadSettings().catch(err => window.ArtificeToast.error("Could not load settings: " + err.message));
+if (document.getElementById("set-llm_provider")) {
+  loadSettings().catch(err => window.ArtificeToast.error("Could not load settings: " + err.message));
+}
 
 // ── Handoff: check for text sent from another app ────────────────
 (function () {

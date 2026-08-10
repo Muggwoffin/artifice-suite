@@ -142,6 +142,44 @@ not just separate branches — and `git reflog` is the tool that surfaces this k
 collision after the fact, since neither session's own history shows the other's
 transient checkout.
 
+### 2026-08-10 — Regression sweep: 2026-08-08/09 commit burst (ocr, draft, graph)
+
+A burst of undocumented commits (`0ee8c63` → `5ce7eeb` → `0554f33` → `3d91e7c`),
+all on 2026-08-08/09, introduced and partially repaired broken control flow in the
+`main()` functions of `artifice-ocr`, `artifice-draft`, and `artifice-graph` web
+servers.
+
+**What broke.** In `apps/artifice-ocr/src/artifice_ocr/web/server.py`, the native-window
+launch block in `main()` had two defects the repair commit (`5ce7eeb` "repair broken try
+blocks") missed:
+
+1. `open_native_window()` was called **twice in succession with identical arguments**
+   (~L739 and ~L754) — a copy-paste duplicate, not a retry. Because
+   `open_native_window()` deterministically returns `WindowResult(opened=False)` when
+   pywebview is absent, the second call always repeated the failure reason the first
+   already printed, then fell through to an identical browser-fallback block.
+2. The `frozen` guard was dropped (the comment read "Always attempt native window"),
+   and every execution path through the enclosing `try`/`except` returned before
+   reaching the "Non-frozen (dev)" fallback at the end of the function — **dead
+   code** that had been the dev-mode launch path.
+
+**What this fix pass corrected — scope limited to ocr, draft, graph (not transcribe, not
+shared-ui/model-harness, not frontend).**
+
+- **ocr**: Restored the `getattr(sys, "frozen", False)` guard. Removed the duplicate
+  `open_native_window` call and its redundant import. Merged the
+  `result.opened=False` and `except` paths into a single browser-fallback block, so
+  the dev-mode fallback is now reachable again for non-frozen runs. Invariant
+  preserved: frozen → native window attempt with browser fallback; non-frozen → straight
+  to `webbrowser.open()`.
+- **draft**: Scanned for the same duplicate-call pattern — none found. The
+  `5ce7eeb` repair left a clean single-call structure. No change needed.
+- **graph**: Same scan — clean. No duplicate call, no unreachable code. No change
+  needed.
+
+**Verification.** All three `server.py` files pass `python -m py_compile`. OCR's 13
+relevant window/launch tests (15 collected, 2 skipped for Windows-only) all pass.
+
 ### Session 4 reconciliation — 2026-07-29
 
 Re-measurement closed **six** stale Part IV items without code changes: `artifice-transcribe`

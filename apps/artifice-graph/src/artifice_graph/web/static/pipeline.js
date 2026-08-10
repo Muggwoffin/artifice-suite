@@ -243,8 +243,15 @@
     if (typeof text === "string") { els.statusStrip.querySelector("[data-status-text]").textContent = text; }
   }
 
+  // Tracks whether we have failed since the last successful state refresh.
+  // Used to toast only on the first failure after a success — a polling
+  // function that toasts on every failed poll would spam the user during
+  // any extended outage.
+  var _stateFailedSinceSuccess = false;
+
   function refreshState() {
-    window.fetch("/api/state").then(function(r) { return r.json(); }).then(function(s) {
+    window.ArtificeBind.apiFetch("/api/state").then(function(s) {
+      _stateFailedSinceSuccess = false;
       if (!s) return;
       setStat("documents", s.documents);
       setStat("chunks", s.chunks);
@@ -252,7 +259,14 @@
       setStat("relationships", s.relationships);
       setStat("raw", s.entities_raw);
       renderBreakdowns(s);
-    }).catch(function() {});
+    }).catch(function(err) {
+      if (!_stateFailedSinceSuccess) {
+        _stateFailedSinceSuccess = true;
+        if (window.ArtificeToast) {
+          window.ArtificeToast.error("Could not refresh state: " + err.message);
+        }
+      }
+    });
   }
 
   // Singular / plural label pairs for each stat tile, keyed by the same
