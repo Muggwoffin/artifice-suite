@@ -161,7 +161,7 @@ def open_native_window(
     # GTK, etc.) is missing at runtime.
     try:
         api = WindowApi()
-        webview.settings['DRAG_REGION_DIRECT_TARGET_ONLY'] = True
+        webview.settings["DRAG_REGION_DIRECT_TARGET_ONLY"] = True
         api._window = webview.create_window(
             title=title,
             url=url,

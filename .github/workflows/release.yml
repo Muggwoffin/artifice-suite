@@ -5,6 +5,12 @@ on:
     tags:
       - 'v*'
 
+# Workflow-level default: version-guard only checks out and reads, so
+# read-only is sufficient. github-release overrides with contents: write
+# below — job-level permissions take precedence over this default.
+permissions:
+  contents: read
+
 jobs:
   version-guard:
     runs-on: ubuntu-latest

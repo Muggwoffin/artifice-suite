@@ -35,6 +35,7 @@ log = get_logger("tropy_browse")
 
 router = APIRouter(tags=["tropy-browse"])
 
+
 def _live_browse_enabled() -> bool:
     """Return True if live Tropy .tpy browsing is enabled.
 
@@ -49,9 +50,7 @@ def _live_browse_enabled() -> bool:
 
 def _check_enabled() -> None:
     if not _live_browse_enabled():
-        raise HTTPException(
-            status_code=404, detail="Live Tropy browse is not enabled"
-        )
+        raise HTTPException(status_code=404, detail="Live Tropy browse is not enabled")
 
 
 def _resolve_db_path(raw: str) -> Path:

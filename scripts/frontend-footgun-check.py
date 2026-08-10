@@ -34,16 +34,16 @@ JS_GLOB = "apps/*/src/*/web/static/**/*.js"
 HTML_GLOB = "apps/*/src/*/web/templates/**/*.html"
 
 ADD_LISTENER_RE = re.compile(
-    r'^\s{0,2}([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\.addEventListener\('
+    r"^\s{0,2}([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\.addEventListener\("
 )
-GUARD_IF_RE = re.compile(r'^\s*if\s*\(\s*([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*\)')
-BIND_IF_PRESENT_RE = re.compile(r'window\.ArtificeBind\.bindIfPresent\(')
+GUARD_IF_RE = re.compile(r"^\s*if\s*\(\s*([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*\)")
+BIND_IF_PRESENT_RE = re.compile(r"window\.ArtificeBind\.bindIfPresent\(")
 
 EMPTY_CATCH_RE = re.compile(
-    r'\.catch\(\s*(?:function\s*\([^)]*\)|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)\s*\{\s*\}\s*\)'
+    r"\.catch\(\s*(?:function\s*\([^)]*\)|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)\s*\{\s*\}\s*\)"
 )
 
-SCRIPT_TAG_RE = re.compile(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', re.DOTALL | re.IGNORECASE)
+SCRIPT_TAG_RE = re.compile(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", re.DOTALL | re.IGNORECASE)
 
 
 def check_unguarded_listeners(path: Path) -> list[str]:

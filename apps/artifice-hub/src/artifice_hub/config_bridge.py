@@ -28,7 +28,7 @@ from secure_io import write_private_json
 # ---------------------------------------------------------------------------
 # For OCR:  ~/.artifice_ocr/settings.json  (flat JSON, PERSISTED_KEYS)
 # For Draft: ~/.artifice_draft/web_settings.json  (flat JSON)
-# For Graph: platformdirs config.json  (nested JSON: llm.model_name, embedding.model_name)
+# For Graph: platformdirs config.json  (nested JSON: llm.model, embedding.model)
 # Transcribe has no Ollama-relevant model config — no mapping needed.
 # ---------------------------------------------------------------------------
 
@@ -43,10 +43,7 @@ def _graph_config_path() -> Path:
     """Return the graph config path, matching config_helper.CONFIG_FILE."""
     import platformdirs
 
-    return (
-        Path(platformdirs.user_data_dir("artifice-graph", "ArtificeSuite"))
-        / "config.json"
-    )
+    return Path(platformdirs.user_data_dir("artifice-graph", "ArtificeSuite")) / "config.json"
 
 
 def _ocr_settings_path() -> Path:
@@ -63,8 +60,8 @@ _ROLE_KEY_MAP: dict[tuple[str, str], tuple[Callable[[], Path], str]] = {
     ("artifice-ocr", "chat"): (_ocr_settings_path, "cleanup_model"),
     ("artifice-ocr", "translation"): (_ocr_settings_path, "translate_model"),
     ("artifice-draft", "chat"): (_draft_settings_path, "model_name"),
-    ("artifice-graph", "chat"): (_graph_config_path, "llm.model_name"),
-    ("artifice-graph", "embedding"): (_graph_config_path, "embedding.model_name"),
+    ("artifice-graph", "chat"): (_graph_config_path, "llm.model"),
+    ("artifice-graph", "embedding"): (_graph_config_path, "embedding.model"),
 }
 
 
@@ -77,11 +74,25 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
-    """Write JSON with restricted permissions, merging onto existing content."""
+    """Write JSON with restricted permissions, merging onto existing content.
+
+    Raises:
+        PermissionError: if the file cannot be verified as restricted-access
+            after one retry — mirrors the guarantee each target app's own
+            save path (OCR's save_user_settings, Draft's save_settings,
+            Graph's save_user_config) already makes; this bridge must not be
+            a weaker path to the same files.
+    """
+    from secure_io import is_restricted
+
     path.parent.mkdir(parents=True, exist_ok=True)
     merged = _read_json(path)
     merged.update(data)
     write_private_json(path, merged)
+    if not is_restricted(path):
+        write_private_json(path, merged)
+        if not is_restricted(path):
+            raise PermissionError(f"Could not restrict permissions on {path}")
 
 
 def write_model_choice(slug: str, role: str, model_name: str) -> None:
@@ -94,9 +105,7 @@ def write_model_choice(slug: str, role: str, model_name: str) -> None:
     """
     key = (slug, role)
     if key not in _ROLE_KEY_MAP:
-        raise ValueError(
-            f"No config bridge mapping for app={slug!r} role={role!r}"
-        )
+        raise ValueError(f"No config bridge mapping for app={slug!r} role={role!r}")
 
     path_factory, config_key = _ROLE_KEY_MAP[key]
     path: Path = path_factory()
@@ -115,7 +124,7 @@ def write_model_choice(slug: str, role: str, model_name: str) -> None:
         return
 
     # Graph uses a nested config structure.
-    # config_key is "llm.model_name" or "embedding.model_name".
+    # config_key is "llm.model" or "embedding.model".
     if slug == "artifice-graph":
         _write_graph_config(path, config_key, model_name)
         return
@@ -125,12 +134,24 @@ def write_model_choice(slug: str, role: str, model_name: str) -> None:
 
 
 def _write_graph_config(path: Path, key_path: str, model_name: str) -> None:
-    """Write a nested key (e.g. ``llm.model_name``) into graph's config.json.
+    """Write a nested key (e.g. ``llm.model``) into graph's config.json.
 
     Graph's config is a PipelineConfig serialisation with top-level sections
     (``llm``, ``embedding``, etc.).  We only touch the field we were asked to
     change — everything else is preserved as-is.
+
+    Raises:
+        ValueError: if key_path isn't a dotted ``"section.field"`` string, or if
+            an existing section in the file isn't a JSON object (e.g. a
+            hand-edited or externally-corrupted config.json where ``"llm"`` is a
+            string or null instead of an object) — writing into it would
+            raise a confusing TypeError instead.
+        PermissionError: if the file cannot be verified as restricted-access
+            after one retry — see _write_json's docstring for why this
+            matters.
     """
+    from secure_io import is_restricted
+
     current = _read_json(path)
     parts = key_path.split(".", 1)
     if len(parts) != 2:
@@ -138,6 +159,15 @@ def _write_graph_config(path: Path, key_path: str, model_name: str) -> None:
     section, field = parts
     if section not in current:
         current[section] = {}
+    elif not isinstance(current[section], dict):
+        raise ValueError(
+            f"Graph config section {section!r} is not an object "
+            f"(got {type(current[section]).__name__}) — cannot write {field!r} into it"
+        )
     current[section][field] = model_name
     path.parent.mkdir(parents=True, exist_ok=True)
     write_private_json(path, current)
+    if not is_restricted(path):
+        write_private_json(path, current)
+        if not is_restricted(path):
+            raise PermissionError(f"Could not restrict permissions on {path}")

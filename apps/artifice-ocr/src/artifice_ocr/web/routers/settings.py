@@ -37,13 +37,26 @@ def _validate_base_url(raw: str, field_name: str) -> str:
 _URL_FIELDS = ("ollama_url", "lm_studio_url", "api_base_url")
 
 _CONFIG_KEYS = (
-    "lm_studio_url", "ollama_url", "huggingface_token",
-    "api_key", "api_base_url",
-    "ocr_backend", "cleanup_backend", "translate_backend",
-    "output_dir", "cleanup_model", "translate_model",
-    "ocr_model", "document_type", "max_ocr_workers", "chunk_max_tokens",
-    "resume", "confidence_enabled", "ollama_think",
-    "tropy_last_path", "tropy_last_export_path",
+    "lm_studio_url",
+    "ollama_url",
+    "huggingface_token",
+    "api_key",
+    "api_base_url",
+    "ocr_backend",
+    "cleanup_backend",
+    "translate_backend",
+    "output_dir",
+    "cleanup_model",
+    "translate_model",
+    "ocr_model",
+    "document_type",
+    "max_ocr_workers",
+    "chunk_max_tokens",
+    "resume",
+    "confidence_enabled",
+    "ollama_think",
+    "tropy_last_path",
+    "tropy_last_export_path",
     "tropy_live_browse_enabled",
 )
 
@@ -155,7 +168,11 @@ def health_check() -> dict:
         }
 
     if "ollama" in backends:
-        models = [config.get("ocr_model"), config.get("cleanup_model"), config.get("translate_model")]
+        models = [
+            config.get("ocr_model"),
+            config.get("cleanup_model"),
+            config.get("translate_model"),
+        ]
         ollama_url = config.get("ollama_url") or "http://localhost:11434"
         probe = probe_endpoint_sync(ollama_url, policy=_endpoint_policy, timeout_s=10)
         ollama_reachable = probe.reachable
@@ -166,8 +183,7 @@ def health_check() -> dict:
             "url": ollama_url,
         }
         results["models"] = [
-            {"name": m, "ok": ollama_reachable and m in available}
-            for m in models if m
+            {"name": m, "ok": ollama_reachable and m in available} for m in models if m
         ]
 
     if "huggingface" in backends:
@@ -180,6 +196,7 @@ def health_check() -> dict:
     if "api_key" in backends:
         base_url = config.get("api_base_url") or "https://api.openai.com/v1"
         from ..._backend import get_client
+
         ok, detail = get_client("api_key").health_check()
         results["api_key"] = {"ok": ok, "detail": detail, "url": base_url}
 

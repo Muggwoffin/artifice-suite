@@ -61,11 +61,13 @@ from ..uv_backend import (
 
 app = FastAPI(title="ArtificeHub")
 
+
 class AllowedHostsMiddleware(BaseHTTPMiddleware):
     """Reject requests with a Host header that isn't localhost.
 
     Prevents DNS-rebinding attacks against the Hub's local API.
     """
+
     _ALLOWED = ("127.0.0.1", "localhost", "[::1]")
 
     async def dispatch(self, request, call_next):
@@ -73,6 +75,7 @@ class AllowedHostsMiddleware(BaseHTTPMiddleware):
         if host and host not in self._ALLOWED:
             return JSONResponse({"error": "Forbidden"}, status_code=403)
         return await call_next(request)
+
 
 app.add_middleware(AllowedHostsMiddleware)
 
@@ -101,6 +104,7 @@ app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
 
 # ── Serve index.html at root ───────────────────────────────────────────
 
+
 @app.get("/")
 async def index():
     """Serve the hub dashboard."""
@@ -114,6 +118,7 @@ async def index():
 # API routes
 # ---------------------------------------------------------------------------
 
+
 # Tier mapping from GpuKind to HardwareTier
 def _gpu_kind_to_tier(gpu_kind: GpuKind) -> HardwareTier:
     if gpu_kind == GpuKind.CUDA:
@@ -122,9 +127,10 @@ def _gpu_kind_to_tier(gpu_kind: GpuKind) -> HardwareTier:
         return HardwareTier.MAC_UNIFIED
     return HardwareTier.LAPTOP
 
+
 # Helper function to parse progress from ollama output
 def _parse_progress(line: str) -> dict[str, Any]:
-    match = re.search(r'(\d{1,3})%', line)
+    match = re.search(r"(\d{1,3})%", line)
     progress = int(match.group(1)) if match else None
     return {"line": line, "progress": progress} if progress is not None else {"line": line}
 
@@ -401,6 +407,7 @@ async def api_engine_status(slug: str):
 
     return status
 
+
 @app.post("/api/engine/{slug}/pull")
 async def api_pull_model(slug: str, request: Request):
     """Pull a model for the given app slug."""
@@ -434,6 +441,7 @@ async def api_pull_model(slug: str, request: Request):
 
     def _run():
         from ..uv_backend import _run_subprocess
+
         result = _run_subprocess(cmd, job)
         job.finish(result)
 

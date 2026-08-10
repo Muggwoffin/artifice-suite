@@ -34,6 +34,11 @@ on:
     tags:
       - 'v*'
 
+# The build job only checks out, builds, and uploads a workflow artifact
+# (upload-artifact needs no elevated token scope) — read-only is sufficient.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: ${{ matrix.os }} — ${{ github.event.inputs.app || 'artifice-ocr' }}
