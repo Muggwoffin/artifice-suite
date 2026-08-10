@@ -158,11 +158,13 @@ const PreviewTab = (function () {
 
   TAB_ACTIVATE.preview = () => refreshList(true);
 
+  // Find & Replace
+  if (container) {
+    const previewFindReplace = new FindReplace(container);
+    previewFindReplace.attach();
+  }
+
   return { open };
 })();
 
 window.PreviewTab = PreviewTab;
-
-// Find & Replace
-const previewFindReplace = new FindReplace(container);
-previewFindReplace.attach();

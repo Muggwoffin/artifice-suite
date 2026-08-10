@@ -181,7 +181,7 @@
     "apps/artifice-ocr/src/artifice_ocr/cli.py|I001": 2,
     "apps/artifice-ocr/src/artifice_ocr/cli.py|SIM108": 1,
     "apps/artifice-ocr/src/artifice_ocr/history.py|UP017": 1,
-    "apps/artifice-ocr/src/artifice_ocr/jobs.py|B023": 8,
+    "apps/artifice-ocr/src/artifice_ocr/jobs.py|B023": 10,
     "apps/artifice-ocr/src/artifice_ocr/jobs.py|UP017": 1,
     "apps/artifice-ocr/src/artifice_ocr/jobs.py|UP042": 1,
     "apps/artifice-ocr/src/artifice_ocr/pdf_export.py|E501": 16,

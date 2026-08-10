@@ -19,7 +19,7 @@ const SettingsTab = (function () {
     api_key: "text", api_base_url: "text",
     document_type: "select",
     max_ocr_workers: "int", chunk_max_tokens: "int",
-    resume: "bool", confidence_enabled: "bool", ollama_think: "bool",
+    resume: "bool", confidence_enabled: "bool", ollama_think: "bool", tropy_live_browse_enabled: "bool",
   };
 
   const docTypeSelect = document.getElementById("set-document_type");
@@ -95,10 +95,14 @@ const SettingsTab = (function () {
   }
 
   async function save() {
-    await api("POST", "/api/config", collect());
-    savedLabel.textContent = "Saved.";
-    savedLabel.style.color = "var(--accent)";
-    setTimeout(() => { savedLabel.textContent = ""; }, 2500);
+    try {
+      await api("POST", "/api/config", collect());
+      savedLabel.textContent = "Saved.";
+      savedLabel.style.color = "var(--accent)";
+      setTimeout(() => { savedLabel.textContent = ""; }, 2500);
+    } catch (err) {
+      if (window.ArtificeToast) window.ArtificeToast.error("Could not save settings: " + err.message);
+    }
   }
 
   async function resetDefaults() {

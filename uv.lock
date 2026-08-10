@@ -367,6 +367,7 @@ version = "0.1.0"
 source = { editable = "apps/artifice-hub" }
 dependencies = [
     { name = "artifice-model-harness" },
+    { name = "artifice-secure-io" },
     { name = "artifice-shared-ui" },
     { name = "fastapi" },
     { name = "platformdirs" },
@@ -378,6 +379,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-secure-io", editable = "packages/secure-io" },
     { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "platformdirs", specifier = ">=4.0.0" },
