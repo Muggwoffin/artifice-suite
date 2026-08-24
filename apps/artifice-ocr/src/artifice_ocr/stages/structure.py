@@ -189,9 +189,7 @@ def perform(
         json.dump(data, f, indent=2)
 
     if guard_result.ok:
-        log.info(
-            "Structure complete (%d -> %d chars)", len(text), len(final_text)
-        )
+        log.info("Structure complete (%d -> %d chars)", len(text), len(final_text))
     else:
         log.info(
             "Structure rejected for %s, original text kept (%d chars)",

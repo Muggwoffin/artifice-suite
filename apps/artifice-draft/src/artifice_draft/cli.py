@@ -48,10 +48,14 @@ def main():
         print("  OPENAI_BASE_URL        OpenAI-compatible base URL")
         print("  ANTHROPIC_API_KEY      API key for Anthropic")
         print("  ANTHROPIC_MODEL        Anthropic model name")
-        print("  EDITING_STYLE          academic | creative | concise | business | journal | custom")
+        print(
+            "  EDITING_STYLE          academic | creative | concise | business | journal | custom"
+        )
         print("  CUSTOM_SYSTEM_PROMPT   Custom system prompt (when style=custom)")
         print("  STYLE_GUIDE            Journal style guide name (when style=journal)")
-        print("  EXPORT_FORMAT          docx_track_changes | docx_plain | markdown | html | plain_text")
+        print(
+            "  EXPORT_FORMAT          docx_track_changes | docx_plain | markdown | html | plain_text"
+        )
         print("  BATCH_SIZE             Paragraphs per LLM call (default: 5)")
         print("  TEMPERATURE            LLM temperature (default: 0.3)")
         print("  ENABLE_REVIEW          Enable human-in-the-loop review (true/false)")
@@ -62,6 +66,7 @@ def main():
 
     if len(sys.argv) > 1 and sys.argv[1] == "--styles":
         from artifice_draft.prompts import list_styles
+
         print("Available editing styles:")
         for s in list_styles():
             print(f"  - {s}")
@@ -69,6 +74,7 @@ def main():
 
     if len(sys.argv) > 1 and sys.argv[1] == "--style-guides":
         from artifice_draft.style_guides import list_guides
+
         print("Available journal style guides:")
         for g in list_guides():
             print(f"  - {g}")
@@ -163,6 +169,7 @@ def main():
     cfg = AppConfig.from_env()
 
     from artifice_draft.log_setup import setup_logging
+
     setup_logging(level=cfg.log_level, log_file=cfg.log_file)
 
     if len(sys.argv) > 1 and sys.argv[1] == "--headless":
@@ -189,14 +196,17 @@ def main():
         # the config default is empty, so announcing cfg.active_model first
         # would print nothing where a model name belongs.
         from artifice_draft._resolution import resolve_for_run
+
         try:
             resolve_for_run(cfg)
         except RuntimeError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
 
-        print(f"Sending to {cfg.active_model} ({cfg.llm_provider.value}) "
-              f"with style '{cfg.editing_style.value}'...")
+        print(
+            f"Sending to {cfg.active_model} ({cfg.llm_provider.value}) "
+            f"with style '{cfg.editing_style.value}'..."
+        )
         edits_list = call_ollama(
             paragraphs=paragraphs,
             batch_size=cfg.batch_size,
@@ -228,7 +238,9 @@ def main():
                 ExportFormat.HTML: "_edited.html",
                 ExportFormat.PLAIN_TEXT: "_edited.txt",
             }
-            output_path = str(Path(inp).parent / (Path(inp).stem + ext_map.get(fmt, "_edited.docx")))
+            output_path = str(
+                Path(inp).parent / (Path(inp).stem + ext_map.get(fmt, "_edited.docx"))
+            )
 
         actual = apply_edits(
             input_path=inp,

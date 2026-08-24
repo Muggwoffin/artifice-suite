@@ -62,12 +62,23 @@ def _wait_for_thread(doc_id: str, timeout: float = 5.0) -> None:
 def _mock_edits_response():
     """Return a list of LLMEdit objects matching the mocked harness output."""
     return [
-        LLMEdit(paragraph_index=0, original_text="Hello wrold", edited_text="Hello world", status="edited"),
-        LLMEdit(paragraph_index=1, original_text="This is a secnd paragraph.", edited_text=None, status="unchanged"),
+        LLMEdit(
+            paragraph_index=0,
+            original_text="Hello wrold",
+            edited_text="Hello world",
+            status="edited",
+        ),
+        LLMEdit(
+            paragraph_index=1,
+            original_text="This is a secnd paragraph.",
+            edited_text=None,
+            status="unchanged",
+        ),
     ]
 
 
 # --------------------------------------------------------------------- upload
+
 
 def test_upload_rejects_non_docx(client):
     res = client.post("/api/upload", files={"file": ("notes.txt", b"hello", "text/plain")})
@@ -75,10 +86,16 @@ def test_upload_rejects_non_docx(client):
 
 
 def test_upload_parses_paragraphs(client, docx_bytes):
-    res = client.post("/api/upload", files={
-        "file": ("sample.docx", docx_bytes,
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-    })
+    res = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                "sample.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
     assert res.status_code == 200
     body = res.json()
     assert body["paragraph_count"] == 2
@@ -87,6 +104,7 @@ def test_upload_parses_paragraphs(client, docx_bytes):
 
 
 # ------------------------------------------------------------------- settings
+
 
 def test_settings_roundtrip_and_merge(client):
     res = client.get("/api/settings")
@@ -119,13 +137,20 @@ def test_settings_never_expose_api_keys(client):
 
 # ------------------------------------------------------------- run: no review
 
+
 def test_run_without_review_writes_output_and_is_downloadable(client, docx_bytes):
     client.post("/api/settings", json={"enable_review": False})
 
-    upload = client.post("/api/upload", files={
-        "file": ("sample.docx", docx_bytes,
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-    })
+    upload = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                "sample.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
     doc_id = upload.json()["doc_id"]
 
     # resolve_for_run probes a live Ollama to pick a model; these tests
@@ -149,10 +174,16 @@ def test_run_without_review_writes_output_and_is_downloadable(client, docx_bytes
 
 
 def test_download_404s_before_finalize(client, docx_bytes):
-    upload = client.post("/api/upload", files={
-        "file": ("sample.docx", docx_bytes,
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-    })
+    upload = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                "sample.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
     doc_id = upload.json()["doc_id"]
     res = client.get(f"/api/run/{doc_id}/download")
     assert res.status_code == 404
@@ -167,13 +198,20 @@ def test_unknown_doc_id_404s(client):
 
 # ---------------------------------------------------------------- run: review
 
+
 def test_review_flow_reject_keeps_original_text(client, docx_bytes):
     client.post("/api/settings", json={"enable_review": True})
 
-    upload = client.post("/api/upload", files={
-        "file": ("sample.docx", docx_bytes,
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-    })
+    upload = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                "sample.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
     doc_id = upload.json()["doc_id"]
 
     # resolve_for_run probes a live Ollama to pick a model; these tests
@@ -199,9 +237,12 @@ def test_review_flow_reject_keeps_original_text(client, docx_bytes):
     assert item["edited_text"] == "Hello world"
     assert item["diff"]["original_ranges"]
 
-    submit = client.post(f"/api/run/{doc_id}/review", json={
-        "decisions": [{"paragraph_index": 0, "approved": False, "replacement_text": None}],
-    })
+    submit = client.post(
+        f"/api/run/{doc_id}/review",
+        json={
+            "decisions": [{"paragraph_index": 0, "approved": False, "replacement_text": None}],
+        },
+    )
     assert submit.status_code == 200
     assert submit.json()["stage"] == "done"
 
@@ -210,16 +251,23 @@ def test_review_flow_reject_keeps_original_text(client, docx_bytes):
 
 
 def test_review_endpoint_409s_when_not_awaiting_review(client, docx_bytes):
-    upload = client.post("/api/upload", files={
-        "file": ("sample.docx", docx_bytes,
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-    })
+    upload = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                "sample.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
     doc_id = upload.json()["doc_id"]
     res = client.get(f"/api/run/{doc_id}/review")
     assert res.status_code == 409
 
 
 # --------------------------------------------------------- credential redaction
+
 
 def test_get_settings_redacts_api_key(client, monkeypatch, tmp_path):
     """GET /api/settings must return the placeholder, not the real key."""
@@ -262,6 +310,7 @@ def test_settings_roundtrip_preserves_api_key(client, monkeypatch, tmp_path):
 
 # --------------------------------------------------------------- upload limits
 
+
 def test_upload_rejects_oversized_content_length(client):
     """A Content-Length header exceeding 50 MB must return HTTP 413."""
     res = client.post(
@@ -276,8 +325,13 @@ def test_upload_accepts_exactly_at_limit(client, docx_bytes):
     """A file at exactly 50 MB (Content-Length) must be accepted."""
     res = client.post(
         "/api/upload",
-        files={"file": ("sample.docx", docx_bytes,
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        files={
+            "file": (
+                "sample.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
         headers={"Content-Length": str(50 * 1024 * 1024)},
     )
     # Should pass the size check — may fail on content if the file isn't
@@ -297,6 +351,7 @@ def test_style_guide_preview_rejects_oversized(client):
 
 # ------------------------------------------------------ streaming cap (bypass)
 
+
 def test_read_capped_raises_during_read():
     """_read_capped raises HTTP 413 once the limit is exceeded mid-stream,
     before the full body is gathered."""
@@ -305,8 +360,10 @@ def test_read_capped_raises_during_read():
 
     class _FakeUpload:
         filename = "test.docx"
+
         def __init__(self, total: int):
             self._remain = total
+
         async def read(self, size: int = -1) -> bytes:
             if self._remain <= 0:
                 return b""
@@ -334,10 +391,16 @@ def test_upload_streaming_cap_catches_what_content_length_misses(client, monkeyp
     monkeypatch.setattr(server_mod, "_content_length_exceeds", lambda *a, **kw: False)
     monkeypatch.setattr(server_mod, "_MAX_UPLOAD_BYTES", 10)
 
-    res = client.post("/api/upload", files={
-        "file": ("test.docx", b"x" * 1000,
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-    })
+    res = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                "test.docx",
+                b"x" * 1000,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
     assert res.status_code == 413
 
 
@@ -348,7 +411,10 @@ def test_preview_file_streaming_cap(client, monkeypatch):
     monkeypatch.setattr(server_mod, "_content_length_exceeds", lambda *a, **kw: False)
     monkeypatch.setattr(server_mod, "_MAX_UPLOAD_BYTES", 10)
 
-    res = client.post("/api/style-guides/preview-file", files={
-        "file": ("test.pdf", b"x" * 1000, "application/pdf"),
-    })
+    res = client.post(
+        "/api/style-guides/preview-file",
+        files={
+            "file": ("test.pdf", b"x" * 1000, "application/pdf"),
+        },
+    )
     assert res.status_code == 413

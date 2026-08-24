@@ -102,8 +102,9 @@ def perform(
     # still repaired.
     normalised_text, normalise_counts = normalise(raw_text)
     if any(normalise_counts.values()):
-        log.info("Pre-pass repairs: %s",
-                 ", ".join(f"{k}={v}" for k, v in normalise_counts.items() if v))
+        log.info(
+            "Pre-pass repairs: %s", ", ".join(f"{k}={v}" for k, v in normalise_counts.items() if v)
+        )
 
     model_text = _cleanup_with_chunking(normalised_text, system_prompt, user_template)
 
@@ -155,6 +156,5 @@ def perform(
     if guard_result.ok:
         log.info("Cleanup complete (%d -> %d chars)", len(raw_text), len(cleaned_text))
     else:
-        log.info("Cleanup rejected for %s, raw text kept (%d chars)",
-                 base_name, len(cleaned_text))
+        log.info("Cleanup rejected for %s, raw text kept (%d chars)", base_name, len(cleaned_text))
     return data

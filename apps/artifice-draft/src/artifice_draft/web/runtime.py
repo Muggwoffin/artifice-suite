@@ -81,6 +81,7 @@ def load_settings() -> dict:
         return {}
     try:
         from secure_io import ensure_restricted
+
         ensure_restricted(_SETTINGS_PATH)
     except Exception:
         logger.warning(
@@ -129,9 +130,7 @@ def save_settings(patch: dict) -> dict:
         # One retry — transient ACL propagation is rare but real on Windows.
         write_private_json(_SETTINGS_PATH, current)
         if not is_restricted(_SETTINGS_PATH):
-            raise PermissionError(
-                f"Failed to secure settings file after retry: {_SETTINGS_PATH}"
-            )
+            raise PermissionError(f"Failed to secure settings file after retry: {_SETTINGS_PATH}")
 
     return current
 
@@ -190,6 +189,7 @@ def config_from_settings() -> AppConfig:
 
 def serialize_settings(cfg: AppConfig) -> dict:
     from artifice_draft.style_guides import list_guides
+
     return {
         "llm_provider": cfg.llm_provider.value,
         "editing_style": cfg.editing_style.value,
@@ -216,6 +216,7 @@ def serialize_settings(cfg: AppConfig) -> dict:
 # per-document state
 # --------------------------------------------------------------------------- #
 
+
 @dataclass
 class DocState:
     doc_id: str
@@ -234,6 +235,7 @@ class DocState:
 
     def __post_init__(self):
         import uuid
+
         if not self.session_id:
             self.session_id = f"{self.doc_id}-{uuid.uuid4().hex[:8]}"
 
@@ -282,14 +284,16 @@ def serialize_review_items(doc: DocState) -> list[dict]:
         if not edited or edited == orig:
             continue
         orig_ranges, edit_ranges = diff_ranges(orig, edited)
-        out.append({
-            "paragraph_index": item["paragraph_index"],
-            "original_text": orig,
-            "edited_text": edited,
-            "status": item["status"],
-            "approved": item["approved"],
-            "diff": {"original_ranges": orig_ranges, "edited_ranges": edit_ranges},
-        })
+        out.append(
+            {
+                "paragraph_index": item["paragraph_index"],
+                "original_text": orig,
+                "edited_text": edited,
+                "status": item["status"],
+                "approved": item["approved"],
+                "diff": {"original_ranges": orig_ranges, "edited_ranges": edit_ranges},
+            }
+        )
     return out
 
 
@@ -341,6 +345,7 @@ class RunState:
 
         def _worker():
             try:
+
                 def on_progress(p: PipelineProgress) -> None:
                     doc.events.put(p)
 
@@ -354,21 +359,28 @@ class RunState:
                 if cfg.enable_review:
                     doc.review_items = create_review_items(doc.edits, doc.paragraphs)
                     doc.stage = "awaiting_review"
-                    doc.events.put(PipelineProgress(
-                        total_paragraphs=len(doc.paragraphs),
-                        current_paragraph=len(doc.paragraphs),
-                        stage="awaiting_review", percentage=100.0,
-                        message="LLM processing complete — awaiting review",
-                    ))
+                    doc.events.put(
+                        PipelineProgress(
+                            total_paragraphs=len(doc.paragraphs),
+                            current_paragraph=len(doc.paragraphs),
+                            stage="awaiting_review",
+                            percentage=100.0,
+                            message="LLM processing complete — awaiting review",
+                        )
+                    )
                 else:
                     self._finalize(doc, decisions=None)
             except Exception as exc:  # noqa: BLE001 — reported to the client, not swallowed
                 logger.exception("Run failed for %s", doc_id)
                 doc.error = str(exc)
                 doc.stage = "error"
-                doc.events.put(PipelineProgress(
-                    stage="error", error=str(exc), message=f"Error: {exc}",
-                ))
+                doc.events.put(
+                    PipelineProgress(
+                        stage="error",
+                        error=str(exc),
+                        message=f"Error: {exc}",
+                    )
+                )
 
         doc.thread = threading.Thread(target=_worker, daemon=True)
         doc.thread.start()
@@ -419,10 +431,13 @@ class RunState:
         )
         doc.output_path = Path(actual_path)
         doc.stage = "done"
-        doc.events.put(PipelineProgress(
-            stage="done", percentage=100.0,
-            message=f"Done — saved to {doc.output_path.name}",
-        ))
+        doc.events.put(
+            PipelineProgress(
+                stage="done",
+                percentage=100.0,
+                message=f"Done — saved to {doc.output_path.name}",
+            )
+        )
 
 
 state = RunState()

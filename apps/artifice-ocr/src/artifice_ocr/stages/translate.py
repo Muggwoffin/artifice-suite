@@ -153,7 +153,9 @@ def perform(
 
     system_prompt = None
     if skip_translation:
-        log.info("Source already English — skipping translation, passing cleaned text through unchanged")
+        log.info(
+            "Source already English — skipping translation, passing cleaned text through unchanged"
+        )
         translated_text = cleaned_text
     else:
         prompts = get_translation_prompt(doc_type)
@@ -162,7 +164,9 @@ def perform(
 
         log.info("Translating with %s (doc_type=%s)", model_for("translation"), doc_type)
         translated_text = _translate_with_chunking(
-            cleaned_text, system_prompt, user_template,
+            cleaned_text,
+            system_prompt,
+            user_template,
         )
 
     # Confidence scoring — meaningless when nothing was actually translated.
@@ -170,7 +174,8 @@ def perform(
     if cfg("confidence_enabled") and not skip_translation:
         log.info("Evaluating confidence...")
         confidence = evaluate_confidence(
-            cleaned_text, translated_text,
+            cleaned_text,
+            translated_text,
             enable_self_assessment=True,
         )
 

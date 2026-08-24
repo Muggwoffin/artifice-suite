@@ -115,7 +115,8 @@ def _call_self_assessment(source_text: str, output_text: str) -> dict[str, Any]:
     raw = response.message.content.strip()
     # Extract JSON from response
     import json
-    match = re.search(r'\{[^}]+\}', raw)
+
+    match = re.search(r"\{[^}]+\}", raw)
     if match:
         return json.loads(match.group())
     return {"score": 50, "reasoning": "Could not parse self-assessment"}
@@ -159,6 +160,9 @@ def evaluate_confidence(
 
     log.info(
         "Confidence: %d/100 (heuristic=%d, llm=%d, markers=%d)",
-        overall, h_score, llm_score, len(markers),
+        overall,
+        h_score,
+        llm_score,
+        len(markers),
     )
     return result

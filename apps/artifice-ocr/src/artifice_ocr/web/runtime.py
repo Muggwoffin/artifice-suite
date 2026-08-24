@@ -38,7 +38,9 @@ IMAGE_DPI = 300
 IMAGE_MAX_LONG_EDGE = 3000
 
 _IMAGE_PASSTHROUGH_TYPES = {
-    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
 }
 
 
@@ -193,8 +195,12 @@ def reprocess_item(item: JobItem, from_stage: str, stages: list[str]) -> dict[st
                 "stage": "raw_ocr",
             }
             cleaned = run_cleanup_step(
-                raw_data, item.stem, output_dir,
-                skip_cleanup=False, resume=False, force=True,
+                raw_data,
+                item.stem,
+                output_dir,
+                skip_cleanup=False,
+                resume=False,
+                force=True,
             )
             item.results["cleaned"] = cleaned
             item.results.setdefault("cleaned", {})["cleaned_text"] = cleaned.get("cleaned_text", "")
@@ -207,8 +213,11 @@ def reprocess_item(item: JobItem, from_stage: str, stages: list[str]) -> dict[st
                 "stage": "cleaned",
             }
             translated = run_translate_step(
-                cleaned_data, item.stem, output_dir,
-                resume=False, force=True,
+                cleaned_data,
+                item.stem,
+                output_dir,
+                resume=False,
+                force=True,
             )
             item.results["translated"] = translated
             item.results.setdefault("translated", {})["translated_text"] = translated.get(
@@ -296,7 +305,8 @@ class RunState:
             p = Path(raw)
             if p.is_dir():
                 resolved.extend(
-                    str(f) for f in sorted(p.rglob("*"))
+                    str(f)
+                    for f in sorted(p.rglob("*"))
                     if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
                 )
             elif p.suffix.lower() in SUPPORTED_EXTENSIONS:
@@ -351,18 +361,13 @@ class RunState:
     def tropy_eligible_items(self, item_ids: list[str] | None) -> list[JobItem]:
         """Queue items that came from the Tropy JSON-LD bridge (carry
         origin = 'tropy-jsonld'), for export back."""
-        pool = (
-            [self.get(i) for i in item_ids] if item_ids is not None
-            else list(self.items)
-        )
+        pool = [self.get(i) for i in item_ids] if item_ids is not None else list(self.items)
         return [
-            i for i in pool
-            if i is not None and (i.source or {}).get("origin") == "tropy-jsonld"
+            i for i in pool if i is not None and (i.source or {}).get("origin") == "tropy-jsonld"
         ]
 
     # --------------------------------------------------------------- running
-    def start_run(self, *, stages: set[str], output_dir: str,
-                  force: bool) -> queue.Queue:
+    def start_run(self, *, stages: set[str], output_dir: str, force: bool) -> queue.Queue:
         if self.runner is not None and self.runner.is_running:
             raise RuntimeError("A run is already in progress")
         if not self.items:
@@ -383,12 +388,12 @@ class RunState:
 
         self.run_id = self.history.start_run(
             stages=[s for s in STAGES if s in stages],
-            output_dir=output_dir, total=len(self.items),
+            output_dir=output_dir,
+            total=len(self.items),
         )
 
         events: queue.Queue = queue.Queue()
-        self.runner = JobRunner(self.items, output_dir, stages=stages,
-                                force=force, events=events)
+        self.runner = JobRunner(self.items, output_dir, stages=stages, force=force, events=events)
         self.runner.start()
         return events
 
@@ -480,6 +485,7 @@ state = RunState()
 # PDF export (one-off, not wired into JobRunner — see HANDOFF_PDF_EXPORT_UI.md)
 # --------------------------------------------------------------------------- #
 
+
 class PdfExportState:
     """State for a single one-off PDF export operation.
 
@@ -500,8 +506,15 @@ pdf_export_state = PdfExportState()
 
 
 def start_pdf_export(
-    folder, *, stage, structure, output, manifest_path,
-    format="pdf", style="readable", bilingual=False,
+    folder,
+    *,
+    stage,
+    structure,
+    output,
+    manifest_path,
+    format="pdf",
+    style="readable",
+    bilingual=False,
 ) -> bool:
     """Returns False (caller should 409) if one is already running."""
     with pdf_export_state.lock:
@@ -528,16 +541,20 @@ def _run_pdf_export(folder, stage, structure, output, manifest_path, format, sty
 
     try:
         result_path = pdf_export.compile(
-            folder, stage=stage, structure=structure, output=output,
-            manifest_path=manifest_path, format=format, style=style,
+            folder,
+            stage=stage,
+            structure=structure,
+            output=output,
+            manifest_path=manifest_path,
+            format=format,
+            style=style,
             bilingual=bilingual,
             on_progress=on_progress,
         )
         with pdf_export_state.lock:
             pdf_export_state.output_path = str(result_path)
             pdf_export_state.status = "done"
-            pdf_export_state.events.put(
-                {"type": "done", "output_path": str(result_path)})
+            pdf_export_state.events.put({"type": "done", "output_path": str(result_path)})
     except Exception as exc:
         with pdf_export_state.lock:
             pdf_export_state.status = "error"

@@ -99,15 +99,18 @@ class TestPerform:
                 "artifice_ocr.stages.title.run_structured",
                 return_value=mock_result,
             ),
-            patch("artifice_ocr.stages.title.cfg", lambda k: {
-                "cleanup_model": "gemma4:12b",
-                "cleanup_backend": "ollama",
-                "ollama_url": "http://localhost:11434",
-                "lm_studio_url": "http://localhost:1234/v1",
-                "api_base_url": "https://api.openai.com/v1",
-                "api_key": "",
-                "title_max_chars": 120,
-            }.get(k)),
+            patch(
+                "artifice_ocr.stages.title.cfg",
+                lambda k: {
+                    "cleanup_model": "gemma4:12b",
+                    "cleanup_backend": "ollama",
+                    "ollama_url": "http://localhost:11434",
+                    "lm_studio_url": "http://localhost:1234/v1",
+                    "api_base_url": "https://api.openai.com/v1",
+                    "api_key": "",
+                    "title_max_chars": 120,
+                }.get(k),
+            ),
         ):
             from artifice_ocr.stages.title import perform
 
@@ -141,15 +144,18 @@ class TestPerform:
                 "artifice_ocr.stages.title.run_structured",
                 side_effect=StructuredOutputUnsupported("no structured output"),
             ),
-            patch("artifice_ocr.stages.title.cfg", lambda k: {
-                "cleanup_model": "gemma4:12b",
-                "cleanup_backend": "ollama",
-                "ollama_url": "http://localhost:11434",
-                "lm_studio_url": "http://localhost:1234/v1",
-                "api_base_url": "https://api.openai.com/v1",
-                "api_key": "",
-                "title_max_chars": 120,
-            }.get(k)),
+            patch(
+                "artifice_ocr.stages.title.cfg",
+                lambda k: {
+                    "cleanup_model": "gemma4:12b",
+                    "cleanup_backend": "ollama",
+                    "ollama_url": "http://localhost:11434",
+                    "lm_studio_url": "http://localhost:1234/v1",
+                    "api_base_url": "https://api.openai.com/v1",
+                    "api_key": "",
+                    "title_max_chars": 120,
+                }.get(k),
+            ),
         ):
             from artifice_ocr.stages.title import perform
 
@@ -171,15 +177,18 @@ class TestPerform:
                 "artifice_ocr.stages.title.run_structured",
                 side_effect=RuntimeError("connection refused"),
             ),
-            patch("artifice_ocr.stages.title.cfg", lambda k: {
-                "cleanup_model": "gemma4:12b",
-                "cleanup_backend": "ollama",
-                "ollama_url": "http://localhost:11434",
-                "lm_studio_url": "http://localhost:1234/v1",
-                "api_base_url": "https://api.openai.com/v1",
-                "api_key": "",
-                "title_max_chars": 120,
-            }.get(k)),
+            patch(
+                "artifice_ocr.stages.title.cfg",
+                lambda k: {
+                    "cleanup_model": "gemma4:12b",
+                    "cleanup_backend": "ollama",
+                    "ollama_url": "http://localhost:11434",
+                    "lm_studio_url": "http://localhost:1234/v1",
+                    "api_base_url": "https://api.openai.com/v1",
+                    "api_key": "",
+                    "title_max_chars": 120,
+                }.get(k),
+            ),
         ):
             from artifice_ocr.stages.title import perform
 
@@ -208,7 +217,7 @@ class TestPerform:
             data=valid_data,
             mode_used=StructuredOutputMode.PROMPTED,
             model="gemma4:12b",
-            raw='{}',
+            raw="{}",
             repaired=False,
         )
 
@@ -217,15 +226,18 @@ class TestPerform:
                 "artifice_ocr.stages.title.run_structured",
                 return_value=mock_result,
             ),
-            patch("artifice_ocr.stages.title.cfg", lambda k: {
-                "cleanup_model": "gemma4:12b",
-                "cleanup_backend": "ollama",
-                "ollama_url": "http://localhost:11434",
-                "lm_studio_url": "http://localhost:1234/v1",
-                "api_base_url": "https://api.openai.com/v1",
-                "api_key": "",
-                "title_max_chars": 120,
-            }.get(k)),
+            patch(
+                "artifice_ocr.stages.title.cfg",
+                lambda k: {
+                    "cleanup_model": "gemma4:12b",
+                    "cleanup_backend": "ollama",
+                    "ollama_url": "http://localhost:11434",
+                    "lm_studio_url": "http://localhost:1234/v1",
+                    "api_base_url": "https://api.openai.com/v1",
+                    "api_key": "",
+                    "title_max_chars": 120,
+                }.get(k),
+            ),
         ):
             from artifice_ocr.stages.title import perform
 
@@ -245,7 +257,7 @@ class TestPerform:
             data=valid_data,
             mode_used=StructuredOutputMode.PROMPTED,
             model="gemma4:12b",
-            raw='{}',
+            raw="{}",
             repaired=False,
         )
 
@@ -254,15 +266,18 @@ class TestPerform:
                 "artifice_ocr.stages.title.run_structured",
                 return_value=mock_result,
             ),
-            patch("artifice_ocr.stages.title.cfg", lambda k: {
-                "cleanup_model": "gemma4:12b",
-                "cleanup_backend": "ollama",
-                "ollama_url": "http://localhost:11434",
-                "lm_studio_url": "http://localhost:1234/v1",
-                "api_base_url": "https://api.openai.com/v1",
-                "api_key": "",
-                "title_max_chars": 120,
-            }.get(k)),
+            patch(
+                "artifice_ocr.stages.title.cfg",
+                lambda k: {
+                    "cleanup_model": "gemma4:12b",
+                    "cleanup_backend": "ollama",
+                    "ollama_url": "http://localhost:11434",
+                    "lm_studio_url": "http://localhost:1234/v1",
+                    "api_base_url": "https://api.openai.com/v1",
+                    "api_key": "",
+                    "title_max_chars": 120,
+                }.get(k),
+            ),
         ):
             from artifice_ocr.stages.title import perform
 
@@ -282,7 +297,7 @@ class TestPerform:
             data=valid_data,
             mode_used=StructuredOutputMode.PROMPTED,
             model="gemma4:12b",
-            raw='{}',
+            raw="{}",
             repaired=False,
         )
 
@@ -291,15 +306,18 @@ class TestPerform:
                 "artifice_ocr.stages.title.run_structured",
                 return_value=mock_result,
             ),
-            patch("artifice_ocr.stages.title.cfg", lambda k: {
-                "cleanup_model": "gemma4:12b",
-                "cleanup_backend": "ollama",
-                "ollama_url": "http://localhost:11434",
-                "lm_studio_url": "http://localhost:1234/v1",
-                "api_base_url": "https://api.openai.com/v1",
-                "api_key": "",
-                "title_max_chars": 120,
-            }.get(k)),
+            patch(
+                "artifice_ocr.stages.title.cfg",
+                lambda k: {
+                    "cleanup_model": "gemma4:12b",
+                    "cleanup_backend": "ollama",
+                    "ollama_url": "http://localhost:11434",
+                    "lm_studio_url": "http://localhost:1234/v1",
+                    "api_base_url": "https://api.openai.com/v1",
+                    "api_key": "",
+                    "title_max_chars": 120,
+                }.get(k),
+            ),
         ):
             from artifice_ocr.stages.title import perform
 
@@ -320,7 +338,7 @@ class TestPerform:
             data=valid_data,
             mode_used=StructuredOutputMode.JSON_OBJECT,
             model="gemma4:12b",
-            raw='{}',
+            raw="{}",
             repaired=True,
         )
 
@@ -329,15 +347,18 @@ class TestPerform:
                 "artifice_ocr.stages.title.run_structured",
                 return_value=mock_result,
             ),
-            patch("artifice_ocr.stages.title.cfg", lambda k: {
-                "cleanup_model": "gemma4:12b",
-                "cleanup_backend": "ollama",
-                "ollama_url": "http://localhost:11434",
-                "lm_studio_url": "http://localhost:1234/v1",
-                "api_base_url": "https://api.openai.com/v1",
-                "api_key": "",
-                "title_max_chars": 120,
-            }.get(k)),
+            patch(
+                "artifice_ocr.stages.title.cfg",
+                lambda k: {
+                    "cleanup_model": "gemma4:12b",
+                    "cleanup_backend": "ollama",
+                    "ollama_url": "http://localhost:11434",
+                    "lm_studio_url": "http://localhost:1234/v1",
+                    "api_base_url": "https://api.openai.com/v1",
+                    "api_key": "",
+                    "title_max_chars": 120,
+                }.get(k),
+            ),
         ):
             from artifice_ocr.stages.title import perform
 
@@ -369,7 +390,10 @@ class TestRunTitleStep:
             "cleaned_text": "Some text",
         }
         result = run_title_step(
-            cleaned_data, "doc", str(tmp_path), skip_title=True,
+            cleaned_data,
+            "doc",
+            str(tmp_path),
+            skip_title=True,
         )
         assert result["title"] == "doc"
         assert result.get("_skipped") is True
@@ -388,8 +412,11 @@ class TestRunTitleStep:
             "cleaned_text": "Some text",
         }
         result = run_title_step(
-            cleaned_data, "doc", str(tmp_path),
-            resume=True, force=False,
+            cleaned_data,
+            "doc",
+            str(tmp_path),
+            resume=True,
+            force=False,
         )
         assert result["title"] == "Previously Generated Title"
         assert result.get("_skipped") is True
@@ -410,18 +437,24 @@ class TestRunTitleStep:
             repaired=False,
         )
 
-        with patch(
-            "artifice_ocr.stages.title.run_structured",
-            return_value=mock_result,
-        ), patch("artifice_ocr.stages.title.cfg", lambda k: {
-            "cleanup_model": "gemma4:12b",
-            "cleanup_backend": "ollama",
-            "ollama_url": "http://localhost:11434",
-            "lm_studio_url": "http://localhost:1234/v1",
-            "api_base_url": "https://api.openai.com/v1",
-            "api_key": "",
-            "title_max_chars": 120,
-        }.get(k)):
+        with (
+            patch(
+                "artifice_ocr.stages.title.run_structured",
+                return_value=mock_result,
+            ),
+            patch(
+                "artifice_ocr.stages.title.cfg",
+                lambda k: {
+                    "cleanup_model": "gemma4:12b",
+                    "cleanup_backend": "ollama",
+                    "ollama_url": "http://localhost:11434",
+                    "lm_studio_url": "http://localhost:1234/v1",
+                    "api_base_url": "https://api.openai.com/v1",
+                    "api_key": "",
+                    "title_max_chars": 120,
+                }.get(k),
+            ),
+        ):
             from artifice_ocr.pipeline import run_title_step
 
             cleaned_data = {
@@ -429,8 +462,11 @@ class TestRunTitleStep:
                 "cleaned_text": "Some text",
             }
             result = run_title_step(
-                cleaned_data, "doc", str(tmp_path),
-                resume=True, force=True,
+                cleaned_data,
+                "doc",
+                str(tmp_path),
+                resume=True,
+                force=True,
             )
             assert result["title"] == "Fresh Title"
             assert result.get("_skipped") is not True  # not skipped — it ran

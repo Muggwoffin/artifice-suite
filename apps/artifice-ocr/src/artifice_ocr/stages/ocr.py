@@ -57,13 +57,13 @@ def _exif_orientation_matrix(orientation: int, width: float, height: float):
         return None
     w, h = width, height
     matrices = {
-        2: fitz.Matrix(-1, 0, 0, 1, w, 0),          # mirrored horizontal
-        3: fitz.Matrix(1, 1).prerotate(180),         # rotated 180°
-        4: fitz.Matrix(1, 0, 0, -1, 0, h),           # mirrored vertical
-        5: fitz.Matrix(0, 1, 1, 0, 0, 0),            # mirrored + rotated 270°
-        6: fitz.Matrix(1, 1).prerotate(90),          # rotated 90° CW
-        7: fitz.Matrix(0, -1, -1, 0, h, w),          # mirrored + rotated 90° CW
-        8: fitz.Matrix(1, 1).prerotate(270),         # rotated 270° CW
+        2: fitz.Matrix(-1, 0, 0, 1, w, 0),  # mirrored horizontal
+        3: fitz.Matrix(1, 1).prerotate(180),  # rotated 180°
+        4: fitz.Matrix(1, 0, 0, -1, 0, h),  # mirrored vertical
+        5: fitz.Matrix(0, 1, 1, 0, 0, 0),  # mirrored + rotated 270°
+        6: fitz.Matrix(1, 1).prerotate(90),  # rotated 90° CW
+        7: fitz.Matrix(0, -1, -1, 0, h, w),  # mirrored + rotated 90° CW
+        8: fitz.Matrix(1, 1).prerotate(270),  # rotated 270° CW
     }
     return matrices.get(orientation)
 
@@ -161,7 +161,9 @@ def _pdf_to_page_images(pdf_path: Path, orientation: int = 1) -> list[Path]:
     return page_images
 
 
-def _pdf_single_page_image(pdf_path: Path, page_index: int, orientation: int = 1) -> tuple[Path, int]:
+def _pdf_single_page_image(
+    pdf_path: Path, page_index: int, orientation: int = 1
+) -> tuple[Path, int]:
     """Render one page of a PDF. Returns (temp PNG path, total page count).
 
     Used when a caller addresses pages individually — Tropy stores one row per
@@ -174,8 +176,7 @@ def _pdf_single_page_image(pdf_path: Path, page_index: int, orientation: int = 1
     try:
         if not 0 <= page_index < total:
             raise ValueError(
-                f"Page {page_index + 1} out of range for {pdf_path.name} "
-                f"({total} page(s))"
+                f"Page {page_index + 1} out of range for {pdf_path.name} ({total} page(s))"
             )
         page = doc[page_index]
         zoom = fitz.Matrix(200 / 72, 200 / 72)
@@ -208,9 +209,7 @@ def perform(
     """
     path = Path(input_path).resolve()
     if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
-        raise ValueError(
-            f"Unsupported file type: {path.suffix}. Supported: {SUPPORTED_EXTENSIONS}"
-        )
+        raise ValueError(f"Unsupported file type: {path.suffix}. Supported: {SUPPORTED_EXTENSIONS}")
 
     log.info("Starting OCR for %s", path.name)
 
@@ -257,21 +256,23 @@ def perform(
             json_path = json_dir / f"{base_name}.json"
             json_path.parent.mkdir(parents=True, exist_ok=True)
             with open(json_path, "w", encoding="utf-8") as f:
-                json.dump({
-                    "source_file": str(path),
-                    "stage": "raw_ocr",
-                    "rejected_extracted_text": extracted_text,
-                    "engine": backend_for("vision"),
-                    "model": model,
-                    "ocr_prompt": OCR_PROMPT,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "page": page_number,
-                    "total_pages": num_pages,
-                    "guard": guard_result.to_dict(),
-                }, f, indent=2)
-            raise RuntimeError(
-                f"OCR rejected for {path.name}: {'; '.join(guard_result.reasons)}"
-            )
+                json.dump(
+                    {
+                        "source_file": str(path),
+                        "stage": "raw_ocr",
+                        "rejected_extracted_text": extracted_text,
+                        "engine": backend_for("vision"),
+                        "model": model,
+                        "ocr_prompt": OCR_PROMPT,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "page": page_number,
+                        "total_pages": num_pages,
+                        "guard": guard_result.to_dict(),
+                    },
+                    f,
+                    indent=2,
+                )
+            raise RuntimeError(f"OCR rejected for {path.name}: {'; '.join(guard_result.reasons)}")
 
     base_output_dir = Path(output_dir)
     text_dir = base_output_dir / "raw_ocr" / "text"

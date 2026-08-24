@@ -103,10 +103,7 @@ def _resolve_with_tiers(installed: list[str], configured: str | None):
             tier=tier,
             configured=configured,
         )
-        if (
-            result.model_name is not None
-            or result.source is ResolutionSource.CONFIGURED_MISSING
-        ):
+        if result.model_name is not None or result.source is ResolutionSource.CONFIGURED_MISSING:
             return result
     return result  # the last NONE_AVAILABLE
 

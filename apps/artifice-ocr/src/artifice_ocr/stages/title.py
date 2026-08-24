@@ -48,9 +48,7 @@ class PageTitleSchema(BaseModel):
         max_length=120,
         description="Short archival title reflecting page content",
     )
-    language: str = Field(
-        ..., description="Detected source language ISO code of the page"
-    )
+    language: str = Field(..., description="Detected source language ISO code of the page")
 
 
 # ---------------------------------------------------------------------------
@@ -198,14 +196,16 @@ def perform(
     except (StructuredOutputUnsupported, SchemaValidationFailed) as exc:
         log.warning(
             "Title generation failed for %s: %s — falling back to basename",
-            base_name, exc,
+            base_name,
+            exc,
         )
         return _fallback_result(source_file, base_name, output_dir, error=str(exc))
 
     except Exception as exc:
         log.warning(
             "Title generation failed for %s: %s — falling back to basename",
-            base_name, exc,
+            base_name,
+            exc,
         )
         return _fallback_result(source_file, base_name, output_dir, error=str(exc))
 
@@ -216,7 +216,9 @@ def perform(
     # 1. Length cap (truncation, not retry)
     if len(title) > max_chars:
         log.warning(
-            "Title for %s exceeds %d chars — truncating", base_name, max_chars,
+            "Title for %s exceeds %d chars — truncating",
+            base_name,
+            max_chars,
         )
         title = title[:max_chars]
         guard_results["truncated"] = True
@@ -224,8 +226,7 @@ def perform(
     # 2. Accent check: warn but keep (generated content, not a transcription edit)
     if _UMLAUT.search(title) and cleaned_text and not _UMLAUT.search(cleaned_text[:2000]):
         log.warning(
-            "Title for %s introduces diacritics not present in source — "
-            "keeping title but flagging",
+            "Title for %s introduces diacritics not present in source — keeping title but flagging",
             base_name,
         )
         guard_results["accent_warning"] = True
@@ -237,7 +238,9 @@ def perform(
             base_name,
         )
         return _fallback_result(
-            source_file, base_name, output_dir,
+            source_file,
+            base_name,
+            output_dir,
             error="repetition loop: " + title,
         )
 
@@ -274,7 +277,8 @@ def perform(
 
     log.info(
         "Title generated for %s: %s",
-        base_name, output_data["title"],
+        base_name,
+        output_data["title"],
     )
     return output_data
 

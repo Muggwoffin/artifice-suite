@@ -228,9 +228,7 @@ def _resolve_auto(role: str, configured: str | None) -> _RoleResolution:
     return _RoleResolution(resolution.model_name, backend, resolution.source)
 
 
-def _resolve_local(
-    role: str, backend: str, configured: str | None
-) -> _RoleResolution:
+def _resolve_local(role: str, backend: str, configured: str | None) -> _RoleResolution:
     result = _probe(backend)
     installed = list(result.models) if result.reachable else []
     resolution = _resolve_with_tiers(role, installed, configured)
@@ -239,9 +237,7 @@ def _resolve_local(
     return _RoleResolution(resolution.model_name, backend, resolution.source)
 
 
-def _resolve_with_tiers(
-    role: str, installed: list[str], configured: str | None
-) -> ModelResolution:
+def _resolve_with_tiers(role: str, installed: list[str], configured: str | None) -> ModelResolution:
     """Call ``resolve_model`` across the hardware tiers, returning the first
     answer that is not ``NONE_AVAILABLE``.
 
@@ -300,8 +296,7 @@ def _failure(
         )
 
     vision_note = (
-        f"{label} requires a vision-capable model; a text-only model cannot "
-        "be substituted. "
+        f"{label} requires a vision-capable model; a text-only model cannot be substituted. "
         if role == "vision"
         else ""
     )

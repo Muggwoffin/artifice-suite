@@ -46,6 +46,7 @@ log = get_logger("pdf_export")
 # Style presets
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PDFStyle:
     font_body: str = "librebaskerville"
@@ -62,8 +63,12 @@ class PDFStyle:
 
 PDF_STYLES = {
     "readable": PDFStyle(font_size_body=12.0, font_size_heading=16.0, line_height=1.7),
-    "academic": PDFStyle(font_body="times", font_heading="times", font_size_body=10.0, show_provenance=False),
-    "compact": PDFStyle(font_size_body=9.0, font_size_heading=12.0, line_height=1.3, margin_top=30, margin_bottom=30),
+    "academic": PDFStyle(
+        font_body="times", font_heading="times", font_size_body=10.0, show_provenance=False
+    ),
+    "compact": PDFStyle(
+        font_size_body=9.0, font_size_heading=12.0, line_height=1.3, margin_top=30, margin_bottom=30
+    ),
 }
 
 
@@ -98,9 +103,15 @@ def _register_fonts() -> None:
 
     try:
         pdfmetrics.registerFont(TTFont("PlayfairDisplay", str(_FONTS_DIR / "PlayfairDisplay.ttf")))
-        pdfmetrics.registerFont(TTFont("PlayfairDisplay-Italic", str(_FONTS_DIR / "PlayfairDisplay-Italic.ttf")))
-        pdfmetrics.registerFont(TTFont("LibreBaskerville", str(_FONTS_DIR / "LibreBaskerville.ttf")))
-        pdfmetrics.registerFont(TTFont("LibreBaskerville-Italic", str(_FONTS_DIR / "LibreBaskerville-Italic.ttf")))
+        pdfmetrics.registerFont(
+            TTFont("PlayfairDisplay-Italic", str(_FONTS_DIR / "PlayfairDisplay-Italic.ttf"))
+        )
+        pdfmetrics.registerFont(
+            TTFont("LibreBaskerville", str(_FONTS_DIR / "LibreBaskerville.ttf"))
+        )
+        pdfmetrics.registerFont(
+            TTFont("LibreBaskerville-Italic", str(_FONTS_DIR / "LibreBaskerville-Italic.ttf"))
+        )
 
         pdfmetrics.registerFontFamily(
             "LibreBaskerville",
@@ -125,13 +136,28 @@ def _get_styles(style: PDFStyle | None = None):
     _register_fonts()
     use_custom = _FONTS_REGISTERED
 
-    _body_map = {"librebaskerville": ("LibreBaskerville", "Times-Roman"), "times": ("Times-Roman", "Times-Roman")}
-    _heading_map = {"playfairdisplay": ("PlayfairDisplay", "Times-Bold"), "times": ("Times-Bold", "Times-Bold")}
-    _italic_map = {"librebaskerville": ("LibreBaskerville-Italic", "Times-Italic"), "times": ("Times-Italic", "Times-Italic")}
+    _body_map = {
+        "librebaskerville": ("LibreBaskerville", "Times-Roman"),
+        "times": ("Times-Roman", "Times-Roman"),
+    }
+    _heading_map = {
+        "playfairdisplay": ("PlayfairDisplay", "Times-Bold"),
+        "times": ("Times-Bold", "Times-Bold"),
+    }
+    _italic_map = {
+        "librebaskerville": ("LibreBaskerville-Italic", "Times-Italic"),
+        "times": ("Times-Italic", "Times-Italic"),
+    }
 
-    body_font = _body_map.get(style.font_body, ("Times-Roman", "Times-Roman"))[0 if use_custom else 1]
-    body_italic = _italic_map.get(style.font_body, ("Times-Italic", "Times-Italic"))[0 if use_custom else 1]
-    heading_font = _heading_map.get(style.font_heading, ("Times-Bold", "Times-Bold"))[0 if use_custom else 1]
+    body_font = _body_map.get(style.font_body, ("Times-Roman", "Times-Roman"))[
+        0 if use_custom else 1
+    ]
+    body_italic = _italic_map.get(style.font_body, ("Times-Italic", "Times-Italic"))[
+        0 if use_custom else 1
+    ]
+    heading_font = _heading_map.get(style.font_heading, ("Times-Bold", "Times-Bold"))[
+        0 if use_custom else 1
+    ]
 
     styles = getSampleStyleSheet()
 
@@ -186,6 +212,7 @@ def _get_styles(style: PDFStyle | None = None):
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PageText:
     """One page of processed text destined for the PDF.
@@ -196,6 +223,7 @@ class PageText:
     per page within an output dir.  `section` groups pages under a heading
     when several items are combined into one PDF (batch export).
     """
+
     label: str
     text: str
     source_path: Path
@@ -208,6 +236,7 @@ class PageText:
 @dataclass
 class BilingualPageText(PageText):
     """One page of bilingual text: original (cleaned) + translated."""
+
     original_text: str = ""
     translated_text: str = ""
 
@@ -216,20 +245,19 @@ class BilingualPageText(PageText):
 # Natural sort
 # ---------------------------------------------------------------------------
 
+
 def _natural_sort_key(s: str) -> list:
     """Sort key that handles embedded numbers naturally.
 
     'page2' sorts before 'page10'.
     """
-    return [
-        int(part) if part.isdigit() else part.lower()
-        for part in re.split(r"(\d+)", s)
-    ]
+    return [int(part) if part.isdigit() else part.lower() for part in re.split(r"(\d+)", s)]
 
 
 # ---------------------------------------------------------------------------
 # Collect pages
 # ---------------------------------------------------------------------------
+
 
 def _load_manifest(path: Path) -> dict | None:
     """Load a manifest, normalising to the page-entry mapping.
@@ -356,28 +384,31 @@ def collect_folder(
                         matched_key = key
                         break
             else:
-                matched_key = next(
-                    (k for k, e in manifest.items() if e is entry), None)
+                matched_key = next((k for k, e in manifest.items() if e is entry), None)
 
             if entry:
-                pages.append(PageText(
-                    label=entry.get("item_title", txt_path.stem),
-                    text=txt_path.read_text(encoding="utf-8"),
-                    source_path=txt_path,
-                    page_number=entry.get("page_number"),
-                    item_title=entry.get("item_title"),
-                    # The full manifest key ("Item/page") is the true pipeline
-                    # stem — unique per page, so the structure cache cannot
-                    # collide across items sharing a page filename.
-                    stem=matched_key or rel_stem,
-                ))
+                pages.append(
+                    PageText(
+                        label=entry.get("item_title", txt_path.stem),
+                        text=txt_path.read_text(encoding="utf-8"),
+                        source_path=txt_path,
+                        page_number=entry.get("page_number"),
+                        item_title=entry.get("item_title"),
+                        # The full manifest key ("Item/page") is the true pipeline
+                        # stem — unique per page, so the structure cache cannot
+                        # collide across items sharing a page filename.
+                        stem=matched_key or rel_stem,
+                    )
+                )
             else:
-                pages.append(PageText(
-                    label=txt_path.stem,
-                    text=txt_path.read_text(encoding="utf-8"),
-                    source_path=txt_path,
-                    stem=rel_stem,
-                ))
+                pages.append(
+                    PageText(
+                        label=txt_path.stem,
+                        text=txt_path.read_text(encoding="utf-8"),
+                        source_path=txt_path,
+                        stem=rel_stem,
+                    )
+                )
 
         # Sort by page_number (None goes last)
         pages.sort(key=lambda p: (p.page_number is None, p.page_number or 0))
@@ -396,12 +427,14 @@ def collect_folder(
         # No manifest: natural-sort by filename
         txt_files.sort(key=lambda p: _natural_sort_key(p.name))
         for txt_path in txt_files:
-            pages.append(PageText(
-                label=txt_path.stem,
-                text=txt_path.read_text(encoding="utf-8"),
-                source_path=txt_path,
-                stem=txt_path.relative_to(primary_dir).with_suffix("").as_posix(),
-            ))
+            pages.append(
+                PageText(
+                    label=txt_path.stem,
+                    text=txt_path.read_text(encoding="utf-8"),
+                    source_path=txt_path,
+                    stem=txt_path.relative_to(primary_dir).with_suffix("").as_posix(),
+                )
+            )
 
     log.info("Collected %d page(s) from %s", len(pages), folder)
     return pages
@@ -410,6 +443,7 @@ def collect_folder(
 # ---------------------------------------------------------------------------
 # Collect pages by stem (batch export)
 # ---------------------------------------------------------------------------
+
 
 def collect_stems(
     stems: list[str],
@@ -465,32 +499,35 @@ def collect_stems(
         entry = stem_to_entry.get(stem) or stem_to_entry.get(Path(stem).stem)
         item_title = entry.get("item_title") if entry else None
 
-        pages.append(PageText(
-            label=Path(stem).name,
-            text=txt_path.read_text(encoding="utf-8"),
-            source_path=txt_path,
-            page_number=entry.get("page_number") if entry else None,
-            item_title=item_title,
-            stem=stem,
-            section=item_title or (stem.split("/")[0] if "/" in stem else None),
-        ))
+        pages.append(
+            PageText(
+                label=Path(stem).name,
+                text=txt_path.read_text(encoding="utf-8"),
+                source_path=txt_path,
+                page_number=entry.get("page_number") if entry else None,
+                item_title=item_title,
+                stem=stem,
+                section=item_title or (stem.split("/")[0] if "/" in stem else None),
+            )
+        )
 
     if skipped:
-        log.info("Skipped %d stem(s) with no processed text: %s",
-                 len(skipped), ", ".join(skipped[:5]))
+        log.info(
+            "Skipped %d stem(s) with no processed text: %s", len(skipped), ", ".join(skipped[:5])
+        )
     if len(stage_counts) > 1:
         # The stage fallback mixed sources — make it visible which stage
         # the pages actually came from.
         mix = ", ".join(f"{s}: {n}" for s, n in sorted(stage_counts.items()))
         log.info("Collected pages from mixed stages (%s)", mix)
-    log.info("Collected %d page(s) from %d stem(s) in %s",
-             len(pages), len(seen), output_dir)
+    log.info("Collected %d page(s) from %d stem(s) in %s", len(pages), len(seen), output_dir)
     return pages, skipped
 
 
 # ---------------------------------------------------------------------------
 # Collect bilingual pages
 # ---------------------------------------------------------------------------
+
 
 def collect_bilingual_folder(
     folder: str,
@@ -537,15 +574,17 @@ def collect_bilingual_folder(
                         break
 
             trans_path = translated_files.get(stem)
-            pages.append(BilingualPageText(
-                label=entry.get("item_title", stem) if entry else stem,
-                text=txt_path.read_text(encoding="utf-8"),
-                source_path=txt_path,
-                page_number=entry.get("page_number") if entry else None,
-                item_title=entry.get("item_title") if entry else None,
-                original_text=txt_path.read_text(encoding="utf-8"),
-                translated_text=trans_path.read_text(encoding="utf-8") if trans_path else "",
-            ))
+            pages.append(
+                BilingualPageText(
+                    label=entry.get("item_title", stem) if entry else stem,
+                    text=txt_path.read_text(encoding="utf-8"),
+                    source_path=txt_path,
+                    page_number=entry.get("page_number") if entry else None,
+                    item_title=entry.get("item_title") if entry else None,
+                    original_text=txt_path.read_text(encoding="utf-8"),
+                    translated_text=trans_path.read_text(encoding="utf-8") if trans_path else "",
+                )
+            )
 
         pages.sort(key=lambda p: (p.page_number is None, p.page_number or 0))
 
@@ -563,13 +602,15 @@ def collect_bilingual_folder(
         for stem in sorted_stems:
             txt_path = cleaned_files[stem]
             trans_path = translated_files.get(stem)
-            pages.append(BilingualPageText(
-                label=stem,
-                text=txt_path.read_text(encoding="utf-8"),
-                source_path=txt_path,
-                original_text=txt_path.read_text(encoding="utf-8"),
-                translated_text=trans_path.read_text(encoding="utf-8") if trans_path else "",
-            ))
+            pages.append(
+                BilingualPageText(
+                    label=stem,
+                    text=txt_path.read_text(encoding="utf-8"),
+                    source_path=txt_path,
+                    original_text=txt_path.read_text(encoding="utf-8"),
+                    translated_text=trans_path.read_text(encoding="utf-8") if trans_path else "",
+                )
+            )
 
     log.info("Collected %d bilingual page(s) from %s", len(pages), folder)
     return pages
@@ -588,6 +629,7 @@ def _find_text_dir(folder_path: Path, stage: str) -> Path | None:
 # ---------------------------------------------------------------------------
 # Structure pages
 # ---------------------------------------------------------------------------
+
 
 def structure_pages(
     pages: list[PageText],
@@ -626,15 +668,17 @@ def structure_pages(
         guard_ok = result.get("guard", {}).get("ok", True)
         if not guard_ok:
             on_rejected(page.label)
-        structured.append(PageText(
-            label=page.label,
-            text=result.get("structured_text", page.text),
-            source_path=page.source_path,
-            page_number=page.page_number,
-            item_title=page.item_title,
-            stem=page.stem,
-            section=page.section,
-        ))
+        structured.append(
+            PageText(
+                label=page.label,
+                text=result.get("structured_text", page.text),
+                source_path=page.source_path,
+                page_number=page.page_number,
+                item_title=page.item_title,
+                stem=page.stem,
+                section=page.section,
+            )
+        )
 
     return structured
 
@@ -667,15 +711,17 @@ def _structure_bilingual_pages(
         guard_ok = result.get("guard", {}).get("ok", True)
         if not guard_ok:
             on_rejected(page.label)
-        structured.append(BilingualPageText(
-            label=page.label,
-            text=result.get("structured_text", page.original_text),
-            source_path=page.source_path,
-            page_number=page.page_number,
-            item_title=page.item_title,
-            original_text=result.get("structured_text", page.original_text),
-            translated_text=page.translated_text,
-        ))
+        structured.append(
+            BilingualPageText(
+                label=page.label,
+                text=result.get("structured_text", page.original_text),
+                source_path=page.source_path,
+                page_number=page.page_number,
+                item_title=page.item_title,
+                original_text=result.get("structured_text", page.original_text),
+                translated_text=page.translated_text,
+            )
+        )
 
     return structured
 
@@ -683,6 +729,7 @@ def _structure_bilingual_pages(
 # ---------------------------------------------------------------------------
 # Compile (collect → structure → render)
 # ---------------------------------------------------------------------------
+
 
 def compile(
     folder: str,
@@ -726,8 +773,7 @@ def compile(
         on_progress(f"Found {len(bilingual_pages)} page(s)")
 
         if structure:
-            bilingual_pages = _structure_bilingual_pages(
-                bilingual_pages, on_progress=on_progress)
+            bilingual_pages = _structure_bilingual_pages(bilingual_pages, on_progress=on_progress)
 
         title = next((p.item_title for p in bilingual_pages if p.item_title), None)
         if output is None:
@@ -743,7 +789,9 @@ def compile(
             result_path = render_bilingual_markdown(bilingual_pages, output_path, title=title)
         else:
             on_progress("Rendering bilingual PDF...")
-            result_path = render_bilingual_pdf(bilingual_pages, output_path, title=title, style=style)
+            result_path = render_bilingual_pdf(
+                bilingual_pages, output_path, title=title, style=style
+            )
 
         on_progress(f"Done: {len(bilingual_pages)} page(s) -> {result_path}")
         return result_path
@@ -756,7 +804,9 @@ def compile(
 
     rejected: list[str] = []
     if structure:
-        pages = structure_pages(pages, on_progress=on_progress, on_rejected=lambda l: rejected.append(l))
+        pages = structure_pages(
+            pages, on_progress=on_progress, on_rejected=lambda l: rejected.append(l)
+        )
 
     title = next((p.item_title for p in pages if p.item_title), None)
     if output is None:
@@ -775,7 +825,9 @@ def compile(
         result_path = render_pdf(pages, output_path, title=title, style=style)
 
     if rejected:
-        on_progress(f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept")
+        on_progress(
+            f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept"
+        )
     on_progress(f"Done: {len(pages)} page(s) -> {result_path}")
     return result_path
 
@@ -783,6 +835,7 @@ def compile(
 # ---------------------------------------------------------------------------
 # Batch compile (queue selection / whole run -> one combined PDF)
 # ---------------------------------------------------------------------------
+
 
 def _safe_filename(name: str) -> str:
     """Strip characters Windows forbids in filenames."""
@@ -839,7 +892,8 @@ def compile_batch(
 
     on_progress(f"Collecting {len(stems)} item(s) from {output_dir}...")
     pages, skipped = collect_stems(
-        stems, output_dir=output_dir, stage=stage, manifest_path=manifest_path)
+        stems, output_dir=output_dir, stage=stage, manifest_path=manifest_path
+    )
     if skipped:
         shown = ", ".join(skipped[:5]) + ("..." if len(skipped) > 5 else "")
         on_progress(f"Skipped {len(skipped)} item(s) with no processed text: {shown}")
@@ -850,7 +904,8 @@ def compile_batch(
     rejected: list[str] = []
     if structure:
         pages = structure_pages(
-            pages, on_progress=on_progress,
+            pages,
+            on_progress=on_progress,
             on_rejected=lambda l: rejected.append(l),
             output_dir=output_dir,
         )
@@ -874,7 +929,9 @@ def compile_batch(
         result_path = render_pdf(pages, output_path, title=title, style=style)
 
     if rejected:
-        on_progress(f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept")
+        on_progress(
+            f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept"
+        )
     on_progress(f"Done: {len(pages)} page(s) -> {result_path}")
     return result_path
 
@@ -882,6 +939,7 @@ def compile_batch(
 # ---------------------------------------------------------------------------
 # Render PDF
 # ---------------------------------------------------------------------------
+
 
 def render_pdf(
     pages: list[PageText],
@@ -939,11 +997,9 @@ def render_pdf(
 
             # Check if this looks like a heading (short, possibly all caps or
             # starts with a salutation/date pattern)
-            is_heading = (
-                len(para) < 80 and (
-                    para.isupper() or
-                    re.match(r"^(Dear|Sir|Madam|Subject|RE:|Date:)", para, re.IGNORECASE) is not None
-                )
+            is_heading = len(para) < 80 and (
+                para.isupper()
+                or re.match(r"^(Dear|Sir|Madam|Subject|RE:|Date:)", para, re.IGNORECASE) is not None
             )
 
             if is_heading:
@@ -969,6 +1025,7 @@ def render_pdf(
 # ---------------------------------------------------------------------------
 # Render Markdown
 # ---------------------------------------------------------------------------
+
 
 def render_markdown(
     pages: list[PageText],
@@ -1005,6 +1062,7 @@ def render_markdown(
 # ---------------------------------------------------------------------------
 # Render bilingual PDF (two-column: original | translation)
 # ---------------------------------------------------------------------------
+
 
 def render_bilingual_pdf(
     pages: list[BilingualPageText],
@@ -1053,10 +1111,14 @@ def render_bilingual_pdf(
                 [[Paragraph(_escape_html(provenance), provenance_style)]],
                 colWidths=[usable_width],
             )
-            prov_table.setStyle(TableStyle([
-                ("SPAN", (0, 0), (-1, -1)),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]))
+            prov_table.setStyle(
+                TableStyle(
+                    [
+                        ("SPAN", (0, 0), (-1, -1)),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ]
+                )
+            )
             story.append(prov_table)
 
         orig_paras = [p.strip() for p in page.original_text.split("\n\n") if p.strip()]
@@ -1065,20 +1127,23 @@ def render_bilingual_pdf(
         paired = list(itertools.zip_longest(orig_paras, trans_paras, fillvalue=""))
 
         if paired:
-            table_data = [[
-                Paragraph(_escape_html(_clean_para(p)), body_style)
-                for p in row
-            ] for row in paired]
+            table_data = [
+                [Paragraph(_escape_html(_clean_para(p)), body_style) for p in row] for row in paired
+            ]
 
             table = Table(table_data, colWidths=[col_width, col_width])
-            table.setStyle(TableStyle([
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("GRID", (0, 0), (-1, -1), 0.5, "#cccccc"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ]))
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("GRID", (0, 0), (-1, -1), 0.5, "#cccccc"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ]
+                )
+            )
             story.append(table)
 
         if i < len(pages) - 1:
@@ -1092,6 +1157,7 @@ def render_bilingual_pdf(
 # ---------------------------------------------------------------------------
 # Render bilingual Markdown (pipe-table: original | translation)
 # ---------------------------------------------------------------------------
+
 
 def render_bilingual_markdown(
     pages: list[BilingualPageText],
@@ -1138,8 +1204,4 @@ def _clean_para(text: str) -> str:
 
 def _escape_html(text: str) -> str:
     """Escape text for reportlab Paragraph markup."""
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

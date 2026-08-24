@@ -218,11 +218,13 @@ def audit_translations(
         except (OSError, ValueError):
             continue
         if data.get("source_language") == "en" and not data.get("skipped_translation"):
-            affected.append({
-                "stem": str(json_file.relative_to(json_dir).with_suffix("")),
-                "source_file": data.get("source_file", ""),
-                "json_path": str(json_file),
-            })
+            affected.append(
+                {
+                    "stem": str(json_file.relative_to(json_dir).with_suffix("")),
+                    "source_file": data.get("source_file", ""),
+                    "json_path": str(json_file),
+                }
+            )
 
     if as_json:
         typer.echo(json_module.dumps(affected, indent=2))
@@ -240,7 +242,7 @@ def audit_translations(
             typer.echo(f"      source: {entry['source_file']}")
 
     typer.echo(
-        "\nRe-run these with --force (or the GUI/web \"Force re-run\" option) "
+        '\nRe-run these with --force (or the GUI/web "Force re-run" option) '
         "so the fixed translate stage regenerates them instead of reusing "
         "the existing output."
     )
@@ -248,22 +250,19 @@ def audit_translations(
 
 @app.command()
 def pipeline(
-    input_path: str = typer.Argument(
-        help="Path to image file or directory of images"
-    ),
+    input_path: str = typer.Argument(help="Path to image file or directory of images"),
     output_dir: str = typer.Option("output", help="Output directory"),
     skip_ocr: bool = typer.Option(False, "--skip-ocr", help="Skip the OCR stage"),
     skip_cleanup: bool = typer.Option(False, "--skip-cleanup", help="Skip the cleanup stage"),
     skip_translate: bool = typer.Option(
         False, "--skip-translate", help="Skip the translation stage"
     ),
-    force: bool = typer.Option(
-        False, "--force", help="Re-process even if outputs exist"
-    ),
+    force: bool = typer.Option(False, "--force", help="Re-process even if outputs exist"),
     document_type: str = typer.Option(
-        "default", "--doc-type",
+        "default",
+        "--doc-type",
         help="Document type (default, handwritten, typed_clean,"
-             " technical, formal, casual, multi_lang)",
+        " technical, formal, casual, multi_lang)",
     ),
     no_confidence: bool = typer.Option(False, "--no-confidence", help="Disable confidence scoring"),
 ):
@@ -276,10 +275,12 @@ def pipeline(
     from artifice_ocr.pipeline import run_pipeline
 
     # Apply CLI overrides to config
-    config.apply_overrides({
-        "document_type": document_type,
-        "confidence_enabled": not no_confidence,
-    })
+    config.apply_overrides(
+        {
+            "document_type": document_type,
+            "confidence_enabled": not no_confidence,
+        }
+    )
 
     # Resolve the models/backends for the stages that will actually run.
     # Fails fast with a legible message instead of a provider 404.
@@ -295,9 +296,9 @@ def pipeline(
     p = Path(input_path)
     if p.is_dir():
         from artifice_ocr.stages.ocr import SUPPORTED_EXTENSIONS
+
         files = sorted(
-            f for f in p.iterdir()
-            if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
+            f for f in p.iterdir() if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
         )
         if not files:
             typer.echo(f"No supported files in {input_path}", err=True)
@@ -305,7 +306,8 @@ def pipeline(
 
         typer.echo(f"Running batch pipeline for {len(files)} file(s)...")
         result = run_pipeline(
-            input_path, output_dir=output_dir,
+            input_path,
+            output_dir=output_dir,
             skip_translate=skip_translate,
             skip_cleanup=skip_cleanup,
             skip_ocr=skip_ocr,
@@ -324,7 +326,8 @@ def pipeline(
 
         typer.echo(f"Running pipeline for {input_path} ({', '.join(stages_done)})...")
         result = run_pipeline(
-            input_path, output_dir=output_dir,
+            input_path,
+            output_dir=output_dir,
             skip_translate=skip_translate,
             skip_cleanup=skip_cleanup,
             skip_ocr=skip_ocr,
@@ -363,8 +366,7 @@ def tropy_import(
     total_photos = sum(len(i.photos) for i in preview.items)
     total_missing = sum(1 for i in preview.items for p in i.photos if p.missing)
     typer.echo(
-        f"Photos: {total_photos}"
-        + (f"  ({total_missing} missing)" if total_missing else "")
+        f"Photos: {total_photos}" + (f"  ({total_missing} missing)" if total_missing else "")
     )
 
     if preview.warnings:
@@ -390,8 +392,12 @@ def tropy_import(
 
 @app.command("tropy-export")
 def tropy_export(
-    output: str = typer.Option("artifice-ocr-tropy.jsonld", "--output", "-o",
-                                help="Output file path for the JSON-LD export"),
+    output: str = typer.Option(
+        "artifice-ocr-tropy.jsonld",
+        "--output",
+        "-o",
+        help="Output file path for the JSON-LD export",
+    ),
     stage: str = typer.Option(
         "cleaned", "--stage", help="Text stage: raw_ocr, cleaned, translated"
     ),
@@ -446,23 +452,21 @@ def compile_pdf(
     stage: str = typer.Option("cleaned", "--stage", help="cleaned|raw_ocr|translated"),
     output: str = typer.Option(None, "--output", help="Output PDF/MD path"),
     structure: bool = typer.Option(
-        None, "--structure/--no-structure",
+        None,
+        "--structure/--no-structure",
         help="Apply structuring pass (bilingual defaults to off)",
     ),
-    manifest: str = typer.Option(
-        None, "--manifest", help="Explicit tropy_manifest.json path"
-    ),
-    format: str = typer.Option(
-        "pdf", "--format", help="Output format: pdf or md"
-    ),
+    manifest: str = typer.Option(None, "--manifest", help="Explicit tropy_manifest.json path"),
+    format: str = typer.Option("pdf", "--format", help="Output format: pdf or md"),
     style: str = typer.Option(
-        "readable", "--style",
+        "readable",
+        "--style",
         help="PDF style preset: readable, academic, compact",
     ),
     bilingual: bool = typer.Option(
-        False, "--bilingual",
-        help="Two-column original + translation"
-             " (uses cleaned + translated stages)",
+        False,
+        "--bilingual",
+        help="Two-column original + translation (uses cleaned + translated stages)",
     ),
 ):
     """Compile processed text files into a single readable PDF or Markdown file.
@@ -515,9 +519,7 @@ def export_ludwiglang(
         help="Collection name (subdirectory under output/cleaned/text/)"
     ),
     output_dir: str = typer.Option("output", help="Pipeline output directory"),
-    medium: str = typer.Option(
-        "print", help="Document medium: typed, handwritten, print"
-    ),
+    medium: str = typer.Option("print", help="Document medium: typed, handwritten, print"),
     author: str = typer.Option("", help="Author (overrides tropy manifest)"),
     date: str = typer.Option("", help="Date (overrides tropy manifest)"),
     page_markers: bool = typer.Option(
@@ -527,9 +529,9 @@ def export_ludwiglang(
         False, "--skip-language-gate", help="Skip the German-language check"
     ),
     output: str = typer.Option(
-        None, "--output",
-        help="Explicit output .md path"
-             " (default: output/ludwiglang/<collection>/text.md)",
+        None,
+        "--output",
+        help="Explicit output .md path (default: output/ludwiglang/<collection>/text.md)",
     ),
 ):
     """Export a cleaned collection as a LudwigLang-importable .md file.
@@ -546,8 +548,7 @@ def export_ludwiglang(
         cleaned_root = Path(collection)
         if not cleaned_root.exists():
             raise typer.BadParameter(
-                f"Collection not found at output/cleaned/text/{collection} "
-                f"nor at {collection}"
+                f"Collection not found at output/cleaned/text/{collection} nor at {collection}"
             )
 
     manifest = _read_manifest(Path(output_dir))
@@ -577,9 +578,9 @@ def _print_batch_summary(result: dict, output_dir: str):
     batch_elapsed = result.get("batch_elapsed", 0)
     batch_size = result.get("batch_size", len(files))
 
-    typer.echo(f"\n{'='*60}")
+    typer.echo(f"\n{'=' * 60}")
     typer.echo(f"  BATCH SUMMARY — {batch_size} file(s)  ({batch_elapsed:.1f}s)")
-    typer.echo(f"{'='*60}")
+    typer.echo(f"{'=' * 60}")
 
     for fpath, data in files.items():
         name = Path(fpath).name
@@ -611,7 +612,7 @@ def _print_batch_summary(result: dict, output_dir: str):
 
         typer.echo(line)
 
-    typer.echo(f"{'='*60}")
+    typer.echo(f"{'=' * 60}")
     typer.echo(f"Output: {output_dir}/")
 
 
