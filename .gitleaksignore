@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# =============================================================================
+# gitleaks allowlist — deliberately suppressed findings
+# =============================================================================
+# Entries are FINGERPRINTS (commit:file:rule:line), not paths, so suppression
+# is pinned to the exact historical blob. A later real secret in the same file
+# produces a different fingerprint and is still reported. Never add a bare path
+# here — that would blind the scanner to the whole file.
+#
+# WHY THIS FILE EXISTS
+#
+# `gitleaks detect` scans history and reported six findings, all of them fake
+# tokens in artifice-transcribe's token-redaction tests. Those tests exist
+# precisely to prove that a token is redacted before it reaches a log, the job
+# history, or /health/detailed — so they must contain something token-shaped.
+# The values are obviously synthetic:
+#
+#   hf_abcdefghijklmnopqrstuvwxyz123456   the alphabet
+#   hf_aaaaaaaaaaaaaaaaaaaaa              repeated 'a'
+#   sk-bbbbbbbbbbbbbbbbbbbbb              repeated 'b'
+#   hf_real-secret-token-12345            a placeholder that says so
+#
+# A scan that always reports six findings trains people to skip reading it,
+# which is how a real leak gets waved through. Six expected findings is not a
+# baseline; it is noise that defeats the gate.
+#
+# BEFORE ADDING TO THIS FILE
+#
+# Read the matched value in the source first and confirm it is synthetic. If a
+# finding cannot be shown to be fake, it is not a false positive — rotate the
+# credential and rewrite the history instead of listing it here.
+#
+# RELATED, AND NOT FIXED BY THIS FILE
+#
+# CI's gitleaks step passes for an unrelated reason: actions/checkout@v7 makes a
+# shallow clone, so `gitleaks detect` scans one commit rather than the branch's
+# history, and would not catch a secret introduced in an earlier commit of a PR.
+# Setting `fetch-depth: 0` on that job makes the gate real — and needs this file
+# in place first, or the six fixtures below would turn it permanently red.
+# =============================================================================
+
+# --- test_download.py: redact_token() unit tests -----------------------------
+# Synthetic HF/OpenAI tokens fed to the redaction helper and asserted absent
+# from its output.
+8eb1371ed7fd591a9841be410112f9e711b0c364:apps/artifice-transcribe/tests/test_download.py:generic-api-key:442
+6d435c359b76631457c8a5e07b3080cd4716debb:apps/artifice-transcribe/tests/test_download.py:generic-api-key:442
+0c8d5753bd8fdc5212d3acf46498929dfc5b8774:apps/artifice-transcribe/tests/test_download.py:generic-api-key:105
+a47f2cd79c1e2d112dbf10552cc27706ac85fab3:apps/artifice-transcribe/tests/test_download.py:generic-api-key:105
+
+# --- test_security.py: GET /api/v1/config redaction --------------------------
+# Asserts hf_token is never returned verbatim by the config endpoint.
+6380d70d3f00baf2f884a62150cab4048b2481dc:apps/artifice-transcribe/tests/test_security.py:generic-api-key:400
+de345c16921e74dce72a53e234618b0b5beb81cb:apps/artifice-transcribe/tests/test_security.py:generic-api-key:410
