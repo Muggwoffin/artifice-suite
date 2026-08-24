@@ -1,6 +1,6 @@
 [project]
 name = "artifice-model-harness"
-version = "0.2.0"
+version = "0.3.0"
 description = "Shared BYOM connector and schema-validated call surface for Ollama, LM Studio, and generic OpenAI-compatible endpoints."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -48,6 +48,11 @@ packages = ["src/model_harness"]
 [dependency-groups]
 dev = []
 
+# The live_smoke guard is declared here AND in the root pyproject.toml,
+# deliberately.  pytest selects exactly one config file (from the rootdir it
+# computes) — it does not merge them.  This section is what makes the
+# package-scoped invocation work (`uv run pytest packages/model-harness`); the
+# root copy covers repo-root invocations.  Change the two sections together.
 [tool.pytest.ini_options]
 markers = [
     "live_smoke: live smoke test requiring a running Ollama server (run with --live-smoke)",

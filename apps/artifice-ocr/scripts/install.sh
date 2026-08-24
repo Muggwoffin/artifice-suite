@@ -60,13 +60,14 @@ fi
 
 # --- ensure uv is available (pinned checksum verification) --------------------
 #
-# MAINTAINER: Replace the checksum below with the actual SHA256 of the
-# installer BEFORE EVERY RELEASE. To obtain it:
-#
-#   curl -fsSL https://astral.sh/uv/install.sh | sha256sum
+# The uv installer is fetched from a version-pinned URL, so its bytes are
+# immutable and the checksum below changes only when UV_VERSION is bumped.
+# When bumping, change UV_VERSION and EXPECTED_HASH together and re-verify
+# the hash against the pinned release before committing.
 
-UV_INSTALLER_URL="https://astral.sh/uv/install.sh"
-EXPECTED_HASH="a7e3924ea1cd06bf1518c577d635c624ae2e2db030e0fc8ff8cf426224384e17"
+UV_VERSION="0.12.5"
+UV_INSTALLER_URL="https://astral.sh/uv/${UV_VERSION}/install.sh"
+EXPECTED_HASH="504511fbbbd811aeaba6738abc79408956b6c7da0ca35437b3dcc24a41efc111"
 
 if ! command -v uv &>/dev/null; then
     banner "Installing uv (Python package manager)"
@@ -106,9 +107,12 @@ If you are the maintainer:
 
     rm -f "$uv_installer"
 
-    # The uv installer adds ~/.cargo/bin to PATH via shell profile, but that
-    # only takes effect in new sessions. Source it for the current one.
-    export PATH="$HOME/.cargo/bin:$PATH"
+    # uv installs itself to ~/.local/bin (honouring XDG_BIN_HOME), not
+    # ~/.cargo/bin --- that path is a legacy of uv's old cargo-based
+    # installer.  The profile update only takes effect in new sessions, so
+    # prepend both directories now for the current one: the modern location
+    # first, ~/.cargo/bin retained as a fallback for older existing installs.
+    export PATH="${XDG_BIN_HOME:-$HOME/.local/bin}:$HOME/.cargo/bin:$PATH"
 
     if ! command -v uv &>/dev/null; then
         die "uv was installed but is not on PATH. Try restarting your terminal and running this script again."
@@ -155,8 +159,13 @@ if ! uv tool install "$extra_spec"; then
     die "Failed to install artifice-ocr. Check the output above for details."
 fi
 
-# Resolve the installed entry-point location.
-entry_point="$HOME/.cargo/bin/artifice-ocr-web"
+# Resolve the installed entry-point location.  uv tool install places
+# executables in the uv tool bin directory (~/.local/bin, or $XDG_BIN_HOME
+# if set), with ~/.cargo/bin retained as a fallback for older installs.
+entry_point="${XDG_BIN_HOME:-$HOME/.local/bin}/artifice-ocr-web"
+if [ ! -x "$entry_point" ]; then
+    entry_point="$HOME/.cargo/bin/artifice-ocr-web"
+fi
 if [ ! -x "$entry_point" ]; then
     entry_point="$(command -v artifice-ocr-web 2>/dev/null || true)"
 fi

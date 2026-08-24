@@ -1879,6 +1879,35 @@ of them propagated into a wrong instruction given to an agent.
    file no longer makes routine pytest runs error. It remains a live-server script rather than a
    normal CI test.
 
+### Closed by re-measurement on 2026-08-24
+
+Four entries below were measured again while scoping the 0.3.0 release. All four were true when
+written and are no longer true. Struck rather than deleted, per this list's own convention.
+
+1. [x] ~~**Part IV item 0 — secret files are unprotected on Windows.**~~ **Closed.** Phase 6 item 3
+   records the `packages/secure-io` implementation *and* its native-Windows verification. This
+   entry and that one contradicted each other for weeks; Phase 6 was the current one.
+2. [x] ~~**Part IV item 4 — delete the committed `.idea/` directories, 8 files still tracked.**~~
+   **Closed.** `git ls-files | grep -c "\.idea/"` returns **0**.
+3. [x] ~~**Step 9 item 1a — remove every emoji from `artifice-ocr`.**~~ **Closed.** A Unicode-range
+   grep over `apps/artifice-ocr/src/artifice_ocr/web/` returns no matches.
+4. [x] ~~**Step 9 — the three static apps must be ported to Jinja.**~~ **Closed.** All four apps now
+   carry a `web/templates/` tree (`ocr` 3, `draft` 3, `transcribe` 3, `graph` 4). The structural
+   obstacle that made "give every app an About page" a phase rather than a chore is gone.
+
+**Phase 6 item 1 is stale in the more dangerous direction and is NOT struck here, because it reads
+as a standing prohibition.** It says frozen bundles "are ruled out, and the reason is load-bearing…
+Do not reopen this without a new reason." That decision **was** reopened on 2026-08-06 and reversed
+with exactly the new reason its own text invited: the ASR stack is what makes freezing untenable,
+and it lives in *one* app. `ocr`, `draft`, `graph` and `hub` all freeze today — four `.spec` files
+and a shared `packages/shared-ui/shared_ui/window.py` — while `artifice-transcribe` stays a `uv`
+install for precisely the reason Phase 6 gives. The paragraph's own caveat ("a frozen bundle
+remains *technically* viable for `ocr`, `draft` and `graph`") anticipated the outcome.
+
+**Read Phase 6 item 1 as history, not as policy.** A live prohibition that has already been
+overturned is worse than a stale fact: it invites the next session to undo shipped work in the
+belief it is enforcing a rule.
+
 ### Open
 
 0. **Secret files are unprotected on Windows.** `artifice-ocr/config.py` and

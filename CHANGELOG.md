@@ -8,6 +8,8 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-24
+
 ### Added
 - **Auto-generated page titles in `artifice-ocr`.** New optional pipeline stage
   (`stages/title.py`) generates short archival titles (≤120 chars) for each OCR'd

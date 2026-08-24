@@ -15,8 +15,8 @@ authors:
     orcid: "https://orcid.org/0000-0001-6019-3578"
 repository-code: "https://github.com/Muggwoffin/artifice-suite"
 license: AGPL-3.0-or-later
-version: 0.2.0
-date-released: "2026-07-27"
+version: 0.3.0
+date-released: "2026-08-24"
 keywords:
   - digital humanities
   - optical character recognition

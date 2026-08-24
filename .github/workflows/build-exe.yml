@@ -41,12 +41,18 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.os }} — ${{ github.event.inputs.app || 'artifice-ocr' }}
+    name: ${{ matrix.os }} — ${{ matrix.app }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false     # a Windows failure should not hide a Linux success
       matrix:
         os: [windows-latest, ubuntu-latest]
+        # A tag push has no `inputs.app`, so it must build every app; a manual
+        # dispatch builds exactly the one selected. `fromJSON` over a
+        # conditional string is the standard per-trigger matrix idiom.
+        app: ${{ fromJSON(github.event_name == 'workflow_dispatch'
+              && format('["{0}"]', inputs.app)
+              || '["artifice-ocr","artifice-draft","artifice-graph","artifice-hub"]') }}
 
     steps:
       # v7 to match every other workflow. Dependabot's checkout/setup-uv bumps
@@ -73,7 +79,7 @@ jobs:
         # workspace packages the Hub depends on; the separate pip install is
         # the Hub package itself.
         run: |
-          APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
+          APP="${{ matrix.app }}"
           case "$APP" in
             artifice-draft) uv sync --extra draft-web ;;
             artifice-graph) uv sync --extra graph-web ;;
@@ -89,7 +95,7 @@ jobs:
         # collection for prompts, fonts, static, templates, configs and the
         # shared_ui assets. A bare invocation silently produces a binary that
         # starts and then 404s every asset.
-        run: uv run --with pyinstaller pyinstaller --clean --noconfirm apps/${{ github.event.inputs.app || 'artifice-ocr' }}/${{ github.event.inputs.app || 'artifice-ocr' }}.spec
+        run: uv run --with pyinstaller pyinstaller --clean --noconfirm apps/${{ matrix.app }}/${{ matrix.app }}.spec
 
       - name: Smoke-test the built binary (Linux)
         if: runner.os == 'Linux'
@@ -117,7 +123,7 @@ jobs:
         #  - It has no shared masthead (no navByom); check for app-grid instead
         #  - pkill pattern uses dist/$APP to match both onedir and onefile paths
         run: |
-          APP="${{ github.event.inputs.app || 'artifice-ocr' }}"
+          APP="${{ matrix.app }}"
           case "$APP" in
             artifice-draft) API="/api/settings"; APP_CSS="/static/css/app.css" ;;
             artifice-graph) API="/api/state"; APP_CSS="/static/app.css" ;;
@@ -174,7 +180,7 @@ jobs:
         #  - It needs longer startup time for self-extraction (Start-Sleep 25)
         #  - It has no shared masthead (no navByom); check for app-grid instead
         run: |
-          $app = "${{ github.event.inputs.app || 'artifice-ocr' }}"
+          $app = "${{ matrix.app }}"
           $apiPath = switch ($app) {
             "artifice-draft" { "/api/settings" }
             "artifice-graph" { "/api/state" }
@@ -233,7 +239,7 @@ jobs:
       - name: Upload the bundle
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.inputs.app || 'artifice-ocr' }}-${{ runner.os }}
+          name: ${{ matrix.app }}-${{ runner.os }}
           # Three paths cover both packaging modes without per-app conditionals:
           #   dist/$APP/       — onedir subdirectory (ocr, draft, graph)
           #   dist/$APP        — onefile bare binary (hub on Linux)
@@ -241,8 +247,102 @@ jobs:
           # upload-artifact includes whichever paths exist; if-no-files-found
           # only triggers when NONE of them match.
           path: |
-            dist/${{ github.event.inputs.app || 'artifice-ocr' }}/
-            dist/${{ github.event.inputs.app || 'artifice-ocr' }}
-            dist/${{ github.event.inputs.app || 'artifice-ocr' }}.exe
+            dist/${{ matrix.app }}/
+            dist/${{ matrix.app }}
+            dist/${{ matrix.app }}.exe
           if-no-files-found: error
           retention-days: 30
+
+  # Attach the frozen bundles to the GitHub Release, on tags only.
+  #
+  # This is a separate job rather than extra steps on `build` for a reason:
+  # the build job runs a PyInstaller freeze of third-party code and is
+  # deliberately held to `contents: read` — it must not carry a write-capable
+  # token while executing arbitrary build tooling. Only this job, which does
+  # nothing but archive already-built artifacts and upload them, holds
+  # `contents: write`, and only at the job level.
+  attach-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read   # download-artifact needs this once job-level perms zero the defaults
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      # A release asset must be a single file, and the onedir builds (ocr,
+      # draft, graph) are directories — so archive each bundle into one tarball
+      # (Linux) or zip (Windows). The Hub is onefile (a bare binary) but is
+      # archived the same way for a uniform asset set and a name a user can
+      # make sense of. `${{ github.ref_name }}` supplies the version.
+      - name: Archive each bundle into a single release asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          VER="${{ github.ref_name }}"
+          cd "$GITHUB_WORKSPACE"
+
+          for app in artifice-ocr artifice-draft artifice-graph artifice-hub; do
+            for os in Linux Windows; do
+              (
+                cd "dist/$app-$os"
+                # upload-artifact may or may not have preserved the `dist/`
+                # prefix; step inside it if so, so the archive opens to the
+                # bundle (onedir folder or bare onefile binary), not a dist/ dir.
+                [ -d dist ] && cd dist
+                if [ "$os" = "Linux" ]; then
+                  tar -czf "$GITHUB_WORKSPACE/$app-Linux-$VER.tar.gz" .
+                else
+                  zip -qr "$GITHUB_WORKSPACE/$app-Windows-$VER.zip" .
+                fi
+              )
+            done
+          done
+
+          ls -l "$GITHUB_WORKSPACE"
+
+      # `gh` is preinstalled on the runner; GH_TOKEN carries the job's
+      # contents:write scope to the CLI.
+      - name: Upload assets to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VER="${{ github.ref_name }}"
+
+          # Why wait for the release instead of creating it: the Release is
+          # created by a DIFFERENT workflow — release.yml's `github-release`
+          # job — which fires on the same tag. Two workflows, one trigger, no
+          # ordering guarantee between them, so the release may not exist yet
+          # when this job runs, and `gh release upload` against a missing
+          # release fails. Poll for it here rather than create it: release.yml
+          # owns creation and gates it on the version-consistency check first,
+          # and creating it from two places would race. This loop is not a
+          # pointless retry — it exists to de-race two workflows on one tag.
+          for attempt in $(seq 1 30); do
+            if gh release view "$VER" >/dev/null 2>&1; then
+              echo "release $VER found on attempt $attempt"
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "::error::release $VER did not appear within 30 attempts" >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
+          gh release upload "$VER" \
+            "artifice-ocr-Linux-$VER.tar.gz" \
+            "artifice-ocr-Windows-$VER.zip" \
+            "artifice-draft-Linux-$VER.tar.gz" \
+            "artifice-draft-Windows-$VER.zip" \
+            "artifice-graph-Linux-$VER.tar.gz" \
+            "artifice-graph-Windows-$VER.zip" \
+            "artifice-hub-Linux-$VER.tar.gz" \
+            "artifice-hub-Windows-$VER.zip" \
+            --clobber
