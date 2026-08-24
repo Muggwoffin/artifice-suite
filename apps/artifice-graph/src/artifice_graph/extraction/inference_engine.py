@@ -22,8 +22,15 @@ logger = logging.getLogger(__name__)
 # models without a dedicated vision API.
 # ---------------------------------------------------------------------------
 _VISION_INDICATORS = [
-    "vision", "vl", "multi-modal", "image", "visual",
-    "qwen", "llava", "gpt-4-vision", "claude-3",
+    "vision",
+    "vl",
+    "multi-modal",
+    "image",
+    "visual",
+    "qwen",
+    "llava",
+    "gpt-4-vision",
+    "claude-3",
 ]
 
 
@@ -50,7 +57,7 @@ class ModelInfo:
             "supports_chat": self.supports_chat,
             "supports_images": self.supports_images,
             "max_tokens": self.max_tokens,
-            "description": self.description
+            "description": self.description,
         }
 
 
@@ -61,7 +68,11 @@ class InferenceEngine:
         self,
         base_url: str = "http://localhost:11434/v1",
         api_key: str = "",
-        model: str = "gemma2:27b",
+        # No default model. This previously said "gemma2:27b", a *second* layer
+        # of defaults below the config layer — invisible in every UI and
+        # divergent from it. The caller supplies the model; it comes from
+        # config, which artifice_graph._resolution has already resolved.
+        model: str = "",
         timeout: int = 30,
         enable_streaming: bool = True,
         parser: Optional[Any] = None,
@@ -133,11 +144,7 @@ class InferenceEngine:
         return text_models, vision_models
 
     async def _make_chat_request(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        model: str,
-        stream: bool = False
+        self, system_prompt: str, user_prompt: str, model: str, stream: bool = False
     ) -> AsyncGenerator[str, None]:
         """
         Make a chat completion request with streaming support.
@@ -151,9 +158,7 @@ class InferenceEngine:
         Yields:
             Response chunks as they arrive
         """
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
 
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -162,10 +167,10 @@ class InferenceEngine:
             "model": model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
             "temperature": 0.1,
-            "stream": stream
+            "stream": stream,
         }
 
         if not stream:
@@ -184,10 +189,7 @@ class InferenceEngine:
 
         try:
             resp = await self.client.post(
-                api_path,
-                headers=headers,
-                json=payload,
-                timeout=self.timeout
+                api_path, headers=headers, json=payload, timeout=self.timeout
             )
 
             if resp.status_code != 200:
@@ -231,7 +233,7 @@ class InferenceEngine:
         user_prompt: str,
         model: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
-        stream: bool = False
+        stream: bool = False,
     ) -> AsyncGenerator[str, None]:
         """
         Perform a chat completion with streaming support and fallback parsing.
@@ -248,14 +250,13 @@ class InferenceEngine:
         """
         model_to_use = model or self.model
 
-        async for chunk in self._make_chat_request(system_prompt, user_prompt, model_to_use, stream):
+        async for chunk in self._make_chat_request(
+            system_prompt, user_prompt, model_to_use, stream
+        ):
             yield chunk
 
     async def get_response_text(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        model: Optional[str] = None
+        self, system_prompt: str, user_prompt: str, model: Optional[str] = None
     ) -> str:
         """
         Get a complete response text without streaming.
@@ -272,12 +273,16 @@ class InferenceEngine:
 
         if self.enable_streaming:
             chunks = []
-            async for chunk in self.chat_completion(system_prompt, user_prompt, model_to_use, stream=True):
+            async for chunk in self.chat_completion(
+                system_prompt, user_prompt, model_to_use, stream=True
+            ):
                 chunks.append(chunk)
 
             full_response = "".join(chunks)
         else:
-            async for chunk in self.chat_completion(system_prompt, user_prompt, model_to_use, stream=False):
+            async for chunk in self.chat_completion(
+                system_prompt, user_prompt, model_to_use, stream=False
+            ):
                 full_response = chunk
                 break
 

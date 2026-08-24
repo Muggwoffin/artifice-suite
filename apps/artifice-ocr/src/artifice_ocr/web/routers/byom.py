@@ -86,6 +86,51 @@ class TestRequest(BaseModel):
     api_key: str = ""
 
 
+class ModelRequest(BaseModel):
+    """A per-role model choice. OCR has three roles."""
+
+    model: str = ""
+    role: str = "chat"
+
+
+# Role → the settings key it writes. Mirrors artifice_ocr._resolution.ROLE_KEYS
+# and the Hub's config_bridge._ROLE_KEY_MAP; all three must agree, because all
+# three write the same ~/.artifice_ocr/settings.json.
+_ROLE_SETTING = {
+    "vision": "ocr_model",
+    "chat": "cleanup_model",
+    "translation": "translate_model",
+}
+
+
+# ── POST /api/byom/model ────────────────────────────────────────────────────
+
+
+@router.post("/model")
+def byom_set_model(req: ModelRequest) -> dict:
+    """Persist the user's model choice for a role.
+
+    An empty ``model`` clears the choice deliberately, returning the role to
+    per-run resolution against whatever the endpoint serves. That is a
+    supported state, not an error.
+    """
+    key = _ROLE_SETTING.get(req.role)
+    if key is None:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": f"artifice-ocr has no {req.role!r} role; "
+                f"expected one of {sorted(_ROLE_SETTING)}."
+            },
+        )
+
+    chosen = req.model.strip()
+    overrides = {key: chosen}
+    config.apply_overrides(overrides)
+    config.save_user_settings(overrides)
+    return {"model": chosen or None, "role": req.role}
+
+
 # ── GET /api/byom/state ─────────────────────────────────────────────────────
 
 
@@ -101,10 +146,11 @@ def byom_state() -> dict:
     ollama_url = config.get("ollama_url") or "http://localhost:11434"
     ocr_model = config.get("ocr_model") or ""
 
-    # "Configured" means the user has intentionally set something beyond
-    # the default out-of-the-box endpoints.
+    # "Configured" means the user has intentionally set something beyond the
+    # default out-of-the-box endpoints — including choosing a model, which
+    # counts even when both endpoints are still the shipped defaults.
     configured = is_configured(
-        api_base_url, api_key, defaults=("https://api.openai.com/v1",)
+        api_base_url, api_key, defaults=("https://api.openai.com/v1",), model=ocr_model
     ) or is_configured(ollama_url, defaults=("http://localhost:11434",))
 
     return {

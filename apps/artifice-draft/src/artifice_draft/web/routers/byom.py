@@ -95,7 +95,8 @@ def byom_state() -> dict:
     base_url = settings.get("base_url") or ""
     model_name = settings.get("model_name") or ""
 
-    configured = is_configured(base_url)
+    # An explicitly chosen model counts as configured, not just the endpoint.
+    configured = is_configured(base_url, model=model_name)
 
     return {
         "app": "artifice-draft",
@@ -104,6 +105,40 @@ def byom_state() -> dict:
         "model": model_name or None,
         "recommendations": _byom_recommendations("artifice-draft"),
     }
+
+
+# ── POST /api/byom/model ────────────────────────────────────────────────────
+
+
+class ModelRequest(BaseModel):
+    """A per-role model choice. Draft has a single role, ``chat``."""
+
+    model: str = ""
+    role: str = "chat"
+
+
+@router.post("/model")
+def byom_set_model(req: ModelRequest) -> dict:
+    """Persist the user's model choice for a role.
+
+    Until this existed the BYOM screen could detect and test an endpoint but
+    never record which model to use, so the app fell back to a shipped literal
+    — the defect this whole change set removes. The Hub could write a choice;
+    an app launched directly could not.
+
+    An empty ``model`` clears the choice deliberately, returning the app to
+    per-run resolution against whatever the endpoint serves. That is a
+    supported state, not an error.
+    """
+    if req.role != "chat":
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"artifice-draft has no {req.role!r} role; expected 'chat'."},
+        )
+
+    chosen = req.model.strip()
+    save_settings({"model_name": chosen})
+    return {"model": chosen or None, "role": "chat"}
 
 
 # ── GET /api/byom/detect ────────────────────────────────────────────────────

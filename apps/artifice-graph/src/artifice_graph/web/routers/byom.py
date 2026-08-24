@@ -108,8 +108,13 @@ def byom_state() -> dict:
         emb_base_url = emb_defaults.base_url
         emb_model = emb_defaults.model
 
-    configured = is_configured(base_url, api_key, defaults=("http://localhost:11434/v1",))
-    emb_configured = is_configured(emb_base_url, defaults=("http://localhost:11434",))
+    # An explicitly chosen model counts as configured, not just the endpoint.
+    configured = is_configured(
+        base_url, api_key, defaults=("http://localhost:11434/v1",), model=model
+    )
+    emb_configured = is_configured(
+        emb_base_url, defaults=("http://localhost:11434",), model=emb_model
+    )
 
     return {
         "app": "artifice-graph",
@@ -180,6 +185,47 @@ async def byom_test(req: TestRequest) -> dict:
         "models": list(result.models),
         "hint": result.hint,
     }
+
+
+# ── POST /api/byom/model ────────────────────────────────────────────────────
+
+
+class ModelRequest(BaseModel):
+    """A per-role model choice. Graph has two roles: chat and embedding."""
+
+    model: str = ""
+    role: str = "chat"
+
+
+@router.post("/model")
+def byom_set_model(req: ModelRequest) -> dict:
+    """Persist the user's model choice for a role.
+
+    Graph previously had **no in-app way to set a model at all** — the Hub was
+    the only writer, so a user running graph directly had to hand-edit
+    config.json. This closes that.
+
+    An empty ``model`` clears the choice deliberately, returning graph to
+    per-run resolution against whatever the endpoint serves. That is a
+    supported state, not an error.
+    """
+    if req.role not in ("chat", "embedding"):
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": f"artifice-graph has no {req.role!r} role; expected 'chat' or 'embedding'."
+            },
+        )
+
+    chosen = req.model.strip()
+    saved = load_saved_config() or PipelineConfig()
+    if req.role == "chat":
+        saved.llm.model = chosen
+    else:
+        saved.embedding.model = chosen
+    save_user_config(saved)
+
+    return {"model": chosen or None, "role": req.role}
 
 
 # ── POST /api/byom/test-embedding ────────────────────────────────────────────

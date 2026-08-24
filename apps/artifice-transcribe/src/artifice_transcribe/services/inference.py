@@ -10,6 +10,8 @@ from typing import Any
 
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
+from model_harness.registry import HardwareTier
+from model_harness.resolution import resolve_model
 from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
@@ -85,6 +87,60 @@ class InferenceEngine:
         self.vision_enabled = vision_enabled
         self.client = AsyncOpenAI(base_url=self.base_url, api_key=self.api_key)
 
+    async def _resolve_model_name(self) -> str:
+        """Pick a model when none is configured, from what the server serves.
+
+        This replaces three stacked defects:
+
+        * ``models.data[0].id`` took whatever the server happened to list
+          first — potentially an embedding model, which would return
+          confident nonsense rather than an error.
+        * Falling back to the literal string ``"default"`` named a model no
+          provider serves, guaranteeing a 404 one call later, at which point
+          the cause was no longer visible.
+        * ``except Exception`` swallowed every failure, including an endpoint
+          the policy had rejected.
+
+        The result is cached on the instance by the caller, so the model list
+        is fetched once per engine rather than per request.
+
+        Raises:
+            RuntimeError: naming the endpoint and what to do.
+        """
+        try:
+            listing = await self.client.models.list()
+        except Exception as exc:  # noqa: BLE001 - re-raised with context below
+            raise RuntimeError(
+                f"Cannot list models from {self.base_url}: {exc}. "
+                "Check the endpoint is running and reachable."
+            ) from exc
+
+        installed = [m.id for m in (listing.data or [])]
+        if not installed:
+            raise RuntimeError(
+                f"No models are available at {self.base_url}. "
+                "Install one (e.g. 'ollama pull llama3.2:3b') and retry."
+            )
+
+        # Transcribe's optional inference endpoint is used for summaries and
+        # cleanup — a chat role. Its Whisper/diarization models are a separate
+        # stack entirely and are not resolved here.
+        for tier in (HardwareTier.LAPTOP, HardwareTier.DESKTOP, HardwareTier.MAC_UNIFIED):
+            resolution = resolve_model(
+                role="chat",
+                installed=installed,
+                app="artifice-transcribe",
+                tier=tier,
+                configured=None,
+            )
+            if resolution.model_name is not None:
+                return resolution.model_name
+
+        raise RuntimeError(
+            f"No suitable text model is installed at {self.base_url}. "
+            "Install one (e.g. 'ollama pull llama3.2:3b') and retry."
+        )
+
     async def generate(
         self,
         prompt: str,
@@ -112,14 +168,7 @@ class InferenceEngine:
         messages = [{"role": "user", "content": content}]
 
         if not self.model_name:
-            try:
-                models = await self.client.models.list()
-                if models.data:
-                    self.model_name = models.data[0].id
-                else:
-                    self.model_name = "default"
-            except Exception:
-                self.model_name = "default"
+            self.model_name = await self._resolve_model_name()
 
         if stream:
             return self._stream_response(messages, temperature, max_tokens)
