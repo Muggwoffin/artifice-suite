@@ -24,7 +24,12 @@
 
 .PARAMETER BackupRoot
     Where to copy the data before deleting it. Defaults to a timestamped folder
-    on the Desktop. The backup is always taken; there is no way to skip it.
+    under ~/artifice-backups. The backup is always taken; there is no way to
+    skip it.
+
+    Deliberately NOT the Desktop: that path follows OneDrive Known Folder
+    redirection, and these directories contain API keys in plaintext. If you
+    point this at a synced folder yourself the script warns but proceeds.
 
 .PARAMETER KeepPrograms
     Remove user data but leave the `uv tool` installs alone. Useful when you are
@@ -151,6 +156,63 @@ if ($present.Count -eq 0) {
     exit 0
 }
 
+# ---------------------------------------------------------------------------
+# Running processes.
+#
+# A live app holds file locks on its own uv tool directory, so `uv tool
+# uninstall` fails with "Access is denied (os error 5)" — which reads like a
+# permissions problem and is not one. Worse, an app still running against a
+# data directory this script has just deleted can recreate it, silently undoing
+# the reset.
+#
+# This is not hypothetical: the first real run hit a wedged artifice-ocr-web
+# left over from an earlier session, which blocked the uninstall and had been
+# writing to history.db minutes earlier.
+#
+# Report them rather than killing them unasked — stopping a process the user is
+# using is their decision, not this script's.
+# ---------------------------------------------------------------------------
+$running = @(
+    Get-Process -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Path -and (
+                $_.Path -like "*\.local\bin\artifice*" -or
+                $_.Path -like "*\uv\tools\artifice*" -or
+                $_.ProcessName -like 'artifice*'
+            )
+        }
+)
+
+if ($running.Count -gt 0) {
+    Write-Host ''
+    Write-Host 'Artifice processes are still running:' -ForegroundColor Yellow
+    $running | Select-Object Id, ProcessName, Path |
+        Format-Table -AutoSize | Out-String -Width 160 | Write-Host
+    Write-Host 'These hold file locks (the uninstall will fail with "Access is denied")' -ForegroundColor Yellow
+    Write-Host 'and can recreate a data directory after it is removed.' -ForegroundColor Yellow
+
+    if ($DryRun) {
+        Write-Host 'DryRun: they would be stopped before the reset proceeds.'
+    } elseif ($Force -or (Read-Host 'Stop them now? (yes/no)') -eq 'yes') {
+        foreach ($proc in $running) {
+            Stop-Process -Id $proc.Id -Force -Confirm:$false -ErrorAction SilentlyContinue
+            Write-Host "  stopped $($proc.ProcessName) (PID $($proc.Id))"
+        }
+        Start-Sleep -Seconds 2
+        $stillUp = @(
+            Get-Process -ErrorAction SilentlyContinue |
+                Where-Object { $_.Path -and $_.Path -like '*artifice*' }
+        )
+        if ($stillUp.Count -gt 0) {
+            Write-Error "Could not stop: $($stillUp.ProcessName -join ', '). Close them and re-run."
+            exit 1
+        }
+    } else {
+        Write-Host 'Aborted. Close the processes and re-run.' -ForegroundColor Yellow
+        exit 1
+    }
+}
+
 Write-Host ''
 Write-Host 'These directories hold your API keys, settings and project data.' -ForegroundColor Yellow
 Write-Host 'Everything listed will be copied to the backup before it is removed.' -ForegroundColor Yellow
@@ -166,7 +228,32 @@ if ($DryRun) {
 
 if (-not $BackupRoot) {
     $stamp = Get-Date -Format 'yyyy-MM-dd-HHmmss'
-    $BackupRoot = Join-Path ([Environment]::GetFolderPath('Desktop')) "artifice-backup-$stamp"
+    # NOT the Desktop. [Environment]::GetFolderPath('Desktop') follows OneDrive
+    # Known Folder redirection, so on a machine with OneDrive backup enabled it
+    # resolves inside the synced tree — and these directories contain API keys
+    # in plaintext. The first real run of this script uploaded a settings.json
+    # holding one to Microsoft's cloud, which is the precise outcome the
+    # suite's secure-io ACL work exists to prevent locally.
+    #
+    # ~/artifice-backups is not a Known Folder, so OneDrive does not redirect
+    # or sync it. Verified on the maintainer's machine.
+    $BackupRoot = Join-Path $env:USERPROFILE "artifice-backups\artifice-backup-$stamp"
+}
+
+# A user-supplied -BackupRoot can still land somewhere synced. Warn rather than
+# refuse: it is their machine and there are legitimate reasons to want a copy in
+# a synced folder — but it must be a decision, not an accident.
+$syncRoots = @($env:OneDrive, $env:OneDriveCommercial, $env:OneDriveConsumer) |
+    Where-Object { $_ } | Select-Object -Unique
+foreach ($root in $syncRoots) {
+    if ($BackupRoot -like "$root*") {
+        Write-Host ''
+        Write-Host 'WARNING: the backup destination is inside a synced folder.' -ForegroundColor Yellow
+        Write-Host "  $BackupRoot" -ForegroundColor Yellow
+        Write-Host 'These directories contain API keys in plaintext, which will be' -ForegroundColor Yellow
+        Write-Host 'uploaded to the cloud. Pass -BackupRoot to choose a local path.' -ForegroundColor Yellow
+        break
+    }
 }
 
 Write-Host ''
