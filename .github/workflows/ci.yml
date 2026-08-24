@@ -21,6 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # `gitleaks detect` below scans git HISTORY, not the working tree.
+          # actions/checkout defaults to a shallow clone (fetch-depth: 1), so it
+          # was scanning exactly one commit — the Zero Secrets gate reported
+          # "no leaks found" while never looking at the branch at all, and a
+          # secret added in an earlier commit of a PR and removed in a later one
+          # would pass untouched. A green gate here meant almost nothing.
+          #
+          # Full history makes the gate real. It requires .gitleaksignore to
+          # exist: history carries six synthetic tokens in artifice-transcribe's
+          # redaction tests, and without that allowlist this step goes
+          # permanently red the moment it can actually see them.
+          fetch-depth: 0
 
       - name: Install shellcheck
         run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
