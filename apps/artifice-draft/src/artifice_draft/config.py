@@ -22,10 +22,18 @@ class AppConfig:
     # Bring Your Own Model (BYOM) configuration
     base_url: str = "http://localhost:11434/v1"
     api_key: str = "not-needed"
-    model_name: str = "gemma4:12b"
+    # Empty means "the user has not chosen a model", NOT "use this one".
+    # These previously named gemma4:12b, which most users do not have
+    # installed, and nothing checked the name against what Ollama actually
+    # serves — so the first inference call failed with a raw provider 404.
+    # artifice_draft._resolution fills these in once per run from the models
+    # the endpoint reports. The OpenAI and Anthropic defaults below stay
+    # concrete on purpose: those are catalogue names the user reads, not a
+    # local shelf that can be probed.
+    model_name: str = ""
     vision_enabled: bool = False
 
-    ollama_model: str = "gemma4:12b"
+    ollama_model: str = ""
     ollama_base_url: str = "http://localhost:11434"
 
     batch_size: int = 5
@@ -163,13 +171,24 @@ class AppConfig:
         return self.ollama_model
 
     def __post_init__(self) -> None:
-        """Keep the model_name field synced with provider-specific fields."""
-        if self.model_name == "gemma4:12b":
-            if self.llm_provider == LLMProvider.OLLAMA and self.ollama_model != "gemma4:12b":
+        """Keep the model_name field synced with provider-specific fields.
+
+        The test is emptiness, not equality with a particular model name.
+
+        This block previously used the literal ``"gemma4:12b"`` as a sentinel
+        meaning "unset" — in four comparisons. That worked only while the
+        defaults happened to be that string, and it made a model name
+        load-bearing for control flow: once the defaults became empty, every
+        comparison would have been False and the provider-specific value would
+        have silently stopped propagating. A sentinel should say "unset", not
+        name a model.
+        """
+        if not self.model_name:
+            if self.llm_provider == LLMProvider.OLLAMA and self.ollama_model:
                 self.model_name = self.ollama_model
-            elif self.llm_provider == LLMProvider.OPENAI and self.openai_model != "gemma4:12b":
+            elif self.llm_provider == LLMProvider.OPENAI and self.openai_model:
                 self.model_name = self.openai_model
-            elif self.llm_provider == LLMProvider.ANTHROPIC and self.anthropic_model != "gemma4:12b":
+            elif self.llm_provider == LLMProvider.ANTHROPIC and self.anthropic_model:
                 self.model_name = self.anthropic_model
 
 

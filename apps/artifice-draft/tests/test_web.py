@@ -128,7 +128,13 @@ def test_run_without_review_writes_output_and_is_downloadable(client, docx_bytes
     })
     doc_id = upload.json()["doc_id"]
 
-    with patch("artifice_draft.llm_client.asyncio.run", return_value=_mock_edits_response()):
+    # resolve_for_run probes a live Ollama to pick a model; these tests
+    # exercise the run/download flow, not resolution, so it is mocked
+    # exactly as the LLM call below already is.
+    with (
+        patch("artifice_draft.web.runtime.resolve_for_run"),
+        patch("artifice_draft.llm_client.asyncio.run", return_value=_mock_edits_response()),
+    ):
         start = client.post(f"/api/run/{doc_id}/start")
         assert start.status_code == 200
         _wait_for_thread(doc_id)
@@ -170,7 +176,13 @@ def test_review_flow_reject_keeps_original_text(client, docx_bytes):
     })
     doc_id = upload.json()["doc_id"]
 
-    with patch("artifice_draft.llm_client.asyncio.run", return_value=_mock_edits_response()):
+    # resolve_for_run probes a live Ollama to pick a model; these tests
+    # exercise the run/download flow, not resolution, so it is mocked
+    # exactly as the LLM call below already is.
+    with (
+        patch("artifice_draft.web.runtime.resolve_for_run"),
+        patch("artifice_draft.llm_client.asyncio.run", return_value=_mock_edits_response()),
+    ):
         client.post(f"/api/run/{doc_id}/start")
         _wait_for_thread(doc_id)
 

@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from artifice_draft._diff import diff_ranges
+from artifice_draft._resolution import resolve_for_run
 from artifice_draft.changelog import format_change_log, generate_change_summary
 from artifice_draft.config import AppConfig
 from artifice_draft.doc_parser import parse_docx
@@ -325,6 +326,15 @@ class RunState:
             raise ValueError("No content found in the document")
 
         cfg = config_from_settings()
+
+        # Resolve the model once, here, before the worker thread starts.
+        # A run is the only point at which we know a model is actually needed,
+        # and resolving synchronously means a failure reaches the HTTP caller
+        # through the RuntimeError this method already raises — rather than
+        # dying inside the thread where the user would see a stalled run and
+        # no explanation.
+        resolve_for_run(cfg)
+
         doc.cfg = cfg
         doc.stage = "running"
         doc.error = None

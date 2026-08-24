@@ -183,6 +183,18 @@ def main():
         paragraphs = parse_docx(inp)
         print(f"Found {len(paragraphs)} paragraphs.")
 
+        # Resolve the model before announcing it. Doing this after parse_docx
+        # means an unreadable file fails without a needless endpoint probe,
+        # and resolving *before* the print is what keeps that line honest —
+        # the config default is empty, so announcing cfg.active_model first
+        # would print nothing where a model name belongs.
+        from artifice_draft._resolution import resolve_for_run
+        try:
+            resolve_for_run(cfg)
+        except RuntimeError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
+
         print(f"Sending to {cfg.active_model} ({cfg.llm_provider.value}) "
               f"with style '{cfg.editing_style.value}'...")
         edits_list = call_ollama(
