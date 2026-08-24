@@ -14,6 +14,7 @@ from artifice_ocr._chunking import chunk_text, reassemble, estimate_tokens
 from artifice_ocr._logging import get_logger
 from artifice_ocr._normalise import normalise
 from artifice_ocr._prompts import get_cleanup_prompt
+from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
 
@@ -28,8 +29,8 @@ def _call_cleanup_chunk(
 ) -> str:
     """Clean up a single chunk of text."""
     user_prompt = user_template.replace("{raw_text}", raw_text)
-    model = cfg("cleanup_model")
-    backend = cfg("cleanup_backend") or "ollama"
+    model = model_for("chat")
+    backend = backend_for("chat")
 
     response = _llm.chat(
         backend=backend,
@@ -92,7 +93,7 @@ def perform(
     system_prompt = prompts["system"]
     user_template = prompts["user"]
 
-    model = cfg("cleanup_model")
+    model = model_for("chat")
     log.info("Cleaning with %s (doc_type=%s)", model, doc_type)
 
     # Deterministic pre-pass: repair hyphenation, em-dash breaks, whitespace
@@ -101,8 +102,9 @@ def perform(
     # still repaired.
     normalised_text, normalise_counts = normalise(raw_text)
     if any(normalise_counts.values()):
-        log.info("Pre-pass repairs: %s",
-                 ", ".join(f"{k}={v}" for k, v in normalise_counts.items() if v))
+        log.info(
+            "Pre-pass repairs: %s", ", ".join(f"{k}={v}" for k, v in normalise_counts.items() if v)
+        )
 
     model_text = _cleanup_with_chunking(normalised_text, system_prompt, user_template)
 
@@ -137,7 +139,7 @@ def perform(
         "stage": "cleaned",
         "raw_text": raw_text,
         "cleaned_text": cleaned_text,
-        "engine": cfg("cleanup_backend") or "ollama",
+        "engine": backend_for("chat"),
         "model": model,
         "system_prompt": system_prompt,
         "document_type": doc_type,
@@ -154,6 +156,5 @@ def perform(
     if guard_result.ok:
         log.info("Cleanup complete (%d -> %d chars)", len(raw_text), len(cleaned_text))
     else:
-        log.info("Cleanup rejected for %s, raw text kept (%d chars)",
-                 base_name, len(cleaned_text))
+        log.info("Cleanup rejected for %s, raw text kept (%d chars)", base_name, len(cleaned_text))
     return data

@@ -500,8 +500,8 @@ def test_config_reset_discards_overrides(client):
     assert client.get("/api/config").json()["cleanup_model"] == "a-custom-model"
 
     res = client.post("/api/config/reset")
-    assert res.json()["cleanup_model"] == "gemma4:12b"
-    assert client.get("/api/config").json()["cleanup_model"] == "gemma4:12b"
+    assert res.json()["cleanup_model"] == ""
+    assert client.get("/api/config").json()["cleanup_model"] == ""
 
 
 # --------------------------------------------------------------------------- #

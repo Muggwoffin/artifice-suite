@@ -24,6 +24,7 @@ from artifice_ocr import _guard, _llm
 from artifice_ocr._chunking import chunk_text, reassemble, estimate_tokens
 from artifice_ocr._logging import get_logger
 from artifice_ocr._prompts import get_structure_prompt
+from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
 
@@ -38,8 +39,8 @@ def _call_structure_chunk(
 ) -> str:
     """Structure a single chunk of text."""
     user_prompt = user_template.replace("{text}", raw_text)
-    model = cfg("cleanup_model")
-    backend = cfg("cleanup_backend") or "ollama"
+    model = model_for("chat")
+    backend = backend_for("chat")
 
     response = _llm.chat(
         backend=backend,
@@ -116,7 +117,7 @@ def perform(
     system_prompt = prompts["system"]
     user_template = prompts["user"]
 
-    model = cfg("cleanup_model")
+    model = model_for("chat")
     base_name = stem or (Path(source_file).stem if source_file else "unknown")
 
     # Resume: skip if structured output already exists
@@ -128,7 +129,7 @@ def perform(
             "stage": "structured",
             "raw_text": text,
             "structured_text": existing,
-            "engine": cfg("cleanup_backend") or "ollama",
+            "engine": backend_for("chat"),
             "model": model,
             "system_prompt": system_prompt,
             "document_type": doc_type,
@@ -174,7 +175,7 @@ def perform(
         "stage": "structured",
         "raw_text": text,
         "structured_text": final_text,
-        "engine": cfg("cleanup_backend") or "ollama",
+        "engine": backend_for("chat"),
         "model": model,
         "system_prompt": system_prompt,
         "document_type": doc_type,
@@ -188,9 +189,7 @@ def perform(
         json.dump(data, f, indent=2)
 
     if guard_result.ok:
-        log.info(
-            "Structure complete (%d -> %d chars)", len(text), len(final_text)
-        )
+        log.info("Structure complete (%d -> %d chars)", len(text), len(final_text))
     else:
         log.info(
             "Structure rejected for %s, original text kept (%d chars)",

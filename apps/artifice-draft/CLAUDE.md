@@ -15,7 +15,14 @@ Run the installed `artifice-draft` command (`src/artifice_draft/cli.py`):
 - **GUI mode**: `artifice-draft --gui`
 - **Headless/CLI mode**: `artifice-draft --headless input.docx [output.docx]`
 
-Environment variables: `OLLAMA_MODEL`, `OLLAMA_URL`, `LLM_PROVIDER`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`. Default model is `gemma4:12b`.
+Environment variables: `OLLAMA_MODEL`, `OLLAMA_URL`, `LLM_PROVIDER`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`.
+
+**There is no default Ollama model, deliberately.** `OLLAMA_MODEL` ships empty,
+meaning "the user has not chosen", and `_resolution.resolve_for_run()` picks one
+at the start of each run from what the endpoint actually serves. The previous
+default named `gemma4:12b`, which most users do not have installed, and nothing
+checked it — so the first call failed with a raw provider 404. Setting
+`OLLAMA_MODEL` explicitly still wins; it is only validated as installed.
 
 ## Architecture
 

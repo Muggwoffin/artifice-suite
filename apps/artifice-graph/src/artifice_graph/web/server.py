@@ -30,6 +30,7 @@ from shared_ui.path_validation import PathValidationError
 from shared_ui.path_validation import validate_path as _shared_validate_path
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from artifice_graph._resolution import resolve_for_run
 from artifice_graph.config import LLMConfig, PipelineConfig, load_config
 from artifice_graph.embedding.bge_embedder import BGEM3Embedder
 from artifice_graph.entity_resolution.resolver import EntityResolver
@@ -312,6 +313,15 @@ def _make_config(body: dict[str, Any]) -> tuple[PipelineConfig, bool]:
         cfg.embedding.base_url = _validate_base_url(ebu, "embedding_base_url")
     if em := body.get("embedding_model"):
         cfg.embedding.model = em
+
+    # Resolve the model names once, here, after every override from the request
+    # body has been applied and before any stage runs. This is the single point
+    # where a run's configuration is final, so it is the only place resolution
+    # can see the user's actual choices — and doing it before the pipeline
+    # starts means a missing model is reported up front rather than surfacing
+    # as a failed stage several minutes in.
+    resolve_for_run(cfg)
+
     return cfg, bool(body.get("incremental", False))
 
 

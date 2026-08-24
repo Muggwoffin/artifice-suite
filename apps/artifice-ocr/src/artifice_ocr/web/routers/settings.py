@@ -151,15 +151,19 @@ def health_check() -> dict:
     from model_harness.discovery import probe_endpoint_sync
 
     backends = {
-        config.get("ocr_backend") or "lm_studio",
-        config.get("cleanup_backend") or "ollama",
-        config.get("translate_backend") or "ollama",
+        config.get("ocr_backend") or "auto",
+        config.get("cleanup_backend") or "auto",
+        config.get("translate_backend") or "auto",
     }
+    # ``auto`` means "whichever local server is reachable" — probe both.
+    wants_auto = "auto" in backends
 
     results: dict[str, Any] = {}
 
-    if "lm_studio" in backends:
-        lm_studio_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+    lm_studio_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+    ollama_url = config.get("ollama_url") or "http://localhost:11434"
+
+    if "lm_studio" in backends or wants_auto:
         probe = probe_endpoint_sync(lm_studio_url, policy=_endpoint_policy, timeout_s=5)
         results["lm_studio"] = {
             "ok": probe.reachable,
@@ -167,21 +171,20 @@ def health_check() -> dict:
             "url": lm_studio_url,
         }
 
-    if "ollama" in backends:
-        models = [
-            config.get("ocr_model"),
-            config.get("cleanup_model"),
-            config.get("translate_model"),
-        ]
-        ollama_url = config.get("ollama_url") or "http://localhost:11434"
+    if "ollama" in backends or wants_auto:
         probe = probe_endpoint_sync(ollama_url, policy=_endpoint_policy, timeout_s=10)
         ollama_reachable = probe.reachable
-        available = set(probe.models)
         results["ollama"] = {
             "ok": ollama_reachable,
             "detail": None if ollama_reachable else (probe.hint or "Cannot reach Ollama"),
             "url": ollama_url,
         }
+        models = [
+            config.get("ocr_model"),
+            config.get("cleanup_model"),
+            config.get("translate_model"),
+        ]
+        available = set(probe.models)
         results["models"] = [
             {"name": m, "ok": ollama_reachable and m in available} for m in models if m
         ]

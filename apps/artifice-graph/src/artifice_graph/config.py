@@ -21,7 +21,11 @@ logger = logging.getLogger(__name__)
 class LLMConfig(BaseModel):
     base_url: str = "http://localhost:11434/v1"
     api_key: str = ""
-    model: str = "gemma2:27b"
+    # Empty means "the user has not chosen a model", NOT "use this one".
+    # This previously named gemma2:27b and nothing checked it against what the
+    # endpoint actually serves, so the first extraction failed with a raw
+    # provider error. artifice_graph._resolution fills it in once per run.
+    model: str = ""
     temperature: float = 0.1
     timeout: int = 120
     supports_vision: bool = False
@@ -30,7 +34,9 @@ class LLMConfig(BaseModel):
 
 class EmbeddingConfig(BaseModel):
     base_url: str = "http://localhost:11434"
-    model: str = "bge-m3"
+    # Empty for the same reason as LLMConfig.model above — resolved per run
+    # against the models the endpoint reports.
+    model: str = ""
     timeout: int = 60
     batch_size: int = 16
     supports_vision: bool = False

@@ -14,6 +14,7 @@ from typing import Any
 import ollama
 
 from artifice_ocr._logging import get_logger
+from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
 
@@ -94,8 +95,8 @@ def _heuristic_score(text: str) -> tuple[int, list[str]]:
 @retry(max_attempts=3, base_delay=1.0, label="Self-assessment")
 def _call_self_assessment(source_text: str, output_text: str) -> dict[str, Any]:
     """Ask the LLM to rate its own confidence."""
-    model = cfg("translate_model")
-    backend = cfg("translate_backend") or "ollama"
+    model = model_for("translation")
+    backend = backend_for("translation")
     prompt = _SELF_ASSESSMENT_PROMPT.format(
         source_text=source_text[:1000],
         output_text=output_text[:1000],
@@ -114,7 +115,8 @@ def _call_self_assessment(source_text: str, output_text: str) -> dict[str, Any]:
     raw = response.message.content.strip()
     # Extract JSON from response
     import json
-    match = re.search(r'\{[^}]+\}', raw)
+
+    match = re.search(r"\{[^}]+\}", raw)
     if match:
         return json.loads(match.group())
     return {"score": 50, "reasoning": "Could not parse self-assessment"}
@@ -158,6 +160,9 @@ def evaluate_confidence(
 
     log.info(
         "Confidence: %d/100 (heuristic=%d, llm=%d, markers=%d)",
-        overall, h_score, llm_score, len(markers),
+        overall,
+        h_score,
+        llm_score,
+        len(markers),
     )
     return result

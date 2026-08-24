@@ -88,8 +88,9 @@ class TestByomState:
         assert body["app"] == "artifice-ocr"
         assert body["configured"] is False
         assert body["endpoint"] == "http://localhost:11434"
-        # Default model is set to a known value, not None.
-        assert isinstance(body["model"], str)
+        # The default model is empty (resolved at run time), so the state
+        # reports it as None — not a concrete name.
+        assert body["model"] is None
         assert "recommendations" in body
 
     def test_configured_true_when_api_key_set(self, client):

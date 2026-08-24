@@ -22,6 +22,7 @@ from artifice_ocr import _guard, config
 # structure guard
 # --------------------------------------------------------------------------- #
 
+
 def test_check_structure_only_rejects_word_change():
     """The structure guard must reject any change to a word."""
     original = "Der Bericht war unvollstaendig und teilweise unklar."
@@ -77,6 +78,7 @@ def test_check_structure_only_accepts_identical_text():
 # --------------------------------------------------------------------------- #
 # structure stage
 # --------------------------------------------------------------------------- #
+
 
 @patch("artifice_ocr.stages.structure.ollama.chat")
 def test_structure_perform_respects_resume(mock_chat, tmp_path):
@@ -135,6 +137,7 @@ def test_structure_perform_accepts_safe_restructure(mock_chat, tmp_path):
 # collect_folder
 # --------------------------------------------------------------------------- #
 
+
 def test_collect_folder_natural_sort(tmp_path):
     """Files should be natural-sorted when no manifest is present."""
     from artifice_ocr import pdf_export
@@ -183,9 +186,7 @@ def test_collect_folder_with_manifest(tmp_path):
             "page_number": 2,
         },
     }
-    (tmp_path / "tropy_manifest.json").write_text(
-        json.dumps(manifest), encoding="utf-8"
-    )
+    (tmp_path / "tropy_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
     pages = pdf_export.collect_folder(str(tmp_path), stage="cleaned")
 
@@ -214,6 +215,7 @@ def test_collect_folder_stage_fallback(tmp_path):
 # end-to-end with mocked model
 # --------------------------------------------------------------------------- #
 
+
 @patch("artifice_ocr.stages.structure.ollama.chat")
 def test_compile_pdf_end_to_end(mock_chat, tmp_path):
     """Full pipeline: collect -> structure -> render, then verify PDF content."""
@@ -234,9 +236,7 @@ def test_compile_pdf_end_to_end(mock_chat, tmp_path):
             if msg["role"] == "user":
                 text = msg["content"]
                 # Simulate adding paragraph breaks
-                return MagicMock(
-                    message=MagicMock(content=text.replace("\n", "\n\n"))
-                )
+                return MagicMock(message=MagicMock(content=text.replace("\n", "\n\n")))
         return MagicMock(message=MagicMock(content="structured text"))
 
     mock_chat.side_effect = side_effect
@@ -271,6 +271,7 @@ def test_compile_pdf_end_to_end(mock_chat, tmp_path):
 # smoke test with real data (no model call)
 # --------------------------------------------------------------------------- #
 
+
 def test_compile_pdf_smoke_no_structure():
     """Smoke test against real data in the repo, no model call."""
     from artifice_ocr import pdf_export
@@ -297,6 +298,7 @@ def test_compile_pdf_smoke_no_structure():
 # compile() function (refactored entry point)
 # --------------------------------------------------------------------------- #
 
+
 @patch("artifice_ocr.stages.structure.ollama.chat")
 def test_structure_pages_calls_on_progress_in_order(mock_chat, tmp_path):
     """on_progress should be called once per page, in order, with messages."""
@@ -308,23 +310,18 @@ def test_structure_pages_calls_on_progress_in_order(mock_chat, tmp_path):
         for msg in messages:
             if msg["role"] == "user":
                 text = msg["content"]
-                return MagicMock(
-                    message=MagicMock(content=text.replace("\n", "\n\n"))
-                )
+                return MagicMock(message=MagicMock(content=text.replace("\n", "\n\n")))
         return MagicMock(message=MagicMock(content="structured"))
 
     mock_chat.side_effect = side_effect
 
     pages = [
-        PageText(label="page_a", text="Page A text.\nSecond line.",
-                 source_path=tmp_path / "a.txt"),
-        PageText(label="page_b", text="Page B text.\nSecond line.",
-                 source_path=tmp_path / "b.txt"),
+        PageText(label="page_a", text="Page A text.\nSecond line.", source_path=tmp_path / "a.txt"),
+        PageText(label="page_b", text="Page B text.\nSecond line.", source_path=tmp_path / "b.txt"),
     ]
 
     calls = []
-    result = pdf_export.structure_pages(
-        pages, on_progress=lambda msg: calls.append(msg))
+    result = pdf_export.structure_pages(pages, on_progress=lambda msg: calls.append(msg))
 
     assert len(calls) == 2
     assert "Structuring 1/2: page_a" in calls[0]
@@ -337,23 +334,24 @@ def test_structure_pages_calls_on_rejected(mock_chat, tmp_path, monkeypatch):
     """on_rejected should be called when the guard rejects a page."""
     # Disable resume so structure.perform always runs the model call
     from artifice_ocr import config as _cfg
+
     _cfg.apply_overrides({"resume": False})
     from artifice_ocr import pdf_export
     from artifice_ocr.pdf_export import PageText
 
     # Model returns a word-change that the guard will reject
-    mock_chat.return_value = MagicMock(
-        message=MagicMock(content="Changed text."))
+    mock_chat.return_value = MagicMock(message=MagicMock(content="Changed text."))
 
     pages = [
-        PageText(label="page_one",
-                 text="Original text that must be kept.",
-                 source_path=tmp_path / "unique_test_page.txt"),
+        PageText(
+            label="page_one",
+            text="Original text that must be kept.",
+            source_path=tmp_path / "unique_test_page.txt",
+        ),
     ]
 
     rejected = []
-    result = pdf_export.structure_pages(
-        pages, on_rejected=lambda l: rejected.append(l))
+    result = pdf_export.structure_pages(pages, on_rejected=lambda l: rejected.append(l))
 
     assert len(rejected) == 1
     assert rejected[0] == "page_one"
@@ -361,8 +359,9 @@ def test_structure_pages_calls_on_rejected(mock_chat, tmp_path, monkeypatch):
     assert result[0].text == "Original text that must be kept."
 
 
+@patch("artifice_ocr._resolution.resolve_models_for_run")
 @patch("artifice_ocr.stages.structure.ollama.chat")
-def test_compile_function_end_to_end(mock_chat, tmp_path):
+def test_compile_function_end_to_end(mock_chat, mock_resolve, tmp_path):
     """pdf_export.compile() should collect, structure and render."""
     from artifice_ocr import pdf_export
 
@@ -376,9 +375,7 @@ def test_compile_function_end_to_end(mock_chat, tmp_path):
         for msg in messages:
             if msg["role"] == "user":
                 text = msg["content"]
-                return MagicMock(
-                    message=MagicMock(content=text.replace("\n", "\n\n"))
-                )
+                return MagicMock(message=MagicMock(content=text.replace("\n", "\n\n")))
         return MagicMock(message=MagicMock(content="structured text"))
 
     mock_chat.side_effect = side_effect
@@ -427,6 +424,7 @@ def test_compile_function_no_structure(mock_chat, tmp_path):
 # Markdown export
 # --------------------------------------------------------------------------- #
 
+
 @patch("artifice_ocr.stages.structure.ollama.chat")
 def test_render_markdown_creates_file(mock_chat, tmp_path):
     """compile() with format='md' should produce a Markdown file."""
@@ -442,8 +440,11 @@ def test_render_markdown_creates_file(mock_chat, tmp_path):
     )
 
     output_path = pdf_export.compile(
-        str(tmp_path), stage="cleaned", structure=False,
-        output=str(tmp_path / "out.md"), format="md",
+        str(tmp_path),
+        stage="cleaned",
+        structure=False,
+        output=str(tmp_path / "out.md"),
+        format="md",
     )
 
     assert output_path.exists()
@@ -460,6 +461,7 @@ def test_render_markdown_creates_file(mock_chat, tmp_path):
 # PDF style presets
 # --------------------------------------------------------------------------- #
 
+
 @patch("artifice_ocr.stages.structure.ollama.chat")
 def test_compile_with_style_preset(mock_chat, tmp_path):
     """compile() with style='compact' should produce a valid PDF."""
@@ -475,8 +477,12 @@ def test_compile_with_style_preset(mock_chat, tmp_path):
     )
 
     output_path = pdf_export.compile(
-        str(tmp_path), stage="cleaned", structure=False,
-        output=str(tmp_path / "out.pdf"), format="pdf", style="compact",
+        str(tmp_path),
+        stage="cleaned",
+        structure=False,
+        output=str(tmp_path / "out.pdf"),
+        format="pdf",
+        style="compact",
     )
 
     assert output_path.exists()
@@ -503,6 +509,7 @@ def test_compile_function_raises_on_empty_folder(tmp_path):
 # --------------------------------------------------------------------------- #
 # Bilingual export
 # --------------------------------------------------------------------------- #
+
 
 def test_collect_bilingual_folder_pairs_by_stem(tmp_path):
     """collect_bilingual_folder() should pair cleaned + translated by stem."""
@@ -768,6 +775,7 @@ def test_compile_bilingual_skips_structure_by_default(tmp_path):
 # _find_manifest normalisation
 # --------------------------------------------------------------------------- #
 
+
 def test_find_manifest_normalises_nested_pages(tmp_path):
     """Real manifests nest entries under a top-level "pages" key."""
     from artifice_ocr import pdf_export
@@ -779,8 +787,7 @@ def test_find_manifest_normalises_nested_pages(tmp_path):
             "Item A/page_p0001": {"item_title": "Item A", "page_number": 1},
         },
     }
-    (tmp_path / "tropy_manifest.json").write_text(
-        json.dumps(manifest), encoding="utf-8")
+    (tmp_path / "tropy_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
     found = pdf_export._find_manifest(tmp_path)
 
@@ -796,8 +803,7 @@ def test_find_manifest_accepts_flat_schema(tmp_path):
     manifest = {
         "Item A/page_p0001": {"item_title": "Item A", "page_number": 1},
     }
-    (tmp_path / "tropy_manifest.json").write_text(
-        json.dumps(manifest), encoding="utf-8")
+    (tmp_path / "tropy_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
     found = pdf_export._find_manifest(tmp_path)
 
@@ -808,6 +814,7 @@ def test_find_manifest_accepts_flat_schema(tmp_path):
 # collect_stems (batch export)
 # --------------------------------------------------------------------------- #
 
+
 def test_collect_stems_flat_no_manifest(tmp_path):
     """Flat stems collect from <output_dir>/<stage>/text/ directly."""
     from artifice_ocr import pdf_export
@@ -817,8 +824,7 @@ def test_collect_stems_flat_no_manifest(tmp_path):
     (text_dir / "page1.txt").write_text("First page text")
     (text_dir / "page2.txt").write_text("Second page text")
 
-    pages, skipped = pdf_export.collect_stems(
-        ["page1", "page2"], output_dir=str(tmp_path))
+    pages, skipped = pdf_export.collect_stems(["page1", "page2"], output_dir=str(tmp_path))
 
     assert skipped == []
     assert [p.stem for p in pages] == ["page1", "page2"]
@@ -843,11 +849,11 @@ def test_collect_stems_with_nested_manifest(tmp_path):
             "Item A/page_p0002": {"item_title": "Item A", "page_number": 2},
         },
     }
-    (tmp_path / "tropy_manifest.json").write_text(
-        json.dumps(manifest), encoding="utf-8")
+    (tmp_path / "tropy_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
     pages, skipped = pdf_export.collect_stems(
-        ["Item A/page_p0002", "Item A/page_p0001"], output_dir=str(tmp_path))
+        ["Item A/page_p0002", "Item A/page_p0001"], output_dir=str(tmp_path)
+    )
 
     assert skipped == []
     # Caller (queue) order preserved, not manifest page order
@@ -866,8 +872,7 @@ def test_collect_stems_skips_missing_and_dedupes(tmp_path):
     text_dir.mkdir(parents=True)
     (text_dir / "one.txt").write_text("First")
 
-    pages, skipped = pdf_export.collect_stems(
-        ["one", "missing", "one"], output_dir=str(tmp_path))
+    pages, skipped = pdf_export.collect_stems(["one", "missing", "one"], output_dir=str(tmp_path))
 
     assert [p.stem for p in pages] == ["one"]
     assert skipped == ["missing"]
@@ -881,8 +886,7 @@ def test_collect_stems_stage_fallback(tmp_path):
     raw_dir.mkdir(parents=True)
     (raw_dir / "page1.txt").write_text("Raw text")
 
-    pages, skipped = pdf_export.collect_stems(
-        ["page1"], output_dir=str(tmp_path), stage="cleaned")
+    pages, skipped = pdf_export.collect_stems(["page1"], output_dir=str(tmp_path), stage="cleaned")
 
     assert skipped == []
     assert pages[0].text == "Raw text"
@@ -892,12 +896,12 @@ def test_collect_stems_stage_fallback(tmp_path):
 # default_batch_output
 # --------------------------------------------------------------------------- #
 
+
 def test_default_batch_output_single_item_name():
     """A batch entirely inside one item is named after that item."""
     from artifice_ocr import pdf_export
 
-    p = pdf_export.default_batch_output(
-        ["Item A/p1", "Item A/p2"], output_dir="out")
+    p = pdf_export.default_batch_output(["Item A/p1", "Item A/p2"], output_dir="out")
 
     assert p.parent == Path("out")
     assert re.fullmatch(r"Item A-\d{8}-\d{4}\.pdf", p.name)
@@ -919,7 +923,7 @@ def test_default_batch_output_md_extension_and_sanitising():
     from artifice_ocr import pdf_export
 
     md = pdf_export.default_batch_output(["Item A/p1"], output_dir="out", format="md")
-    hostile = pdf_export.default_batch_output(['Item: A?/p1'], output_dir="out")
+    hostile = pdf_export.default_batch_output(["Item: A?/p1"], output_dir="out")
 
     assert md.name.endswith(".md")
     assert ":" not in hostile.name and "?" not in hostile.name
@@ -928,6 +932,7 @@ def test_default_batch_output_md_extension_and_sanitising():
 # --------------------------------------------------------------------------- #
 # compile_batch
 # --------------------------------------------------------------------------- #
+
 
 @patch("artifice_ocr.stages.structure.ollama.chat")
 def test_compile_batch_end_to_end(mock_chat, tmp_path):
@@ -983,8 +988,7 @@ def test_compile_batch_reports_skipped(mock_chat, tmp_path):
     )
 
     assert result.exists()
-    assert any("Skipped 1 item(s)" in m and "not_processed" in m
-               for m in progress)
+    assert any("Skipped 1 item(s)" in m and "not_processed" in m for m in progress)
     mock_chat.assert_not_called()
 
 
@@ -1030,8 +1034,8 @@ def test_compile_batch_structure_cache_isolated_per_item(mock_chat, tmp_path):
             if msg["role"] == "user":
                 # Whitespace-only change so the guard accepts it
                 return MagicMock(
-                    message=MagicMock(
-                        content=msg["content"].replace(" steht", "\n\nsteht")))
+                    message=MagicMock(content=msg["content"].replace(" steht", "\n\nsteht"))
+                )
         return MagicMock(message=MagicMock(content=""))
 
     mock_chat.side_effect = side_effect
@@ -1075,8 +1079,7 @@ def test_collect_folder_stems_use_manifest_keys(tmp_path):
             "Item A/scan": {"item_title": "Item A", "page_number": 1},
         },
     }
-    (tmp_path / "tropy_manifest.json").write_text(
-        json.dumps(manifest), encoding="utf-8")
+    (tmp_path / "tropy_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
     pages = pdf_export.collect_folder(str(text_dir), stage="cleaned")
 
@@ -1088,6 +1091,7 @@ def test_collect_folder_stems_use_manifest_keys(tmp_path):
 # --------------------------------------------------------------------------- #
 # compile / compile_batch — path validation
 # --------------------------------------------------------------------------- #
+
 
 def test_compile_refuses_folder_outside_allowed_roots():
     from artifice_ocr import pdf_export
@@ -1105,7 +1109,9 @@ def test_compile_refuses_output_outside_allowed_roots(tmp_path):
 
     with pytest.raises(ValueError, match="outside the directories"):
         pdf_export.compile(
-            str(tmp_path), stage="cleaned", structure=False,
+            str(tmp_path),
+            stage="cleaned",
+            structure=False,
             output="/opt/rejected/out.pdf",
         )
 
@@ -1119,7 +1125,9 @@ def test_compile_refuses_manifest_outside_allowed_roots(tmp_path):
 
     with pytest.raises(ValueError, match="outside the directories"):
         pdf_export.compile(
-            str(tmp_path), stage="cleaned", structure=False,
+            str(tmp_path),
+            stage="cleaned",
+            structure=False,
             manifest_path="/opt/rejected/manifest.json",
         )
 
@@ -1132,7 +1140,9 @@ def test_compile_accepts_valid_paths(tmp_path):
     (text_dir / "page1.txt").write_text("Page 1 text.", encoding="utf-8")
 
     result = pdf_export.compile(
-        str(tmp_path), stage="cleaned", structure=False,
+        str(tmp_path),
+        stage="cleaned",
+        structure=False,
         output=str(tmp_path / "out.pdf"),
     )
     assert result.exists()
@@ -1155,7 +1165,8 @@ def test_compile_batch_refuses_output_outside_allowed_roots(tmp_path):
 
     with pytest.raises(ValueError, match="outside the directories"):
         pdf_export.compile_batch(
-            ["Item A/scan"], output_dir=str(tmp_path),
+            ["Item A/scan"],
+            output_dir=str(tmp_path),
             output="/opt/rejected/out.pdf",
         )
 
@@ -1169,6 +1180,7 @@ def test_compile_batch_refuses_manifest_outside_allowed_roots(tmp_path):
 
     with pytest.raises(ValueError, match="outside the directories"):
         pdf_export.compile_batch(
-            ["Item A/scan"], output_dir=str(tmp_path),
+            ["Item A/scan"],
+            output_dir=str(tmp_path),
             manifest_path="/opt/rejected/manifest.json",
         )

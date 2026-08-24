@@ -111,7 +111,10 @@ def byom_state() -> dict:
     api_key = cfg.get("api_key") or ""
     model_name = cfg.get("model_name") or ""
 
-    configured = is_configured(base_url, api_key, defaults=("http://localhost:11434/v1",))
+    # An explicitly chosen model counts as configured, not just the endpoint.
+    configured = is_configured(
+        base_url, api_key, defaults=("http://localhost:11434/v1",), model=model_name
+    )
 
     return {
         "app": "artifice-transcribe",
@@ -177,3 +180,49 @@ async def byom_test(req: TestRequest) -> dict:
         "models": list(result.models),
         "hint": result.hint,
     }
+
+
+# ── POST /api/byom/model ────────────────────────────────────────────────────
+
+
+class ModelRequest(BaseModel):
+    """A per-role model choice.
+
+    Transcribe's BYOM endpoint is the *optional* one used for summaries and
+    cleanup, so its only role is ``chat``. The Whisper and diarization models
+    are a separate stack with their own download flow and are not set here.
+    """
+
+    model: str = ""
+    role: str = "chat"
+
+
+@router.post("/model")
+def byom_set_model(req: ModelRequest) -> dict:
+    """Persist the user's model choice.
+
+    Transcribe had no save path for a model anywhere — not in the app and not
+    in the Hub, which has no transcribe entry in its role map. With nothing
+    configured, ``InferenceEngine`` used to take whatever the server listed
+    first. This closes that.
+
+    An empty ``model`` clears the choice deliberately, returning the app to
+    per-run resolution. That is a supported state, not an error.
+    """
+    if req.role != "chat":
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"artifice-transcribe has no {req.role!r} role; expected 'chat'."},
+        )
+
+    chosen = req.model.strip()
+    existing = _load_inference_config()
+    _save_inference_config(
+        {
+            "base_url": existing.get("base_url", ""),
+            "api_key": existing.get("api_key", ""),
+            "model_name": chosen,
+            "vision_enabled": existing.get("vision_enabled", False),
+        }
+    )
+    return {"model": chosen or None, "role": "chat"}

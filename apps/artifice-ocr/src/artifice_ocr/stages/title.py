@@ -20,6 +20,7 @@ from typing import Any
 
 from artifice_ocr._guard import _UMLAUT, _WORD
 from artifice_ocr._logging import get_logger
+from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr.config import get as cfg
 from model_harness.contract import (
     ModelConnectorConfig,
@@ -47,9 +48,7 @@ class PageTitleSchema(BaseModel):
         max_length=120,
         description="Short archival title reflecting page content",
     )
-    language: str = Field(
-        ..., description="Detected source language ISO code of the page"
-    )
+    language: str = Field(..., description="Detected source language ISO code of the page")
 
 
 # ---------------------------------------------------------------------------
@@ -81,9 +80,9 @@ _BACKEND_PROVIDER: dict[str, Provider] = {
 
 def _resolve_provider_config() -> ModelConnectorConfig:
     """Build a :class:`ModelConnectorConfig` from the app config."""
-    backend = (cfg("cleanup_backend") or "ollama").lower()
+    backend = backend_for("chat").lower()
     provider: Provider = _BACKEND_PROVIDER.get(backend, "ollama")
-    model = cfg("cleanup_model")
+    model = model_for("chat")
 
     endpoint: str
     api_key: str | None = None
@@ -160,8 +159,8 @@ def perform(
     is an enhancement, never a pipeline blocker.
     """
     base_name = stem or (Path(source_file).stem if source_file else "unknown")
-    model = cfg("cleanup_model")
-    backend = cfg("cleanup_backend") or "ollama"
+    model = model_for("chat")
+    backend = backend_for("chat")
 
     log.info("Generating title for %s (model=%s, backend=%s)", base_name, model, backend)
 
@@ -197,14 +196,16 @@ def perform(
     except (StructuredOutputUnsupported, SchemaValidationFailed) as exc:
         log.warning(
             "Title generation failed for %s: %s — falling back to basename",
-            base_name, exc,
+            base_name,
+            exc,
         )
         return _fallback_result(source_file, base_name, output_dir, error=str(exc))
 
     except Exception as exc:
         log.warning(
             "Title generation failed for %s: %s — falling back to basename",
-            base_name, exc,
+            base_name,
+            exc,
         )
         return _fallback_result(source_file, base_name, output_dir, error=str(exc))
 
@@ -215,7 +216,9 @@ def perform(
     # 1. Length cap (truncation, not retry)
     if len(title) > max_chars:
         log.warning(
-            "Title for %s exceeds %d chars — truncating", base_name, max_chars,
+            "Title for %s exceeds %d chars — truncating",
+            base_name,
+            max_chars,
         )
         title = title[:max_chars]
         guard_results["truncated"] = True
@@ -223,8 +226,7 @@ def perform(
     # 2. Accent check: warn but keep (generated content, not a transcription edit)
     if _UMLAUT.search(title) and cleaned_text and not _UMLAUT.search(cleaned_text[:2000]):
         log.warning(
-            "Title for %s introduces diacritics not present in source — "
-            "keeping title but flagging",
+            "Title for %s introduces diacritics not present in source — keeping title but flagging",
             base_name,
         )
         guard_results["accent_warning"] = True
@@ -236,7 +238,9 @@ def perform(
             base_name,
         )
         return _fallback_result(
-            source_file, base_name, output_dir,
+            source_file,
+            base_name,
+            output_dir,
             error="repetition loop: " + title,
         )
 
@@ -273,7 +277,8 @@ def perform(
 
     log.info(
         "Title generated for %s: %s",
-        base_name, output_data["title"],
+        base_name,
+        output_data["title"],
     )
     return output_data
 

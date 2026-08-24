@@ -494,6 +494,16 @@
       '<button type="button" class="byom-btn-primary" id="byomTestBtn">Test connection</button>' +
       '<div class="byom-result" id="byomResult" role="status" aria-live="polite" data-state="idle">Not tested yet.</div>' +
       "</div>" +
+      // Model choice. Hidden until a connection test succeeds, because the
+      // options are the models that endpoint actually reports — offering a
+      // picker before we know what is installed is how the suite ended up
+      // shipping model names nobody had. One row per role: most apps have a
+      // single "chat" role, ocr has three and graph has two.
+      '<div class="byom-modelpick" id="byomModelPick" hidden>' +
+      '<div class="byom-modelpick-rows" id="byomModelRows"></div>' +
+      '<button type="button" class="byom-btn-primary" id="byomModelSave">Use these models</button>' +
+      '<div class="byom-result" id="byomModelResult" role="status" aria-live="polite" data-state="idle"></div>' +
+      "</div>" +
       "</div>" +
       // Second, independent endpoint — graph only. Present in the DOM for
       // every app (this markup is built before state is known) but hidden
@@ -1036,6 +1046,7 @@
   };
 
   Byom.prototype._testConnection = function (url, apiKey) {
+    var self = this;
     this._runTest({
       url: url,
       apiKey: apiKey,
@@ -1044,7 +1055,129 @@
       resultEl: this.resultEl,
       testBtn: this.testBtn,
       endpoint: "/api/byom/test",
-      onSuccess: this.onConfigured
+      onSuccess: function (info) {
+        self._renderModelPicker(info.models || []);
+        if (self.onConfigured) { self.onConfigured(info); }
+      }
+    });
+  };
+
+  // ── Model choice ─────────────────────────────────────────────────────────
+  //
+  // The BYOM screen used to configure an *endpoint* and nothing else: its only
+  // POST was the connection test, and no app exposed a route to record which
+  // model to use. Apps therefore fell back to a shipped literal — gemma4:12b in
+  // draft, gemma2:27b in graph — which most users do not have. These methods
+  // and POST /api/byom/model close that.
+
+  // Distinct roles this app uses, in a stable order, derived from the
+  // recommendations the server sent. Defaults to a single chat role, which is
+  // correct for draft and transcribe.
+  Byom.prototype._rolesFromState = function () {
+    var recs = (this.state && this.state.recommendations) || null;
+    var list = recs && recs.models ? recs.models : (recs || []);
+    var roles = [];
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i] && list[i].role;
+      if (r && roles.indexOf(r) === -1) { roles.push(r); }
+    }
+    return roles.length ? roles : ["chat"];
+  };
+
+  var ROLE_LABELS = {
+    vision: "Vision / OCR model",
+    chat: "Text model",
+    translation: "Translation model",
+    embedding: "Embedding model"
+  };
+
+  Byom.prototype._renderModelPicker = function (models) {
+    var wrap = qs(this.overlay, "#byomModelPick");
+    var rows = qs(this.overlay, "#byomModelRows");
+    if (!wrap || !rows) { return; }
+
+    if (!models.length) {
+      // Connected but nothing pulled. Say so rather than showing an empty
+      // dropdown, which reads as a broken control.
+      wrap.hidden = true;
+      return;
+    }
+
+    rows.innerHTML = "";
+    var roles = this._rolesFromState();
+    for (var i = 0; i < roles.length; i++) {
+      var role = roles[i];
+      var field = document.createElement("div");
+      field.className = "byom-field";
+
+      var id = "byomModel_" + role;
+      var label = document.createElement("label");
+      label.setAttribute("for", id);
+      label.textContent = ROLE_LABELS[role] || role;
+      field.appendChild(label);
+
+      var select = document.createElement("select");
+      select.className = "byom-input";
+      select.id = id;
+      select.setAttribute("data-role", role);
+
+      // "Choose automatically" is first and is the default, because it is the
+      // shipped behaviour: an empty choice means the app resolves a model per
+      // run from what the endpoint serves. It is a real option, not a null.
+      var auto = document.createElement("option");
+      auto.value = "";
+      auto.textContent = "Choose automatically";
+      select.appendChild(auto);
+
+      for (var m = 0; m < models.length; m++) {
+        var opt = document.createElement("option");
+        opt.value = models[m];
+        opt.textContent = models[m];
+        select.appendChild(opt);
+      }
+      field.appendChild(select);
+      rows.appendChild(field);
+    }
+
+    wrap.hidden = false;
+    this._wireModelSave();
+  };
+
+  Byom.prototype._wireModelSave = function () {
+    var self = this;
+    var btn = qs(this.overlay, "#byomModelSave");
+    if (!btn || btn.getAttribute("data-wired") === "true") { return; }
+    btn.setAttribute("data-wired", "true");
+
+    btn.addEventListener("click", function () {
+      var rows = qs(self.overlay, "#byomModelRows");
+      var resultEl = qs(self.overlay, "#byomModelResult");
+      var selects = rows ? rows.querySelectorAll("select") : [];
+      if (!selects.length) { return; }
+
+      btn.disabled = true;
+      self._setResultOn(resultEl, "pending", "Saving…");
+
+      var pending = [];
+      for (var i = 0; i < selects.length; i++) {
+        pending.push(self.fetchImpl("/api/byom/model", {
+          method: "POST",
+          body: { model: selects[i].value, role: selects[i].getAttribute("data-role") }
+        }));
+      }
+
+      Promise.all(pending)
+        .then(function () {
+          btn.disabled = false;
+          self._setResultOn(resultEl, "ok", "Saved.");
+          // The masthead dot reads `configured`, which a model choice now
+          // affects, so re-read state rather than leaving it stale.
+          return self._refresh ? self._refresh() : null;
+        })
+        ["catch"](function (err) {
+          btn.disabled = false;
+          self._setResultOn(resultEl, "fail", (err && err.message) || "Could not save.");
+        });
     });
   };
 
@@ -1100,9 +1233,18 @@
     var btn = document.getElementById(NAV_TRIGGER_ID);
     if (!btn) return;
     btn.setAttribute("data-state", configured ? "configured" : "unconfigured");
+    // "Connection", not "Model". GET /api/byom/state derives `configured`
+    // from the endpoint and credentials — and, since the model-resolution
+    // work, from whether a model has been explicitly chosen. It has never
+    // measured whether a *model* is present and usable, so the old wording
+    // claimed something the flag does not know. An app with no model chosen
+    // is not misconfigured: it resolves one per run from what the endpoint
+    // serves, which is the normal state.
     btn.setAttribute(
       "aria-label",
-      configured ? "Model configured. Open connection settings." : "Model not configured. Open connection settings."
+      configured
+        ? "Connection configured. Open connection settings."
+        : "Connection not configured. Open connection settings."
     );
   }
 

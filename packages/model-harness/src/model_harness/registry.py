@@ -593,15 +593,23 @@ def is_configured(
     api_key: str = "",
     *,
     defaults: Iterable[str] = (),
+    model: str = "",
 ) -> bool:
     """Return ``True`` when the user has departed from the built-in defaults.
 
-    An endpoint is considered configured when either:
+    A connection is considered configured when any of:
 
     * *api_key* is non-empty and is not a known placeholder
       (``""``, ``"not-needed"``), **or**
     * *base_url* is non-empty and is not one of the values the app ships
-      as its default.
+      as its default, **or**
+    * *model* is non-empty — the user has explicitly chosen a model.
+
+    **This reports intent, not readiness.** It performs no I/O: it cannot say
+    whether the endpoint answers, nor whether the chosen model is installed.
+    Callers must not present the result as "connected" or "ready" — a
+    configured endpoint that is currently down would make that a lie, and
+    recovering from exactly that is what the BYOM screen exists for.
 
     Args:
         base_url: The URL the app will connect to (may be empty).
@@ -609,6 +617,10 @@ def is_configured(
         defaults: The set of base URLs the app ships as out-of-the-box
             defaults. Callers should pass the app-specific shipped base
             URL values to compare against.
+        model: The chosen model name, if any. Empty means the app will
+            resolve one per run from what the endpoint serves, which is the
+            normal state and is *not* a defect — see
+            :mod:`model_harness.resolution`.
 
     Returns:
         ``True`` if the user has intentionally changed at least one
@@ -616,7 +628,9 @@ def is_configured(
     """
     if api_key and api_key not in _PLACEHOLDER_API_KEYS:
         return True
-    if base_url and base_url not in defaults:  # noqa: SIM103
+    if base_url and base_url not in defaults:
+        return True
+    if model:  # noqa: SIM103
         return True
     return False
 

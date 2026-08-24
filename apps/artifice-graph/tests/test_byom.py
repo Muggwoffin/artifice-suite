@@ -284,7 +284,10 @@ class TestByomContractAndSsrf:
         assert body["configured"] is False
         assert body["embedding"]["configured"] is False
         assert body["embedding"]["endpoint"] == "http://localhost:11434"
-        assert body["embedding"]["model"] == "bge-m3"
+        # No model has been chosen, so state reports none. The default used to
+        # be "bge-m3"; naming a model the user may not have installed is the
+        # defect this branch removes — resolution picks one per run instead.
+        assert body["embedding"]["model"] is None
 
     def test_state_json_keys_configured(self, client):
         cfg = PipelineConfig(llm=LLMConfig(base_url="http://localhost:9999/v1", api_key="sk-real"))
@@ -490,7 +493,10 @@ class TestByomContractAndSsrf:
         emb = r.json()["embedding"]
         assert emb["configured"] is False
         assert emb["endpoint"] == "http://localhost:11434"
-        assert emb["model"] == "bge-m3"
+        # Neither case sets a model, so state reports none rather than the old
+        # "bge-m3" default. These tests are about the endpoint being
+        # configured; the model is chosen per run by _resolution.
+        assert emb["model"] is None
 
     def test_embedding_state_reports_configured(self, client):
         """When the embedding URL is changed, state reports configured=True."""
@@ -504,7 +510,10 @@ class TestByomContractAndSsrf:
         emb = r.json()["embedding"]
         assert emb["configured"] is True
         assert emb["endpoint"] == "http://localhost:8888/v1"
-        assert emb["model"] == "bge-m3"
+        # Neither case sets a model, so state reports none rather than the old
+        # "bge-m3" default. These tests are about the endpoint being
+        # configured; the model is chosen per run by _resolution.
+        assert emb["model"] is None
 
     # -- SSRF surface -----------------------------------------------------
 
