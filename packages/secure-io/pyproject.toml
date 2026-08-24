@@ -1,6 +1,6 @@
 [project]
 name = "artifice-secure-io"
-version = "0.2.0"
+version = "0.3.0"
 description = "OS-appropriate access controls for secret-bearing files in the Artifice Suite"
 readme = "README.md"
 requires-python = ">=3.11"

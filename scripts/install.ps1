@@ -12,8 +12,8 @@ heavy ASR pack, and creates a Desktop shortcut.  Downloads and verifies the uv
 installer with a pinned SHA256 checksum before executing it --- never pipes a
 remote script directly into a shell.
 
-The SHA256 constant in this file MUST be updated by the maintainer before every
-release.  See the MAINTAINER comment in the uv-bootstrap section.
+The uv installer URL and checksum are version-pinned; they change only when
+`$UvVersion` is deliberately bumped.  See the uv-bootstrap section below.
 
 .EXAMPLE
 .\install.ps1
@@ -61,19 +61,17 @@ try {
 
 # --- ensure uv is available (pinned checksum verification) --------------------
 #
-# MAINTAINER: Replace the checksum below with the actual SHA256 of the
-# installer BEFORE EVERY RELEASE.  To obtain it:
-#
-#   Invoke-WebRequest https://astral.sh/uv/install.ps1 -OutFile - | Get-FileHash -Algorithm SHA256
-#
-# The placeholder value will ALWAYS cause a mismatch, preventing the installer
-# from running an unverified script.
+# The uv installer is fetched from a version-pinned URL, so its bytes are
+# immutable and the checksum below changes only when $UvVersion is bumped.
+# When bumping, change $UvVersion and $ExpectedUvHash together and re-verify
+# the hash against the pinned release before committing.
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     Write-Banner "Installing uv (Python package manager)"
 
-    $ExpectedUvHash = "PLACEHOLDER_SHA256"
-    $uvInstallerUrl = "https://astral.sh/uv/install.ps1"
+    $UvVersion = "0.12.5"
+    $ExpectedUvHash = "ca1ad558c65d31e2d3a24464638aff90bfb81d6c72428b4e71d6f55944a68541"
+    $uvInstallerUrl = "https://astral.sh/uv/$UvVersion/install.ps1"
     $uvInstallerPath = Join-Path $env:TEMP "uv-install-$(Get-Random).ps1"
 
     try {
@@ -117,12 +115,19 @@ If you are the maintainer:
         Exit-Install "Failed to download or verify the uv installer: $_"
     }
 
-    # The uv installer adds ~\.cargo\bin to the user PATH, but that only takes
-    # effect in new shell sessions.  Prepend it here so the rest of this
-    # script can find uv.
+    # uv installs itself to %USERPROFILE%\.local\bin (the uv tool bin
+    # directory), not ~\.cargo\bin --- that path is a legacy of uv's old
+    # cargo-based installer.  The profile update only takes effect in new
+    # shell sessions, so prepend both directories now: the modern location
+    # first, ~\.cargo\bin retained as a fallback for older existing installs.
+    $uvToolBin = "$env:USERPROFILE\.local\bin"
     $cargoBin = "$env:USERPROFILE\.cargo\bin"
-    if (Test-Path $cargoBin) {
-        $env:PATH = "$cargoBin;$env:PATH"
+    # Build the prefix in one pass so ~\.local\bin stays ahead of ~\.cargo\bin.
+    # Two sequential prepends invert the order — the second one lands at the
+    # front of the final PATH.
+    $pathPrefix = @($uvToolBin, $cargoBin) | Where-Object { Test-Path $_ }
+    if ($pathPrefix) {
+        $env:PATH = ($pathPrefix -join ';') + ";$env:PATH"
     }
 
     # Final check: did uv actually show up?
@@ -193,20 +198,29 @@ $desktop = [Environment]::GetFolderPath("Desktop")
 $shortcutPath = Join-Path $desktop "Artifice Transcribe.lnk"
 
 # Resolve the installed entry-point.  uv tool install places executables in
-# ~\.cargo\bin by default.  Try that first, then fall back to a PATH search.
+# the uv tool bin directory (%USERPROFILE%\.local\bin), with ~\.cargo\bin
+# retained as a fallback for older installs.  Try those first, then fall back
+# to a PATH search.
+$targetExe = $null
+$uvToolBin = "$env:USERPROFILE\.local\bin"
 $cargoBin = "$env:USERPROFILE\.cargo\bin"
-if (Test-Path "$cargoBin\artifice-transcribe.exe") {
-    $targetExe = "$cargoBin\artifice-transcribe.exe"
-} elseif (Test-Path "$cargoBin\artifice-transcribe.cmd") {
-    $targetExe = "$cargoBin\artifice-transcribe.cmd"
-} else {
+foreach ($binDir in @($uvToolBin, $cargoBin)) {
+    if (Test-Path "$binDir\artifice-transcribe.exe") {
+        $targetExe = "$binDir\artifice-transcribe.exe"
+        break
+    } elseif (Test-Path "$binDir\artifice-transcribe.cmd") {
+        $targetExe = "$binDir\artifice-transcribe.cmd"
+        break
+    }
+}
+if (-not $targetExe) {
     # uv may have installed to a non-default tool dir; probe it.
     $found = Get-Command artifice-transcribe -CommandType Application -ErrorAction SilentlyContinue
     if ($found) {
         $targetExe = $found.Source
     } else {
-        # Re-add cargo bin to PATH in case it was dropped and retry.
-        $env:PATH = "$cargoBin;$env:PATH"
+        # Re-add the uv tool bin dirs to PATH in case they were dropped and retry.
+        $env:PATH = "$uvToolBin;$cargoBin;$env:PATH"
         $found = Get-Command artifice-transcribe -CommandType Application -ErrorAction SilentlyContinue
         if ($found) {
             $targetExe = $found.Source

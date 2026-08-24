@@ -12,8 +12,8 @@
 # and verifies the uv installer with a pinned SHA256 checksum before
 # executing it --- never pipes a remote script directly into a shell.
 #
-# The SHA256 constant in this file MUST be updated by the maintainer before
-# every release.  See the MAINTAINER comment in the uv-bootstrap section.
+# The uv installer URL and checksum are version-pinned; they change only when
+# UV_VERSION is deliberately bumped.  See the uv-bootstrap section below.
 #
 # Usage:
 #   bash install.sh        (double-click the .command file on macOS)
@@ -41,16 +41,14 @@ fi
 
 # --- ensure uv is available (pinned checksum verification) --------------------
 #
-# MAINTAINER: Replace the checksum below with the actual SHA256 of the
-# installer BEFORE EVERY RELEASE.  To obtain it:
-#
-#   curl -fsSL https://astral.sh/uv/install.sh | sha256sum
-#
-# The placeholder value will ALWAYS cause a mismatch, preventing the
-# installer from running an unverified script.
+# The uv installer is fetched from a version-pinned URL, so its bytes are
+# immutable and the checksum below changes only when UV_VERSION is bumped.
+# When bumping, change UV_VERSION and EXPECTED_HASH together and re-verify
+# the hash against the pinned release before committing.
 
-UV_INSTALLER_URL="https://astral.sh/uv/install.sh"
-EXPECTED_HASH="PLACEHOLDER_SHA256"
+UV_VERSION="0.12.5"
+UV_INSTALLER_URL="https://astral.sh/uv/${UV_VERSION}/install.sh"
+EXPECTED_HASH="504511fbbbd811aeaba6738abc79408956b6c7da0ca35437b3dcc24a41efc111"
 
 if ! command -v uv &>/dev/null; then
     banner "Installing uv (Python package manager)"
@@ -91,9 +89,12 @@ If you are the maintainer:
 
     rm -f "$uv_installer"
 
-    # The uv installer adds ~/.cargo/bin to PATH via shell profile, but that
-    # only takes effect in new sessions.  Source it for the current one.
-    export PATH="$HOME/.cargo/bin:$PATH"
+    # uv installs itself to ~/.local/bin (honouring XDG_BIN_HOME), not
+    # ~/.cargo/bin --- that path is a legacy of uv's old cargo-based
+    # installer.  The profile update only takes effect in new sessions, so
+    # prepend both directories now for the current one: the modern location
+    # first, ~/.cargo/bin retained as a fallback for older existing installs.
+    export PATH="${XDG_BIN_HOME:-$HOME/.local/bin}:$HOME/.cargo/bin:$PATH"
 
     # Final check: did uv actually show up?
     if ! command -v uv &>/dev/null; then
@@ -180,8 +181,12 @@ banner "Desktop shortcut"
 os_type="$(uname -s)"
 
 # Resolve the installed entry-point.  uv tool install places executables in
-# ~/.cargo/bin by default.
-entry_point="$HOME/.cargo/bin/artifice-transcribe"
+# the uv tool bin directory (~/.local/bin, or $XDG_BIN_HOME if set), with
+# ~/.cargo/bin retained as a fallback for older installs.
+entry_point="${XDG_BIN_HOME:-$HOME/.local/bin}/artifice-transcribe"
+if [ ! -x "$entry_point" ]; then
+    entry_point="$HOME/.cargo/bin/artifice-transcribe"
+fi
 if [ ! -x "$entry_point" ]; then
     # Fall back to a PATH search.
     entry_point="$(command -v artifice-transcribe 2>/dev/null || true)"

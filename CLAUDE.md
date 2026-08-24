@@ -13,6 +13,29 @@ You oversee the development of four local-first, BYOM (Bring-Your-Own-Model) aca
 - `apps/artifice-graph` (Knowledge graph creator)
 - `apps/artifice-transcribe` (Oral history transcription via Whisper/Parakeet & pyannote)
 
+…and a fifth app that is **not** a harness, added later and easy to miss:
+- `apps/artifice-hub` (native GUI launcher — installs, updates and launches the other four)
+
+> **"Four apps" was wrong from the day the Hub landed and stayed wrong for two weeks —
+> corrected 2026-08-24.** `apps/artifice-hub` has 43 tests, its own `artifice-hub.spec`, a
+> `window.py`, and a slot in `build-exe.yml`'s app choice. It is deliberately **frozen-only**:
+> no Dockerfile, no PyPI publish, no `uv tool install` (`README.md:106-111`). That exclusion is
+> why every count in this file said four — the Hub is absent from the *publishing* paths a survey
+> naturally greps, and present everywhere else.
+>
+> **It is still in scope for anything version-shaped.** `scripts/check-release-consistency.py`
+> globs `apps/*/pyproject.toml`, so the Hub is gated whether or not it ships to PyPI — and on
+> 2026-08-24 it was the *sole* reason the release gate failed, sitting at `0.1.0` against `0.2.0`
+> everywhere else. A "frozen-only, not published" app is exempt from distribution, not from the
+> suite version.
+>
+> Note also that its `version` is at **line 7** of its `pyproject.toml`, not line 3 like the other
+> eight. A brief that says "line 3" will send an agent to the wrong line.
+>
+> The Hub is also the one app with **no `templates/` tree** — it serves static HTML, so anything
+> done "in every app's `base.html`" silently skips it. That is exactly how it ended up the only
+> app with no favicon while the other four had one.
+
 ## Core Instructions
 1. **Do not write bulk code directly.** Delegate code writing, testing, layout, and auditing to specialized sub-agents via OpenCode tools or Claude Code commands.
 2. **Enforce Harness Architecture.** Verify that no feature relies on freeform chat. All model

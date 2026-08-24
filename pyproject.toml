@@ -1,6 +1,6 @@
 [project]
 name = "artifice-suite"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local-first, BYOM desktop tool suite designed around harness architecture."
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
@@ -96,3 +96,16 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+# The live_smoke guard is declared here AND in
+# packages/model-harness/pyproject.toml, deliberately.  pytest selects exactly
+# one config file (from the rootdir it computes) — it does not merge them.  A
+# repo-root invocation (e.g. `uv run pytest packages/model-harness
+# packages/secure-io`) reads only THIS file and never sees the model-harness
+# section, so the marker and `-m 'not live_smoke'` must live in both places.
+# Change the two sections together.
+[tool.pytest.ini_options]
+markers = [
+    "live_smoke: live smoke test requiring a running Ollama server (run with --live-smoke)",
+]
+addopts = "-m 'not live_smoke'"

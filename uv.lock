@@ -249,7 +249,7 @@ wheels = [
 
 [[package]]
 name = "artifice-draft"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "apps/artifice-draft" }
 dependencies = [
     { name = "artifice-model-harness" },
@@ -297,7 +297,7 @@ provides-extras = ["web"]
 
 [[package]]
 name = "artifice-graph"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "apps/artifice-graph" }
 dependencies = [
     { name = "artifice-model-harness" },
@@ -363,7 +363,7 @@ dev = [
 
 [[package]]
 name = "artifice-hub"
-version = "0.1.0"
+version = "0.3.0"
 source = { editable = "apps/artifice-hub" }
 dependencies = [
     { name = "artifice-model-harness" },
@@ -390,7 +390,7 @@ requires-dist = [
 
 [[package]]
 name = "artifice-model-harness"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "packages/model-harness" }
 dependencies = [
     { name = "httpx" },
@@ -408,7 +408,7 @@ dev = []
 
 [[package]]
 name = "artifice-ocr"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "apps/artifice-ocr" }
 dependencies = [
     { name = "artifice-model-harness" },
@@ -468,12 +468,12 @@ dev = [
 
 [[package]]
 name = "artifice-secure-io"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "packages/secure-io" }
 
 [[package]]
 name = "artifice-shared-ui"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "packages/shared-ui" }
 dependencies = [
     { name = "platformdirs" },
@@ -488,7 +488,7 @@ requires-dist = [
 
 [[package]]
 name = "artifice-suite"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
 
 [package.optional-dependencies]
@@ -592,7 +592,7 @@ dev = [
 
 [[package]]
 name = "artifice-transcribe"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "apps/artifice-transcribe" }
 dependencies = [
     { name = "aiosqlite" },
