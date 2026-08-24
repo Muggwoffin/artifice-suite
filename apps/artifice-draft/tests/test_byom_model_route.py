@@ -11,8 +11,8 @@ to set one at all.
 
 from __future__ import annotations
 
-import pytest
 import artifice_draft.web.runtime as runtime
+import pytest
 from artifice_draft.web.server import app
 from fastapi.testclient import TestClient
 
