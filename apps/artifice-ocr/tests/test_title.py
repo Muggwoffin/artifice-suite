@@ -18,6 +18,22 @@ from model_harness.contract import (
 )
 from pydantic import ValidationError
 
+
+@pytest.fixture(autouse=True)
+def _set_resolved_config():
+    """Title reads model/backend through the resolver accessors, which fall
+    back to real config (not the module's ``cfg`` that individual tests patch
+    for the other keys).  Provide the model/backend the tests expect."""
+    from artifice_ocr import _resolution, config
+
+    config.reset()
+    _resolution.reset()
+    config.apply_overrides({"cleanup_model": "gemma4:12b", "cleanup_backend": "ollama"})
+    yield
+    config.reset()
+    _resolution.reset()
+
+
 # ---------------------------------------------------------------------------
 # Schema validation
 # ---------------------------------------------------------------------------

@@ -14,6 +14,7 @@ from artifice_ocr._chunking import chunk_text, reassemble, estimate_tokens
 from artifice_ocr._confidence import evaluate_confidence
 from artifice_ocr._logging import get_logger
 from artifice_ocr._prompts import get_translation_prompt, get_lang_detect_prompt
+from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
 
@@ -36,8 +37,8 @@ COMMON_LANGUAGES = {
 
 @retry(max_attempts=3, base_delay=1.0, label="Lang detect")
 def _call_lang_detect(text: str, doc_type: str = "default") -> str:
-    model = cfg("translate_model")
-    backend = cfg("translate_backend") or "ollama"
+    model = model_for("translation")
+    backend = backend_for("translation")
     prompt = get_lang_detect_prompt(doc_type)
     response = _llm.chat(
         backend=backend,
@@ -78,8 +79,8 @@ def _call_translate_chunk(
 ) -> str:
     """Translate a single chunk of text."""
     user_prompt = user_template.replace("{text}", cleaned_text)
-    model = cfg("translate_model")
-    backend = cfg("translate_backend") or "ollama"
+    model = model_for("translation")
+    backend = backend_for("translation")
 
     response = _llm.chat(
         backend=backend,
@@ -159,7 +160,7 @@ def perform(
         system_prompt = prompts["system"]
         user_template = prompts["user"]
 
-        log.info("Translating with %s (doc_type=%s)", cfg("translate_model"), doc_type)
+        log.info("Translating with %s (doc_type=%s)", model_for("translation"), doc_type)
         translated_text = _translate_with_chunking(
             cleaned_text, system_prompt, user_template,
         )
@@ -196,8 +197,8 @@ def perform(
         "source_language_name": lang_name,
         "cleaned_text": cleaned_text,
         "translated_text": translated_text,
-        "engine": cfg("translate_backend") or "ollama",
-        "model": cfg("translate_model"),
+        "engine": backend_for("translation"),
+        "model": model_for("translation"),
         "system_prompt": system_prompt,
         "document_type": doc_type,
         "timestamp": datetime.now(timezone.utc).isoformat(),

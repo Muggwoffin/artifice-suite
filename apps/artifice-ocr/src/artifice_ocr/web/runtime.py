@@ -373,6 +373,14 @@ class RunState:
         config.apply_overrides({"output_dir": output_dir})
         config.save_user_settings({"output_dir": output_dir})
 
+        # Resolve concrete model/backend pairs once, before any item runs.
+        # Fails fast with a legible RuntimeError when a model cannot be
+        # resolved, so a bad setup is reported up front rather than as a raw
+        # provider 404 on the first file.
+        from .._resolution import resolve_models_for_run
+
+        resolve_models_for_run(stages=stages)
+
         self.run_id = self.history.start_run(
             stages=[s for s in STAGES if s in stages],
             output_dir=output_dir, total=len(self.items),

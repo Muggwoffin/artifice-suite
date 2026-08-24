@@ -23,9 +23,14 @@ _CONFIG_DIR = importlib.resources.files("artifice_ocr") / "configs"
 
 _DEFAULTS: dict[str, Any] = {
     "lm_studio_url": "http://localhost:1234/v1",
-    "ocr_model": "allenai/olmocr-2-7b",
-    "cleanup_model": "gemma4:12b",
-    "translate_model": "translategemma:4b",
+    # Model names are resolved at run time (see artifice_ocr._resolution):
+    # an empty string means "no explicit choice — resolve from what the local
+    # server actually serves".  Shipping a concrete name here was the bug: the
+    # OCR default was a Hugging Face repo id, not an Ollama tag, so a default
+    # install failed before the user did anything.
+    "ocr_model": "",
+    "cleanup_model": "",
+    "translate_model": "",
     "output_dir": "output",
     "translate_enabled": True,
     "title_enabled": False,  # opt-in stage
@@ -77,9 +82,14 @@ _DEFAULTS: dict[str, Any] = {
     # P6: GUI persistence
     "history_db": None,  # defaults to ~/.artifice_ocr/history.db
     "gui_theme": "paper",  # "paper" (light) or "night" (dark)
-    "ocr_backend": "lm_studio",
-    "cleanup_backend": "ollama",
-    "translate_backend": "ollama",
+    # ``"auto"`` means "use whichever local server is reachable and can serve
+    # a suitable model".  The previous default presumed LM Studio for OCR and
+    # Ollama for cleanup/translate, which broke a user running only Ollama
+    # (the setup the Hub itself installs).  An explicit ``"ollama"`` /
+    # ``"lm_studio"`` / ``"huggingface"`` / ``"api_key"`` is still honoured.
+    "ocr_backend": "auto",
+    "cleanup_backend": "auto",
+    "translate_backend": "auto",
     "ollama_url": "http://localhost:11434",
     "huggingface_token": "",
     "api_key": "",

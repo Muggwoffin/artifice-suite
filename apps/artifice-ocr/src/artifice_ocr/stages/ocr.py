@@ -13,6 +13,7 @@ from typing import Any, Dict
 from artifice_ocr import _guard
 from artifice_ocr._backend import get_client as _get_backend_client
 from artifice_ocr._logging import get_logger
+from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
 
@@ -112,8 +113,8 @@ def _ocr_single_image(image_path: Path, orientation: int = 1) -> str:
     by LM Studio, Ollama's ``/v1`` endpoint, and Hugging Face alike.
     """
     image_b64, mime = _encode_image(image_path, orientation)
-    backend = cfg("ocr_backend") or "lm_studio"
-    model = cfg("ocr_model")
+    backend = backend_for("vision")
+    model = model_for("vision")
 
     # Ollama's native API carries images in an ``images`` field, not as
     # ``image_url`` content blocks.  Route through the ``ollama_openai``
@@ -214,7 +215,7 @@ def perform(
     log.info("Starting OCR for %s", path.name)
 
     is_pdf = path.suffix.lower() == ".pdf"
-    model = cfg("ocr_model")
+    model = model_for("vision")
     page_number = 1
 
     if is_pdf and page is not None:
@@ -260,7 +261,7 @@ def perform(
                     "source_file": str(path),
                     "stage": "raw_ocr",
                     "rejected_extracted_text": extracted_text,
-                    "engine": cfg("ocr_backend") or "lm_studio",
+                    "engine": backend_for("vision"),
                     "model": model,
                     "ocr_prompt": OCR_PROMPT,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -292,7 +293,7 @@ def perform(
         "source_file": str(path),
         "stage": "raw_ocr",
         "extracted_text": extracted_text,
-        "engine": cfg("ocr_backend") or "lm_studio",
+        "engine": backend_for("vision"),
         "model": model,
         "ocr_prompt": OCR_PROMPT,
         "timestamp": datetime.now(timezone.utc).isoformat(),

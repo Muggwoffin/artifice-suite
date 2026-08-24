@@ -710,6 +710,14 @@ def compile(
         validate_path(manifest_path, "manifest_path")
     folder_path = Path(folder)
 
+    if structure:
+        # The structuring pass is a model call; resolve its model/backend the
+        # same way the pipeline does, so the empty/auto defaults resolve to a
+        # concrete model instead of reaching the provider with an empty name.
+        from artifice_ocr._resolution import resolve_models_for_run
+
+        resolve_models_for_run(stages={"cleanup"})
+
     if bilingual:
         on_progress(f"Collecting bilingual pages from {folder_path}...")
         bilingual_pages = collect_bilingual_folder(str(folder_path), manifest_path=manifest_path)

@@ -13,6 +13,22 @@ from artifice_ocr.cli import app
 runner = CliRunner()
 
 
+@pytest.fixture(autouse=True)
+def _reset_config_and_resolution():
+    """Reset config and the per-run resolution cache before/after each test.
+
+    Model/backend defaults are now empty/auto, so a stale override from one
+    test (or a leftover resolution cache) would leak into the next.
+    """
+    from artifice_ocr import _resolution, config
+
+    config.reset()
+    _resolution.reset()
+    yield
+    config.reset()
+    _resolution.reset()
+
+
 def _mock_backend_response(text="Sample extracted text"):
     """Return a MagicMock that looks like a _backend._SimpleResponse."""
     mock_resp = MagicMock()
@@ -31,7 +47,10 @@ def test_ocr_stage_writes_files(mock_get_client, tmp_path):
     mock_client.chat.return_value = _mock_backend_response("Hello from OCR")
     mock_get_client.return_value = mock_client
 
+    from artifice_ocr import config
     from artifice_ocr.stages import ocr
+
+    config.apply_overrides({"ocr_model": "olmocr-2-7b", "ocr_backend": "lm_studio"})
 
     test_image = tmp_path / "doc.png"
     test_image.write_bytes(b"\x89PNG fake")
@@ -40,8 +59,8 @@ def test_ocr_stage_writes_files(mock_get_client, tmp_path):
     result = ocr.perform(str(test_image), output_dir=str(out_dir))
 
     assert result["extracted_text"] == "Hello from OCR"
-    assert result["engine"] in ("lm_studio", "lm-studio")
-    assert result["model"] == "allenai/olmocr-2-7b"
+    assert result["engine"] == "lm_studio"
+    assert result["model"] == "olmocr-2-7b"
     assert "timestamp" in result
 
     text_file = out_dir / "raw_ocr" / "text" / "doc.txt"
@@ -56,7 +75,7 @@ def test_ocr_stage_writes_files(mock_get_client, tmp_path):
 
     mock_client.chat.assert_called_once()
     call_kwargs = mock_client.chat.call_args
-    assert call_kwargs.kwargs["model"] == "allenai/olmocr-2-7b"
+    assert call_kwargs.kwargs["model"] == "olmocr-2-7b"
     user_msg = call_kwargs.kwargs["messages"][0]
     assert user_msg["role"] == "user"
     assert isinstance(user_msg["content"], list)
@@ -82,8 +101,9 @@ def test_ocr_stage_rejects_unsupported_type(mock_get_client, tmp_path):
     mock_get_client.assert_not_called()
 
 
+@patch("artifice_ocr.cli.resolve_models_for_run")
 @patch("artifice_ocr.stages.ocr._get_backend_client")
-def test_ocr_cli_wires_through(mock_get_client, tmp_path):
+def test_ocr_cli_wires_through(mock_get_client, mock_resolve, tmp_path):
     mock_client = MagicMock()
     mock_client.chat.return_value = _mock_backend_response("CLI test text")
     mock_get_client.return_value = mock_client
@@ -130,7 +150,10 @@ def test_raw_output_preserved_fully(mock_get_client, tmp_path):
 def test_cleanup_stage_writes_files(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="Cleaned output text"))
 
+    from artifice_ocr import config
     from artifice_ocr.stages import cleanup
+
+    config.apply_overrides({"cleanup_model": "gemma4:12b", "cleanup_backend": "ollama"})
 
     out_dir = tmp_path / "output"
     result = cleanup.perform(
@@ -179,8 +202,8 @@ def test_cleanup_stage_uses_prompt_file(mock_chat, tmp_path):
 
 
 @patch("artifice_ocr.stages.cleanup.ollama.chat")
-@patch("artifice_ocr.cli.check_ollama", return_value=[])
-def test_cleanup_cli_wires_through(mock_check_ollama, mock_chat, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_cleanup_cli_wires_through(mock_resolve, mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="Cleaned via CLI"))
 
     # This test covers CLI plumbing, not guard behaviour. The stub reply is far
@@ -233,7 +256,10 @@ def test_cleanup_preserves_raw_text_in_json(mock_chat, tmp_path):
 def test_translate_stage_writes_files(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="Translated output text"))
 
+    from artifice_ocr import config
     from artifice_ocr.stages import translate
+
+    config.apply_overrides({"translate_model": "translategemma:4b", "translate_backend": "ollama"})
 
     out_dir = tmp_path / "output"
     result = translate.perform(
@@ -286,8 +312,8 @@ def test_translate_stage_uses_prompt_file(mock_chat, tmp_path):
 
 
 @patch("artifice_ocr.stages.translate.ollama.chat")
-@patch("artifice_ocr.cli.check_ollama", return_value=[])
-def test_translate_cli_wires_through(mock_check_ollama, mock_chat, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_translate_cli_wires_through(mock_resolve, mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="Translated via CLI"))
 
     cleaned_file = tmp_path / "cleaned.txt"
@@ -331,7 +357,10 @@ def test_translate_preserves_cleaned_text_in_json(mock_chat, tmp_path):
 def test_detect_language_returns_iso_code(mock_chat, tmp_path):
     mock_chat.return_value = MagicMock(message=MagicMock(content="de"))
 
+    from artifice_ocr import config
     from artifice_ocr.stages.translate import detect_language
+
+    config.apply_overrides({"translate_model": "translategemma:4b", "translate_backend": "ollama"})
 
     lang = detect_language("Das ist ein Test")
     assert lang == "de"
@@ -379,9 +408,15 @@ def test_config_defaults_are_set():
 
     config.reset()
     cfg = config.load_config()
-    assert cfg["ocr_model"] == "allenai/olmocr-2-7b"
-    assert cfg["cleanup_model"] == "gemma4:12b"
-    assert cfg["translate_model"] == "translategemma:4b"
+    # Models are resolved at run time; the default is an empty string, not a
+    # concrete name (a concrete name was the bug: it presumed a server the
+    # suite does not install).
+    assert cfg["ocr_model"] == ""
+    assert cfg["cleanup_model"] == ""
+    assert cfg["translate_model"] == ""
+    assert cfg["ocr_backend"] == "auto"
+    assert cfg["cleanup_backend"] == "auto"
+    assert cfg["translate_backend"] == "auto"
     assert cfg["lm_studio_url"] == "http://localhost:1234/v1"
     config.reset()
 
@@ -399,7 +434,7 @@ def test_config_file_override(tmp_path):
     cfg = config.load_config(cfg_file)
     assert cfg["ocr_model"] == "custom-model"
     assert cfg["output_dir"] == "/tmp/out"
-    assert cfg["cleanup_model"] == "gemma4:12b"  # default preserved
+    assert cfg["cleanup_model"] == ""  # default preserved (resolved at run time)
     config.reset()
 
 
@@ -441,7 +476,7 @@ def test_config_get_shorthand():
     from artifice_ocr import config
 
     config.reset()
-    assert config.get("ocr_model") == "allenai/olmocr-2-7b"
+    assert config.get("ocr_model") == ""
     assert config.get("nonexistent", "fallback") == "fallback"
     config.reset()
 
@@ -628,9 +663,8 @@ def test_ocr_stage_accepts_real_varied_text(mock_get_client, tmp_path):
 @patch("artifice_ocr.stages.ocr._get_backend_client")
 @patch("artifice_ocr.stages.cleanup.ollama.chat")
 @patch("artifice_ocr.stages.translate.ollama.chat")
-@patch("artifice_ocr.cli.check_ollama", return_value=[])
-@patch("artifice_ocr.cli.check_lm_studio", return_value=None)
-def test_pipeline_batch_folder(mock_check_lm_studio, mock_check_ollama, mock_translate, mock_cleanup, mock_get_client, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_pipeline_batch_folder(mock_resolve, mock_translate, mock_cleanup, mock_get_client, tmp_path):
     mock_client = MagicMock()
     mock_client.chat.return_value = _mock_backend_response("Batch OCR text")
     mock_get_client.return_value = mock_client
@@ -659,9 +693,8 @@ def test_pipeline_batch_folder(mock_check_lm_studio, mock_check_ollama, mock_tra
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
 @patch("artifice_ocr.stages.cleanup.ollama.chat")
-@patch("artifice_ocr.cli.check_ollama", return_value=[])
-@patch("artifice_ocr.cli.check_lm_studio", return_value=None)
-def test_pipeline_skip_translate(mock_check_lm_studio, mock_check_ollama, mock_cleanup, mock_get_client, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_pipeline_skip_translate(mock_resolve, mock_cleanup, mock_get_client, tmp_path):
     mock_client = MagicMock()
     mock_client.chat.return_value = _mock_backend_response("OCR text")
     mock_get_client.return_value = mock_client
@@ -682,9 +715,8 @@ def test_pipeline_skip_translate(mock_check_lm_studio, mock_check_ollama, mock_c
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
 @patch("artifice_ocr.stages.cleanup.ollama.chat")
-@patch("artifice_ocr.cli.check_ollama", return_value=[])
-@patch("artifice_ocr.cli.check_lm_studio", return_value=None)
-def test_pipeline_force_reprocess(mock_check_lm_studio, mock_check_ollama, mock_cleanup, mock_get_client, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_pipeline_force_reprocess(mock_resolve, mock_cleanup, mock_get_client, tmp_path):
     mock_client = MagicMock()
     mock_client.chat.return_value = _mock_backend_response("Fresh OCR")
     mock_get_client.return_value = mock_client
@@ -860,8 +892,8 @@ def test_preflight_shows_lm_failure(mock_ollama, mock_lm):
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
 @patch("artifice_ocr.stages.cleanup.ollama.chat")
-@patch("artifice_ocr.cli.check_lm_studio", return_value=None)
-def test_pipeline_skip_cleanup(mock_check_lm_studio, mock_cleanup, mock_get_client, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_pipeline_skip_cleanup(mock_resolve, mock_cleanup, mock_get_client, tmp_path):
     mock_client = MagicMock()
     mock_client.chat.return_value = _mock_backend_response("OCR text")
     mock_get_client.return_value = mock_client
@@ -882,8 +914,8 @@ def test_pipeline_skip_cleanup(mock_check_lm_studio, mock_cleanup, mock_get_clie
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
 @patch("artifice_ocr.stages.cleanup.ollama.chat")
-@patch("artifice_ocr.cli.check_ollama", return_value=[])
-def test_pipeline_skip_ocr(mock_check_ollama, mock_cleanup, mock_get_client, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_pipeline_skip_ocr(mock_resolve, mock_cleanup, mock_get_client, tmp_path):
     mock_cleanup.return_value = MagicMock(message=MagicMock(content="Cleaned text"))
 
     img = tmp_path / "doc.png"
@@ -909,7 +941,7 @@ def test_config_apply_overrides():
     config.apply_overrides({"ocr_model": "custom-model", "resume": False})
     assert config.get("ocr_model") == "custom-model"
     assert config.get("resume") is False
-    assert config.get("cleanup_model") == "gemma4:12b"  # default preserved
+    assert config.get("cleanup_model") == ""  # default preserved (resolved at run time)
     config.reset()
 
 
@@ -1093,9 +1125,8 @@ def test_config_confidence_enabled_default():
 @patch("artifice_ocr.stages.ocr._get_backend_client")
 @patch("artifice_ocr.stages.cleanup.ollama.chat")
 @patch("artifice_ocr.stages.translate.ollama.chat")
-@patch("artifice_ocr.cli.check_ollama", return_value=[])
-@patch("artifice_ocr.cli.check_lm_studio", return_value=None)
-def test_pipeline_doc_type_flag(mock_check_lm_studio, mock_check_ollama, mock_translate, mock_cleanup, mock_get_client, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_pipeline_doc_type_flag(mock_resolve, mock_translate, mock_cleanup, mock_get_client, tmp_path):
     mock_client = MagicMock()
     mock_client.chat.return_value = _mock_backend_response("OCR text")
     mock_get_client.return_value = mock_client
@@ -1121,9 +1152,8 @@ def test_pipeline_doc_type_flag(mock_check_lm_studio, mock_check_ollama, mock_tr
 @patch("artifice_ocr.stages.ocr._get_backend_client")
 @patch("artifice_ocr.stages.cleanup.ollama.chat")
 @patch("artifice_ocr.stages.translate.ollama.chat")
-@patch("artifice_ocr.cli.check_ollama", return_value=[])
-@patch("artifice_ocr.cli.check_lm_studio", return_value=None)
-def test_pipeline_no_confidence_flag(mock_check_lm_studio, mock_check_ollama, mock_translate, mock_cleanup, mock_get_client, tmp_path):
+@patch("artifice_ocr.cli.resolve_models_for_run")
+def test_pipeline_no_confidence_flag(mock_resolve, mock_translate, mock_cleanup, mock_get_client, tmp_path):
     mock_client = MagicMock()
     mock_client.chat.return_value = _mock_backend_response("OCR text")
     mock_get_client.return_value = mock_client

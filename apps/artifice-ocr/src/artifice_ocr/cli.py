@@ -7,6 +7,7 @@ from pathlib import Path
 import typer
 
 from artifice_ocr._logging import get_logger, setup_logging
+from artifice_ocr._resolution import resolve_models_for_run
 from artifice_ocr.config import _USER_DIR
 from artifice_ocr.config import get as cfg
 from artifice_ocr.stages import cleanup as cleanup_stage
@@ -39,10 +40,30 @@ def data_dir():
 
 
 def _ollama_models_needed() -> list[str]:
-    models = [cfg("cleanup_model")]
+    models: list[str] = []
+    cleanup_model = cfg("cleanup_model")
+    if cleanup_model:
+        models.append(cleanup_model)
     if cfg("translate_enabled"):
-        models.append(cfg("translate_model"))
+        translate_model = cfg("translate_model")
+        if translate_model:
+            models.append(translate_model)
     return models
+
+
+def _resolve_or_exit(stages: set[str]) -> None:
+    """Resolve the models/backends for *stages*, exiting with a legible error.
+
+    Resolution probes the configured local servers once and fails fast when a
+    role cannot be resolved (no suitable model installed, or the user's
+    explicit model is missing) — instead of reaching the provider and printing
+    a raw 404.
+    """
+    try:
+        resolve_models_for_run(stages=stages)
+    except RuntimeError as exc:
+        typer.echo(f"ERROR: {exc}", err=True)
+        raise typer.Exit(code=1) from None
 
 
 @app.command()
@@ -102,9 +123,7 @@ def ocr(
     output_dir: str = typer.Option("output", help="Output directory"),
 ):
     """Run the OCR stage on a given input file."""
-    err = check_lm_studio()
-    if err:
-        typer.echo(f"WARNING: {err}", err=True)
+    _resolve_or_exit({"ocr"})
 
     typer.echo(f"Processing {input_path}...")
     result = ocr_stage.perform(input_path, output_dir=output_dir)
@@ -119,10 +138,7 @@ def cleanup(
     output_dir: str = typer.Option("output", help="Output directory"),
 ):
     """Run conservative syntactic cleanup on a raw OCR text file."""
-    errors = check_ollama([cfg("cleanup_model")])
-    if any("Cannot reach" in e for e in errors):
-        typer.echo(f"ERROR: {errors[0]}", err=True)
-        raise typer.Exit(code=1)
+    _resolve_or_exit({"cleanup"})
 
     p = Path(text_path)
     if not p.exists():
@@ -145,10 +161,7 @@ def translate(
     output_dir: str = typer.Option("output", help="Output directory"),
 ):
     """Translate a cleaned text file into English."""
-    errors = check_ollama([cfg("translate_model")])
-    if any("Cannot reach" in e for e in errors):
-        typer.echo(f"ERROR: {errors[0]}", err=True)
-        raise typer.Exit(code=1)
+    _resolve_or_exit({"translate"})
 
     p = Path(text_path)
     if not p.exists():
@@ -268,23 +281,16 @@ def pipeline(
         "confidence_enabled": not no_confidence,
     })
 
-    # Only check services for stages that will actually run
+    # Resolve the models/backends for the stages that will actually run.
+    # Fails fast with a legible message instead of a provider 404.
+    stages: set[str] = set()
     if not skip_ocr:
-        lm_err = check_lm_studio()
-        if lm_err:
-            typer.echo(f"ERROR: {lm_err}", err=True)
-            raise typer.Exit(code=1)
-
-    ollama_models = []
-    if not skip_cleanup:
-        ollama_models.append(cfg("cleanup_model"))
+        stages.add("ocr")
+    if not skip_cleanup or cfg("title_enabled"):
+        stages.add("cleanup")  # the "chat" role (cleanup + title share it)
     if not skip_translate:
-        ollama_models.append(cfg("translate_model"))
-    if ollama_models:
-        ollama_errors = check_ollama(ollama_models)
-        if any("Cannot reach" in e for e in ollama_errors):
-            typer.echo(f"ERROR: {ollama_errors[0]}", err=True)
-            raise typer.Exit(code=1)
+        stages.add("translate")
+    _resolve_or_exit(stages)
 
     p = Path(input_path)
     if p.is_dir():
@@ -496,7 +502,7 @@ def compile_pdf(
             style=style,
             bilingual=bilingual,
         )
-    except ValueError as exc:
+    except (ValueError, RuntimeError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from exc
 

@@ -361,8 +361,9 @@ def test_structure_pages_calls_on_rejected(mock_chat, tmp_path, monkeypatch):
     assert result[0].text == "Original text that must be kept."
 
 
+@patch("artifice_ocr._resolution.resolve_models_for_run")
 @patch("artifice_ocr.stages.structure.ollama.chat")
-def test_compile_function_end_to_end(mock_chat, tmp_path):
+def test_compile_function_end_to_end(mock_chat, mock_resolve, tmp_path):
     """pdf_export.compile() should collect, structure and render."""
     from artifice_ocr import pdf_export
 

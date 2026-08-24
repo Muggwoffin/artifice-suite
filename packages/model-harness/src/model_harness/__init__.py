@@ -55,6 +55,11 @@ from model_harness.registry import (
     is_configured,
     recommendations_for_app,
 )
+from model_harness.resolution import (
+    ModelResolution,
+    ResolutionSource,
+    resolve_model,
+)
 
 __all__ = [
     "ASR_MODELS",
@@ -70,11 +75,13 @@ __all__ = [
     "ModelConnectorConfig",
     "ModelProvider",
     "ModelRecommendation",
+    "ModelResolution",
     "OpenAIProvider",
     "ProbeResult",
     "Provider",
     "ProviderCapabilities",
     "RawCompletion",
+    "ResolutionSource",
     "SchemaT",
     "SchemaValidationFailed",
     "StructuredOutputMode",
@@ -87,6 +94,7 @@ __all__ = [
     "probe_endpoint",
     "probe_endpoint_sync",
     "recommendations_for_app",
+    "resolve_model",
     "run_structured",
     "select_mode",
 ]
