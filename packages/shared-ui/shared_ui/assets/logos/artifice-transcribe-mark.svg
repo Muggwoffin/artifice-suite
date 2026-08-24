@@ -1,3 +1,5 @@
+<!-- SPDX-FileCopyrightText: 2026 Maurice Casey -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- SVG favicon: serif "A" on paper ground, drawn as path (no text/CSS inherit) -->
 <!-- Accent: violet #715993 — from tokens.css:124. NOTE: artwork samples #6a538a; token #715993 used per maintainer call. -->
 <!-- Literal hex intentional: SVG favicons get no cascade; var(accent) resolves to nothing -->
