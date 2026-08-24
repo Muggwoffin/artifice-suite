@@ -150,10 +150,33 @@ foreach ($name in $dataDirs.Keys) {
     }
 }
 
-if ($present.Count -eq 0) {
+# An installed program with no data directory is a real state — an app that was
+# installed and never run, or one whose data this script already removed on an
+# earlier pass. Exiting on the data check alone would skip the uninstall
+# entirely and report a machine as clean while four apps sat on the PATH.
+$programsPresent = $false
+if (-not $KeepPrograms) {
+    foreach ($app in $APPS) {
+        $toolDir = Join-Path $env:APPDATA "uv\tools\$app"
+        $shims = @(
+            Get-ChildItem (Join-Path $env:USERPROFILE '.local\bin') -Filter "$app*" -ErrorAction SilentlyContinue
+        )
+        if ((Test-Path $toolDir) -or $shims.Count -gt 0) {
+            $programsPresent = $true
+            break
+        }
+    }
+}
+
+if ($present.Count -eq 0 -and -not $programsPresent) {
     Write-Host ''
     Write-Host 'Nothing to remove — this machine is already in a first-run state.' -ForegroundColor Green
     exit 0
+}
+
+if ($present.Count -eq 0) {
+    Write-Host ''
+    Write-Host 'No user data found, but installed programs remain — continuing.' -ForegroundColor Yellow
 }
 
 # ---------------------------------------------------------------------------
@@ -270,27 +293,36 @@ if (-not $Force) {
 # ---------------------------------------------------------------------------
 # Back up first. A failure here must abort before anything is deleted.
 # ---------------------------------------------------------------------------
-Write-Banner 'Backing up'
+if ($present.Count -gt 0) {
+    Write-Banner 'Backing up'
 
-if (-not (Test-Path -LiteralPath $BackupRoot)) {
-    New-Item -ItemType Directory -Path $BackupRoot -Force | Out-Null
-}
+    if (-not (Test-Path -LiteralPath $BackupRoot)) {
+        New-Item -ItemType Directory -Path $BackupRoot -Force | Out-Null
+    }
 
-foreach ($name in $present.Keys) {
-    $src  = $present[$name]
-    $dest = Join-Path $BackupRoot $name
-    Copy-Item -LiteralPath $src -Destination $dest -Recurse -Force
-    Write-Host "  copied  $src  ->  $dest"
-}
+    foreach ($name in $present.Keys) {
+        $src  = $present[$name]
+        $dest = Join-Path $BackupRoot $name
+        Copy-Item -LiteralPath $src -Destination $dest -Recurse -Force
+        Write-Host "  copied  $src  ->  $dest"
+    }
 
-# Verify the backup is non-empty before destroying the source. A silent
-# zero-file copy would turn this script into an unrecoverable delete.
-$backedUp = @(Get-ChildItem -LiteralPath $BackupRoot -Recurse -File -ErrorAction SilentlyContinue)
-if ($backedUp.Count -eq 0) {
-    Write-Error "Backup produced no files at $BackupRoot. Refusing to delete anything."
-    exit 1
+    # Verify the backup is non-empty before destroying the source. A silent
+    # zero-file copy would turn this script into an unrecoverable delete.
+    #
+    # Guarded by $present.Count above rather than run unconditionally: with
+    # programs installed but no user data there is legitimately nothing to
+    # copy, and an empty-backup abort there would refuse to do the uninstall
+    # it was asked for.
+    $backedUp = @(Get-ChildItem -LiteralPath $BackupRoot -Recurse -File -ErrorAction SilentlyContinue)
+    if ($backedUp.Count -eq 0) {
+        Write-Error "Backup produced no files at $BackupRoot. Refusing to delete anything."
+        exit 1
+    }
+    Write-Host ("  verified {0} files in the backup" -f $backedUp.Count) -ForegroundColor Green
+} else {
+    Write-Banner 'No user data to back up'
 }
-Write-Host ("  verified {0} files in the backup" -f $backedUp.Count) -ForegroundColor Green
 
 # ---------------------------------------------------------------------------
 # Remove the data.
@@ -322,15 +354,52 @@ if (Test-Path -LiteralPath $suiteRoot) {
 if (-not $KeepPrograms) {
     Write-Banner 'Uninstalling programs'
     foreach ($app in $APPS) {
-        $cmd = Get-Command $app -ErrorAction SilentlyContinue
-        if (-not $cmd) { Write-Host "  not installed  $app"; continue }
+        # Presence is NOT `Get-Command $app`. Each app installs several
+        # console scripts — artifice-ocr also ships artifice-ocr-web — and a
+        # half-removed install can leave the `-web` shim behind while the bare
+        # name is gone. Checking only the bare name then reports "not
+        # installed" and skips an app that is very much still there, which is
+        # exactly what happened on 2026-08-24: the reset reported artifice-ocr
+        # absent while its uv tool directory, its venv and its -web shim all
+        # survived, and had to be cleared by hand afterwards.
+        #
+        # Look at all three places instead, and treat any of them as present.
+        $toolDir = Join-Path $env:APPDATA "uv\tools\$app"
+        $shims = @(
+            Get-ChildItem (Join-Path $env:USERPROFILE '.local\bin') -Filter "$app*" -ErrorAction SilentlyContinue
+        )
+        $onPath = @(Get-Command "$app*" -ErrorAction SilentlyContinue)
+
+        if (-not (Test-Path $toolDir) -and $shims.Count -eq 0 -and $onPath.Count -eq 0) {
+            Write-Host "  not installed  $app"
+            continue
+        }
+
         # No 2>&1 on a native exe: in PowerShell 5.1 that wraps each stderr line
         # in an ErrorRecord and sets $? to false even on a clean exit.
         & uv tool uninstall $app | Out-Null
-        if ($LASTEXITCODE -eq 0) {
+        $uvExit = $LASTEXITCODE
+
+        # uv can exit non-zero on an environment it considers broken — the very
+        # state this is meant to clean — so sweep the remnants regardless and
+        # judge success by what is left on disk, not by uv's exit code.
+        if (Test-Path $toolDir) {
+            Remove-Item -Recurse -Force -Confirm:$false $toolDir -ErrorAction SilentlyContinue
+        }
+        foreach ($shim in $shims) {
+            Remove-Item -Force -Confirm:$false $shim.FullName -ErrorAction SilentlyContinue
+        }
+
+        $stillThere = (Test-Path $toolDir) -or @(
+            Get-ChildItem (Join-Path $env:USERPROFILE '.local\bin') -Filter "$app*" -ErrorAction SilentlyContinue
+        ).Count -gt 0
+
+        if ($stillThere) {
+            Write-Host "  FAILED         $app (uv exit $uvExit; files remain)" -ForegroundColor Yellow
+        } elseif ($uvExit -eq 0) {
             Write-Host "  uninstalled    $app"
         } else {
-            Write-Host "  FAILED         $app (uv exit $LASTEXITCODE)" -ForegroundColor Yellow
+            Write-Host "  uninstalled    $app (uv exit $uvExit; remnants swept)"
         }
     }
 } else {
