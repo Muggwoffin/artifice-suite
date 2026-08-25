@@ -234,24 +234,38 @@ async function refreshQueue() {
 // -------------------------------------------------------------- adding files
 
 async function pickFiles() {
+  let res;
   try {
-    const res = await api("POST", "/api/native/pick-file");
-    return res.path ? [res.path] : [];
+    res = await api("POST", "/api/native/pick-file");
   } catch {
+    if (window.ArtificeToast) window.ArtificeToast.error("Could not reach the server to open the file picker.");
+    return [];
+  }
+  if (res.state === "selected") return res.paths || [];
+  if (res.state === "unavailable") {
+    if (window.ArtificeToast) window.ArtificeToast.show(res.reason || "File picker unavailable", "warning");
     const raw = prompt("Enter a full file path (e.g. C:\\Users\\you\\Documents\\scan.jpg):");
     return raw ? [raw] : [];
   }
+  return [];  // cancelled — the user closed the dialog on purpose
 }
 
 async function pickFolder(kind) {
   const label = kind === "output" ? "output directory"
              : kind === "tropy" ? "Tropy project" : "folder";
+  let res;
   try {
-    const res = await api("POST", "/api/native/pick-folder");
-    return res.path || null;
+    res = await api("POST", "/api/native/pick-folder");
   } catch {
+    if (window.ArtificeToast) window.ArtificeToast.error("Could not reach the server to open the folder picker.");
+    return null;
+  }
+  if (res.state === "selected") return res.paths[0] || null;
+  if (res.state === "unavailable") {
+    if (window.ArtificeToast) window.ArtificeToast.show(res.reason || "Folder picker unavailable", "warning");
     return prompt(`Enter a full ${label} path (e.g. C:\\Users\\you\\Documents):`);
   }
+  return null;  // cancelled — the user closed the dialog on purpose
 }
 
 async function addPaths(paths) {

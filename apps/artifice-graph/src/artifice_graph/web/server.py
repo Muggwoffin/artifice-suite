@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
+from shared_ui.filedialog import FileType, pick_files_async, pick_folder_async
 from shared_ui.path_validation import PathValidationError
 from shared_ui.path_validation import validate_path as _shared_validate_path
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -1468,48 +1469,36 @@ async def about():
 
 
 @app.post("/api/native/pick-file")
-def pick_file() -> dict[str, str | None]:
-    """Open a native file picker dialog and return the selected file path.
+async def pick_file() -> dict[str, str | list[str]]:
+    """Open a native file picker and return the selected path(s).
 
-    Uses tkinter's filedialog when available (desktop/frozen builds).
-    Returns empty path on cancel or if running in a headless environment.
+    Returns ``{"state": "selected"|"cancelled"|"unavailable", "paths": [...],
+    "reason": "..."}`` — the shared file-dialog contract.  ``paths`` is
+    non-empty only for ``"selected"`` and ``reason`` is non-empty only for
+    ``"unavailable"``.  Multiple files may be selected.
+
+    Constructed inside the handler, not at module scope: a FileType description
+    that fails the [word chars + spaces] rule raises ValueError at construction,
+    and a module-scope instance would crash the server at import time rather
+    than on the one request that uses it.
     """
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        path = filedialog.askopenfilename(
-            title="Select a file",
-            filetypes=[("Text files", "*.txt *.md"), ("All Files", "*.*")],
-        )
-        root.destroy()
-        return {"path": path if path else None}
-    except Exception:
-        return {"path": None}
+    file_types = (
+        FileType("Text files", ("*.txt", "*.md")),
+        FileType("All Files", ("*.*",)),
+    )
+    result = await pick_files_async(title="Select a file", file_types=file_types)
+    return result.as_dict()
 
 
 @app.post("/api/native/pick-folder")
-def pick_folder() -> dict[str, str | None]:
-    """Open a native folder picker dialog and return the selected folder path.
+async def pick_folder() -> dict[str, str | list[str]]:
+    """Open a native folder picker and return the selected folder path.
 
-    Uses tkinter's filedialog when available (desktop/frozen builds).
-    Returns empty path on cancel or if running in a headless environment.
+    Returns ``{"state": "selected"|"cancelled"|"unavailable", "paths": [...],
+    "reason": "..."}`` — the shared file-dialog contract.  Single selection.
     """
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        path = filedialog.askdirectory(title="Select a folder")
-        root.destroy()
-        return {"path": path if path else None}
-    except Exception:
-        return {"path": None}
+    result = await pick_folder_async(title="Select a folder")
+    return result.as_dict()
 
 
 # ── Main / bootstrap ──────────────────────────────────────────────────

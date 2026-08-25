@@ -282,20 +282,28 @@ tropyEls["modal-tropy-add"].addEventListener("click", (e) => {
 });
 
 async function browseTropyFile() {
+  let data;
   try {
     const res = await fetch("/api/native/pick-file", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ preset: "json" }),
     });
-    const data = await res.json();
-    if (data.path) {
-      loadImportPreview({ path: data.path });
-    }
+    data = await res.json();
   } catch (err) {
     if (window.ArtificeToast)
-      window.ArtificeToast.error("File picker not available — type the path instead.");
+      window.ArtificeToast.error("Could not reach the server to open the file picker.");
+    return;
   }
+  if (data.state === "selected" && data.paths && data.paths.length) {
+    loadImportPreview({ path: data.paths[0] });
+  } else if (data.state === "unavailable") {
+    if (window.ArtificeToast)
+      window.ArtificeToast.show(data.reason || "File picker unavailable", "warning");
+    const raw = prompt("Enter a full path to a Tropy JSON-LD export (e.g. C:\\Users\\you\\Documents\\export.jsonld):");
+    if (raw) loadImportPreview({ path: raw });
+  }
+  // cancelled — do nothing
 }
 
 tropyEls["btn-tropy-browse-file"].onclick = browseTropyFile;
@@ -502,17 +510,27 @@ tropyEls["tropy-tab-jsonld"].onclick = () => switchTropyMode("jsonld");
 tropyEls["tropy-tab-browse"].onclick = () => switchTropyMode("browse");
 
 tropyEls["btn-tropy-browse-pick"].onclick = async () => {
+  let data;
   try {
     const res = await fetch("/api/native/pick-file", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
-    const data = await res.json();
-    if (data.path) tropyEls["tropy-browse-path"].value = data.path;
+    data = await res.json();
   } catch (err) {
-    if (window.ArtificeToast) window.ArtificeToast.error("File picker not available — type the path instead.");
+    if (window.ArtificeToast) window.ArtificeToast.error("Could not reach the server to open the file picker.");
+    return;
   }
+  if (data.state === "selected" && data.paths && data.paths.length) {
+    tropyEls["tropy-browse-path"].value = data.paths[0];
+  } else if (data.state === "unavailable") {
+    if (window.ArtificeToast)
+      window.ArtificeToast.show(data.reason || "File picker unavailable", "warning");
+    const raw = prompt("Enter a full path to a Tropy project file:");
+    if (raw) tropyEls["tropy-browse-path"].value = raw;
+  }
+  // cancelled — do nothing
 };
 
 tropyEls["btn-tropy-browse-load"].onclick = async () => {
@@ -759,26 +777,35 @@ tropyEls["btn-send-tropy-write"].onclick = async () => {
   tropyEls["tropy-export-loading-text"].textContent = "Choose save location…";
   tropyEls["tropy-export-status"].textContent = "";
 
-  let saveRes;
+  let pathData;
   try {
-    saveRes = await fetch("/api/native/save-file", {
+    const saveRes = await fetch("/api/native/save-file", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ preset: "json", default_name: "artifice-ocr-tropy.jsonld" }),
     });
+    pathData = await saveRes.json();
   } catch (err) {
     tropyEls["tropy-export-loading"].classList.add("hidden");
-    tropyEls["tropy-export-status"].textContent = "Save dialog not available";
+    tropyEls["tropy-export-status"].textContent = "Could not reach the server to open the save dialog";
     tropyEls["tropy-export-status"].className = "tropy-export-status error";
-    if (window.ArtificeToast) window.ArtificeToast.error("Save dialog not available — try running from the desktop app");
+    if (window.ArtificeToast) window.ArtificeToast.error("Could not reach the server to open the save dialog");
     return;
   }
 
-  const pathData = await saveRes.json().catch(() => ({}));
-  const savePath = pathData.path;
+  let savePath = null;
+  if (pathData.state === "selected") {
+    savePath = (pathData.paths && pathData.paths[0]) || null;
+  } else if (pathData.state === "unavailable") {
+    // No native dialog — fall back to a typed path.
+    if (window.ArtificeToast)
+      window.ArtificeToast.show(pathData.reason || "Save dialog unavailable", "warning");
+    savePath = prompt("Enter a full path to save the Tropy export (e.g. C:\\Users\\you\\Documents\\artifice-ocr-tropy.jsonld):");
+  }
+
   if (!savePath) {
     tropyEls["tropy-export-loading"].classList.add("hidden");
-    return;  // user cancelled the dialog
+    return;  // user cancelled the dialog (or the fallback prompt)
   }
 
   // Step 2 – generate the export, writing to the chosen path
