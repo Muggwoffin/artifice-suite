@@ -19,6 +19,19 @@ from fastapi.testclient import TestClient
 from shared_ui.filedialog import DialogResult, DialogState
 
 
+def _native(paths):
+    """Return *paths* as the wire format renders them on this platform.
+
+    ``DialogResult.as_dict`` stringifies ``Path`` objects, so the separator is
+    whatever the running OS uses: ``"/data/notes.txt"`` comes back as
+    ``"\\data\\notes.txt"`` on Windows.  Asserting against a POSIX literal
+    therefore passes on Linux and macOS and fails on Windows — which is
+    exactly what it did.  The contract is "the paths the backend gave us,
+    stringified", not "POSIX separators".
+    """
+    return [str(Path(p)) for p in paths]
+
+
 @pytest.fixture
 def client():
     """A bare TestClient — the dialog routes read no config/queue state."""
@@ -58,7 +71,7 @@ def _install(monkeypatch, name, state, paths=(), reason=""):
             DialogState.SELECTED,
             ("/data/notes.txt",),
             "",
-            {"state": "selected", "paths": ["/data/notes.txt"], "reason": ""},
+            {"state": "selected", "paths": _native(["/data/notes.txt"]), "reason": ""},
         ),
         (
             DialogState.CANCELLED,
@@ -90,7 +103,7 @@ def test_pick_file_allows_multiple_selection(client, monkeypatch):
         paths=("/data/one.txt", "/data/two.md"),
     )
     res = client.post("/api/native/pick-file")
-    assert res.json()["paths"] == ["/data/one.txt", "/data/two.md"]
+    assert res.json()["paths"] == _native(["/data/one.txt", "/data/two.md"])
 
 
 def test_pick_file_builds_text_filter_plus_all_files(client, monkeypatch):
@@ -115,7 +128,7 @@ def test_pick_file_builds_text_filter_plus_all_files(client, monkeypatch):
             DialogState.SELECTED,
             ("/data/vault",),
             "",
-            {"state": "selected", "paths": ["/data/vault"], "reason": ""},
+            {"state": "selected", "paths": _native(["/data/vault"]), "reason": ""},
         ),
         (
             DialogState.CANCELLED,

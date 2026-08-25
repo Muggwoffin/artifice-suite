@@ -19,6 +19,19 @@ from fastapi.testclient import TestClient
 from shared_ui.filedialog import DialogResult, DialogState
 
 
+def _native(paths):
+    """Return *paths* as the wire format renders them on this platform.
+
+    ``DialogResult.as_dict`` stringifies ``Path`` objects, so the separator is
+    whatever the running OS uses: ``"/data/scan.png"`` comes back as
+    ``"\\data\\scan.png"`` on Windows.  Asserting against a POSIX literal
+    therefore passes on Linux and macOS and fails on Windows — which is
+    exactly what it did.  The contract is "the paths the backend gave us,
+    stringified", not "POSIX separators".
+    """
+    return [str(Path(p)) for p in paths]
+
+
 @pytest.fixture
 def client():
     """A bare TestClient — the dialog routes read no queue/config state."""
@@ -58,7 +71,7 @@ def _install(monkeypatch, name, state, paths=(), reason=""):
             DialogState.SELECTED,
             ("/data/scan.png",),
             "",
-            {"state": "selected", "paths": ["/data/scan.png"], "reason": ""},
+            {"state": "selected", "paths": _native(["/data/scan.png"]), "reason": ""},
         ),
         (
             DialogState.CANCELLED,
@@ -90,7 +103,7 @@ def test_pick_file_allows_multiple_selection(client, monkeypatch):
         paths=("/data/one.png", "/data/two.png"),
     )
     res = client.post("/api/native/pick-file")
-    assert res.json()["paths"] == ["/data/one.png", "/data/two.png"]
+    assert res.json()["paths"] == _native(["/data/one.png", "/data/two.png"])
 
 
 def test_pick_file_json_preset_builds_valid_file_types(client, monkeypatch):
@@ -119,7 +132,7 @@ def test_pick_file_default_preset_is_images(client, monkeypatch):
             DialogState.SELECTED,
             ("/data/scans",),
             "",
-            {"state": "selected", "paths": ["/data/scans"], "reason": ""},
+            {"state": "selected", "paths": _native(["/data/scans"]), "reason": ""},
         ),
         (
             DialogState.CANCELLED,
@@ -154,7 +167,7 @@ def test_pick_folder_returns_three_state_shape(client, monkeypatch, state, paths
             DialogState.SELECTED,
             ("/data/out.jsonld",),
             "",
-            {"state": "selected", "paths": ["/data/out.jsonld"], "reason": ""},
+            {"state": "selected", "paths": _native(["/data/out.jsonld"]), "reason": ""},
         ),
         (
             DialogState.CANCELLED,
