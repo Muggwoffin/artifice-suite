@@ -480,6 +480,9 @@ class RunState:
             "running": bool(self.runner and self.runner.is_running),
             "paused": bool(self.runner and self.runner.is_paused),
             "total": len(self.items),
+            # Capability flag: tells the client the upload endpoint exists so
+            # it can enable the dropzone. Always true once the route ships.
+            "upload_enabled": True,
         }
 
 

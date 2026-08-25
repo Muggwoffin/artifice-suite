@@ -362,7 +362,10 @@ def test_events_client_disconnect_does_not_leave_state_broken(events_server):
 def test_empty_queue_on_startup(client):
     res = client.get("/api/queue")
     assert res.status_code == 200
-    assert res.json() == {"items": [], "status": {"running": False, "paused": False, "total": 0}}
+    assert res.json() == {
+        "items": [],
+        "status": {"running": False, "paused": False, "total": 0, "upload_enabled": True},
+    }
 
 
 def test_add_paths_resolves_supported_extensions_only(client, tmp_path):
