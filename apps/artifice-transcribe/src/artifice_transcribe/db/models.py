@@ -44,19 +44,43 @@ class LegacyEmbeddingError(ValueError):
     the raw-float32 format.  The speaker must be re-enrolled."""
 
 
+# Pickle protocol 2+ frames the payload as PROTO (``\x80``) + protocol byte.
+# Protocol 5 has been the default since Python 3.8, so a legacy row written by
+# any Python this project has ever supported carries one of these.
+_PICKLE_PROTOCOLS = frozenset({2, 3, 4, 5})
+
+# Every well-formed pickle ends with the STOP opcode.
+_PICKLE_STOP = 0x2E  # b"."
+
+
 def _is_legacy_pickle_blob(blob: bytes) -> bool:
     """Return *True* if *blob* looks like a pickled Python object.
 
     Pickle protocol 2+ payloads begin with the opcode ``\\x80`` followed by
-    a protocol byte.  Protocol 0/1 payloads start with a printable ASCII
-    opcode (e.g. ``(``, ``i``) and are harder to detect without a full
-    parse, but in practice every pickle produced by a modern Python has
-    been protocol 2+ since 3.8 raised the default.
+    a protocol byte, and end with the STOP opcode ``.``.  Protocol 0/1
+    payloads start with a printable ASCII opcode (e.g. ``(``, ``i``) and are
+    harder to detect without a full parse, but in practice every pickle
+    produced by a modern Python has been protocol 2+ since 3.8 raised the
+    default.
 
-    Checking the ``\\x80`` prefix is cheap, safe, and catches all real-world
-    legacy rows without ever calling ``pickle.loads``.
+    All three bytes are checked, not just the leading ``\\x80``.  A raw
+    float32 vector is arbitrary binary, so roughly one embedding in 256 has
+    a leading byte of ``0x80`` purely by chance — under the prefix-only test
+    those rows were refused as "legacy" and the user was told to re-enrol a
+    speaker whose data was perfectly readable.  CI caught exactly that on a
+    random 512-dim vector.  Requiring the protocol byte and the trailing
+    STOP as well takes the collision rate from ~1 in 256 to ~1 in 4 million
+    while still matching every real pickle.
+
+    The check remains a pure byte inspection; ``pickle.loads`` is never
+    called.
     """
-    return len(blob) > 0 and blob[0] == 0x80
+    return (
+        len(blob) >= 3
+        and blob[0] == 0x80
+        and blob[1] in _PICKLE_PROTOCOLS
+        and blob[-1] == _PICKLE_STOP
+    )
 
 
 def unpack_embedding(blob: bytes, dimension: int | None = None) -> "np.ndarray":
@@ -71,15 +95,10 @@ def unpack_embedding(blob: bytes, dimension: int | None = None) -> "np.ndarray":
     if len(blob) == 0:
         raise ValueError("Embedding blob is empty")
     if len(blob) % 4 != 0:
-        raise ValueError(
-            f"Embedding blob is {len(blob)} bytes, not a multiple of 4 (float32)"
-        )
+        raise ValueError(f"Embedding blob is {len(blob)} bytes, not a multiple of 4 (float32)")
     actual_dim = len(blob) // 4
     if dimension is not None and actual_dim != dimension:
-        raise ValueError(
-            f"Embedding blob has dimension {actual_dim}, "
-            f"expected {dimension}"
-        )
+        raise ValueError(f"Embedding blob has dimension {actual_dim}, expected {dimension}")
     import numpy as np
 
     return np.frombuffer(blob, dtype=np.float32)

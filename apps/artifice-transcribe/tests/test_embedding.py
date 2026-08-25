@@ -103,10 +103,7 @@ class TestLegacyPickleDetection:
     # Pickle protocol 2 payload for a 4-element float list:
     #   \x80\x02]q\x00(G?\xd9\x99\x9aG?\xd9\x99\x9aG?\xd9\x99\x9aG?\xd9\x99\x9ae.
     # (length 32 = 8 * 4, so it also exercises the silent-wrong-vector path)
-    _PICKLE_FLOATS = (
-        b"\x80\x02]q\x00(G?\xd9\x99\x9aG?\xd9\x99\x9a"
-        b"G?\xd9\x99\x9aG?\xd9\x99\x9ae."
-    )
+    _PICKLE_FLOATS = b"\x80\x02]q\x00(G?\xd9\x99\x9aG?\xd9\x99\x9aG?\xd9\x99\x9aG?\xd9\x99\x9ae."
 
     # A pure Python float is pickled via the FLOAT opcode 'F':
     #   \x80\x02F1.0\n.
@@ -157,6 +154,50 @@ class TestLegacyPickleDetection:
         handlers still catch it, but callers can also match it
         specifically."""
         assert issubclass(LegacyEmbeddingError, ValueError)
+
+    # ── False positives ────────────────────────────────────────────────
+    #
+    # A raw float32 vector is arbitrary binary.  Roughly one embedding in
+    # 256 begins with the byte 0x80 by pure chance, and the sniff used to
+    # test that byte alone — so those rows were refused as "legacy" and the
+    # user was told to re-enrol a speaker whose data was perfectly intact.
+    # CI caught it on a random 512-dim vector; these tests pin the shape of
+    # the collision so it cannot come back.
+
+    def test_float32_vector_starting_with_0x80_round_trips(self):
+        """A valid embedding whose first byte is 0x80 must not be refused."""
+        # b"\x80\x19\x97\xbf" is the exact little-endian float32 that failed
+        # in CI.  The second element additionally collides with the pickle
+        # protocol byte (0x02); only the missing trailing STOP separates
+        # this blob from a protocol-2 pickle.
+        raw = b"\x80\x19\x97\xbf\x80\x02\x00\x3f\x00\x00\x80\x3f"
+        restored = unpack_embedding(raw, dimension=3)
+        assert restored.dtype == np.float32
+        assert restored.tobytes() == raw
+
+    def test_0x80_prefix_without_pickle_protocol_byte_is_not_legacy(self):
+        """0x80 followed by a byte no pickle protocol uses is float32 data."""
+        # 0x19 is not in {2, 3, 4, 5}, so the protocol-byte check rejects it
+        # even though the blob also happens to end in the STOP opcode 0x2e.
+        raw = b"\x80\x19\x97\xbf\x00\x00\x00\x2e"
+        assert unpack_embedding(raw, dimension=2).tobytes() == raw
+
+    def test_pickle_prefix_without_stop_opcode_is_not_legacy(self):
+        """A pickle frame header with no trailing STOP is not a pickle."""
+        raw = b"\x80\x02\x97\xbf\x00\x00\x80\x3f"
+        assert unpack_embedding(raw, dimension=2).tobytes() == raw
+
+    def test_random_vectors_are_never_misread_as_legacy(self):
+        """The whole point: no random embedding is refused as legacy.
+
+        1024 draws would have produced ~4 spurious failures under the
+        prefix-only check.
+        """
+        rng = np.random.default_rng(seed=20260824)
+        for _ in range(1024):
+            original = rng.standard_normal(512).astype(np.float32)
+            restored = unpack_embedding(pack_embedding(original), dimension=512)
+            np.testing.assert_array_equal(original, restored)
 
 
 class TestAutoMatchResilience:

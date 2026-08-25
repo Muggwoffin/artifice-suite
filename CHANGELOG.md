@@ -8,6 +8,23 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 
 ## [Unreleased]
 
+### Fixed
+- **`artifice-transcribe` no longer refuses roughly one enrolled speaker in 256.**
+  The legacy-pickle sniff in `db/models.py` identified a stored embedding as a
+  pre-migration pickle from its leading byte alone (`0x80`). A raw float32 vector
+  is arbitrary binary, so ~0.4% of perfectly valid embeddings began with that byte
+  by chance and were rejected with "the speaker must be re-enrolled". The check now
+  requires the full pickle protocol-2+ signature — `0x80`, a protocol byte in 2–5,
+  and the trailing STOP opcode — taking the collision rate to ~1 in 4 million while
+  still matching every real legacy row. Still a pure byte inspection; `pickle.loads`
+  is never called.
+- **Reset script detects an installed app by any of its shims.** `scripts/reset-for-first-run.ps1`
+  looked only for the bare command name, so an app that also installs a suffixed shim
+  (`artifice-ocr-web`) was reported "not installed" while remnants remained on disk.
+  It now checks the uv tool directory, `~/.local/bin`, and `PATH`, and judges success
+  by what is left on disk rather than by uv's exit code. The early "already clean"
+  exit likewise considered only user data and now considers installed programs too.
+
 ## [0.3.0] - 2026-08-24
 
 ### Added
