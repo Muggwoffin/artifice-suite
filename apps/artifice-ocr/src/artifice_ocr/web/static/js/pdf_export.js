@@ -73,8 +73,27 @@ async function browsePdfFolder() {
 }
 
 async function browsePdfOutput() {
-  const path = prompt("Enter where to save the PDF (e.g. C:\\Users\\you\\Documents\\output.pdf):");
-  if (path) pdfEls["pdf-output"].value = path;
+  let data;
+  try {
+    data = await api("POST", "/api/native/save-file", {
+      preset: "all",
+      default_name: "output.pdf",
+    });
+  } catch {
+    if (window.ArtificeToast) window.ArtificeToast.error("Could not reach the server to open the save dialog.");
+    return;
+  }
+  if (data.state === "selected" && data.paths && data.paths.length) {
+    pdfEls["pdf-output"].value = data.paths[0];
+    return;
+  }
+  if (data.state === "unavailable") {
+    if (window.ArtificeToast) window.ArtificeToast.show(data.reason || "Save dialog unavailable", "warning");
+    const path = prompt("Enter where to save the PDF (e.g. C:\\Users\\you\\Documents\\output.pdf):");
+    if (path) pdfEls["pdf-output"].value = path;
+    return;
+  }
+  // cancelled — do nothing
 }
 
 // --------------------------------------------------------- start / download

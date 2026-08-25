@@ -20,13 +20,18 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
+import shared_ui
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
-
-import shared_ui
+from shared_ui.filedialog import (
+    FileType,
+    pick_files_async,
+    pick_folder_async,
+    save_file_async,
+)
 from shared_ui.handoff import cleanup_expired, write_discovery
 from shared_ui.server_bootstrap import (
     ensure_std_streams,
@@ -163,11 +168,13 @@ def about() -> HTMLResponse:
 
 
 @app.post("/api/native/pick-file")
-async def pick_file(request: Request) -> dict[str, str | None]:
-    """Open a native file picker dialog and return the selected file path.
+async def pick_file(request: Request) -> dict[str, str | list[str]]:
+    """Open a native file picker and return the selected path(s).
 
-    Uses tkinter's filedialog when available (desktop/frozen builds).
-    Returns empty path on cancel or if running in a headless environment.
+    Returns ``{"state": "selected"|"cancelled"|"unavailable", "paths": [...],
+    "reason": "..."}`` — the shared file-dialog contract.  ``paths`` is
+    non-empty only for ``"selected"`` and ``reason`` is non-empty only for
+    ``"unavailable"``.  Multiple files may be selected.
 
     An optional JSON body ``{"preset": "images"|"json"}`` switches the
     file-type filter — ``"json"`` selects ``*.jsonld *.json`` files.
@@ -183,58 +190,47 @@ async def pick_file(request: Request) -> dict[str, str | None]:
     except (json.JSONDecodeError, UnicodeDecodeError):
         pass
 
+    # Constructed inside the handler, not at module scope: a FileType
+    # description that fails the [word chars + spaces] rule raises ValueError
+    # at construction, and a module-scope instance would crash the server at
+    # import time rather than on the one request that uses it.
     if preset == "json":
-        filetypes = [("JSON-LD export", "*.jsonld *.json"), ("All Files", "*.*")]
-    else:
-        filetypes = [("Images", "*.jpg *.jpeg *.png *.tiff *.gif"), ("All Files", "*.*")]
-
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        path = filedialog.askopenfilename(
-            title="Select a file",
-            filetypes=filetypes,
+        file_types = (
+            FileType("JSON export", ("*.jsonld", "*.json")),
+            FileType("All Files", ("*.*",)),
         )
-        root.destroy()
-        return {"path": path if path else None}
-    except Exception:
-        return {"path": None}
+    else:
+        file_types = (
+            FileType("Images", ("*.jpg", "*.jpeg", "*.png", "*.tiff", "*.gif")),
+            FileType("All Files", ("*.*",)),
+        )
+
+    result = await pick_files_async(title="Select a file", file_types=file_types)
+    return result.as_dict()
 
 
 @app.post("/api/native/pick-folder")
-def pick_folder() -> dict[str, str | None]:
-    """Open a native folder picker dialog and return the selected folder path.
+async def pick_folder() -> dict[str, str | list[str]]:
+    """Open a native folder picker and return the selected folder path.
 
-    Uses tkinter's filedialog when available (desktop/frozen builds).
-    Returns empty path on cancel or if running in a headless environment.
+    Returns ``{"state": "selected"|"cancelled"|"unavailable", "paths": [...],
+    "reason": "..."}`` — the shared file-dialog contract.  Single selection.
     """
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        path = filedialog.askdirectory(title="Select a folder")
-        root.destroy()
-        return {"path": path if path else None}
-    except Exception:
-        return {"path": None}
+    result = await pick_folder_async(title="Select a folder")
+    return result.as_dict()
 
 
 @app.post("/api/native/save-file")
-async def save_file(request: Request) -> dict[str, str | None]:
+async def save_file(request: Request) -> dict[str, str | list[str]]:
     """Open a native save-file dialog and return the chosen path.
 
-    Uses tkinter's filedialog when available (desktop/frozen builds).
-    Returns empty path on cancel or if running in a headless environment.
+    Returns ``{"state": "selected"|"cancelled"|"unavailable", "paths": [...],
+    "reason": "..."}`` — the shared file-dialog contract.  Single selection.
 
     An optional JSON body ``{"preset": "json", "default_name": "<name>"}``
-    switches the file-type filter — ``"json"`` selects ``*.jsonld`` files.
+    switches the file-type filter and the pre-filled filename.  The extension
+    is carried by ``default_name`` (e.g. ``artifice-ocr-tropy.jsonld``) — the
+    service applies no ``defaultextension`` policy.
     """
     preset = "json"
     default_name = "artifice-ocr-tropy.jsonld"
@@ -249,27 +245,19 @@ async def save_file(request: Request) -> dict[str, str | None]:
         pass
 
     if preset == "json":
-        filetypes = [("JSON-LD", "*.jsonld"), ("JSON", "*.json"), ("All Files", "*.*")]
-    else:
-        filetypes = [("All Files", "*.*")]
-
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        path = filedialog.asksaveasfilename(
-            title="Save Tropy export",
-            defaultextension=".jsonld",
-            initialfile=default_name,
-            filetypes=filetypes,
+        file_types = (
+            FileType("JSON export", ("*.jsonld", "*.json")),
+            FileType("All Files", ("*.*",)),
         )
-        root.destroy()
-        return {"path": path if path else None}
-    except Exception:
-        return {"path": None}
+    else:
+        file_types = (FileType("All Files", ("*.*",)),)
+
+    result = await save_file_async(
+        title="Save Tropy export",
+        default_name=default_name,
+        file_types=file_types,
+    )
+    return result.as_dict()
 
 
 @app.post("/api/native/reveal")
