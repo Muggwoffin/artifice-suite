@@ -470,6 +470,45 @@ def test_pause_resume_cancel_are_no_ops_without_a_run(client):
         assert client.post(path).json() == {"ok": True}
 
 
+def test_start_run_preflight_failure_returns_409_with_url(client, tmp_path, monkeypatch):
+    """A preflight failure (unreachable endpoint) yields a 409 naming the URL.
+
+    Resolution is stubbed to succeed (populating the role cache) so the failure
+    provably comes from the preflight check, not from model resolution.
+    """
+    from artifice_ocr import _resolution
+    from artifice_ocr._resolution import _RoleResolution
+    from model_harness.discovery import ProbeResult
+    from model_harness.resolution import ResolutionSource
+
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+
+    config.apply_overrides({"ocr_backend": "ollama", "ocr_model": "llava:7b"})
+
+    def fake_resolve(*, stages=None):
+        _resolution.reset()
+        _resolution._cache["vision"] = _RoleResolution(
+            model="llava:7b", backend="ollama", source=ResolutionSource.USER_CHOICE
+        )
+
+    monkeypatch.setattr(_resolution, "resolve_models_for_run", fake_resolve)
+    monkeypatch.setattr(
+        _resolution,
+        "probe_endpoint_sync",
+        lambda *a, **k: ProbeResult(
+            url="http://localhost:11434", reachable=False, hint="down"
+        ),
+    )
+
+    res = client.post("/api/run/start", json={"stages": ["ocr"]})
+    assert res.status_code == 409
+    detail = res.json()["detail"]
+    assert "http://localhost:11434" in detail
+    assert "Cannot reach OCR endpoint" in detail
+
+
 # --------------------------------------------------------------------------- #
 # config
 # --------------------------------------------------------------------------- #
@@ -510,24 +549,32 @@ def test_config_reset_discards_overrides(client):
 
 
 def test_set_config_rejects_link_local_ollama_url(client):
-    """A link-local ollama_url is refused at save time with HTTP 400."""
-    res = client.post("/api/config", json={"ollama_url": "http://169.254.169.254/"})
+    """A link-local ollama_url is refused at save time when a backend uses it."""
+    res = client.post(
+        "/api/config", json={"ocr_backend": "ollama", "ollama_url": "http://169.254.169.254/"}
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "link-local" in detail.lower()
 
 
 def test_set_config_rejects_link_local_lm_studio_url(client):
-    """A link-local lm_studio_url is refused at save time with HTTP 400."""
-    res = client.post("/api/config", json={"lm_studio_url": "http://169.254.169.254/v1"})
+    """A link-local lm_studio_url is refused at save time when a backend uses it."""
+    res = client.post(
+        "/api/config",
+        json={"ocr_backend": "lm_studio", "lm_studio_url": "http://169.254.169.254/v1"},
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "link-local" in detail.lower()
 
 
 def test_set_config_rejects_link_local_api_base_url(client):
-    """A link-local api_base_url is refused at save time with HTTP 400."""
-    res = client.post("/api/config", json={"api_base_url": "http://169.254.169.254/v1"})
+    """A link-local api_base_url is refused at save time when a backend uses it."""
+    res = client.post(
+        "/api/config",
+        json={"ocr_backend": "api_key", "api_base_url": "http://169.254.169.254/v1"},
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "link-local" in detail.lower()
@@ -538,6 +585,9 @@ def test_set_config_allows_loopback_urls(client):
     res = client.post(
         "/api/config",
         json={
+            "ocr_backend": "ollama",
+            "cleanup_backend": "lm_studio",
+            "translate_backend": "api_key",
             "ollama_url": "http://localhost:11434",
             "lm_studio_url": "http://localhost:1234/v1",
             "api_base_url": "http://localhost:8080/v1",
@@ -554,7 +604,9 @@ def test_set_config_rejects_public_api_base_url_without_env_var(client, monkeypa
 
     strict_policy = EndpointPolicy(allow_public=False)
     monkeypatch.setattr(settings_mod, "_endpoint_policy", strict_policy)
-    res = client.post("/api/config", json={"api_base_url": "http://8.8.8.8/v1"})
+    res = client.post(
+        "/api/config", json={"ocr_backend": "api_key", "api_base_url": "http://8.8.8.8/v1"}
+    )
     assert res.status_code == 400
     detail = res.json()["detail"]
     assert "public address" in detail.lower()
@@ -567,7 +619,9 @@ def test_set_config_allows_public_api_base_url_with_env_var(client, monkeypatch)
 
     permissive_policy = EndpointPolicy(allow_public=True)
     monkeypatch.setattr(settings_mod, "_endpoint_policy", permissive_policy)
-    res = client.post("/api/config", json={"api_base_url": "http://8.8.8.8/v1"})
+    res = client.post(
+        "/api/config", json={"ocr_backend": "api_key", "api_base_url": "http://8.8.8.8/v1"}
+    )
     assert res.status_code == 200
     assert res.json() == {"ok": True}
 
@@ -577,6 +631,103 @@ def test_set_config_passes_non_url_fields_through(client):
     res = client.post("/api/config", json={"output_dir": "somewhere"})
     assert res.status_code == 200
     assert config.get("output_dir") == "somewhere"
+
+
+def test_set_config_trims_model_name_whitespace(client):
+    """A model name posted with trailing whitespace is persisted trimmed."""
+    res = client.post(
+        "/api/config",
+        json={"cleanup_model": "aya-expanse:8b-q8_0  "},
+    )
+    assert res.status_code == 200
+    assert config.get("cleanup_model") == "aya-expanse:8b-q8_0"
+    assert config.load_user_settings().get("cleanup_model") == "aya-expanse:8b-q8_0"
+
+
+def test_set_config_normalises_ollama_url(client):
+    """``ollama_url`` is stored canonical — whitespace and a trailing ``/v1``
+    removed — so a later reader appends exactly one ``/v1``."""
+    res = client.post(
+        "/api/config",
+        json={"ocr_backend": "ollama", "ollama_url": "  http://localhost:11434/v1  "},
+    )
+    assert res.status_code == 200
+    assert config.get("ollama_url") == "http://localhost:11434"
+    assert config.load_user_settings().get("ollama_url") == "http://localhost:11434"
+
+
+# --------------------------------------------------------------------------- #
+# config — URL validation only for active backends (pure-Ollama save regression)
+# --------------------------------------------------------------------------- #
+
+
+def test_set_config_pure_ollama_with_default_api_base_url_saves(client, monkeypatch):
+    """The exact failure the maintainer hit: all three backends ``ollama``,
+    an empty api_key, and api_base_url at its shipped public default must save
+    with 200 — not be rejected by the endpoint policy for a field no backend
+    is using."""
+    from artifice_ocr.web.routers import settings as settings_mod
+    from model_harness.endpoint_policy import EndpointPolicy
+
+    # Fail closed deliberately: a public api_base_url must STILL be rejected
+    # when api_key is active, so this test proves the save succeeds because the
+    # inactive field is skipped, not because the policy was relaxed.
+    monkeypatch.setattr(
+        settings_mod, "_endpoint_policy", EndpointPolicy(allow_public=False)
+    )
+
+    res = client.post(
+        "/api/config",
+        json={
+            "ocr_backend": "ollama",
+            "cleanup_backend": "ollama",
+            "translate_backend": "ollama",
+            "api_key": "",
+            "api_base_url": "https://api.openai.com/v1",
+            "ollama_url": "http://localhost:11434",
+        },
+    )
+    assert res.status_code == 200
+    assert res.json() == {"ok": True}
+
+
+def test_set_config_skips_validation_for_inactive_url_fields(client, monkeypatch):
+    """A link-local value in an *inactive* URL field is not validated at save
+    time — it is deferred to use-time by the endpoint policy."""
+    # Default backends are "auto"; no field maps to "auto", so none is checked.
+    res = client.post(
+        "/api/config", json={"api_base_url": "http://169.254.169.254/v1"}
+    )
+    assert res.status_code == 200
+    assert res.json() == {"ok": True}
+
+
+def test_set_config_redaction_round_trip_preserves_secret(client):
+    """GET → form → POST must not overwrite a real key with the placeholder."""
+    from artifice_ocr.web.routers.settings import REDACTED_PLACEHOLDER
+
+    client.post("/api/config", json={"api_key": "sk-real-secret"})
+    body = client.get("/api/config").json()
+    assert body["api_key"] == REDACTED_PLACEHOLDER
+
+    res = client.post("/api/config", json=body)
+    assert res.status_code == 200
+    assert config.get("api_key") == "sk-real-secret"
+    assert config.load_user_settings().get("api_key") == "sk-real-secret"
+
+
+def test_set_config_redaction_round_trip_preserves_huggingface_token(client):
+    """Same round-trip for the Hugging Face token."""
+    from artifice_ocr.web.routers.settings import REDACTED_PLACEHOLDER
+
+    client.post("/api/config", json={"huggingface_token": "hf-real-token"})
+    body = client.get("/api/config").json()
+    assert body["huggingface_token"] == REDACTED_PLACEHOLDER
+
+    res = client.post("/api/config", json=body)
+    assert res.status_code == 200
+    assert config.get("huggingface_token") == "hf-real-token"
+    assert config.load_user_settings().get("huggingface_token") == "hf-real-token"
 
 
 # --------------------------------------------------------------------------- #

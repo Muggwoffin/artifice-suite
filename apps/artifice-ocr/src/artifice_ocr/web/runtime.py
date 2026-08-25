@@ -382,9 +382,15 @@ class RunState:
         # Fails fast with a legible RuntimeError when a model cannot be
         # resolved, so a bad setup is reported up front rather than as a raw
         # provider 404 on the first file.
-        from .._resolution import resolve_models_for_run
+        from .._resolution import preflight_run, resolve_models_for_run
 
         resolve_models_for_run(stages=stages)
+        # Preflight: one cheap probe per selected stage's backend, reusing the
+        # resolution pass's cached results.  A bad endpoint (unreachable,
+        # policy-rejected, wrong API shape, or a model that vanished between
+        # resolution and now) raises a RuntimeError the router maps to a 409 —
+        # a run must not start only to fail identically on every queued page.
+        preflight_run(stages=stages)
 
         self.run_id = self.history.start_run(
             stages=[s for s in STAGES if s in stages],

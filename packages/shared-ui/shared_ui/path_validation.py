@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import re
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 
 # On POSIX systems, pathlib treats ``C:/Windows`` as a relative path and
@@ -64,13 +65,21 @@ def normalise_path(raw: str, field_name: str) -> str:
     return normalised
 
 
-def build_allowed_roots(env_var: str) -> list[Path]:
+def build_allowed_roots(env_var: str, extra_roots: Iterable[str] = ()) -> list[Path]:
     """Return the set of directory roots permitted for user-supplied paths.
 
     Roots are resolved at call time so ``cwd`` reflects the server process at
     the moment of the check, not import time. The env var provides the escape
     hatch for external drives, network shares, and any other location an
     individual installation needs.
+
+    ``extra_roots`` is an optional iterable of additional roots supplied by
+    the calling application — e.g. a user-approved folder list persisted in
+    that app's own config. Entries are ``expanduser()``-and-``resolve()``d the
+    same way as env-var entries. Blank entries and entries that fail to
+    resolve are ignored rather than raising, so a stale approved folder for an
+    unplugged drive cannot break validation of unrelated paths. Omitting the
+    argument preserves the previous behaviour exactly.
     """
     roots: list[Path] = [
         Path.home(),
@@ -83,16 +92,35 @@ def build_allowed_roots(env_var: str) -> list[Path]:
         raw = raw.strip()
         if raw:
             roots.append(Path(raw).expanduser().resolve())
+    for raw in extra_roots:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            roots.append(Path(raw).expanduser().resolve())
+        except Exception:
+            # A stale approved folder (e.g. an unplugged external drive) must
+            # not turn every path check into an error; skip it.
+            continue
     return roots
 
 
-def validate_path(raw: str, field_name: str, *, allowed_roots_env_var: str) -> str:
+def validate_path(
+    raw: str,
+    field_name: str,
+    *,
+    allowed_roots_env_var: str,
+    extra_roots: Iterable[str] = (),
+) -> str:
     """Return *raw* as a normalised path string after checking it resides
     within an allowed root directory.  Raises ``ValueError`` on rejection.
 
     Backslashes are normalised to forward slashes before processing so that a
     Windows-style path supplied from outside the web layer is not
     misinterpreted as a single filename on a POSIX server.
+
+    ``extra_roots`` is passed through to :func:`build_allowed_roots`; omitting
+    it preserves the previous behaviour exactly.
     """
     normalised_raw = normalise_path(raw, field_name)
     try:
@@ -100,7 +128,7 @@ def validate_path(raw: str, field_name: str, *, allowed_roots_env_var: str) -> s
     except Exception:
         raise PathValidationError(f"{field_name}: cannot resolve path {raw!r}") from None
 
-    allowed = build_allowed_roots(allowed_roots_env_var)
+    allowed = build_allowed_roots(allowed_roots_env_var, extra_roots)
     for root in allowed:
         resolved_root = root.resolve()
         try:

@@ -103,6 +103,10 @@ def byom_state() -> dict:
         "configured": configured,
         "endpoint": base_url or None,
         "model": model_name or None,
+        # The roles this app supports. Draft is chat-only; derived from the
+        # same mapping POST /model honours (_ROLE_SETTING) so the picker can
+        # never show a role the app cannot save, or omit one it can.
+        "roles": list(_ROLE_SETTING),
         "recommendations": _byom_recommendations("artifice-draft"),
     }
 
@@ -115,6 +119,14 @@ class ModelRequest(BaseModel):
 
     model: str = ""
     role: str = "chat"
+
+
+# Role → the settings key it writes. Draft supports a single role; GET /state
+# publishes these keys as `roles`, so the picker is built from what the app
+# actually maps, never from the recommendations registry.
+_ROLE_SETTING = {
+    "chat": "model_name",
+}
 
 
 @router.post("/model")
@@ -130,14 +142,17 @@ def byom_set_model(req: ModelRequest) -> dict:
     per-run resolution against whatever the endpoint serves. That is a
     supported state, not an error.
     """
-    if req.role != "chat":
+    if req.role not in _ROLE_SETTING:
         return JSONResponse(
             status_code=400,
-            content={"error": f"artifice-draft has no {req.role!r} role; expected 'chat'."},
+            content={
+                "error": f"artifice-draft has no {req.role!r} role; "
+                f"expected one of {sorted(_ROLE_SETTING)}."
+            },
         )
 
     chosen = req.model.strip()
-    save_settings({"model_name": chosen})
+    save_settings({_ROLE_SETTING[req.role]: chosen})
     return {"model": chosen or None, "role": "chat"}
 
 

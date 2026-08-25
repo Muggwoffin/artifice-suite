@@ -134,6 +134,17 @@ class TestByomState:
         assert r.status_code == 200
         json.dumps(r.json())
 
+    def test_state_roles_match_role_setting(self, client):
+        """state.roles is derived from _ROLE_SETTING keys — derive one from the
+        other and assert equality, so the two can never drift apart."""
+        from artifice_ocr.web.routers.byom import _ROLE_SETTING
+
+        r = client.get("/api/byom/state")
+        assert r.status_code == 200
+        assert r.json()["roles"] == list(_ROLE_SETTING)
+        # Stable, sensible order the picker renders in.
+        assert r.json()["roles"] == ["vision", "chat", "translation"]
+
 
 # ── GET /api/byom/detect ──────────────────────────────────────────────────
 
@@ -226,7 +237,7 @@ class TestByomTest:
         """A reachable endpoint persists its URL so configured=True."""
         with patch("artifice_ocr.web.routers.byom.probe_endpoint") as mock_probe:
             mock_probe.return_value = ProbeResult(
-                url="http://localhost:11434/v1",
+                url="http://localhost:9999",
                 reachable=True,
                 provider="ollama",
                 models=("llava:7b",),
@@ -236,7 +247,7 @@ class TestByomTest:
             r = client.post(
                 "/api/byom/test",
                 json={
-                    "url": "http://localhost:11434/v1",
+                    "url": "http://localhost:9999",
                     "api_key": "",
                 },
             )
@@ -297,6 +308,70 @@ class TestByomTest:
             assert saved.get("api_key") == "sk-secret-123"
             assert saved.get("api_base_url") == "http://localhost:9999/v1"
 
+    def test_successful_ollama_probe_does_not_rewrite_api_base_url(self, client):
+        """A successful Ollama probe persists ollama_url but must not restore
+        the shipped cloud ``api_base_url`` default — that re-poisons a field
+        the user deliberately cleared."""
+        with patch("artifice_ocr.web.routers.byom.probe_endpoint") as mock_probe:
+            mock_probe.return_value = ProbeResult(
+                url="http://localhost:11434/v1",
+                reachable=True,
+                provider="ollama",
+                models=("llava:7b",),
+                hint=None,
+            )
+
+            # Give api_base_url a non-default value so a poisoned write back to
+            # https://api.openai.com/v1 would be observable.
+            config.apply_overrides({"api_base_url": "http://localhost:9999/v1"})
+            config.save_user_settings({"api_base_url": "http://localhost:9999/v1"})
+
+            r = client.post(
+                "/api/byom/test",
+                json={"url": "http://localhost:11434/v1", "api_key": ""},
+            )
+            assert r.status_code == 200
+
+            saved = config.load_user_settings()
+            assert saved.get("ollama_url") == "http://localhost:11434"
+            assert saved.get("api_base_url") == "http://localhost:9999/v1"
+
+
+# ── POST /api/byom/model ───────────────────────────────────────────────────
+
+
+class TestByomModel:
+    """`POST /api/byom/model` persists each role to the correct settings key.
+
+    OCR has three roles (vision, chat, translation) mapping to three settings
+    (ocr_model, cleanup_model, translate_model) — the BYOM screen must be able
+    to set all three, not just the chat/cleanup one.
+    """
+
+    def test_vision_role_sets_ocr_model(self, client):
+        r = client.post("/api/byom/model", json={"model": "llava:7b", "role": "vision"})
+        assert r.status_code == 200
+        assert r.json() == {"model": "llava:7b", "role": "vision"}
+        assert config.get("ocr_model") == "llava:7b"
+
+    def test_translation_role_sets_translate_model(self, client):
+        r = client.post("/api/byom/model", json={"model": "qwen2.5:7b", "role": "translation"})
+        assert r.status_code == 200
+        assert r.json() == {"model": "qwen2.5:7b", "role": "translation"}
+        assert config.get("translate_model") == "qwen2.5:7b"
+
+    def test_chat_role_sets_cleanup_model(self, client):
+        r = client.post("/api/byom/model", json={"model": "mistral:7b", "role": "chat"})
+        assert r.status_code == 200
+        assert r.json() == {"model": "mistral:7b", "role": "chat"}
+        assert config.get("cleanup_model") == "mistral:7b"
+
+    def test_unknown_role_is_rejected(self, client):
+        """No embedding role may leak into ocr's picker — the server rejects it."""
+        r = client.post("/api/byom/model", json={"model": "bge-m3", "role": "embedding"})
+        assert r.status_code == 400
+        assert "embedding" in r.json()["error"]
+
 
 # ── Contract + SSRF + first-paint tests (pytest-httpx) ────────────────────
 
@@ -315,7 +390,9 @@ class TestByomContractAndSsrf:
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         body = r.json()
-        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations"}
+        assert set(body.keys()) == {
+            "app", "configured", "endpoint", "model", "roles", "recommendations"
+        }
         assert body["app"] == "artifice-ocr"
         assert body["configured"] is False
 
@@ -325,7 +402,9 @@ class TestByomContractAndSsrf:
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         body = r.json()
-        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations"}
+        assert set(body.keys()) == {
+            "app", "configured", "endpoint", "model", "roles", "recommendations"
+        }
         assert body["configured"] is True
 
     # -- GET /api/byom/detect --------------------------------------------

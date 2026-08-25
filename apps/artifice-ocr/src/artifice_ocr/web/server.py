@@ -176,9 +176,10 @@ async def pick_file(request: Request) -> dict[str, str | list[str]]:
     non-empty only for ``"selected"`` and ``reason`` is non-empty only for
     ``"unavailable"``.  Multiple files may be selected.
 
-    An optional JSON body ``{"preset": "images"|"json"}`` switches the
-    file-type filter — ``"json"`` selects ``*.jsonld *.json`` files.
-    Defaults to ``"images"`` for backward compatibility.
+    An optional JSON body ``{"preset": "images"|"json"|"tropy"}`` switches the
+    file-type filter — ``"json"`` selects ``*.jsonld *.json`` files, ``"tropy"``
+    selects ``*.tpy`` project databases.  Defaults to ``"images"`` for backward
+    compatibility.
     """
     preset = "images"
     try:
@@ -197,6 +198,11 @@ async def pick_file(request: Request) -> dict[str, str | list[str]]:
     if preset == "json":
         file_types = (
             FileType("JSON export", ("*.jsonld", "*.json")),
+            FileType("All Files", ("*.*",)),
+        )
+    elif preset == "tropy":
+        file_types = (
+            FileType("Tropy project", ("*.tpy",)),
             FileType("All Files", ("*.*",)),
         )
     else:
@@ -325,6 +331,17 @@ _BYOM_PREVIEW_APP_NAMES = {
     "artifice-transcribe": "Transcribe",
 }
 
+# Roles each app's GET /api/byom/state publishes, in the same stable order the
+# real routers serve. OCR derives its list from the router's own _ROLE_SETTING
+# so this dev-only copy can never drift from it; the other three are hand-kept
+# in sync with their routers' _ROLE_SETTING (ocr cannot import another app).
+_PREVIEW_ROLES = {
+    "artifice-ocr": list(byom_router._ROLE_SETTING),
+    "artifice-draft": ["chat"],
+    "artifice-graph": ["chat", "embedding"],
+    "artifice-transcribe": ["chat"],
+}
+
 
 def _byom_recommendations(app: str) -> dict:
     """Serialise model_harness.registry recommendations for *app*.
@@ -382,6 +399,7 @@ def _byom_base_state(app: str) -> dict:
         "configured": False,
         "endpoint": None,
         "model": None,
+        "roles": _PREVIEW_ROLES.get(app, ["chat"]),
         "recommendations": _byom_recommendations(app),
     }
     if app == "artifice-graph":

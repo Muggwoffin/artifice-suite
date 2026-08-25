@@ -12,6 +12,7 @@ from model_harness.contract import EndpointRejected
 from model_harness.discovery import (
     ProbeResult,
     detect_local_servers,
+    normalise_base_url,
     probe_endpoint,
 )
 from model_harness.endpoint_policy import EndpointPolicy
@@ -158,6 +159,10 @@ def byom_state() -> dict:
         "configured": configured,
         "endpoint": api_base_url if api_key else ollama_url,
         "model": ocr_model or None,
+        # The roles this app supports, in stable order. Derived from the same
+        # mapping POST /model honours (_ROLE_SETTING) so the picker can never
+        # show a role the app cannot save, or omit one it can.
+        "roles": list(_ROLE_SETTING),
         "recommendations": _byom_recommendations("artifice-ocr"),
     }
 
@@ -215,10 +220,9 @@ async def byom_test(req: TestRequest) -> dict:
         if req.api_key:
             overrides["api_key"] = req.api_key
         if result.provider == "ollama":
-            overrides["ollama_url"] = base_url.rstrip("/")
-            overrides["api_base_url"] = "https://api.openai.com/v1"
+            overrides["ollama_url"] = normalise_base_url(base_url)
         else:
-            overrides["api_base_url"] = base_url
+            overrides["api_base_url"] = base_url.strip()
         config.apply_overrides(overrides)
         config.save_user_settings(overrides)
 

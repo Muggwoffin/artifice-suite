@@ -40,6 +40,7 @@ from model_harness.anthropic_adapter import AnthropicProvider
 from model_harness.discovery import (
     ProbeResult,
     detect_local_servers,
+    normalise_base_url,
     probe_endpoint,
     probe_endpoint_sync,
 )
@@ -91,6 +92,7 @@ __all__ = [
     "get_asr_model",
     "get_endpoint",
     "is_configured",
+    "normalise_base_url",
     "probe_endpoint",
     "probe_endpoint_sync",
     "recommendations_for_app",

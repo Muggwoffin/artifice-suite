@@ -121,6 +121,11 @@ def byom_state() -> dict:
         "configured": configured,
         "endpoint": base_url or None,
         "model": model or None,
+        # The roles this app supports, in stable order (chat = extraction LLM,
+        # embedding = the separate embedding server). Derived from the same
+        # mapping POST /model honours (_ROLE_SETTING) so the picker can never
+        # show a role the app cannot save, or omit one it can.
+        "roles": list(_ROLE_SETTING),
         "recommendations": _byom_recommendations("artifice-graph"),
         "embedding": {
             "configured": emb_configured,
@@ -197,6 +202,16 @@ class ModelRequest(BaseModel):
     role: str = "chat"
 
 
+# Role → which config section/field it writes. Mirrors artifice_graph
+# ._resolution (chat → extraction LLM, embedding → embedding server) and the
+# Hub's config_bridge._ROLE_KEY_MAP; all three must agree. GET /state publishes
+# these keys as `roles`, so they are what the picker is built from.
+_ROLE_SETTING = {
+    "chat": "llm.model",
+    "embedding": "embedding.model",
+}
+
+
 @router.post("/model")
 def byom_set_model(req: ModelRequest) -> dict:
     """Persist the user's model choice for a role.
@@ -209,11 +224,12 @@ def byom_set_model(req: ModelRequest) -> dict:
     per-run resolution against whatever the endpoint serves. That is a
     supported state, not an error.
     """
-    if req.role not in ("chat", "embedding"):
+    if req.role not in _ROLE_SETTING:
         return JSONResponse(
             status_code=400,
             content={
-                "error": f"artifice-graph has no {req.role!r} role; expected 'chat' or 'embedding'."
+                "error": f"artifice-graph has no {req.role!r} role; "
+                f"expected one of {sorted(_ROLE_SETTING)}."
             },
         )
 

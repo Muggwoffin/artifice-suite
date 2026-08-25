@@ -83,6 +83,16 @@ class TestByomState:
         r = client.get("/api/byom/state")
         json.dumps(r.json())
 
+    def test_state_roles_match_role_setting(self, client):
+        """state.roles is derived from _ROLE_SETTING keys — derive one from the
+        other and assert equality, so the two can never drift apart."""
+        from artifice_draft.web.routers.byom import _ROLE_SETTING
+
+        r = client.get("/api/byom/state")
+        assert r.status_code == 200
+        assert r.json()["roles"] == list(_ROLE_SETTING)
+        assert r.json()["roles"] == ["chat"]
+
 
 # ── GET /api/byom/detect ──────────────────────────────────────────────────
 
@@ -234,7 +244,9 @@ class TestByomContractAndSsrf:
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         body = r.json()
-        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations"}
+        assert set(body.keys()) == {
+            "app", "configured", "endpoint", "model", "roles", "recommendations"
+        }
         assert body["app"] == "artifice-draft"
         assert body["configured"] is False
 
@@ -243,7 +255,9 @@ class TestByomContractAndSsrf:
         r = client.get("/api/byom/state")
         assert r.status_code == 200
         body = r.json()
-        assert set(body.keys()) == {"app", "configured", "endpoint", "model", "recommendations"}
+        assert set(body.keys()) == {
+            "app", "configured", "endpoint", "model", "roles", "recommendations"
+        }
         assert body["configured"] is True
 
     # -- GET /api/byom/detect --------------------------------------------

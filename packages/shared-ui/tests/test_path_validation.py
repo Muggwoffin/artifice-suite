@@ -184,3 +184,78 @@ class TestValidatePath:
 
         with pytest.raises(ValueError, match="is outside the directories"):
             validate_path(foo_file, "source", allowed_roots_env_var="BAR_ALLOWED_ROOTS")
+
+
+class TestExtraRoots:
+    """Tests for the optional ``extra_roots`` parameter (user-approved folders).
+
+    ``extra_roots`` lets an application add user-granted roots on top of the
+    implicit defaults and the env var. It must be purely additive: omitting it
+    preserves the previous behaviour exactly, and an approved folder must not
+    defeat the hidden-directory rule.
+    """
+
+    def test_default_extra_roots_matches_no_argument(self) -> None:
+        """Omitting ``extra_roots`` is identical to passing ``()``."""
+        assert build_allowed_roots("NONEXISTENT_ENV_VAR") == build_allowed_roots(
+            "NONEXISTENT_ENV_VAR", ()
+        )
+
+    def test_extra_roots_are_included_resolved(self, tmp_path: Path) -> None:
+        """An extra root appears in the roots list, resolved."""
+        extra = tmp_path / "approved"
+        extra.mkdir()
+        roots = build_allowed_roots("NONEXISTENT_ENV_VAR", extra_roots=[str(extra)])
+        assert extra.resolve() in roots
+
+    def test_blank_and_stale_extra_roots_are_ignored(self, tmp_path: Path) -> None:
+        """Blank entries are skipped; a stale (nonexistent) entry is added
+        harmlessly without raising and never matched."""
+        extra = tmp_path / "approved"
+        extra.mkdir()
+        roots = build_allowed_roots(
+            "NONEXISTENT_ENV_VAR",
+            extra_roots=["", "   ", "/nonexistent/stale/drive", str(extra)],
+        )
+        assert extra.resolve() in roots
+
+    def test_validate_path_accepts_path_under_extra_root(self) -> None:
+        """A path outside every default root is accepted once an extra root
+        covers it. Uses fabricated paths under /opt, matching the env-var
+        selection test's approach (resolve(strict=False) does not require
+        existence)."""
+        approved = "/opt/_artifice_approved_root"
+        target = f"{approved}/project/x.tpy"
+        with pytest.raises(ValueError, match="is outside the directories"):
+            validate_path(target, "source", allowed_roots_env_var="NONEXISTENT")
+        result = validate_path(
+            target,
+            "source",
+            allowed_roots_env_var="NONEXISTENT",
+            extra_roots=[approved],
+        )
+        assert os.path.isabs(result)
+
+    def test_extra_root_does_not_defeat_hidden_directory_rule(self) -> None:
+        """A hidden directory under an approved root is still rejected."""
+        approved = "/opt/_artifice_approved_root"
+        hidden_target = f"{approved}/.secret/x.tpy"
+        with pytest.raises(ValueError, match="descends into a hidden directory"):
+            validate_path(
+                hidden_target,
+                "source",
+                allowed_roots_env_var="NONEXISTENT",
+                extra_roots=[approved],
+            )
+
+    def test_stale_extra_root_does_not_break_validation(self) -> None:
+        """A stale (unresolvable/nonexistent) extra root must not break
+        validation of paths covered by another, valid extra root."""
+        target = "/opt/_artifice_approved_valid/project/x.tpy"
+        result = validate_path(
+            target,
+            "source",
+            allowed_roots_env_var="NONEXISTENT",
+            extra_roots=["/nonexistent/stale/drive", "/opt/_artifice_approved_valid"],
+        )
+        assert os.path.isabs(result)

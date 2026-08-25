@@ -305,7 +305,7 @@
               <option value="api_key">API Key (cloud)</option>
             </select>
           </label>
-          <label>OCR model <input type="text" id="set-ocr_model" placeholder="e.g. allenai/olmocr-2-7b"></label>
+          <label>OCR model <input type="text" id="set-ocr_model" placeholder="leave blank to pick automatically"></label>
           <label>Cleanup backend
             <select id="set-cleanup_backend">
               <option value="ollama">Ollama</option>
@@ -369,6 +369,13 @@
             <button class="btn accent" id="btn-template-save">Save Current as Template</button>
           </div>
           <span id="template-status" class="dim" style="margin-top:0.5rem; display:inline-block;"></span>
+        </div>
+        <div class="card settings-card" style="grid-column: 1 / -1;">
+          <h3>Approved folders</h3>
+          <p class="dim" style="margin:0 0 0.5rem;">Approving a folder grants Artifice permission to read and write files beneath it.</p>
+          <ul id="approved-folders-list" style="list-style:none; margin:0 0 0.5rem; padding:0; display:flex; flex-direction:column; gap:0.4rem;"></ul>
+          <button class="btn" id="btn-approved-folder-add" type="button">Add folder&hellip;</button>
+          <span id="approved-folders-status" class="dim" style="margin-left:0.5rem;"></span>
         </div>
         <div class="card settings-card" style="grid-column: 1 / -1;">
           <h3>Connection Status</h3>

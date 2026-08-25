@@ -80,8 +80,9 @@ def test_check_structure_only_accepts_identical_text():
 # --------------------------------------------------------------------------- #
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_structure_perform_respects_resume(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """Second call with existing output should be a no-op."""
     from artifice_ocr.stages import structure
 
@@ -101,8 +102,9 @@ def test_structure_perform_respects_resume(mock_chat, tmp_path):
     assert mock_chat.call_count == 1  # only called once
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_structure_perform_fallback_on_guard_reject(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """When guard rejects, original text should be kept."""
     from artifice_ocr.stages import structure
 
@@ -117,8 +119,9 @@ def test_structure_perform_fallback_on_guard_reject(mock_chat, tmp_path):
     assert "rejected_structured_text" in result
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_structure_perform_accepts_safe_restructure(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """When guard accepts, structured text should be used."""
     from artifice_ocr.stages import structure
 
@@ -216,8 +219,9 @@ def test_collect_folder_stage_fallback(tmp_path):
 # --------------------------------------------------------------------------- #
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_compile_pdf_end_to_end(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """Full pipeline: collect -> structure -> render, then verify PDF content."""
     import fitz  # PyMuPDF
     from artifice_ocr import pdf_export
@@ -299,8 +303,9 @@ def test_compile_pdf_smoke_no_structure():
 # --------------------------------------------------------------------------- #
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_structure_pages_calls_on_progress_in_order(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """on_progress should be called once per page, in order, with messages."""
     from artifice_ocr import pdf_export
     from artifice_ocr.pdf_export import PageText
@@ -329,8 +334,9 @@ def test_structure_pages_calls_on_progress_in_order(mock_chat, tmp_path):
     assert len(result) == 2
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_structure_pages_calls_on_rejected(mock_chat, tmp_path, monkeypatch):
+    mock_chat = mock_chat.return_value.chat
     """on_rejected should be called when the guard rejects a page."""
     # Disable resume so structure.perform always runs the model call
     from artifice_ocr import config as _cfg
@@ -360,8 +366,9 @@ def test_structure_pages_calls_on_rejected(mock_chat, tmp_path, monkeypatch):
 
 
 @patch("artifice_ocr._resolution.resolve_models_for_run")
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_compile_function_end_to_end(mock_chat, mock_resolve, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """pdf_export.compile() should collect, structure and render."""
     from artifice_ocr import pdf_export
 
@@ -399,8 +406,9 @@ def test_compile_function_end_to_end(mock_chat, mock_resolve, tmp_path):
     assert any("Done" in m for m in progress)
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_compile_function_no_structure(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """compile() with structure=False should skip the model call."""
     from artifice_ocr import pdf_export
 
@@ -425,8 +433,9 @@ def test_compile_function_no_structure(mock_chat, tmp_path):
 # --------------------------------------------------------------------------- #
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_render_markdown_creates_file(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """compile() with format='md' should produce a Markdown file."""
     from artifice_ocr import pdf_export
 
@@ -462,8 +471,9 @@ def test_render_markdown_creates_file(mock_chat, tmp_path):
 # --------------------------------------------------------------------------- #
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_compile_with_style_preset(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """compile() with style='compact' should produce a valid PDF."""
     import fitz
     from artifice_ocr import pdf_export
@@ -760,7 +770,7 @@ def test_compile_bilingual_skips_structure_by_default(tmp_path):
     (translated_dir / "page1.txt").write_text("Translated text.")
 
     output_path = tmp_path / "bilingual_no_struct.pdf"
-    with patch("artifice_ocr.stages.structure.ollama.chat") as mock_chat:
+    with patch("artifice_ocr.stages.structure.ollama.Client") as mock_chat:
         result = pdf_export.compile(
             str(tmp_path),
             bilingual=True,
@@ -934,8 +944,9 @@ def test_default_batch_output_md_extension_and_sanitising():
 # --------------------------------------------------------------------------- #
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_compile_batch_end_to_end(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """Two items combine into one PDF with per-item section headings."""
     import fitz
     from artifice_ocr import pdf_export
@@ -970,8 +981,9 @@ def test_compile_batch_end_to_end(mock_chat, tmp_path):
     assert any("Done" in m for m in progress)
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_compile_batch_reports_skipped(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """Items without processed text are skipped and reported, not fatal."""
     from artifice_ocr import pdf_export
 
@@ -1000,8 +1012,9 @@ def test_compile_batch_raises_when_nothing_processed(tmp_path):
         pdf_export.compile_batch(["ghost"], output_dir=str(tmp_path))
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_compile_batch_default_output_is_timestamped(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """With output=None the PDF lands in output_dir with a timestamped name."""
     from artifice_ocr import pdf_export
 
@@ -1017,8 +1030,9 @@ def test_compile_batch_default_output_is_timestamped(mock_chat, tmp_path):
     mock_chat.assert_not_called()
 
 
-@patch("artifice_ocr.stages.structure.ollama.chat")
+@patch("artifice_ocr.stages.structure.ollama.Client")
 def test_compile_batch_structure_cache_isolated_per_item(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     """Regression: items sharing a page filename must not collide in the
     structured-text resume cache (previously keyed by bare filename stem)."""
     import fitz

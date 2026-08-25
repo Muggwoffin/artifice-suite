@@ -61,6 +61,56 @@ let tropyBrowseItems = [];      // items from /browse/items for current filter
 let tropyBrowseSelected = new Map(); // item_id -> true for checked items
 let tropyBrowseFilter = null;    // { list_id?, tag? } current filter
 
+// Recent-project dropdown + folder picker, built in JS because the Browse tab
+// markup lives in index.html (out of scope here) — these affordances only make
+// sense in browse mode anyway.
+let tropyBrowseRecentRow = null;
+let tropyBrowseRecentEl = null;
+
+function setupTropyBrowseExtras() {
+  const pathInput = tropyEls["tropy-browse-path"];
+  const pickBtn = tropyEls["btn-tropy-browse-pick"];
+  if (!pathInput || !pickBtn) return;
+
+  // Recent-projects dropdown, placed above the path row. Selecting one fills
+  // the path input and loads the project — the common case is select, not type.
+  const recentRow = document.createElement("div");
+  recentRow.style.cssText = "display:flex;gap:0.4rem;align-items:center;margin-bottom:0.5rem;";
+  const recentSel = document.createElement("select");
+  recentSel.id = "tropy-browse-recent";
+  recentSel.className = "select";
+  recentSel.style.cssText = "flex:1;";
+  recentSel.setAttribute("aria-label", "Recent Tropy projects");
+  const emptyOpt = document.createElement("option");
+  emptyOpt.value = "";
+  emptyOpt.textContent = "Select a recent project…";
+  recentSel.appendChild(emptyOpt);
+  recentRow.appendChild(recentSel);
+  recentRow.style.display = "none";
+  const pathRow = pathInput.closest(".tropy-browse-path-row");
+  pathRow.parentNode.insertBefore(recentRow, pathRow);
+
+  // A .tropy bundle is a directory — add a folder picker beside "Pick…".
+  const folderBtn = document.createElement("button");
+  folderBtn.type = "button";
+  folderBtn.className = "btn btn-small";
+  folderBtn.id = "btn-tropy-browse-pick-folder";
+  folderBtn.textContent = "Pick folder…";
+  pickBtn.parentNode.insertBefore(folderBtn, pickBtn.nextSibling);
+
+  recentSel.onchange = () => {
+    const val = recentSel.value;
+    if (!val) return;
+    tropyEls["tropy-browse-path"].value = val;
+    tropyEls["btn-tropy-browse-load"].click();
+  };
+  folderBtn.onclick = pickTropyFolder;
+
+  tropyBrowseRecentRow = recentRow;
+  tropyBrowseRecentEl = recentSel;
+}
+setupTropyBrowseExtras();
+
 // ------------------------------------------------------------- import modal
 
 async function openTropyAdd() {
@@ -81,6 +131,7 @@ async function openTropyAdd() {
       }
     }
   } catch { /* settings are optional */ }
+  loadRecentTropyProjects();
 }
 
 function resetImportState() {
@@ -308,6 +359,52 @@ async function browseTropyFile() {
 
 tropyEls["btn-tropy-browse-file"].onclick = browseTropyFile;
 
+// Recent-projects dropdown population — soft failure, never an error.
+async function loadRecentTropyProjects() {
+  if (!tropyBrowseRecentRow || !tropyBrowseRecentEl) return;
+  try {
+    const data = await window.ArtificeBind.apiFetch("/api/tropy/browse/recent", { method: "GET" });
+    const projects = data.projects || [];
+    tropyBrowseRecentEl.innerHTML = '<option value="">Select a recent project…</option>';
+    for (const p of projects) {
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = p;
+      tropyBrowseRecentEl.appendChild(opt);
+    }
+    tropyBrowseRecentRow.style.display = projects.length ? "" : "none";
+  } catch {
+    // Tropy not installed, or the feature flag is off — hide the dropdown.
+    tropyBrowseRecentRow.style.display = "none";
+  }
+}
+
+// Folder picker for .tropy bundle directories (the common case).
+async function pickTropyFolder() {
+  let data;
+  try {
+    const res = await fetch("/api/native/pick-folder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    data = await res.json();
+  } catch (err) {
+    if (window.ArtificeToast)
+      window.ArtificeToast.error("Could not reach the server to open the folder picker.");
+    return;
+  }
+  if (data.state === "selected" && data.paths && data.paths.length) {
+    tropyEls["tropy-browse-path"].value = data.paths[0];
+  } else if (data.state === "unavailable") {
+    if (window.ArtificeToast)
+      window.ArtificeToast.show(data.reason || "Folder picker unavailable", "warning");
+    const raw = prompt("Enter a path to a Tropy project folder:");
+    if (raw) tropyEls["tropy-browse-path"].value = raw;
+  }
+  // cancelled — do nothing
+}
+
 // Dropzone click / keyboard activation triggers the same file picker
 tropyEls["tropy-dropzone"].onclick = browseTropyFile;
 tropyEls["tropy-dropzone"].addEventListener("keydown", (e) => {
@@ -515,7 +612,7 @@ tropyEls["btn-tropy-browse-pick"].onclick = async () => {
     const res = await fetch("/api/native/pick-file", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ preset: "tropy" }),
     });
     data = await res.json();
   } catch (err) {
@@ -653,11 +750,31 @@ function renderTropyBrowseItems() {
     cb.onchange = () => {
       const id = parseInt(cb.dataset.itemId, 10);
       if (cb.checked) tropyBrowseSelected.set(id, true); else tropyBrowseSelected.delete(id);
-      tropyEls["tropy-browse-summary-text"].textContent = tropyBrowseSelected.size + " item(s) selected";
+      updateTropyBrowseSummary();
       tropyEls["tropy-browse-summary"].classList.toggle("hidden", tropyBrowseSelected.size === 0);
       tropyEls["btn-tropy-browse-enqueue"].disabled = tropyBrowseSelected.size === 0;
     };
   });
+}
+
+// Show "N of M pages unavailable" as the user selects items — before a run
+// starts, not as N failures during it.
+function updateTropyBrowseSummary() {
+  let missing = 0;
+  let total = 0;
+  for (const it of tropyBrowseItems) {
+    if (tropyBrowseSelected.has(it.item_id)) {
+      total += it.photo_count || 0;
+      missing += it.missing_count || 0;
+    }
+  }
+  let text = tropyBrowseSelected.size + " item(s) selected";
+  if (missing > 0) {
+    text += " — " + missing + " of " + total + " page(s) unavailable";
+  }
+  const el = tropyEls["tropy-browse-summary-text"];
+  el.textContent = text;
+  el.classList.toggle("warning", missing > 0);
 }
 
 tropyEls["btn-tropy-browse-enqueue"].onclick = async () => {
@@ -676,7 +793,16 @@ tropyEls["btn-tropy-browse-enqueue"].onclick = async () => {
         item_ids: Array.from(tropyBrowseSelected.keys()),
       }),
     });
-    if (window.ArtificeToast) window.ArtificeToast.success(`Added ${data.added} item(s) from Tropy`);
+    if (window.ArtificeToast) {
+      if (data.missing > 0) {
+        window.ArtificeToast.show(
+          `Added ${data.added} item(s) from Tropy — ${data.missing} of ${data.total} page(s) unavailable`,
+          "warning"
+        );
+      } else {
+        window.ArtificeToast.success(`Added ${data.added} item(s) from Tropy`);
+      }
+    }
     setQueue(data.items);
     tropyEls["modal-tropy-add"].classList.add("hidden");
   } catch (err) {

@@ -23,7 +23,10 @@ Schema is the real Tropy ``.tpy`` schema:
   - ``taggings`` — REFERENCES subjects(id) not items(id)
 """
 
+import json
+import os
 import sqlite3
+import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
@@ -89,6 +92,47 @@ def _connect(db_path: Path) -> sqlite3.Connection:
 
 
 # --------------------------------------------------------------------------- #
+# project path resolution
+# --------------------------------------------------------------------------- #
+
+PROJECT_DB_NAME = "project.tpy"
+_BACKUP_SUFFIX = ".backup.tpy"
+
+
+def resolve_project_db_path(path: str | Path) -> Path:
+    """Resolve a user-supplied path to the project's ``.tpy`` SQLite file.
+
+    Accepts the same three forms the pre-JSON-LD reader did:
+
+    - a ``.tropy`` bundle *directory* (contains ``project.tpy``)
+    - a ``project.tpy`` (or any ``.tpy``) *file* directly
+    - a *containing folder* holding one or more ``.tpy`` files
+
+    ``project.tpy`` is always preferred, and ``*.backup.tpy`` files are never
+    returned.  Tropy writes ``project.<timestamp>.backup.tpy`` snapshots into
+    the bundle, and a verbatim ``sorted(p.glob("*.tpy"))[0]`` sorts those
+    *ahead of* ``project.tpy`` (digits sort before ``t``) — silently opening a
+    stale backup and reporting success.
+    """
+    p = Path(path).expanduser()
+    if p.is_file() and p.suffix == ".tpy":
+        return p
+    if p.is_dir():
+        db = p / PROJECT_DB_NAME
+        if db.exists():
+            return db
+        candidates = [
+            m for m in p.glob("*.tpy") if not m.name.endswith(_BACKUP_SUFFIX)
+        ]
+        if candidates:
+            return sorted(candidates, key=lambda m: m.name)[0]
+    # Unmanaged single-file project (path names a .tpy that may not exist yet).
+    if p.suffix == ".tpy":
+        return p
+    return p / PROJECT_DB_NAME
+
+
+# --------------------------------------------------------------------------- #
 # project base resolution
 # --------------------------------------------------------------------------- #
 
@@ -114,6 +158,13 @@ def _resolve_photo_path(
 ) -> Path:
     """Resolve a base-relative photo path to an absolute :class:`Path`.
 
+    Tropy writes both separators into ``photos.path`` — one real project has
+    868 rows using backslashes and the rest forward slashes — so normalise
+    ``\\`` → ``/`` before resolving.  On POSIX a stored
+    ``KV Files\\KV-2-2339.pdf`` is otherwise treated as a single filename and
+    the photo silently resolves to a path that does not exist.  Matches
+    ``tropy_jsonld``'s handling of the same input.
+
     ``base`` values:
     - ``'project'`` — resolve relative to the folder containing the .tpy file
     - ``'home'`` — resolve relative to ``Path.home()``
@@ -121,16 +172,17 @@ def _resolve_photo_path(
     - An absolute path string — use as the base directory
     - Any other string — resolve relative to the DB folder
     """
+    normalised = (photo_path or "").replace("\\", "/")
     if not base:
-        return (db_path.parent / photo_path).resolve()
+        return (db_path.parent / normalised).resolve()
     if base == "project":
-        return (db_path.parent / photo_path).resolve()
+        return (db_path.parent / normalised).resolve()
     if base == "home":
-        return (Path.home() / photo_path).resolve()
+        return (Path.home() / normalised).resolve()
     if _is_absolute_base(base):
-        return (Path(base) / photo_path).resolve()
+        return (Path(base) / normalised).resolve()
     # Relative base string — resolve relative to DB folder
-    return (db_path.parent / base / photo_path).resolve()
+    return (db_path.parent / base / normalised).resolve()
 
 
 def _is_absolute_base(base: str) -> bool:
@@ -366,14 +418,27 @@ def list_items(
 
     try:
         if list_id is not None:
+            # ``UNION``, not ``UNION ALL``: the recursive step must dedupe.
+            # A cyclic parent chain (1 -> 2 -> 1) makes ``UNION ALL`` re-emit
+            # the same rows forever and never reach a fixed point — the query
+            # hangs.  ``UNION`` drops repeats, so the recursion terminates.
+            # The outer ``SELECT DISTINCT`` already dedupes items, so this
+            # costs nothing for acyclic projects.
             rows = conn.execute(
                 """
-                SELECT i.id FROM items i
+                WITH RECURSIVE sub(list_id) AS (
+                    SELECT ?
+                    UNION
+                    SELECT l.list_id FROM lists l
+                    JOIN sub ON l.parent_list_id = sub.list_id
+                )
+                SELECT DISTINCT i.id FROM items i
                 JOIN list_items li ON li.id = i.id
+                JOIN sub ON sub.list_id = li.list_id
                 LEFT JOIN trash t ON t.id = i.id
-                WHERE li.list_id = ? AND li.deleted IS NULL
+                WHERE li.deleted IS NULL
                   AND t.deleted IS NULL
-                ORDER BY li.position, i.id
+                ORDER BY i.id
                 """,
                 (list_id,),
             ).fetchall()
@@ -504,3 +569,97 @@ def items_to_job_items(
                 )
             )
     return result
+
+
+# --------------------------------------------------------------------------- #
+# discovery — Tropy's own state (recent projects)
+# --------------------------------------------------------------------------- #
+
+
+def tropy_config_dir() -> Path:
+    """Directory Tropy stores its per-user state in (``state.json``).
+
+    - Windows: ``%APPDATA%\\Tropy``
+    - macOS: ``~/Library/Application Support/Tropy``
+    - elsewhere: ``$XDG_CONFIG_HOME/Tropy`` (default ``~/.config/Tropy``)
+
+    ``Path.home()`` raises when ``HOME`` (POSIX) / ``USERPROFILE`` (Windows)
+    is unset and the fallback lookup also fails.  There is then no home
+    directory, so return a path under a root that cannot exist — the caller
+    (:func:`recent_projects`) checks ``state.exists()`` and soft-fails to ``[]``.
+    """
+    try:
+        home = Path.home()
+    except (RuntimeError, KeyError, OSError, ImportError):
+        home = Path("/__artifice_no_home__")
+    if sys.platform == "win32":
+        base = os.environ.get("APPDATA") or (home / "AppData" / "Roaming")
+        return Path(base) / "Tropy"
+    if sys.platform == "darwin":
+        return home / "Library" / "Application Support" / "Tropy"
+    return Path(
+        os.environ.get("XDG_CONFIG_HOME") or (home / ".config")
+    ) / "Tropy"
+
+
+def recent_projects() -> list[Path]:
+    """Projects Tropy has opened recently, newest first. Missing ones dropped.
+
+    Failure is soft: no ``state.json``, an unreadable file, invalid JSON, or a
+    malformed payload all return an empty list — never an error.  ``state.json``
+    is written by Tropy, not us, and is treated as untrusted: a top-level
+    non-dict, a non-list ``recent``, and individual non-string entries are all
+    tolerated rather than raised.
+    """
+    state = tropy_config_dir() / "state.json"
+    if not state.exists():
+        return []
+    try:
+        with open(state, encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError, ValueError):
+        return []
+
+    try:
+        recent = data.get("recent")
+    except AttributeError:
+        # Top-level payload was not a dict (a list, string, number, …).
+        return []
+    if not isinstance(recent, list):
+        return []
+
+    out: list[Path] = []
+    for entry in recent:
+        try:
+            p = Path(entry)
+            if p.exists():
+                out.append(p)
+        except (TypeError, ValueError, OSError):
+            # A non-string entry (int, bool, None, dict, list, …) or an
+            # unstat-able path — skip this entry, keep the rest.
+            continue
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# missing-asset reporting
+# --------------------------------------------------------------------------- #
+
+
+def missing_asset_count(items: list[TropyItem]) -> tuple[int, int]:
+    """Return ``(missing, total)`` photo counts across *items*.
+
+    A photo is "missing" when its backing file was absent at read time
+    (iCloud/OneDrive placeholders, an unplugged drive, …).  The flag is
+    computed per-photo in :func:`_read_photos`; this just aggregates it so the
+    enqueue route can report "N of M pages unavailable" before a run starts,
+    rather than as N failures during it.
+    """
+    total = 0
+    missing = 0
+    for item in items:
+        for photo in item.photos:
+            total += 1
+            if photo.missing:
+                missing += 1
+    return missing, total

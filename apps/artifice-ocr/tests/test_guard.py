@@ -172,8 +172,9 @@ def test_noun_protection_can_be_disabled():
 # integration with the stage
 # --------------------------------------------------------------------------- #
 
-@patch("artifice_ocr.stages.cleanup.ollama.chat")
+@patch("artifice_ocr.stages.cleanup.ollama.Client")
 def test_stage_keeps_raw_text_when_guard_rejects(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     from artifice_ocr.stages import cleanup
 
     raw = ("ly safe in Italian occupied zone. Unwilling tzerland as he sees no "
@@ -191,8 +192,9 @@ def test_stage_keeps_raw_text_when_guard_rejects(mock_chat, tmp_path):
     assert written == raw
 
 
-@patch("artifice_ocr.stages.cleanup.ollama.chat")
+@patch("artifice_ocr.stages.cleanup.ollama.Client")
 def test_stage_accepts_a_safe_repair(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     from artifice_ocr.stages import cleanup
 
     raw = "Der Be-\nricht war unvollstandig."
@@ -206,8 +208,9 @@ def test_stage_accepts_a_safe_repair(mock_chat, tmp_path):
     assert "rejected_cleaned_text" not in result
 
 
-@patch("artifice_ocr.stages.cleanup.ollama.chat")
+@patch("artifice_ocr.stages.cleanup.ollama.Client")
 def test_guard_can_be_switched_off_entirely(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     from artifice_ocr.stages import cleanup
 
     config.apply_overrides({"cleanup_guard": False})

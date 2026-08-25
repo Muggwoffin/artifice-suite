@@ -1070,18 +1070,77 @@
   // draft, gemma2:27b in graph — which most users do not have. These methods
   // and POST /api/byom/model close that.
 
-  // Distinct roles this app uses, in a stable order, derived from the
-  // recommendations the server sent. Defaults to a single chat role, which is
-  // correct for draft and transcribe.
-  Byom.prototype._rolesFromState = function () {
-    var recs = (this.state && this.state.recommendations) || null;
-    var list = recs && recs.models ? recs.models : (recs || []);
-    var roles = [];
+  // Collects the distinct, truthy `.role` strings from `list` (an array of
+  // recommendation objects), appending into `acc` and returning it. Used by
+  // _rolesFromState's recommendation-shaped fallback.
+  function _collectRoles(list, acc) {
+    if (!Array.isArray(list)) { return acc; }
     for (var i = 0; i < list.length; i++) {
       var r = list[i] && list[i].role;
-      if (r && roles.indexOf(r) === -1) { roles.push(r); }
+      if (r && acc.indexOf(r) === -1) { acc.push(r); }
     }
-    return roles.length ? roles : ["chat"];
+    return acc;
+  }
+
+  // Returns the distinct, truthy strings in `list`, preserving order.
+  function _uniqueRoles(list) {
+    var acc = [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && acc.indexOf(list[i]) === -1) { acc.push(list[i]); }
+    }
+    return acc;
+  }
+
+  // A readable label for a role. ROLE_LABELS covers the four roles the suite
+  // knows today; any role without an entry still renders as a title-cased
+  // token rather than "undefined".
+  function roleLabel(role) {
+    if (ROLE_LABELS[role]) { return ROLE_LABELS[role]; }
+    var s = String(role == null ? "" : role);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  // Distinct roles this app uses, in a stable order.
+  //
+  // GET /api/byom/state now publishes `roles`, derived server-side from the
+  // app's _ROLE_SETTING — the mapping POST /api/byom/model actually honours.
+  // That list is authoritative: recommendations are only *suggestions* and
+  // may omit a role the app supports (ocr's recommendations carry vision and
+  // translation but no chat, so building the picker from them would make
+  // cleanup_model unreachable — the exact bug this fixes, moved). The
+  // recommendation-shaped fallback below exists only so this shared file keeps
+  // working against a server that has not yet been updated to publish `roles`,
+  // and it now handles the tier-keyed dict every server actually sends
+  // ({laptop: [...], desktop: [...], mac_unified: [...]}) rather than the
+  // `recs.models` array no server produces.
+  Byom.prototype._rolesFromState = function () {
+    var state = this.state || {};
+    var roles;
+
+    // 1. The server's own list wins.
+    if (Array.isArray(state.roles)) {
+      roles = _uniqueRoles(state.roles);
+      if (roles.length) { return roles; }
+    }
+
+    // 2. Fall back to deriving roles from recommendations, handling both the
+    //    flat-array shape the original code assumed and the tier-keyed dict.
+    var recs = state.recommendations;
+    if (recs) {
+      if (Array.isArray(recs)) {
+        roles = _collectRoles(recs, []);
+      } else {
+        roles = [];
+        var tiers = Object.keys(recs);
+        for (var i = 0; i < tiers.length; i++) {
+          _collectRoles(recs[tiers[i]], roles);
+        }
+      }
+      if (roles.length) { return roles; }
+    }
+
+    // 3. Nothing known: a single chat role (correct for draft and transcribe).
+    return ["chat"];
   };
 
   var ROLE_LABELS = {
@@ -1113,7 +1172,7 @@
       var id = "byomModel_" + role;
       var label = document.createElement("label");
       label.setAttribute("for", id);
-      label.textContent = ROLE_LABELS[role] || role;
+      label.textContent = roleLabel(role);
       field.appendChild(label);
 
       var select = document.createElement("select");

@@ -34,6 +34,7 @@ from model_harness.registry import KNOWN_ENDPOINTS
 __all__ = [
     "ProbeResult",
     "detect_local_servers",
+    "normalise_base_url",
     "probe_endpoint",
     "probe_endpoint_sync",
 ]
@@ -148,6 +149,31 @@ def _identify_provider(url: str) -> Provider | None:
         if port == info.default_port:
             return info.provider
     return None
+
+
+def normalise_base_url(url: str) -> str:
+    """Return *url* with surrounding whitespace, any trailing ``/v1`` path and
+    trailing slashes removed.
+
+    Canonicalises the four common spellings of an Ollama base URL to a single
+    host root, so a caller can append exactly one API prefix — ``/v1`` for the
+    OpenAI-compatible API, ``/api/...`` for the native one — without doubling a
+    path segment::
+
+        http://localhost:11434
+        http://localhost:11434/
+        http://localhost:11434/v1
+        http://localhost:11434/v1/
+
+    all normalise to ``http://localhost:11434``.
+
+    Only a *trailing* ``/v1`` is stripped — a URL whose path continues past
+    ``/v1`` (e.g. ``http://localhost:11434/v1/chat/completions``) is returned
+    unchanged.  Surrounding whitespace is removed first, because a pasted URL
+    often carries a trailing space that would otherwise survive the path
+    comparison and defeat the ``/v1`` strip.
+    """
+    return _strip_v1(url.strip()).rstrip("/")
 
 
 def _strip_v1(url: str) -> str:

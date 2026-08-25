@@ -31,8 +31,11 @@ module adds is *which endpoint to ask* and *how to fail*:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+from urllib.parse import urlsplit, urlunsplit
 
+from model_harness.contract import EndpointRejected
 from model_harness.discovery import ProbeResult, probe_endpoint_sync
 from model_harness.endpoint_policy import EndpointPolicy
 from model_harness.registry import HardwareTier
@@ -43,9 +46,12 @@ from . import config
 __all__ = [
     "backend_for",
     "model_for",
+    "preflight_run",
     "reset",
     "resolve_models_for_run",
 ]
+
+logger = logging.getLogger(__name__)
 
 _policy = EndpointPolicy()
 
@@ -103,10 +109,55 @@ class _RoleResolution:
 # read by model_for/backend_for, cleared by reset().
 _cache: dict[str, _RoleResolution] = {}
 
+# Per-run probe cache: base URL → result.  Populated lazily by :func:`_probe`
+# so that a run probing several roles that share a backend (and the preflight
+# that re-checks each resolved role) makes exactly one HTTP probe per distinct
+# endpoint.  Cleared by reset() so config changes between runs are re-probed.
+_probe_cache: dict[str, ProbeResult] = {}
+
 
 def reset() -> None:
-    """Clear the per-run resolution cache (used by tests and re-resolution)."""
+    """Clear the per-run resolution and probe caches."""
     _cache.clear()
+    _probe_cache.clear()
+
+
+def _redact_url(url: str) -> str:
+    """Return *url* safe for a log line: no userinfo credentials, no query.
+
+    A configured base URL should never carry credentials, but a pasted one can
+    (``http://user:pass@host``), and the endpoint policy does not reject the
+    userinfo component.  Logs get pasted into issue reports, so the password
+    must not survive into one.  The query/fragment is dropped too, as defence
+    in depth for a base URL that should not carry one in the first place.
+    """
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return "<invalid-url>"
+    host = parts.hostname or ""
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    if parts.port is not None:
+        host = f"{host}:{parts.port}"
+    return urlunsplit((parts.scheme, host, parts.path, "", ""))
+
+
+def _base_url_for(backend: str) -> str:
+    """The base URL a resolved *backend* will call, from config or default.
+
+    Only used for logging (and the preflight's failure messages) — the probe
+    and the backends themselves resolve their own URLs, so this must not be
+    treated as authoritative for I/O.
+    """
+    if backend in _BACKEND_URL_KEYS:
+        url_key, default = _BACKEND_URL_KEYS[backend]
+        return config.get(url_key) or default
+    if backend == "api_key":
+        return config.get("api_base_url") or "https://api.openai.com/v1"
+    if backend == "huggingface":
+        return "https://api-inference.huggingface.co/models"
+    return "<unknown>"
 
 
 def model_for(role: str) -> str:
@@ -164,19 +215,44 @@ def resolve_models_for_run(*, stages: set[str] | None = None) -> None:
 
     Raises:
         RuntimeError: with a legible message when a role cannot be resolved —
-            the user's explicit model is not installed, or no suitable model
-            is installed on any reachable server.  The message names the role,
-            the endpoint(s) probed, and what to do.
+            the user's explicit model is not installed, no suitable model
+            is installed on any reachable server, or the endpoint is rejected
+            by the local-first policy.  The message names the role, the
+            endpoint(s) probed, and what to do.
+
+    One INFO log line is emitted per resolved role recording the backend,
+    resolved base URL, model and :class:`ResolutionSource`, so a later
+    provider failure can be traced to the endpoint that was actually chosen.
     """
     reset()
     for role in _roles_for_stages(stages):
-        _cache[role] = _resolve_role(role)
+        try:
+            resolved = _resolve_role(role)
+        except EndpointRejected as exc:
+            raise RuntimeError(
+                f"{_ROLE_LABELS[role]} endpoint is rejected by the "
+                f"local-first endpoint policy: {exc}"
+            ) from exc
+        _cache[role] = resolved
+        logger.info(
+            "Model resolution: role=%s backend=%s base_url=%s model=%s source=%s",
+            role,
+            resolved.backend,
+            _redact_url(_base_url_for(resolved.backend)),
+            resolved.model,
+            resolved.source.value,
+        )
 
 
 def _probe(backend: str) -> ProbeResult:
     url_key, default = _BACKEND_URL_KEYS[backend]
     url = config.get(url_key) or default
-    return probe_endpoint_sync(url, policy=_policy, timeout_s=_PROBE_TIMEOUT_S)
+    cached = _probe_cache.get(url)
+    if cached is not None:
+        return cached
+    result = probe_endpoint_sync(url, policy=_policy, timeout_s=_PROBE_TIMEOUT_S)
+    _probe_cache[url] = result
+    return result
 
 
 def _resolve_role(role: str) -> _RoleResolution:
@@ -312,3 +388,80 @@ def _join(urls: list[str]) -> str:
     if len(urls) == 1:
         return urls[0]
     return " and ".join(urls)
+
+
+# ---------------------------------------------------------------------------
+# Preflight (cheap per-backend check before the runner starts)
+# ---------------------------------------------------------------------------
+
+
+def preflight_run(*, stages: set[str] | None = None) -> None:
+    """Probe each resolved role's backend once more, failing fast on any problem.
+
+    Runs after :func:`resolve_models_for_run` has populated the cache, so it
+    reads the resolved ``(model, backend)`` pairs and reuses the probe results
+    the resolution pass already fetched — a healthy run pays no extra network
+    round-trip.  Each failure is raised as a :class:`RuntimeError` naming the
+    cause, provider, base URL and model, so the web layer maps it to a 409
+    instead of starting a run that 404s on every queued page.
+
+    Cloud backends (``api_key`` / ``huggingface``) are not probed here: they
+    carry no local model list to check, and their endpoints are validated by
+    the endpoint policy at client-construction time.
+    """
+    for role in _roles_for_stages(stages):
+        resolved = _cache.get(role)
+        if resolved is None or resolved.backend not in _BACKEND_URL_KEYS:
+            continue
+        _check_resolved_role(role, resolved)
+
+
+def _check_resolved_role(role: str, resolved: _RoleResolution) -> None:
+    label = _ROLE_LABELS[role]
+    url = _base_url_for(resolved.backend)
+    redacted = _redact_url(url)
+
+    try:
+        result = _probe(resolved.backend)
+    except EndpointRejected as exc:
+        raise RuntimeError(
+            f"{label} endpoint {redacted} (backend '{resolved.backend}', "
+            f"model '{resolved.model}') is rejected by the local-first "
+            f"endpoint policy: {exc}"
+        ) from exc
+
+    if not result.reachable:
+        raise RuntimeError(_unreachable_cause(label, resolved, redacted, result))
+
+    if resolved.model not in result.models:
+        raise RuntimeError(
+            f"{label} model '{resolved.model}' is not installed on backend "
+            f"'{resolved.backend}' at {redacted}."
+        )
+
+
+def _unreachable_cause(
+    label: str,
+    resolved: _RoleResolution,
+    redacted_url: str,
+    result: ProbeResult,
+) -> str:
+    """Build the unreachable-vs-wrong-shape distinction from the probe hint.
+
+    ``probe_endpoint_sync`` collapses several failures into ``reachable=False``
+    and leaves the *kind* of failure in ``hint``.  A "model list" hint means the
+    server answered but did not expose a model list — wrong base URL or wrong
+    API shape (e.g. a doubled ``/v1``); anything else is a transport failure
+    (connection refused, DNS, timeout).
+    """
+    hint = result.hint or ""
+    if "model list" in hint:
+        return (
+            f"{label} endpoint {redacted_url} (backend '{resolved.backend}', "
+            f"model '{resolved.model}') responded but does not look like a "
+            f"model server — wrong base URL or API shape. {hint}"
+        )
+    return (
+        f"Cannot reach {label} endpoint {redacted_url} (backend "
+        f"'{resolved.backend}', model '{resolved.model}'). {hint}"
+    )

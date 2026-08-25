@@ -86,6 +86,16 @@ class TestByomState:
         r = client.get("/api/byom/state")
         json.dumps(r.json())
 
+    def test_state_roles_match_role_setting(self, client):
+        """state.roles is derived from _ROLE_SETTING keys — derive one from the
+        other and assert equality, so the two can never drift apart."""
+        from artifice_graph.web.routers.byom import _ROLE_SETTING
+
+        r = client.get("/api/byom/state")
+        assert r.status_code == 200
+        assert r.json()["roles"] == list(_ROLE_SETTING)
+        assert r.json()["roles"] == ["chat", "embedding"]
+
 
 # ── GET /api/byom/detect ──────────────────────────────────────────────────
 
@@ -260,6 +270,34 @@ class TestByomTest:
         assert saved.ingestion.chunk_size == 800
 
 
+# ── POST /api/byom/model ───────────────────────────────────────────────────
+
+
+class TestByomModel:
+    """Graph's picker sets two roles: chat (extraction LLM) and embedding."""
+
+    def test_chat_role_sets_llm_model(self, client):
+        r = client.post("/api/byom/model", json={"model": "qwen2.5:32b", "role": "chat"})
+        assert r.status_code == 200
+        assert r.json() == {"model": "qwen2.5:32b", "role": "chat"}
+        saved = config_helper.load_saved_config()
+        assert saved is not None
+        assert saved.llm.model == "qwen2.5:32b"
+
+    def test_embedding_role_sets_embedding_model(self, client):
+        r = client.post("/api/byom/model", json={"model": "bge-m3", "role": "embedding"})
+        assert r.status_code == 200
+        assert r.json() == {"model": "bge-m3", "role": "embedding"}
+        saved = config_helper.load_saved_config()
+        assert saved is not None
+        assert saved.embedding.model == "bge-m3"
+
+    def test_unknown_role_is_rejected(self, client):
+        r = client.post("/api/byom/model", json={"model": "x", "role": "vision"})
+        assert r.status_code == 400
+        assert "vision" in r.json()["error"]
+
+
 # ── Contract + SSRF + first-paint tests (pytest-httpx) ────────────────────
 
 
@@ -277,6 +315,7 @@ class TestByomContractAndSsrf:
             "configured",
             "endpoint",
             "model",
+            "roles",
             "recommendations",
             "embedding",
         }
@@ -300,6 +339,7 @@ class TestByomContractAndSsrf:
             "configured",
             "endpoint",
             "model",
+            "roles",
             "recommendations",
             "embedding",
         }

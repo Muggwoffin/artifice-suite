@@ -5,6 +5,7 @@
 """Tests that pin the seam: all OpenAI client construction flows through _backend."""
 
 import ast
+import logging
 import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -421,7 +422,7 @@ def test_backend_allows_loopback_or_private_url(monkeypatch, backend_name, url_k
 
     mock_client = MagicMock()
     with patch.object(_backend, "OpenAI", return_value=mock_client):
-        with patch.object(_backend.ollama, "chat", return_value=MagicMock()):
+        with patch.object(_backend.ollama, "Client", return_value=MagicMock()):
             backend = _backend.get_client(backend_name)
             if hasattr(backend, "_client"):
                 backend._client()
@@ -512,3 +513,216 @@ def test_huggingface_backend_accepts_when_public_allowed(monkeypatch):
                 messages=[{"role": "user", "content": "hi"}],
             )
             assert result.message.content == "test response"
+
+
+# ---------------------------------------------------------------------------
+# Ollama URL normalisation — one /v1, never two
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("configured", [
+    "http://localhost:11434",
+    "http://localhost:11434/",
+    "http://localhost:11434/v1",
+    "http://localhost:11434/v1/",
+    "  http://localhost:11434/v1  ",
+    " http://localhost:11434/ ",
+])
+def test_ollama_openai_client_appends_single_v1(monkeypatch, configured):
+    """All four spellings of the Ollama base URL — plus surrounding whitespace —
+    yield exactly one ``/v1``.
+
+    Regression: the old code appended ``"/v1"`` unconditionally, so a stored URL
+    already ending in ``/v1`` produced ``/v1/v1`` and a 404 on every chat
+    completion.  Surrounding whitespace re-opened the same bug by defeating the
+    ``/v1`` strip; the client must normalise before appending.  The OpenAI SDK
+    posts chat completions to ``{base_url}/chat/completions``.
+    """
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "ollama_url": configured,
+    })
+    config.load_config()
+
+    captured = {}
+    with patch.object(
+        _backend, "OpenAI", side_effect=lambda **kw: captured.update(kw) or MagicMock()
+    ):
+        _backend.OllamaOpenAIBackend()._client()
+
+    assert captured["base_url"] == "http://localhost:11434/v1"
+    assert captured["base_url"].rstrip("/") + "/chat/completions" == (
+        "http://localhost:11434/v1/chat/completions"
+    )
+
+
+@pytest.mark.parametrize("configured", [
+    "http://localhost:11434",
+    "http://localhost:11434/",
+    "http://localhost:11434/v1",
+    "http://localhost:11434/v1/",
+])
+def test_ollama_backend_constructs_client_with_configured_host(monkeypatch, configured):
+    """OllamaBackend must build ``ollama.Client(host=...)`` from the configured URL.
+
+    The old code set ``ollama.host = host``, an unused module attribute, so the
+    configured host was silently ignored for cleanup, translate and language
+    detection (the native client kept its import-time ``$OLLAMA_HOST`` default).
+    The native Ollama API is not the OpenAI-compatible one, so the ``/v1``
+    suffix must be stripped before constructing the client.
+    """
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "ollama_url": configured,
+    })
+    config.load_config()
+
+    mock_client = MagicMock()
+    with patch.object(_backend.ollama, "Client", return_value=mock_client) as mock_cls:
+        _backend.OllamaBackend().chat(
+            model="m",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+
+    mock_cls.assert_called_once_with(host="http://localhost:11434")
+    mock_client.chat.assert_called_once()
+
+
+def test_ollama_backend_validates_normalised_host(monkeypatch):
+    """OllamaBackend runs the endpoint policy on the *normalised* host.
+
+    The raw config value may carry a trailing ``/v1``; the client is built from
+    ``normalise_base_url(host)``.  Validation must inspect that same normalised
+    value, not the raw spelling, so a future policy that inspects the path
+    cannot silently miss this call site.
+    """
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "ollama_url": "http://localhost:11434/v1",
+    })
+    config.load_config()
+
+    validated: list[str] = []
+    with patch.object(
+        _backend,
+        "_validate_url",
+        side_effect=lambda url, field: validated.append(url) or url,
+    ), patch.object(_backend.ollama, "Client", return_value=MagicMock()):
+        _backend.OllamaBackend().chat(
+            model="m",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+
+    assert validated == ["http://localhost:11434"]
+
+
+# ---------------------------------------------------------------------------
+# Provider 404 wrapping — the message must name what was called
+# ---------------------------------------------------------------------------
+
+
+def _openai_404():
+    import httpx
+    from openai import NotFoundError
+
+    request = httpx.Request("POST", "http://localhost:11434/v1/chat/completions")
+    response = httpx.Response(404, request=request, json={"error": {"message": "not found"}})
+    return NotFoundError("not found", response=response, body=None)
+
+
+def test_ollama_openai_404_names_base_url_and_model(monkeypatch):
+    """A provider 404 on the OCR path surfaces the attempted URL and model."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "ollama_url": "http://localhost:11434/v1",  # the doubled-/v1 trap
+    })
+    config.load_config()
+    _backend._logged_base_urls.clear()
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = _openai_404()
+    with patch.object(_backend, "OpenAI", return_value=mock_client), pytest.raises(
+        RuntimeError
+    ) as excinfo:
+        _backend.OllamaOpenAIBackend().chat(
+            model="llava:7b",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+
+    msg = str(excinfo.value)
+    assert "404" in msg
+    assert "http://localhost:11434/v1" in msg  # exactly one /v1
+    assert "llava:7b" in msg
+
+
+def test_native_ollama_404_names_base_url_and_model(monkeypatch):
+    """The native Ollama path wraps a 404 the same way."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "ollama_url": "http://localhost:11434",
+    })
+    config.load_config()
+    _backend._logged_base_urls.clear()
+
+    mock_client = MagicMock()
+    mock_client.chat.side_effect = _backend.ollama.ResponseError("model not found", status_code=404)
+    with patch.object(_backend.ollama, "Client", return_value=mock_client), pytest.raises(
+        RuntimeError
+    ) as excinfo:
+        _backend.OllamaBackend().chat(
+            model="llama3.2:3b",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+
+    msg = str(excinfo.value)
+    assert "404" in msg
+    assert "http://localhost:11434" in msg
+    assert "llama3.2:3b" in msg
+
+
+# ---------------------------------------------------------------------------
+# Base URL logging — once at INFO, never an API key
+# ---------------------------------------------------------------------------
+
+
+def test_backend_logs_base_url_once_at_info(monkeypatch, caplog):
+    """First client construction logs INFO; a repeat for the same URL is DEBUG."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "ollama_url": "http://localhost:11434/v1",
+    })
+    config.load_config()
+    _backend._logged_base_urls.clear()
+
+    with patch.object(_backend, "OpenAI", return_value=MagicMock()), caplog.at_level(
+        logging.INFO
+    ):
+        _backend.OllamaOpenAIBackend()._client()
+        _backend.OllamaOpenAIBackend()._client()
+
+    info_lines = [
+        r.getMessage()
+        for r in caplog.records
+        if r.name == "artifice_ocr._backend" and r.levelno == logging.INFO
+    ]
+    assert len(info_lines) == 1
+    assert "http://localhost:11434/v1" in info_lines[0]
+
+
+def test_backend_log_never_contains_api_key(monkeypatch, caplog):
+    """Client construction logs the base URL, never the configured key."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(config, "_DEFAULTS", {**config._DEFAULTS,
+        "api_key": "sk-secret-backend",
+        "api_base_url": "http://10.0.0.1/v1",
+    })
+    config.load_config()
+    _backend._logged_base_urls.clear()
+
+    with patch.object(_backend, "OpenAI", return_value=MagicMock()), caplog.at_level(
+        logging.INFO
+    ):
+        _backend.ApiKeyBackend()._client()
+
+    assert "sk-secret-backend" not in caplog.text
+    assert "http://10.0.0.1/v1" in caplog.text
