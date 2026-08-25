@@ -8,7 +8,30 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 
 ## [Unreleased]
 
+### Added
+- **`artifice-ocr` drag-and-drop upload and native file picker.** New
+  `POST /api/queue/upload` staging endpoint; dropzone rework with a file-picker
+  fallback using the OS native dialog (replacing a typed-path `prompt()`);
+  browser-mode file picker surfaced in the UI. The "Add from Tropy…" modal
+  likewise replaced `prompt()` with a native path field and drag-and-drop zone.
+
+### Changed
+- **`apps/artifice-ocr/docs/TROPY_INTEGRATION.md` corrected.** The document
+  previously stated no code path ever writes to a Tropy `.tpy` database. A
+  direct write-back path (`tropy_write.py`, opt-in, default off, not yet wired
+  to Settings UI) now exists and has been documented. Sections on removed
+  modules, write-path capabilities, and the "What Was Removed" heading were
+  updated accordingly.
+
 ### Fixed
+- **`artifice-ocr` pipeline end-to-end.** Fixes: doubled `/v1` base URL (the
+  404), settings save rejecting unused fields, approved folders for external
+  drives, Tropy recent-projects list, tolerant path resolution, nested list
+  rendering via recursive CTE, mixed path-separator handling, missing-asset
+  preflight, BYOM role picker in the UI, and provider diagnostics output.
+- **`artifice-ocr` `python-multipart` declared.** The dependency was absent
+  from `pyproject.toml`, so the OCR container could not serve `multipart/form-data`
+  upload requests.
 - **`artifice-transcribe` no longer refuses roughly one enrolled speaker in 256.**
   The legacy-pickle sniff in `db/models.py` identified a stored embedding as a
   pre-migration pickle from its leading byte alone (`0x80`). A raw float32 vector

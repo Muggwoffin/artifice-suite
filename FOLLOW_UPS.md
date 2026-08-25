@@ -217,5 +217,36 @@ These are acknowledged as a separate brief to `ui-ux`.
 
 ---
 
+## SQLite URI construction may be wrong on Windows (UNVERIFIED)
+
+The two Tropy modules build their SQLite URIs differently:
+
+- `apps/artifice-ocr/src/artifice_ocr/tropy_write.py:203` —
+  `file:{self.db_path.as_posix()}` → on Windows, `file:C:/Users/name/project.tpy`
+- `apps/artifice-ocr/src/artifice_ocr/tropy_db.py:82` —
+  `file:{db_path}` → on Windows, backslashes inside the URI
+
+Per the SQLite URI specification, `file:path` without `//` is interpreted
+relative to the current working directory. An absolute Windows path may require
+`file:///C:/Users/name/project.tpy`.
+
+**Why it matters:** if SQLite treats `file:C:/…` as relative, the connection
+fails or silently resolves against the wrong directory — on the *write* path,
+against the user's research database.
+
+The inconsistency between the two modules is itself the strongest signal that
+neither was exercised on Windows. `tropy_db.py` is committed and apparently
+working, so SQLite may be lenient here.
+
+**UNVERIFIED** — cannot be settled from Linux/WSL, where both forms behave the
+same. Needs a run on native Windows against a real `.tropy` project. Found by
+`security-auditor` on 2026-08-25, which correctly declined to assert it as a
+bug. Do **not** apply a speculative fix: a blind change risks breaking a path
+that currently works.
+
+**Owner:** maintainer (Windows verification), then `lead-engineer`.
+
+---
+
 *Last verified: 2026-08-25. Items marked UNVERIFIED could not be confirmed from
 within the repo and are recorded as maintainer actions only.*

@@ -30,9 +30,9 @@ from ...tropy_db import (
     recent_projects,
     resolve_project_db_path,
 )
-from ..validation import validate_directory
 from ..models import TropyBrowseRequest, TropyEnqueueRequest
 from ..runtime import state
+from ..validation import validate_directory
 
 log = get_logger("tropy_browse")
 

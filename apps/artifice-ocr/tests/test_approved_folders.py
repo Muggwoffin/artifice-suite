@@ -16,7 +16,6 @@ from the existing checks.
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 import pytest
 from artifice_ocr import config

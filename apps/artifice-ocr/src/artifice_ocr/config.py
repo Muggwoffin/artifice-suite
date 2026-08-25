@@ -39,6 +39,12 @@ _DEFAULTS: dict[str, Any] = {
     # don't type a path" flow the JSON-LD rewrite dropped. Still gated by the
     # read-only connection guarantee; ARTIFICE_OCR_TROPY_LIVE_READ overrides it.
     "tropy_live_browse_enabled": True,
+    # Direct write-back of OCR results into the Tropy project's notes /
+    # transcriptions tables. Opt-in and default OFF: writing to the user's
+    # research database is the highest-risk operation in the suite, so it is
+    # never on unless the user turns it on explicitly. Restored 2026-08-25,
+    # knowingly reversing ebd89e6, as an opt-in alongside the JSON-LD bridge.
+    "tropy_writeback_enabled": False,
     "title_max_chars": 120,
     "resume": True,
     "max_ocr_workers": 2,
@@ -136,6 +142,7 @@ PERSISTED_KEYS = (
     "tropy_last_path",
     "tropy_last_export_path",
     "tropy_live_browse_enabled",
+    "tropy_writeback_enabled",
     "approved_folders",
 )
 

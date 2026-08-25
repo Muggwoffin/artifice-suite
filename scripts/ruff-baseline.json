@@ -216,6 +216,7 @@
     "apps/artifice-ocr/src/artifice_ocr/web/routers/ludwiglang.py|B904": 1,
     "apps/artifice-ocr/src/artifice_ocr/web/routers/ludwiglang.py|F401": 1,
     "apps/artifice-ocr/src/artifice_ocr/web/routers/ludwiglang.py|I001": 1,
+    "apps/artifice-ocr/src/artifice_ocr/web/routers/queue.py|B008": 1,
     "apps/artifice-ocr/src/artifice_ocr/web/routers/queue.py|E501": 1,
     "apps/artifice-ocr/src/artifice_ocr/web/routers/queue.py|I001": 1,
     "apps/artifice-ocr/src/artifice_ocr/web/routers/settings.py|E501": 1,

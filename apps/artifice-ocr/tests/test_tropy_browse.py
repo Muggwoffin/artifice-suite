@@ -31,7 +31,6 @@ from artifice_ocr.tropy_db import (
     missing_asset_count,
     recent_projects,
     resolve_project_db_path,
-    tropy_config_dir,
 )
 from artifice_ocr.web import runtime
 from artifice_ocr.web.routers import (
