@@ -889,3 +889,52 @@ class TestContextSize:
     def test_a_non_overflow_error_is_untouched(self):
         """Only overflow errors are rewritten; everything else propagates."""
         assert not _backend._is_context_overflow(Exception("connection refused"))
+
+
+# ---------------------------------------------------------------------------
+# Provider calls must only pass arguments the provider SDK accepts
+# ---------------------------------------------------------------------------
+
+
+def test_provider_calls_pass_no_unknown_kwargs():
+    """No provider call may pass a keyword the real SDK would reject.
+
+    This exists because a keyword meant for our own ``_guarded_chat`` wrapper
+    was inserted into the ``client.chat.completions.create(...)`` call inside
+    it, in four backends at once. Every test passed and every page failed:
+
+        Completions.create() got an unexpected keyword argument 'backend_name'
+
+    Tests could not see it because they mock the client, and a ``MagicMock``
+    accepts any keyword silently — the defect only exists where a real SDK
+    object is on the other end. So this checks the *source*, not a call.
+
+    ``_guarded_chat`` is ours and takes ``backend_name``; the provider calls it
+    wraps are not and do not.
+    """
+    import ast
+
+    path = Path(__file__).resolve().parents[1] / "src" / "artifice_ocr" / "_backend.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+
+    # Keywords our wrapper owns. Anything here appearing in a provider call is
+    # the bug this test is named for.
+    OURS = {"backend_name", "base_url"}
+
+    # Attribute chains that are a real third-party SDK call.
+    PROVIDER_CALLS = {"create", "chat_completion"}
+
+    offenders = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not isinstance(func, ast.Attribute) or func.attr not in PROVIDER_CALLS:
+            continue
+        for kw in node.keywords:
+            if kw.arg in OURS:
+                offenders.append(f"{path.name}:{node.lineno} passes {kw.arg!r} to .{func.attr}()")
+
+    assert not offenders, (
+        "provider SDK calls must not receive our wrapper's keywords:\n  " + "\n  ".join(offenders)
+    )
