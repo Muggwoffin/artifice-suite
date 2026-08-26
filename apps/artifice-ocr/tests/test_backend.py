@@ -833,7 +833,7 @@ class TestContextSize:
         ceiling nobody asked for.
         """
         config.apply_overrides({"context_size": 0})
-        assert _backend._configured_context_size() == 0
+        assert _backend._configured_context_size() is None
 
     def test_a_positive_value_is_used(self, clean_config):
         config.apply_overrides({"context_size": 8192})
@@ -843,7 +843,7 @@ class TestContextSize:
         """A bad setting degrades to the old path rather than stopping a run."""
         for bad in ("", "not-a-number", None, -1):
             config.apply_overrides({"context_size": bad})
-            assert _backend._configured_context_size() == 0, bad
+            assert _backend._configured_context_size() is None, bad
 
     def test_ollama_sends_num_ctx_only_when_set(self, clean_config):
         """``num_ctx`` rides in the same options dict as ``num_predict``."""
@@ -889,6 +889,48 @@ class TestContextSize:
     def test_a_non_overflow_error_is_untouched(self):
         """Only overflow errors are rewritten; everything else propagates."""
         assert not _backend._is_context_overflow(Exception("connection refused"))
+
+    def test_overflow_detection_does_not_fire_on_unrelated_errors(self):
+        """Rewriting an error replaces what the user sees, so a false positive
+        hides a real failure behind advice about a limit they have not hit.
+
+        The last entry is the one that matters: an earlier draft matched the
+        bare phrase "maximum context length", which fires on a *capability*
+        error and would have reported it as an overflow. Detection is on
+        provider error identifiers now — LM Studio's ``exceed_context_size_error``
+        and OpenAI's ``context_length_exceeded`` — because providers change
+        prose and not codes.
+        """
+        for message in (
+            "maximum retries exceeded",
+            "429 Too Many Requests: rate limit exceeded",
+            "Read timed out after 60s",
+            "model 'x' not found, try pulling it first",
+            "maximum context length not supported for this model",
+        ):
+            assert not _backend._is_context_overflow(Exception(message)), message
+
+    def test_overflow_detection_fires_on_both_providers(self):
+        """LM Studio reports a ``type``; OpenAI reports a ``code``."""
+        assert _backend._is_context_overflow(
+            Exception('{"type":"exceed_context_size_error","n_ctx":4096}')
+        )
+        assert _backend._is_context_overflow(Exception('{"code":"context_length_exceeded"}'))
+
+    def test_overflow_detection_fires_on_openai_prose_without_the_code(self):
+        """A provider sending the sentence but not the code still matches.
+
+        The trailing clause is what separates it from the capability error in
+        the test above — "maximum context length" alone is not enough, and
+        treating it as enough is what would rewrite a real failure into advice
+        about a limit the user has not hit.
+        """
+        assert _backend._is_context_overflow(
+            Exception(
+                "This model's maximum context length is 4096 tokens, "
+                "however you requested 5000 tokens"
+            )
+        )
 
 
 # ---------------------------------------------------------------------------
