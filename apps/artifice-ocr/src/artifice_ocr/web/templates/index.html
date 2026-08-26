@@ -380,6 +380,15 @@
           <label>Enable confidence scoring <input type="checkbox" id="set-confidence_enabled"></label>
           <label>Enhance faint or bright scans <input type="checkbox" id="set-preprocess_enabled"></label>
           <p class="dim" style="margin:-0.2rem 0 0.3rem;">Deterministic clean-up (greyscale, even out lighting, stretch contrast) before OCR. Helps washed-out or over-exposed photos; leave off for clean scans.</p>
+          <label>OCR engine
+            <select id="set-ocr_engine">
+              <option value="vision_model">Vision model (default)</option>
+              <option value="tesseract">Tesseract (local, offline)</option>
+            </select>
+          </label>
+          <p class="dim" id="tesseract-status" style="margin:-0.1rem 0 0.3rem;" aria-live="polite">Checking for Tesseract&hellip;</p>
+          <label>Fall back to Tesseract on failed pages <input type="checkbox" id="set-tesseract_fallback_on_failure"></label>
+          <p class="dim" style="margin:-0.2rem 0 0.3rem;">When a page fails the vision model (loops or errors) and Tesseract is installed, retry that page with Tesseract instead of failing it. Provenance is recorded per page.</p>
           <label>Enable Tropy project browsing <input type="checkbox" id="set-tropy_live_browse_enabled"></label>
           <details style="margin-top:0.5rem;">
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>
@@ -389,6 +398,8 @@
               <p class="dim" id="context-size-hint" style="margin:0;" aria-live="polite">0 uses the model&rsquo;s own default. Raise this if a page fails with &ldquo;exceeds the available context size&rdquo;.</p>
               <label><input type="checkbox" id="set-ollama_think"> Think step-by-step (slow &mdash; not recommended)</label>
               <p class="dim" style="margin:0;">Much slower with no visible improvement.</p>
+              <label>Tesseract language <input type="text" id="set-tesseract_lang" style="width:8rem;" placeholder="eng" title="Tesseract language code(s), e.g. eng, deu, or deu+eng. You need the matching traineddata installed."></label>
+              <label>Tesseract path <input type="text" id="set-tesseract_path" style="width:16rem;" placeholder="auto-detect" title="Full path to the tesseract binary. Leave blank to detect it on PATH."></label>
             </div>
           </details>
         </div>

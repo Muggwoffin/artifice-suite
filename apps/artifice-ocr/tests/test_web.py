@@ -3317,3 +3317,19 @@ def test_config_reset_does_not_leak_credentials(client, monkeypatch):
     assert body.get("huggingface_token") == "************", (
         f"Expected placeholder for huggingface_token, got: {body.get('huggingface_token')}"
     )
+
+
+def test_tesseract_status_route_returns_shape(client, monkeypatch):
+    """The detection endpoint always returns a stable shape, whether or not a
+    real Tesseract binary is present on the machine running the test."""
+    from artifice_ocr import _tesseract
+
+    monkeypatch.setattr(_tesseract, "resolve_binary", lambda: "/usr/bin/tesseract")
+    monkeypatch.setattr(_tesseract, "version", lambda binary=None: "tesseract 5.3.3")
+
+    res = client.get("/api/tesseract/status")
+    assert res.status_code == 200
+    body = res.json()
+    assert set(body) == {"available", "path", "version", "lang"}
+    assert body["available"] is True
+    assert body["version"] == "tesseract 5.3.3"

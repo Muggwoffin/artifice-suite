@@ -1,8 +1,28 @@
 # Adding Tesseract as an OCR engine option — plan
 
-**Status:** Approved (detect-installed path), not yet built.
+**Status:** Implemented (detect-installed engine + fallback-on-failure). Built
+on the pre-processing branch; see the outcome note below.
 **Date:** 2026-08-26
-**Owner:** maintainer, to schedule after Phase 1 pre-processing lands.
+**Owner:** maintainer.
+
+> ## Outcome, 2026-08-26
+>
+> Built as planned, with one improvement: **no new Python dependency.** Rather
+> than `pytesseract`, the engine subprocesses the `tesseract` binary directly
+> (`_tesseract.py`), so nothing new ships in the wheel/onedir and the
+> dependency audit stays clean. It is driven by image *bytes* from
+> `ocr._encode_image`, so it inherits orientation correction and — because this
+> landed on the pre-processing branch — the Phase 1 pre-processing for free.
+>
+> Shipped: `ocr_engine` (vision_model | tesseract), `tesseract_lang`,
+> `tesseract_path`, `tesseract_fallback_on_failure`; detection via
+> `_tesseract.resolve_binary` (config path → PATH → known Windows locations);
+> a `/api/tesseract/status` route and a live "found / not found" line in
+> Settings; the fallback for both a per-page vision exception and a
+> repetition-guard rejection (re-rendering the page images), with provenance
+> recorded as `tesseract-fallback` in the page metadata and a re-check so a
+> fallback cannot itself smuggle in a loop. 15 new tests, all mocked — no real
+> binary required in CI.
 
 > **Maintainer decisions, 2026-08-26:** build the **detect-installed** path (not
 > bundled). Additionally offer Tesseract as an **automatic fallback on a failed

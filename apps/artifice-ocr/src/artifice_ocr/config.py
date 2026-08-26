@@ -94,6 +94,19 @@ _DEFAULTS: dict[str, Any] = {
     "preprocess_illumination": True,
     "preprocess_autocontrast": True,
     "preprocess_gamma": 1.0,  # 1.0 = no gamma; <1 lightens, >1 darkens mid-tones
+    # OCR engine selection. "vision_model" (default) routes an image to a vision
+    # LLM; "tesseract" runs the locally-installed Tesseract binary instead — a
+    # fast, offline, deterministic transcriber. Tesseract is NOT bundled: the
+    # binary is detected on PATH (or at tesseract_path). See docs/
+    # OCR_TESSERACT_ENGINE_PLAN.md and _tesseract.py.
+    "ocr_engine": "vision_model",
+    "tesseract_lang": "eng",  # e.g. "eng", "deu", "deu+eng"; needs the traineddata
+    "tesseract_path": "",  # explicit binary path when it is not on PATH
+    # Independent safety net: when a vision-model page fails (repetition-guard
+    # rejection or exhausted retries) and Tesseract is available, retry that page
+    # with Tesseract rather than failing it. Off by default; provenance is
+    # recorded as "tesseract-fallback" in the page metadata.
+    "tesseract_fallback_on_failure": False,
     # Content-preservation guard for cleanup. When the model's output looks
     # lossy or has altered a proper noun, the raw text is kept instead, so a
     # page is either cleaned or untouched — never quietly truncated.
@@ -156,6 +169,10 @@ PERSISTED_KEYS = (
     "preprocess_illumination",
     "preprocess_autocontrast",
     "preprocess_gamma",
+    "ocr_engine",
+    "tesseract_lang",
+    "tesseract_path",
+    "tesseract_fallback_on_failure",
     "gui_theme",
     "ollama_think",
     "run_templates",

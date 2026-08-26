@@ -149,6 +149,10 @@ _CONFIG_KEYS = (
     "resume",
     "confidence_enabled",
     "preprocess_enabled",
+    "ocr_engine",
+    "tesseract_lang",
+    "tesseract_path",
+    "tesseract_fallback_on_failure",
     "ollama_think",
     "tropy_last_path",
     "tropy_last_export_path",
@@ -355,3 +359,13 @@ def health_check() -> dict:
         results["api_key"] = {"ok": ok, "detail": detail, "url": base_url}
 
     return results
+
+
+@router.get("/api/tesseract/status")
+def tesseract_status() -> dict:
+    """Whether the Tesseract binary is detected, where, its version, and the
+    configured language — so the UI can tell the user honestly rather than
+    offering an engine that silently does nothing."""
+    from ..._tesseract import status
+
+    return status()
