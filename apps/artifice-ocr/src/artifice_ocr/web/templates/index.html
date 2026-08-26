@@ -602,12 +602,12 @@
   <!-- Tropy: export results as JSON-LD -->
   <div class="modal-backdrop hidden" id="modal-tropy-send">
     <div class="modal" style="width:min(560px, 94vw);">
-      <h3>Export to Tropy</h3>
+      <h3 id="tropy-modal-title">Export to Tropy</h3>
       <button class="modal-close" data-modal-close aria-label="Close export dialog">&times;</button>
 
       <div class="tropy-help">
-        <p>Generate a Tropy JSON-LD file containing your OCR results. Import it back into Tropy with <strong>File &rarr; Import</strong>.</p>
-        <p class="dim">Downloads a file. In Tropy: File &rarr; Import Items&hellip; and choose it. Tropy creates new items — your originals are untouched.</p>
+        <p id="tropy-help-text">Generate a Tropy JSON-LD file containing your OCR results. Import it back into Tropy with <strong>File &rarr; Import</strong>.</p>
+        <p class="dim" id="tropy-help-detail">Downloads a file. In Tropy: File &rarr; Import Items&hellip; and choose it. Tropy creates new items — your originals are untouched.</p>
       </div>
 
       <div class="tropy-export-summary" id="tropy-export-summary">
@@ -625,8 +625,30 @@
         </div>
       </div>
 
+      <div class="tropy-writeback-section hidden" id="tropy-writeback-section">
+        <fieldset class="tropy-destination">
+          <legend class="tropy-destination-legend">Destination</legend>
+          <label class="tropy-destination-option">
+            <input type="radio" name="tropy-destination" id="tropy-dest-jsonld" value="jsonld" checked>
+            <span>Save a JSON-LD file</span>
+          </label>
+          <label class="tropy-destination-option">
+            <input type="radio" name="tropy-destination" id="tropy-dest-writeback" value="writeback">
+            <span>Write into the Tropy project</span>
+          </label>
+        </fieldset>
+        <div class="tropy-writeback-warning hidden" id="tropy-writeback-warning">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5L14.5 13H1.5L8 1.5Z"/><line x1="8" y1="6" x2="8" y2="9"/><circle cx="8" cy="11.5" r=".6" fill="currentColor" stroke="none"/></svg>
+          <span>This modifies your Tropy project &mdash; a timestamped backup is taken automatically.</span>
+        </div>
+        <div class="tropy-writeback-preview hidden" id="tropy-writeback-preview" aria-live="polite" aria-atomic="true"></div>
+      </div>
+
       <div class="tropy-export-options">
-        <label>Text to export
+        <!-- The id sits on the span, not the label: the destination swap sets
+             textContent on this element, and the <select> below is a child of
+             the label. Targeting the label wiped the select out of the DOM. -->
+        <label><span id="tropy-export-label">Text to export</span>
           <select id="tropy-export-stage">
             <option value="cleaned">Cleaned text</option>
             <option value="raw_ocr">Raw OCR text</option>
@@ -642,9 +664,15 @@
 
       <div class="tropy-export-status dim" id="tropy-export-status"></div>
 
-      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+      <div class="tropy-export-footer" id="tropy-export-footer">
         <button class="btn" id="btn-send-tropy-close" type="button">Close</button>
         <button class="btn accent" id="btn-send-tropy-write" type="button">Generate &amp; Export</button>
+      </div>
+
+      <div class="tropy-writeback-footer hidden" id="tropy-writeback-footer">
+        <button class="btn" id="btn-send-tropy-close-writeback" type="button">Close</button>
+        <button class="btn" id="btn-writeback-preview" type="button">Preview</button>
+        <button class="btn accent" id="btn-writeback-commit" type="button" disabled>Write</button>
       </div>
     </div>
   </div>

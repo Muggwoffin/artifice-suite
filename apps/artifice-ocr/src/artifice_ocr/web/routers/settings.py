@@ -151,6 +151,11 @@ _CONFIG_KEYS = (
     "tropy_last_path",
     "tropy_last_export_path",
     "tropy_live_browse_enabled",
+    # The UI reads this to decide whether to show the write-back Destination
+    # control at all. It was in PERSISTED_KEYS but not here, so POST accepted
+    # it and GET never returned it — the control read `undefined`, stayed
+    # hidden, and the feature was unreachable even when switched on.
+    "tropy_writeback_enabled",
     "approved_folders",
 )
 

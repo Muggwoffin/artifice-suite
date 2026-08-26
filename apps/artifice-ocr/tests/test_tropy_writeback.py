@@ -489,3 +489,33 @@ def test_error_path_redacts_absolute_paths(client, tmp_path):
     assert str(tmp_path) not in body
     # the exception type survived sanitisation (still diagnostic)
     assert "OperationalError" in body
+
+
+# --------------------------------------------------------------------------- #
+# the UI gate must be readable, not merely writable
+# --------------------------------------------------------------------------- #
+
+
+def test_writeback_gate_round_trips_through_the_config_api(client):
+    """The UI decides whether to show the Destination control by reading
+    ``tropy_writeback_enabled`` from ``GET /api/config``.
+
+    The key was in ``PERSISTED_KEYS`` but missing from the settings router's
+    ``_CONFIG_KEYS``, so POST accepted it and GET never returned it. The control
+    read ``undefined``, stayed hidden, and the feature was unreachable even when
+    switched on — while every route test still passed, because the routes
+    themselves were correct. A setting the UI must read is only half-wired until
+    GET returns it.
+    """
+    assert client.get("/api/config").json()["tropy_writeback_enabled"] is False
+
+    assert client.post("/api/config", json={"tropy_writeback_enabled": True}).status_code == 200
+
+    body = client.get("/api/config").json()
+    assert "tropy_writeback_enabled" in body, (
+        "GET /api/config must expose the write-back gate; the UI reads it from here"
+    )
+    assert body["tropy_writeback_enabled"] is True
+
+    assert client.post("/api/config", json={"tropy_writeback_enabled": False}).status_code == 200
+    assert client.get("/api/config").json()["tropy_writeback_enabled"] is False
