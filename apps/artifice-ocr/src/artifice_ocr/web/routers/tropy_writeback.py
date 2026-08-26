@@ -71,17 +71,25 @@ def _resolve_db_path(raw: str | None) -> Path:
     return resolve_project_db_path(validated)
 
 
-def _eligible_split(items):
-    """Split selected items into those carrying a ``source.photo_id`` and those
-    that do not.
+def _split_by_project(items, db_path: Path):
+    """Split writable items into those from the target project and the rest.
 
-    ``entries_from_items`` silently drops items without a ``photo_id``; only
-    photos that came *from* Tropy can be written back. Surfacing the split
-    lets the UI report "N of M selected photos came from Tropy" rather than an
-    empty write reading as success.
+    ``entries_from_items`` requires only a ``photo_id``; it does not know which
+    project that id belongs to. Tropy ids are per-project, so an item browsed
+    from project A must never be written into project B — a match lands a note
+    on a different photo entirely. An item with no ``tropy_project`` recorded
+    cannot be proven to belong here, so it is refused too (fail closed).
     """
-    eligible = [i for i in items if (i.source or {}).get("photo_id") is not None]
-    return eligible, len(eligible), len(items) - len(eligible)
+    target = db_path.resolve()
+    eligible = []
+    foreign = []
+    for i in items:
+        project = (i.source or {}).get("tropy_project")
+        if project is not None and Path(project).resolve() == target:
+            eligible.append(i)
+        else:
+            foreign.append(i)
+    return eligible, foreign
 
 
 def _prepare(req):
@@ -89,22 +97,27 @@ def _prepare(req):
     from the selected items.
 
     Shared by preview and commit so both compute identical results.
-    Returns ``(db_path, entries, eligible, ineligible)``.
+    Returns ``(db_path, entries, eligible, foreign, ineligible)``.
     """
     if req.stage not in _VALID_STAGES:
         raise HTTPException(status_code=400, detail=f"Unknown stage: {req.stage}")
     db_path = _resolve_db_path(req.project_path)
-    items = state.tropy_eligible_items(req.item_ids)
-    eligible_items, eligible, ineligible = _eligible_split(items)
+    items = state.tropy_writable_items(req.item_ids)
+    eligible_items, foreign_items = _split_by_project(items, db_path)
     entries = entries_from_items(eligible_items, stage=req.stage)
-    return db_path, entries, eligible, ineligible
+    if req.item_ids is not None:
+        selected = sum(1 for i in req.item_ids if state.get(i) is not None)
+    else:
+        selected = len(state.items)
+    ineligible = selected - len(items)
+    return db_path, entries, len(eligible_items), len(foreign_items), ineligible
 
 
 @router.post("/api/tropy/writeback/preview")
 def tropy_writeback_preview(req: TropyWritebackPreviewRequest) -> dict:
     """Report what a write-back would do, without writing anything."""
     _check_enabled()
-    db_path, entries, eligible, ineligible = _prepare(req)
+    db_path, entries, eligible, foreign, ineligible = _prepare(req)
 
     try:
         with TropyWriter(db_path) as writer:
@@ -119,6 +132,7 @@ def tropy_writeback_preview(req: TropyWritebackPreviewRequest) -> dict:
         "summary": preview.summary(),
         "eligible": eligible,
         "ineligible": ineligible,
+        "foreign": foreign,
     }
 
 
@@ -132,7 +146,16 @@ def tropy_writeback_commit(req: TropyWritebackCommitRequest) -> dict:
     should look again.
     """
     _check_enabled()
-    db_path, entries, _eligible, _ineligible = _prepare(req)
+    db_path, entries, _eligible, foreign, _ineligible = _prepare(req)
+
+    if foreign:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"{foreign} selected item(s) do not belong to this Tropy "
+                "project — please preview again before writing"
+            ),
+        )
 
     try:
         with TropyWriter(db_path) as writer:

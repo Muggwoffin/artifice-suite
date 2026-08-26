@@ -9,6 +9,12 @@ Runs against a synthetic ``.tpy`` project built the way
 the FTS triggers), never a real archive. The write-back setting is opt-in and
 default off, so every test that needs the write path enables it explicitly and
 the gate-off test asserts the default.
+
+Items are built the way ``tropy_db.items_to_job_items`` emits them: a live
+browse carries ``origin="tropy-live"``, a ``photo_id``, and the resolved
+``tropy_project`` the id belongs to. That provenance is what lets the route
+refuse a write when an item came from a different project than the one being
+written to.
 """
 
 import json
@@ -88,20 +94,33 @@ def _marker_project(tmp_path, marker="SECRETUSER"):
     return _build_project(tmp_path / marker / "Archive.tropy")
 
 
-def _item(photo_id, *, text="Der Bericht", path=None):
-    """A queue item from the Tropy JSON-LD bridge carrying a ``photo_id``."""
+def _tpy(project) -> str:
+    """The resolved ``.tpy`` path a live-browsed item from ``project`` carries."""
+    return str((Path(project) / "project.tpy").resolve())
+
+
+def _item(photo_id, *, text="Der Bericht", path=None, project=None):
+    """A live-browsed queue item, as ``items_to_job_items`` emits one.
+
+    ``project`` is the bundle directory the item came from; its ``.tpy`` path
+    is stored resolved in ``source["tropy_project"]``. Pass ``None`` to model an
+    item with no project provenance at all.
+    """
     return JobItem(
         path=path or f"/pages/{photo_id}-{len(text)}.png",
-        source={"origin": "tropy-jsonld", "photo_id": photo_id},
+        source={
+            "origin": "tropy-live",
+            "photo_id": photo_id,
+            "tropy_project": _tpy(project) if project is not None else None,
+        },
         results={"cleaned": {"cleaned_text": text}},
     )
 
 
 def _no_photo_item(*, text="kein Photo"):
-    """A queue item from the Tropy JSON-LD bridge with no ``photo_id``."""
+    """A queue item that did not come from Tropy (no ``photo_id``)."""
     return JobItem(
         path=f"/pages/no-photo-{len(text)}.png",
-        source={"origin": "tropy-jsonld"},
         results={"cleaned": {"cleaned_text": text}},
     )
 
@@ -148,10 +167,16 @@ def test_gate_off_returns_404_for_both_routes(client):
 # --------------------------------------------------------------------------- #
 
 
-def test_preview_reports_eligible_and_ineligible_split(client, project):
-    """Items without a photo_id are reported as ineligible, not silently dropped."""
+def test_preview_reports_foreign_separately_from_ineligible(client, project, tmp_path):
+    """A foreign item is counted separately from ineligible (not-from-Tropy).
+
+    The three buckets mean different things to a user: "will be written"
+    (eligible), "from a different project" (foreign), "not from Tropy"
+    (ineligible) — so none is folded into another.
+    """
     config.apply_overrides({"tropy_writeback_enabled": True})
-    state.add_items([_item(10), _no_photo_item()])
+    other = _build_project(tmp_path / "Other.tropy")
+    state.add_items([_item(10, project=project), _item(20, project=other), _no_photo_item()])
 
     resp = client.post(
         "/api/tropy/writeback/preview",
@@ -161,6 +186,7 @@ def test_preview_reports_eligible_and_ineligible_split(client, project):
     assert resp.status_code == 200
     data = resp.json()
     assert data["eligible"] == 1
+    assert data["foreign"] == 1
     assert data["ineligible"] == 1
     assert data["blockers"] == []
     assert data["counts"]["notes:insert"] == 1
@@ -170,7 +196,7 @@ def test_preview_returns_blockers_verbatim(client, project, monkeypatch):
     """Blockers are returned in the preview body (200), not raised as an error."""
     config.apply_overrides({"tropy_writeback_enabled": True})
     monkeypatch.setattr("artifice_ocr.tropy_write._tropy_is_running", lambda: True)
-    state.add_items([_item(10)])
+    state.add_items([_item(10, project=project)])
 
     resp = client.post(
         "/api/tropy/writeback/preview",
@@ -186,8 +212,8 @@ def test_preview_returns_blockers_verbatim(client, project, monkeypatch):
 def test_preview_selects_only_requested_item_ids(client, project):
     """``item_ids`` narrows the selection, mirroring the export route."""
     config.apply_overrides({"tropy_writeback_enabled": True})
-    ten = _item(10)
-    eleven = _item(11, text="Zweite Seite")
+    ten = _item(10, project=project)
+    eleven = _item(11, text="Zweite Seite", project=project)
     state.add_items([ten, eleven])
 
     resp = client.post(
@@ -203,16 +229,117 @@ def test_preview_selects_only_requested_item_ids(client, project):
     assert resp.json()["eligible"] == 1
 
 
+def test_preview_matches_two_spellings_of_one_project(client, project):
+    """A project passed with a ``..`` segment still matches the stored path.
+
+    The write target and the item's ``tropy_project`` are compared resolved, so
+    two spellings of the same ``.tpy`` file are not read as a mismatch.
+    """
+    config.apply_overrides({"tropy_writeback_enabled": True})
+    state.add_items([_item(10, project=project)])
+
+    resp = client.post(
+        "/api/tropy/writeback/preview",
+        json={
+            "project_path": str(project / "sub" / ".."),
+            "stage": "cleaned",
+            "item_ids": None,
+        },
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["eligible"] == 1
+    assert data["foreign"] == 0
+
+
 # --------------------------------------------------------------------------- #
 # commit: refusal paths must not touch the database
 # --------------------------------------------------------------------------- #
+
+
+def test_commit_foreign_project_returns_409_and_db_unchanged(client, project, tmp_path):
+    """An item from another Tropy project is refused, with nothing written."""
+    config.apply_overrides({"tropy_writeback_enabled": True})
+    other = _build_project(tmp_path / "Other.tropy")
+    state.add_items([_item(20, project=other)])
+
+    db = project / "project.tpy"
+    before = db.read_bytes()
+
+    resp = client.post(
+        "/api/tropy/writeback/commit",
+        json={
+            "project_path": str(project),
+            "stage": "cleaned",
+            "item_ids": None,
+            "expected_write_count": 0,
+        },
+    )
+
+    assert resp.status_code == 409
+    assert db.read_bytes() == before
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT COUNT(*) FROM notes").fetchone()[0] == 0
+    con.close()
+
+
+def test_commit_no_project_returns_409_and_db_unchanged(client, project):
+    """An item with no ``tropy_project`` is refused (fail closed), not written."""
+    config.apply_overrides({"tropy_writeback_enabled": True})
+    state.add_items([_item(10, project=None)])
+
+    db = project / "project.tpy"
+    before = db.read_bytes()
+
+    resp = client.post(
+        "/api/tropy/writeback/commit",
+        json={
+            "project_path": str(project),
+            "stage": "cleaned",
+            "item_ids": None,
+            "expected_write_count": 0,
+        },
+    )
+
+    assert resp.status_code == 409
+    assert db.read_bytes() == before
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT COUNT(*) FROM notes").fetchone()[0] == 0
+    con.close()
+
+
+def test_commit_mixed_queue_returns_409_and_nothing_written(client, project, tmp_path):
+    """One foreign item in a mixed queue blocks the whole write, not just itself."""
+    config.apply_overrides({"tropy_writeback_enabled": True})
+    other = _build_project(tmp_path / "Other.tropy")
+    state.add_items([_item(10, project=project), _item(20, project=other)])
+
+    db = project / "project.tpy"
+    before = db.read_bytes()
+
+    resp = client.post(
+        "/api/tropy/writeback/commit",
+        json={
+            "project_path": str(project),
+            "stage": "cleaned",
+            "item_ids": None,
+            "expected_write_count": 1,
+        },
+    )
+
+    assert resp.status_code == 409
+    assert db.read_bytes() == before
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT COUNT(*) FROM notes").fetchone()[0] == 0
+    con.close()
 
 
 def test_commit_blocked_returns_409_and_db_unchanged(client, project, monkeypatch):
     """A blocker present at commit time is a 409 and writes nothing."""
     config.apply_overrides({"tropy_writeback_enabled": True})
     monkeypatch.setattr("artifice_ocr.tropy_write._tropy_is_running", lambda: True)
-    state.add_items([_item(10)])
+    state.add_items([_item(10, project=project)])
 
     db = project / "project.tpy"
     before = db.read_bytes()
@@ -237,7 +364,7 @@ def test_commit_blocked_returns_409_and_db_unchanged(client, project, monkeypatc
 def test_commit_count_mismatch_returns_409_and_db_unchanged(client, project):
     """A recomputed insertable count that differs from the client's is a 409."""
     config.apply_overrides({"tropy_writeback_enabled": True})
-    state.add_items([_item(10)])
+    state.add_items([_item(10, project=project)])
 
     db = project / "project.tpy"
     before = db.read_bytes()
@@ -267,7 +394,7 @@ def test_commit_count_mismatch_returns_409_and_db_unchanged(client, project):
 def test_commit_happy_path_writes_notes_with_selection(client, project):
     """A successful commit writes notes carrying the ProseMirror ``selection`` key."""
     config.apply_overrides({"tropy_writeback_enabled": True})
-    state.add_items([_item(10, text="Der Bericht\n\nZweiter Absatz")])
+    state.add_items([_item(10, text="Der Bericht\n\nZweiter Absatz", project=project)])
 
     resp = client.post(
         "/api/tropy/writeback/commit",
@@ -297,9 +424,9 @@ def test_commit_happy_path_writes_notes_with_selection(client, project):
 
 
 def test_commit_only_writes_eligible_items(client, project):
-    """Only the item carrying a photo_id is written; the rest are skipped."""
+    """Only the item from the target project is written; the rest are skipped."""
     config.apply_overrides({"tropy_writeback_enabled": True})
-    state.add_items([_item(10), _no_photo_item()])
+    state.add_items([_item(10, project=project), _no_photo_item()])
 
     resp = client.post(
         "/api/tropy/writeback/commit",
@@ -334,7 +461,7 @@ def test_error_path_redacts_absolute_paths(client, tmp_path):
     config.apply_overrides({"tropy_writeback_enabled": True})
     root = _marker_project(tmp_path)
     db = root / "project.tpy"
-    state.add_items([_item(10, text="geheim")])
+    state.add_items([_item(10, text="geheim", project=root)])
 
     def boom(text):
         raise sqlite3.OperationalError(f"cannot write {db}")
