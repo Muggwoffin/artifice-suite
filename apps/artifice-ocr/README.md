@@ -33,10 +33,10 @@ ArtificeOCR is a local-first pipeline built specifically for processing, cleanin
 ### 1. Guarded 5-Stage Processing Pipeline
 Runs entirely on local GPU hardware with complete JSON metadata outputs (prompts, confidence, guard results, timings) at every stage:
 * **Stage 1 — Vision OCR:** Converts document scans and photos into raw text using `allenai/olmocr-2-7b` via LM Studio.
-* **Stage 2 — Guarded Cleanup:** Repairs OCR artifacts using `gemma4:12b` via Ollama. Guarded against word deletions, umlaut transliteration corruptions (`ueber` $\rightarrow$ `über`), and loss of capitalized German nouns.
-* **Stage 3 — Guarded Structuring:** Adds paragraph breaks for human readability using `gemma4:12b` via Ollama. Guarded by **word-for-word equality**—only newline insertions are allowed.
+* **Stage 2 — Guarded Cleanup:** Repairs OCR artifacts using a local chat model via Ollama. Guarded against word deletions, umlaut transliteration corruptions (`ueber` $\rightarrow$ `über`), and loss of capitalized German nouns.
+* **Stage 3 — Guarded Structuring:** Adds paragraph breaks for human readability using the same chat model. Guarded by **word-for-word equality**—only newline insertions are allowed.
 * **Stage 4 — Auto-Generated Page Titles (optional):** Generates short archival titles (≤120 chars) per page using the configured `cleanup_model` via `model_harness.contract`. Opt-in via `title_enabled` config (default off). Guarded by length cap + truncation, accent warnings, and repetition rejection; falls back to basename on any failure. Outputs to `title/text/` and `title/json/`.
-* **Stage 5 — Historical Translation:** Optional translation (e.g., German to English) using specialized models (`translategemma:4b`) via Ollama.
+* **Stage 5 — Historical Translation:** Optional translation (e.g., German to English) using a multilingual model such as `aya-expanse:8b` via Ollama.
 
 ### 2. Deep Tropy Archive Integration
 Connects to [Tropy](https://tropy.org) historical research archives via a **JSON-LD file bridge** — export from Tropy, import into ArtificeOCR, process, export back:
@@ -101,9 +101,9 @@ artifice-suite/
 │       ├── tests/                     # Pytest suite
 │       └── README.md
 └── packages/
-    ├── shared-ui/                     # The New Masses CSS tokens & web components
+    ├── shared-ui/                     # The New Masses CSS tokens, web components, upload guards
     ├── model-harness/                 # BYOM connectors (Ollama/LM Studio)
-    └── core-types/                    # Shared TypeScript & Python data interfaces
+    └── secure-io/                     # Hardened file and path I/O
 ```
 
 ---
@@ -111,20 +111,46 @@ artifice-suite/
 ## 🚀 Setup & Hardware Requirements
 
 ### Prerequisites & Dependencies
-Ensure **Python 3.11+** is installed. From the monorepo root:
+Ensure **Python 3.11+** is installed. The suite is a [uv](https://docs.astral.sh/uv/)
+workspace — the bootstrap script installs `uv` if it is missing. From the monorepo root:
 
 ```bash
-# Install shared packages and app in editable mode
-pip install -e packages/core-types -e packages/model-harness -e packages/shared-ui -e apps/artifice-ocr[web]
+bash scripts/install.sh artifice-ocr
 ```
 
+PowerShell:
+
+```powershell
+.\scripts\install.ps1 artifice-ocr
+```
+
+This runs `uv tool install --editable` against the local workspace, so the app
+stays linked to your clone. Uninstall with `bash scripts/uninstall.sh artifice-ocr`.
+
+> Use `uv` workspace commands, not bare `pip install`. A `pip install -e` line
+> here previously named a `packages/core-types` that does not exist, so it failed
+> outright for anyone who followed it.
+
 ### Engine Setup & Model Provisioning
-- **LM Studio**: Launch LM Studio locally on port `1234` and load `allenai/olmocr-2-7b`.
-- **Ollama**: Launch Ollama locally on port `11434` and pull required models:
+
+The app is model-agnostic — set whatever you have in **Settings**. These are the
+suite's recommendations, and they come from
+`packages/model-harness/src/model_harness/registry.py`, which is the single
+source of truth. It records provenance badges alongside each entry, because a
+model whose training data cannot be inspected cannot be cited honestly in a
+methods section.
+
+- **Ollama** on port `11434`:
   ```bash
-  ollama pull gemma4:12b
-  ollama pull translategemma:4b
+  ollama pull richardyoung/olmocr2:7b-q8   # OCR — Allen AI olmOCR-2, Strict Open Data
+  ollama pull aya-expanse:8b               # translation — Open Science Lab
   ```
+  olmOCR-2 wants ~12 GB VRAM for full GPU offload; it runs on 8 GB with CPU
+  fallback at reduced throughput.
+- **LM Studio** on port `1234`, as an alternative: load `allenai/olmocr-2-7b`.
+  Note that LM Studio fixes a model's **context window when it loads it** — if a
+  page fails with "exceeds the available context size", raise it there
+  (`lms load <model> --context-length 8192`), not in Artifice's Settings.
 
 ### Cross-Platform & macOS Apple Silicon Notes
 - **Linux / Windows (CUDA)**: Native GPU acceleration via CUDA drivers.
@@ -177,12 +203,17 @@ Set defaults via `configs/default.yaml` or environment variables:
 | :--- | :--- | :--- |
 | `lmstudio_base_url` | `http://localhost:1234/v1` | LM Studio vision OCR endpoint |
 | `ollama_host` | `http://localhost:11434` | Ollama LLM endpoint |
-| `ocr_model` | `allenai/olmocr-2-7b` | Vision model used for OCR stage |
-| `cleanup_model` | `gemma4:12b` | Model used for guarded cleanup |
-| `translate_model` | `translategemma:4b` | Model used for translation |
+| `ocr_model` | *(empty)* | Vision model for the OCR stage. Recommended: `richardyoung/olmocr2:7b-q8` |
+| `cleanup_model` | *(empty)* | Model for guarded cleanup and structuring |
+| `translate_model` | *(empty)* | Model for translation. Recommended: `aya-expanse:8b` |
+| `context_size` | `0` | Model context window in tokens. `0` leaves it to the model. Ollama only — LM Studio and hosted APIs set it themselves |
 | `cleanup_guard` | `true` | Enable German noun / umlaut protection guard |
 | `structure_guard` | `true` | Enable word-for-word equality guard |
 | `ollama_think` | `false` | Disable reasoning tokens (13× speedup during cleanup) |
+
+The three model settings ship **empty** — nothing is preselected, so the app
+never silently uses a model you did not choose. Set them in **Settings**, or via
+`OCR_MODEL` / `CLEANUP_MODEL` / `TRANSLATE_MODEL`.
 
 ---
 

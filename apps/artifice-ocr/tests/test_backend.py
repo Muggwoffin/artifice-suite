@@ -801,3 +801,91 @@ def test_backend_log_never_contains_api_key(monkeypatch, caplog):
 
     assert "sk-secret-backend" not in caplog.text
     assert "http://10.0.0.1/v1" in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# Context size — num_ctx, and the actionable overflow message
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def clean_config():
+    """Isolate config mutations; these tests set context_size deliberately."""
+    config.reset()
+    config.load_config()
+    yield
+    config.reset()
+    config.load_config()
+
+
+class TestContextSize:
+    """The model's context window, and what happens when a page overflows it.
+
+    Not to be confused with ``chunk_max_tokens``, which splits *text* before the
+    cleanup/translate stages. This is the window the model is loaded with, and
+    it is what a page image overflows.
+    """
+
+    def test_zero_sends_no_num_ctx(self, clean_config):
+        """0 means "leave it to the model" — the behaviour before this existed.
+
+        A config written before this setting must not suddenly acquire a
+        ceiling nobody asked for.
+        """
+        config.apply_overrides({"context_size": 0})
+        assert _backend._configured_context_size() == 0
+
+    def test_a_positive_value_is_used(self, clean_config):
+        config.apply_overrides({"context_size": 8192})
+        assert _backend._configured_context_size() == 8192
+
+    def test_a_malformed_value_falls_back_to_zero(self, clean_config):
+        """A bad setting degrades to the old path rather than stopping a run."""
+        for bad in ("", "not-a-number", None, -1):
+            config.apply_overrides({"context_size": bad})
+            assert _backend._configured_context_size() == 0, bad
+
+    def test_ollama_sends_num_ctx_only_when_set(self, clean_config):
+        """``num_ctx`` rides in the same options dict as ``num_predict``."""
+        config.apply_overrides({"context_size": 4096, "ollama_url": "http://localhost:11434"})
+        with patch("artifice_ocr._backend.ollama.Client") as mock_client:
+            mock_client.return_value.chat.return_value = MagicMock()
+            _backend.OllamaBackend().chat(model="m", messages=[{"role": "user", "content": "x"}])
+        assert mock_client.return_value.chat.call_args.kwargs["options"]["num_ctx"] == 4096
+
+        config.apply_overrides({"context_size": 0})
+        with patch("artifice_ocr._backend.ollama.Client") as mock_client:
+            mock_client.return_value.chat.return_value = MagicMock()
+            _backend.OllamaBackend().chat(model="m", messages=[{"role": "user", "content": "x"}])
+        assert "num_ctx" not in mock_client.return_value.chat.call_args.kwargs["options"]
+
+    def test_overflow_error_names_the_numbers_and_where_to_fix_it(self):
+        """The raw provider error is a wall of escaped JSON. Ours is not.
+
+        This is the string LM Studio actually returns, nested inside an OpenAI
+        SDK error — reproduced verbatim so a change in our parsing is caught.
+        """
+        raw = (
+            "Error code: 400 - {'error': {'message': '{\"error\":{\"code\":400,"
+            '"message":"request (4107 tokens) exceeds the available context size '
+            '(4096 tokens), try increasing it","type":"exceed_context_size_error",'
+            "\"n_prompt_tokens\":4107,\"n_ctx\":4096}}', 'type': 'invalid_request_error'}}"
+        )
+        assert _backend._is_context_overflow(Exception(raw))
+
+        text = str(_backend._context_overflow(Exception(raw), backend_name="lm_studio"))
+        assert "4107" in text and "4096" in text
+        # LM Studio cannot be changed from our Settings, so the message must not
+        # send the user to a control that cannot help them.
+        assert "lms load" in text
+        assert "Settings" not in text
+
+    def test_overflow_hint_is_per_backend(self):
+        assert "Settings" in _backend._context_overflow_hint("ollama")
+        lm_hint = _backend._context_overflow_hint("lm_studio")
+        assert "LM Studio" in lm_hint and "Settings" not in lm_hint
+        assert "server-side" in _backend._context_overflow_hint("api_key")
+
+    def test_a_non_overflow_error_is_untouched(self):
+        """Only overflow errors are rewritten; everything else propagates."""
+        assert not _backend._is_context_overflow(Exception("connection refused"))

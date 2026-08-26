@@ -51,6 +51,19 @@ _DEFAULTS: dict[str, Any] = {
     # P4: Pipeline optimization & robustness
     "chunk_max_tokens": 3500,
     "chunk_overlap_tokens": 200,
+    # Model context window, in tokens. 0 means "leave it to the backend" —
+    # the model's own default — which is the behaviour before this setting
+    # existed, so a config that predates it keeps working unchanged.
+    #
+    # This is NOT chunk_max_tokens. That splits *text* before sending it to
+    # the cleanup/translate/structure stages. This is the size of the window
+    # the model itself is loaded with, and it is what a page image overflows:
+    # "request (4107 tokens) exceeds the available context size (4096)".
+    #
+    # Only Ollama honours it. LM Studio fixes context when it *loads* a model,
+    # and hosted APIs set it server-side — for those the UI says where to
+    # change it rather than sending a value that is silently ignored.
+    "context_size": 0,
     "confidence_enabled": True,
     "document_type": "default",
     # P7: throughput. Reasoning models burn ~17x the tokens they need on
@@ -126,6 +139,7 @@ PERSISTED_KEYS = (
     "document_type",
     "confidence_enabled",
     "chunk_max_tokens",
+    "context_size",
     "gui_theme",
     "ollama_think",
     "run_templates",

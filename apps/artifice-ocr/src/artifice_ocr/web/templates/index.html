@@ -348,7 +348,7 @@
               <option value="api_key">API Key (cloud)</option>
             </select>
           </label>
-          <label>Cleanup model <input type="text" id="set-cleanup_model" placeholder="e.g. gemma4:12b"></label>
+          <label>Cleanup model <input type="text" id="set-cleanup_model" placeholder="e.g. aya-expanse:8b"></label>
           <label>Translate backend
             <select id="set-translate_backend">
               <option value="ollama">Ollama</option>
@@ -357,7 +357,7 @@
               <option value="api_key">API Key (cloud)</option>
             </select>
           </label>
-          <label>Translate model <input type="text" id="set-translate_model" placeholder="e.g. translategemma:4b"></label>
+          <label>Translate model <input type="text" id="set-translate_model" placeholder="e.g. aya-expanse:8b"></label>
           <details style="margin-top:0.5rem;">
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Connection settings</summary>
             <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.4rem;">
@@ -383,6 +383,8 @@
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>
             <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.4rem;">
               <label>Max text chunk size <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;" title="How much text the AI processes at once. Leave at default unless you have a reason to change it."></label>
+              <label>Context size <input type="number" id="set-context_size" min="0" step="1024" style="width:6rem;" title="The model's context window, in tokens. 0 leaves it to the model's own default."></label>
+              <p class="dim" id="context-size-hint" style="margin:0;" aria-live="polite">0 uses the model&rsquo;s own default. Raise this if a page fails with &ldquo;exceeds the available context size&rdquo;.</p>
               <label><input type="checkbox" id="set-ollama_think"> Think step-by-step (slow &mdash; not recommended)</label>
               <p class="dim" style="margin:0;">Much slower with no visible improvement.</p>
             </div>

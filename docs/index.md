@@ -8,6 +8,7 @@ the index exists to say where things are rather than to duplicate them.
 | Document | What it covers |
 |---|---|
 | [README.md](../README.md) | What the suite is, quick start, app table |
+| [INSTALL_OCR_WINDOWS.md](INSTALL_OCR_WINDOWS.md) | Installing Artifice OCR on Windows from the frozen build — including the SmartScreen prompt and why it appears |
 | Each app's own `README.md` | Setup and entry points for that app (e.g. [`apps/artifice-ocr/README.md`](../apps/artifice-ocr/README.md)) |
 | [Design_Philosophy.md](../Design_Philosophy.md) | The New Masses design system — tokens, typography, motion, anti-patterns |
 
@@ -21,6 +22,8 @@ the index exists to say where things are rather than to duplicate them.
 | [SECURITY.md](../SECURITY.md) | Reporting a vulnerability |
 | [ROADMAP.md](../ROADMAP.md) | Direction, release cadence, and the explicit out-of-scope list |
 | [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) | The working task list and operational history (large, maintainer-facing) |
+| [MAINTAINER_CHECKLIST.md](MAINTAINER_CHECKLIST.md) | Release checks CI does not run, open items only the maintainer can close, and the traps that have cost real time |
+| [FOLLOW_UPS.md](../FOLLOW_UPS.md) | Deferred work. **Read the header** — it is treated as authoritative by sub-agents, and stale entries have produced confidently wrong work |
 
 ## Governance and release
 
