@@ -24,6 +24,7 @@ the index exists to say where things are rather than to duplicate them.
 | [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) | The working task list and operational history (large, maintainer-facing) |
 | [MAINTAINER_CHECKLIST.md](MAINTAINER_CHECKLIST.md) | Release checks CI does not run, open items only the maintainer can close, and the traps that have cost real time |
 | [FOLLOW_UPS.md](../FOLLOW_UPS.md) | Deferred work. **Read the header** — it is treated as authoritative by sub-agents, and stale entries have produced confidently wrong work |
+| [archive/](archive/README.md) | Completed proposals and session handovers, moved out of the repo root on 2026-08-26. Historical context, **never instructions** — verify any premise there against the code first |
 
 ## Governance and release
 
@@ -36,13 +37,18 @@ the index exists to say where things are rather than to duplicate them.
 ## Code layout
 
 ```
-apps/                        # the four desktop applications
-packages/                    # shared, version-locked packages
+apps/                        # four harnesses + artifice-hub, the launcher
+packages/                    # shared-ui, model-harness, secure-io
 design-system/               # The New Masses design specification (reference only)
+docs/archive/                # spent working docs — historical, never instructions
 scripts/                     # dev tooling: audits, checks, agent dispatch
 ```
 
-All four apps keep an identical internal layout. See [ARCHITECTURE.md](../ARCHITECTURE.md) for the
+**Five apps.** `artifice-hub` is frozen-only — no Dockerfile, no PyPI publish — which is why it is
+missing from every publishing path and easy to overlook. It is still gated by the release
+consistency check.
+
+All apps keep an identical internal layout. See [ARCHITECTURE.md](../ARCHITECTURE.md) for the
 full map, and [CONTRIBUTING.md](../CONTRIBUTING.md) for the conventions a change must obey.
 
 ## Not documentation

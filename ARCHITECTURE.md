@@ -6,15 +6,27 @@ The Artifice Suite is structured as a `uv` workspace monorepo enforcing strict b
 
 ```
 artifice-suite/
-├── apps/                 # Desktop applications (OCR, Draft, Graph, Transcribe)
-├── packages/             # Shared packages (shared-ui, model-harness, core-types)
-├── .opencode/agents/     # OpenCode sub-agent definitions
-└── .claude/agents/       # Claude Code sub-agent definitions
+├── apps/                 # OCR, Draft, Graph, Transcribe — and Hub, the launcher
+├── packages/             # shared-ui, model-harness, secure-io
+├── docs/                 # Guides, specs, and archive/ for spent working docs
+└── .opencode/agents/     # Sub-agent definitions (the whole fleet)
 ```
 
-Agent definitions live in `agents/` directories in both runtimes. Nothing belongs in
-`.claude/rules/` — files there load as project-wide instructions into every session instead of
-scoping to a single agent.
+**Five apps, not four.** `apps/artifice-hub` is a native GUI launcher that installs, updates and
+launches the other four. It is deliberately **frozen-only** — no Dockerfile, no PyPI publish, no
+`uv tool install` — which is why it is absent from every *publishing* path and easy to miss in a
+survey. It is still in scope for anything version-shaped: `scripts/check-release-consistency.py`
+globs `apps/*/pyproject.toml`, so the Hub is gated whether or not it ships.
+
+**`packages/core-types` does not exist** and has not for some time; the third package is
+`secure-io`. An install command in `apps/artifice-ocr/README.md` named it until 2026-08-26 and
+failed outright for anyone who ran it.
+
+**`.claude/agents/` is empty and must stay that way.** All seven agents are defined in
+`.opencode/agents/`; a definition in both runtimes shadows the other when the orchestrator
+dispatches by name, and `scripts/smoke-test-agents.sh` asserts this in both directions. Nothing
+belongs in `.claude/rules/` either — files there load as project-wide instructions into *every*
+session instead of scoping to a single agent.
 
 ## Core Abstraction: `packages/model-harness`
 
@@ -33,9 +45,16 @@ scoping to a single agent.
   the degradation ladder, validates the response against the declared schema, returns a
   `HarnessResult`.
 
-90 tests pass. The web layers of `artifice-graph` and `artifice-transcribe` import
-`model_harness.contract` and `model_harness.endpoint_policy`; no extraction path yet calls
-`run_structured`.
+265 tests pass (re-measured 2026-08-26; this said 90 for some time).
+
+The other two packages:
+
+- **`packages/shared-ui`** — design tokens, web fonts, the native file dialog, server bootstrap,
+  and the defensive I/O helpers every app shares: `path_validation.py` (allowed roots, filename
+  sanitisation) and `uploads.py` (a size cap that fails *during* the read). It deliberately depends
+  on `platformdirs` and `uvicorn` only — **no web framework**, so its helpers raise domain errors
+  and each app's web layer translates them. Do not add `fastapi` or `starlette` to it.
+- **`packages/secure-io`** — hardened file and path I/O, including legacy-data migration.
 
 The contract specifies that all model interactions must pass through `packages/model-harness` to
 prevent the ELIZA effect and ensure deterministic outputs.
@@ -65,4 +84,19 @@ All UI components and presentation layers across the suite must strictly adhere 
 
 ## Modular Parity
 
-All applications in `apps/` maintain identical internal folder layouts (`src/`, `tests/`, `Dockerfile`, `package.json`, `README.md`) to allow seamless refactoring and multi-agent contribution.
+All applications in `apps/` maintain identical internal folder layouts (`src/artifice_<slug>/`,
+`tests/`, `Dockerfile`, `pyproject.toml`, `README.md`) to allow seamless refactoring and
+multi-agent contribution.
+
+**There is no `package.json` anywhere, and no Node toolchain.** This list named one until
+2026-08-26; nothing in the repository has ever had one. Every frontend is vanilla JS with Jinja
+templates or static HTML.
+
+**Web assets live inside the installable package** — `apps/<app>/src/artifice_<slug>/web/static/`,
+never at the app root. Assets outside the package are excluded from a wheel and can only be found
+by a path relative to the current working directory, which breaks the moment the server starts
+from anywhere else. Resolve packaged assets with `importlib.resources`, not
+`Path(__file__).parent.parent`.
+
+The Hub is the one app with no `templates/` tree — it serves static HTML. Anything done "in every
+app's `base.html`" silently skips it.
