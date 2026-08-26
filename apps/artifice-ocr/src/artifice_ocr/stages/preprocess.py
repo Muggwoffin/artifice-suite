@@ -25,10 +25,9 @@ from __future__ import annotations
 import io
 
 import numpy as np
-from PIL import Image, ImageFilter, ImageOps
-
 from artifice_ocr._logging import get_logger
 from artifice_ocr.config import get as cfg
+from PIL import Image, ImageFilter, ImageOps
 
 log = get_logger("preprocess")
 

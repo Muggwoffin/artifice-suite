@@ -12,10 +12,8 @@ the ink and widen the tonal range, and it must be a strict no-op when disabled.
 import io
 
 import numpy as np
-import pytest
-from PIL import Image
-
 from artifice_ocr.stages import preprocess
+from PIL import Image
 
 
 def _washed_page() -> bytes:
@@ -53,12 +51,16 @@ def test_processing_widens_contrast(monkeypatch):
     range so faint text separates from paper far more than in the original."""
     monkeypatch.setattr(preprocess, "is_enabled", lambda: True)
     # Default config: grayscale + illumination + autocontrast on, gamma 1.0.
-    monkeypatch.setattr(preprocess, "cfg", lambda key, default=None: {
-        "preprocess_grayscale": True,
-        "preprocess_illumination": True,
-        "preprocess_autocontrast": True,
-        "preprocess_gamma": 1.0,
-    }.get(key, default))
+    monkeypatch.setattr(
+        preprocess,
+        "cfg",
+        lambda key, default=None: {
+            "preprocess_grayscale": True,
+            "preprocess_illumination": True,
+            "preprocess_autocontrast": True,
+            "preprocess_gamma": 1.0,
+        }.get(key, default),
+    )
 
     original = _decode(_washed_page())
     processed = _decode(preprocess.maybe_process(_washed_page()))
@@ -69,9 +71,13 @@ def test_processing_widens_contrast(monkeypatch):
 
 def test_gamma_out_of_range_is_ignored(monkeypatch):
     """A nonsensical gamma must not raise into the OCR run — it is dropped."""
-    monkeypatch.setattr(preprocess, "cfg", lambda key, default=None: {
-        "preprocess_gamma": 999.0,
-    }.get(key, default))
+    monkeypatch.setattr(
+        preprocess,
+        "cfg",
+        lambda key, default=None: {
+            "preprocess_gamma": 999.0,
+        }.get(key, default),
+    )
     assert preprocess._gamma_value() is None
 
 
