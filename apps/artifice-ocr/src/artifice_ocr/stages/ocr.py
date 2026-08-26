@@ -11,6 +11,7 @@ from typing import Any, Dict
 
 
 from artifice_ocr import _guard
+from artifice_ocr import _tesseract
 from artifice_ocr._backend import get_client as _get_backend_client
 from artifice_ocr._logging import get_logger
 from artifice_ocr._resolution import backend_for, model_for
@@ -120,8 +121,8 @@ def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
 
 
 @retry(max_attempts=4, base_delay=2.0, label="OCR")
-def _ocr_single_image(image_path: Path, orientation: int = 1) -> str:
-    """Send a single image to the OCR backend and return extracted text.
+def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
+    """Send a single image to the vision-model OCR backend and return text.
 
     All backends use their OpenAI-compatible endpoint for OCR because
     images are sent as ``image_url`` content blocks — the format supported
@@ -152,6 +153,79 @@ def _ocr_single_image(image_path: Path, orientation: int = 1) -> str:
         temperature=0.0,
     )
     return response.message.content or ""
+
+
+def _tesseract_from_image(image_path: Path, orientation: int = 1) -> str:
+    """Run Tesseract on an image, reusing ``_encode_image`` so the bytes carry
+    the same orientation correction and (when enabled) deterministic
+    pre-processing the vision path would apply."""
+    image_b64, _mime = _encode_image(image_path, orientation)
+    return _tesseract.ocr_bytes(base64.standard_b64decode(image_b64))
+
+
+def _ocr_single_image(image_path: Path, orientation: int = 1) -> tuple[str, str]:
+    """OCR one image and return ``(text, engine)``.
+
+    ``engine`` records provenance for the page metadata:
+      - ``"tesseract"`` when Tesseract is the selected primary engine,
+      - the vision backend name (e.g. ``"ollama"``) on the normal path,
+      - ``"tesseract-fallback"`` when the vision path failed and the
+        ``tesseract_fallback_on_failure`` safety net recovered the page.
+
+    A historian citing a transcription needs to know which engine read each
+    page, so this is deliberately explicit rather than assumed.
+    """
+    if cfg("ocr_engine", "vision_model") == "tesseract":
+        return _tesseract_from_image(image_path, orientation), "tesseract"
+
+    try:
+        return _ocr_vision(image_path, orientation), backend_for("vision")
+    except Exception as exc:
+        if cfg("tesseract_fallback_on_failure") and _tesseract.is_available():
+            log.warning(
+                "Vision OCR failed for %s (%s) — falling back to Tesseract",
+                getattr(image_path, "name", image_path),
+                exc,
+            )
+            text = _tesseract_from_image(image_path, orientation)
+            if text.strip():
+                return text, "tesseract-fallback"
+            log.warning("Tesseract fallback produced no text; re-raising vision failure")
+        raise
+
+
+def _summarise_engines(engines: list[str]) -> str:
+    """Collapse per-page engine tags into one readable provenance label,
+    preserving order and de-duplicating (e.g. ``"ollama+tesseract-fallback"``)."""
+    if not engines:
+        return backend_for("vision")
+    return "+".join(dict.fromkeys(engines))
+
+
+def _ocr_document_via_tesseract(
+    path: Path, *, page: int | None, is_pdf: bool, orientation: int
+) -> str:
+    """Re-OCR a whole document with Tesseract by re-rendering its page image(s).
+
+    Used by the ``tesseract_fallback_on_failure`` safety net when the vision
+    model produced a degenerate result the repetition guard rejected — the page
+    images from the first pass are already gone, so they are rendered again.
+    """
+    if is_pdf and page is not None:
+        img_path, _total = _pdf_single_page_image(path, page, orientation)
+        try:
+            return _tesseract_from_image(img_path, orientation)
+        finally:
+            img_path.unlink(missing_ok=True)
+    if is_pdf:
+        texts = []
+        for img_path in _pdf_to_page_images(path, orientation):
+            try:
+                texts.append(_tesseract_from_image(img_path, orientation))
+            finally:
+                img_path.unlink(missing_ok=True)
+        return "\n\n--- Page Break ---\n\n".join(texts)
+    return _tesseract_from_image(path, orientation)
 
 
 def _pdf_to_page_images(pdf_path: Path, orientation: int = 1) -> list[Path]:
@@ -231,12 +305,17 @@ def perform(
     is_pdf = path.suffix.lower() == ".pdf"
     model = model_for("vision")
     page_number = 1
+    # Provenance: which engine(s) actually read the page(s). Collected across
+    # pages so a per-page Tesseract fallback is not lost in a whole-document
+    # label. Written to the "engine" field below.
+    engines_used: list[str] = []
 
     if is_pdf and page is not None:
         img_path, num_pages = _pdf_single_page_image(path, page, orientation)
         log.info("OCR page %d/%d of %s", page + 1, num_pages, path.name)
         try:
-            extracted_text = _ocr_single_image(img_path)
+            extracted_text, engine = _ocr_single_image(img_path)
+            engines_used.append(engine)
         finally:
             img_path.unlink(missing_ok=True)
         page_number = page + 1
@@ -245,14 +324,19 @@ def perform(
         page_texts = []
         for i, img_path in enumerate(page_images):
             log.info("OCR page %d/%d of %s", i + 1, len(page_images), path.name)
-            page_texts.append(_ocr_single_image(img_path))
+            text, engine = _ocr_single_image(img_path)
+            page_texts.append(text)
+            engines_used.append(engine)
             img_path.unlink(missing_ok=True)
 
         extracted_text = "\n\n--- Page Break ---\n\n".join(page_texts)
         num_pages = len(page_texts)
     else:
-        extracted_text = _ocr_single_image(path, orientation)
+        extracted_text, engine = _ocr_single_image(path, orientation)
+        engines_used.append(engine)
         num_pages = 1
+
+    engine_used = _summarise_engines(engines_used)
 
     # The model has no fallback text to revert to here (unlike cleanup/
     # structure, which can keep the source on rejection) — a degenerate OCR
@@ -264,30 +348,60 @@ def perform(
     if cfg("ocr_repetition_guard"):
         guard_result = _guard.check_no_repetition_loop(extracted_text)
         if not guard_result.ok:
-            base_output_dir = Path(output_dir)
-            json_dir = base_output_dir / "raw_ocr" / "json"
-            json_dir.mkdir(parents=True, exist_ok=True)
-            base_name = stem or path.stem
-            json_path = json_dir / f"{base_name}.json"
-            json_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    {
-                        "source_file": str(path),
-                        "stage": "raw_ocr",
-                        "rejected_extracted_text": extracted_text,
-                        "engine": backend_for("vision"),
-                        "model": model,
-                        "ocr_prompt": OCR_PROMPT,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "page": page_number,
-                        "total_pages": num_pages,
-                        "guard": guard_result.to_dict(),
-                    },
-                    f,
-                    indent=2,
+            # Safety net: a degenerate vision result the guard rejected (e.g. a
+            # repetition loop) can often be recovered by re-reading the page(s)
+            # with Tesseract. Only when the fallback is enabled, Tesseract is
+            # available, and the primary engine was not already Tesseract (which
+            # would just repeat the same read). The recovered text is re-checked
+            # by the same guard so a fallback cannot itself smuggle in a loop.
+            recovered_ok = False
+            if (
+                cfg("tesseract_fallback_on_failure")
+                and "tesseract" not in engine_used
+                and _tesseract.is_available()
+            ):
+                log.warning(
+                    "Vision OCR for %s was rejected by the repetition guard — "
+                    "falling back to Tesseract",
+                    path.name,
                 )
-            raise RuntimeError(f"OCR rejected for {path.name}: {'; '.join(guard_result.reasons)}")
+                recovered = _ocr_document_via_tesseract(
+                    path, page=page, is_pdf=is_pdf, orientation=orientation
+                )
+                recheck = _guard.check_no_repetition_loop(recovered)
+                if recovered.strip() and recheck.ok:
+                    extracted_text = recovered
+                    engine_used = "tesseract-fallback"
+                    guard_result = recheck
+                    recovered_ok = True
+
+            if not recovered_ok:
+                base_output_dir = Path(output_dir)
+                json_dir = base_output_dir / "raw_ocr" / "json"
+                json_dir.mkdir(parents=True, exist_ok=True)
+                base_name = stem or path.stem
+                json_path = json_dir / f"{base_name}.json"
+                json_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(json_path, "w", encoding="utf-8") as f:
+                    json.dump(
+                        {
+                            "source_file": str(path),
+                            "stage": "raw_ocr",
+                            "rejected_extracted_text": extracted_text,
+                            "engine": engine_used,
+                            "model": model,
+                            "ocr_prompt": OCR_PROMPT,
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "page": page_number,
+                            "total_pages": num_pages,
+                            "guard": guard_result.to_dict(),
+                        },
+                        f,
+                        indent=2,
+                    )
+                raise RuntimeError(
+                    f"OCR rejected for {path.name}: {'; '.join(guard_result.reasons)}"
+                )
 
     base_output_dir = Path(output_dir)
     text_dir = base_output_dir / "raw_ocr" / "text"
@@ -309,7 +423,7 @@ def perform(
         "source_file": str(path),
         "stage": "raw_ocr",
         "extracted_text": extracted_text,
-        "engine": backend_for("vision"),
+        "engine": engine_used,
         "model": model,
         "ocr_prompt": OCR_PROMPT,
         "timestamp": datetime.now(timezone.utc).isoformat(),

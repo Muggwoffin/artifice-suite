@@ -504,7 +504,8 @@ def test_config_get_shorthand():
 @patch("artifice_ocr.stages.ocr._pdf_to_page_images")
 def test_pdf_ocr_concatenates_pages(mock_pages, mock_ocr, tmp_path):
     mock_pages.return_value = [tmp_path / "p1.png", tmp_path / "p2.png"]
-    mock_ocr.side_effect = ["Text from page 1", "Text from page 2"]
+    # _ocr_single_image now returns (text, engine).
+    mock_ocr.side_effect = [("Text from page 1", "ollama"), ("Text from page 2", "ollama")]
 
     from artifice_ocr.stages import ocr
 
@@ -523,7 +524,7 @@ def test_pdf_ocr_concatenates_pages(mock_pages, mock_ocr, tmp_path):
 
 @patch("artifice_ocr.stages.ocr._ocr_single_image")
 def test_single_image_ocr_sets_total_pages_1(mock_ocr, tmp_path):
-    mock_ocr.return_value = "Single page text"
+    mock_ocr.return_value = ("Single page text", "ollama")
 
     from artifice_ocr.stages import ocr
 

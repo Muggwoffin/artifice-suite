@@ -20,6 +20,7 @@ const SettingsTab = (function () {
     document_type: "select",
     max_ocr_workers: "int", chunk_max_tokens: "int", context_size: "int",
     resume: "bool", confidence_enabled: "bool", preprocess_enabled: "bool", ollama_think: "bool", tropy_live_browse_enabled: "bool",
+    ocr_engine: "select", tesseract_lang: "text", tesseract_path: "text", tesseract_fallback_on_failure: "bool",
   };
 
   // Only Ollama honours a per-request context window. LM Studio fixes it when
@@ -125,6 +126,27 @@ const SettingsTab = (function () {
     updateDocTypeHint();
     updateConnectionVisibility();
     updateContextSizeState();
+    refreshTesseractStatus();
+  }
+
+  // Report whether the Tesseract binary is actually detected. A control that
+  // silently no-ops when the binary is missing is worse than none — so the UI
+  // says plainly whether it was found, and where.
+  async function refreshTesseractStatus() {
+    const elStatus = document.getElementById("tesseract-status");
+    if (!elStatus) return;
+    try {
+      const s = await api("GET", "/api/tesseract/status");
+      if (s.available) {
+        const ver = s.version ? ` — ${escapeHtml(s.version)}` : "";
+        elStatus.textContent = `Tesseract found${ver} (${escapeHtml(s.path || "on PATH")}).`;
+      } else {
+        elStatus.textContent =
+          "Tesseract not found. Install it and/or set its path below to use it as an engine or fallback.";
+      }
+    } catch (_) {
+      elStatus.textContent = "Could not check for Tesseract.";
+    }
   }
 
   function collect() {
