@@ -128,9 +128,71 @@ to build.
 
 ## Dependencies
 
-- **`rapidfuzz`** — new dependency (small, C-backed, permissive licence). Fine.
-- **Pillow** — already added (#84). Crop + in-memory buffer need nothing more.
-- **No new binary** — reuses the Tesseract binary #86 already detects.
+Every dependency is a real weight-and-packaging cost in the frozen (PyInstaller)
+build, and the dependency-audit gate keeps that honest — so this is grouped by
+value, not just listed.
+
+### Worth adding (high value, low cost)
+
+- **`rapidfuzz`** — the alignment/distance workhorse. Small, C-backed, permissive
+  licence.
+- **`difflib` (stdlib, zero cost)** — use *alongside* rapidfuzz, not instead.
+  `SequenceMatcher.get_matching_blocks()` anchors on high-confidence matching
+  runs first; rapidfuzz `editops` then diffs only the gaps. This anchoring is the
+  single biggest robustness win for the alignment problem, and it costs nothing.
+- **`unicodedata` (stdlib, zero cost)** — NFKD normalisation for the comparison
+  sequence, so German folding (Müller/Mueller, ß/ss, accents) flags *real*
+  divergences instead of umlaut noise.
+- **Pillow** — already added (#84). Crop + in-memory `BytesIO` buffer need nothing
+  more.
+
+### The one dependency that actually decides quality
+
+- **`opencv-python-headless`** — belongs to **pre-processing Phase 2** (deskew +
+  adaptive binarisation), which arbitration *depends on*: Tesseract's word boxes
+  are only as good as the image handed to it, and on degraded mimeographs OpenCV
+  is what makes deskew/threshold reliable. Use the **`-headless`** variant — it
+  drops the GUI/Qt deps that matter for a frozen, server-style app. Cost is real
+  (~40–60 MB frozen, occasional PyInstaller hook coaxing), so it is a deliberate
+  Phase 2 decision, not a casual add. `scikit-image` is the alternative but drags
+  in scipy — a heavier transitive tree; prefer headless OpenCV.
+
+### Situational (add only when the specific need appears)
+
+- **`markdown-it-py`** — only if the VLM emits **tables or nested structure** that
+  must be preserved. Its token stream carries source positions, so arbitrated
+  words splice into text spans without ever touching a table pipe or emphasis
+  marker, and the result can be re-parsed to confirm the Markdown still validates.
+  For mostly-paragraph output, regex span-tracking suffices — skip it.
+- **`pytesseract`** — optional convenience for the `image_to_data` (TSV + coords)
+  step in Phase A. The alternative — parsing `tesseract … tsv` stdout directly —
+  keeps binary discovery under `_tesseract.resolve_binary`'s single control and
+  avoids pytesseract's own path-hunting; prefer that, but pytesseract is a small,
+  reasonable dep if TSV parsing is unwelcome.
+
+### Dev / evaluation only (never shipped)
+
+- **`jiwer`** — CER/WER against a small hand-labelled sample, to *prove* the
+  arbitration improves accuracy rather than relocating errors. Keep it a
+  test/eval dependency, out of the runtime wheel.
+
+### Actively avoid
+
+- Heavy ML/layout stacks — `layoutparser`, `detectron2`, the `olmocr` toolkit
+  itself, `biopython` aligners. All torch-scale or worse; wrong for a local frozen
+  app. Since olmOCR runs **through Ollama**, call it via the existing backend, not
+  the `olmocr` package.
+
+### Architecture note (not a dependency)
+
+Route the crop queries through the existing `_backend` / model-harness layer, not
+a direct `import ollama`. That layer carries the endpoint policy and the
+openly-provenanced-model stance, and keeps the crop pass model-agnostic (any
+vision engine, not hard-wired to Ollama). No new dependency — just reuse.
+
+**Net:** `rapidfuzz` + stdlib `difflib`/`unicodedata` cover the whole diff/align
+core; `opencv-python-headless` is the one weighty add, and it is really a Phase 2
+pre-processing decision arbitration rides on; everything else is situational.
 
 ## Testing
 
