@@ -73,6 +73,70 @@ to build.
    **offline/batch** step, not interactive. Bound the concurrency to avoid
    thrashing VRAM.
 
+## Is it worth it? Measure first, and start minimal
+
+Honest counterweight to the ambition above — recorded here so the cheap path is
+on the record next to the elaborate one.
+
+**The full automated pipeline's hardest part coincides with its motivating
+case.** It works best when Tesseract is *decent* and the VLM occasionally invents
+a confident word — then the diff is real signal. On the worst degraded
+mimeographs, Tesseract's segmentation and coordinates are themselves unreliable,
+so the "deterministic referee" is weakest exactly where it is needed most, and
+the alignment produces noise rather than divergences. There is a real risk of
+building an elaborate machine that helps most on pages that were already fine.
+The riskiest, least-valuable part is **auto-reconciliation** — silently splicing
+machine edits into a transcription is precisely what a historian should distrust.
+
+### Measure before building (an afternoon, not a sprint)
+
+Run the current Tesseract + VLM on ~20 representative pages of the real corpus and
+count: **how often does the VLM hallucinate a high-entropy token (date,
+pseudonym, place) that Tesseract read correctly?** That single number decides the
+whole investment:
+
+- **~1 per several pages** → the minimal version below is more than enough; the
+  full pipeline is over-engineering.
+- **pervasive** → automating the *flagging* (diff/align) starts to pay off — but
+  as "flag for review", never as silent reconciliation.
+
+`jiwer` (dev-only) or manual checking answers this before any weeks are spent.
+
+### The minimal version (build this first)
+
+A **human-triggered crop re-query** in the correction/preview UI — ~15% of the
+work for ~80% of the value, and a better ethos fit because the tool shows its
+working and the human adjudicates:
+
+1. **Select-to-re-read.** In the preview/correction view, the historian selects a
+   distrusted word or drags a box over a region.
+2. **Crop + strict query.** The backend crops that region from the *pre-processed*
+   page image, sends it through `query_vlm_crop(bytes, STRICT_PROMPT)` — the same
+   context-free "transcribe only these pixels, output [ILLEGIBLE] if you cannot"
+   prompt — over the existing vision backend.
+3. **Propose, never replace.** Show the crop's reading beside the original; the
+   historian accepts or edits. Nothing is auto-written.
+4. **Provenance.** Record that the token was crop-arbitrated (and whether a human
+   accepted it).
+
+**Why it is cheap:** no alignment, no reconciliation, no `rapidfuzz`, no OpenCV
+required. It needs only the `query_vlm_crop` wrapper (a thin call over the
+existing vision path) and one UI selection hook. `get_tesseract_data` is optional
+— if present, snap the human's selection to the nearest Tesseract word box;
+otherwise the human's box is enough. It targets exactly the tokens that matter,
+because the human — who knows which date or name is load-bearing for a citation —
+chooses them.
+
+### Escalation ladder
+
+1. Ship the Tesseract engine + fallback (#86) — already recovers looped pages
+   cheaply.
+2. Measure the hallucination rate on real pages.
+3. Build the minimal human-triggered crop re-query above.
+4. **Only if the numbers justify it**, add automated *flagging* of divergences
+   (diff/align surfaced for review) — and even then, never silent
+   auto-reconciliation into the Markdown.
+
 ## What has to be built first
 
 - **Tesseract word data with coordinates.** The current `_tesseract.py` (#86)
