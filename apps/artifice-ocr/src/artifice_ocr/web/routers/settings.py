@@ -145,6 +145,7 @@ _CONFIG_KEYS = (
     "document_type",
     "max_ocr_workers",
     "chunk_max_tokens",
+    "context_size",
     "resume",
     "confidence_enabled",
     "ollama_think",

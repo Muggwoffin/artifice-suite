@@ -18,9 +18,60 @@ const SettingsTab = (function () {
     lm_studio_url: "text", ollama_url: "text", huggingface_token: "text",
     api_key: "text", api_base_url: "text",
     document_type: "select",
-    max_ocr_workers: "int", chunk_max_tokens: "int",
+    max_ocr_workers: "int", chunk_max_tokens: "int", context_size: "int",
     resume: "bool", confidence_enabled: "bool", ollama_think: "bool", tropy_live_browse_enabled: "bool",
   };
+
+  // Only Ollama honours a per-request context window. LM Studio fixes it when
+  // it *loads* a model and hosted APIs set it server-side, so on those backends
+  // the field is disabled and says where the limit really lives — a control
+  // that looks live and is ignored is worse than no control.
+  const CONTEXT_SIZE_HINTS = {
+    ollama: null,   // null = field stays enabled, default hint shown
+    lm_studio:
+      "LM Studio sets the context window when it loads a model, so this cannot " +
+      "be changed from here. Raise it in LM Studio, or run: " +
+      "lms load <model> --context-length 8192",
+    api_key:
+      "This backend sets its context window server-side. Choose a model with a " +
+      "larger context window instead.",
+    huggingface:
+      "This backend sets its context window server-side. Choose a model with a " +
+      "larger context window instead.",
+  };
+
+  const DEFAULT_CONTEXT_HINT =
+    "0 uses the model’s own default. Raise this if a page fails with " +
+    "“exceeds the available context size”.";
+
+  // The OCR stage is what overflows on a page image, so the *vision* backend
+  // decides whether this field can do anything — not cleanup or translate.
+  function updateContextSizeState() {
+    const input = document.getElementById("set-context_size");
+    const hint = document.getElementById("context-size-hint");
+    if (!input || !hint) return;
+
+    const backendSel = document.getElementById("set-ocr_backend");
+    const backend = backendSel ? backendSel.value : "";
+
+    // "auto" resolves at run time, so it cannot be pinned to one answer here.
+    if (!backend || backend === "auto") {
+      input.disabled = false;
+      hint.textContent =
+        DEFAULT_CONTEXT_HINT +
+        " With OCR backend set to Auto, this applies only when Ollama is chosen.";
+      return;
+    }
+
+    const hintText = CONTEXT_SIZE_HINTS[backend];
+    if (hintText) {
+      input.disabled = true;
+      hint.textContent = hintText;
+    } else {
+      input.disabled = false;
+      hint.textContent = DEFAULT_CONTEXT_HINT;
+    }
+  }
 
   // Connection fields are only meaningful — and only visible — when a backend
   // that uses them is selected.  Mirrors the server's URL→backend mapping plus
@@ -73,6 +124,7 @@ const SettingsTab = (function () {
     renderApprovedFolders();
     updateDocTypeHint();
     updateConnectionVisibility();
+    updateContextSizeState();
   }
 
   function collect() {
@@ -297,6 +349,11 @@ const SettingsTab = (function () {
   ["ocr_backend", "cleanup_backend", "translate_backend"].forEach(key => {
     el(key).addEventListener("change", updateConnectionVisibility);
   });
+
+  // Context size follows the *vision* backend specifically: the OCR stage is
+  // what overflows on a page image, and it is the only stage whose backend
+  // decides whether a per-request context window is honoured at all.
+  el("ocr_backend").addEventListener("change", updateContextSizeState);
 
   docTypeSelect.addEventListener("change", updateDocTypeHint);
   document.getElementById("btn-settings-save").onclick = save;

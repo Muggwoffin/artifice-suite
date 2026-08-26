@@ -5,6 +5,7 @@
 """Unified backend abstraction for LLMs (Ollama, LM Studio, Hugging Face)."""
 
 import logging
+import re
 from typing import Any
 
 import ollama
@@ -78,7 +79,84 @@ def _provider_404(exc: Exception, *, base_url: str, model: str) -> RuntimeError:
     )
 
 
-def _guarded_chat(call, *, base_url: str, model: str) -> Any:
+_CONTEXT_OVERFLOW_MARKERS = (
+    "exceed_context_size_error",
+    "exceeds the available context size",
+    "context length exceeded",
+    "maximum context length",
+)
+
+# "request (4107 tokens) exceeds the available context size (4096 tokens)"
+_CONTEXT_NUMBERS = re.compile(
+    r"\((?P<prompt>\d+)\s+tokens?\).{0,40}?\((?P<ctx>\d+)\s+tokens?\)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _configured_context_size() -> int:
+    """The user's chosen context window in tokens, or 0 to leave it alone.
+
+    Anything non-numeric or non-positive reads as 0 rather than raising: a
+    malformed setting must not stop a run, it must fall back to the previous
+    behaviour of not sending ``num_ctx`` at all.
+    """
+    try:
+        value = int(config.get("context_size") or 0)
+    except (TypeError, ValueError):
+        return 0
+    return value if value > 0 else 0
+
+
+def _context_overflow_hint(backend_name: str) -> str:
+    """Where the user actually changes the context window, per backend.
+
+    Naming the wrong place is worse than naming none: LM Studio fixes context
+    when it *loads* a model, so telling that user to edit an app setting sends
+    them to a control that cannot help them.
+    """
+    if backend_name in ("ollama", "ollama_openai"):
+        return (
+            "Raise 'Context size' in Settings (Ollama honours it per request), "
+            "or pick a model with a larger context window."
+        )
+    if backend_name == "lm_studio":
+        return (
+            "LM Studio fixes the context window when it loads a model, so this "
+            "cannot be changed from Artifice. Raise it in LM Studio's model "
+            "settings, or run: lms load <model> --context-length 8192"
+        )
+    return (
+        "This backend sets its context window server-side. Use a model with a "
+        "larger context window, or a backend you control."
+    )
+
+
+def _context_overflow(exc: BaseException, *, backend_name: str) -> Exception:
+    """Turn a provider context-overflow error into an actionable one.
+
+    The raw error arrives as a JSON string nested inside an OpenAI SDK error,
+    which renders as a wall of escaped braces that tells a historian nothing.
+    The two token counts are the useful part; keep those, drop the rest, and
+    say where the limit is actually configured.
+    """
+    raw = str(exc)
+    match = _CONTEXT_NUMBERS.search(raw)
+    if match:
+        detail = (
+            f"The page needs {match.group('prompt')} tokens but the model's "
+            f"context window is {match.group('ctx')}."
+        )
+    else:
+        detail = "The request was larger than the model's context window."
+    return RuntimeError(f"{detail} {_context_overflow_hint(backend_name)}")
+
+
+def _is_context_overflow(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return any(marker in text for marker in _CONTEXT_OVERFLOW_MARKERS)
+
+
+def _guarded_chat(call, *, base_url: str, model: str, backend_name: str = "") -> Any:
     """Run *call*, translating a provider 404 into a self-describing error."""
     try:
         return call()
@@ -87,6 +165,12 @@ def _guarded_chat(call, *, base_url: str, model: str) -> Any:
     except ollama.ResponseError as exc:
         if getattr(exc, "status_code", None) == 404:
             raise _provider_404(exc, base_url=base_url, model=model) from exc
+        if _is_context_overflow(exc):
+            raise _context_overflow(exc, backend_name=backend_name) from exc
+        raise
+    except Exception as exc:
+        if _is_context_overflow(exc):
+            raise _context_overflow(exc, backend_name=backend_name) from exc
         raise
 
 
@@ -118,16 +202,32 @@ class OllamaBackend:
         options: dict[str, Any] = {"temperature": temperature}
         if num_predict is not None:
             options["num_predict"] = num_predict
+        # 0 means "leave it to the model's own default", which is what happened
+        # before this setting existed. Only send num_ctx when the user has
+        # actually chosen a value.
+        context_size = _configured_context_size()
+        if context_size:
+            options["num_ctx"] = context_size
 
         kwargs: dict[str, Any] = {"model": model, "messages": messages, "options": options}
         if think is not None:
             kwargs["think"] = think
 
         if think is None:
-            return _guarded_chat(lambda: client.chat(**kwargs), base_url=normalised, model=model)
+            return _guarded_chat(
+                lambda: client.chat(**kwargs),
+                base_url=normalised,
+                model=model,
+                backend_name="ollama",
+            )
 
         try:
-            return _guarded_chat(lambda: client.chat(**kwargs), base_url=normalised, model=model)
+            return _guarded_chat(
+                lambda: client.chat(**kwargs),
+                base_url=normalised,
+                model=model,
+                backend_name="ollama",
+            )
         except Exception as exc:
             if _is_think_unsupported(exc):
                 logger.debug(
@@ -176,15 +276,30 @@ class OllamaOpenAIBackend:
         if num_predict is not None:
             kwargs["max_tokens"] = num_predict
 
+        # This is the backend OCR uses for *every* provider (see
+        # stages/ocr.py — images go as image_url content blocks, which the
+        # native API does not take), so it is the path a page image overflows.
+        #
+        # `/v1` has no standard field for the context window, so num_ctx rides
+        # in `extra_body`, which the OpenAI SDK passes through untouched.
+        # Ollama reads `options` from the request body; a server that does not
+        # will ignore an unknown key rather than fail. Only sent when the user
+        # set a value, so the default path is byte-identical to before.
+        context_size = _configured_context_size()
+        if context_size:
+            kwargs["extra_body"] = {"options": {"num_ctx": context_size}}
+
         resp = _guarded_chat(
             lambda: client.chat.completions.create(
                 model=model,
+                backend_name="ollama_openai",
                 messages=messages,
                 temperature=temperature,
                 **kwargs,
             ),
             base_url=base_url,
             model=model,
+            backend_name="ollama_openai",
         )
         content = resp.choices[0].message.content or ""
         return _SimpleResponse(content)
@@ -228,12 +343,14 @@ class LMStudioBackend:
         resp = _guarded_chat(
             lambda: client.chat.completions.create(
                 model=model,
+                backend_name="lm_studio",
                 messages=messages,
                 temperature=temperature,
                 **kwargs,
             ),
             base_url=base_url,
             model=model,
+            backend_name="lm_studio",
         )
         content = resp.choices[0].message.content or ""
         return _SimpleResponse(content)
@@ -277,6 +394,7 @@ class HuggingFaceBackend:
 
         resp = client.chat_completion(
             model=model,
+            backend_name="huggingface",
             messages=messages,
             temperature=temperature,
             **kwargs,
@@ -336,12 +454,14 @@ class ApiKeyBackend:
         resp = _guarded_chat(
             lambda: client.chat.completions.create(
                 model=model,
+                backend_name="api_key",
                 messages=messages,
                 temperature=temperature,
                 **kwargs,
             ),
             base_url=base_url,
             model=model,
+            backend_name="api_key",
         )
         content = resp.choices[0].message.content or ""
         return _SimpleResponse(content)
