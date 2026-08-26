@@ -378,6 +378,8 @@
           <label>Parallel OCR readers <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
           <label>Resume (skip existing outputs) <input type="checkbox" id="set-resume"></label>
           <label>Enable confidence scoring <input type="checkbox" id="set-confidence_enabled"></label>
+          <label>Enhance faint or bright scans <input type="checkbox" id="set-preprocess_enabled"></label>
+          <p class="dim" style="margin:-0.2rem 0 0.3rem;">Deterministic clean-up (greyscale, even out lighting, stretch contrast) before OCR. Helps washed-out or over-exposed photos; leave off for clean scans.</p>
           <label>Enable Tropy project browsing <input type="checkbox" id="set-tropy_live_browse_enabled"></label>
           <details style="margin-top:0.5rem;">
             <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>

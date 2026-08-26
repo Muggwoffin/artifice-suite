@@ -148,6 +148,7 @@ _CONFIG_KEYS = (
     "context_size",
     "resume",
     "confidence_enabled",
+    "preprocess_enabled",
     "ollama_think",
     "tropy_last_path",
     "tropy_last_export_path",
