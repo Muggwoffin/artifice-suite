@@ -17,6 +17,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPExcepti
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
+from shared_ui.path_validation import PathValidationError, sanitise_path_component
+from shared_ui.uploads import UploadTooLarge, read_capped
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,41 +107,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["transcription"])
 
 
-async def _read_capped(upload: UploadFile, limit: int) -> bytes:
-    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
-    exceeded **during** the read so an oversized body is never fully resident.
-    """
-    chunks: list[bytes] = []
-    total = 0
-    while chunk := await upload.read(64 * 1024):
-        total += len(chunk)
-        if total > limit:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
-            )
-        chunks.append(chunk)
-    return b"".join(chunks)
-
-
 # ── Path safety ──────────────────────────────────────────────────────────────
-
-
-def _sanitise_path_component(raw: str) -> str:
-    """Return a safe single-component filename from *raw*.
-
-    Rejects components that are empty, ``"."``, or ``".."`` after
-    stripping — ``Path("..").name`` returns ``".."``, so ``.name``
-    alone is not sufficient.
-
-    Backslashes are treated as separators (Windows path support) so that
-    ``..\\\\..\\\\windows\\\\system32`` collapses to ``system32`` even on
-    POSIX where ``Path.name`` would return the whole string.
-    """
-    cleaned = Path(raw.replace("\\", "/")).name
-    if cleaned in ("", ".", ".."):
-        raise HTTPException(400, f"Invalid path component: {raw!r}")
-    return cleaned
 
 
 def _assert_contained(path: Path, container: Path) -> None:
@@ -873,7 +841,10 @@ async def create_transcription(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> JobCreated:
-    contents = await _read_capped(file, settings.max_upload_size)
+    try:
+        contents = await read_capped(file, settings.max_upload_size)
+    except UploadTooLarge as e:
+        raise HTTPException(status_code=413, detail=e.public_message) from e
 
     job = TranscriptionJob(
         filename=file.filename or "unknown",
@@ -890,7 +861,10 @@ async def create_transcription(
     db.add(job)
     await db.commit()
 
-    safe_filename = _sanitise_path_component(file.filename or "unknown")
+    try:
+        safe_filename = sanitise_path_component(file.filename or "unknown")
+    except PathValidationError as e:
+        raise HTTPException(status_code=400, detail=e.public_message) from e
     audio_path = settings.upload_path / f"{job.id}_{safe_filename}"
     _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
@@ -1470,10 +1444,19 @@ async def enroll_speaker(
 ) -> SpeakerEnrollResponse:
     """Enroll a known speaker by uploading a short audio clip of their voice."""
 
-    contents = await _read_capped(file, settings.max_upload_size)
+    try:
+        contents = await read_capped(file, settings.max_upload_size)
+    except UploadTooLarge as e:
+        raise HTTPException(status_code=413, detail=e.public_message) from e
 
-    safe_name = _sanitise_path_component(name)
-    safe_filename = _sanitise_path_component(file.filename or "unknown")
+    try:
+        safe_name = sanitise_path_component(name, field_name="name")
+    except PathValidationError as e:
+        raise HTTPException(status_code=400, detail=e.public_message) from e
+    try:
+        safe_filename = sanitise_path_component(file.filename or "unknown")
+    except PathValidationError as e:
+        raise HTTPException(status_code=400, detail=e.public_message) from e
     audio_path = settings.upload_path / f"enroll_{safe_name}_{safe_filename}"
     _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
