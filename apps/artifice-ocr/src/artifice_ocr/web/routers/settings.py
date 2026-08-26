@@ -56,6 +56,26 @@ def _validate_approved_folder(entry: Any) -> str:
         )
     try:
         normalised = normalise_path(entry, "approved_folders")
+        # CodeQL flags this as py/path-injection, and the taint is real: the
+        # value arrives in a request body and becomes an allowed root. It is
+        # suppressed rather than sanitised because the usual sanitiser — check
+        # the path resolves inside a known-safe root — would defeat the entire
+        # feature. An approved folder exists *to be* a new root, for archives
+        # on external drives and network shares that are deliberately outside
+        # home, tempdir and cwd. Containing it to those roots would leave it
+        # able to grant only what is already granted.
+        #
+        # What stands in for containment: the native OS folder dialog is the
+        # consent step, the entry must resolve to an existing directory, it is
+        # persisted in canonical form, and a drive or filesystem root is
+        # refused outright.
+        #
+        # The stronger fix is to stop accepting the path from the request at
+        # all — /api/native/pick-folder already runs the dialog server-side, so
+        # the server could record what it returned and require membership. That
+        # removes the taint instead of suppressing it, at the cost of the
+        # typed-path fallback used when the native picker is unavailable.
+        # codeql[py/path-injection]
         resolved = Path(normalised).expanduser().resolve(strict=False)
     except PathValidationError as e:
         raise HTTPException(status_code=400, detail=e.public_message) from e
