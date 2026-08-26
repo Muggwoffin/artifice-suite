@@ -75,7 +75,12 @@ def _validate_approved_folder(entry: Any) -> str:
         # the server could record what it returned and require membership. That
         # removes the taint instead of suppressing it, at the cost of the
         # typed-path fallback used when the native picker is unavailable.
-        # codeql[py/path-injection]
+        #
+        # The alert is dismissed as "won't fix" in GitHub code scanning, which
+        # is the only mechanism that works: a `# codeql[py/path-injection]`
+        # comment here is inert. That was tried on this line and the alert
+        # simply moved down with it. Do not re-add one — it reads as a working
+        # suppression and does nothing.
         resolved = Path(normalised).expanduser().resolve(strict=False)
     except PathValidationError as e:
         raise HTTPException(status_code=400, detail=e.public_message) from e
