@@ -52,12 +52,14 @@ from artifice_draft.style_guides.base import StyleGuide
 import importlib.resources
 import shared_ui
 from shared_ui.handoff import cleanup_expired, write_discovery
+from shared_ui.path_validation import PathValidationError, sanitise_path_component
 from shared_ui.server_bootstrap import (
     ensure_std_streams,
     free_port,
     start_server_thread,
     wait_for_server,
 )
+from shared_ui.uploads import UploadTooLarge, read_capped
 
 # Resolved through importlib.resources, NOT a __file__-relative path.  This
 # app is distributed as a frozen .exe, where __file__ points inside a
@@ -70,30 +72,13 @@ STATIC_DIR = importlib.resources.files("artifice_draft.web") / "static"
 _MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024
 
 
-async def _read_capped(upload: UploadFile, limit: int) -> bytes:
-    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
-    exceeded **during** the read so an oversized body is never fully resident.
-    """
-    chunks: list[bytes] = []
-    total = 0
-    while chunk := await upload.read(64 * 1024):
-        total += len(chunk)
-        if total > limit:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
-            )
-        chunks.append(chunk)
-    return b"".join(chunks)
-
-
 def _content_length_exceeds(request: Request, limit: int) -> bool:
     """Return True if the Content-Length header exceeds *limit* bytes.
 
     A fast-path early rejection — an honest client that declares a
     content-length above the limit is refused without the body ever being
     read.  If the header is absent or unparseable the check passes, and the
-    streaming cap in ``_read_capped`` becomes the guarantee.
+    streaming cap in ``read_capped`` becomes the guarantee.
     """
     raw = request.headers.get("content-length")
     if raw is None:
@@ -279,7 +264,10 @@ async def preview_guide_file(request: Request, file: UploadFile = File(...)) -> 
 
     import tempfile
 
-    data = await _read_capped(file, _MAX_UPLOAD_BYTES)
+    try:
+        data = await read_capped(file, _MAX_UPLOAD_BYTES)
+    except UploadTooLarge as e:
+        raise HTTPException(status_code=413, detail=e.public_message) from e
     suffix = ".docx" if lower.endswith(".docx") else ".pdf"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(data)
@@ -328,7 +316,13 @@ def delete_guide(name: str) -> dict:
 
 @app.post("/api/upload")
 async def upload(request: Request, file: UploadFile = File(...)) -> dict:
-    if not (file.filename or "").lower().endswith(".docx"):
+    raw_name = file.filename or ""
+    try:
+        safe_name = sanitise_path_component(raw_name)
+    except PathValidationError as e:
+        raise HTTPException(status_code=400, detail=e.public_message) from e
+
+    if not safe_name.lower().endswith(".docx"):
         raise HTTPException(status_code=400, detail="Only .docx files are supported")
 
     if _content_length_exceeds(request, _MAX_UPLOAD_BYTES):
@@ -337,9 +331,13 @@ async def upload(request: Request, file: UploadFile = File(...)) -> dict:
             detail=f"File exceeds 50 MB upload limit",
         )
 
-    data = await _read_capped(file, _MAX_UPLOAD_BYTES)
     try:
-        doc = state.add_document(file.filename, data)
+        data = await read_capped(file, _MAX_UPLOAD_BYTES)
+    except UploadTooLarge as e:
+        raise HTTPException(status_code=413, detail=e.public_message) from e
+
+    try:
+        doc = state.add_document(safe_name, data)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -488,9 +486,7 @@ def tropy_notes_export(req: TropyNotesExportRequest) -> dict:
     except NoteImportError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception:
-        raise HTTPException(
-            status_code=500, detail="Could not build note export"
-        ) from None
+        raise HTTPException(status_code=500, detail="Could not build note export") from None
 
     return {"jsonld": content, "note_count": len(req.notes)}
 

@@ -16,7 +16,6 @@ from unittest.mock import patch
 
 import pytest
 from docx import Document
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 import artifice_draft.web.runtime as runtime
@@ -101,6 +100,56 @@ def test_upload_parses_paragraphs(client, docx_bytes):
     assert body["paragraph_count"] == 2
     assert body["stage"] == "uploaded"
     assert body["doc_id"]
+
+
+def test_upload_normalises_windows_backslash_filename(client, docx_bytes):
+    """A Windows-style path supplied to a POSIX server must be reduced to its
+    base name — ``Path("..\\..\\evil.docx").name`` returns the whole string on
+    POSIX, so ``sanitise_path_component`` normalises the backslashes first."""
+    res = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                r"..\..\evil.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
+    assert res.status_code == 200
+    assert res.json()["filename"] == "evil.docx"
+
+
+@pytest.mark.parametrize("bad_name", [".", ".."])
+def test_upload_rejects_dot_and_dotdot_filenames(client, docx_bytes, bad_name):
+    """A filename of ``"."`` or ``".."`` must be a 400, not a 500 from
+    ``IsADirectoryError``."""
+    res = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                bad_name,
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
+    assert res.status_code == 400
+
+
+def test_upload_stores_reported_name(client, docx_bytes):
+    res = client.post(
+        "/api/upload",
+        files={
+            "file": (
+                "report.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+        },
+    )
+    assert res.status_code == 200
+    assert res.json()["filename"] == "report.docx"
 
 
 # ------------------------------------------------------------------- settings
@@ -352,15 +401,14 @@ def test_style_guide_preview_rejects_oversized(client):
 # ------------------------------------------------------ streaming cap (bypass)
 
 
-def test_read_capped_raises_during_read():
-    """_read_capped raises HTTP 413 once the limit is exceeded mid-stream,
-    before the full body is gathered."""
+def test_streaming_cap_raises_upload_too_large():
+    """The shared ``read_capped`` raises ``UploadTooLarge`` once the limit is
+    exceeded mid-stream, before the full body is gathered."""
     import asyncio
-    from artifice_draft.web.server import _read_capped
+
+    from shared_ui.uploads import UploadTooLarge, read_capped
 
     class _FakeUpload:
-        filename = "test.docx"
-
         def __init__(self, total: int):
             self._remain = total
 
@@ -371,14 +419,13 @@ def test_read_capped_raises_during_read():
             self._remain -= n
             return b"x" * n
 
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(_read_capped(_FakeUpload(10_000), 10))
-    assert exc_info.value.status_code == 413
+    with pytest.raises(UploadTooLarge):
+        asyncio.run(read_capped(_FakeUpload(10_000), 10))
 
 
 def test_upload_streaming_cap_catches_what_content_length_misses(client, monkeypatch):
     """When the Content-Length check passes (header absent), the streaming
-    cap in _read_capped is still enforced and the upload is refused.
+    cap in ``read_capped`` is still enforced and the upload is refused.
 
     The existing ``test_upload_rejects_oversized_content_length`` proves the
     Content-Length fast path works for honest clients.  This test proves the

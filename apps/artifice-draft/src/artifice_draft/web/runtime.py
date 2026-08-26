@@ -305,6 +305,13 @@ class RunState:
         self._lock = threading.Lock()
 
     def add_document(self, filename: str, data: bytes) -> DocState:
+        """Store an uploaded document under *filename* and parse it.
+
+        *filename* arrives pre-sanitised by the web layer (a single path
+        component via ``shared_ui.path_validation.sanitise_path_component``),
+        so ``Path(...).name`` here is a defense-in-depth no-op rather than the
+        primary traversal guard.
+        """
         doc_id = uuid.uuid4().hex[:12]
         doc_dir = _WORK_DIR / doc_id
         doc_dir.mkdir(parents=True, exist_ok=True)
