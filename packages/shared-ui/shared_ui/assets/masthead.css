@@ -231,3 +231,34 @@ body {
   display: block;
   pointer-events: none;
 }
+
+/* Bottom-right resize grip for the frameless native window. Hidden in a normal
+ * browser; revealed (like the window controls) once pywebviewready fires and
+ * window-controls.js adds .pywebview-active to <html> and injects the element.
+ * Drives WindowApi.resize() — see window-controls.js. */
+.window-resize-grip {
+  display: none;
+}
+
+.pywebview-active .window-resize-grip {
+  display: block;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 1rem;
+  height: 1rem;
+  cursor: nwse-resize;
+  z-index: 900; /* above app chrome; below full-screen modal backdrops */
+  opacity: 0.45;
+  /* Two diagonal ink strokes — a conventional grip, drawn from a token colour
+   * rather than a hardcoded one. */
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 3px,
+    var(--ink-faint) 3px 4px
+  );
+}
+
+.window-resize-grip:hover {
+  opacity: 0.85;
+}

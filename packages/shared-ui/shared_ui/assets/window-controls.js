@@ -49,6 +49,69 @@
     return false;
   }
 
+  /* The native window is frameless (see shared_ui/window.py) so the OS resize
+   * border is gone; `resizable=True` alone does not give a frameless WinForms/
+   * WebView2 window draggable edges. Re-implement resizing with a bottom-right
+   * grip that drives the exposed WindowApi.resize(width, height). Anchored
+   * top-left (which is all resize() offers), so only the right/bottom edges
+   * move — the common case. Injected here, not in markup, so every app that
+   * loads this script gets it without per-app template changes. */
+  function installResizeGrip() {
+    if (!document.body || document.getElementById("windowResizeGrip")) return;
+
+    var grip = document.createElement("div");
+    grip.id = "windowResizeGrip";
+    grip.className = "window-resize-grip pywebview-drag-region-exclude";
+    grip.setAttribute("aria-hidden", "true");
+    document.body.appendChild(grip);
+
+    var dragging = false;
+    var startX = 0, startY = 0, startW = 0, startH = 0, lastW = 0, lastH = 0;
+    var frame = null;
+
+    function apiResize() {
+      frame = null;
+      if (
+        window.pywebview && window.pywebview.api &&
+        typeof window.pywebview.api.resize === "function"
+      ) {
+        window.pywebview.api.resize(Math.round(lastW), Math.round(lastH));
+      }
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      // min_size in window.py is (640, 480); keep the JS floor in step.
+      lastW = Math.max(640, startW + (e.screenX - startX));
+      lastH = Math.max(480, startH + (e.screenY - startY));
+      e.preventDefault();
+      if (frame === null) frame = window.requestAnimationFrame(apiResize);
+    }
+
+    function onUp(e) {
+      dragging = false;
+      if (frame !== null) { window.cancelAnimationFrame(frame); frame = null; }
+      try { grip.releasePointerCapture(e.pointerId); } catch (err) {}
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerup", onUp, true);
+    }
+
+    grip.addEventListener("pointerdown", function (e) {
+      dragging = true;
+      startX = e.screenX;
+      startY = e.screenY;
+      startW = window.innerWidth;   // frameless: inner size == window size
+      startH = window.innerHeight;
+      lastW = startW;
+      lastH = startH;
+      try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+      window.addEventListener("pointermove", onMove, true);
+      window.addEventListener("pointerup", onUp, true);
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
+
   function onPywebviewReady() {
     var root = document.documentElement;
     if (root) {
@@ -57,6 +120,8 @@
         root.className = root.className + " pywebview-active";
       }
     }
+
+    installResizeGrip();
 
     function stopDrag(e) {
       if (e && typeof e.stopPropagation === "function") {
