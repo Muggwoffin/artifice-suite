@@ -35,7 +35,8 @@ is required anywhere.
 
 ### Install from PyPI (primary)
 
-All four apps are published at `0.1.0`. Install one or more with:
+All four apps are published at `0.3.0` (the Hub ships frozen only, never to
+PyPI). Install one or more with:
 
 ```bash
 uv tool install "artifice-ocr[web]"              # OCR pipeline
