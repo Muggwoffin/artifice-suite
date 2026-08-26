@@ -1211,6 +1211,67 @@ def test_tropy_export_history_requires_item_node(client, tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+# tropy writable items — QueueState.tropy_writable_items selector
+# --------------------------------------------------------------------------- #
+
+
+def test_tropy_writable_items_selects_items_with_photo_id(client):
+    """An item carrying a numeric ``photo_id`` is writable back to Tropy."""
+    from artifice_ocr.jobs import JobItem
+
+    writable = JobItem(path="with-id.png", source={"photo_id": 11})
+    runtime.state.add_items([writable])
+
+    assert runtime.state.tropy_writable_items(None) == [writable]
+
+
+def test_tropy_writable_items_skips_items_without_photo_id(client):
+    """An item with no ``photo_id`` at all is not writable."""
+    from artifice_ocr.jobs import JobItem
+
+    plain = JobItem(path="plain.png")
+    runtime.state.add_items([plain])
+
+    assert runtime.state.tropy_writable_items(None) == []
+
+
+def test_tropy_writable_items_skips_explicit_none_photo_id(client):
+    """An item whose ``photo_id`` is explicitly ``None`` is not writable."""
+    from artifice_ocr.jobs import JobItem
+
+    nulled = JobItem(path="nulled.png", source={"photo_id": None})
+    runtime.state.add_items([nulled])
+
+    assert runtime.state.tropy_writable_items(None) == []
+
+
+def test_tropy_writable_items_is_independent_of_origin(client):
+    """Selection keys on ``photo_id``, not ``origin``.
+
+    An item with ``origin == "tropy-jsonld"`` and a ``photo_id`` is still
+    selected — the filter is on the id, not the origin.
+    """
+    from artifice_ocr.jobs import JobItem
+
+    jsonld = JobItem(path="jsonld.png", source={"origin": "tropy-jsonld", "photo_id": 5})
+    runtime.state.add_items([jsonld])
+
+    assert runtime.state.tropy_writable_items(None) == [jsonld]
+
+
+def test_tropy_writable_items_none_item_ids_considers_whole_queue(client):
+    """``item_ids=None`` considers the whole queue, not a subset."""
+    from artifice_ocr.jobs import JobItem
+
+    a = JobItem(path="a.png", source={"photo_id": 1})
+    b = JobItem(path="b.png")
+    c = JobItem(path="c.png", source={"photo_id": 2})
+    runtime.state.add_items([a, b, c])
+
+    assert runtime.state.tropy_writable_items(None) == [a, c]
+
+
+# --------------------------------------------------------------------------- #
 # preview (in-memory queue item text)
 # --------------------------------------------------------------------------- #
 

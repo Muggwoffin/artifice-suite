@@ -366,6 +366,20 @@ class RunState:
             i for i in pool if i is not None and (i.source or {}).get("origin") == "tropy-jsonld"
         ]
 
+    def tropy_writable_items(self, item_ids: list[str] | None) -> list[JobItem]:
+        """Queue items that can be written back to Tropy: those carrying a
+        numeric Tropy photo id.
+
+        Deliberately filters on ``photo_id`` presence rather than on ``origin``.
+        That is exactly what ``tropy_write.entries_from_items`` requires, so this
+        states its own contract instead of encoding it as a proxy. Today only
+        live-browse items (``origin == "tropy-live"``) carry one — the JSON-LD
+        manifest hardcodes ``photo_id: null`` — but if that ever changes this
+        keeps working.
+        """
+        pool = [self.get(i) for i in item_ids] if item_ids is not None else list(self.items)
+        return [i for i in pool if i is not None and (i.source or {}).get("photo_id") is not None]
+
     # --------------------------------------------------------------- running
     def start_run(self, *, stages: set[str], output_dir: str, force: bool) -> queue.Queue:
         if self.runner is not None and self.runner.is_running:
