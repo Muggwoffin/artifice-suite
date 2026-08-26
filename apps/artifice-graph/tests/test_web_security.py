@@ -14,7 +14,6 @@ from unittest.mock import patch
 import pytest
 from artifice_graph.web.server import (
     _MAX_UPLOAD_BYTES,
-    _read_capped,
     _validate_base_url,
     _validate_directory,
 )
@@ -286,33 +285,6 @@ def test_accepts_temp_outside_tmp_and_home(monkeypatch):
             d.rmdir()
 
 
-# --------------------------------------------------------------------------- #
-# Streaming upload cap — _read_capped
-# --------------------------------------------------------------------------- #
-
-
-def test_read_capped_raises_during_read():
-    """_read_capped raises HTTP 413 once the limit is exceeded mid-stream,
-    before the full body is gathered."""
-
-    class _FakeUpload:
-        filename = "test.txt"
-
-        def __init__(self, total: int):
-            self._remain = total
-
-        async def read(self, size: int = -1) -> bytes:
-            if self._remain <= 0:
-                return b""
-            n = min(size if size > 0 else 4096, 4096, self._remain)
-            self._remain -= n
-            return b"x" * n
-
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(_read_capped(_FakeUpload(10_000), 10))
-    assert exc_info.value.status_code == 413
-
-
 def test_upload_oversized_rejected_per_file_in_batch(monkeypatch, tmp_path):
     """An oversized file is rejected as a per-entry status/reason, not a 413
     that kills the whole batch — per the docstring contract at
@@ -356,6 +328,33 @@ def test_upload_oversized_rejected_per_file_in_batch(monkeypatch, tmp_path):
     assert uploaded[1]["filename"] == "big.txt"
     assert uploaded[2]["status"] == "ok"
     assert uploaded[2]["filename"] == "more.txt"
+
+
+def test_upload_bad_filename_raises_400(monkeypatch, tmp_path):
+    """A crafted filename (``.`` or ``..``) is refused with HTTP 400.
+
+    Filename sanitisation is delegated to ``shared_ui.path_validation``; this
+    test verifies the web layer translates ``PathValidationError`` back into
+    the HTTP 400 the route has always returned for a malformed filename.
+    """
+    from artifice_graph.config import PipelineConfig
+    from artifice_graph.web import server as server_mod
+
+    cfg = PipelineConfig()
+    cfg.ingestion.input_dir = str(tmp_path / "input")
+    monkeypatch.setattr(server_mod, "load_config", lambda: cfg)
+
+    class _FakeUpload:
+        def __init__(self, filename: str):
+            self.filename = filename
+
+        async def read(self, size: int = -1) -> bytes:
+            return b""
+
+    for bad in ("..", "."):
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(server_mod.api_upload_files([_FakeUpload(bad)]))
+        assert exc_info.value.status_code == 400
 
 
 # -- Nominatim lookup gating (F6) --------------------------------------------

@@ -11,7 +11,6 @@ from pathlib import Path
 
 import httpx
 import pytest
-from fastapi import HTTPException
 from pytest_httpx import HTTPXMock
 
 from artifice_transcribe.db.models import JobStatus, SpeakerMapping, TranscriptionJob
@@ -179,9 +178,7 @@ async def test_transcribe_traversal_sanitisation(
 @pytest.mark.skipif(
     not _ASR_AVAILABLE, reason="ASR stack not installed (pyannote.audio unavailable)"
 )
-async def test_enroll_traversal_sanitisation(
-    api, name, fname, expected_status, description
-):
+async def test_enroll_traversal_sanitisation(api, name, fname, expected_status, description):
     # Prevent the diarization model download (needs HF token) from
     # interfering with the sanitisation test.
     from unittest.mock import MagicMock, patch
@@ -233,9 +230,7 @@ async def test_transcribe_sanitised_filename_written_inside_upload_dir(api):
 
 async def test_enroll_rejects_oversized_upload(api, monkeypatch):
     """The enrollment endpoint must enforce the same max_upload_size as /transcribe."""
-    monkeypatch.setattr(
-        "artifice_transcribe.api.v1.routes.settings.max_upload_size", 10
-    )
+    monkeypatch.setattr("artifice_transcribe.api.v1.routes.settings.max_upload_size", 10)
     resp = await api.client.post(
         "/api/v1/speakers/enroll",
         data={"name": "speaker"},
@@ -247,9 +242,7 @@ async def test_enroll_rejects_oversized_upload(api, monkeypatch):
 
 async def test_transcribe_rejects_oversized_upload(api, monkeypatch):
     """The /transcribe endpoint must reject uploads larger than max_upload_size."""
-    monkeypatch.setattr(
-        "artifice_transcribe.api.v1.routes.settings.max_upload_size", 10
-    )
+    monkeypatch.setattr("artifice_transcribe.api.v1.routes.settings.max_upload_size", 10)
     resp = await api.client.post(
         "/api/v1/transcribe",
         files={"file": ("interview.wav", b"x" * 11)},
@@ -262,19 +255,22 @@ async def test_transcribe_rejects_oversized_upload(api, monkeypatch):
 
 
 def test_read_capped_raises_during_read():
-    """_read_capped raises HTTP 413 once the limit is exceeded mid-stream,
-    before the full body is gathered.
+    """``read_capped`` raises ``UploadTooLarge`` once the limit is exceeded
+    mid-stream, before the full body is gathered.
 
-    This is a unit test on the helper; the endpoint-level tests above
+    This is a unit test on the shared helper; the endpoint-level tests above
     (``test_transcribe_rejects_oversized_upload`` and
-    ``test_enroll_rejects_oversized_upload``) prove the routes use it.
+    ``test_enroll_rejects_oversized_upload``) prove the routes translate it
+    into HTTP 413.
     """
-    from artifice_transcribe.api.v1.routes import _read_capped
+    from shared_ui.uploads import UploadTooLarge, read_capped
 
     class _FakeUpload:
         filename = "test.wav"
+
         def __init__(self, total: int):
             self._remain = total
+
         async def read(self, size: int = -1) -> bytes:
             if self._remain <= 0:
                 return b""
@@ -282,21 +278,22 @@ def test_read_capped_raises_during_read():
             self._remain -= n
             return b"x" * n
 
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(_read_capped(_FakeUpload(10_000), 10))
-    assert exc_info.value.status_code == 413
+    with pytest.raises(UploadTooLarge):
+        asyncio.run(read_capped(_FakeUpload(10_000), 10))
 
 
 def test_read_capped_respects_dynamic_limit():
-    """_read_capped uses the caller-supplied limit, not a hardcoded
+    """``read_capped`` uses the caller-supplied limit, not a hardcoded
     constant — important because transcribe's limit is configurable
     via settings.max_upload_size."""
-    from artifice_transcribe.api.v1.routes import _read_capped
+    from shared_ui.uploads import UploadTooLarge, read_capped
 
     class _FakeUpload:
         filename = "test.wav"
+
         def __init__(self, total: int):
             self._remain = total
+
         async def read(self, size: int = -1) -> bytes:
             if self._remain <= 0:
                 return b""
@@ -305,17 +302,16 @@ def test_read_capped_respects_dynamic_limit():
             return b"x" * n
 
     # Under a 1000-byte limit, 500 bytes should pass.
-    result = asyncio.run(_read_capped(_FakeUpload(500), 1000))
+    result = asyncio.run(read_capped(_FakeUpload(500), 1000))
     assert len(result) == 500
 
     # At exactly the limit, should still pass.
-    result2 = asyncio.run(_read_capped(_FakeUpload(1000), 1000))
+    result2 = asyncio.run(read_capped(_FakeUpload(1000), 1000))
     assert len(result2) == 1000
 
     # One byte over must fail.
-    with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(_read_capped(_FakeUpload(1001), 1000))
-    assert exc_info.value.status_code == 413
+    with pytest.raises(UploadTooLarge):
+        asyncio.run(read_capped(_FakeUpload(1001), 1000))
 
 
 # --------------------------------------------------- inference endpoint shapes

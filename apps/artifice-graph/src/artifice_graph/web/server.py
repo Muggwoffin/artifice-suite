@@ -27,8 +27,9 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
 from shared_ui.filedialog import FileType, pick_files_async, pick_folder_async
-from shared_ui.path_validation import PathValidationError
+from shared_ui.path_validation import PathValidationError, sanitise_path_component
 from shared_ui.path_validation import validate_path as _shared_validate_path
+from shared_ui.uploads import UploadTooLarge, read_capped
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from artifice_graph._resolution import resolve_for_run
@@ -1263,47 +1264,17 @@ async def api_stream(run: str = Query(...)):
     )
 
 
-# ── Path safety (mirrors artifice-transcribe/api/v1/routes.py) ─────
-# ``Path("..").name`` returns ``".."`` on every platform, so ``.name``
-# alone is not a sufficient guard.  The backslash replacement handles
-# Windows-style paths supplied from a browser on a POSIX server.
+# ── Upload guards (shared_ui.uploads / shared_ui.path_validation) ─────
+# Filename sanitisation and the size cap live in shared-ui; this web layer
+# translates their domain errors into HTTP responses.
 
 _MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB, mirrors IngestionConfig.max_file_size_mb
-
-
-async def _read_capped(upload: UploadFile, limit: int) -> bytes:
-    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
-    exceeded **during** the read so an oversized body is never fully resident.
-    """
-    chunks: list[bytes] = []
-    total = 0
-    while chunk := await upload.read(64 * 1024):
-        total += len(chunk)
-        if total > limit:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
-            )
-        chunks.append(chunk)
-    return b"".join(chunks)
 
 
 def _allowed_upload_extensions(cfg: PipelineConfig) -> frozenset[str]:
     return frozenset(
         {ext.lower() for ext in cfg.ingestion.supported_extensions} | {".pdf", ".html", ".htm"}
     )
-
-
-def _sanitise_path_component(raw: str) -> str:
-    """Return a safe single-component filename from *raw*.
-
-    Treats backslashes as separators (Windows path support) and rejects
-    components that are empty, ``"."`` or ``".."`` after cleaning.
-    """
-    cleaned = Path(raw.replace("\\", "/")).name
-    if cleaned in ("", ".", ".."):
-        raise HTTPException(status_code=400, detail=f"Invalid filename: {raw!r}")
-    return cleaned
 
 
 def _assert_contained(path: Path, container: Path) -> None:
@@ -1318,8 +1289,8 @@ def _assert_contained(path: Path, container: Path) -> None:
 async def api_upload_files(files: list[UploadFile] = File(...)):
     """Upload one or more text/document files into the pipeline's input directory.
 
-    Filenames are sanitised with the same ``_sanitise_path_component`` guard used
-    in artifice-transcribe to prevent path-traversal. Only the extensions the
+    Filenames are sanitised with the shared ``sanitise_path_component`` guard
+    used by the other apps to prevent path-traversal. Only the extensions the
     ingest stage accepts (plus the built-in PDF/HTML handlers) are stored;
     oversized files (>50 MB) are refused.
 
@@ -1347,7 +1318,10 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
     results = []
     for upload in files:
         raw_name = upload.filename or "unknown"
-        safe_name = _sanitise_path_component(raw_name)
+        try:
+            safe_name = sanitise_path_component(raw_name)
+        except PathValidationError as e:
+            raise HTTPException(status_code=400, detail=e.public_message) from e
         ext = Path(safe_name).suffix.lower()
 
         if ext not in allowed_extensions:
@@ -1361,8 +1335,8 @@ async def api_upload_files(files: list[UploadFile] = File(...)):
             continue
 
         try:
-            contents = await _read_capped(upload, _MAX_UPLOAD_BYTES)
-        except HTTPException:
+            contents = await read_capped(upload, _MAX_UPLOAD_BYTES)
+        except UploadTooLarge:
             results.append(
                 {
                     "filename": raw_name,
