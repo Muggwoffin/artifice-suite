@@ -505,7 +505,8 @@ state = RunState()
 
 
 # --------------------------------------------------------------------------- #
-# PDF export (one-off, not wired into JobRunner — see HANDOFF_PDF_EXPORT_UI.md)
+# PDF export (one-off, not wired into JobRunner — see
+# docs/archive/handoffs/HANDOFF_PDF_EXPORT_UI.md, which is historical)
 # --------------------------------------------------------------------------- #
 
 

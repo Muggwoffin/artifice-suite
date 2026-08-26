@@ -9,6 +9,29 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 ## [Unreleased]
 
 ### Added
+- **Tropy write-back is reachable by a user.** `tropy_write.py` had been
+  complete, tested and unwired since `eba87a2` — its own commit said "nothing
+  wires it to a route, a stage, or a button". Two gated routes
+  (`/api/tropy/writeback/preview` and `/commit`, 404 when disabled) and a
+  Destination control in the Send to Tropy modal now reach it. The commit route
+  recomputes the preview server-side and refuses on any blocker, count mismatch
+  or foreign item — never a partial write. **Write-back applies only to photos
+  added via Browse project**; a JSON-LD import carries no numeric photo id and
+  can never be written back, and the modal says so. (#77)
+- **Cross-project write guard.** Photo ids are per-project, so an item browsed
+  from project A written into project B lands a transcription on a different
+  photo. Items now record `source["tropy_project"]`, and a foreign item is
+  refused before the writer opens. (#77)
+- **Context size setting** (`context_size`, default `0` = leave it to the
+  model). Live for Ollama, which honours `num_ctx` per request; disabled with an
+  explanation for LM Studio, which fixes the window when it *loads* a model, and
+  for hosted APIs that set it server-side. A context-overflow error is now
+  rewritten to name the two token counts and where the limit actually lives.
+  (#79, #81)
+- **`docs/INSTALL_OCR_WINDOWS.md`** — the frozen-build install route, including
+  why SmartScreen blocks an unsigned binary and why the zip should be unblocked
+  *before* extracting. **`docs/MAINTAINER_CHECKLIST.md`** — release checks CI
+  does not run, and the traps that have cost real time.
 - **`artifice-ocr` drag-and-drop upload and native file picker.** New
   `POST /api/queue/upload` staging endpoint; dropzone rework with a file-picker
   fallback using the OS native dialog (replacing a typed-path `prompt()`);
@@ -16,6 +39,20 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   likewise replaced `prompt()` with a native path field and drag-and-drop zone.
 
 ### Changed
+- **Upload guards have one home.** `_read_capped` was copy-pasted into four apps
+  and `_sanitise_path_component` into three, with `artifice-draft` missing the
+  filename guard entirely. Both now live in `packages/shared-ui`
+  (`uploads.read_capped`, `path_validation.sanitise_path_component`) and raise
+  domain errors rather than `HTTPException` — shared-ui depends on
+  `platformdirs` and `uvicorn` only, and must not gain a web framework. Each
+  app's web layer translates, preserving its existing responses exactly. (#78)
+- **Docs pass.** Spent working documents moved out of the repository root and
+  the app roots into `docs/archive/` — four completed proposals and eight
+  session handovers. Every mention of them elsewhere was prose, not a markdown
+  link, so nothing broke. `ARCHITECTURE.md` corrected: it said four apps (there
+  are five — the Hub is frozen-only, not absent), named a `packages/core-types`
+  that does not exist, claimed 90 model-harness tests (265), and listed a
+  `package.json` in every app when the suite has no Node toolchain at all.
 - **`apps/artifice-ocr/docs/TROPY_INTEGRATION.md` corrected.** The document
   previously stated no code path ever writes to a Tropy `.tpy` database. A
   direct write-back path (`tropy_write.py`, opt-in, default off, not yet wired
@@ -24,6 +61,37 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   updated accordingly.
 
 ### Fixed
+- **`backend_name` was passed to the provider SDK**, breaking OCR on every
+  backend with `Completions.create() got an unexpected keyword argument`. The
+  keyword belongs to our own `_guarded_chat` wrapper; a script adding it to
+  eight call sites could not distinguish the wrapper's `model=model,` from the
+  provider call's, and tagged both. **799 tests passed over it** — they mock the
+  client, and a `MagicMock` accepts any keyword silently. The guard added is a
+  test that reads the *source*: it walks the AST and fails if a provider call
+  receives a keyword the wrapper owns. (#80)
+- **Context-overflow detection could rewrite unrelated errors.** Matching the
+  bare phrase "maximum context length" also fired on "maximum context length not
+  supported for this model" — a *capability* error — replacing a real failure
+  with advice about a limit the user had not hit. Detection now leads with
+  machine-stable provider identifiers (`exceed_context_size_error`,
+  `context_length_exceeded`), with the prose form requiring the overflow clause
+  that follows it. Found by an independent `oss-reviewer` pass. (#81)
+- **`artifice-draft` had no filename sanitisation** on upload. Not the traversal
+  hole `FOLLOW_UPS.md` described — `Path(filename).name` into a per-upload
+  `uuid4` directory already defeated `../../etc/passwd` — but two real gaps:
+  backslashes are not separators on POSIX, so a Windows-style name survived
+  intact, and `Path(".").name` is `""`, making `doc_dir / ""` the directory
+  itself and raising `IsADirectoryError`, a 500 where a 400 belonged. (#78)
+- **`tropy_write._display_path` leaked the path it existed to redact**, on
+  Windows only. Its home-relative branch emitted the whole tail, disclosing the
+  archive location and research topic. It passed on POSIX by accident: pytest's
+  `tmp_path` is not under `$HOME` there, so the basename branch ran instead.
+  Reproduced on Linux by pointing `HOME` and `TMPDIR` at a shared ancestor. (#76)
+- **The write-back gate was invisible to the UI.** `tropy_writeback_enabled` was
+  in `PERSISTED_KEYS` but missing from the settings router's `_CONFIG_KEYS`, so
+  POST accepted it and GET never returned it — the control read `undefined` and
+  stayed hidden even when the feature was on, while every route test passed. A
+  test now round-trips the gate through the API. (#79)
 - **`artifice-ocr` pipeline end-to-end.** Fixes: doubled `/v1` base URL (the
   404), settings save rejecting unused fields, approved folders for external
   drives, Tropy recent-projects list, tolerant path resolution, nested list

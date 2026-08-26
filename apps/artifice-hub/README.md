@@ -17,7 +17,7 @@ Using Artifice Suite from the command line works, but a graphical launcher lower
 
 - **No Dockerfile** — the Hub is a GUI application. Running it inside a container is meaningless (it needs a display, a webview backend, and access to the host's `uv` installation).
 - **No PyPI publish** — the Hub ships as a frozen executable, not as a pip-installable package. The `pyproject.toml` exists for development and for the workspace resolver.
-- **No model calls** — the Hub makes zero model interactions. It is purely a launcher and installer. The [harness architecture mandate](../CLAUDE.md) does not apply here.
+- **No model calls** — the Hub makes zero model interactions. It is purely a launcher and installer. The [harness architecture mandate](../../CLAUDE.md) does not apply here.
 - **Onefile, not onedir** — every other app ships as `onedir` (a folder). The Hub is a single double-clickable `.exe`/`.app` because it is a tiny launcher (fastapi + pywebview, no model libraries) and onefile is the expected UX for a launcher.
 
 ## Building
