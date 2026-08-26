@@ -62,6 +62,15 @@ class TestWindowApiNullSafety:
         api.resize(1024, 768)  # should not raise
         assert api._window is None
 
+    def test_resize_forwards_to_window(self) -> None:
+        """The frameless resize grip drives this — it must reach the window."""
+        from unittest.mock import MagicMock
+
+        api = WindowApi()
+        api._window = MagicMock()
+        api.resize(1024, 768)
+        api._window.resize.assert_called_once_with(1024, 768)
+
     def test_destroy_noop(self) -> None:
         api = WindowApi()
         api.destroy()  # should not raise
