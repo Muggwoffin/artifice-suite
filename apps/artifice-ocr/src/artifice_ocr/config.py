@@ -83,6 +83,17 @@ _DEFAULTS: dict[str, Any] = {
     # this fails the item outright instead of silently writing the loop to
     # raw_ocr/ as if it were a real transcription.
     "ocr_repetition_guard": True,
+    # Phase 1 deterministic image pre-processing, applied before the page is
+    # sent to the vision model. Off by default: a clean scan needs none of it,
+    # and it must never change behaviour for an existing user who has not asked
+    # for it. The master toggle is the one UI control; the per-step keys are
+    # advanced/config-only and used when the master is on. See
+    # docs/OCR_PREPROCESSING_PLAN.md and stages/preprocess.py.
+    "preprocess_enabled": False,
+    "preprocess_grayscale": True,
+    "preprocess_illumination": True,
+    "preprocess_autocontrast": True,
+    "preprocess_gamma": 1.0,  # 1.0 = no gamma; <1 lightens, >1 darkens mid-tones
     # Content-preservation guard for cleanup. When the model's output looks
     # lossy or has altered a proper noun, the raw text is kept instead, so a
     # page is either cleaned or untouched — never quietly truncated.
@@ -140,6 +151,11 @@ PERSISTED_KEYS = (
     "confidence_enabled",
     "chunk_max_tokens",
     "context_size",
+    "preprocess_enabled",
+    "preprocess_grayscale",
+    "preprocess_illumination",
+    "preprocess_autocontrast",
+    "preprocess_gamma",
     "gui_theme",
     "ollama_think",
     "run_templates",

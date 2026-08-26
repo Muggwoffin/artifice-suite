@@ -601,6 +601,42 @@ def test_ocr_applies_orientation_correction_before_encoding(mock_get_client, tmp
     assert rotated_url != normal_url  # the bytes actually changed, not just relabelled
 
 
+def test_encode_image_is_untouched_when_preprocess_disabled(tmp_path, monkeypatch):
+    """With pre-processing off (the default), _encode_image returns the raw
+    file bytes and original mime — no behaviour change for existing users."""
+    from artifice_ocr.stages import ocr, preprocess
+
+    monkeypatch.setattr(preprocess, "is_enabled", lambda: False)
+    img = tmp_path / "scan.png"
+    _make_test_image(img)
+
+    b64, mime = ocr._encode_image(img)
+    assert mime == "image/png"
+    import base64
+
+    with open(img, "rb") as f:
+        raw = f.read()
+    assert base64.standard_b64decode(b64) == raw  # bytes passed through unchanged
+
+
+def test_encode_image_applies_preprocessing_when_enabled(tmp_path, monkeypatch):
+    """With pre-processing on, _encode_image funnels the image through the
+    stage and the emitted bytes differ from the raw file."""
+    from artifice_ocr.stages import ocr, preprocess
+
+    monkeypatch.setattr(preprocess, "is_enabled", lambda: True)
+    img = tmp_path / "scan.png"
+    _make_test_image(img)
+
+    b64, mime = ocr._encode_image(img)
+    assert mime == "image/png"
+    import base64
+
+    with open(img, "rb") as f:
+        raw = f.read()
+    assert base64.standard_b64decode(b64) != raw  # the stage actually ran
+
+
 # ---------------------------------------------------------------------------
 # OCR degeneracy guard integration
 # ---------------------------------------------------------------------------

@@ -16,6 +16,7 @@ from artifice_ocr._logging import get_logger
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
+from artifice_ocr.stages import preprocess as _preprocess
 
 log = get_logger("ocr")
 
@@ -82,6 +83,9 @@ def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
     so it commutes with any rotation angle and composition order here
     doesn't matter, unlike a non-uniform scale would.
     """
+    data: bytes | None = None
+    mime: str | None = None
+
     if orientation != 1:
         import fitz  # PyMuPDF
 
@@ -94,13 +98,24 @@ def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
                 zoom = native.width / page.rect.width if page.rect.width else 1.0
                 mat = fitz.Matrix(zoom, zoom) * orient_mat
                 pix = page.get_pixmap(matrix=mat)
-                return base64.standard_b64encode(pix.tobytes("png")).decode("utf-8"), "image/png"
+                data, mime = pix.tobytes("png"), "image/png"
         finally:
             doc.close()
 
-    with open(path, "rb") as f:
-        data = f.read()
-    mime = _MIME_MAP.get(path.suffix.lower(), "image/png")
+    if data is None:
+        with open(path, "rb") as f:
+            data = f.read()
+        mime = _MIME_MAP.get(path.suffix.lower(), "image/png")
+
+    # Optional deterministic pre-processing (greyscale / contrast / illumination
+    # / gamma) to rescue bright, washed-out or low-contrast pages before the
+    # model sees them. Off by default; returns None when disabled or on any
+    # decode failure, in which case the original bytes and mime are used
+    # unchanged. See stages/preprocess.py.
+    processed = _preprocess.maybe_process(data)
+    if processed is not None:
+        data, mime = processed, "image/png"
+
     return base64.standard_b64encode(data).decode("utf-8"), mime
 
 
