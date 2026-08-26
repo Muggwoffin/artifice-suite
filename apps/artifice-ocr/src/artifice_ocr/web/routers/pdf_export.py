@@ -51,15 +51,17 @@ def pdf_export_start(req: PdfExportRequest) -> dict:
             ),
         )
     started = start_pdf_export(
-        req.folder, stage=req.stage,
-        structure=req.structure, output=req.output,
+        req.folder,
+        stage=req.stage,
+        structure=req.structure,
+        output=req.output,
         manifest_path=req.manifest,
-        format=req.format, style=req.style,
+        format=req.format,
+        style=req.style,
         bilingual=req.bilingual,
     )
     if not started:
-        raise HTTPException(
-            status_code=409, detail="A PDF export is already running")
+        raise HTTPException(status_code=409, detail="A PDF export is already running")
     return {"ok": True}
 
 
@@ -77,18 +79,18 @@ async def pdf_export_events():
     async def gen():
         while True:
             try:
-                event = await asyncio.to_thread(
-                    pdf_export_state.events.get, True, 1.0)
+                event = await asyncio.to_thread(pdf_export_state.events.get, True, 1.0)
             except queue.Empty:
                 yield ": heartbeat\n\n"
                 continue
             yield f"data: {json.dumps(event)}\n\n"
             if event.get("type") in ("done", "error"):
                 break
+
     return StreamingResponse(
-        gen(), media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache",
-                 "X-Accel-Buffering": "no"},
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 
