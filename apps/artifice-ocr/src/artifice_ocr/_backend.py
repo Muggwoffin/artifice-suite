@@ -292,7 +292,6 @@ class OllamaOpenAIBackend:
         resp = _guarded_chat(
             lambda: client.chat.completions.create(
                 model=model,
-                backend_name="ollama_openai",
                 messages=messages,
                 temperature=temperature,
                 **kwargs,
@@ -343,7 +342,6 @@ class LMStudioBackend:
         resp = _guarded_chat(
             lambda: client.chat.completions.create(
                 model=model,
-                backend_name="lm_studio",
                 messages=messages,
                 temperature=temperature,
                 **kwargs,
@@ -394,7 +392,6 @@ class HuggingFaceBackend:
 
         resp = client.chat_completion(
             model=model,
-            backend_name="huggingface",
             messages=messages,
             temperature=temperature,
             **kwargs,
@@ -454,7 +451,6 @@ class ApiKeyBackend:
         resp = _guarded_chat(
             lambda: client.chat.completions.create(
                 model=model,
-                backend_name="api_key",
                 messages=messages,
                 temperature=temperature,
                 **kwargs,
