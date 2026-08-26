@@ -8,6 +8,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
+from shared_ui.path_validation import PathValidationError, sanitise_path_component
+from shared_ui.uploads import UploadTooLarge, read_capped
 
 from ..models import (
     AddPathsRequest,
@@ -152,41 +154,11 @@ def reorder_queue(req: ReorderRequest) -> dict:
 
 
 # ── File upload ────────────────────────────────────────────────────────────
-# Mirrors artifice-graph's api_upload_files and the _read_capped /
-# _sanitise_path_component helpers carried by graph, draft and transcribe.
-# Deliberately a fourth copy rather than a new shared abstraction —
-# consolidation is a separate brief.
+# Upload guards (size cap, filename sanitisation) come from shared_ui.uploads
+# and shared_ui.path_validation; this web layer translates their domain errors
+# into HTTP responses.
 
 _MAX_UPLOAD_BYTES: int = 50 * 1024 * 1024  # 50 MB
-
-
-async def _read_capped(upload: UploadFile, limit: int) -> bytes:
-    """Read *upload* in bounded 64 KB chunks, raising HTTP 413 if *limit* is
-    exceeded **during** the read so an oversized body is never fully resident.
-    """
-    chunks: list[bytes] = []
-    total = 0
-    while chunk := await upload.read(64 * 1024):
-        total += len(chunk)
-        if total > limit:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File exceeds {limit // (1024 * 1024)} MB upload limit",
-            )
-        chunks.append(chunk)
-    return b"".join(chunks)
-
-
-def _sanitise_path_component(raw: str) -> str:
-    """Return a safe single-component filename from *raw*.
-
-    Treats backslashes as separators (Windows path support) and rejects
-    components that are empty, ``"."`` or ``".."`` after cleaning.
-    """
-    cleaned = Path(raw.replace("\\", "/")).name
-    if cleaned in ("", ".", ".."):
-        raise HTTPException(status_code=400, detail=f"Invalid filename: {raw!r}")
-    return cleaned
 
 
 def _staging_dir() -> Path:
@@ -222,8 +194,8 @@ def _unique_dest(staging: Path, safe_name: str) -> Path:
 async def upload_files(files: list[UploadFile] = File(...)) -> dict:
     """Upload one or more files into the pipeline's staging directory.
 
-    Filenames are sanitised with the same ``_sanitise_path_component`` guard
-    the other three apps use to prevent path traversal. Anything whose
+    Filenames are sanitised with the shared ``sanitise_path_component`` guard
+    used by the other apps to prevent path traversal. Anything whose
     extension is not in ``SUPPORTED_EXTENSIONS`` is rejected per-file, and
     files larger than 50 MB are refused during the read.
 
@@ -250,7 +222,10 @@ async def upload_files(files: list[UploadFile] = File(...)) -> dict:
     staged_paths: list[str] = []
     for upload in files:
         raw_name = upload.filename or ""
-        safe_name = _sanitise_path_component(raw_name)
+        try:
+            safe_name = sanitise_path_component(raw_name)
+        except PathValidationError as e:
+            raise HTTPException(status_code=400, detail=e.public_message) from e
         ext = Path(safe_name).suffix.lower()
 
         if ext not in SUPPORTED_EXTENSIONS:
@@ -265,8 +240,8 @@ async def upload_files(files: list[UploadFile] = File(...)) -> dict:
             continue
 
         try:
-            contents = await _read_capped(upload, _MAX_UPLOAD_BYTES)
-        except HTTPException:
+            contents = await read_capped(upload, _MAX_UPLOAD_BYTES)
+        except UploadTooLarge:
             results.append(
                 {
                     "filename": raw_name,
