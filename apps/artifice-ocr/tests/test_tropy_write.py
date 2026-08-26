@@ -84,7 +84,8 @@ def _build_project(root: Path) -> Path:
         con.execute(
             "INSERT INTO photos (id,item_id,path,mimetype,page,filename) "
             "VALUES (?,1,'assets/a.pdf','application/pdf',?,'KV-2-1234.pdf')",
-            (pid, pid - 10))
+            (pid, pid - 10),
+        )
     con.commit()
     con.close()
     return root
@@ -112,6 +113,7 @@ def _writeback_on(monkeypatch):
 # opt-in gating (default off)
 # --------------------------------------------------------------------------- #
 
+
 def test_writeback_defaults_off():
     """The setting must ship off, never on, unless the user opts in."""
     config.reset()
@@ -122,8 +124,7 @@ def test_write_refuses_when_disabled(project):
     config.apply_overrides({"tropy_writeback_enabled": False})
 
     with TropyWriter(project) as w:
-        preview = w.preview([WriteEntry(photo_id=10, text="Der Bericht")],
-                            [TARGET_NOTES])
+        preview = w.preview([WriteEntry(photo_id=10, text="Der Bericht")], [TARGET_NOTES])
         assert any("disabled" in b.lower() for b in preview.blockers)
         report = w.write(preview)
 
@@ -173,6 +174,7 @@ def test_repair_refuses_when_disabled(project):
 # the read path must stay read-only
 # --------------------------------------------------------------------------- #
 
+
 def test_tropy_db_never_imports_tropy_write():
     """Static check: tropy_db must not import (or reference) the write module.
 
@@ -199,9 +201,12 @@ def test_tropy_db_never_imports_tropy_write():
 # preview
 # --------------------------------------------------------------------------- #
 
+
 def test_preview_reports_insertable_rows_without_writing(project):
-    entries = [WriteEntry(photo_id=10, text="Der Bericht", label="p.1"),
-               WriteEntry(photo_id=11, text="Zweite Seite", label="p.2")]
+    entries = [
+        WriteEntry(photo_id=10, text="Der Bericht", label="p.1"),
+        WriteEntry(photo_id=11, text="Zweite Seite", label="p.2"),
+    ]
 
     with TropyWriter(project) as w:
         preview = w.preview(entries, [TARGET_NOTES])
@@ -258,9 +263,9 @@ def test_running_tropy_blocks_the_write(project):
 # writing notes
 # --------------------------------------------------------------------------- #
 
+
 def test_write_notes_creates_valid_rows_and_updates_search(project):
-    entries = [WriteEntry(photo_id=10, text="Der Bericht\n\nZweiter Absatz",
-                          language="DE")]
+    entries = [WriteEntry(photo_id=10, text="Der Bericht\n\nZweiter Absatz", language="DE")]
 
     with TropyWriter(project) as w:
         report = w.write(w.preview(entries, [TARGET_NOTES]))
@@ -296,8 +301,7 @@ def test_stored_note_carries_selection_key(project):
     JSON** and must FAIL if the key is ever dropped again.
     """
     with TropyWriter(project) as w:
-        report = w.write(w.preview([WriteEntry(photo_id=10, text="Ein Satz")],
-                                   [TARGET_NOTES]))
+        report = w.write(w.preview([WriteEntry(photo_id=10, text="Ein Satz")], [TARGET_NOTES]))
     assert report.written == 1
 
     con = sqlite3.connect(project / "project.tpy")
@@ -323,9 +327,12 @@ def test_write_transcriptions_marks_its_own_rows(project):
     assert row["id"] == 11
     assert row["text"] == "Transkribierter Text"
     assert json.loads(row["config"])["generator"] == "artifice_ocr"
-    assert con.execute(
-        "SELECT COUNT(*) FROM fts_transcriptions WHERE text MATCH 'Transkribierter'"
-    ).fetchone()[0] == 1
+    assert (
+        con.execute(
+            "SELECT COUNT(*) FROM fts_transcriptions WHERE text MATCH 'Transkribierter'"
+        ).fetchone()[0]
+        == 1
+    )
     con.close()
 
 
@@ -361,8 +368,7 @@ def test_rerunning_does_not_duplicate(project):
 
 
 def test_failed_write_rolls_back_completely(project):
-    entries = [WriteEntry(photo_id=10, text="erste"),
-               WriteEntry(photo_id=11, text="zweite")]
+    entries = [WriteEntry(photo_id=10, text="erste"), WriteEntry(photo_id=11, text="zweite")]
 
     with TropyWriter(project) as w:
         preview = w.preview(entries, [TARGET_NOTES])
@@ -390,8 +396,9 @@ def test_failed_write_rolls_back_completely(project):
 
 def test_backup_can_be_skipped(project):
     with TropyWriter(project) as w:
-        report = w.write(w.preview([WriteEntry(photo_id=10, text="x")],
-                                   [TARGET_NOTES]), make_backup=False)
+        report = w.write(
+            w.preview([WriteEntry(photo_id=10, text="x")], [TARGET_NOTES]), make_backup=False
+        )
 
     assert report.written == 1
     assert report.backup is None
@@ -400,6 +407,7 @@ def test_backup_can_be_skipped(project):
 # --------------------------------------------------------------------------- #
 # backup sidecars
 # --------------------------------------------------------------------------- #
+
 
 def test_backup_copies_wal_and_shm_sidecars(project):
     """A .tpy copied without its -wal/-shm sidecars is not a valid restore
@@ -430,6 +438,7 @@ def test_backup_when_no_sidecars_present(project):
 # locked database
 # --------------------------------------------------------------------------- #
 
+
 def test_locked_database_produces_legible_blocker(project):
     """A held write lock must surface as a legible reason, never a bare
     sqlite3.OperationalError leaking out of blockers()."""
@@ -451,14 +460,27 @@ def test_locked_database_produces_legible_blocker(project):
 # repairing notes written before the selection-key fix
 # --------------------------------------------------------------------------- #
 
+
 def test_repair_fixes_a_note_missing_selection(project):
     con = sqlite3.connect(project / "project.tpy")
-    broken_state = json.dumps({"doc": {"type": "doc", "content": [
-        {"type": "paragraph", "attrs": {"align": "left"},
-         "content": [{"type": "text", "text": "Dear Hig,"}]},
-    ]}})
-    con.execute("INSERT INTO notes (id, text, state, language) VALUES (10, 'Dear Hig,', ?, 'en')",
-               (broken_state,))
+    broken_state = json.dumps(
+        {
+            "doc": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "attrs": {"align": "left"},
+                        "content": [{"type": "text", "text": "Dear Hig,"}],
+                    },
+                ],
+            }
+        }
+    )
+    con.execute(
+        "INSERT INTO notes (id, text, state, language) VALUES (10, 'Dear Hig,', ?, 'en')",
+        (broken_state,),
+    )
     con.commit()
     con.close()
 
@@ -481,12 +503,15 @@ def test_repair_fixes_a_note_missing_selection(project):
 
 def test_repair_leaves_healthy_notes_untouched(project):
     con = sqlite3.connect(project / "project.tpy")
-    healthy_state = json.dumps({
-        "doc": {"type": "doc", "content": [{"type": "paragraph", "attrs": {"align": "left"}}]},
-        "selection": {"type": "text", "anchor": 5, "head": 5},
-    })
-    con.execute("INSERT INTO notes (id, text, state, language) VALUES (10, 'x', ?, 'en')",
-               (healthy_state,))
+    healthy_state = json.dumps(
+        {
+            "doc": {"type": "doc", "content": [{"type": "paragraph", "attrs": {"align": "left"}}]},
+            "selection": {"type": "text", "anchor": 5, "head": 5},
+        }
+    )
+    con.execute(
+        "INSERT INTO notes (id, text, state, language) VALUES (10, 'x', ?, 'en')", (healthy_state,)
+    )
     con.commit()
     con.close()
 
@@ -516,8 +541,10 @@ def test_repair_refuses_while_tropy_is_running(project):
 
 def test_repair_backs_up_by_default(project):
     con = sqlite3.connect(project / "project.tpy")
-    con.execute("INSERT INTO notes (id, text, state, language) VALUES (10, 'x', ?, 'en')",
-               (json.dumps({"doc": {"type": "doc", "content": []}}),))
+    con.execute(
+        "INSERT INTO notes (id, text, state, language) VALUES (10, 'x', ?, 'en')",
+        (json.dumps({"doc": {"type": "doc", "content": []}}),),
+    )
     con.commit()
     con.close()
 
@@ -531,6 +558,7 @@ def test_repair_backs_up_by_default(project):
 # --------------------------------------------------------------------------- #
 # helpers
 # --------------------------------------------------------------------------- #
+
 
 def test_prosemirror_state_handles_blank_lines():
     state = json.loads(_prosemirror_state("eins\n\nzwei"))
@@ -592,6 +620,7 @@ def test_entries_use_detected_language():
 # F1 — TOCTOU between preview and write
 # --------------------------------------------------------------------------- #
 
+
 def test_blocker_appearing_after_preview_aborts_the_write(project):
     """A blocker that appears *after* preview must abort the write.
 
@@ -606,8 +635,7 @@ def test_blocker_appearing_after_preview_aborts_the_write(project):
         return calls["n"] >= 2  # first call (preview): closed; second: running
 
     with (
-        patch("artifice_ocr.tropy_write._tropy_is_running",
-              side_effect=tropy_appears_later),
+        patch("artifice_ocr.tropy_write._tropy_is_running", side_effect=tropy_appears_later),
         TropyWriter(project) as w,
     ):
         preview = w.preview([WriteEntry(photo_id=10, text="x")], [TARGET_NOTES])
@@ -650,8 +678,7 @@ def test_backup_and_write_happen_under_a_held_write_lock(project, monkeypatch):
     monkeypatch.setattr(shutil, "copy2", spy_copy2)
 
     with TropyWriter(project) as w:
-        report = w.write(w.preview([WriteEntry(photo_id=10, text="x")],
-                                   [TARGET_NOTES]))
+        report = w.write(w.preview([WriteEntry(photo_id=10, text="x")], [TARGET_NOTES]))
 
     assert report.written == 1
     assert observed == [True, True], "write lock was not held across the backup"
@@ -662,7 +689,8 @@ def test_repair_rechecks_blockers_before_writing(project):
     con = sqlite3.connect(project / "project.tpy")
     con.execute(
         "INSERT INTO notes (id, text, state, language) VALUES (10, 'x', ?, 'en')",
-        (json.dumps({"doc": {"type": "doc", "content": []}}),))
+        (json.dumps({"doc": {"type": "doc", "content": []}}),),
+    )
     con.commit()
     con.close()
 
@@ -673,8 +701,7 @@ def test_repair_rechecks_blockers_before_writing(project):
         return calls["n"] >= 2
 
     with (
-        patch("artifice_ocr.tropy_write._tropy_is_running",
-              side_effect=tropy_appears_later),
+        patch("artifice_ocr.tropy_write._tropy_is_running", side_effect=tropy_appears_later),
         TropyWriter(project) as w,
         pytest.raises(RuntimeError, match="running"),
     ):
@@ -691,12 +718,12 @@ def test_repair_rechecks_blockers_before_writing(project):
 # F2/F3 — no absolute paths in logs, blockers, or reports
 # --------------------------------------------------------------------------- #
 
+
 def test_successful_write_leaks_no_absolute_path(tmp_path, caplog):
     root = _marker_project(tmp_path)
 
     with caplog.at_level(logging.INFO), TropyWriter(root) as w:
-        report = w.write(w.preview([WriteEntry(photo_id=10, text="geheim")],
-                                   [TARGET_NOTES]))
+        report = w.write(w.preview([WriteEntry(photo_id=10, text="geheim")], [TARGET_NOTES]))
 
     assert report.written == 1
     assert "SECRETUSER" not in caplog.text
@@ -710,8 +737,7 @@ def test_error_report_and_log_redact_absolute_path(tmp_path, caplog):
     db = root / "project.tpy"
 
     with caplog.at_level(logging.INFO), TropyWriter(root) as w:
-        preview = w.preview([WriteEntry(photo_id=10, text="geheim")],
-                            [TARGET_NOTES])
+        preview = w.preview([WriteEntry(photo_id=10, text="geheim")], [TARGET_NOTES])
 
         def boom(text):
             raise sqlite3.OperationalError(f"cannot write {db}")

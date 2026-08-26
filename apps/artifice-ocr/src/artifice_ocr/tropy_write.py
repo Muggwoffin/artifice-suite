@@ -145,12 +145,15 @@ def _tropy_is_running() -> bool:
         if sys.platform == "win32":
             result = subprocess.run(
                 ["tasklist", "/FI", "IMAGENAME eq Tropy.exe", "/NH"],
-                capture_output=True, text=True, timeout=15,
+                capture_output=True,
+                text=True,
+                timeout=15,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
             return "Tropy.exe" in result.stdout
-        result = subprocess.run(["pgrep", "-i", "tropy"],
-                                capture_output=True, text=True, timeout=15)
+        result = subprocess.run(
+            ["pgrep", "-i", "tropy"], capture_output=True, text=True, timeout=15
+        )
         return result.returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False  # can't tell; the lock check below is the backstop
@@ -181,12 +184,20 @@ def _prosemirror_state(text: str) -> str:
             node["content"] = [{"type": "text", "text": line}]
         paragraphs.append(node)
     if not paragraphs:
-        paragraphs = [{"type": "paragraph", "attrs": {"align": "left"},
-                       "content": [{"type": "text", "text": text}]}]
-    return json.dumps({
-        "doc": {"type": "doc", "content": paragraphs},
-        "selection": {"type": "text", "anchor": 0, "head": 0},
-    }, ensure_ascii=False)
+        paragraphs = [
+            {
+                "type": "paragraph",
+                "attrs": {"align": "left"},
+                "content": [{"type": "text", "text": text}],
+            }
+        ]
+    return json.dumps(
+        {
+            "doc": {"type": "doc", "content": paragraphs},
+            "selection": {"type": "text", "anchor": 0, "head": 0},
+        },
+        ensure_ascii=False,
+    )
 
 
 def _display_path(path: Path) -> str:
@@ -194,10 +205,17 @@ def _display_path(path: Path) -> str:
 
     Logs and error messages get pasted into issue reports, and the absolute
     database path normally contains the username and the archive location
-    (and sometimes the research topic). Return a home-relative form
-    (``~/Documents/…``) when the path is under the home directory, otherwise
-    the basename alone. Either way the *project* stays identifiable without
-    disclosing where it lives on disk.
+    (and sometimes the research topic). Return the basename alone, prefixed
+    with ``~/…/`` when the path lies under the home directory. The *project*
+    stays identifiable, and the caller learns whether it sits inside their
+    home directory, without any intermediate component being disclosed.
+
+    Emitting the full home-relative tail (``~/Documents/Cairo-1919/…``) would
+    disclose precisely the archive location and research topic this function
+    exists to withhold, so no intermediate component is ever returned. That
+    distinction is platform-sensitive and was previously invisible: on POSIX
+    a temporary path is not under ``$HOME``, whereas on Windows the user's
+    temp directory is, so only the Windows job caught the leak.
     """
     resolved = Path(path)
     home: Path | None = None
@@ -210,7 +228,7 @@ def _display_path(path: Path) -> str:
             if resolved == home:
                 return "~"
             if resolved.is_relative_to(home):
-                return "~/" + resolved.relative_to(home).as_posix()
+                return f"~/…/{resolved.name}" if resolved.name else "~"
         except (ValueError, OSError):
             pass
     return resolved.name
@@ -256,8 +274,7 @@ class TropyWriter:
     def __init__(self, project_path: str | Path):
         self.db_path = resolve_project_db_path(project_path)
         if not self.db_path.exists():
-            raise FileNotFoundError(
-                f"No Tropy database at {_display_path(self.db_path)}")
+            raise FileNotFoundError(f"No Tropy database at {_display_path(self.db_path)}")
         self._con: sqlite3.Connection | None = None
 
     # ------------------------------------------------------------- lifecycle
@@ -291,25 +308,23 @@ class TropyWriter:
         if _tropy_is_running():
             problems.append(
                 "Tropy is running — close it before writing, or it will "
-                "overwrite these changes from its in-memory state")
+                "overwrite these changes from its in-memory state"
+            )
 
         if not os.access(self.db_path, os.W_OK):
             problems.append(f"{_display_path(self.db_path)} is not writable")
 
         # A held write lock means something else is mid-transaction.
         try:
-            probe = sqlite3.connect(str(self.db_path), timeout=1.0,
-                                    isolation_level=None)
+            probe = sqlite3.connect(str(self.db_path), timeout=1.0, isolation_level=None)
             try:
                 probe.execute("BEGIN IMMEDIATE")
                 probe.execute("ROLLBACK")
             finally:
                 probe.close()
         except sqlite3.OperationalError as exc:
-            problems.append(
-                f"{_display_path(self.db_path)} is locked by another process")
-            log.debug("Tropy lock probe failed: %s",
-                      _redact_text(str(exc), self.db_path))
+            problems.append(f"{_display_path(self.db_path)} is locked by another process")
+            log.debug("Tropy lock probe failed: %s", _redact_text(str(exc), self.db_path))
 
         return problems
 
@@ -328,8 +343,7 @@ class TropyWriter:
         return target
 
     # --------------------------------------------------------------- preview
-    def preview(self, entries: Iterable[WriteEntry],
-                targets: Iterable[str]) -> Preview:
+    def preview(self, entries: Iterable[WriteEntry], targets: Iterable[str]) -> Preview:
         """Work out what would be written, without writing anything."""
         targets = [t for t in targets if t in VALID_TARGETS]
         result = Preview(blockers=self.blockers())
@@ -344,29 +358,38 @@ class TropyWriter:
             text = (entry.text or "").strip()
             for target in targets:
                 if not text:
-                    result.plans.append(EntryPlan(
-                        entry, target, "empty", "no text for this page"))
+                    result.plans.append(EntryPlan(entry, target, "empty", "no text for this page"))
                     continue
                 if entry.photo_id not in known_photos:
-                    result.plans.append(EntryPlan(
-                        entry, target, "missing-photo",
-                        f"photo {entry.photo_id} is not in this project"))
+                    result.plans.append(
+                        EntryPlan(
+                            entry,
+                            target,
+                            "missing-photo",
+                            f"photo {entry.photo_id} is not in this project",
+                        )
+                    )
                     continue
                 if self._already_present(con, target, entry.photo_id, text):
-                    result.plans.append(EntryPlan(
-                        entry, target, "duplicate",
-                        "identical text already attached to this photo"))
+                    result.plans.append(
+                        EntryPlan(
+                            entry,
+                            target,
+                            "duplicate",
+                            "identical text already attached to this photo",
+                        )
+                    )
                     continue
                 result.plans.append(EntryPlan(entry, target, "insert"))
 
         return result
 
-    def _already_present(self, con: sqlite3.Connection, target: str,
-                         photo_id: int, text: str) -> bool:
+    def _already_present(
+        self, con: sqlite3.Connection, target: str, photo_id: int, text: str
+    ) -> bool:
         table = "notes" if target == TARGET_NOTES else "transcriptions"
         row = con.execute(
-            f"SELECT 1 FROM {table} WHERE id = ? AND text = ? "
-            f"AND deleted IS NULL LIMIT 1",
+            f"SELECT 1 FROM {table} WHERE id = ? AND text = ? AND deleted IS NULL LIMIT 1",
             (photo_id, text),
         ).fetchone()
         return row is not None
@@ -416,17 +439,18 @@ class TropyWriter:
                 text = entry.text.strip()
                 if plan.target == TARGET_NOTES:
                     con.execute(
-                        "INSERT INTO notes (id, text, state, language) "
-                        "VALUES (?, ?, ?, ?)",
-                        (entry.photo_id, text, _prosemirror_state(text),
-                         entry.clean_language()),
+                        "INSERT INTO notes (id, text, state, language) VALUES (?, ?, ?, ?)",
+                        (entry.photo_id, text, _prosemirror_state(text), entry.clean_language()),
                     )
                 else:
-                    config_json = json.dumps({
-                        "generator": GENERATOR,
-                        "stage": entry.stage,
-                        "created": datetime.now().isoformat(timespec="seconds"),
-                    }, ensure_ascii=False)
+                    config_json = json.dumps(
+                        {
+                            "generator": GENERATOR,
+                            "stage": entry.stage,
+                            "created": datetime.now().isoformat(timespec="seconds"),
+                        },
+                        ensure_ascii=False,
+                    )
                     con.execute(
                         "INSERT INTO transcriptions (id, text, config, data, status) "
                         "VALUES (?, ?, ?, ?, 0)",
@@ -434,16 +458,13 @@ class TropyWriter:
                     )
                 report.written += 1
             con.execute("COMMIT")
-            log.info("Wrote %d row(s) into %s", report.written,
-                     _display_path(self.db_path))
+            log.info("Wrote %d row(s) into %s", report.written, _display_path(self.db_path))
         except Exception as exc:
             con.execute("ROLLBACK")
             report.errors.append(_sanitise_error(exc, self.db_path))
             report.written = 0
-            log.error("Tropy write rolled back: %s",
-                      _sanitise_error(exc, self.db_path))
-            log.debug("Tropy write failure detail: %s",
-                      _redact_text(str(exc), self.db_path))
+            log.error("Tropy write rolled back: %s", _sanitise_error(exc, self.db_path))
+            log.debug("Tropy write failure detail: %s", _redact_text(str(exc), self.db_path))
 
         return report
 
@@ -495,8 +516,11 @@ class TropyWriter:
                 self.backup()
             con.executemany("UPDATE notes SET state = ? WHERE note_id = ?", to_fix)
             con.execute("COMMIT")
-            log.info("Repaired %d note(s) missing a selection in %s",
-                     len(to_fix), _display_path(self.db_path))
+            log.info(
+                "Repaired %d note(s) missing a selection in %s",
+                len(to_fix),
+                _display_path(self.db_path),
+            )
         except Exception:
             con.execute("ROLLBACK")
             raise
@@ -527,13 +551,15 @@ def entries_from_items(items, *, stage: str = "cleaned") -> list[WriteEntry]:
             bucket, field_name = key_map[candidate]
             text = (item.results.get(bucket) or {}).get(field_name)
             if text and text.strip():
-                entries.append(WriteEntry(
-                    photo_id=int(photo_id),
-                    text=text,
-                    label=item.name,
-                    language=_language_code(item),
-                    stage=candidate,
-                ))
+                entries.append(
+                    WriteEntry(
+                        photo_id=int(photo_id),
+                        text=text,
+                        label=item.name,
+                        language=_language_code(item),
+                        stage=candidate,
+                    )
+                )
                 break
     return entries
 

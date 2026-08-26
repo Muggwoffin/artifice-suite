@@ -806,9 +806,7 @@ class TestFeatureFlag:
         monkeypatch.setattr(
             config,
             "get",
-            lambda key, default=None: (
-                False if key == "tropy_live_browse_enabled" else default
-            ),
+            lambda key, default=None: False if key == "tropy_live_browse_enabled" else default,
         )
 
     def test_projects_404_when_disabled(self, tmp_path, monkeypatch):
@@ -1209,16 +1207,13 @@ class TestNestedLists:
         conn.executescript(_TROPY_SCHEMA)
         conn.execute("INSERT INTO lists (list_id, name) VALUES (0, 'ROOT')")
         conn.execute(
-            "INSERT INTO lists (list_id, name, parent_list_id) "
-            "VALUES (1, 'Correspondence', 0)",
+            "INSERT INTO lists (list_id, name, parent_list_id) VALUES (1, 'Correspondence', 0)",
         )
         conn.execute(
-            "INSERT INTO lists (list_id, name, parent_list_id) "
-            "VALUES (2, 'Vienna 1937-38', 1)",
+            "INSERT INTO lists (list_id, name, parent_list_id) VALUES (2, 'Vienna 1937-38', 1)",
         )
         conn.execute(
-            "INSERT INTO project (project_id, name, base) "
-            "VALUES (1, 'Test Project', 'project')",
+            "INSERT INTO project (project_id, name, base) VALUES (1, 'Test Project', 'project')",
         )
         for iid in (1, 2):
             conn.execute(
@@ -1256,16 +1251,13 @@ class TestNestedLists:
         conn.executescript(_TROPY_SCHEMA)
         conn.execute("INSERT INTO lists (list_id, name) VALUES (0, 'ROOT')")
         conn.execute(
-            "INSERT INTO lists (list_id, name, parent_list_id) "
-            "VALUES (1, 'One', 2)",
+            "INSERT INTO lists (list_id, name, parent_list_id) VALUES (1, 'One', 2)",
         )
         conn.execute(
-            "INSERT INTO lists (list_id, name, parent_list_id) "
-            "VALUES (2, 'Two', 1)",
+            "INSERT INTO lists (list_id, name, parent_list_id) VALUES (2, 'Two', 1)",
         )
         conn.execute(
-            "INSERT INTO project (project_id, name, base) "
-            "VALUES (1, 'Test Project', 'project')",
+            "INSERT INTO project (project_id, name, base) VALUES (1, 'Test Project', 'project')",
         )
         for iid in (1, 2):
             conn.execute(

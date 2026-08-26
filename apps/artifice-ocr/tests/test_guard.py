@@ -18,12 +18,14 @@ from artifice_ocr import _guard, config
 @pytest.fixture(autouse=True)
 def strict_guard():
     """Run each test against the shipped defaults."""
-    config.apply_overrides({
-        "cleanup_guard": True,
-        "cleanup_guard_max_deleted_words": 2,
-        "cleanup_guard_min_length_ratio": 0.97,
-        "cleanup_guard_protect_nouns": True,
-    })
+    config.apply_overrides(
+        {
+            "cleanup_guard": True,
+            "cleanup_guard_max_deleted_words": 2,
+            "cleanup_guard_min_length_ratio": 0.97,
+            "cleanup_guard_protect_nouns": True,
+        }
+    )
     yield
     config.reset()
     config.load_config()
@@ -33,12 +35,14 @@ def strict_guard():
 # things the guard must reject
 # --------------------------------------------------------------------------- #
 
+
 def test_rejects_deleted_clause():
     """IMG_7186: a fragmentary SOE cable had whole clauses removed."""
-    raw = ("ly safe in Italian occupied zone. Unwilling tzerland as he sees no "
-           "useful activity here. to join you but only if he can work.")
-    cleaned = ("ly safe in Italian occupied zone. Unwilling to join you but "
-               "only if he can work.")
+    raw = (
+        "ly safe in Italian occupied zone. Unwilling tzerland as he sees no "
+        "useful activity here. to join you but only if he can work."
+    )
+    cleaned = "ly safe in Italian occupied zone. Unwilling to join you but only if he can work."
 
     result = _guard.check(raw, cleaned)
 
@@ -52,10 +56,14 @@ def test_rejects_corrupted_place_name_even_when_other_copies_survive():
 
     A set-based check misses this entirely, which is why nouns are counted.
     """
-    raw = ("Chef der Zivilverwaltung im Elsass (Abteilung...) einreichen. "
-           "Dienststellen im Elsass melden. Verwaltung im Elsass bestimmt.")
-    cleaned = ("Chef der Zivilverwaltung im Elsass (Abteilung...) einreichen. "
-               "Dienststellen im Elsass melden. Verwaltung im Elass bestimmt.")
+    raw = (
+        "Chef der Zivilverwaltung im Elsass (Abteilung...) einreichen. "
+        "Dienststellen im Elsass melden. Verwaltung im Elsass bestimmt."
+    )
+    cleaned = (
+        "Chef der Zivilverwaltung im Elsass (Abteilung...) einreichen. "
+        "Dienststellen im Elsass melden. Verwaltung im Elass bestimmt."
+    )
 
     result = _guard.check(raw, cleaned)
 
@@ -104,6 +112,7 @@ def test_rejects_empty_output():
 # --------------------------------------------------------------------------- #
 # things the guard must allow
 # --------------------------------------------------------------------------- #
+
 
 def test_allows_hyphenated_line_rejoin():
     """The repair cleanup exists to make must survive the guard."""
@@ -172,19 +181,22 @@ def test_noun_protection_can_be_disabled():
 # integration with the stage
 # --------------------------------------------------------------------------- #
 
+
 @patch("artifice_ocr.stages.cleanup.ollama.Client")
 def test_stage_keeps_raw_text_when_guard_rejects(mock_chat, tmp_path):
     mock_chat = mock_chat.return_value.chat
     from artifice_ocr.stages import cleanup
 
-    raw = ("ly safe in Italian occupied zone. Unwilling tzerland as he sees no "
-           "useful activity here. to join you but only if he can work.")
+    raw = (
+        "ly safe in Italian occupied zone. Unwilling tzerland as he sees no "
+        "useful activity here. to join you but only if he can work."
+    )
     lossy = "ly safe in Italian occupied zone. Unwilling to join you."
     mock_chat.return_value = MagicMock(message=MagicMock(content=lossy))
 
     result = cleanup.perform(raw, source_file="page.tif", output_dir=str(tmp_path))
 
-    assert result["cleaned_text"] == raw            # raw survives
+    assert result["cleaned_text"] == raw  # raw survives
     assert result["guard"]["ok"] is False
     assert result["rejected_cleaned_text"] == lossy  # kept for review
 
@@ -234,6 +246,7 @@ def test_guard_can_be_switched_off_entirely(mock_chat, tmp_path):
 # repeated ~30 times on another in the same folder. Unlike the cleanup/
 # structure guards above, there is no source text to fall back to here.
 
+
 def test_repetition_guard_rejects_a_single_line_looped():
     looped = "\n\n".join(["Verwaltung Werte von Welleben eine Grundlage setzen."] * 50)
 
@@ -260,8 +273,7 @@ def test_repetition_guard_rejects_a_short_cycle():
 
 def test_repetition_guard_accepts_real_varied_text():
     real = "\n\n".join(
-        f"This is genuinely distinct archival sentence number {i} of the page."
-        for i in range(40)
+        f"This is genuinely distinct archival sentence number {i} of the page." for i in range(40)
     )
 
     result = _guard.check_no_repetition_loop(real)

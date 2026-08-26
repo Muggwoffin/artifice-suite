@@ -33,6 +33,7 @@ def _validate_url(url: str, field_name: str) -> str:
     except EndpointRejected as e:
         raise EndpointRejected(f"{field_name}: {e}") from e
 
+
 _THINK_UNSUPPORTED_HINTS = (
     "does not support thinking",
     "thinking is not supported",
@@ -123,14 +124,10 @@ class OllamaBackend:
             kwargs["think"] = think
 
         if think is None:
-            return _guarded_chat(
-                lambda: client.chat(**kwargs), base_url=normalised, model=model
-            )
+            return _guarded_chat(lambda: client.chat(**kwargs), base_url=normalised, model=model)
 
         try:
-            return _guarded_chat(
-                lambda: client.chat(**kwargs), base_url=normalised, model=model
-            )
+            return _guarded_chat(lambda: client.chat(**kwargs), base_url=normalised, model=model)
         except Exception as exc:
             if _is_think_unsupported(exc):
                 logger.debug(
@@ -191,6 +188,7 @@ class OllamaOpenAIBackend:
         )
         content = resp.choices[0].message.content or ""
         return _SimpleResponse(content)
+
 
 class LMStudioBackend:
     """OpenAI-compatible LM Studio backend.

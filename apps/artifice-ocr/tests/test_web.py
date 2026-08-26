@@ -500,9 +500,7 @@ def test_start_run_preflight_failure_returns_409_with_url(client, tmp_path, monk
     monkeypatch.setattr(
         _resolution,
         "probe_endpoint_sync",
-        lambda *a, **k: ProbeResult(
-            url="http://localhost:11434", reachable=False, hint="down"
-        ),
+        lambda *a, **k: ProbeResult(url="http://localhost:11434", reachable=False, hint="down"),
     )
 
     res = client.post("/api/run/start", json={"stages": ["ocr"]})
@@ -675,9 +673,7 @@ def test_set_config_pure_ollama_with_default_api_base_url_saves(client, monkeypa
     # Fail closed deliberately: a public api_base_url must STILL be rejected
     # when api_key is active, so this test proves the save succeeds because the
     # inactive field is skipped, not because the policy was relaxed.
-    monkeypatch.setattr(
-        settings_mod, "_endpoint_policy", EndpointPolicy(allow_public=False)
-    )
+    monkeypatch.setattr(settings_mod, "_endpoint_policy", EndpointPolicy(allow_public=False))
 
     res = client.post(
         "/api/config",
@@ -698,9 +694,7 @@ def test_set_config_skips_validation_for_inactive_url_fields(client, monkeypatch
     """A link-local value in an *inactive* URL field is not validated at save
     time — it is deferred to use-time by the endpoint policy."""
     # Default backends are "auto"; no field maps to "auto", so none is checked.
-    res = client.post(
-        "/api/config", json={"api_base_url": "http://169.254.169.254/v1"}
-    )
+    res = client.post("/api/config", json={"api_base_url": "http://169.254.169.254/v1"})
     assert res.status_code == 200
     assert res.json() == {"ok": True}
 

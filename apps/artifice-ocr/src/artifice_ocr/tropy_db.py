@@ -121,9 +121,7 @@ def resolve_project_db_path(path: str | Path) -> Path:
         db = p / PROJECT_DB_NAME
         if db.exists():
             return db
-        candidates = [
-            m for m in p.glob("*.tpy") if not m.name.endswith(_BACKUP_SUFFIX)
-        ]
+        candidates = [m for m in p.glob("*.tpy") if not m.name.endswith(_BACKUP_SUFFIX)]
         if candidates:
             return sorted(candidates, key=lambda m: m.name)[0]
     # Unmanaged single-file project (path names a .tpy that may not exist yet).
@@ -597,9 +595,7 @@ def tropy_config_dir() -> Path:
         return Path(base) / "Tropy"
     if sys.platform == "darwin":
         return home / "Library" / "Application Support" / "Tropy"
-    return Path(
-        os.environ.get("XDG_CONFIG_HOME") or (home / ".config")
-    ) / "Tropy"
+    return Path(os.environ.get("XDG_CONFIG_HOME") or (home / ".config")) / "Tropy"
 
 
 def recent_projects() -> list[Path]:

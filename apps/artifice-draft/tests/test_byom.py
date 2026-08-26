@@ -245,7 +245,12 @@ class TestByomContractAndSsrf:
         assert r.status_code == 200
         body = r.json()
         assert set(body.keys()) == {
-            "app", "configured", "endpoint", "model", "roles", "recommendations"
+            "app",
+            "configured",
+            "endpoint",
+            "model",
+            "roles",
+            "recommendations",
         }
         assert body["app"] == "artifice-draft"
         assert body["configured"] is False
@@ -256,7 +261,12 @@ class TestByomContractAndSsrf:
         assert r.status_code == 200
         body = r.json()
         assert set(body.keys()) == {
-            "app", "configured", "endpoint", "model", "roles", "recommendations"
+            "app",
+            "configured",
+            "endpoint",
+            "model",
+            "roles",
+            "recommendations",
         }
         assert body["configured"] is True
 

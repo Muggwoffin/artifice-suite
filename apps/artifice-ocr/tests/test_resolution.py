@@ -252,9 +252,7 @@ def test_resolution_log_never_contains_api_key(monkeypatch, caplog):
 
 def test_redact_url_strips_userinfo_and_query():
     """The log helper strips credentials and query/fragment."""
-    assert _resolution._redact_url("http://user:pass@localhost:11434") == (
-        "http://localhost:11434"
-    )
+    assert _resolution._redact_url("http://user:pass@localhost:11434") == ("http://localhost:11434")
     assert _resolution._redact_url("http://localhost:11434/v1?api_key=secret") == (
         "http://localhost:11434/v1"
     )

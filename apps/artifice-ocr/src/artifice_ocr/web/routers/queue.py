@@ -125,7 +125,9 @@ def reprocess_item_route(item_id: str, req: ReprocessRequest) -> dict:
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found in the queue")
     if req.from_stage not in ("raw", "cleaned", "translate"):
-        raise HTTPException(status_code=400, detail="from_stage must be 'raw', 'cleaned', or 'translate'")
+        raise HTTPException(
+            status_code=400, detail="from_stage must be 'raw', 'cleaned', or 'translate'"
+        )
     if not req.stages:
         raise HTTPException(status_code=400, detail="No stages to re-run")
     try:
