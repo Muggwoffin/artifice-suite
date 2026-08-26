@@ -31,20 +31,18 @@ function openPdfExport() {
   pdfEls["pdf-log"].innerHTML = "";
   pdfEls["btn-pdf-download"].disabled = true;
   pdfEls["btn-pdf-start"].disabled = false;
-  setPdfStatus("Select a folder of processed .txt files, then press Start.", "");
+  setPdfStatus("Point at your output folder, choose a stage, then press Start.", "");
 
-  // Smart default: use the output dir from the main view
+  // Default the input to the pipeline's output ROOT, not a per-item leaf.
+  // The backend reads <folder>/<stage>/text/*.txt, so the output root is
+  // always a valid input and the Stage selector below decides which text is
+  // used. The previous default appended "/cleaned/text/<item name>", which is
+  // never a real directory of .txt files (text is written as <stem>.txt files
+  // directly in cleaned/text/, not in a per-item subfolder) — so it produced
+  // "No pages found" every time and contradicted the Stage selector.
   const outputDir = (els["output-dir"] && els["output-dir"].value) || "output";
+  pdfEls["pdf-folder"].value = outputDir;
   pdfEls["pdf-output"].value = "";
-
-  // Try to guess from the first queue item
-  if (items.size > 0) {
-    const first = items.values().next().value;
-    if (first && first.name) {
-      const name = first.name.replace(/\.[^.]+$/, "");
-      pdfEls["pdf-folder"].value = outputDir + "/cleaned/text/" + name;
-    }
-  }
 }
 
 function closePdfExport() {

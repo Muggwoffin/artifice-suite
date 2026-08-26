@@ -512,7 +512,7 @@ def test_compile_function_raises_on_empty_folder(tmp_path):
     empty = tmp_path / "empty"
     empty.mkdir()
 
-    with pytest.raises(ValueError, match="No pages found"):
+    with pytest.raises(ValueError, match="No 'cleaned' text found"):
         pdf_export.compile(str(empty), stage="cleaned", structure=False)
 
 

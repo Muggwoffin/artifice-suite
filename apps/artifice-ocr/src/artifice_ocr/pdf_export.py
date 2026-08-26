@@ -769,7 +769,11 @@ def compile(
         on_progress(f"Collecting bilingual pages from {folder_path}...")
         bilingual_pages = collect_bilingual_folder(str(folder_path), manifest_path=manifest_path)
         if not bilingual_pages:
-            raise ValueError(f"No pages found in {folder}")
+            raise ValueError(
+                f"No cleaned/ and translated/ text found under {folder}. "
+                "Bilingual mode needs both a cleaned and a translated stage. "
+                "Point at your output folder and run those stages first."
+            )
         on_progress(f"Found {len(bilingual_pages)} page(s)")
 
         if structure:
@@ -799,7 +803,13 @@ def compile(
     on_progress(f"Collecting pages from {folder_path}...")
     pages = collect_folder(str(folder_path), stage=stage, manifest_path=manifest_path)
     if not pages:
-        raise ValueError(f"No pages found in {folder}")
+        raise ValueError(
+            f"No '{stage}' text found under {folder}. Looked for "
+            f"{folder}/{stage}/text/*.txt (and .txt files directly in the "
+            "folder). Point at your output folder, or pick a Stage that has "
+            "been run — the pipeline must finish that stage before it can be "
+            "compiled."
+        )
     on_progress(f"Found {len(pages)} page(s)")
 
     rejected: list[str] = []
