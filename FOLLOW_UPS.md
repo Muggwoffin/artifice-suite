@@ -380,6 +380,39 @@ app. Nothing in CI reads prose, so none of this fails a gate.
 
 ---
 
+## `_backend.py`'s four `chat` methods have diverged into copy-paste
+
+Raised by `oss-reviewer` (Mistral) on 2026-08-26, reviewing the file after it
+took four changes in a day and shipped a regression.
+
+`OllamaBackend`, `OllamaOpenAIBackend`, `LMStudioBackend`, `HuggingFaceBackend`
+and `ApiKeyBackend` each repeat: build a client, validate the URL, log the base
+URL once, map `num_predict` to `num_predict` or `max_tokens`, call
+`_guarded_chat`, and unwrap the response into `_SimpleResponse`.
+
+What genuinely differs is small: client construction, where `num_ctx` goes
+(`options` vs `extra_body` vs nowhere), `think` handling (Ollama only), and
+response extraction.
+
+**Why it matters, concretely.** `backend_name` was added to eight call sites by
+one script. Because the same `model=model,` shape appears twice per backend —
+once in the provider call, once in the wrapper around it — it landed in four
+*provider* calls too, and broke OCR on every backend at once
+(`Completions.create() got an unexpected keyword argument 'backend_name'`, fixed
+in #80). One place to edit is one place to get wrong.
+
+**Not done now, deliberately.** Refactoring five backend classes immediately
+after shipping a regression in that exact file, with no independent reviewer
+available, trades a known-good state for a larger unreviewed change. The AST
+test added in #80 guards the specific failure; the duplication is the standing
+risk.
+
+**Owner:** `lead-engineer`, with a `code-reviewer` pass, once the fleet has
+credit. Extract the shared kwargs construction; keep the per-backend
+differences explicit rather than behind flags.
+
+---
+
 ## draft has a flaky wall-clock test that fails on Windows CI
 
 `apps/artifice-draft/tests/test_byom.py:396` asserts:

@@ -79,11 +79,36 @@ def _provider_404(exc: Exception, *, base_url: str, model: str) -> RuntimeError:
     )
 
 
+# Machine-stable error identifiers first — providers change prose, not codes.
+# ``exceed_context_size_error`` is LM Studio's ``type``; ``context_length_exceeded``
+# is OpenAI's ``code``. Both arrive inside the serialised body in ``str(exc)``.
+#
+# The two prose entries are kept because a provider may report only a message,
+# but they name the *overflow* specifically. An earlier draft also matched the
+# bare phrase "maximum context length", which fires on
+# "maximum context length not supported for this model" — a capability error,
+# not an overflow — and would have replaced it with a misleading one. Rewriting
+# an error is only safe when the match is unambiguous, because the rewrite is
+# what the user sees.
 _CONTEXT_OVERFLOW_MARKERS = (
     "exceed_context_size_error",
+    "context_length_exceeded",
     "exceeds the available context size",
     "context length exceeded",
-    "maximum context length",
+)
+
+# OpenAI's prose form: "This model's maximum context length is 4096 tokens,
+# however you requested 5000 tokens". Its body also carries the
+# ``context_length_exceeded`` code above, so this is the belt to that braces —
+# it catches a provider that sends the sentence without the code.
+#
+# The trailing clause is required, and is the whole point: "maximum context
+# length" alone also appears in "maximum context length not supported for this
+# model", which is a capability error. Matching that would replace a real
+# failure with advice about a limit the user has not hit.
+_CONTEXT_OVERFLOW_PHRASE = re.compile(
+    r"maximum context length.{0,80}?(however|you requested|resulted in|but you)",
+    re.IGNORECASE | re.DOTALL,
 )
 
 # "request (4107 tokens) exceeds the available context size (4096 tokens)"
@@ -93,18 +118,25 @@ _CONTEXT_NUMBERS = re.compile(
 )
 
 
-def _configured_context_size() -> int:
-    """The user's chosen context window in tokens, or 0 to leave it alone.
+def _configured_context_size() -> int | None:
+    """The user's chosen context window in tokens, or ``None`` to leave it alone.
 
-    Anything non-numeric or non-positive reads as 0 rather than raising: a
-    malformed setting must not stop a run, it must fall back to the previous
+    Returns ``None`` rather than ``0`` for "do not send ``num_ctx``". The config
+    value is still ``0`` — that reads well in the UI ("0 uses the model's own
+    default") — but ``0`` is a *valid* token count, so a backend author writing
+    ``if context_size:`` and one writing ``if context_size is not None:`` would
+    get different behaviour from the same value. ``None`` cannot be mistaken for
+    a window size.
+
+    Anything non-numeric or non-positive reads as ``None`` rather than raising:
+    a malformed setting must not stop a run, it must fall back to the previous
     behaviour of not sending ``num_ctx`` at all.
     """
     try:
         value = int(config.get("context_size") or 0)
     except (TypeError, ValueError):
-        return 0
-    return value if value > 0 else 0
+        return None
+    return value if value > 0 else None
 
 
 def _context_overflow_hint(backend_name: str) -> str:
@@ -153,7 +185,9 @@ def _context_overflow(exc: BaseException, *, backend_name: str) -> Exception:
 
 def _is_context_overflow(exc: BaseException) -> bool:
     text = str(exc).lower()
-    return any(marker in text for marker in _CONTEXT_OVERFLOW_MARKERS)
+    if any(marker in text for marker in _CONTEXT_OVERFLOW_MARKERS):
+        return True
+    return bool(_CONTEXT_OVERFLOW_PHRASE.search(text))
 
 
 def _guarded_chat(call, *, base_url: str, model: str, backend_name: str = "") -> Any:
@@ -206,7 +240,7 @@ class OllamaBackend:
         # before this setting existed. Only send num_ctx when the user has
         # actually chosen a value.
         context_size = _configured_context_size()
-        if context_size:
+        if context_size is not None:
             options["num_ctx"] = context_size
 
         kwargs: dict[str, Any] = {"model": model, "messages": messages, "options": options}
@@ -286,7 +320,7 @@ class OllamaOpenAIBackend:
         # will ignore an unknown key rather than fail. Only sent when the user
         # set a value, so the default path is byte-identical to before.
         context_size = _configured_context_size()
-        if context_size:
+        if context_size is not None:
             kwargs["extra_body"] = {"options": {"num_ctx": context_size}}
 
         resp = _guarded_chat(
