@@ -74,7 +74,7 @@
           <table class="queue">
             <thead>
               <tr>
-                <th style="width:2rem;"></th>
+                <th style="width:2rem;"><input type="checkbox" id="select-all-rows" title="Select all" aria-label="Select all rows"></th>
                 <th>File</th>
                 <th class="c">OCR</th>
                 <th class="c">Cleanup</th>
@@ -565,10 +565,16 @@
       <button class="modal-close" data-modal-close>&times;</button>
       <p class="dim">Compile processed text files from a folder into one continuous reading PDF.</p>
 
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
-        <input type="text" id="pdf-folder" class="input" style="flex:1;" placeholder="Folder of .txt files">
+      <label class="field-label" for="pdf-folder">Input folder</label>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.2rem;">
+        <input type="text" id="pdf-folder" class="input" style="flex:1;" placeholder="Your output folder, e.g. output">
         <button class="btn" id="btn-pdf-browse-folder">Browse&hellip;</button>
       </div>
+      <p class="dim" style="margin:0 0 0.6rem; font-size:0.82rem;">
+        Pick the pipeline&rsquo;s <strong>output</strong> folder (the one holding <code>cleaned/</code>,
+        <code>raw_ocr/</code>&hellip;), not a single file. The <strong>Stage</strong> selector below
+        chooses which processed text is read.
+      </p>
 
       <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
         <label>Stage:
@@ -598,10 +604,14 @@
         Requires both cleaned/ and translated/ outputs in the folder.  Structure pass is skipped unless you check it below.
       </p>
 
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
-        <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Output path (optional)">
+      <label class="field-label" for="pdf-output">Save PDF to</label>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.2rem;">
+        <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Optional — where to save the PDF">
         <button class="btn" id="btn-pdf-browse-output">Browse&hellip;</button>
       </div>
+      <p class="dim" style="margin:0 0 0.6rem; font-size:0.82rem;">
+        Leave blank to save into the <code>output</code> folder, named after the input folder.
+      </p>
 
       <p class="dim" id="pdf-status"></p>
       <div id="pdf-log" style="max-height:26vh; overflow:auto; background:var(--paper-recessed); border-radius:var(--radius); padding:0.6rem; font-family:var(--font-mono); font-size:0.82rem; white-space:pre-wrap;"></div>

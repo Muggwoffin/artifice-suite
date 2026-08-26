@@ -231,6 +231,17 @@ button, input, select { font-family: inherit; font-size: inherit; }
 
 .dim { color: var(--ink-faint); font-size: var(--text-sm); }
 
+/* Small block label sitting above an input row (e.g. the Compile PDF modal). */
+.field-label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
 /* -------------------------------------------------------------- drop zone */
 
 .dropzone {

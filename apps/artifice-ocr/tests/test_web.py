@@ -2440,6 +2440,32 @@ def test_pdf_export_400_on_missing_folder(client, tmp_path):
     assert status["status"] == "error"
 
 
+def test_pdf_export_400_when_folder_is_a_file(client, tmp_path):
+    """Pointing the input at a file (not a folder) is rejected synchronously
+    with guidance — the exact failure a user hit selecting a .pdf inside
+    output/cleaned/text/ and getting the generic 'No pages found'."""
+    a_file = tmp_path / "some.pdf"
+    a_file.write_bytes(b"%PDF-1.4\n")
+    res = client.post(
+        "/api/pdf-export/start",
+        json={"folder": str(a_file), "stage": "cleaned", "structure": False},
+    )
+    assert res.status_code == 400
+    assert "folder, not a file" in res.json()["detail"]
+
+
+def test_pdf_export_400_when_folder_absent(client, tmp_path):
+    """A path inside allowed roots that does not exist is rejected up front
+    rather than surfacing later as 'No pages found'."""
+    ghost = tmp_path / "does_not_exist"
+    res = client.post(
+        "/api/pdf-export/start",
+        json={"folder": str(ghost), "stage": "cleaned", "structure": False},
+    )
+    assert res.status_code == 400
+    assert "Folder not found" in res.json()["detail"]
+
+
 def test_pdf_export_download_404_before_compilation(client):
     res = client.get("/api/pdf-export/download")
     assert res.status_code == 404
