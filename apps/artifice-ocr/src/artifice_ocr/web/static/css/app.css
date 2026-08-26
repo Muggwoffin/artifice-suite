@@ -1376,6 +1376,64 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .tropy-export-status.error { color: var(--error); font-weight: 600; }
 .tropy-export-status.success { color: var(--success); }
 
+/* ----------------------------------------------------- tropy writeback destination */
+
+.tropy-writeback-section { margin-bottom: var(--space-5); }
+.tropy-writeback-section.hidden { display: none; }
+.tropy-writeback-warning.hidden { display: none; }
+.tropy-writeback-preview.hidden { display: none; }
+/* Both modal footers were inline `style="display:flex"`, which outranks any
+   class selector — so `.hidden` could never hide them and both footers showed
+   at once. The layout lives here instead, where `.hidden` can win. */
+.tropy-export-footer,
+.tropy-writeback-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+.tropy-export-footer.hidden { display: none; }
+.tropy-writeback-footer.hidden { display: none; }
+
+.tropy-destination { border: 0; padding: 0; margin: 0; }
+.tropy-destination-legend {
+  display: block; width: 100%;
+  font-family: var(--font-label); font-size: var(--text-xs);
+  font-weight: 600; letter-spacing: var(--label-tracking);
+  text-transform: uppercase; color: var(--ink-faint);
+  padding: 0; margin-bottom: var(--space-3);
+}
+.tropy-destination-option {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--rule); border-radius: var(--radius-sm);
+  background: var(--paper-recessed); cursor: pointer;
+  font-size: var(--text-sm); color: var(--ink);
+  transition: background-color var(--duration-instant) ease;
+  margin-bottom: var(--space-3);
+}
+.tropy-destination-option:last-of-type { margin-bottom: 0; }
+.tropy-destination-option:hover { background: var(--accent-wash); }
+.tropy-destination-option input[type="radio"] { accent-color: var(--accent); flex-shrink: 0; }
+.tropy-destination-option input[type="radio"]:checked + span { font-weight: 600; color: var(--accent-deep); }
+
+.tropy-writeback-warning {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  margin-top: var(--space-3); padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm); color: var(--ink);
+}
+.tropy-writeback-warning svg { flex-shrink: 0; margin-top: 1px; color: var(--warning); }
+
+.tropy-writeback-preview {
+  margin-top: var(--space-3); padding: var(--space-4);
+  background: var(--paper-raised); border: 1px solid var(--rule);
+  border-radius: var(--radius-sm); font-size: var(--text-sm);
+  white-space: pre-line;
+}
+
 /* ------------------------------------------------------ tropy browse-project mode */
 
 .tropy-mode-tabs {
