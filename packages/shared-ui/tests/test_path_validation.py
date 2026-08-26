@@ -11,8 +11,10 @@ from pathlib import Path
 
 import pytest
 from shared_ui.path_validation import (
+    PathValidationError,
     build_allowed_roots,
     normalise_path,
+    sanitise_path_component,
     validate_path,
 )
 
@@ -44,6 +46,31 @@ class TestNormalisePath:
     def test_plain_path_passes_through(self) -> None:
         result = normalise_path("/home/user/docs", "source")
         assert result == "/home/user/docs"
+
+
+class TestSanitisePathComponent:
+    """Tests for sanitise_path_component()."""
+
+    def test_traversal_collapses_to_final_component(self) -> None:
+        assert sanitise_path_component("../../etc/passwd") == "passwd"
+
+    def test_windows_traversal_collapses_on_posix(self) -> None:
+        # Backslashes are treated as separators, so this must yield "system32"
+        # even on POSIX where Path("..\\..\\x").name returns the whole string.
+        assert sanitise_path_component("..\\..\\windows\\system32") == "system32"
+
+    def test_plain_filename_returned_unchanged(self) -> None:
+        assert sanitise_path_component("report.docx") == "report.docx"
+
+    @pytest.mark.parametrize("raw", ["", ".", ".."])
+    def test_rejects_empty_and_dot_components(self, raw: str) -> None:
+        with pytest.raises(PathValidationError):
+            sanitise_path_component(raw)
+
+    def test_public_message_names_the_input(self) -> None:
+        with pytest.raises(PathValidationError) as exc_info:
+            sanitise_path_component("..")
+        assert exc_info.value.public_message == "Invalid filename: '..'"
 
 
 class TestBuildAllowedRoots:

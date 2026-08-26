@@ -65,6 +65,24 @@ def normalise_path(raw: str, field_name: str) -> str:
     return normalised
 
 
+def sanitise_path_component(raw: str, field_name: str = "filename") -> str:
+    """Return a safe single-component filename from *raw*.
+
+    Treats backslashes as separators (Windows path support) and rejects
+    components that are empty, ``"."`` or ``".."`` after cleaning.  Raises
+    :class:`PathValidationError` — no web-framework dependency — on rejection.
+
+    The backslash replacement is load-bearing: on POSIX,
+    ``Path("..\\..\\x").name`` returns the whole string because a backslash is
+    not a separator there, so a Windows-style name supplied to a POSIX server
+    must be normalised first.
+    """
+    cleaned = Path(raw.replace("\\", "/")).name
+    if cleaned in ("", ".", ".."):
+        raise PathValidationError(f"Invalid {field_name}: {raw!r}")
+    return cleaned
+
+
 def build_allowed_roots(env_var: str, extra_roots: Iterable[str] = ()) -> list[Path]:
     """Return the set of directory roots permitted for user-supplied paths.
 
