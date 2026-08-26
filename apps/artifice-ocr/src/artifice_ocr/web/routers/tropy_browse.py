@@ -26,10 +26,13 @@ from ...tropy_db import (
     list_lists,
     list_projects,
     list_tags,
+    missing_asset_count,
+    recent_projects,
+    resolve_project_db_path,
 )
-from ...validation import validate_path
 from ..models import TropyBrowseRequest, TropyEnqueueRequest
 from ..runtime import state
+from ..validation import validate_directory
 
 log = get_logger("tropy_browse")
 
@@ -54,19 +57,37 @@ def _check_enabled() -> None:
 
 
 def _resolve_db_path(raw: str) -> Path:
-    """Validate and return the .tpy database path."""
-    validated = validate_path(raw, "path")
-    return Path(validated)
+    """Validate the user-supplied path, then resolve it to the ``.tpy`` file.
+
+    Accepts a ``.tropy`` bundle directory, a ``project.tpy`` (or any ``.tpy``)
+    file, or a containing folder.  Validation runs on the *user-supplied* path
+    first; the derived ``.tpy`` is always a child of (or identical to) that
+    validated path, so nothing bypasses ``validate_path``.
+    """
+    validated = validate_directory(raw, "path")
+    return resolve_project_db_path(validated)
 
 
 def _resolve_output_dir(raw: str) -> str:
     """Validate and return the output directory path."""
-    return validate_path(raw, "output_dir")
+    return validate_directory(raw, "output_dir")
 
 
 # --------------------------------------------------------------------------- #
 # browse routes
 # --------------------------------------------------------------------------- #
+
+
+@router.get("/api/tropy/browse/recent")
+def browse_recent() -> dict:
+    """List Tropy's recently-opened projects (from its own ``state.json``).
+
+    Soft failure: no Tropy install, no ``state.json``, or unreadable JSON all
+    return an empty list.  Paths are returned verbatim — each is re-validated
+    when the user actually loads it through the other browse routes.
+    """
+    _check_enabled()
+    return {"projects": [str(p) for p in recent_projects()]}
 
 
 @router.post("/api/tropy/browse/projects")
@@ -208,9 +229,15 @@ def enqueue_from_tropy(req: TropyEnqueueRequest) -> dict:
             item = get_item(db_path, item_id)
             if item is not None:
                 items.append(item)
+        missing, total = missing_asset_count(items)
         job_items = items_to_job_items(items, output_dir=output_dir)
         added = state.add_items(job_items)
-        return {"added": len(added), "items": state.queue_snapshot()}
+        return {
+            "added": len(added),
+            "missing": missing,
+            "total": total,
+            "items": state.queue_snapshot(),
+        }
     except TropyDBError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:

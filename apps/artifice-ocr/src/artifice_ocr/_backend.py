@@ -6,12 +6,16 @@
 
 import logging
 from typing import Any
+
 import ollama
-from openai import OpenAI
 from huggingface_hub import InferenceClient
 from model_harness.contract import EndpointRejected
+from model_harness.discovery import normalise_base_url
 from model_harness.endpoint_policy import EndpointPolicy
+from openai import NotFoundError, OpenAI
+
 from . import config
+from ._resolution import _redact_url
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +33,7 @@ def _validate_url(url: str, field_name: str) -> str:
     except EndpointRejected as e:
         raise EndpointRejected(f"{field_name}: {e}") from e
 
+
 _THINK_UNSUPPORTED_HINTS = (
     "does not support thinking",
     "thinking is not supported",
@@ -41,6 +46,48 @@ _THINK_UNSUPPORTED_HINTS = (
 def _is_think_unsupported(exc: Exception) -> bool:
     msg = str(exc).lower()
     return any(hint in msg for hint in _THINK_UNSUPPORTED_HINTS)
+
+
+# Distinct ``(backend, base_url)`` pairs already logged at INFO.  Backends are
+# recreated per call (per page) by design, so without this the pipeline would
+# emit one INFO line per page; the first construction of a given URL logs at
+# INFO and repeats log at DEBUG.
+_logged_base_urls: set[tuple[str, str]] = set()
+
+
+def _log_base_url_once(backend: str, base_url: str) -> None:
+    """Log a backend's constructed base URL once per distinct URL per process."""
+    key = (backend, base_url)
+    if key in _logged_base_urls:
+        logger.debug("Reusing %s backend client: base_url=%s", backend, _redact_url(base_url))
+        return
+    _logged_base_urls.add(key)
+    logger.info("Constructing %s backend client: base_url=%s", backend, _redact_url(base_url))
+
+
+def _provider_404(exc: Exception, *, base_url: str, model: str) -> RuntimeError:
+    """Wrap a provider 404 into a RuntimeError naming what was actually called.
+
+    A raw ``openai.NotFoundError`` surfaces as the provider's bare message with
+    no indication of which URL was attempted — the exact shape that made a
+    doubled ``/v1`` invisible.  The message carries the base URL and model so
+    the next such failure names itself.
+    """
+    return RuntimeError(
+        f"Provider returned 404 for model '{model}' at {_redact_url(base_url)}: {exc}"
+    )
+
+
+def _guarded_chat(call, *, base_url: str, model: str) -> Any:
+    """Run *call*, translating a provider 404 into a self-describing error."""
+    try:
+        return call()
+    except NotFoundError as exc:
+        raise _provider_404(exc, base_url=base_url, model=model) from exc
+    except ollama.ResponseError as exc:
+        if getattr(exc, "status_code", None) == 404:
+            raise _provider_404(exc, base_url=base_url, model=model) from exc
+        raise
 
 
 class _SimpleMessage:
@@ -64,8 +111,10 @@ class OllamaBackend:
         num_predict: int | None = None,
     ) -> Any:
         host = config.get("ollama_url") or "http://localhost:11434"
-        _validate_url(host, "ollama_url")
-        ollama.host = host
+        normalised = normalise_base_url(host)
+        _validate_url(normalised, "ollama_url")
+        _log_base_url_once("ollama", normalised)
+        client = ollama.Client(host=normalised)
         options: dict[str, Any] = {"temperature": temperature}
         if num_predict is not None:
             options["num_predict"] = num_predict
@@ -75,10 +124,10 @@ class OllamaBackend:
             kwargs["think"] = think
 
         if think is None:
-            return ollama.chat(**kwargs)
+            return _guarded_chat(lambda: client.chat(**kwargs), base_url=normalised, model=model)
 
         try:
-            return ollama.chat(**kwargs)
+            return _guarded_chat(lambda: client.chat(**kwargs), base_url=normalised, model=model)
         except Exception as exc:
             if _is_think_unsupported(exc):
                 logger.debug(
@@ -87,7 +136,9 @@ class OllamaBackend:
                     exc,
                 )
                 kwargs.pop("think", None)
-                return ollama.chat(**kwargs)
+                return _guarded_chat(
+                    lambda: client.chat(**kwargs), base_url=normalised, model=model
+                )
             raise
 
 
@@ -100,9 +151,14 @@ class OllamaOpenAIBackend:
     across every backend without a format conversion in the middle.
     """
 
+    def _base_url(self) -> str:
+        raw = config.get("ollama_url") or "http://localhost:11434"
+        return normalise_base_url(raw) + "/v1"
+
     def _client(self) -> OpenAI:
-        base_url = (config.get("ollama_url") or "http://localhost:11434") + "/v1"
+        base_url = self._base_url()
         _validate_url(base_url, "ollama_url")
+        _log_base_url_once("ollama_openai", base_url)
         return OpenAI(base_url=base_url, api_key="ollama")
 
     def chat(
@@ -114,19 +170,25 @@ class OllamaOpenAIBackend:
         think: bool | None = None,
         num_predict: int | None = None,
     ) -> Any:
+        base_url = self._base_url()
         client = self._client()
         kwargs: dict[str, Any] = {}
         if num_predict is not None:
             kwargs["max_tokens"] = num_predict
 
-        resp = client.chat.completions.create(
+        resp = _guarded_chat(
+            lambda: client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                **kwargs,
+            ),
+            base_url=base_url,
             model=model,
-            messages=messages,
-            temperature=temperature,
-            **kwargs,
         )
         content = resp.choices[0].message.content or ""
         return _SimpleResponse(content)
+
 
 class LMStudioBackend:
     """OpenAI-compatible LM Studio backend.
@@ -139,9 +201,13 @@ class LMStudioBackend:
        Nothing is broken; the surface has moved, not disappeared.
     """
 
+    def _base_url(self) -> str:
+        return config.get("lm_studio_url") or "http://localhost:1234/v1"
+
     def _client(self) -> OpenAI:
-        base_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
+        base_url = self._base_url()
         _validate_url(base_url, "lm_studio_url")
+        _log_base_url_once("lm_studio", base_url)
         return OpenAI(base_url=base_url, api_key="lm-studio")
 
     def chat(
@@ -153,16 +219,21 @@ class LMStudioBackend:
         think: bool | None = None,
         num_predict: int | None = None,
     ) -> Any:
+        base_url = self._base_url()
         client = self._client()
         kwargs: dict[str, Any] = {}
         if num_predict is not None:
             kwargs["max_tokens"] = num_predict
 
-        resp = client.chat.completions.create(
+        resp = _guarded_chat(
+            lambda: client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                **kwargs,
+            ),
+            base_url=base_url,
             model=model,
-            messages=messages,
-            temperature=temperature,
-            **kwargs,
         )
         content = resp.choices[0].message.content or ""
         return _SimpleResponse(content)
@@ -224,10 +295,14 @@ class ApiKeyBackend:
     must also make.  See :class:`model_harness.endpoint_policy.EndpointPolicy`.
     """
 
+    def _base_url(self) -> str:
+        return config.get("api_base_url") or "https://api.openai.com/v1"
+
     def _client(self) -> OpenAI:
-        base_url = config.get("api_base_url") or "https://api.openai.com/v1"
+        base_url = self._base_url()
         api_key = config.get("api_key") or ""
         _validate_url(base_url, "api_base_url")
+        _log_base_url_once("api_key", base_url)
         return OpenAI(base_url=base_url, api_key=api_key)
 
     def health_check(self) -> tuple[bool, str | None]:
@@ -235,7 +310,7 @@ class ApiKeyBackend:
         api_key = config.get("api_key")
         if not api_key:
             return False, "No API key configured"
-        base_url = config.get("api_base_url") or "https://api.openai.com/v1"
+        base_url = self._base_url()
         _validate_url(base_url, "api_base_url")
         try:
             self._client().models.list()
@@ -252,16 +327,21 @@ class ApiKeyBackend:
         think: bool | None = None,
         num_predict: int | None = None,
     ) -> Any:
+        base_url = self._base_url()
         client = self._client()
         kwargs: dict[str, Any] = {}
         if num_predict is not None:
             kwargs["max_tokens"] = num_predict
 
-        resp = client.chat.completions.create(
+        resp = _guarded_chat(
+            lambda: client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                **kwargs,
+            ),
+            base_url=base_url,
             model=model,
-            messages=messages,
-            temperature=temperature,
-            **kwargs,
         )
         content = resp.choices[0].message.content or ""
         return _SimpleResponse(content)

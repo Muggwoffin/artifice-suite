@@ -234,20 +234,105 @@ button, input, select { font-family: inherit; font-size: inherit; }
 /* -------------------------------------------------------------- drop zone */
 
 .dropzone {
-  margin: 1rem var(--space-6) 0;
-  border: 1px dashed var(--rule-dark);
-  border-radius: var(--radius);
-  padding: 1rem var(--space-6);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 8rem;
+  margin: var(--space-4) var(--space-6) var(--space-4);
+  padding: var(--space-6) var(--space-5);
+  background: var(--paper-recessed);
+  border: 2px dashed var(--rule-dark);
+  border-radius: var(--radius-lg);
   text-align: center;
-  color: var(--ink-faint);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background-color var(--duration-fast) ease,
+              border-color var(--duration-fast) ease;
 }
 
-.dropzone:hover, .dropzone.drag {
+.dropzone:hover {
   background: var(--accent-wash);
   border-color: var(--accent);
-  color: var(--accent-deep);
+}
+
+.dropzone:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.dropzone.drag {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  border-style: solid;
+}
+
+.dropzone-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dropzone-state.hidden { display: none; }
+
+.dropzone-icon {
+  color: var(--ink-soft);
+  margin-bottom: var(--space-2);
+}
+
+.dropzone:hover .dropzone-icon,
+.dropzone.drag .dropzone-icon {
+  color: var(--accent);
+}
+
+.dropzone-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.dropzone-hint {
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  color: var(--ink-faint);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+.dropzone-state--success .dropzone-title { color: var(--success); }
+.dropzone-state--error .dropzone-title { color: var(--error); }
+
+.dropzone-check { color: var(--success); }
+.dropzone-error-icon { color: var(--error); }
+
+.dropzone-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Spinner used inside the dropzone and elsewhere */
+.spinner {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--rule);
+  border-top-color: var(--accent);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; border-color: var(--accent); opacity: 0.6; }
 }
 
 /* ------------------------------------------------------------------ toolbar */
@@ -324,6 +409,22 @@ button.btn.accent:hover:not(:disabled) { background: var(--accent-deep); }
 button.btn.danger { color: var(--error); }
 button.btn.danger:hover:not(:disabled) { background: var(--error); color: var(--paper); border-color: var(--error); }
 
+/* Tertiary action — visually subordinate to the primary/secondary split
+   established by Design_Philosophy.md §8.1. Used for orphan export actions
+   (e.g. "Send to LudwigLang") that should not compete with Browse/Add. */
+button.btn.ghost {
+  color: var(--ink-faint);
+  border-color: transparent;
+  box-shadow: none;
+}
+button.btn.ghost:hover:not(:disabled) {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  transform: none;
+  box-shadow: none;
+}
+
 /* A button that pairs an inline SVG icon (Design_Philosophy.md §8.8) with a
    text label — Run/Pause/Stop today. Flex handles the icon/label baseline
    alignment that plain text-with-a-dingbat used to need line-height: 1 for. */
@@ -351,6 +452,12 @@ button.btn.icon-btn svg { flex-shrink: 0; }
   overflow: auto;
   max-height: 42vh;
   background: var(--paper-raised);
+}
+
+/* Label inside icon-btn (Run / Pause / Stop): prevents the button's line box
+   from growing when the label text wraps. */
+.icon-btn-label {
+  white-space: nowrap;
 }
 
 table.queue {
@@ -505,6 +612,8 @@ td.stage-failed { color: var(--error); font-weight: 600; }
 .log .success { color: var(--accent-deep); }
 .log .warning { color: var(--gold); }
 .log .error { color: var(--error); }
+.log .log-empty { color: var(--ink-faint); font-style: italic; font-size: var(--text-sm); }
+.log .log-empty:only-child { display: block; text-align: center; padding: var(--space-3) 0; }
 
 /* --------------------------------------------------------------- status bar */
 

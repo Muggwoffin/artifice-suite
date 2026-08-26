@@ -34,7 +34,17 @@ _DEFAULTS: dict[str, Any] = {
     "output_dir": "output",
     "translate_enabled": True,
     "title_enabled": False,  # opt-in stage
-    "tropy_live_browse_enabled": False,
+    # Live Tropy project browsing (read-only .tpy). Enabled by default per the
+    # maintainer's decision (2026-08-25): it restores the "select a project,
+    # don't type a path" flow the JSON-LD rewrite dropped. Still gated by the
+    # read-only connection guarantee; ARTIFICE_OCR_TROPY_LIVE_READ overrides it.
+    "tropy_live_browse_enabled": True,
+    # Direct write-back of OCR results into the Tropy project's notes /
+    # transcriptions tables. Opt-in and default OFF: writing to the user's
+    # research database is the highest-risk operation in the suite, so it is
+    # never on unless the user turns it on explicitly. Restored 2026-08-25,
+    # knowingly reversing ebd89e6, as an opt-in alongside the JSON-LD bridge.
+    "tropy_writeback_enabled": False,
     "title_max_chars": 120,
     "resume": True,
     "max_ocr_workers": 2,
@@ -94,6 +104,11 @@ _DEFAULTS: dict[str, Any] = {
     "huggingface_token": "",
     "api_key": "",
     "api_base_url": "https://api.openai.com/v1",
+    # User-approved folders — an explicit, user-granted extension of the
+    # allowed-roots list. Each entry is an absolute directory the user picked
+    # through the native folder dialog (the consent step), so a Tropy project
+    # on an external drive can be opened without the env var.
+    "approved_folders": [],
 }
 
 _USER_DIR = Path.home() / ".artifice_ocr"
@@ -127,6 +142,8 @@ PERSISTED_KEYS = (
     "tropy_last_path",
     "tropy_last_export_path",
     "tropy_live_browse_enabled",
+    "tropy_writeback_enabled",
+    "approved_folders",
 )
 
 _config_cache: dict[str, Any] | None = None

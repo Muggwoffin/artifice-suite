@@ -25,6 +25,9 @@ const els = {};
  "btn-clear", "btn-skip", "btn-retry", "btn-browse-output",
  "btn-run", "btn-pause", "btn-stop", "progress-bar", "progress-value",
  "status-text", "stage-text", "stage-ocr", "stage-cleanup", "stage-translate", "stage-force",
+ "dropzone-idle", "dropzone-uploading", "dropzone-success",
+ "dropzone-error", "dropzone-hint", "dropzone-live",
+ "dropzone-success-text", "dropzone-error-text",
 ].forEach(id => {
   els[id] = document.getElementById(id);
 });
@@ -71,8 +74,27 @@ function setQueue(list) {
 
 function renderAll() {
   els["queue-body"].innerHTML = "";
-  for (const item of items.values()) els["queue-body"].appendChild(rowFor(item));
+  if (items.size === 0) {
+    const hint = isDesktop
+      ? "Use Browse Files to add documents."
+      : "Drop image files above, or use Browse Files to add documents.";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="9" class="table-empty-cell">
+      <p class="panel-empty-title">No documents queued</p>
+      <p class="panel-empty-desc">${hint}</p>
+    </td>`;
+    els["queue-body"].appendChild(tr);
+  } else {
+    for (const item of items.values()) els["queue-body"].appendChild(rowFor(item));
+  }
   updateCount();
+  updateLogEmptyState();
+}
+
+function updateLogEmptyState() {
+  if (els["log"].children.length === 0) {
+    els["log"].innerHTML = '<p class="log-empty">Activity will appear here as the pipeline runs.</p>';
+  }
 }
 
 function updateCount() {
@@ -275,21 +297,193 @@ async function addPaths(paths) {
   log(`Added ${data.added} file(s)`, "accent");
 }
 
-els["btn-browse-files"].onclick = async () => addPaths(await pickFiles());
-els["btn-add-folder"].onclick = async () => {
-  const folder = await pickFolder("folder");
-  if (folder) addPaths([folder]);
+// btn-browse-files: use the hidden file input in browser mode (where native
+// pickers are unavailable), the native picker in desktop mode.
+els["btn-browse-files"].onclick = async () => {
+  if (isDesktop) {
+    addPaths(await pickFiles());   // desktop: async native picker
+  } else {
+    ensureFileInput().click();     // browser: real OS file dialog
+  }
 };
 
-els["dropzone"].addEventListener("click", () => els["btn-browse-files"].click());
+// btn-add-folder: native folder picker is only available in desktop mode.
+// In browser mode there is no API for folder access — disable rather than
+// prompt for a typed path.
+els["btn-add-folder"].onclick = () => {
+  if (isDesktop) {
+    pickFolder("folder").then(folder => { if (folder) addPaths([folder]); });
+  } else {
+    if (window.ArtificeToast) {
+      window.ArtificeToast.show("Folder add is not available in browser mode.", "warning");
+    }
+  }
+};
+
+// -------------------------------------------------------------- dropzone
+
+// Detect whether we are running inside a pywebview desktop window.
+// A desktop window exposes window.pywebview; a browser does not.
+const isDesktop = !!(window.pywebview);
+
+// Hidden <input type=file> used for browser-mode file picking.
+// Created once and reused; never exposed to the user directly.
+let fileInput = null;
+
+function ensureFileInput() {
+  if (fileInput) return fileInput;
+  fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.multiple = true;
+  fileInput.accept = ".jpeg,.jpg,.pdf,.png,.tif,.tiff";
+  fileInput.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;";
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length) {
+      uploadFiles(fileInput.files);
+      fileInput.value = "";
+    }
+  });
+  document.body.appendChild(fileInput);
+  return fileInput;
+}
+
+// Show a named dropzone state sub-element, hide all others.
+function setDropzoneState(state) {
+  const states = ["idle", "uploading", "success", "error"];
+  states.forEach(s => {
+    const el = els["dropzone-" + s];
+    if (el) el.classList.toggle("hidden", s !== state);
+  });
+}
+
+// Announce a message to screen readers via aria-live.
+function announceDropzone(message) {
+  if (els["dropzone-live"]) els["dropzone-live"].textContent = message;
+}
+
+// Upload an array of File objects via POST /api/queue/upload.
+async function uploadFiles(files) {
+  if (!files || !files.length) return;
+  setDropzoneState("uploading");
+  announceDropzone("Uploading " + files.length + " file(s)…");
+
+  const fd = new FormData();
+  for (const f of files) fd.append("files", f);
+  let data;
+  try {
+    const res = await fetch("/api/queue/upload", { method: "POST", body: fd });
+    data = await res.json();
+  } catch (err) {
+    setDropzoneState("error");
+    els["dropzone-error-text"].textContent = "Upload failed — is the server running?";
+    announceDropzone("Upload failed.");
+    log("Upload failed: " + err.message, "error");
+    setTimeout(() => setDropzoneState("idle"), 3000);
+    return;
+  }
+
+  // Update queue with the server's response (same shape as add-paths).
+  setQueue(data.items);
+
+  // Report per-file results.
+  const rejected = data.uploaded.filter(e => e.status === "rejected");
+  const accepted = data.uploaded.filter(e => e.status === "ok");
+  if (rejected.length === 0) {
+    setDropzoneState("success");
+    els["dropzone-success-text"].textContent =
+      accepted.length === 1
+        ? "Added: " + accepted[0].filename
+        : "Added " + accepted.length + " file(s)";
+    announceDropzone(accepted.length + " file(s) added to queue.");
+    log("Uploaded " + accepted.length + " file(s)", "accent");
+  } else {
+    const reasons = rejected.map(e => e.filename + ": " + e.reason).join("; ");
+    setDropzoneState("error");
+    els["dropzone-error-text"].textContent = rejected.length + " rejected: " + reasons;
+    announceDropzone(rejected.length + " file(s) rejected.");
+    if (accepted.length > 0) {
+      log("Uploaded " + accepted.length + " file(s); " + rejected.length + " rejected: " + reasons, "warning");
+    } else {
+      log("Upload rejected: " + reasons, "warning");
+    }
+  }
+  setTimeout(() => setDropzoneState("idle"), 4000);
+}
+
+// Dropzone click: desktop uses native picker, browser uses hidden file input.
+els["dropzone"].addEventListener("click", () => {
+  if (isDesktop) {
+    els["btn-browse-files"].click();
+  } else {
+    ensureFileInput().click();
+  }
+});
+
+els["dropzone"].addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    els["dropzone"].click();
+  }
+});
+
 ["dragenter", "dragover"].forEach(evt =>
-  els["dropzone"].addEventListener(evt, e => { e.preventDefault(); els["dropzone"].classList.add("drag"); }));
+  els["dropzone"].addEventListener(evt, e => {
+    e.preventDefault();
+    els["dropzone"].classList.add("drag");
+  }));
+
 ["dragleave", "drop"].forEach(evt =>
-  els["dropzone"].addEventListener(evt, e => { e.preventDefault(); els["dropzone"].classList.remove("drag"); }));
-els["dropzone"].addEventListener("drop", () => {
-  // A browser drop event carries File objects, never a filesystem path, so
-  // there is nothing usable to send here — use Browse Files instead.
-  log("Drag-and-drop isn't supported in the browser — use Browse Files instead.", "warning");
+  els["dropzone"].addEventListener(evt, e => {
+    e.preventDefault();
+    els["dropzone"].classList.remove("drag");
+  }));
+
+els["dropzone"].addEventListener("drop", async (e) => {
+  e.preventDefault();
+  els["dropzone"].classList.remove("drag");
+  if (isDesktop) {
+    // Desktop: native drag-drop paths are out of scope — fall back to Browse.
+    log("Drag-and-drop is not available in desktop mode — use Browse Files.", "warning");
+    return;
+  }
+
+  const entries = [];
+  const items = e.dataTransfer.items;
+  if (!items) {
+    log("Could not read dropped items.", "warning");
+    return;
+  }
+
+  let hasFolder = false;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item.kind === "directory") {
+      hasFolder = true;
+    } else if (item.kind === "file") {
+      const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+      if (entry && entry.isDirectory) {
+        hasFolder = true;
+      } else {
+        entries.push(item.getAsFile());
+      }
+    }
+  }
+
+  if (hasFolder) {
+    setDropzoneState("error");
+    els["dropzone-error-text"].textContent = "Folders cannot be uploaded — drop individual image files instead.";
+    announceDropzone("Folders cannot be uploaded.");
+    log("Folder drop ignored: folders cannot be uploaded via the browser.", "warning");
+    setTimeout(() => setDropzoneState("idle"), 3500);
+    return;
+  }
+
+  if (entries.length === 0) {
+    log("No accepted files in drop.", "warning");
+    return;
+  }
+
+  uploadFiles(entries);
 });
 
 els["btn-remove"].onclick = async () => {
@@ -373,6 +567,9 @@ els["btn-stop"].onclick = async () => {
 // ---------------------------------------------------------------------- log
 
 function log(message, tag) {
+  // Remove the empty-state placeholder when the first real message arrives.
+  const empty = els["log"].querySelector(".log-empty");
+  if (empty) empty.remove();
   const line = document.createElement("div");
   line.className = `line ${tag || ""}`;
   line.textContent = message;

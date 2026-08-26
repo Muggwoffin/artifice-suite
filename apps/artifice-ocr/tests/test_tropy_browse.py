@@ -9,7 +9,9 @@ Uses the **real** Tropy ``.tpy`` schema (``subjects``, ``metadata``,
 ``trash``, ``taggings``).
 """
 
+import json
 import sqlite3
+import threading
 from pathlib import Path
 
 import pytest
@@ -26,6 +28,9 @@ from artifice_ocr.tropy_db import (
     list_lists,
     list_projects,
     list_tags,
+    missing_asset_count,
+    recent_projects,
+    resolve_project_db_path,
 )
 from artifice_ocr.web import runtime
 from artifice_ocr.web.routers import (
@@ -789,11 +794,20 @@ class TestPhotoOrientation:
 
 
 class TestFeatureFlag:
-    """Feature flag off by default — all routes return 404."""
+    """Feature flag OFF — all routes return 404.
+
+    Live browse is enabled by default (see config.py), so these tests force it
+    off explicitly rather than relying on the default.
+    """
 
     @pytest.fixture(autouse=True)
     def _ensure_flag_off(self, monkeypatch):
         monkeypatch.delenv("ARTIFICE_OCR_TROPY_LIVE_READ", raising=False)
+        monkeypatch.setattr(
+            config,
+            "get",
+            lambda key, default=None: False if key == "tropy_live_browse_enabled" else default,
+        )
 
     def test_projects_404_when_disabled(self, tmp_path, monkeypatch):
         client = _client_with_state(tmp_path, monkeypatch)
@@ -818,6 +832,11 @@ class TestFeatureFlag:
             "/api/tropy/browse/enqueue",
             json={"path": "/nonexistent.tpy", "item_ids": [1]},
         )
+        assert resp.status_code == 404
+
+    def test_recent_404_when_disabled(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        resp = client.get("/api/tropy/browse/recent")
         assert resp.status_code == 404
 
 
@@ -886,6 +905,44 @@ class TestBrowseRoutesEnabled:
         )
         assert resp.status_code == 400
 
+    def test_recent_projects_route_returns_empty(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.tropy_config_dir",
+            lambda: tmp_path / "Tropy",
+        )
+        resp = client.get("/api/tropy/browse/recent")
+        assert resp.status_code == 200
+        assert resp.json() == {"projects": []}
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            pytest.param([1, 2, 3], id="top-level-list"),
+            pytest.param("a bare string", id="top-level-string"),
+            pytest.param(42, id="top-level-int"),
+            pytest.param({}, id="recent-missing"),
+            pytest.param({"recent": None}, id="recent-null"),
+            pytest.param({"recent": "not-a-list"}, id="recent-string"),
+            pytest.param({"recent": {"a": "b"}}, id="recent-dict"),
+            pytest.param({"recent": [12345]}, id="recent-entry-int"),
+            pytest.param({"recent": [None]}, id="recent-entry-null"),
+            pytest.param({"recent": [True]}, id="recent-entry-bool"),
+            pytest.param({"recent": [["nested"]]}, id="recent-entry-list"),
+            pytest.param({"recent": [{"a": 1}]}, id="recent-entry-dict"),
+        ],
+    )
+    def test_malformed_state_route_returns_200(self, tmp_path, monkeypatch, payload):
+        """A malformed state.json must 200 with an empty list, never a 500."""
+        client = _client_with_state(tmp_path, monkeypatch)
+        cfg = tmp_path / "Tropy"
+        cfg.mkdir()
+        (cfg / "state.json").write_text(json.dumps(payload), encoding="utf-8")
+        monkeypatch.setattr("artifice_ocr.tropy_db.tropy_config_dir", lambda: cfg)
+        resp = client.get("/api/tropy/browse/recent")
+        assert resp.status_code == 200
+        assert resp.json() == {"projects": []}
+
 
 class TestBrowseRoutesEnabledViaConfig:
     """Routes work when tropy_live_browse_enabled=True via config (no env var)."""
@@ -909,24 +966,27 @@ class TestBrowseRoutesEnabledViaConfig:
         data = resp.json()
         assert len(data["projects"]) == 1
 
-    def test_disabled_by_default_when_env_unset(self, tmp_path, monkeypatch):
-        """Routes return 404 when neither env var nor config toggle is set."""
+    def test_enabled_by_default(self, tmp_path, monkeypatch):
+        """Browse routes are enabled by default (maintainer decision, 2026-08-25)."""
         client = _client_with_state(tmp_path, monkeypatch)
-        # config defaults to False, and env var is unset
 
+        tpy = _create_tpy(tmp_path / "test.tpy")
         resp = client.post(
             "/api/tropy/browse/projects",
-            json={"path": "/nonexistent.tpy"},
+            json={"path": str(tpy)},
         )
-        assert resp.status_code == 404
-        assert "not enabled" in resp.json()["detail"].lower()
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["projects"]) == 1
 
     def test_flip_then_call_without_restart(self, tmp_path, monkeypatch):
         """Demonstrate: flip via POST /api/config, then immediately call a
         browse route — it must work with no server restart."""
         client = _client_with_state(tmp_path, monkeypatch)
 
-        # Initially disabled (config default is False, env var is unset)
+        # Start from an explicit disabled state so the toggle is exercised in
+        # both directions (the default is now enabled).
+        config.apply_overrides({"tropy_live_browse_enabled": False})
         resp = client.post(
             "/api/tropy/browse/projects",
             json={"path": "/nonexistent.tpy"},
@@ -978,3 +1038,335 @@ class TestSchemaMissingTables:
         )
         items = list_items(empty)
         assert items == []
+
+
+# --------------------------------------------------------------------------- #
+# recent projects (item 1)
+# --------------------------------------------------------------------------- #
+
+
+class TestRecentProjects:
+    """recent_projects() reads Tropy's own state.json, soft-failing to []."""
+
+    def test_no_state_returns_empty(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.tropy_config_dir",
+            lambda: tmp_path / "Tropy",
+        )
+        assert recent_projects() == []
+
+    def test_parses_valid_state_and_drops_missing(self, tmp_path, monkeypatch):
+        cfg = tmp_path / "Tropy"
+        cfg.mkdir()
+        existing = tmp_path / "ISK Project.tropy"
+        existing.mkdir()
+        (cfg / "state.json").write_text(
+            json.dumps(
+                {
+                    "recent": [
+                        str(existing),
+                        str(tmp_path / "gone.tropy"),
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr("artifice_ocr.tropy_db.tropy_config_dir", lambda: cfg)
+        assert recent_projects() == [existing]
+
+    def test_corrupt_json_returns_empty(self, tmp_path, monkeypatch):
+        cfg = tmp_path / "Tropy"
+        cfg.mkdir()
+        (cfg / "state.json").write_text("{not valid json", encoding="utf-8")
+        monkeypatch.setattr("artifice_ocr.tropy_db.tropy_config_dir", lambda: cfg)
+        assert recent_projects() == []
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            pytest.param([1, 2, 3], id="top-level-list"),
+            pytest.param("a bare string", id="top-level-string"),
+            pytest.param(42, id="top-level-int"),
+            pytest.param({}, id="recent-missing"),
+            pytest.param({"recent": None}, id="recent-null"),
+            pytest.param({"recent": "not-a-list"}, id="recent-string"),
+            pytest.param({"recent": {"a": "b"}}, id="recent-dict"),
+            pytest.param({"recent": [12345]}, id="recent-entry-int"),
+            pytest.param({"recent": [None]}, id="recent-entry-null"),
+            pytest.param({"recent": [True]}, id="recent-entry-bool"),
+            pytest.param({"recent": [["nested"]]}, id="recent-entry-list"),
+            pytest.param({"recent": [{"a": 1}]}, id="recent-entry-dict"),
+        ],
+    )
+    def test_malformed_state_returns_empty(self, tmp_path, monkeypatch, payload):
+        """Tropy's state.json is untrusted: any malformed shape soft-fails to []."""
+        cfg = tmp_path / "Tropy"
+        cfg.mkdir()
+        (cfg / "state.json").write_text(json.dumps(payload), encoding="utf-8")
+        monkeypatch.setattr("artifice_ocr.tropy_db.tropy_config_dir", lambda: cfg)
+        assert recent_projects() == []
+
+    def test_skips_bad_entry_keeps_valid(self, tmp_path, monkeypatch):
+        """A non-string entry is skipped, not the whole list."""
+        cfg = tmp_path / "Tropy"
+        cfg.mkdir()
+        existing = tmp_path / "Real Project.tropy"
+        existing.mkdir()
+        (cfg / "state.json").write_text(
+            json.dumps({"recent": [12345, str(existing), None, True]}),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr("artifice_ocr.tropy_db.tropy_config_dir", lambda: cfg)
+        assert recent_projects() == [existing]
+
+    def test_path_home_raising_returns_empty(self, monkeypatch):
+        """Path.home() raising (HOME/USERPROFILE unset) must not propagate."""
+
+        def _no_home():
+            raise RuntimeError("Could not determine home directory")
+
+        monkeypatch.setattr("artifice_ocr.tropy_db.Path.home", _no_home)
+        assert recent_projects() == []
+
+
+# --------------------------------------------------------------------------- #
+# project path resolution (item 2)
+# --------------------------------------------------------------------------- #
+
+
+class TestResolveProjectDbPath:
+    """resolve_project_db_path() accepts a bundle dir, a .tpy, or a folder."""
+
+    def test_bundle_directory(self, tmp_path):
+        bundle = tmp_path / "ISK Project.tropy"
+        bundle.mkdir()
+        db = bundle / "project.tpy"
+        db.write_text("")
+        assert resolve_project_db_path(bundle) == db
+
+    def test_project_tpy_file(self, tmp_path):
+        db = tmp_path / "project.tpy"
+        db.write_text("")
+        assert resolve_project_db_path(db) == db
+
+    def test_containing_folder(self, tmp_path):
+        folder = tmp_path / "exports"
+        folder.mkdir()
+        db = folder / "whatever.tpy"
+        db.write_text("")
+        assert resolve_project_db_path(folder) == db
+
+    def test_prefers_project_tpy_over_backup(self, tmp_path):
+        """The real hazard: backups sort ahead of project.tpy (digits < 't')."""
+        bundle = tmp_path / "Rose Cohen Letters.tropy"
+        bundle.mkdir()
+        real = bundle / "project.tpy"
+        real.write_text("")
+        (bundle / "project.20260801.backup.tpy").write_text("")
+        (bundle / "project.20260701.backup.tpy").write_text("")
+        assert resolve_project_db_path(bundle) == real
+
+    def test_backup_excluded_when_no_project_tpy(self, tmp_path):
+        folder = tmp_path / "exports"
+        folder.mkdir()
+        (folder / "project.20260801.backup.tpy").write_text("")
+        other = folder / "other.tpy"
+        other.write_text("")
+        assert resolve_project_db_path(folder) == other
+
+    def test_only_backups_refused_by_construction(self, tmp_path):
+        """Only ``*.backup.tpy`` files present — never open a stale snapshot.
+
+        The resolver filters backups out, leaving no candidate, so it falls
+        through to the constructed ``project.tpy`` path (which does not exist).
+        A later "helpful" relaxation of the backup filter would silently return
+        a stale backup here.
+        """
+        bundle = tmp_path / "Rose Cohen Letters.tropy"
+        bundle.mkdir()
+        (bundle / "project.20260801.backup.tpy").write_text("")
+        (bundle / "project.20260701.backup.tpy").write_text("")
+        resolved = resolve_project_db_path(bundle)
+        # Not one of the backups, and no real project.tpy exists on disk.
+        assert not resolved.name.endswith(".backup.tpy")
+        assert resolved == bundle / "project.tpy"
+        assert not resolved.exists()
+
+
+# --------------------------------------------------------------------------- #
+# nested lists (item 3)
+# --------------------------------------------------------------------------- #
+
+
+class TestNestedLists:
+    """Selecting a parent list must include items from its child lists."""
+
+    def test_parent_list_includes_child_items(self, tmp_path, monkeypatch):
+        tpy = tmp_path / "nested.tpy"
+        conn = sqlite3.connect(str(tpy))
+        conn.executescript(_TROPY_SCHEMA)
+        conn.execute("INSERT INTO lists (list_id, name) VALUES (0, 'ROOT')")
+        conn.execute(
+            "INSERT INTO lists (list_id, name, parent_list_id) VALUES (1, 'Correspondence', 0)",
+        )
+        conn.execute(
+            "INSERT INTO lists (list_id, name, parent_list_id) VALUES (2, 'Vienna 1937-38', 1)",
+        )
+        conn.execute(
+            "INSERT INTO project (project_id, name, base) VALUES (1, 'Test Project', 'project')",
+        )
+        for iid in (1, 2):
+            conn.execute(
+                "INSERT INTO subjects (id, template, type) "
+                "VALUES (?, 'https://tropy.org/v1/templates/item', 'item')",
+                (iid,),
+            )
+            conn.execute("INSERT INTO items (id) VALUES (?)", (iid,))
+        conn.execute(
+            "INSERT INTO list_items (list_id, id, position) VALUES (1, 1, 0)",
+        )
+        conn.execute(
+            "INSERT INTO list_items (list_id, id, position) VALUES (2, 2, 0)",
+        )
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        items = list_items(tpy, list_id=1)
+        assert {it.item_id for it in items} == {1, 2}
+
+    def test_cyclic_parent_chain_terminates(self, tmp_path, monkeypatch):
+        """A cyclic parent chain (1 -> 2 -> 1) must terminate, not hang.
+
+        The recursive CTE uses ``UNION`` (not ``UNION ALL``) so the recursion
+        dedupes and reaches a fixed point.  Run the query in a daemon thread
+        with a join timeout so a regression fails loudly instead of hanging CI
+        forever.
+        """
+        tpy = tmp_path / "cyclic.tpy"
+        conn = sqlite3.connect(str(tpy))
+        conn.executescript(_TROPY_SCHEMA)
+        conn.execute("INSERT INTO lists (list_id, name) VALUES (0, 'ROOT')")
+        conn.execute(
+            "INSERT INTO lists (list_id, name, parent_list_id) VALUES (1, 'One', 2)",
+        )
+        conn.execute(
+            "INSERT INTO lists (list_id, name, parent_list_id) VALUES (2, 'Two', 1)",
+        )
+        conn.execute(
+            "INSERT INTO project (project_id, name, base) VALUES (1, 'Test Project', 'project')",
+        )
+        for iid in (1, 2):
+            conn.execute(
+                "INSERT INTO subjects (id, template, type) "
+                "VALUES (?, 'https://tropy.org/v1/templates/item', 'item')",
+                (iid,),
+            )
+            conn.execute("INSERT INTO items (id) VALUES (?)", (iid,))
+        conn.execute(
+            "INSERT INTO list_items (list_id, id, position) VALUES (1, 1, 0)",
+        )
+        conn.execute(
+            "INSERT INTO list_items (list_id, id, position) VALUES (2, 2, 0)",
+        )
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+
+        result = {}
+
+        def _run():
+            result["items"] = list_items(tpy, list_id=1)
+
+        thread = threading.Thread(target=_run, daemon=True)
+        thread.start()
+        thread.join(timeout=10.0)
+        assert not thread.is_alive(), (
+            "list_items() hung on a cyclic parent chain — regression to "
+            "UNION ALL in the recursive CTE?"
+        )
+        assert {it.item_id for it in result["items"]} == {1, 2}
+
+
+# --------------------------------------------------------------------------- #
+# mixed path separators (item 4)
+# --------------------------------------------------------------------------- #
+
+
+class TestMixedPathSeparators:
+    """A stored backslash path resolves correctly on POSIX."""
+
+    def test_backslash_path_resolves_on_posix(self, tmp_path):
+        db = tmp_path / "test.tpy"
+        db.write_text("")
+        result = _resolve_photo_path("KV Files\\KV-2-2339.pdf", db, "project")
+        assert result == (tmp_path / "KV Files" / "KV-2-2339.pdf").resolve()
+        assert result.parent.name == "KV Files"
+        assert result.name == "KV-2-2339.pdf"
+
+
+# --------------------------------------------------------------------------- #
+# missing-asset preflight (item 5)
+# --------------------------------------------------------------------------- #
+
+
+class TestMissingAssetPreflight:
+    """Missing page counts are surfaced at enqueue time, before a run."""
+
+    def test_missing_asset_count_aggregates(self):
+        photos = [
+            TropyPhoto(
+                photo_id=1,
+                path="/tmp/a.png",
+                item_id=1,
+                page=None,
+                mimetype="image/png",
+                checksum="a",
+                orientation=1,
+                missing=True,
+            ),
+            TropyPhoto(
+                photo_id=2,
+                path="/tmp/b.png",
+                item_id=1,
+                page=None,
+                mimetype="image/png",
+                checksum="b",
+                orientation=1,
+                missing=False,
+            ),
+        ]
+        item = TropyItem(item_id=1, title="T", photos=photos)
+        assert missing_asset_count([item]) == (1, 2)
+
+    def test_enqueue_reports_missing_count(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+
+        tpy = _create_tpy(tmp_path / "test.tpy")
+        # Create one of the three photos so two are missing on disk.
+        (tmp_path / "fake_photo_1.png").write_bytes(b"x")
+
+        resp = client.post(
+            "/api/tropy/browse/enqueue",
+            json={
+                "path": str(tpy),
+                "item_ids": [1, 2],
+                "output_dir": "/tmp/output",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 3
+        assert data["missing"] == 2
+        assert data["added"] == 3

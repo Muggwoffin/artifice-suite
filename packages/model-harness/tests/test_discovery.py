@@ -19,6 +19,7 @@ from model_harness import EndpointRejected, Provider
 from model_harness.discovery import (
     ProbeResult,
     detect_local_servers,
+    normalise_base_url,
     probe_endpoint,
     probe_endpoint_sync,
     _CORS_HINT,
@@ -232,9 +233,7 @@ class TestProbeEndpointUnreachable:
     async def test_connection_refused_generic(self, httpx_mock: HTTPXMock):
         """Connection refused with no registry match → generic runner-down hint."""
         httpx_mock.add_exception(
-            httpx.ConnectError(
-                "[Errno 111] Connection refused"
-            ),
+            httpx.ConnectError("[Errno 111] Connection refused"),
         )
         result = await probe_endpoint(
             "http://localhost:9999/v1",
@@ -673,6 +672,72 @@ class TestUrlPatterns:
         # Verify no double-/models request was made
         urls = [r.url.path for r in httpx_mock.get_requests()]
         assert "/v1/models/models" not in urls
+
+
+# ---------------------------------------------------------------------------
+# normalise_base_url
+# ---------------------------------------------------------------------------
+
+
+class TestNormaliseBaseUrl:
+    """``normalise_base_url`` canonicalises the four Ollama URL spellings.
+
+    Regression: :func:`model_harness.discovery._strip_v1` removes a trailing
+    ``/v1`` before probing ``/api/tags``, so a stored ``.../v1`` URL made every
+    probe pass while inference appended a second ``/v1`` and 404'd.  This helper
+    is the single canonical form both callers build from.
+    """
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "http://localhost:11434",
+            "http://localhost:11434/",
+            "http://localhost:11434/v1",
+            "http://localhost:11434/v1/",
+        ],
+    )
+    def test_four_spellings_normalise_to_one_host(self, url):
+        assert normalise_base_url(url) == "http://localhost:11434"
+
+    def test_preserves_non_v1_path(self):
+        assert (
+            normalise_base_url("http://localhost:11434/custom/path")
+            == "http://localhost:11434/custom/path"
+        )
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "  http://localhost:11434/v1  ",
+            "http://localhost:11434/v1",
+            "http://localhost:11434",
+            " http://localhost:11434/ ",
+        ],
+    )
+    def test_surrounding_whitespace_normalises_to_one_host(self, url):
+        """Leading/trailing whitespace must not defeat the ``/v1`` strip."""
+        assert normalise_base_url(url) == "http://localhost:11434"
+
+    def test_trailing_v1_only_stripped_not_nested(self):
+        """Only a *trailing* ``/v1`` is stripped — a nested path is preserved.
+
+        This is inherited behaviour, not a regression: the caller that appends
+        ``/v1`` would also double it on this input.  Pinned so the scope is
+        explicit and a later change cannot silently alter it.
+        """
+        assert (
+            normalise_base_url("http://localhost:11434/v1/chat/completions")
+            == "http://localhost:11434/v1/chat/completions"
+        )
+
+    def test_strip_v1_keeps_historical_behaviour(self):
+        # _strip_v1 keeps its trailing-slash behaviour for the /v1 case; only
+        # normalise_base_url drops it.  Existing callers are unaffected.
+        from model_harness.discovery import _strip_v1
+
+        assert _strip_v1("http://localhost:11434/v1") == "http://localhost:11434/"
+        assert _strip_v1("http://localhost:11434") == "http://localhost:11434"
 
 
 # ---------------------------------------------------------------------------

@@ -46,6 +46,9 @@ Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 web = [
     "fastapi",
     "uvicorn[standard]",
+    # Required by the File()/UploadFile handler at web/routers/queue.py — FastAPI
+    # refuses to start without it ("Form data requires python-multipart").
+    "python-multipart>=0.0.9",
 ]
 window = [
     "pywebview>=5.0",

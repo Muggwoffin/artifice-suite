@@ -22,10 +22,28 @@ const SettingsTab = (function () {
     resume: "bool", confidence_enabled: "bool", ollama_think: "bool", tropy_live_browse_enabled: "bool",
   };
 
+  // Connection fields are only meaningful — and only visible — when a backend
+  // that uses them is selected.  Mirrors the server's URL→backend mapping plus
+  // the two credential rows ``updateConnectionVisibility`` also hides.  collect()
+  // skips any field whose backend is inactive, so a hidden row's stale value is
+  // never posted back (e.g. the shipped api_base_url default on an Ollama-only
+  // install, which would otherwise 400 on the server's endpoint policy).
+  const CONNECTION_FIELDS = {
+    lm_studio_url: "lm_studio",
+    ollama_url: "ollama",
+    huggingface_token: "huggingface",
+    api_key: "api_key",
+    api_base_url: "api_key",
+  };
+
   const docTypeSelect = document.getElementById("set-document_type");
   const docTypeHint = document.getElementById("doc-type-hint");
   const savedLabel = document.getElementById("settings-saved");
   const healthPanel = document.getElementById("health-panel");
+
+  const approvedFoldersList = document.getElementById("approved-folders-list");
+  const approvedFoldersStatus = document.getElementById("approved-folders-status");
+  let approvedFolders = [];
 
   let docTypes = {};
 
@@ -51,13 +69,18 @@ const SettingsTab = (function () {
       if (kind === "bool") el(key).checked = !!value;
       else el(key).value = value ?? "";
     }
+    approvedFolders = Array.isArray(values.approved_folders) ? values.approved_folders.slice() : [];
+    renderApprovedFolders();
     updateDocTypeHint();
     updateConnectionVisibility();
   }
 
   function collect() {
     const out = {};
+    const backends = activeBackends();
     for (const [key, kind] of Object.entries(FIELDS)) {
+      const backend = CONNECTION_FIELDS[key];
+      if (backend && !backends.has(backend)) continue;
       const field = el(key);
       if (kind === "bool") out[key] = field.checked;
       else if (kind === "int") out[key] = parseInt(field.value, 10) || 0;
@@ -86,6 +109,66 @@ const SettingsTab = (function () {
     if (hfRow) hfRow.style.display = backends.has("huggingface") ? "" : "none";
     if (akRow) akRow.style.display = backends.has("api_key") ? "" : "none";
     if (buRow) buRow.style.display = backends.has("api_key") ? "" : "none";
+  }
+
+  function setApprovedStatus(msg, isError) {
+    approvedFoldersStatus.textContent = msg;
+    approvedFoldersStatus.style.color = isError ? "var(--gold)" : "";
+  }
+
+  function renderApprovedFolders() {
+    approvedFoldersList.innerHTML = approvedFolders.length
+      ? approvedFolders.map((folder, i) =>
+          `<li style="display:flex; align-items:center; gap:0.5rem;">
+             <span class="dim" style="flex:1; word-break:break-all;">${escapeHtml(folder)}</span>
+             <button class="btn btn-small" data-remove-folder="${i}" type="button">Remove</button>
+           </li>`).join("")
+      : `<li class="dim">No folders approved yet.</li>`;
+    approvedFoldersList.querySelectorAll("[data-remove-folder]").forEach(btn => {
+      btn.addEventListener("click", () => removeApprovedFolder(Number(btn.dataset.removeFolder)));
+    });
+  }
+
+  async function persistApprovedFolders() {
+    await api("POST", "/api/config", { approved_folders: approvedFolders });
+  }
+
+  async function addApprovedFolder() {
+    let folder = null;
+    try {
+      folder = await pickFolder();
+    } catch {
+      setApprovedStatus("Could not open the folder picker.", true);
+      return;
+    }
+    if (!folder) return; // cancelled or unavailable without a typed path
+    if (approvedFolders.includes(folder)) {
+      setApprovedStatus("That folder is already approved.", true);
+      return;
+    }
+    approvedFolders.push(folder);
+    try {
+      await persistApprovedFolders();
+    } catch (err) {
+      approvedFolders.pop();
+      setApprovedStatus("Could not approve folder: " + err.message, true);
+      return;
+    }
+    renderApprovedFolders();
+    setApprovedStatus("", false);
+  }
+
+  async function removeApprovedFolder(index) {
+    const removed = approvedFolders.splice(index, 1)[0];
+    try {
+      await persistApprovedFolders();
+    } catch (err) {
+      approvedFolders.splice(index, 0, removed);
+      setApprovedStatus("Could not remove folder: " + err.message, true);
+      return;
+    }
+    renderApprovedFolders();
+    setApprovedStatus("", false);
   }
 
   async function load() {
@@ -219,6 +302,7 @@ const SettingsTab = (function () {
   document.getElementById("btn-settings-save").onclick = save;
   document.getElementById("btn-settings-reset").onclick = resetDefaults;
   document.getElementById("btn-preflight").onclick = runPreflight;
+  document.getElementById("btn-approved-folder-add").onclick = addApprovedFolder;
   document.getElementById("btn-template-save").onclick = saveTemplate;
   document.getElementById("btn-template-apply").onclick = applyTemplate;
   document.getElementById("btn-template-delete").onclick = deleteTemplate;

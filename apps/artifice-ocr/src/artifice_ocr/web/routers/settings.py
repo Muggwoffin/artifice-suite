@@ -4,12 +4,15 @@
 
 """Settings, document types, templates, and health-check routes."""
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
 from model_harness.contract import EndpointRejected
+from model_harness.discovery import normalise_base_url
 from model_harness.endpoint_policy import EndpointPolicy
+from shared_ui.path_validation import PathValidationError, normalise_path
 
 from ... import config
 from ..._prompts import DOCUMENT_TYPES
@@ -26,6 +29,83 @@ router = APIRouter(tags=["settings"])
 _endpoint_policy = EndpointPolicy()
 
 
+def _validate_approved_folder(entry: Any) -> str:
+    """Return one approved-folder entry in canonical form, or reject it.
+
+    An approved folder becomes an *allowed root* for every later path check
+    (``validation.validate_path`` passes this list as ``extra_roots``), so a
+    value accepted here widens the sandbox for the whole app. The native
+    folder dialog is the consent step; this guard is what stops an
+    unprivileged or forged request from writing an arbitrary — or merely
+    stale, or traversal-encoded — path into that list.
+
+    The entry is normalised with the audited shared helper rather than an
+    ad-hoc ``Path(entry)``, then resolved, so ``..`` segments and symlinks
+    are collapsed and the *canonical* directory is what gets persisted and
+    later compared against. Storing the raw string would let two spellings of
+    one directory disagree with the containment check that consumes them.
+
+    A filesystem or drive root is refused outright: granting ``/`` or ``C:\\``
+    as an OCR root would nullify path validation everywhere, and no real
+    archive folder is a drive root.
+    """
+    if not isinstance(entry, str) or not entry.strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"approved_folders: {entry!r} is not a valid folder path",
+        )
+    try:
+        normalised = normalise_path(entry, "approved_folders")
+        # CodeQL flags this as py/path-injection, and the taint is real: the
+        # value arrives in a request body and becomes an allowed root. It is
+        # suppressed rather than sanitised because the usual sanitiser — check
+        # the path resolves inside a known-safe root — would defeat the entire
+        # feature. An approved folder exists *to be* a new root, for archives
+        # on external drives and network shares that are deliberately outside
+        # home, tempdir and cwd. Containing it to those roots would leave it
+        # able to grant only what is already granted.
+        #
+        # What stands in for containment: the native OS folder dialog is the
+        # consent step, the entry must resolve to an existing directory, it is
+        # persisted in canonical form, and a drive or filesystem root is
+        # refused outright.
+        #
+        # The stronger fix is to stop accepting the path from the request at
+        # all — /api/native/pick-folder already runs the dialog server-side, so
+        # the server could record what it returned and require membership. That
+        # removes the taint instead of suppressing it, at the cost of the
+        # typed-path fallback used when the native picker is unavailable.
+        #
+        # The alert is dismissed as "won't fix" in GitHub code scanning, which
+        # is the only mechanism that works: a `# codeql[py/path-injection]`
+        # comment here is inert. That was tried on this line and the alert
+        # simply moved down with it. Do not re-add one — it reads as a working
+        # suppression and does nothing.
+        resolved = Path(normalised).expanduser().resolve(strict=False)
+    except PathValidationError as e:
+        raise HTTPException(status_code=400, detail=e.public_message) from e
+    except OSError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"approved_folders: {entry!r} cannot be resolved",
+        ) from None
+
+    if resolved == Path(resolved.anchor):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "approved_folders: a drive or filesystem root cannot be "
+                "approved. Choose the specific folder holding your images."
+            ),
+        )
+    if not resolved.is_dir():
+        raise HTTPException(
+            status_code=400,
+            detail=f"approved_folders: {entry!r} is not an existing directory",
+        )
+    return str(resolved)
+
+
 def _validate_base_url(raw: str, field_name: str) -> str:
     """Return *raw* after checking its scheme and host. Fails closed, loudly."""
     try:
@@ -34,7 +114,20 @@ def _validate_base_url(raw: str, field_name: str) -> str:
         raise HTTPException(status_code=400, detail=f"{field_name}: {e}") from e
 
 
-_URL_FIELDS = ("ollama_url", "lm_studio_url", "api_base_url")
+# URL field → the backend name that activates it.  A URL is only validated
+# when a backend that actually consumes it is selected: the Settings form posts
+# the app's own shipped defaults back regardless of what the user chose
+# (``api_base_url`` ships as ``https://api.openai.com/v1`` even on a
+# pure-Ollama install), and rejecting those is what made Save fail
+# unconditionally.  The policy itself stays fail-closed — this narrows *which*
+# fields are checked, never the check.
+_URL_FIELD_BACKENDS = {
+    "ollama_url": "ollama",
+    "lm_studio_url": "lm_studio",
+    "api_base_url": "api_key",
+}
+
+_BACKEND_KEYS = ("ocr_backend", "cleanup_backend", "translate_backend")
 
 _CONFIG_KEYS = (
     "lm_studio_url",
@@ -58,6 +151,7 @@ _CONFIG_KEYS = (
     "tropy_last_path",
     "tropy_last_export_path",
     "tropy_live_browse_enabled",
+    "approved_folders",
 )
 
 # Keys whose values must not be returned verbatim in API responses.
@@ -81,11 +175,61 @@ def get_config() -> dict:
 @router.post("/api/config")
 def set_config(overrides: dict[str, Any]) -> dict:
     allowed = {k: v for k, v in overrides.items() if k in config.PERSISTED_KEYS}
+
+    # Never persist the redaction placeholder over a real secret.  The form
+    # round-trips the GET /api/config response straight back to this route,
+    # and GET redacts secrets to a placeholder — persisting that placeholder
+    # would overwrite a genuine key with twelve asterisks.
+    for key in _REDACTED_KEYS:
+        if allowed.get(key) == REDACTED_PLACEHOLDER:
+            del allowed[key]
+
+    # Canonicalise what is stored before validation and persistence.  Model
+    # names and URLs accumulate surrounding whitespace (a pasted value, a
+    # trailing space in a hand-edited settings file) — strip it so the stored
+    # config is canonical and a later reader cannot be caught by a spelling
+    # variant.  ``ollama_url`` is a host root to which the caller appends
+    # ``/v1``, so it goes through ``normalise_base_url``; ``lm_studio_url`` and
+    # ``api_base_url`` already carry ``/v1`` as part of their value and are
+    # only whitespace-stripped.
+    for key in ("ocr_model", "cleanup_model", "translate_model"):
+        value = allowed.get(key)
+        if isinstance(value, str):
+            allowed[key] = value.strip()
+
+    if isinstance(allowed.get("ollama_url"), str):
+        allowed["ollama_url"] = normalise_base_url(allowed["ollama_url"])
+    for key in ("lm_studio_url", "api_base_url"):
+        value = allowed.get(key)
+        if isinstance(value, str):
+            allowed[key] = value.strip()
+
     # Validate endpoint URLs before persisting — a bad value should be
-    # refused when entered rather than only when used.
-    for field in _URL_FIELDS:
-        if field in allowed and allowed[field]:
+    # refused when entered rather than only when used.  But only validate a
+    # URL when a backend that actually uses it is active, so the shipped
+    # default for an *unused* field (e.g. api_base_url on a pure-Ollama
+    # install) is not rejected.  The effective backends are read from the
+    # incoming overrides *merged over current config* — the form may post a
+    # partial payload.
+    active_backends = {b for b in (allowed.get(k, config.get(k)) for k in _BACKEND_KEYS) if b}
+    for field, backend in _URL_FIELD_BACKENDS.items():
+        if field in allowed and allowed[field] and backend in active_backends:
             _validate_base_url(allowed[field], field)
+
+    # Approved folders are an explicit user grant, but they must still be
+    # validated on write: each entry has to be an existing directory, or the
+    # whole save is refused and the offending entry named. The native folder
+    # dialog is the consent step; this guard stops an unprivileged request
+    # from writing an arbitrary (or stale) path into the approved list.
+    if "approved_folders" in allowed:
+        folders = allowed["approved_folders"]
+        if not isinstance(folders, list):
+            raise HTTPException(
+                status_code=400,
+                detail="approved_folders must be a list of folder paths",
+            )
+        allowed["approved_folders"] = [_validate_approved_folder(entry) for entry in folders]
+
     config.apply_overrides(allowed)
     config.save_user_settings(allowed)
     return {"ok": True}

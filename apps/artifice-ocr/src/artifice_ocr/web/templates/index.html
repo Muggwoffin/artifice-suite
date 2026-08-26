@@ -32,8 +32,42 @@
           <span class="dim" id="queue-count">0 files</span>
         </div>
 
-        <div class="dropzone" id="dropzone">
-          Drop files or folders here, or click to browse
+        <div class="dropzone" id="dropzone" tabindex="0" role="button"
+             aria-label="Drop image files here, or press Enter to browse">
+          <div class="dropzone-state" id="dropzone-idle">
+            <svg class="dropzone-icon" viewBox="0 0 24 24" width="32" height="32"
+                 fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span class="dropzone-title">Drop image files here</span>
+            <span class="dropzone-hint" id="dropzone-hint">or click to browse</span>
+          </div>
+          <div class="dropzone-state hidden" id="dropzone-uploading">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="dropzone-title">Uploading&hellip;</span>
+          </div>
+          <div class="dropzone-state hidden" id="dropzone-success">
+            <svg class="dropzone-icon dropzone-check" viewBox="0 0 24 24" width="32" height="32"
+                 fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span class="dropzone-title" id="dropzone-success-text">Added</span>
+          </div>
+          <div class="dropzone-state hidden" id="dropzone-error">
+            <svg class="dropzone-icon dropzone-error-icon" viewBox="0 0 24 24" width="32" height="32"
+                 fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span class="dropzone-title" id="dropzone-error-text"></span>
+          </div>
+          <div class="dropzone-live" id="dropzone-live" aria-live="polite" aria-atomic="true"></div>
         </div>
 
         <div class="queue-wrap">
@@ -68,7 +102,7 @@
           <div class="spacer"></div>
           <button class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
           <button class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
-          <button class="btn" id="btn-send-ludwiglang">Send to LudwigLang&hellip;</button>
+          <button class="btn ghost" id="btn-send-ludwiglang">Send to LudwigLang&hellip;</button>
         </div>
 
         <div class="section-divider"></div>
@@ -85,7 +119,7 @@
           <strong style="font-size:var(--text-sm); white-space:nowrap;">Output</strong>
           <input type="text" id="output-dir" value="output">
           <button class="btn" id="btn-browse-output">&hellip;</button>
-          <button class="btn accent icon-btn" id="btn-run"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Run Pipeline</span></button>
+          <button class="btn accent icon-btn" id="btn-run"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="icon-btn-label">Run Pipeline</span></button>
           <button class="btn icon-btn" id="btn-pause" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg><span>Pause</span></button>
           <button class="btn danger icon-btn" id="btn-stop" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg><span>Stop</span></button>
         </div>
@@ -305,7 +339,7 @@
               <option value="api_key">API Key (cloud)</option>
             </select>
           </label>
-          <label>OCR model <input type="text" id="set-ocr_model" placeholder="e.g. allenai/olmocr-2-7b"></label>
+          <label>OCR model <input type="text" id="set-ocr_model" placeholder="leave blank to pick automatically"></label>
           <label>Cleanup backend
             <select id="set-cleanup_backend">
               <option value="ollama">Ollama</option>
@@ -369,6 +403,13 @@
             <button class="btn accent" id="btn-template-save">Save Current as Template</button>
           </div>
           <span id="template-status" class="dim" style="margin-top:0.5rem; display:inline-block;"></span>
+        </div>
+        <div class="card settings-card" style="grid-column: 1 / -1;">
+          <h3>Approved folders</h3>
+          <p class="dim" style="margin:0 0 0.5rem;">Approving a folder grants Artifice permission to read and write files beneath it.</p>
+          <ul id="approved-folders-list" style="list-style:none; margin:0 0 0.5rem; padding:0; display:flex; flex-direction:column; gap:0.4rem;"></ul>
+          <button class="btn" id="btn-approved-folder-add" type="button">Add folder&hellip;</button>
+          <span id="approved-folders-status" class="dim" style="margin-left:0.5rem;"></span>
         </div>
         <div class="card settings-card" style="grid-column: 1 / -1;">
           <h3>Connection Status</h3>

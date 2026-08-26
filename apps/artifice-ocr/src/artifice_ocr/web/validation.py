@@ -40,9 +40,9 @@ def validate_directory(raw: str, field_name: str) -> str:
             status_code=400,
             detail=(
                 f"{field_name}: path {raw!r} is outside the directories "
-                f"this server is permitted to access. The operator can "
-                f"widen them with the ARTIFICE_OCR_ALLOWED_ROOTS "
-                f"environment variable."
+                f"this server is permitted to access. Approve the folder in "
+                f"Settings, or widen the allowed roots with the "
+                f"ARTIFICE_OCR_ALLOWED_ROOTS environment variable."
             ),
         ) from None
     except PathValidationError as exc:

@@ -428,6 +428,7 @@ dependencies = [
 [package.optional-dependencies]
 web = [
     { name = "fastapi" },
+    { name = "python-multipart" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 window = [
@@ -452,6 +453,7 @@ requires-dist = [
     { name = "openai" },
     { name = "pymupdf" },
     { name = "python-dotenv" },
+    { name = "python-multipart", marker = "extra == 'web'", specifier = ">=0.0.9" },
     { name = "pywebview", marker = "extra == 'window'", specifier = ">=5.0" },
     { name = "pyyaml" },
     { name = "reportlab" },

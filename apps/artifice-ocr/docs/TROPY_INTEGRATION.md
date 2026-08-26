@@ -1,15 +1,17 @@
 # Tropy Integration
 
-**Status: implemented — JSON-LD file bridge (primary), optional live read-only `.tpy` browse.**
+**Status: implemented — JSON-LD file bridge (primary), optional live read-only `.tpy` browse, and an opt-in write-back to `.tpy`.**
 
 The architecture described in this document is the one actually in source as of
 commit `3d91e7c` ("Redone Tropy integration", 2026-08-09). The old SQLite
-read/write modules (`tropy.py`, `tropy_read.py`, `tropy_write.py`) were removed
-in that change. What they described — direct live database writes to Tropy's
-`notes` and `transcriptions` tables — does not exist in current source.
+read/write modules (`tropy.py`, `tropy_read.py`) were removed; `tropy_write.py` was
+restored 2026-08-25, knowingly reversing `ebd89e6`, as an opt-in default-off
+write-back alongside the JSON-LD bridge.
 
-There are two independent read paths and one export path. No code path ever
-writes to a Tropy `.tpy` database file.
+There are two independent read paths and one export path. A third path — direct
+write-back to the `.tpy` database — is present but **opt-in and default off**
+(`tropy_writeback_enabled: False` in `config.py`). It is not yet wired to any
+UI control and is under security audit.
 
 
 ## Overview
@@ -35,6 +37,7 @@ There are **two ways** to read from a Tropy project:
 |---|---|---|---|
 | JSON-LD file bridge | `tropy_jsonld.py` | Never | None — always available |
 | Live read-only browse | `tropy_db.py` | Never | Settings toggle `tropy_live_browse_enabled` |
+| Direct write-back | `tropy_write.py` | When enabled | `tropy_writeback_enabled` (default off; not yet in Settings UI) |
 
 Both map to the same `JobItem` pipeline entry. The manifest (`tropy_manifest.json`)
 is written by the JSON-LD import path and documents provenance for downstream
@@ -84,11 +87,14 @@ Both generate a Tropy-compatible JSON-LD file. The UI flow:
    **Tropy → File → Import Items… → select the exported file**.
 
 There is no preview dialog listing rows before write, no "duplicate detection",
-and no write to Tropy's `notes` or `transcriptions` tables. The closest thing
-to a write-back is the JSON-LD round-trip through Tropy's own import machinery.
-The old direct-insert mechanism (with `BEGIN IMMEDIATE`, timestamped backup,
-Tropy-must-be-closed probe, and separate Notes/Transcriptions targets) was
-removed in the 2026-08-09 rewrite.
+and no write to Tropy's `notes` or `transcriptions` tables via this path. A
+separate direct-write path exists (`tropy_write.py`) but is opt-in, default off,
+and not yet exposed in the UI. Guards on the write path include: refusal while
+Tropy holds the lock, timestamped backup including `-wal`/`-shm` sidecars,
+preview-before-write, duplicate-text skip, and a ProseMirror `selection` key on
+every note. The old direct-insert mechanism (with `BEGIN IMMEDIATE`, timestamped
+backup, Tropy-must-be-closed probe, and separate Notes/Transcriptions targets)
+was removed in the 2026-08-09 rewrite and subsequently restored.
 
 ### Path validation (`_tropy_pathcheck.py`)
 
@@ -241,26 +247,29 @@ The 2026-08-09 rewrite deleted:
 
 - **`tropy.py`** — `mode=ro` live database reader. Replaced by `tropy_db.py`
   (still read-only, but a separate, simpler library module).
-- **`tropy_write.py`** — direct insert into Tropy's `notes` and `transcriptions`
-  tables. Nothing replaces it. Write-back is now exclusively the JSON-LD
-  round-trip.
 - **`tropy_read.py`** — the old 7-route import/preview/browse/write FastAPI
   module. Replaced by `tropy_bridge.py` (import/export, JSON-LD only) and
   `tropy_browse.py` (live browse, read-only).
 
-The following capabilities from the old doc **do not exist** in current source:
+**`tropy_write.py`** was removed in the 2026-08-09 rewrite and **restored
+2026-08-25** — knowingly reversing `ebd89e6` — as an opt-in default-off write-back
+alongside the JSON-LD bridge. It is not yet wired to any Settings UI control.
 
-- **Notes and Transcriptions as separate write targets.** There is no
-  `transcriptions` table insert, no `config.generator = "artifice_ocr"` tagging,
-  and no "duplicate detection" comparing new text against existing notes.
+The following capabilities from the old doc **do not exist** in the JSON-LD bridge
+(default path):
+
+- **Notes and Transcriptions as write targets.** The JSON-LD bridge writes
+  no `.tpy` tables. The separate `tropy_write.py` write-back path (opt-in,
+  default off) does write notes and transcriptions with duplicate-text skip,
+  timestamped backup, and a ProseMirror `selection` key on every note.
 - **Tropy-must-be-closed probe.** The live-read connection uses `mode=ro`
   and catches `SQLITE_BUSY` at the library level; there is no proactive probe.
 - **Automatic timestamped backup.** The JSON-LD export is a new file the user
-  owns; artifice-ocr never touches the `.tpy` file.
+  owns; artifice-ocr never touches the `.tpy` file via this path.
 - **`immutable=1` connection flag.** The current `mode=ro` is correct; the old
   doc warned against `immutable=1` and that warning still applies if anyone
   tried it, but the current code uses `mode=ro` only.
-- **Inline pre-write preview dialog.** The export modal shows item/photo
+- **Inline pre-write preview dialog.** The JSON-LD export modal shows item/photo
   statistics but does not enumerate rows or flag duplicates before writing.
 
 

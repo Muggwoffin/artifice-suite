@@ -20,8 +20,9 @@ from unittest.mock import MagicMock, patch
 from artifice_ocr import config
 
 
-@patch("artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.Client")
 def test_skips_translation_when_source_confidently_english(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     mock_chat.return_value = MagicMock(message=MagicMock(content="en"))
 
     from artifice_ocr.stages import translate
@@ -51,10 +52,11 @@ def test_skips_translation_when_source_confidently_english(mock_chat, tmp_path):
     assert "confidence" not in data
 
 
-@patch("artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.Client")
 def test_still_translates_when_detection_is_uncertain(mock_chat, tmp_path):
     # Garbled response -> detect_language() falls back to "unknown", which
     # must NOT skip translation — only a *confident* "en" does.
+    mock_chat = mock_chat.return_value.chat
     mock_chat.side_effect = [
         MagicMock(message=MagicMock(content="not a language code")),
         MagicMock(message=MagicMock(content="Translated text")),
@@ -71,8 +73,9 @@ def test_still_translates_when_detection_is_uncertain(mock_chat, tmp_path):
     assert mock_chat.call_count == 3
 
 
-@patch("artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.Client")
 def test_skip_behavior_can_be_disabled_via_config(mock_chat, tmp_path):
+    mock_chat = mock_chat.return_value.chat
     mock_chat.side_effect = [
         MagicMock(message=MagicMock(content="en")),
         MagicMock(message=MagicMock(content="Rewritten by the model")),
@@ -93,11 +96,12 @@ def test_skip_behavior_can_be_disabled_via_config(mock_chat, tmp_path):
     assert mock_chat.call_count == 3
 
 
-@patch("artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.Client")
 def test_multi_lang_detection_parses_comma_separated_response(mock_chat):
     # multi_lang's own prompt asks for several comma-separated codes in
     # prevalence order; previously the comma made isalpha() fail and this
     # always fell back to "unknown".
+    mock_chat = mock_chat.return_value.chat
     mock_chat.return_value = MagicMock(message=MagicMock(content="de,en,fr"))
 
     from artifice_ocr.stages.translate import detect_language
@@ -106,8 +110,9 @@ def test_multi_lang_detection_parses_comma_separated_response(mock_chat):
     assert lang == "de"
 
 
-@patch("artifice_ocr.stages.translate.ollama.chat")
+@patch("artifice_ocr.stages.translate.ollama.Client")
 def test_multi_lang_single_code_still_works(mock_chat):
+    mock_chat = mock_chat.return_value.chat
     mock_chat.return_value = MagicMock(message=MagicMock(content="en"))
 
     from artifice_ocr.stages.translate import detect_language

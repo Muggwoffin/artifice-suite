@@ -34,6 +34,7 @@ from model_harness.registry import KNOWN_ENDPOINTS
 __all__ = [
     "ProbeResult",
     "detect_local_servers",
+    "normalise_base_url",
     "probe_endpoint",
     "probe_endpoint_sync",
 ]
@@ -47,24 +48,13 @@ _DEFAULT_TIMEOUT_S: float = 10.0
 _OLLAMA_TAGS_PATH: str = "/api/tags"
 _OPENAI_MODELS_PATH: str = "/models"
 
-_RUNNER_DOWN_HINT: str = (
-    "Ensure your local model runner (Ollama, LM Studio, vLLM) is running"
-)
-_CORS_HINT: str = (
-    "If running Ollama, ensure OLLAMA_ORIGINS=* is set in your environment"
-)
-_OLLAMA_SERVE_HINT: str = (
-    "Run 'ollama serve' to start the Ollama server"
-)
-_LM_STUDIO_DOWN_HINT: str = (
-    "Ensure the LM Studio server is running and accessible"
-)
-_MODEL_NOT_PULLED_HINT: str = (
-    "Use 'ollama pull <model>' to download models to this provider"
-)
+_RUNNER_DOWN_HINT: str = "Ensure your local model runner (Ollama, LM Studio, vLLM) is running"
+_CORS_HINT: str = "If running Ollama, ensure OLLAMA_ORIGINS=* is set in your environment"
+_OLLAMA_SERVE_HINT: str = "Run 'ollama serve' to start the Ollama server"
+_LM_STUDIO_DOWN_HINT: str = "Ensure the LM Studio server is running and accessible"
+_MODEL_NOT_PULLED_HINT: str = "Use 'ollama pull <model>' to download models to this provider"
 _TIMEOUT_HINT: str = (
-    "The server did not respond in time. Check that it is running and "
-    "the URL is correct."
+    "The server did not respond in time. Check that it is running and the URL is correct."
 )
 _MALFORMED_RESPONSE_HINT: str = (
     "The server responded but the body was not a valid model list. "
@@ -150,6 +140,31 @@ def _identify_provider(url: str) -> Provider | None:
     return None
 
 
+def normalise_base_url(url: str) -> str:
+    """Return *url* with surrounding whitespace, any trailing ``/v1`` path and
+    trailing slashes removed.
+
+    Canonicalises the four common spellings of an Ollama base URL to a single
+    host root, so a caller can append exactly one API prefix — ``/v1`` for the
+    OpenAI-compatible API, ``/api/...`` for the native one — without doubling a
+    path segment::
+
+        http://localhost:11434
+        http://localhost:11434/
+        http://localhost:11434/v1
+        http://localhost:11434/v1/
+
+    all normalise to ``http://localhost:11434``.
+
+    Only a *trailing* ``/v1`` is stripped — a URL whose path continues past
+    ``/v1`` (e.g. ``http://localhost:11434/v1/chat/completions``) is returned
+    unchanged.  Surrounding whitespace is removed first, because a pasted URL
+    often carries a trailing space that would otherwise survive the path
+    comparison and defeat the ``/v1`` strip.
+    """
+    return _strip_v1(url.strip()).rstrip("/")
+
+
 def _strip_v1(url: str) -> str:
     """Return *url* with the trailing ``/v1`` path removed.
 
@@ -164,9 +179,7 @@ def _strip_v1(url: str) -> str:
     return urlunparse(parsed)
 
 
-async def _probe_ollama_tags(
-    client: httpx.AsyncClient, base_url: str
-) -> list[str] | None:
+async def _probe_ollama_tags(client: httpx.AsyncClient, base_url: str) -> list[str] | None:
     """Hit ``/api/tags`` and return the model names found.
 
     Returns *None* when the endpoint does not answer (non-200, wrong
@@ -190,9 +203,7 @@ async def _probe_ollama_tags(
     return models
 
 
-async def _probe_openai_models(
-    client: httpx.AsyncClient, base_url: str
-) -> list[str] | None:
+async def _probe_openai_models(client: httpx.AsyncClient, base_url: str) -> list[str] | None:
     """Hit ``/v1/models`` and return the model IDs found.
 
     The *base_url* is expected to include the ``/v1`` prefix (it is stripped
@@ -305,9 +316,7 @@ async def probe_endpoint(
     malformed = False
 
     try:
-        async with httpx.AsyncClient(
-            timeout=timeout_s, follow_redirects=False
-        ) as client:
+        async with httpx.AsyncClient(timeout=timeout_s, follow_redirects=False) as client:
             # Probe Ollama-native /api/tags
             try:
                 tags = await _probe_ollama_tags(client, url)
@@ -507,9 +516,7 @@ def probe_endpoint_sync(
         loop = asyncio.get_running_loop()
     except RuntimeError:
         # No running loop — we are free to create one
-        return asyncio.run(
-            probe_endpoint(url, policy=policy, timeout_s=timeout_s)
-        )
+        return asyncio.run(probe_endpoint(url, policy=policy, timeout_s=timeout_s))
     raise RuntimeError(
         "probe_endpoint_sync cannot be called from inside a running event loop. "
         "Use the async probe_endpoint() instead to avoid deadlocking."

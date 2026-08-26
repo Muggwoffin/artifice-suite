@@ -121,6 +121,10 @@ def byom_state() -> dict:
         "configured": configured,
         "endpoint": base_url or None,
         "model": model_name or None,
+        # The roles this app supports. Transcribe's BYOM endpoint is chat-only;
+        # derived from the same mapping POST /model honours (_ROLE_SETTING) so
+        # the picker can never drift from what the app actually maps.
+        "roles": list(_ROLE_SETTING),
         "recommendations": _byom_recommendations("artifice-transcribe"),
     }
 
@@ -197,6 +201,14 @@ class ModelRequest(BaseModel):
     role: str = "chat"
 
 
+# Role → the inference-config key it writes. Transcribe supports a single role;
+# GET /state publishes these keys as `roles`, so the picker is built from what
+# the app actually maps, never from the recommendations registry.
+_ROLE_SETTING = {
+    "chat": "model_name",
+}
+
+
 @router.post("/model")
 def byom_set_model(req: ModelRequest) -> dict:
     """Persist the user's model choice.
@@ -209,10 +221,13 @@ def byom_set_model(req: ModelRequest) -> dict:
     An empty ``model`` clears the choice deliberately, returning the app to
     per-run resolution. That is a supported state, not an error.
     """
-    if req.role != "chat":
+    if req.role not in _ROLE_SETTING:
         return JSONResponse(
             status_code=400,
-            content={"error": f"artifice-transcribe has no {req.role!r} role; expected 'chat'."},
+            content={
+                "error": f"artifice-transcribe has no {req.role!r} role; "
+                f"expected one of {sorted(_ROLE_SETTING)}."
+            },
         )
 
     chosen = req.model.strip()
