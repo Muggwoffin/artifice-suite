@@ -515,6 +515,7 @@ def get_item(db_path: str | Path, item_id: int) -> TropyItem | None:
 def items_to_job_items(
     items: list[TropyItem],
     *,
+    project_db: str | Path,
     output_dir: str,
 ) -> list:
     """Convert TropyItem objects to JobItem objects for the pipeline.
@@ -559,6 +560,7 @@ def items_to_job_items(
                         "tropy_item_id": item.item_id,
                         "item_title": item.title,
                         "photo_id": photo.photo_id,
+                        "tropy_project": str(Path(project_db).resolve()),
                         "photo_path_rel": photo_name,
                         "checksum": photo.checksum,
                         "mimetype": photo.mimetype,

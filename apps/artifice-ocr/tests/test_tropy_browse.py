@@ -728,7 +728,9 @@ class TestItemsToJobItems:
             ),
         ]
         item = TropyItem(item_id=1, title="Test", photos=photos)
-        job_items = items_to_job_items([item], output_dir="/tmp/output")
+        job_items = items_to_job_items(
+            [item], project_db="/tmp/project.tpy", output_dir="/tmp/output"
+        )
 
         assert len(job_items) == 1
         ji = job_items[0]
@@ -754,12 +756,76 @@ class TestItemsToJobItems:
             ),
         ]
         item = TropyItem(item_id=2, title="War Diary", photos=photos)
-        job_items = items_to_job_items([item], output_dir="/tmp/output")
+        job_items = items_to_job_items(
+            [item], project_db="/tmp/project.tpy", output_dir="/tmp/output"
+        )
 
         assert len(job_items) == 1
         ji = job_items[0]
         assert ji.page == 2  # PDF, so page is carried through
         assert "_p0003" in ji.output_stem
+
+    def test_source_carries_tropy_project(self):
+        """JobItem source records which project the live-browsed item came from."""
+        photos = [
+            TropyPhoto(
+                photo_id=1,
+                path="/tmp/photo.png",
+                item_id=1,
+                page=None,
+                mimetype="image/png",
+                checksum="abc",
+                orientation=1,
+                missing=False,
+            ),
+        ]
+        item = TropyItem(item_id=1, title="Test", photos=photos)
+        job_items = items_to_job_items(
+            [item], project_db="/tmp/project.tpy", output_dir="/tmp/output"
+        )
+
+        ji = job_items[0]
+        assert ji.source["tropy_project"] == str(Path("/tmp/project.tpy").resolve())
+
+    def test_tropy_project_is_resolved(self, tmp_path):
+        """A relative/`..` spelling is stored as its canonical resolved path."""
+        photos = [
+            TropyPhoto(
+                photo_id=1,
+                path="/tmp/photo.png",
+                item_id=1,
+                page=None,
+                mimetype="image/png",
+                checksum="abc",
+                orientation=1,
+                missing=False,
+            ),
+        ]
+        item = TropyItem(item_id=1, title="Test", photos=photos)
+        raw = tmp_path / "sub" / ".." / "project.tpy"
+        job_items = items_to_job_items([item], project_db=raw, output_dir="/tmp/output")
+
+        ji = job_items[0]
+        assert ji.source["tropy_project"] == str((tmp_path / "project.tpy").resolve())
+        assert ".." not in ji.source["tropy_project"]
+
+    def test_project_db_is_required(self):
+        """Calling without ``project_db`` fails loudly, not with a ``None``."""
+        photos = [
+            TropyPhoto(
+                photo_id=1,
+                path="/tmp/photo.png",
+                item_id=1,
+                page=None,
+                mimetype="image/png",
+                checksum="abc",
+                orientation=1,
+                missing=False,
+            ),
+        ]
+        item = TropyItem(item_id=1, title="Test", photos=photos)
+        with pytest.raises(TypeError):
+            items_to_job_items([item], output_dir="/tmp/output")
 
 
 class TestPhotoOrientation:
@@ -782,7 +848,7 @@ class TestPhotoOrientation:
 
         tpy = _create_tpy(tmp_path / "test.tpy")
         items = list_items(tpy)
-        ji = items_to_job_items(items, output_dir="/tmp/output")
+        ji = items_to_job_items(items, project_db=tpy, output_dir="/tmp/output")
         # All test data uses orientation=1
         for j in ji:
             assert j.source["orientation"] == 1

@@ -230,7 +230,7 @@ def enqueue_from_tropy(req: TropyEnqueueRequest) -> dict:
             if item is not None:
                 items.append(item)
         missing, total = missing_asset_count(items)
-        job_items = items_to_job_items(items, output_dir=output_dir)
+        job_items = items_to_job_items(items, project_db=db_path, output_dir=output_dir)
         added = state.add_items(job_items)
         return {
             "added": len(added),
