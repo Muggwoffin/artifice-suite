@@ -21,6 +21,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from artifice_output import layout_for_path, slugify
+from .output import stage_dir
 from .validation import validate_path
 
 from reportlab.lib.pagesizes import A4
@@ -274,7 +276,7 @@ def _load_manifest(path: Path) -> dict | None:
 
 
 def _find_manifest(folder: Path, explicit_path: str | None = None) -> dict | None:
-    """Find tropy_manifest.json in the folder's parent chain or explicit path."""
+    """Find a canonical or legacy manifest in the folder's parent chain."""
     if explicit_path:
         p = Path(explicit_path)
         if p.exists():
@@ -285,9 +287,10 @@ def _find_manifest(folder: Path, explicit_path: str | None = None) -> dict | Non
     # Walk up parent directories
     current = folder
     for _ in range(10):  # safety limit
-        manifest_path = current / "tropy_manifest.json"
-        if manifest_path.exists():
-            return _load_manifest(manifest_path)
+        for name in ("manifest.json", "tropy_manifest.json"):
+            manifest_path = current / name
+            if manifest_path.exists():
+                return _load_manifest(manifest_path)
         parent = current.parent
         if parent == current:
             break
@@ -344,7 +347,7 @@ def collect_folder(
         primary_dir = None
 
         for s in stage_dirs:
-            candidate = folder_path / s / "text"
+            candidate = stage_dir(folder_path, s) / "text"
             if candidate.exists() and any(candidate.glob("*.txt")):
                 primary_dir = candidate
                 break
@@ -485,7 +488,7 @@ def collect_stems(
         txt_path = None
         stage_used = None
         for s in stage_dirs:
-            candidate = output_path / s / "text" / f"{stem}.txt"
+            candidate = stage_dir(output_path, s) / "text" / f"{stem}.txt"
             if candidate.exists():
                 txt_path = candidate
                 stage_used = s
@@ -620,7 +623,7 @@ def _find_text_dir(folder_path: Path, stage: str) -> Path | None:
     """Locate the text directory for a given stage within folder."""
     if any(folder_path.glob("*.txt")) and stage == "cleaned":
         return folder_path
-    candidate = folder_path / stage / "text"
+    candidate = stage_dir(folder_path, stage) / "text"
     if candidate.exists() and any(candidate.glob("*.txt")):
         return candidate
     return None
@@ -687,6 +690,7 @@ def _structure_bilingual_pages(
     pages: list[BilingualPageText],
     on_progress: Callable[[str], None] | None = None,
     on_rejected: Callable[[str], None] | None = None,
+    output_dir: str = "output",
 ) -> list[BilingualPageText]:
     """Structure bilingual pages: add paragraph breaks to original_text only.
 
@@ -707,6 +711,8 @@ def _structure_bilingual_pages(
         result = structure.perform(
             page.original_text,
             source_file=str(page.source_path),
+            output_dir=output_dir,
+            stem=page.stem,
         )
         guard_ok = result.get("guard", {}).get("ok", True)
         if not guard_ok:
@@ -777,14 +783,15 @@ def compile(
         on_progress(f"Found {len(bilingual_pages)} page(s)")
 
         if structure:
-            bilingual_pages = _structure_bilingual_pages(bilingual_pages, on_progress=on_progress)
+            bilingual_pages = _structure_bilingual_pages(
+                bilingual_pages,
+                on_progress=on_progress,
+                output_dir=str(folder_path) if layout_for_path(folder_path) else "output",
+            )
 
         title = next((p.item_title for p in bilingual_pages if p.item_title), None)
         if output is None:
-            output_dir = Path("output")
-            output_dir.mkdir(exist_ok=True)
-            ext = ".md" if format == "md" else ".pdf"
-            output_path = output_dir / f"{folder_path.name}_bilingual{ext}"
+            output_path = _default_export_path(folder_path, format, bilingual=True)
         else:
             output_path = Path(output)
 
@@ -815,15 +822,15 @@ def compile(
     rejected: list[str] = []
     if structure:
         pages = structure_pages(
-            pages, on_progress=on_progress, on_rejected=lambda l: rejected.append(l)
+            pages,
+            on_progress=on_progress,
+            on_rejected=lambda l: rejected.append(l),
+            output_dir=str(folder_path) if layout_for_path(folder_path) else "output",
         )
 
     title = next((p.item_title for p in pages if p.item_title), None)
     if output is None:
-        output_dir = Path("output")
-        output_dir.mkdir(exist_ok=True)
-        ext = ".md" if format == "md" else ".pdf"
-        output_path = output_dir / f"{folder_path.name}{ext}"
+        output_path = _default_export_path(folder_path, format)
     else:
         output_path = Path(output)
 
@@ -852,6 +859,20 @@ def _safe_filename(name: str) -> str:
     return re.sub(r'[<>:"/\\|?*]', "_", name).strip() or "batch"
 
 
+def _default_export_path(folder: Path, format: str, *, bilingual: bool = False) -> Path:
+    """Choose a readable default without breaking legacy input folders."""
+    ext = ".md" if format == "md" else ".pdf"
+    suffix = "_bilingual" if bilingual else ""
+    layout = layout_for_path(folder)
+    if layout is not None:
+        destination = layout.export_dir("pdf" if format == "pdf" else "markdown")
+        destination.mkdir(parents=True, exist_ok=True)
+        return destination / f"{slugify(folder.name)}{suffix}{ext}"
+    destination = Path("output")
+    destination.mkdir(exist_ok=True)
+    return destination / f"{folder.name}{suffix}{ext}"
+
+
 def default_batch_output(
     stems: list[str],
     *,
@@ -868,7 +889,14 @@ def default_batch_output(
     name = tops.pop() if len(tops) == 1 and all("/" in s for s in stems) else "batch"
     stamp = datetime.now().strftime("%Y%m%d-%H%M")
     ext = ".md" if format == "md" else ".pdf"
-    return Path(output_dir) / f"{_safe_filename(name)}-{stamp}{ext}"
+    layout = layout_for_path(output_dir)
+    destination = (
+        layout.export_dir("pdf" if format == "pdf" else "markdown")
+        if layout
+        else Path(output_dir)
+    )
+    destination.mkdir(parents=True, exist_ok=True)
+    return destination / f"{_safe_filename(name)}-{stamp}{ext}"
 
 
 def compile_batch(

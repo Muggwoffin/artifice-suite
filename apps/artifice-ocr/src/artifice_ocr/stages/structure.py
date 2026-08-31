@@ -27,6 +27,7 @@ from artifice_ocr._prompts import get_structure_prompt
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
+from artifice_ocr.output import stage_dir
 
 log = get_logger("structure")
 
@@ -88,13 +89,13 @@ def _structure_with_chunking(
 
 def _output_exists(stem: str, output_dir: str) -> bool:
     """Check if structured output for a stem already exists."""
-    p = Path(output_dir) / "structured" / "text" / f"{stem}.txt"
+    p = stage_dir(output_dir, "structured") / "text" / f"{stem}.txt"
     return p.exists()
 
 
 def _load_existing_text(stem: str, output_dir: str) -> str:
     """Load existing structured text for a stem."""
-    p = Path(output_dir) / "structured" / "text" / f"{stem}.txt"
+    p = stage_dir(output_dir, "structured") / "text" / f"{stem}.txt"
     return p.read_text(encoding="utf-8")
 
 
@@ -156,8 +157,8 @@ def perform(
         final_text = text
 
     base_output_dir = Path(output_dir)
-    text_dir = base_output_dir / "structured" / "text"
-    json_dir = base_output_dir / "structured" / "json"
+    text_dir = stage_dir(base_output_dir, "structured") / "text"
+    json_dir = stage_dir(base_output_dir, "structured") / "records"
 
     text_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)

@@ -21,6 +21,7 @@ from shared_ui.path_validation import PathValidationError, sanitise_path_compone
 from shared_ui.uploads import UploadTooLarge, read_capped
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from artifice_output import ProjectLayout, slugify
 
 from artifice_transcribe.config import settings
 from artifice_transcribe.db.models import (
@@ -1397,6 +1398,18 @@ async def export_transcript(
     body = await exporters[format](db, job_id)
     is_binary = format in (ExportFormat.pdf,)
     content = body if is_binary or not isinstance(body, str) else body.encode("utf-8")
+    try:
+        project = ProjectLayout(
+            settings.output_path,
+            job.project_name or Path(job.filename).stem or "transcript",
+            create=True,
+        )
+        export_dir = project.export_dir("transcript")
+        export_dir.mkdir(parents=True, exist_ok=True)
+        (export_dir / f"{slugify(Path(job.filename).stem)}.{format.value}").write_bytes(content)
+    except OSError:
+        # Preserve the HTTP download if the optional local archive is unavailable.
+        pass
     return Response(
         content=content,
         media_type=content_type_map[format],

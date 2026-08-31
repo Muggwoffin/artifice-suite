@@ -43,6 +43,7 @@ from artifice_draft.models import (
     ReviewDecision,
 )
 from artifice_draft.review import apply_decisions, create_review_items
+from artifice_output import ProjectLayout, slugify
 
 logger = logging.getLogger(__name__)
 
@@ -422,7 +423,12 @@ class RunState:
         summary = generate_change_summary(doc.edits, doc.paragraphs)
         doc.summary_text = format_change_log(summary)
 
-        base = str(doc.path.with_suffix(""))
+        if cfg.output_dir:
+            layout = ProjectLayout(cfg.output_dir, doc.path.stem, create=True)
+            base = str(layout.export_dir("draft") / slugify(doc.path.stem))
+            Path(base).parent.mkdir(parents=True, exist_ok=True)
+        else:
+            base = str(doc.path.with_suffix(""))
         suffix = _EXT_MAP.get(cfg.export_format, "_edited.docx")
         output_path = base + suffix
         if Path(output_path).exists():

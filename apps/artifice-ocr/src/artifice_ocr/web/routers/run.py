@@ -5,6 +5,7 @@
 """Run control routes: start, pause, resume, cancel, skip, retry, status."""
 
 from fastapi import APIRouter, HTTPException
+from artifice_output import ProjectLayout
 
 from ...jobs import STAGES
 from ..models import SkipRequest, StartRunRequest
@@ -18,6 +19,9 @@ router = APIRouter(tags=["run"])
 def start_run(req: StartRunRequest) -> dict:
     stages = {s for s in req.stages if s in STAGES}
     output_dir = validate_directory(req.output_dir, "output_dir")
+    if req.project or req.output_dir == "output":
+        layout = ProjectLayout(output_dir, req.project or "OCR project", create=True)
+        output_dir = str(layout.project_dir)
     try:
         state.start_run(stages=stages, output_dir=output_dir, force=req.force)
     except (RuntimeError, ValueError) as exc:

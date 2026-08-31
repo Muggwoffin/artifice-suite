@@ -791,7 +791,8 @@ def write_manifest(
     This is the documented contract between artifice-ocr and downstream
     consumers (artifice-graph, artificial analysis tools, hand-curated
     archival pipelines).  The manifest is a JSON file at
-    ``<output_dir>/tropy_manifest.json`` with the following shape::
+    ``<output_dir>/manifest.json`` in a canonical project (or the historical
+    ``tropy_manifest.json`` name for legacy roots) with the following shape::
 
         {
             "schema_version": "1.0",
@@ -832,6 +833,10 @@ def write_manifest(
         out_dir.mkdir(parents=True, exist_ok=True)
     except OSError:
         return None
+    # Canonical projects use a neutral manifest name at project root; retain
+    # the historical filename for legacy output roots and explicit callers.
+    if filename == "tropy_manifest.json" and (out_dir / "project.json").exists():
+        filename = "manifest.json"
     target = out_dir / filename
 
     existing: dict = {}

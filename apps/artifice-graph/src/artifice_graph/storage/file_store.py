@@ -15,7 +15,10 @@ class FileStore:
     """JSON-file persistence for pipeline artefacts."""
 
     def __init__(self, output_dir: str | Path) -> None:
-        self.output_dir = Path(output_dir)
+        root = Path(output_dir)
+        if (root / "project.json").is_file() and (root / "pipeline").is_dir():
+            root = root / "pipeline" / "graph"
+        self.output_dir = root
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def save(self, filename: str, data: list[dict[str, Any]]) -> Path:

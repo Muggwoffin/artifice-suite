@@ -163,7 +163,13 @@ ArtificeGraph reads settings from `config.yaml` or environment variables:
 
 ## 📂 Output Directory Structure
 
-Executing the pipeline populates the `data/output/` directory with structured research artifacts:
+Legacy runs populate the `data/output/` directory with structured research
+artifacts. New project-aware runs use the shared suite layout
+(`projects/<slug>/`): machine artifacts are written to `pipeline/graph/`, graph
+exports to `exports/graph/`, and Obsidian output remains in its selected vault.
+See [`docs/OUTPUT_LAYOUT.md`](../../docs/OUTPUT_LAYOUT.md).
+
+The legacy layout is still supported:
 
 ```
 data/

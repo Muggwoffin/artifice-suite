@@ -56,6 +56,7 @@ class AppConfig:
     style_guide: str = ""
 
     export_format: ExportFormat = ExportFormat.DOCX_TRACK_CHANGES
+    output_dir: str = "output"
 
     enable_review: bool = False
     author_name: str = "ArtificeDraft"

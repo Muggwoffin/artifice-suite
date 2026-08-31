@@ -22,6 +22,7 @@ members = [
     "artifice-hub",
     "artifice-model-harness",
     "artifice-ocr",
+    "artifice-output-layout",
     "artifice-secure-io",
     "artifice-shared-ui",
     "artifice-suite",
@@ -253,6 +254,7 @@ version = "0.3.0"
 source = { editable = "apps/artifice-draft" }
 dependencies = [
     { name = "artifice-model-harness" },
+    { name = "artifice-output-layout" },
     { name = "artifice-secure-io" },
     { name = "artifice-shared-ui" },
     { name = "docx-revisions" },
@@ -277,6 +279,7 @@ web = [
 [package.metadata]
 requires-dist = [
     { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-output-layout", editable = "packages/output-layout" },
     { name = "artifice-secure-io", editable = "packages/secure-io" },
     { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "beautifulsoup4", marker = "extra == 'web'", specifier = ">=4.12" },
@@ -301,6 +304,7 @@ version = "0.3.0"
 source = { editable = "apps/artifice-graph" }
 dependencies = [
     { name = "artifice-model-harness" },
+    { name = "artifice-output-layout" },
     { name = "artifice-secure-io" },
     { name = "artifice-shared-ui" },
     { name = "httpx" },
@@ -336,6 +340,7 @@ dev = [
 requires-dist = [
     { name = "aiofiles", marker = "extra == 'web'", specifier = ">=23.0" },
     { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-output-layout", editable = "packages/output-layout" },
     { name = "artifice-secure-io", editable = "packages/secure-io" },
     { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.100" },
@@ -412,6 +417,7 @@ version = "0.3.0"
 source = { editable = "apps/artifice-ocr" }
 dependencies = [
     { name = "artifice-model-harness" },
+    { name = "artifice-output-layout" },
     { name = "artifice-secure-io" },
     { name = "artifice-shared-ui" },
     { name = "huggingface-hub" },
@@ -448,6 +454,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-output-layout", editable = "packages/output-layout" },
     { name = "artifice-secure-io", editable = "packages/secure-io" },
     { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "fastapi", marker = "extra == 'web'" },
@@ -474,6 +481,11 @@ dev = [
     { name = "pyinstaller", specifier = ">=6.21.0" },
     { name = "pywebview", specifier = ">=5.0" },
 ]
+
+[[package]]
+name = "artifice-output-layout"
+version = "0.1.0"
+source = { editable = "packages/output-layout" }
 
 [[package]]
 name = "artifice-secure-io"
@@ -606,6 +618,7 @@ source = { editable = "apps/artifice-transcribe" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "artifice-model-harness" },
+    { name = "artifice-output-layout" },
     { name = "artifice-secure-io" },
     { name = "artifice-shared-ui" },
     { name = "fastapi" },
@@ -663,6 +676,7 @@ window = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20.0" },
     { name = "artifice-model-harness", editable = "packages/model-harness" },
+    { name = "artifice-output-layout", editable = "packages/output-layout" },
     { name = "artifice-secure-io", editable = "packages/secure-io" },
     { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "artifice-transcribe", extras = ["asr"], marker = "extra == 'asr-cuda'", editable = "apps/artifice-transcribe" },

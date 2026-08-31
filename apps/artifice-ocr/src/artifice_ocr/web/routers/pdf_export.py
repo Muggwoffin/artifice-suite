@@ -12,11 +12,49 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 
+from artifice_output import discover_projects
+
+from ... import config
+from ...pdf_export import collect_bilingual_folder, collect_folder
 from ..models import PdfExportRequest
 from ..runtime import pdf_export_state, start_pdf_export
 from ..validation import validate_directory
 
 router = APIRouter(tags=["pdf-export"])
+
+
+@router.get("/api/output/projects")
+def output_projects(root: str | None = None) -> dict:
+    """List canonical projects beneath the configured output root."""
+    output_root = root or config.get("output_dir", "output")
+    safe_root = validate_directory(output_root, "output_root")
+    return {"root": safe_root, "projects": discover_projects(safe_root)}
+
+
+@router.get("/api/pdf-export/preview")
+def pdf_export_preview(folder: str, stage: str = "cleaned", bilingual: bool = False) -> dict:
+    """Return counts and warnings before a potentially expensive export."""
+    safe_folder = validate_directory(folder, "folder")
+    if bilingual:
+        pages = collect_bilingual_folder(safe_folder)
+        return {
+            "folder": safe_folder,
+            "stage": "cleaned + translated",
+            "pages": len(pages),
+            "translated": sum(bool(page.translated_text) for page in pages),
+            "warnings": (
+                ["Some pages have no translation"]
+                if any(not page.translated_text for page in pages)
+                else []
+            ),
+        }
+    pages = collect_folder(safe_folder, stage=stage)
+    return {
+        "folder": safe_folder,
+        "stage": stage,
+        "pages": len(pages),
+        "warnings": [] if pages else [f"No {stage} text was found in this folder"],
+    }
 
 
 @router.post("/api/pdf-export/start")
@@ -72,6 +110,14 @@ def pdf_export_status_route() -> dict:
         "error": pdf_export_state.error,
         "output_path": pdf_export_state.output_path,
     }
+
+
+@router.post("/api/pdf-export/cancel")
+def pdf_export_cancel() -> dict:
+    if pdf_export_state.status != "running":
+        return {"ok": False, "reason": "No PDF export is running"}
+    pdf_export_state.cancel_requested.set()
+    return {"ok": True}
 
 
 @router.get("/api/pdf-export/events")

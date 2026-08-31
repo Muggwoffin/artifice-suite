@@ -17,6 +17,7 @@ from artifice_ocr._prompts import get_cleanup_prompt
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
+from artifice_ocr.output import stage_dir
 
 log = get_logger("cleanup")
 
@@ -119,8 +120,8 @@ def perform(
     cleaned_text, guard_result = _guard.apply(normalised_text, model_text)
 
     base_output_dir = Path(output_dir)
-    text_dir = base_output_dir / "cleaned" / "text"
-    json_dir = base_output_dir / "cleaned" / "json"
+    text_dir = stage_dir(base_output_dir, "cleaned") / "text"
+    json_dir = stage_dir(base_output_dir, "cleaned") / "records"
 
     text_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)

@@ -12,6 +12,7 @@ from artifice_graph.config import ExportConfig, load_config
 from artifice_graph.models.entity import Entity
 from artifice_graph.models.relationship import Relationship
 from artifice_graph.storage.graph_store import GraphStore
+from artifice_output import ProjectLayout
 
 
 _FORMAT_EXTENSIONS: dict[str, str] = {
@@ -57,7 +58,12 @@ class GraphExporter:
         formats: list[str] | None = None,
     ) -> dict[str, Path]:
         self.build_graph(entities, relationships)
-        output = Path(self.config.output_dir)
+        root = Path(self.config.output_dir)
+        output = (
+            ProjectLayout(root.parent.parent, root.name, create=True).export_dir("graph")
+            if (root / "project.json").is_file()
+            else root
+        )
         output.mkdir(parents=True, exist_ok=True)
 
         if formats is None:

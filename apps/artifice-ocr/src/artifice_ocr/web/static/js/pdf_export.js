@@ -15,7 +15,7 @@
 const pdfEls = {};
 ["btn-compile-pdf", "modal-compile-pdf", "pdf-folder", "pdf-stage",
  "pdf-structure", "pdf-output", "pdf-status", "pdf-log",
- "btn-pdf-start", "btn-pdf-download", "btn-pdf-close",
+ "btn-pdf-start", "btn-pdf-download", "btn-pdf-close", "btn-pdf-cancel",
  "btn-pdf-browse-folder", "btn-pdf-browse-output",
  "pdf-format", "pdf-style", "pdf-bilingual", "pdf-bilingual-hint",
 ].forEach(id => {
@@ -31,6 +31,7 @@ function openPdfExport() {
   pdfEls["pdf-log"].innerHTML = "";
   pdfEls["btn-pdf-download"].disabled = true;
   pdfEls["btn-pdf-start"].disabled = false;
+  pdfEls["btn-pdf-cancel"].disabled = true;
   setPdfStatus("Point at your output folder, choose a stage, then press Start.", "");
 
   // Default the input to the pipeline's output ROOT, not a per-item leaf.
@@ -43,6 +44,7 @@ function openPdfExport() {
   const outputDir = (els["output-dir"] && els["output-dir"].value) || "output";
   pdfEls["pdf-folder"].value = outputDir;
   pdfEls["pdf-output"].value = "";
+  refreshPdfPreview();
 }
 
 function closePdfExport() {
@@ -61,6 +63,27 @@ function appendPdfLog(text) {
   line.textContent = text;
   pdfEls["pdf-log"].appendChild(line);
   pdfEls["pdf-log"].scrollTop = pdfEls["pdf-log"].scrollHeight;
+}
+
+let pdfPreviewTimer = null;
+async function refreshPdfPreview() {
+  const folder = pdfEls["pdf-folder"].value.trim();
+  if (!folder) return;
+  clearTimeout(pdfPreviewTimer);
+  pdfPreviewTimer = setTimeout(async () => {
+    try {
+      const params = new URLSearchParams({
+        folder,
+        stage: pdfEls["pdf-stage"].value,
+        bilingual: String(pdfEls["pdf-bilingual"].checked),
+      });
+      const data = await api("GET", "/api/pdf-export/preview?" + params.toString());
+      const warning = data.warnings && data.warnings.length ? " — " + data.warnings.join("; ") : "";
+      setPdfStatus(`${data.pages} page${data.pages === 1 ? "" : "s"} ready${warning}`, warning ? "warning" : "");
+    } catch (_) {
+      setPdfStatus("Choose a valid output folder to preview pages.", "warning");
+    }
+  }, 250);
 }
 
 // -------------------------------------------------------- browse / download
@@ -101,6 +124,7 @@ async function startPdfExport() {
   if (!folder) { setPdfStatus("Choose a folder first.", "warning"); return; }
 
   pdfEls["btn-pdf-start"].disabled = true;
+  pdfEls["btn-pdf-cancel"].disabled = false;
   pdfEls["btn-pdf-download"].disabled = true;
   pdfEls["pdf-log"].innerHTML = "";
   setPdfStatus("Starting…", "");
@@ -132,12 +156,14 @@ async function startPdfExport() {
       setPdfStatus("PDF compiled successfully.", "success");
       pdfEls["btn-pdf-download"].disabled = false;
       pdfEls["btn-pdf-start"].disabled = false;
+      pdfEls["btn-pdf-cancel"].disabled = true;
       pdfEventSource.close();
       pdfEventSource = null;
     } else if (data.type === "error") {
       appendPdfLog("ERROR: " + data.message);
       setPdfStatus("Error: " + data.message, "error");
       pdfEls["btn-pdf-start"].disabled = false;
+      pdfEls["btn-pdf-cancel"].disabled = true;
       pdfEventSource.close();
       pdfEventSource = null;
     }
@@ -159,9 +185,15 @@ pdfEls["btn-compile-pdf"].onclick = openPdfExport;
 pdfEls["btn-pdf-close"].onclick = closePdfExport;
 pdfEls["modal-compile-pdf"].querySelector("[data-modal-close]")?.addEventListener("click", closePdfExport);
 pdfEls["btn-pdf-start"].onclick = startPdfExport;
+pdfEls["btn-pdf-cancel"].onclick = async () => {
+  await api("POST", "/api/pdf-export/cancel").catch(() => {});
+  setPdfStatus("Cancelling…", "warning");
+};
 pdfEls["btn-pdf-download"].onclick = downloadPdf;
 pdfEls["btn-pdf-browse-folder"].onclick = browsePdfFolder;
 pdfEls["btn-pdf-browse-output"].onclick = browsePdfOutput;
+pdfEls["pdf-folder"].addEventListener("change", refreshPdfPreview);
+pdfEls["pdf-stage"].addEventListener("change", refreshPdfPreview);
 pdfEls["modal-compile-pdf"].addEventListener("click", (e) => {
   if (e.target === pdfEls["modal-compile-pdf"]) closePdfExport();
 });
@@ -174,4 +206,5 @@ pdfEls["pdf-bilingual"].addEventListener("change", (e) => {
   if (on) {
     pdfEls["pdf-structure"].checked = false;
   }
+  refreshPdfPreview();
 });

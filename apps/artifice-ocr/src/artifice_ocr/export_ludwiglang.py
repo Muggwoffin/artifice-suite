@@ -58,7 +58,9 @@ def _parse_page_num(stem: str) -> int:
 
 
 def _discover_pages(collection_dir: Path) -> list[ExportPage]:
-    json_dir = collection_dir / "json"
+    json_dir = collection_dir / "records"
+    if not json_dir.exists():
+        json_dir = collection_dir / "json"
     if not json_dir.exists():
         raise FileNotFoundError(f"No json directory at {json_dir}")
 
@@ -84,7 +86,9 @@ def _discover_pages(collection_dir: Path) -> list[ExportPage]:
 
 
 def _read_manifest(output_dir: Path) -> dict[str, Any] | None:
-    manifest_path = output_dir / "tropy_manifest.json"
+    manifest_path = output_dir / "manifest.json"
+    if not manifest_path.exists():
+        manifest_path = output_dir / "tropy_manifest.json"
     if not manifest_path.exists():
         return None
     try:

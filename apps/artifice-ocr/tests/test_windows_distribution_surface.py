@@ -36,3 +36,12 @@ def test_ocr_pyinstaller_bundle_is_uncompressed_and_windowed():
     assert "console=False" in spec
     assert "uac_admin=False" in spec
     assert "uac_uiaccess=False" in spec
+
+
+def test_canonical_stage_mapping(tmp_path):
+    from artifice_output import ProjectLayout
+    from artifice_ocr.output import stage_dir
+
+    layout = ProjectLayout(tmp_path, "Archive", create=True)
+    assert stage_dir(layout.project_dir, "raw_ocr") == layout.project_dir / "pipeline" / "raw-ocr"
+    assert stage_dir(tmp_path, "raw_ocr") == tmp_path / "raw_ocr"

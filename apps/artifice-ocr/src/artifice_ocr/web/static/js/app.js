@@ -594,6 +594,7 @@ els["btn-run"].onclick = async () => {
   try {
     await api("POST", "/api/run/start", {
       stages, output_dir: els["output-dir"].value || "output",
+      project: (els["output-dir"].value || "output") === "output" ? "OCR project" : null,
       force: els["stage-force"].checked,
     });
     setRunning(true);
