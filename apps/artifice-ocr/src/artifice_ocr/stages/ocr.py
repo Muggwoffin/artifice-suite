@@ -124,20 +124,28 @@ def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
 def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
     """Send a single image to the vision-model OCR backend and return text.
 
-    All backends use their OpenAI-compatible endpoint for OCR because
-    images are sent as ``image_url`` content blocks — the format supported
-    by LM Studio, Ollama's ``/v1`` endpoint, and Hugging Face alike.
+    Every backend is called with the same OpenAI-shaped message: images as
+    ``image_url`` content blocks. LM Studio, Hugging Face and the generic
+    API-key backend take that shape natively. Ollama does not — but unlike
+    the OpenAI-compatible cloud backends, its ``/v1`` endpoint silently
+    ignores the context-window request (``extra_body.options.num_ctx``;
+    measured on live Ollama 0.33.2 — see the ``OllamaOpenAIBackend``
+    docstring in ``_backend.py``), so an ``ollama`` backend is routed to the
+    *native* ``ollama`` client instead of ``ollama_openai``.
+    :func:`artifice_ocr._backend._to_native_messages` converts the OpenAI
+    content blocks this function builds into Ollama's native
+    ``{"content": str, "images": [base64, ...]}`` shape before the request
+    is sent.
+
+    Do not remap ``ollama`` to ``ollama_openai`` here again: that remap is
+    exactly what made "Context size" a no-op for OCR, because Ollama does
+    not honour ``num_ctx`` on the OpenAI-compatible endpoint.
     """
     image_b64, mime = _encode_image(image_path, orientation)
     backend = backend_for("vision")
     model = model_for("vision")
 
-    # Ollama's native API carries images in an ``images`` field, not as
-    # ``image_url`` content blocks.  Route through the ``ollama_openai``
-    # backend which hits the OpenAI-compatible ``/v1`` endpoint so the
-    # message format is the same for every backend.
-    be_name = "ollama_openai" if backend == "ollama" else backend
-    client = _get_backend_client(be_name)
+    client = _get_backend_client(backend)
 
     response = client.chat(
         model=model,
