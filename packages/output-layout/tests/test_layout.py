@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from pathlib import Path
 
 from artifice_output import ProjectLayout, discover_projects, layout_for_path, slugify

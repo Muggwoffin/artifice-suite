@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Resolve OCR stage directories in canonical and legacy output layouts."""
 
 from pathlib import Path

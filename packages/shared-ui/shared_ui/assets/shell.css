@@ -1,3 +1,4 @@
+/* SPDX-FileCopyrightText: 2026 Maurice Casey */
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 :root { --accent: #2f7d45; --accent-deep: #1f5a31; --accent-wash: rgba(47,125,69,.07); --shell-title: 3rem; --shell-nav: 13.5rem; --shell-inspector: 18rem; }
 * { box-sizing: border-box; }
