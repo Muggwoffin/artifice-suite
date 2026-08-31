@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-
 from model_harness.contract import EndpointRejected
 from model_harness.discovery import normalise_base_url
 from model_harness.endpoint_policy import EndpointPolicy
@@ -16,6 +15,7 @@ from shared_ui.path_validation import PathValidationError, normalise_path
 
 from ... import config
 from ..._prompts import DOCUMENT_TYPES
+from ..._resolution import ROLE_KEYS
 
 router = APIRouter(tags=["settings"])
 
@@ -301,6 +301,12 @@ def document_types() -> dict:
     return {"types": DOCUMENT_TYPES}
 
 
+# Local backends that carry a probeable model list (mirrors
+# artifice_ocr._resolution._BACKEND_URL_KEYS). Anything else — api_key,
+# huggingface — is a cloud backend with no local shelf to check.
+_BACKEND_URL_KEYS_HEALTH = frozenset({"lm_studio", "ollama"})
+
+
 @router.get("/api/health")
 def health_check() -> dict:
     from model_harness.discovery import probe_endpoint_sync
@@ -314,12 +320,17 @@ def health_check() -> dict:
     wants_auto = "auto" in backends
 
     results: dict[str, Any] = {}
+    # Populated only for the local backends actually probed below, so each
+    # role's model can be graded against *its own* backend's probe rather
+    # than always against Ollama's — see the per-role loop after.
+    probes: dict[str, Any] = {}
 
     lm_studio_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
     ollama_url = config.get("ollama_url") or "http://localhost:11434"
 
     if "lm_studio" in backends or wants_auto:
         probe = probe_endpoint_sync(lm_studio_url, policy=_endpoint_policy, timeout_s=5)
+        probes["lm_studio"] = probe
         results["lm_studio"] = {
             "ok": probe.reachable,
             "detail": None if probe.reachable else (probe.hint or "Cannot reach LM Studio"),
@@ -328,21 +339,12 @@ def health_check() -> dict:
 
     if "ollama" in backends or wants_auto:
         probe = probe_endpoint_sync(ollama_url, policy=_endpoint_policy, timeout_s=10)
-        ollama_reachable = probe.reachable
+        probes["ollama"] = probe
         results["ollama"] = {
-            "ok": ollama_reachable,
-            "detail": None if ollama_reachable else (probe.hint or "Cannot reach Ollama"),
+            "ok": probe.reachable,
+            "detail": None if probe.reachable else (probe.hint or "Cannot reach Ollama"),
             "url": ollama_url,
         }
-        models = [
-            config.get("ocr_model"),
-            config.get("cleanup_model"),
-            config.get("translate_model"),
-        ]
-        available = set(probe.models)
-        results["models"] = [
-            {"name": m, "ok": ollama_reachable and m in available} for m in models if m
-        ]
 
     if "huggingface" in backends:
         token = config.get("huggingface_token")
@@ -358,7 +360,88 @@ def health_check() -> dict:
         ok, detail = get_client("api_key").health_check()
         results["api_key"] = {"ok": ok, "detail": detail, "url": base_url}
 
+    # Per-role model check, each graded against the backend that role is
+    # actually configured to use — never blanket-checked against Ollama.
+    # This is returned whenever any local backend is active (not only
+    # Ollama), so a pure-LM-Studio install gets a real model check too.
+    results["models"] = _model_health(probes)
+
     return results
+
+
+def _model_health(probes: dict[str, Any]) -> list[dict[str, Any]]:
+    """Grade each role's configured model against its own backend's probe.
+
+    ``ROLE_KEYS`` (from ``artifice_ocr._resolution``) maps each role to its
+    ``(model config key, backend config key)`` pair — the same mapping the
+    once-per-run resolver uses, so "which endpoint is this role's model
+    checked against" cannot drift from "which endpoint the run will actually
+    call".
+
+    * An explicit local backend (``lm_studio`` / ``ollama``) is graded
+      against that backend's own probe.
+    * ``auto`` is graded against the union of whichever local endpoints are
+      reachable, mirroring ``_resolution._resolve_auto`` (which never
+      auto-selects a cloud backend).
+    * A cloud backend (``api_key`` / ``huggingface``) has no local model list
+      to check — it is reported as not checkable rather than a false
+      negative.
+    * An empty configured model name is skipped, as before.
+    """
+    entries: list[dict[str, Any]] = []
+    for _role, (model_key, backend_key) in ROLE_KEYS.items():
+        model_name = (config.get(model_key) or "").strip()
+        if not model_name:
+            continue
+
+        role_backend = (config.get(backend_key) or "auto").strip().lower() or "auto"
+
+        if role_backend == "auto":
+            reachable = [p for p in probes.values() if p.reachable]
+            available: set[str] = set()
+            for p in reachable:
+                available.update(p.models)
+            entries.append(
+                {
+                    "name": model_name,
+                    "backend": "auto",
+                    "ok": bool(reachable) and model_name in available,
+                }
+            )
+            continue
+
+        if role_backend not in _BACKEND_URL_KEYS_HEALTH:
+            # Cloud backend (api_key, huggingface, ...): no local model list
+            # to check against. Do not report a false negative — mark it
+            # explicitly as not checkable instead.
+            entries.append(
+                {
+                    "name": model_name,
+                    "backend": role_backend,
+                    "ok": None,
+                    "checkable": False,
+                    "detail": f"'{role_backend}' has no local model list to check against.",
+                }
+            )
+            continue
+
+        probe = probes.get(role_backend)
+        if probe is None:
+            # A local backend that was not probed above (config drift between
+            # the ``backends`` set and this loop) — treat as unreachable
+            # rather than crash.
+            entries.append({"name": model_name, "backend": role_backend, "ok": False})
+            continue
+
+        entries.append(
+            {
+                "name": model_name,
+                "backend": role_backend,
+                "ok": probe.reachable and model_name in set(probe.models),
+            }
+        )
+
+    return entries
 
 
 @router.get("/api/tesseract/status")
