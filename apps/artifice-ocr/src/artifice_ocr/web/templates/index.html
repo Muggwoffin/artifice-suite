@@ -333,6 +333,7 @@
           <p class="dim" style="margin:0 0 0.5rem;">Choose which service runs each step, and which model it uses.</p>
           <label>OCR backend
             <select id="set-ocr_backend">
+              <option value="auto">Auto (detect)</option>
               <option value="lm_studio">LM Studio</option>
               <option value="ollama">Ollama</option>
               <option value="huggingface">Hugging Face</option>
@@ -342,6 +343,7 @@
           <label>OCR model <input type="text" id="set-ocr_model" placeholder="leave blank to pick automatically"></label>
           <label>Cleanup backend
             <select id="set-cleanup_backend">
+              <option value="auto">Auto (detect)</option>
               <option value="ollama">Ollama</option>
               <option value="lm_studio">LM Studio</option>
               <option value="huggingface">Hugging Face</option>
@@ -351,6 +353,7 @@
           <label>Cleanup model <input type="text" id="set-cleanup_model" placeholder="e.g. aya-expanse:8b"></label>
           <label>Translate backend
             <select id="set-translate_backend">
+              <option value="auto">Auto (detect)</option>
               <option value="ollama">Ollama</option>
               <option value="lm_studio">LM Studio</option>
               <option value="huggingface">Hugging Face</option>

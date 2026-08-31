@@ -164,11 +164,20 @@ const SettingsTab = (function () {
   }
 
   function activeBackends() {
-    return new Set([
+    const backends = new Set([
       el("ocr_backend").value,
       el("cleanup_backend").value,
       el("translate_backend").value,
     ]);
+    // "auto" probes both local servers and picks whichever is reachable
+    // (see _resolution._resolve_auto) -- never a cloud backend. So with any
+    // role set to Auto, both connection rows must stay visible/collectable,
+    // never the huggingface/api_key ones auto can't select.
+    if (backends.has("auto")) {
+      backends.add("lm_studio");
+      backends.add("ollama");
+    }
+    return backends;
   }
 
   function updateConnectionVisibility() {
@@ -287,9 +296,18 @@ const SettingsTab = (function () {
       }
       if (health.ollama) {
         lines.push(healthLine("Ollama", health.ollama.ok, health.ollama.ok ? "" : health.ollama.detail));
-        if (health.models) {
-          lines.push(...health.models.map(m => healthLine(`  ${m.name}`, m.ok)));
-        }
+      }
+      if (health.models) {
+        // Each model was checked against the backend its own role is
+        // configured to use (see settings.py's per-role ROLE_KEYS loop) —
+        // show which server was actually consulted, not just Ollama's.
+        // A cloud-backend model (checkable === false) has no local model
+        // list to grade against, so it gets a neutral "not checkable" line
+        // (reusing the existing `dim` class) rather than a false FAIL.
+        lines.push(...health.models.map(m => m.checkable === false
+          ? `<div class="dim">  ${escapeHtml(m.name)} (${escapeHtml(m.backend)})   not checkable${m.detail ? `   ${escapeHtml(m.detail)}` : ""}</div>`
+          : healthLine(`  ${m.name} (${m.backend})`, m.ok)
+        ));
       }
       if (health.huggingface) {
         lines.push(healthLine("Hugging Face", health.huggingface.ok, health.huggingface.detail));
