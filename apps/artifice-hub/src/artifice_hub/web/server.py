@@ -172,6 +172,7 @@ async def api_update_ui_preferences(request: Request):
         return update_preferences(await request.json())
     except (TypeError, ValueError) as exc:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 

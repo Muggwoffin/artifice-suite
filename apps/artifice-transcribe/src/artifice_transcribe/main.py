@@ -111,6 +111,7 @@ async def patch_ui_preferences(
     """Validate and persist a partial shared UI preference update."""
     return update_preferences(patch)
 
+
 # ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
 # ChoiceLoader lets templates include shared-ui’s masthead partial.
 _JINJA = Environment(

@@ -87,12 +87,10 @@ class GraphExporter:
                 results["cypher"] = self.store.export_cypher(base)
             else:
                 from rich.console import Console
+
                 Console().print(f"[yellow]Unknown format '{fmt}', skipping.[/yellow]")
 
         return results
 
     def summary(self) -> str:
-        return (
-            f"Graph: {self.store.node_count} nodes, "
-            f"{self.store.edge_count} edges"
-        )
+        return f"Graph: {self.store.node_count} nodes, {self.store.edge_count} edges"

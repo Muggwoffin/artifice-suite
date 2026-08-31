@@ -22,10 +22,7 @@ def _collections(output_dir: str) -> list[str]:
     cleaned_text = stage_dir(output_dir, "cleaned") / "text"
     if not cleaned_text.exists():
         return []
-    return sorted(
-        d.name for d in cleaned_text.iterdir()
-        if d.is_dir()
-    )
+    return sorted(d.name for d in cleaned_text.iterdir() if d.is_dir())
 
 
 @router.get("/api/ludwiglang/collections")
@@ -45,9 +42,14 @@ def ludwiglang_export(req: LudwigLangExportRequest) -> dict:
     # cannot escape — the same validate_contained pattern the download
     # endpoint already uses.
     cleaned_root_raw = str(stage_dir(safe_output_dir, "cleaned") / "text" / req.collection)
-    cleaned_root = Path(validate_contained(
-        cleaned_root_raw, safe_output_dir, "collection", must_exist=False,
-    ))
+    cleaned_root = Path(
+        validate_contained(
+            cleaned_root_raw,
+            safe_output_dir,
+            "collection",
+            must_exist=False,
+        )
+    )
     if not cleaned_root.exists():
         raise HTTPException(
             status_code=404,

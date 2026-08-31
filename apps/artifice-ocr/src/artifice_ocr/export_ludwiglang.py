@@ -74,12 +74,14 @@ def _discover_pages(collection_dir: Path) -> list[ExportPage]:
         except (OSError, json.JSONDecodeError) as exc:
             log.warning("Skipping unreadable %s: %s", jp, exc)
             continue
-        pages.append(ExportPage(
-            stem=stem,
-            page_num=_parse_page_num(stem),
-            json_path=jp,
-            data=data,
-        ))
+        pages.append(
+            ExportPage(
+                stem=stem,
+                page_num=_parse_page_num(stem),
+                json_path=jp,
+                data=data,
+            )
+        )
 
     pages.sort(key=lambda p: p.page_num)
     return pages
@@ -120,6 +122,7 @@ def _resolve_author_date(
 
 def _detect_language(text: str) -> str:
     from .stages.translate import detect_language
+
     try:
         return detect_language(text)
     except Exception as exc:
@@ -212,9 +215,7 @@ def export_md(
     skip_language_gate: bool = False,
 ) -> Path:
     if medium not in MEDIUM_OPTIONS:
-        raise ValueError(
-            f"medium must be one of {MEDIUM_OPTIONS}, got {medium!r}"
-        )
+        raise ValueError(f"medium must be one of {MEDIUM_OPTIONS}, got {medium!r}")
 
     result = assemble_collection(collection_dir, page_markers=page_markers)
 
@@ -231,9 +232,7 @@ def export_md(
             raise ValueError(lang_error)
 
     # Resolve author/date/tropy provenance from manifest if not provided
-    manifest_author, manifest_date, tropy_group, archive_ref, orientation = (
-        "", "", "", "", None
-    )
+    manifest_author, manifest_date, tropy_group, archive_ref, orientation = ("", "", "", "", None)
     if not author or not date:
         manifest_author, manifest_date, tropy_group, archive_ref, orientation = (
             _resolve_author_date(result.title, manifest)
@@ -259,12 +258,7 @@ def export_md(
         fm["orientation"] = str(orientation)
 
     if output_path is None:
-        output_path = (
-            collection_dir.parent.parent
-            / "ludwiglang"
-            / result.title
-            / "text.md"
-        )
+        output_path = collection_dir.parent.parent / "ludwiglang" / result.title / "text.md"
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -15,7 +15,8 @@ def test_preferences_default_when_missing(tmp_path):
 def test_preferences_round_trip_and_validate(tmp_path):
     path = tmp_path / "prefs.json"
     assert update_preferences({"theme": "dark", "reduced_motion": True}, path) == {
-        "theme": "dark", "reduced_motion": True
+        "theme": "dark",
+        "reduced_motion": True,
     }
     assert json.loads(path.read_text()) == {"theme": "dark", "reduced_motion": True}
     with pytest.raises(ValueError, match="Unknown"):
@@ -30,7 +31,11 @@ def test_suite_apps_only_returns_safe_loopback_urls(monkeypatch):
     assert len(apps) == 5
     assert all(app["url"] == "http://127.0.0.1:8123/" for app in apps)
     assert {app["slug"] for app in apps} == {
-        "artifice-hub", "artifice-ocr", "artifice-draft", "artifice-transcribe", "artifice-graph"
+        "artifice-hub",
+        "artifice-ocr",
+        "artifice-draft",
+        "artifice-transcribe",
+        "artifice-graph",
     }
 
 

@@ -28,9 +28,7 @@ def test_ocr_runtime_does_not_enumerate_processes_or_strip_download_metadata():
 
 
 def test_ocr_pyinstaller_bundle_is_uncompressed_and_windowed():
-    spec = (ROOT / "apps" / "artifice-ocr" / "artifice-ocr.spec").read_text(
-        encoding="utf-8"
-    )
+    spec = (ROOT / "apps" / "artifice-ocr" / "artifice-ocr.spec").read_text(encoding="utf-8")
     assert "upx=False" in spec
     assert "console=False" in spec
     assert "uac_admin=False" in spec

@@ -888,9 +888,7 @@ def default_batch_output(
     ext = ".md" if format == "md" else ".pdf"
     layout = layout_for_path(output_dir)
     destination = (
-        layout.export_dir("pdf" if format == "pdf" else "markdown")
-        if layout
-        else Path(output_dir)
+        layout.export_dir("pdf" if format == "pdf" else "markdown") if layout else Path(output_dir)
     )
     destination.mkdir(parents=True, exist_ok=True)
     return destination / f"{_safe_filename(name)}-{stamp}{ext}"
