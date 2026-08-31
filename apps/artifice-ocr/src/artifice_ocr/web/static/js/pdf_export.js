@@ -186,7 +186,9 @@ pdfEls["btn-pdf-close"].onclick = closePdfExport;
 pdfEls["modal-compile-pdf"].querySelector("[data-modal-close]")?.addEventListener("click", closePdfExport);
 pdfEls["btn-pdf-start"].onclick = startPdfExport;
 pdfEls["btn-pdf-cancel"].onclick = async () => {
-  await api("POST", "/api/pdf-export/cancel").catch(() => {});
+  await api("POST", "/api/pdf-export/cancel").catch((err) => {
+    if (window.ArtificeToast) window.ArtificeToast.error(`Could not cancel export: ${err.message}`);
+  });
   setPdfStatus("Cancelling…", "warning");
 };
 pdfEls["btn-pdf-download"].onclick = downloadPdf;
