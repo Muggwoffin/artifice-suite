@@ -39,6 +39,10 @@ _DEFAULTS: dict[str, Any] = {
     # don't type a path" flow the JSON-LD rewrite dropped. Still gated by the
     # read-only connection guarantee; ARTIFICE_OCR_TROPY_LIVE_READ overrides it.
     "tropy_live_browse_enabled": True,
+    # 0 discovers the port from Tropy's state and then tries the stable/beta
+    # defaults (2019/2029). A non-zero value is an advanced override for a
+    # Tropy instance launched with a custom ``--port``.
+    "tropy_api_port": 0,
     # Direct write-back of OCR results into the Tropy project's notes /
     # transcriptions tables. Opt-in and default OFF: writing to the user's
     # research database is the highest-risk operation in the suite, so it is
@@ -189,6 +193,7 @@ PERSISTED_KEYS = (
     "tropy_last_path",
     "tropy_last_export_path",
     "tropy_live_browse_enabled",
+    "tropy_api_port",
     "tropy_writeback_enabled",
     "approved_folders",
 )

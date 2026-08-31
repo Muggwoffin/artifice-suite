@@ -403,6 +403,10 @@
               <p class="dim" style="margin:0;">Much slower with no visible improvement.</p>
               <label>Tesseract language <input type="text" id="set-tesseract_lang" style="width:8rem;" placeholder="eng" title="Tesseract language code(s), e.g. eng, deu, or deu+eng. You need the matching traineddata installed."></label>
               <label>Tesseract path <input type="text" id="set-tesseract_path" style="width:16rem;" placeholder="auto-detect" title="Full path to the tesseract binary. Leave blank to detect it on PATH."></label>
+              <label>Tropy API port <input type="number" id="set-tropy_api_port" min="0" max="65535" style="width:7rem;" title="0 detects Tropy automatically. Set a port only if Tropy was started with a custom --port."></label>
+              <p class="dim" style="margin:0;">0 detects Tropy automatically (stable 2019, beta 2029).</p>
+              <label><input type="checkbox" id="set-tropy_writeback_enabled"> Enable advanced closed-project database writeback</label>
+              <p class="dim" style="margin:0;">Advanced fallback only. Close Tropy first; Artifice creates a timestamped backup.</p>
             </div>
           </details>
         </div>
@@ -653,21 +657,25 @@
         </div>
       </div>
 
-      <div class="tropy-writeback-section hidden" id="tropy-writeback-section">
+      <div class="tropy-writeback-section" id="tropy-writeback-section">
         <fieldset class="tropy-destination">
           <legend class="tropy-destination-legend">Destination</legend>
           <label class="tropy-destination-option">
-            <input type="radio" name="tropy-destination" id="tropy-dest-jsonld" value="jsonld" checked>
-            <span>Save a JSON-LD file</span>
+            <input type="radio" name="tropy-destination" id="tropy-dest-api" value="api" checked>
+            <span>Add notes to the original Tropy photos</span>
           </label>
           <label class="tropy-destination-option">
+            <input type="radio" name="tropy-destination" id="tropy-dest-jsonld" value="jsonld">
+            <span>Export new Tropy items as JSON-LD</span>
+          </label>
+          <label class="tropy-destination-option hidden" id="tropy-dest-writeback-option">
             <input type="radio" name="tropy-destination" id="tropy-dest-writeback" value="writeback">
-            <span>Write into the Tropy project</span>
+            <span>Advanced: modify the closed project database</span>
           </label>
         </fieldset>
         <div class="tropy-writeback-warning hidden" id="tropy-writeback-warning">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5L14.5 13H1.5L8 1.5Z"/><line x1="8" y1="6" x2="8" y2="9"/><circle cx="8" cy="11.5" r=".6" fill="currentColor" stroke="none"/></svg>
-          <span>This modifies your Tropy project &mdash; a timestamped backup is taken automatically.</span>
+          <span>Close Tropy first. This modifies its database directly; a timestamped backup is taken automatically.</span>
         </div>
         <div class="tropy-writeback-preview hidden" id="tropy-writeback-preview" aria-live="polite" aria-atomic="true"></div>
       </div>

@@ -1,6 +1,6 @@
 # Tropy Integration
 
-**Status: implemented — JSON-LD file bridge (primary), optional live read-only `.tpy` browse, and an opt-in write-back to `.tpy`.**
+**Status: implemented — JSON-LD, live read-only `.tpy` browse, official Developer API note write-back, and an advanced database fallback.**
 
 The architecture described in this document is the one actually in source as of
 commit `3d91e7c` ("Redone Tropy integration", 2026-08-09). The old SQLite
@@ -8,10 +8,10 @@ read/write modules (`tropy.py`, `tropy_read.py`) were removed; `tropy_write.py` 
 restored 2026-08-25, knowingly reversing `ebd89e6`, as an opt-in default-off
 write-back alongside the JSON-LD bridge.
 
-There are two independent read paths and one export path. A third path — direct
-write-back to the `.tpy` database — is present but **opt-in and default off**
-(`tropy_writeback_enabled: False` in `config.py`). It is not yet wired to any
-UI control and is under security audit.
+There are two independent read paths and two export modes. Normal write-back
+uses Tropy's loopback Developer API to attach notes to the original photos.
+Direct `.tpy` database write-back is an advanced, **opt-in and default-off**
+fallback (`tropy_writeback_enabled: False`).
 
 
 ## Overview
@@ -37,7 +37,8 @@ There are **two ways** to read from a Tropy project:
 |---|---|---|---|
 | JSON-LD file bridge | `tropy_jsonld.py` | Never | None — always available |
 | Live read-only browse | `tropy_db.py` | Never | Settings toggle `tropy_live_browse_enabled` |
-| Direct write-back | `tropy_write.py` | When enabled | `tropy_writeback_enabled` (default off; not yet in Settings UI) |
+| Developer API notes | `tropy_api.py` | Through Tropy | Enable Developer API in Tropy |
+| Direct write-back | `tropy_write.py` | When enabled | Advanced setting `tropy_writeback_enabled` (default off) |
 
 Both map to the same `JobItem` pipeline entry. The manifest (`tropy_manifest.json`)
 is written by the JSON-LD import path and documents provenance for downstream
@@ -46,7 +47,7 @@ consumers.
 
 ## JSON-LD File Bridge (`tropy_jsonld.py`)
 
-**Primary integration.** User-initiated, frictionless, requires no feature flag.
+**Portable file integration.** User-initiated and requires no feature flag.
 
 ### Import: Tropy → artifice-ocr
 
@@ -72,29 +73,17 @@ Two export routes exist:
 - **`POST /api/tropy/export/history`** — exports items from the History database
   (for runs already completed and recorded).
 
-Both generate a Tropy-compatible JSON-LD file. The UI flow:
+The Send to Tropy modal defaults to Developer API note write-back. Tropy must be
+running, the target project must be open, and **Preferences → Developer API**
+must be enabled. Artifice OCR discovers stable port 2019 and beta port 2029 (or
+uses the custom port in Settings), verifies the open project, checks each photo
+and parent item, previews blockers and duplicates, and only then enables commit.
+Identical notes are skipped, so retrying after a partial failure is safe.
 
-1. User picks a save location via the OS native file dialog.
-2. artifice-ocr generates the JSON-LD and **first tries Tropy's local HTTP API**
-   (`http://127.0.0.1:2029/project/import`) as a proxy import. This requires
-   Tropy to be running with its HTTP API enabled (**Preferences → API** or
-   `--port 2029`).
-3. If the API import succeeds → items appear directly in Tropy, no file left
-   behind.
-4. If the API import fails (Tropy not running, API not enabled, or Tropy
-   rejects the payload) → the JSON-LD file is saved at the location the user
-   picked, and the UI shows the file path and re-import instructions:
-   **Tropy → File → Import Items… → select the exported file**.
-
-There is no preview dialog listing rows before write, no "duplicate detection",
-and no write to Tropy's `notes` or `transcriptions` tables via this path. A
-separate direct-write path exists (`tropy_write.py`) but is opt-in, default off,
-and not yet exposed in the UI. Guards on the write path include: refusal while
-Tropy holds the lock, timestamped backup including `-wal`/`-shm` sidecars,
-preview-before-write, duplicate-text skip, and a ProseMirror `selection` key on
-every note. The old direct-insert mechanism (with `BEGIN IMMEDIATE`, timestamped
-backup, Tropy-must-be-closed probe, and separate Notes/Transcriptions targets)
-was removed in the 2026-08-09 rewrite and subsequently restored.
+JSON-LD export is the separate choice for creating/importing new items. It
+preserves source metadata, photos, page numbers, and existing notes when
+provenance is available. The advanced direct-database mode retains its
+closed-project check, timestamped backup, preview, and duplicate protection.
 
 ### Path validation (`_tropy_pathcheck.py`)
 

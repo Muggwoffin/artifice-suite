@@ -12,7 +12,7 @@ JSON log — aggregate queries over a few thousand rows stay instant.
 import json
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -104,7 +104,7 @@ def default_db_path() -> Path:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 class HistoryStore:
@@ -138,8 +138,13 @@ class HistoryStore:
                     ocr_model, cleanup_model, translate_model, total)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    _now(), ",".join(stages), output_dir, cfg("document_type"),
-                    cfg("ocr_model"), cfg("cleanup_model"), cfg("translate_model"),
+                    _now(),
+                    ",".join(stages),
+                    output_dir,
+                    cfg("document_type"),
+                    cfg("ocr_model"),
+                    cfg("cleanup_model"),
+                    cfg("translate_model"),
                     total,
                 ),
             )
@@ -148,15 +153,17 @@ class HistoryStore:
 
     def record_item(self, run_id: int, item) -> None:
         """Persist one finished :class:`jobs.JobItem`."""
-        stage_json = json.dumps({
-            name: {
-                "state": s.state.value,
-                "elapsed": round(s.elapsed, 3),
-                "chars": s.chars,
-                "error": s.error,
+        stage_json = json.dumps(
+            {
+                name: {
+                    "state": s.state.value,
+                    "elapsed": round(s.elapsed, 3),
+                    "chars": s.chars,
+                    "error": s.error,
+                }
+                for name, s in item.stages.items()
             }
-            for name, s in item.stages.items()
-        })
+        )
         results = item.results
         src = item.source or {}
 
@@ -169,7 +176,8 @@ class HistoryStore:
             if len(item_node_json.encode("utf-8")) > _ITEM_NODE_MAX_BYTES:
                 log.warning(
                     "Item node for '%s' exceeds %d KB — storing as non-exportable",
-                    item.name, _ITEM_NODE_MAX_BYTES // 1024,
+                    item.name,
+                    _ITEM_NODE_MAX_BYTES // 1024,
                 )
                 item_node_json = None
         else:
@@ -185,16 +193,22 @@ class HistoryStore:
                     tropy_item_node, created)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    run_id, item.path, item.name, item.state.value, item.language,
-                    item.confidence, item.error, stage_json,
+                    run_id,
+                    item.path,
+                    item.name,
+                    item.state.value,
+                    item.language,
+                    item.confidence,
+                    item.error,
+                    stage_json,
                     (results.get("raw") or {}).get("extracted_text"),
                     (results.get("cleaned") or {}).get("cleaned_text"),
                     (results.get("translated") or {}).get("translated_text"),
                     item.page,
                     src.get("photo_id"),
-                    src.get("item_id"),
+                    src.get("tropy_item_id"),
                     src.get("item_title"),
-                    src.get("project_path"),
+                    src.get("tropy_project"),
                     tropy_group,
                     tropy_photo_path,
                     item_node_json,
@@ -239,8 +253,7 @@ class HistoryStore:
                     (current, item_id),
                 )
             self._conn.execute(
-                f"UPDATE run_items SET {column} = ?, edited = 1, edited_at = ? "
-                "WHERE item_id = ?",
+                f"UPDATE run_items SET {column} = ?, edited = 1, edited_at = ? WHERE item_id = ?",
                 (text, _now(), item_id),
             )
             self._conn.commit()
@@ -321,13 +334,12 @@ class HistoryStore:
                    FROM runs"""
             ).fetchone()
             confidences = [
-                r[0] for r in self._conn.execute(
+                r[0]
+                for r in self._conn.execute(
                     "SELECT confidence FROM run_items WHERE confidence IS NOT NULL"
                 )
             ]
-            stage_rows = self._conn.execute(
-                "SELECT stage_json FROM run_items"
-            ).fetchall()
+            stage_rows = self._conn.execute("SELECT stage_json FROM run_items").fetchall()
             recent = self._conn.execute(
                 """SELECT run_id, started, total, failed, elapsed
                    FROM runs WHERE finished IS NOT NULL

@@ -52,9 +52,23 @@ TROPY_CONTEXT = {
     "@version": "1.1",
     "@vocab": "https://tropy.org/v1/tropy#",
     "template": {"@type": "@id"},
-    "photo": {"@id": "tropy:photo", "@container": "@list"},
-    "note": {"@id": "tropy:note", "@container": "@list"},
-    "selection": {"@id": "tropy:selection", "@container": "@list"},
+    "photo": {
+        "@id": "https://tropy.org/v1/tropy#photo",
+        "@container": "@list",
+        "@context": {
+            "note": {"@id": "https://tropy.org/v1/tropy#note", "@container": "@list"},
+            "selection": {
+                "@id": "https://tropy.org/v1/tropy#selection",
+                "@container": "@list",
+            },
+        },
+    },
+    "note": {"@id": "https://tropy.org/v1/tropy#note", "@container": "@list"},
+    "selection": {
+        "@id": "https://tropy.org/v1/tropy#selection",
+        "@container": "@list",
+    },
+    "title": "http://purl.org/dc/elements/1.1/title",
 }
 
 TITLE_PROPERTY = "http://purl.org/dc/elements/1.1/title"
@@ -604,6 +618,7 @@ class ExportPhoto:
     path_rel: str | None
     checksum: str
     mimetype: str
+    page: int | None = None
 
 
 def _note_html(text: str) -> str:
@@ -614,6 +629,15 @@ def _note_html(text: str) -> str:
     else:
         paras = f"<p>{escape(text.strip())}</p>"
     return paras
+
+
+def _note_node(text: str, language: str) -> dict:
+    lang = (language or "en").strip().lower() or "en"
+    return {
+        "@type": "Note",
+        "text": {"@value": text, "@language": lang},
+        "html": {"@value": _note_html(text), "@language": lang},
+    }
 
 
 def _md5_checksum(path: Path) -> str | None:
@@ -680,63 +704,64 @@ def build_export(photos: list[ExportPhoto]) -> dict:
         base_node = eps_with_text[0].item_node or {}
         item = copy.deepcopy(base_node)
 
-        # Rebuild photo list
+        # Preserve each original photo node and append the OCR note. A minimal
+        # rebuild loses PDF page identity, templates, selections and metadata.
+        original_photos = _as_list(item.get("photo"))
         photo_list: list[dict] = []
         for ep in eps_with_text:
-            photo_entry: dict = {
-                "@type": "Photo",
-                "path": str(ep.abs_path),
-                "checksum": ep.checksum,
-                "mimetype": ep.mimetype,
-            }
-            # Build note
-            note = {
-                "@type": "Note",
-                "text": ep.text,
-                "html": _note_html(ep.text),
-            }
-            photo_entry["note"] = [note]
+            if ep.photo_index is not None and 0 <= ep.photo_index < len(original_photos):
+                photo_entry = copy.deepcopy(original_photos[ep.photo_index])
+            else:
+                photo_entry = {"@type": "Photo"}
+            photo_entry["path"] = str(ep.abs_path)
+            if ep.checksum:
+                photo_entry["checksum"] = ep.checksum
+            if ep.mimetype:
+                photo_entry["mimetype"] = ep.mimetype
+            if ep.page is not None:
+                photo_entry["page"] = ep.page
+            notes = _as_list(photo_entry.get("note"))
+            notes.append(_note_node(ep.text, ep.language))
+            photo_entry["note"] = notes
             photo_list.append(photo_entry)
 
         item["photo"] = photo_list
         graph.append(item)
 
-    # Ad-hoc groups (one item per file)
-    seen_files: set[str] = set()
+    # Ad-hoc groups: one item per file, retaining every PDF page.
+    ad_hoc_files: dict[str, list[ExportPhoto]] = {}
     for ep in ad_hoc:
-        if not ep.text.strip():
-            continue
-        abs_str = str(ep.abs_path)
-        stem = ep.abs_path.stem
-        if abs_str in seen_files:
-            continue
-        seen_files.add(abs_str)
+        if ep.text.strip():
+            ad_hoc_files.setdefault(str(ep.abs_path), []).append(ep)
 
-        checksum = ep.checksum or _md5_checksum(ep.abs_path)
-        mimetype = ep.mimetype or _mimetype_from_suffix(ep.abs_path)
+    for abs_str, eps in ad_hoc_files.items():
+        source = eps[0].abs_path
+        photo_list = []
+        for ep in sorted(eps, key=lambda value: value.page if value.page is not None else -1):
+            checksum = ep.checksum or _md5_checksum(ep.abs_path)
+            mimetype = ep.mimetype or _mimetype_from_suffix(ep.abs_path)
+            photo_entry = {
+                "@type": "Photo",
+                "path": abs_str,
+                "protocol": "file",
+                "template": "https://tropy.org/v1/templates/photo",
+                "mimetype": mimetype,
+                "note": [_note_node(ep.text, ep.language)],
+            }
+            if ep.page is not None:
+                photo_entry["page"] = ep.page
+            if checksum:
+                photo_entry["checksum"] = checksum
+            photo_list.append(photo_entry)
 
-        photo_entry: dict = {
-            "@type": "Photo",
-            "path": abs_str,
-            "mimetype": mimetype,
-            "note": [
-                {
-                    "@type": "Note",
-                    "text": ep.text,
-                    "html": _note_html(ep.text),
-                }
-            ],
-        }
-        if checksum:
-            photo_entry["checksum"] = checksum
-
-        item = {
-            "@type": "Item",
-            "title": stem,
-            "template": "https://tropy.org/v1/templates/generic#item",
-            "photo": [photo_entry],
-        }
-        graph.append(item)
+        graph.append(
+            {
+                "@type": "Item",
+                "title": source.stem,
+                "template": "https://tropy.org/v1/templates/generic",
+                "photo": photo_list,
+            }
+        )
 
     return {
         "@context": TROPY_CONTEXT,

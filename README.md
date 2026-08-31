@@ -23,7 +23,7 @@ A collection of local-first and open-source tools that place a user-friendly int
 | App | What it does | Model backends |
 |---|---|---|
 | 🖥️ **Artifice Hub** | Native GUI launcher and installer. Manages installation, updating, and launching of all four apps. Handles the PyTorch CUDA hardware probe natively. Ships frozen only (not on PyPI). | — |
-| 📷 **Artifice OCR** | Local-first OCR processing: edit raw OCR output, clean up text, auto-generate archival page titles (optional), and translate documents in one workflow. Integrates with Tropy via JSON-LD file bridge and live read-only `.tpy` browse; one-click write-back sends transcriptions to Tropy. | Ollama, LM Studio, OpenAI-compatible, Hugging Face |
+| 📷 **Artifice OCR** | Local-first OCR processing: edit raw OCR output, clean up text, auto-generate archival page titles (optional), and translate documents in one workflow. Integrates with Tropy via JSON-LD and live read-only `.tpy` browse; previewed Developer API write-back attaches notes to original photos. | Ollama, LM Studio, OpenAI-compatible, Hugging Face |
 | 🎧 **Artifice Transcribe** | Oral history transcription with a speech-to-text model of your choice, coupled with pyannote diarization for speaker labels. Produces OHMS- and TEI-compliant transcripts. | Whisper / Parakeet, pyannote |
 | 🗺️ **Artifice Graph** | Knowledge graph creator extracting entities and relationships into a variety of formats. Integrated with Obsidian for navigable graphs. | Ollama, LM Studio, OpenAI-compatible |
 | 📝 **Artifice Draft** | Copy and paste an academic journal style guide for precise edits of your writing. Outputs a track-changed Word file: you veto any change. | Ollama, LM Studio, OpenAI-compatible, Anthropic |

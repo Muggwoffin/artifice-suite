@@ -431,6 +431,7 @@ dependencies = [
 [package.optional-dependencies]
 web = [
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "python-multipart" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -450,6 +451,7 @@ requires-dist = [
     { name = "artifice-secure-io", editable = "packages/secure-io" },
     { name = "artifice-shared-ui", editable = "packages/shared-ui" },
     { name = "fastapi", marker = "extra == 'web'" },
+    { name = "httpx", marker = "extra == 'web'", specifier = ">=0.27" },
     { name = "huggingface-hub" },
     { name = "jinja2", specifier = ">=3.0" },
     { name = "numpy" },

@@ -46,17 +46,11 @@ class TropyImportRequest(BaseModel):
         has_content = self.content is not None
 
         if has_path and has_content:
-            raise ValueError(
-                "Provide either 'path' or 'content', not both"
-            )
+            raise ValueError("Provide either 'path' or 'content', not both")
         if not has_path and not has_content:
-            raise ValueError(
-                "Provide either 'path' or 'content'"
-            )
+            raise ValueError("Provide either 'path' or 'content'")
         if self.filename is not None and not has_content:
-            raise ValueError(
-                "'filename' is only valid with 'content'"
-            )
+            raise ValueError("'filename' is only valid with 'content'")
         return self
 
 
@@ -124,7 +118,3 @@ class LudwigLangExportRequest(BaseModel):
     date: str = ""
     page_markers: bool = False
     skip_language_gate: bool = False
-
-
-class TropyImportToTropyRequest(BaseModel):
-    jsonld: str
