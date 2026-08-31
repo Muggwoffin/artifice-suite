@@ -25,7 +25,6 @@ from ..models import (
     TropyExportRequest,
     TropyImportAddRequest,
     TropyImportRequest,
-    TropyImportToTropyRequest,
 )
 from ..runtime import state
 from ..validation import validate_directory
@@ -136,7 +135,11 @@ _STAGE_COLUMNS = {
 
 def _eligible_photos_for_export(item_ids: list[str] | None, stage: str) -> list[ExportPhoto]:
     """Walk eligible queue items and build :class:`ExportPhoto` objects."""
-    items = state.tropy_eligible_items(item_ids)
+    if item_ids is None:
+        items = list(state.items)
+    else:
+        items = [state.get(item_id) for item_id in item_ids]
+        items = [item for item in items if item is not None]
     stage_key, text_key = _STAGE_COLUMNS.get(stage, ("cleaned", "cleaned_text"))
 
     photos: list[ExportPhoto] = []
@@ -144,6 +147,16 @@ def _eligible_photos_for_export(item_ids: list[str] | None, stage: str) -> list[
         src = item.source or {}
         text = (item.results.get(stage_key) or {}).get(text_key, "") or ""
         item_node = src.get("item_node")
+        group = src.get("tropy_group")
+        if group is None and src.get("tropy_item_id") is not None:
+            # Live-browsed items carry numeric provenance but no JSON-LD
+            # envelope. Group their photos back into the original item shape.
+            group = f"live:{src.get('tropy_project', '')}:{src['tropy_item_id']}"
+            item_node = {
+                "@type": "Item",
+                "title": src.get("item_title") or Path(item.path).stem,
+                "template": "https://tropy.org/v1/templates/generic",
+            }
 
         photos.append(
             ExportPhoto(
@@ -152,11 +165,12 @@ def _eligible_photos_for_export(item_ids: list[str] | None, stage: str) -> list[
                 label=item.name,
                 language=item.language or "de",
                 item_node=item_node,
-                group=src.get("tropy_group"),
+                group=group,
                 photo_index=src.get("photo_index"),
                 path_rel=src.get("photo_path_rel"),
                 checksum=src.get("checksum", ""),
                 mimetype=src.get("mimetype", ""),
+                page=item.page,
             )
         )
     return photos
@@ -189,7 +203,7 @@ def tropy_export(req: TropyExportRequest):
         out = Path(resolved)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")
-        return {"path": str(out), "filename": out.name, "jsonld": content}
+        return {"path": str(out), "filename": out.name}
 
     return Response(
         content=content,
@@ -219,15 +233,27 @@ def _eligible_photos_from_history(item_ids: list[int], stage: str) -> list[Expor
         if row is None:
             continue
 
-        # Must be exportable (has a stored item_node)
-        if not row["tropy_item_node"]:
+        # Must carry either its original JSON-LD envelope or live-project
+        # provenance from Browse Project.
+        if not row["tropy_item_node"] and row["tropy_item_id"] is None:
             continue
 
         text = row[text_col] or ""
-        try:
-            item_node = json.loads(row["tropy_item_node"])
-        except (json.JSONDecodeError, TypeError):
-            item_node = None
+        if row["tropy_item_node"]:
+            try:
+                item_node = json.loads(row["tropy_item_node"])
+            except (json.JSONDecodeError, TypeError):
+                item_node = None
+        else:
+            item_node = {
+                "@type": "Item",
+                "title": row["tropy_item_title"] or row["name"],
+                "template": "https://tropy.org/v1/templates/generic",
+            }
+
+        group = row["tropy_group"] or None
+        if group is None and row["tropy_item_id"] is not None:
+            group = f"live:{row['tropy_project_path'] or ''}:{row['tropy_item_id']}"
 
         source_path = Path(row["source_file"])
         photos.append(
@@ -237,11 +263,12 @@ def _eligible_photos_from_history(item_ids: list[int], stage: str) -> list[Expor
                 label=row["name"] or f"item {row['item_id']}",
                 language=row["language"] or "de",
                 item_node=item_node,
-                group=row["tropy_group"] or None,
+                group=group,
                 photo_index=None,
                 path_rel=row["tropy_photo_path"] or None,
                 checksum="",
                 mimetype="",
+                page=row["page"],
             )
         )
     return photos
@@ -274,7 +301,7 @@ def tropy_export_history(req: TropyExportHistoryRequest):
         out = Path(resolved)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")
-        return {"path": str(out), "filename": out.name, "jsonld": content}
+        return {"path": str(out), "filename": out.name}
 
     return Response(
         content=content,
@@ -283,43 +310,3 @@ def tropy_export_history(req: TropyExportHistoryRequest):
             "Content-Disposition": 'attachment; filename="artifice-ocr-tropy.jsonld"',
         },
     )
-
-
-# --------------------------------------------------------------------------- #
-# proxy: import into Tropy via local HTTP API
-# --------------------------------------------------------------------------- #
-
-
-@router.post("/api/tropy/import-to-tropy")
-def import_to_tropy(req: TropyImportToTropyRequest) -> dict:
-    """Proxy a JSON-LD import to Tropy's local HTTP API (port 2029).
-
-    Tropy ships a built-in HTTP server enabled via Preferences → API
-    toggle or `--port` flag. When it is running, this route POSTs the
-    JSON-LD content to ``http://127.0.0.1:2029/project/import`` (with
-    ``Content-Type: application/x-www-form-urlencoded`` and body
-    ``data=<jsonld>``).
-
-    Returns ``{ ok: True }`` on success, ``{ ok: False, reason: "..." }``
-    on failure. Never exposes the Tropy API URL to the browser — the
-    import is proxied server-side to avoid CORS.
-    """
-    import httpx
-
-    try:
-        response = httpx.post(
-            "http://127.0.0.1:2029/project/import",
-            data={"data": req.jsonld},
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            timeout=5.0,
-        )
-        if response.status_code == 200:
-            return {"ok": True}
-        return {"ok": False, "reason": f"Tropy returned {response.status_code}"}
-    except httpx.ConnectError:
-        return {
-            "ok": False,
-            "reason": "Tropy API not available — enable API in Tropy Preferences",
-        }
-    except Exception:
-        return {"ok": False, "reason": "Import failed"}

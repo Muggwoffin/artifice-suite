@@ -129,6 +129,7 @@ def tropy_writeback_preview(req: TropyWritebackPreviewRequest) -> dict:
     return {
         "blockers": preview.blockers,
         "counts": preview.counts(),
+        "write_count": len(preview.insertable),
         "summary": preview.summary(),
         "eligible": eligible,
         "ineligible": ineligible,

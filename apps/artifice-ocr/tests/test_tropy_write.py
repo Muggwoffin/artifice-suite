@@ -596,14 +596,13 @@ def test_entries_from_items_only_takes_tropy_pages():
     assert entries[0].text == "sauber"
 
 
-def test_entries_from_items_falls_back_when_stage_missing():
+def test_entries_from_items_does_not_fall_back_when_stage_missing():
     item = JobItem(path="a.pdf", source={"photo_id": 7})
     item.results = {"raw": {"extracted_text": "roh"}}
 
     entries = entries_from_items([item], stage="translated")
 
-    assert entries[0].text == "roh"
-    assert entries[0].stage == "raw_ocr"
+    assert entries == []
 
 
 def test_entries_use_detected_language():

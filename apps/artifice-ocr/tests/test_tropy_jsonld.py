@@ -1379,9 +1379,10 @@ def test_build_export_includes_note_with_text_and_html(tmp_path):
     ]
     doc = build_export(photos)
     note = doc["@graph"][0]["photo"][0]["note"][0]
-    assert note["text"] == "Der Bericht\nZweiter Absatz"
-    assert "<p>Der Bericht</p>" in note["html"]
-    assert "<p>Zweiter Absatz</p>" in note["html"]
+    assert note["text"] == {"@value": "Der Bericht\nZweiter Absatz", "@language": "de"}
+    assert "<p>Der Bericht</p>" in note["html"]["@value"]
+    assert "<p>Zweiter Absatz</p>" in note["html"]["@value"]
+    assert note["html"]["@language"] == "de"
 
 
 def test_ad_hoc_photos_produce_minimal_nodes(tmp_path):
@@ -1406,8 +1407,75 @@ def test_ad_hoc_photos_produce_minimal_nodes(tmp_path):
     item = doc["@graph"][0]
     assert item["@type"] == "Item"
     assert item["title"] == "scan"
-    assert item["template"] == "https://tropy.org/v1/templates/generic#item"
+    assert item["template"] == "https://tropy.org/v1/templates/generic"
+    assert item["photo"][0]["template"] == "https://tropy.org/v1/templates/photo"
     assert len(item["photo"]) == 1
+
+
+def test_build_export_preserves_photo_metadata_and_existing_notes(tmp_path):
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"%PDF")
+    original_note = {"@type": "Note", "text": "Research note"}
+    photo_node = {
+        "@type": "Photo",
+        "path": "doc.pdf",
+        "page": 4,
+        "protocol": "file",
+        "template": "https://tropy.org/v1/templates/photo",
+        "orientation": 6,
+        "selection": [{"@type": "Selection", "x": 10}],
+        "note": [original_note],
+    }
+    doc = build_export(
+        [
+            ExportPhoto(
+                abs_path=f,
+                text="OCR text",
+                label="doc.pdf p.5",
+                language="en",
+                item_node={"@type": "Item", "title": "Doc", "photo": [photo_node]},
+                group="g",
+                photo_index=0,
+                path_rel="doc.pdf",
+                checksum="abc",
+                mimetype="application/pdf",
+                page=4,
+            )
+        ]
+    )
+    photo = doc["@graph"][0]["photo"][0]
+    assert photo["page"] == 4
+    assert photo["orientation"] == 6
+    assert photo["selection"] == [{"@type": "Selection", "x": 10}]
+    assert photo["note"][0] == original_note
+    assert photo["note"][1]["text"]["@value"] == "OCR text"
+
+
+def test_ad_hoc_pdf_retains_every_page(tmp_path):
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"%PDF")
+    photos = [
+        ExportPhoto(
+            abs_path=f,
+            text=f"Page {page + 1}",
+            label=f"doc.pdf p.{page + 1}",
+            language="en",
+            item_node=None,
+            group=None,
+            photo_index=None,
+            path_rel=None,
+            checksum="abc",
+            mimetype="application/pdf",
+            page=page,
+        )
+        for page in (0, 1)
+    ]
+    item = build_export(photos)["@graph"][0]
+    assert [photo["page"] for photo in item["photo"]] == [0, 1]
+    assert [photo["note"][0]["text"]["@value"] for photo in item["photo"]] == [
+        "Page 1",
+        "Page 2",
+    ]
 
 
 def test_export_json_produces_indented_json(tmp_path):

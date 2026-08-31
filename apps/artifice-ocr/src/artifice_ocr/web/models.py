@@ -124,7 +124,3 @@ class LudwigLangExportRequest(BaseModel):
     date: str = ""
     page_markers: bool = False
     skip_language_gate: bool = False
-
-
-class TropyImportToTropyRequest(BaseModel):
-    jsonld: str

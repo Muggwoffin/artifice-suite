@@ -50,7 +50,8 @@ const tropyEls = {};
   // Writeback controls
   "tropy-writeback-section", "tropy-writeback-warning",
   "tropy-writeback-preview",
-  "tropy-dest-jsonld", "tropy-dest-writeback",
+  "tropy-dest-api", "tropy-dest-jsonld", "tropy-dest-writeback",
+  "tropy-dest-writeback-option",
   "tropy-writeback-footer", "btn-send-tropy-close-writeback",
   "btn-writeback-preview", "btn-writeback-commit",
 ].forEach(id => {
@@ -833,8 +834,15 @@ tropyEls["btn-tropy-cancel-browse"].onclick = () => {
 
 async function handleWritebackPreview() {
   const stage = tropyEls["tropy-export-stage"].value;
-  const projectPath = tropyBrowseProject ? tropyBrowseProject.path : null;
-  const body = { stage, project_path: projectPath };
+  const isHistory = !!(tropyExportContext && tropyExportContext.isHistory);
+  const projectPath = !isHistory && tropyBrowseProject ? tropyBrowseProject.path : null;
+  const useDatabase = tropyEls["tropy-dest-writeback"].checked;
+  const endpoint = useDatabase ? "/api/tropy/writeback/preview" : "/api/tropy/notes/preview";
+  const body = {
+    stage,
+    project_path: projectPath,
+    source: isHistory ? "history" : "queue",
+  };
   if (tropyExportContext && tropyExportContext.itemIds) {
     body.item_ids = tropyExportContext.itemIds;
   }
@@ -844,15 +852,15 @@ async function handleWritebackPreview() {
   tropyEls["btn-writeback-commit"].disabled = true;
 
   try {
-    const res = await fetch("/api/tropy/writeback/preview", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
     if (res.status === 404) {
-      // Feature was disabled since modal opened — hide the control silently
-      tropyEls["tropy-writeback-section"].classList.add("hidden");
+      if (useDatabase) tropyEls["tropy-dest-writeback-option"].classList.add("hidden");
+      tropyEls["tropy-writeback-preview"].textContent = "This write method is not enabled.";
       return;
     }
 
@@ -873,28 +881,40 @@ async function handleWritebackPreview() {
       return;
     }
 
-    if (data.eligible === 0) {
+    if (!useDatabase && data.project) {
+      tropyEls["tropy-writeback-preview"].textContent =
+        "Connected to " + data.project.name + " (Tropy " + data.project.version + ")";
+    }
+
+    const ready = data.write_count || 0;
+    if (ready === 0) {
       const reasons = [];
-      if (data.ineligible > 0) {
+      const counts = data.counts || {};
+      if ((data.ineligible || counts.ineligible || 0) > 0) {
         reasons.push(
-          data.ineligible + " photo(s) were not imported from Tropy — only photos added through Browse project can be written back"
+          (data.ineligible || counts.ineligible) + " result(s) were not imported through Browse Project"
         );
       }
-      if (data.foreign > 0) {
+      if ((data.foreign || counts.foreign || 0) > 0) {
         reasons.push(
-          data.foreign + " photo(s) belong to a different Tropy project — switch the target project and preview again"
+          (data.foreign || counts.foreign) + " photo(s) belong to a different Tropy project"
         );
       }
+      if (counts.duplicate > 0) reasons.push(counts.duplicate + " identical note(s) already exist");
+      if (counts.empty > 0) reasons.push(counts.empty + " result(s) have no text at this stage");
       tropyEls["tropy-writeback-preview"].textContent =
         reasons.length > 0 ? reasons.join("\n") : "No items can be written back.";
       return;
     }
 
     // Ready
-    const msg = data.summary || (data.eligible + " note(s) will be written");
+    const counts = data.counts || {};
+    let msg = data.summary || (ready + " note" + (ready !== 1 ? "s" : "") + " will be added");
+    if (counts.duplicate > 0) msg += "\n" + counts.duplicate + " identical note(s) will be skipped";
+    if (data.project) msg = "Connected to " + data.project.name + "\n" + msg;
     tropyEls["tropy-writeback-preview"].textContent = msg;
     tropyEls["btn-writeback-commit"].disabled = false;
-    tropyEls["btn-writeback-commit"].textContent = "Write " + data.eligible + " note" + (data.eligible !== 1 ? "s" : "");
+    tropyEls["btn-writeback-commit"].textContent = "Add " + ready + " note" + (ready !== 1 ? "s" : "");
   } catch (err) {
     tropyEls["tropy-writeback-preview"].textContent = "Could not reach the server: " + err.message;
   }
@@ -903,11 +923,15 @@ async function handleWritebackPreview() {
 async function handleWritebackCommit() {
   if (!tropyWritebackPreview) return;
   const stage = tropyEls["tropy-export-stage"].value;
-  const projectPath = tropyBrowseProject ? tropyBrowseProject.path : null;
+  const isHistory = !!(tropyExportContext && tropyExportContext.isHistory);
+  const projectPath = !isHistory && tropyBrowseProject ? tropyBrowseProject.path : null;
+  const useDatabase = tropyEls["tropy-dest-writeback"].checked;
+  const endpoint = useDatabase ? "/api/tropy/writeback/commit" : "/api/tropy/notes/commit";
   const body = {
     stage,
     project_path: projectPath,
-    expected_write_count: tropyWritebackPreview.eligible,
+    source: isHistory ? "history" : "queue",
+    expected_write_count: tropyWritebackPreview.write_count,
   };
   if (tropyExportContext && tropyExportContext.itemIds) {
     body.item_ids = tropyExportContext.itemIds;
@@ -918,7 +942,7 @@ async function handleWritebackCommit() {
   tropyEls["btn-writeback-commit"].disabled = true;
 
   try {
-    const res = await fetch("/api/tropy/writeback/commit", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -938,25 +962,34 @@ async function handleWritebackCommit() {
         errMsg = String(data.detail || "Write failed");
       }
       tropyEls["tropy-writeback-preview"].innerHTML =
-        "<strong>Write failed:</strong> " + escapeHtml(errMsg) + "\nThe write was rolled back.";
+        "<strong>Write failed:</strong> " + escapeHtml(errMsg) + "\nPreview again before retrying.";
       tropyEls["btn-writeback-preview"].disabled = false;
       return;
     }
 
     // Success
-    let msg = data.written + " note" + (data.written !== 1 ? "s" : "") + " written";
+    let msg = data.written + " note" + (data.written !== 1 ? "s" : "") + " added to Tropy";
     if (data.skipped > 0) {
       msg += ", " + data.skipped + " skipped as already present";
     }
     if (data.backup_path) {
       msg += "\nBackup saved to " + data.backup_path;
     }
+    if (data.status === "partial") {
+      msg += "\nThe connection stopped before " + data.remaining + " note(s). Retry to finish safely.";
+      tropyEls["btn-writeback-preview"].disabled = false;
+      tropyEls["tropy-writeback-footer"].classList.remove("hidden");
+    } else {
+      tropyEls["tropy-writeback-footer"].classList.add("hidden");
+    }
     tropyEls["tropy-writeback-preview"].textContent = msg;
-    tropyEls["tropy-writeback-footer"].classList.add("hidden");
-    if (window.ArtificeToast) window.ArtificeToast.success("Written to Tropy");
+    if (window.ArtificeToast) {
+      if (data.status === "partial") window.ArtificeToast.show("Some notes were added; retry to finish", "warning");
+      else window.ArtificeToast.success("Notes added to Tropy");
+    }
   } catch (err) {
     tropyEls["tropy-writeback-preview"].innerHTML =
-      "<strong>Write failed:</strong> " + escapeHtml(err.message) + "\nThe write was rolled back.";
+      "<strong>Write failed:</strong> " + escapeHtml(err.message) + "\nPreview again before retrying.";
     tropyEls["btn-writeback-preview"].disabled = false;
   }
 }
@@ -976,7 +1009,7 @@ async function openTropyExport(context) {
   tropyEls["tropy-writeback-preview"].classList.add("hidden");
   tropyEls["btn-writeback-commit"].disabled = true;
   tropyEls["btn-writeback-commit"].textContent = "Write";
-  tropyEls["tropy-dest-jsonld"].checked = true;
+  tropyEls["tropy-dest-api"].checked = true;
 
   // Fetch config to check writeback gate
   try {
@@ -986,15 +1019,18 @@ async function openTropyExport(context) {
     tropyWritebackEnabled = false;
   }
 
-  if (tropyWritebackEnabled) {
-    tropyEls["tropy-writeback-section"].classList.remove("hidden");
-  } else {
-    tropyEls["tropy-writeback-section"].classList.add("hidden");
-  }
+  tropyEls["tropy-writeback-section"].classList.remove("hidden");
+  // The legacy database writer only operates on the live queue. History uses
+  // the official API, whose provenance comes from the history record itself.
+  const isHistory = !!(context && context.isHistory);
+  tropyEls["tropy-dest-writeback-option"].classList.toggle(
+    "hidden", !tropyWritebackEnabled || isHistory
+  );
 
-  // Default: JSON-LD footer shown, writeback footer hidden
-  tropyEls["tropy-export-footer"].classList.remove("hidden");
-  tropyEls["tropy-writeback-footer"].classList.add("hidden");
+  // Default: official API write-back, with an explicit preview before commit.
+  tropyEls["tropy-export-footer"].classList.add("hidden");
+  tropyEls["tropy-writeback-footer"].classList.remove("hidden");
+  onDestinationChange();
 
   // Fetch export summary counts
   try {
@@ -1019,6 +1055,10 @@ async function openTropyExport(context) {
     tropyEls["tropy-export-stat-photos"].textContent = "?";
     tropyEls["tropy-export-stat-transcriptions"].textContent = "?";
   }
+
+  // The primary API path is useful only when the correct Tropy project is
+  // open. Check immediately so the dialog starts with an actionable state.
+  await handleWritebackPreview();
 }
 
 async function countEligibleItems(stage) {
@@ -1040,7 +1080,7 @@ async function countEligibleItems(stage) {
   let photos = 0;
   let withText = 0;
   for (const item of items) {
-    if (item.source && item.source.origin === "tropy-jsonld") {
+    if (item.source && (item.source.photo_id != null || item.source.origin === "tropy-jsonld")) {
       count++;
       photos++;
       // We can't get full preview text from the queue snapshot, but
@@ -1066,21 +1106,24 @@ tropyEls["modal-tropy-send"].addEventListener("click", (e) => {
 
 // Destination radio: swap footer, warning, and explanatory copy
 function onDestinationChange() {
-  const isWriteback = tropyEls["tropy-dest-writeback"].checked;
-  if (isWriteback) {
+  const isJsonLd = tropyEls["tropy-dest-jsonld"].checked;
+  const isDatabase = tropyEls["tropy-dest-writeback"].checked;
+  if (!isJsonLd) {
     tropyEls["tropy-export-footer"].classList.add("hidden");
     tropyEls["tropy-writeback-footer"].classList.remove("hidden");
-    tropyEls["tropy-writeback-warning"].classList.remove("hidden");
+    tropyEls["tropy-writeback-warning"].classList.toggle("hidden", !isDatabase);
     tropyEls["tropy-writeback-preview"].classList.add("hidden");
     tropyWritebackPreview = null;
     tropyEls["btn-writeback-commit"].disabled = true;
     tropyEls["btn-writeback-commit"].textContent = "Write";
     // Swap explanatory copy to writeback wording
-    tropyEls["tropy-modal-title"].textContent = "Write back to Tropy";
-    tropyEls["tropy-help-text"].textContent =
-      "Write your OCR results into the Tropy project as notes. Tropy must be closed.";
-    tropyEls["tropy-help-detail"].textContent =
-      "Edits the project database directly. A timestamped backup is taken first. Only photos added through Browse project can be written back.";
+    tropyEls["tropy-modal-title"].textContent = "Add notes to Tropy";
+    tropyEls["tropy-help-text"].textContent = isDatabase
+      ? "Advanced fallback: write OCR notes into the closed Tropy project database."
+      : "Add OCR results as notes on the original photos through Tropy's Developer API.";
+    tropyEls["tropy-help-detail"].textContent = isDatabase
+      ? "Tropy must be closed. A timestamped backup is taken first."
+      : "Keep the matching project open in Tropy and enable Developer API in Tropy Preferences. Preview verifies the project before anything is added.";
     tropyEls["tropy-export-label"].textContent = "Text to write";
   } else {
     tropyEls["tropy-export-footer"].classList.remove("hidden");
@@ -1097,6 +1140,7 @@ function onDestinationChange() {
   }
 }
 tropyEls["tropy-dest-jsonld"].addEventListener("change", onDestinationChange);
+tropyEls["tropy-dest-api"].addEventListener("change", onDestinationChange);
 tropyEls["tropy-dest-writeback"].addEventListener("change", onDestinationChange);
 
 tropyEls["btn-writeback-preview"].onclick = handleWritebackPreview;
@@ -1169,36 +1213,6 @@ tropyEls["btn-send-tropy-write"].onclick = async () => {
 
     const data = await res.json();
     const filename = data.filename || savePath.split(/[\\/]/).pop();
-    const jsonldContent = data.jsonld || null;
-
-    // Step 3 – try direct import into Tropy via local HTTP API
-    if (jsonldContent) {
-      tropyEls["tropy-export-loading-text"].textContent = "Importing into Tropy…";
-      try {
-        const importRes = await api("POST", "/api/tropy/import-to-tropy", { jsonld: jsonldContent });
-        if (importRes.ok) {
-          tropyEls["tropy-export-status"].textContent = "Imported into Tropy via API";
-          tropyEls["tropy-export-status"].className = "tropy-export-status success";
-          if (window.ArtificeToast) {
-            window.ArtificeToast.success("Imported into Tropy via API");
-          }
-          tropyEls["tropy-export-loading"].classList.add("hidden");
-          // Persist last-used Tropy export path
-          api("POST", "/api/config", { tropy_last_export_path: savePath }).catch(function(err) {
-            if (window.ArtificeToast) window.ArtificeToast.error("Could not save export path: " + err.message);
-          });
-          return;
-        }
-        // API import failed — fall through to file-based flow with a note
-        const reason = importRes.reason || "Tropy API not reachable";
-        tropyEls["tropy-export-status"].textContent = reason + " — file saved at " + filename;
-        tropyEls["tropy-export-status"].className = "tropy-export-status dim";
-      } catch (err) {
-        // Network error to our own backend — fall through to file-based flow
-        tropyEls["tropy-export-status"].textContent = "Tropy API not available — file saved at " + filename;
-        tropyEls["tropy-export-status"].className = "tropy-export-status dim";
-      }
-    }
 
     // Build multi-line success block with actions
     const statusBlock = document.createElement("div");

@@ -540,27 +540,23 @@ def entries_from_items(items, *, stage: str = "cleaned") -> list[WriteEntry]:
         "cleaned": ("cleaned", "cleaned_text"),
         "translated": ("translated", "translated_text"),
     }
-    order = [stage] + [s for s in ("cleaned", "raw_ocr", "translated") if s != stage]
-
     entries: list[WriteEntry] = []
     for item in items:
         photo_id = (item.source or {}).get("photo_id")
         if photo_id is None:
             continue
-        for candidate in order:
-            bucket, field_name = key_map[candidate]
-            text = (item.results.get(bucket) or {}).get(field_name)
-            if text and text.strip():
-                entries.append(
-                    WriteEntry(
-                        photo_id=int(photo_id),
-                        text=text,
-                        label=item.name,
-                        language=_language_code(item),
-                        stage=candidate,
-                    )
+        bucket, field_name = key_map.get(stage, key_map["cleaned"])
+        text = (item.results.get(bucket) or {}).get(field_name)
+        if text and text.strip():
+            entries.append(
+                WriteEntry(
+                    photo_id=int(photo_id),
+                    text=text,
+                    label=item.name,
+                    language=_language_code(item),
+                    stage=stage,
                 )
-                break
+            )
     return entries
 
 

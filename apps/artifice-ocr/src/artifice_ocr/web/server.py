@@ -53,6 +53,7 @@ from .routers import run as run_router
 from .routers import settings as settings_router
 from .routers import tropy_bridge as tropy_router
 from .routers import tropy_browse as tropy_browse_router
+from .routers import tropy_notes as tropy_notes_router
 from .routers import tropy_writeback as tropy_writeback_router
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,7 @@ app.include_router(history_router.router)
 app.include_router(analytics_router.router)
 app.include_router(tropy_router.router)
 app.include_router(tropy_browse_router.router)
+app.include_router(tropy_notes_router.router)
 app.include_router(tropy_writeback_router.router)
 app.include_router(pdf_export_router.router)
 app.include_router(ludwiglang_router.router)

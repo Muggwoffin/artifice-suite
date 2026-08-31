@@ -44,7 +44,7 @@ Connects to [Tropy](https://tropy.org) historical research archives via a **JSON
 * **Import Add:** Selected items are imported as pipeline-eligible job items with full provenance (`origin: "tropy-jsonld"`, `tropy_group`, `tropy_item_id`), mirroring Tropy's item/page structure on disk.
 * **Export & Export History:** `tropy-export` writes processed OCR text (structured, cleaned, or translated) into a new JSON-LD envelope as Tropy notes. `tropy-export-history` exports only items that already exist in the local run history, enabling incremental re-export.
 * **Live Read-Only `.tpy` Browse:** Opens Tropy `.tpy` SQLite databases directly in read-only mode (feature-flagged via `ARTIFICE_OCR_TROPY_LIVE_READ`). Browse projects, lists, tags, items, and photos — then enqueue directly into the OCR pipeline without manual JSON-LD export.
-* **One-Click Write-Back:** Tries Tropy's local HTTP import API (`POST /project/import` on port 2029) first; falls back to "reveal in file manager" plus re-import instructions.
+* **Safe Note Write-Back:** Previews and attaches OCR text to the original Tropy photos through Tropy's Developer API, verifies the open project, and skips identical notes. JSON-LD export remains available for creating new items; direct database writes are an advanced, default-off fallback.
 * **Inline Warning Surfacing:** Missing photos and pathcheck rejections render as inline warnings in the import modal, giving immediate feedback before enqueue.
 * **Workflow Memory:** Persists last Tropy import path and export path in user settings across sessions.
 

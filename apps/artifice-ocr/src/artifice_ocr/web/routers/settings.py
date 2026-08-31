@@ -157,6 +157,7 @@ _CONFIG_KEYS = (
     "tropy_last_path",
     "tropy_last_export_path",
     "tropy_live_browse_enabled",
+    "tropy_api_port",
     # The UI reads this to decide whether to show the write-back Destination
     # control at all. It was in PERSISTED_KEYS but not here, so POST accepted
     # it and GET never returned it — the control read `undefined`, stayed
