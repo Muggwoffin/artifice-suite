@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 Maurice Casey
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from importlib.resources import files
 
@@ -21,5 +22,14 @@ def test_shell_template_has_landmarks_and_extension_blocks():
 
 def test_shell_javascript_exposes_documented_api():
     source = (files(shared_ui) / "assets/shell.js").read_text()
-    for member in ("init", "publishActivity", "removeActivity", "setModelStatus", "getPreferences", "setPreferences", "refreshSuiteApps"):
+    members = (
+        "init",
+        "publishActivity",
+        "removeActivity",
+        "setModelStatus",
+        "getPreferences",
+        "setPreferences",
+        "refreshSuiteApps",
+    )
+    for member in members:
         assert member in source

@@ -50,7 +50,7 @@ py-modules = []
 # Plain `pip` (not `uv pip`) only works for a single app installed directly:
 #   pip install -e apps/artifice-ocr
 [tool.uv.workspace]
-members = ["apps/*", "packages/model-harness", "packages/secure-io", "packages/shared-ui"]
+members = ["apps/*", "packages/model-harness", "packages/output-layout", "packages/secure-io", "packages/shared-ui"]
 
 [tool.uv.sources]
 artifice-ocr = { workspace = true }
@@ -58,6 +58,7 @@ artifice-draft = { workspace = true }
 artifice-graph = { workspace = true }
 artifice-transcribe = { workspace = true }
 artifice-model-harness = { workspace = true }
+artifice-output-layout = { workspace = true }
 artifice-secure-io = { workspace = true }
 artifice-shared-ui = { workspace = true }
 

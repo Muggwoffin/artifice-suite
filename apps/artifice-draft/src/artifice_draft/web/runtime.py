@@ -28,6 +28,8 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from artifice_output import ProjectLayout, slugify
+
 from artifice_draft._diff import diff_ranges
 from artifice_draft._resolution import resolve_for_run
 from artifice_draft.changelog import format_change_log, generate_change_summary
@@ -422,7 +424,12 @@ class RunState:
         summary = generate_change_summary(doc.edits, doc.paragraphs)
         doc.summary_text = format_change_log(summary)
 
-        base = str(doc.path.with_suffix(""))
+        if cfg.output_dir:
+            layout = ProjectLayout(cfg.output_dir, doc.path.stem, create=True)
+            base = str(layout.export_dir("draft") / slugify(doc.path.stem))
+            Path(base).parent.mkdir(parents=True, exist_ok=True)
+        else:
+            base = str(doc.path.with_suffix(""))
         suffix = _EXT_MAP.get(cfg.export_format, "_edited.docx")
         output_path = base + suffix
         if Path(output_path).exists():

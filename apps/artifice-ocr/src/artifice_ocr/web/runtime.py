@@ -27,6 +27,7 @@ from typing import Any
 from .. import config
 from ..history import HistoryStore
 from ..jobs import STAGES, JobItem, JobRunner, State
+from ..output import stage_dir
 from ..pipeline import run_cleanup_step, run_translate_step
 from .serializers import serialize_item, serialize_item_preview
 
@@ -137,11 +138,13 @@ def _save_stage_text(item: JobItem, stage: str, text: str) -> dict[str, Any]:
     item.results.setdefault(cfg["result_key"], {})[cfg["text_key"]] = text
 
     output_dir = state.runner.output_dir if state.runner else config.get("output_dir")
-    text_path = Path(output_dir) / cfg["dir"] / "text" / f"{item.stem}.txt"
+    text_path = stage_dir(output_dir, cfg["dir"]) / "text" / f"{item.stem}.txt"
     if text_path.exists():
         text_path.write_text(text, encoding="utf-8")
 
-        json_path = Path(output_dir) / cfg["dir"] / "json" / f"{item.stem}.json"
+        json_path = stage_dir(output_dir, cfg["dir"]) / "records" / f"{item.stem}.json"
+        if not json_path.exists():
+            json_path = Path(output_dir) / cfg["dir"] / "json" / f"{item.stem}.json"
         if json_path.exists():
             data = json.loads(json_path.read_text(encoding="utf-8"))
             # Preserve original text on first disk edit
@@ -524,6 +527,7 @@ class PdfExportState:
         self.output_path: str | None = None
         self.events: queue.Queue = queue.Queue()
         self.thread: threading.Thread | None = None
+        self.cancel_requested = threading.Event()
 
 
 pdf_export_state = PdfExportState()
@@ -547,6 +551,7 @@ def start_pdf_export(
         pdf_export_state.status = "running"
         pdf_export_state.error = None
         pdf_export_state.output_path = None
+        pdf_export_state.cancel_requested.clear()
         pdf_export_state.events = queue.Queue()
         pdf_export_state.thread = threading.Thread(
             target=_run_pdf_export,
@@ -561,6 +566,8 @@ def _run_pdf_export(folder, stage, structure, output, manifest_path, format, sty
     from .. import pdf_export
 
     def on_progress(message):
+        if pdf_export_state.cancel_requested.is_set():
+            raise RuntimeError("PDF export cancelled")
         pdf_export_state.events.put({"type": "log", "message": message})
 
     try:

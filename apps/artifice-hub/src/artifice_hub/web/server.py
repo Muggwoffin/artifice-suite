@@ -24,7 +24,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 import shared_ui
-from shared_ui.suite import get_preferences, suite_apps, update_preferences
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -37,6 +36,7 @@ from shared_ui.server_bootstrap import (
     start_server_thread,
     wait_for_server,
 )
+from shared_ui.suite import get_preferences, suite_apps, update_preferences
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .. import __version__
@@ -172,6 +172,7 @@ async def api_update_ui_preferences(request: Request):
         return update_preferences(await request.json())
     except (TypeError, ValueError) as exc:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 

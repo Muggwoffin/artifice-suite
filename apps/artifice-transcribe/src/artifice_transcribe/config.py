@@ -20,6 +20,7 @@ _DEFAULT_DB_URL = f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH}"
 _LEGACY_DB_PATH = Path("./data/transcribe.db").resolve()
 
 _DEFAULT_UPLOAD_PATH = _USER_DATA_PATH / "uploads"
+_DEFAULT_OUTPUT_PATH = _USER_DATA_PATH / "outputs"
 _LEGACY_UPLOAD_PATH = Path("./uploads").resolve()
 
 
@@ -29,6 +30,7 @@ class Settings(BaseSettings):
     hf_token: str = ""
     database_url: str = _DEFAULT_DB_URL
     upload_dir: str = str(_DEFAULT_UPLOAD_PATH)
+    output_dir: str = str(_DEFAULT_OUTPUT_PATH)
     whisper_model: str = "base"
     device: str = "auto"
     max_upload_size: int = 524_288_000  # 500 MB
@@ -81,6 +83,12 @@ class Settings(BaseSettings):
     @property
     def upload_path(self) -> Path:
         p = Path(self.upload_dir)
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    @property
+    def output_path(self) -> Path:
+        p = Path(self.output_dir)
         p.mkdir(parents=True, exist_ok=True)
         return p
 

@@ -22,6 +22,7 @@ from artifice_ocr._guard import _UMLAUT, _WORD
 from artifice_ocr._logging import get_logger
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr.config import get as cfg
+from artifice_ocr.output import record_dir, stage_dir
 from model_harness.contract import (
     ModelConnectorConfig,
     Provider,
@@ -246,8 +247,8 @@ def perform(
 
     # -- Write output ---------------------------------------------------------
     output_path = Path(output_dir)
-    text_dir = output_path / "title" / "text"
-    json_dir = output_path / "title" / "json"
+    text_dir = stage_dir(output_path, "title") / "text"
+    json_dir = record_dir(output_path, "title")
     text_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)
 
@@ -294,8 +295,8 @@ def _fallback_result(
     title = Path(source_file).stem if source_file else base_name
 
     output_path = Path(output_dir)
-    text_dir = output_path / "title" / "text"
-    json_dir = output_path / "title" / "json"
+    text_dir = stage_dir(output_path, "title") / "text"
+    json_dir = record_dir(output_path, "title")
     text_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)
 

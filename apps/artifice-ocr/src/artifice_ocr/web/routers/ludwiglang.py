@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 from ...config import get as config_get
+from ...output import stage_dir
 from ..models import LudwigLangExportRequest
 from ..validation import validate_contained, validate_directory
 
@@ -18,13 +19,10 @@ router = APIRouter(tags=["ludwiglang"])
 
 
 def _collections(output_dir: str) -> list[str]:
-    cleaned_text = Path(output_dir) / "cleaned" / "text"
+    cleaned_text = stage_dir(output_dir, "cleaned") / "text"
     if not cleaned_text.exists():
         return []
-    return sorted(
-        d.name for d in cleaned_text.iterdir()
-        if d.is_dir()
-    )
+    return sorted(d.name for d in cleaned_text.iterdir() if d.is_dir())
 
 
 @router.get("/api/ludwiglang/collections")
@@ -43,10 +41,15 @@ def ludwiglang_export(req: LudwigLangExportRequest) -> dict:
     # so a drive-absolute collection name on Windows (e.g. ``D:/etc/passwd``)
     # cannot escape — the same validate_contained pattern the download
     # endpoint already uses.
-    cleaned_root_raw = str(Path(safe_output_dir) / "cleaned" / "text" / req.collection)
-    cleaned_root = Path(validate_contained(
-        cleaned_root_raw, safe_output_dir, "collection", must_exist=False,
-    ))
+    cleaned_root_raw = str(stage_dir(safe_output_dir, "cleaned") / "text" / req.collection)
+    cleaned_root = Path(
+        validate_contained(
+            cleaned_root_raw,
+            safe_output_dir,
+            "collection",
+            must_exist=False,
+        )
+    )
     if not cleaned_root.exists():
         raise HTTPException(
             status_code=404,

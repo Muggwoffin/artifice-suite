@@ -24,6 +24,7 @@ class RemoveRequest(BaseModel):
 class StartRunRequest(BaseModel):
     stages: list[str]
     output_dir: str = "output"
+    project: str | None = None
     force: bool = False
 
 

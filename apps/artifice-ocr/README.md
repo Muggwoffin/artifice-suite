@@ -53,6 +53,19 @@ Connects to [Tropy](https://tropy.org) historical research archives via a **JSON
 * **LudwigLang Markdown Export:** Exports cleaned and structured text as `.md` files pre-configured with front-matter metadata for the LudwigLang editorial web publisher.
 * **Structured JSON Data:** Full audit logs for every page, preserving raw OCR text, accepted cleanup, rejected model attempts, and guard status logs.
 
+#### Guided PDF export and output folders
+
+The web interface's **Compile PDF** workspace previews available pages and
+stages before starting, warns about missing translations, streams progress,
+and supports cancellation. Defaults write PDFs to the project's
+`exports/pdf/` folder and Markdown to `exports/markdown/`.
+
+New runs use the project layout described in
+[`docs/OUTPUT_LAYOUT.md`](../../docs/OUTPUT_LAYOUT.md): intermediate files are
+under `pipeline/<stage>/{text,records}/`, while files intended for people or
+other applications are under `exports/<type>/`. Existing `output/<stage>` and
+Graph `data/output` folders remain readable and are never moved automatically.
+
 ---
 
 ## 🛡️ The Guard System (Preservation Details)
@@ -90,7 +103,8 @@ artifice-suite/
 │       │   ├── tropy_jsonld.py        # JSON-LD file bridge (import + export)
 │       │   ├── tropy_db.py            # Live read-only .tpy browser (feature-flagged)
 │       │   ├── _tropy_pathcheck.py    # Photo-path safety validation
-│       │   ├── pdf_export.py          # PDF compilation with structuring
+│       │   ├── pdf_export.py          # Guided PDF/Markdown compilation
+│       │   ├── output.py              # Canonical/legacy stage path resolver
 │       │   ├── export_ludwiglang.py   # LudwigLang Markdown export
 │       │   ├── _guard.py              # Content preservation guards
 │       │   ├── _diff.py               # Diff & marker highlighting

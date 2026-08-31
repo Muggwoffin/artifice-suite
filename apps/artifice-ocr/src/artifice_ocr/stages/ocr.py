@@ -17,6 +17,7 @@ from artifice_ocr._logging import get_logger
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
+from artifice_ocr.output import record_dir, stage_dir
 from artifice_ocr.stages import preprocess as _preprocess
 
 log = get_logger("ocr")
@@ -409,7 +410,7 @@ def perform(
 
             if not recovered_ok:
                 base_output_dir = Path(output_dir)
-                json_dir = base_output_dir / "raw_ocr" / "json"
+                json_dir = record_dir(base_output_dir, "raw_ocr")
                 json_dir.mkdir(parents=True, exist_ok=True)
                 base_name = stem or path.stem
                 json_path = json_dir / f"{base_name}.json"
@@ -436,8 +437,8 @@ def perform(
                 )
 
     base_output_dir = Path(output_dir)
-    text_dir = base_output_dir / "raw_ocr" / "text"
-    json_dir = base_output_dir / "raw_ocr" / "json"
+    text_dir = stage_dir(base_output_dir, "raw_ocr") / "text"
+    json_dir = record_dir(base_output_dir, "raw_ocr")
 
     text_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)

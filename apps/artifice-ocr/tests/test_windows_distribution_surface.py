@@ -10,7 +10,6 @@ the strongest defense-evasion signal in the frozen OCR executable.
 
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 OCR_SRC = ROOT / "apps" / "artifice-ocr" / "src" / "artifice_ocr"
 
@@ -29,10 +28,17 @@ def test_ocr_runtime_does_not_enumerate_processes_or_strip_download_metadata():
 
 
 def test_ocr_pyinstaller_bundle_is_uncompressed_and_windowed():
-    spec = (ROOT / "apps" / "artifice-ocr" / "artifice-ocr.spec").read_text(
-        encoding="utf-8"
-    )
+    spec = (ROOT / "apps" / "artifice-ocr" / "artifice-ocr.spec").read_text(encoding="utf-8")
     assert "upx=False" in spec
     assert "console=False" in spec
     assert "uac_admin=False" in spec
     assert "uac_uiaccess=False" in spec
+
+
+def test_canonical_stage_mapping(tmp_path):
+    from artifice_ocr.output import stage_dir
+    from artifice_output import ProjectLayout
+
+    layout = ProjectLayout(tmp_path, "Archive", create=True)
+    assert stage_dir(layout.project_dir, "raw_ocr") == layout.project_dir / "pipeline" / "raw-ocr"
+    assert stage_dir(tmp_path, "raw_ocr") == tmp_path / "raw_ocr"
