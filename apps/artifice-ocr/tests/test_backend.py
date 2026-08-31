@@ -682,6 +682,71 @@ def test_ollama_backend_validates_normalised_host(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# LM Studio URL normalisation — one /v1, never two
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "configured",
+    [
+        "http://localhost:1234",
+        "http://localhost:1234/",
+        "http://localhost:1234/v1",
+        "http://localhost:1234/v1/",
+    ],
+)
+def test_lm_studio_client_appends_single_v1(monkeypatch, configured):
+    """All four spellings of the LM Studio base URL yield exactly one ``/v1``.
+
+    Regression: if a stored URL is missing ``/v1`` or has a trailing slash,
+    the probe path (which defensively adds ``/v1``) and the chat path
+    (which uses _base_url() directly) diverge. A health check passes but
+    chat requests 404. The client must normalise the URL before appending
+    ``/v1`` to prevent doubling.
+    """
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(
+        config,
+        "_DEFAULTS",
+        {
+            **config._DEFAULTS,
+            "lm_studio_url": configured,
+        },
+    )
+    config.load_config()
+
+    captured = {}
+    with patch.object(
+        _backend, "OpenAI", side_effect=lambda **kw: captured.update(kw) or MagicMock()
+    ):
+        _backend.LMStudioBackend()._client()
+
+    assert captured["base_url"] == "http://localhost:1234/v1"
+
+
+def test_lm_studio_client_default_url_unchanged(monkeypatch):
+    """When lm_studio_url is unset, the default ``http://localhost:1234/v1`` is used."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(
+        config,
+        "_DEFAULTS",
+        {
+            **config._DEFAULTS,
+            "lm_studio_url": "",
+        },
+    )
+    config.load_config()
+
+    captured = {}
+    with patch.object(
+        _backend, "OpenAI", side_effect=lambda **kw: captured.update(kw) or MagicMock()
+    ):
+        _backend.LMStudioBackend()._client()
+
+    assert captured["base_url"] == "http://localhost:1234/v1"
+
+
+# ---------------------------------------------------------------------------
 # Provider 404 wrapping — the message must name what was called
 # ---------------------------------------------------------------------------
 

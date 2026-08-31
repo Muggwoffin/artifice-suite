@@ -432,7 +432,18 @@ class LMStudioBackend:
     """
 
     def _base_url(self) -> str:
-        return config.get("lm_studio_url") or "http://localhost:1234/v1"
+        raw = config.get("lm_studio_url") or "http://localhost:1234/v1"
+        # Normalise the URL to prevent probe/chat divergence: the health probe
+        # defensively adds /v1 if missing, while chat uses _base_url() directly.
+        # Without normalisation, a stored value of "http://localhost:1234" probes
+        # GREEN but fails on chat (404). The normalise_base_url strips trailing
+        # slashes and any trailing /v1; we then append /v1 only if absent to
+        # ensure both paths agree. See _provider_404 (~line 69) for why doubling
+        # /v1 must never happen.
+        normalised = normalise_base_url(raw)
+        if normalised.endswith("/v1"):
+            return normalised
+        return normalised + "/v1"
 
     def _client(self) -> OpenAI:
         base_url = self._base_url()
