@@ -827,6 +827,82 @@ class TestItemsToJobItems:
         with pytest.raises(TypeError):
             items_to_job_items([item], output_dir="/tmp/output")
 
+    def test_colliding_stems_get_distinct_second_suffix(self):
+        """Two different items sharing a title and photo filename collide on
+        `page_stem`. The first item's stem must stay byte-identical to plain
+        `page_stem` output (existing on-disk outputs keep matching); the
+        second gets a stable, checksum-derived suffix — never a bare
+        positional counter."""
+        from artifice_ocr.tropy_jsonld import page_stem
+
+        photo_a = TropyPhoto(
+            photo_id=10,
+            path="/tmp/a/page1.jpg",
+            item_id=1,
+            page=None,
+            mimetype="image/jpeg",
+            checksum="chk1",
+            orientation=1,
+            missing=False,
+        )
+        photo_b = TropyPhoto(
+            photo_id=20,
+            path="/tmp/b/page1.jpg",
+            item_id=2,
+            page=None,
+            mimetype="image/jpeg",
+            checksum="chk2",
+            orientation=1,
+            missing=False,
+        )
+        item_a = TropyItem(item_id=1, title="Letters", photos=[photo_a])
+        item_b = TropyItem(item_id=2, title="Letters", photos=[photo_b])
+
+        job_items = items_to_job_items(
+            [item_a, item_b], project_db="/tmp/project.tpy", output_dir="/tmp/output"
+        )
+
+        expected_first = page_stem("Letters", "page1.jpg", None, "image/jpeg", Path("page1.jpg"))
+        assert job_items[0].output_stem == expected_first
+        assert job_items[1].output_stem != job_items[0].output_stem
+        assert job_items[1].output_stem.startswith(expected_first)
+
+    def test_colliding_stems_fall_back_to_photo_id_without_checksum(self):
+        """When neither colliding photo carries a checksum, the discriminator
+        falls back to the (always-present, DB primary key) photo id."""
+        from artifice_ocr.tropy_jsonld import page_stem
+
+        photo_a = TropyPhoto(
+            photo_id=10,
+            path="/tmp/a/page1.jpg",
+            item_id=1,
+            page=None,
+            mimetype="image/jpeg",
+            checksum="",
+            orientation=1,
+            missing=False,
+        )
+        photo_b = TropyPhoto(
+            photo_id=20,
+            path="/tmp/b/page1.jpg",
+            item_id=2,
+            page=None,
+            mimetype="image/jpeg",
+            checksum="",
+            orientation=1,
+            missing=False,
+        )
+        item_a = TropyItem(item_id=1, title="Letters", photos=[photo_a])
+        item_b = TropyItem(item_id=2, title="Letters", photos=[photo_b])
+
+        job_items = items_to_job_items(
+            [item_a, item_b], project_db="/tmp/project.tpy", output_dir="/tmp/output"
+        )
+
+        expected_first = page_stem("Letters", "page1.jpg", None, "image/jpeg", Path("page1.jpg"))
+        assert job_items[0].output_stem == expected_first
+        assert job_items[1].output_stem == f"{expected_first}__id20"
+
 
 class TestPhotoOrientation:
     """Orientation is read from DB and passed through to JobItem source."""

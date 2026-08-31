@@ -141,11 +141,22 @@ function updateCount() {
   els["queue-count"].textContent = text;
 }
 
+// Skip-reason codes mirror pipeline.py's SKIP_NOT_SELECTED / SKIP_ALREADY_EXISTS.
+function skipReasonLabel(s) {
+  if (s.skip_reason === "already_exists") {
+    return s.skip_key ? `Already transcribed (${s.skip_key})` : "Already transcribed";
+  }
+  if (s.skip_reason === "not_selected") return "Not selected";
+  return "";
+}
+
 function stageCell(item, key) {
   const s = item.stages[key];
   const glyph = STATE_GLYPH[s.state] || "·";
   const text = (s.state === "done" && s.chars) ? `${glyph} ${s.chars}` : glyph;
-  return `<td class="c stage-${s.state}">${text}</td>`;
+  const reasonLabel = s.state === "skipped" ? skipReasonLabel(s) : "";
+  const titleAttr = reasonLabel ? ` title="${escapeHtml(reasonLabel)}"` : "";
+  return `<td class="c stage-${s.state}"${titleAttr}>${text}</td>`;
 }
 
 function statusText(item) {
@@ -155,6 +166,12 @@ function statusText(item) {
   }
   const running = STAGE_KEYS.find(k => item.stages[k].state === "running");
   if (running) return `${running[0].toUpperCase()}${running.slice(1)}…`;
+  // A "done" item can still have quietly reused a prior run's output on one
+  // or more stages — say so on the pill rather than let it read identically
+  // to a page that was freshly transcribed this run.
+  if (item.state === "done" && STAGE_KEYS.some(k => item.stages[k].skip_reason === "already_exists")) {
+    return "done — reused";
+  }
   return item.state;
 }
 

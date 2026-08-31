@@ -528,46 +528,52 @@ def items_to_job_items(
     :func:`_resolve_photo_path`.
     """
     from .jobs import JobItem
-    from .tropy_jsonld import page_stem
+    from .tropy_jsonld import disambiguate_stems, page_stem, stem_discriminator
 
-    result: list = []
-
+    pairs: list[tuple] = []  # (item, photo)
     for item in items:
         for photo in item.photos:
-            photo_name = Path(photo.path).name
-            resolved = Path(photo.path)
-            stem = page_stem(
-                item.title,
-                photo_name,
-                photo.page,
-                photo.mimetype,
-                resolved,
-            )
-            is_pdf = photo.mimetype == "application/pdf" or resolved.suffix.lower() == ".pdf"
-            parts = [photo_name]
-            if is_pdf and photo.page is not None:
-                parts.append(f"p.{photo.page + 1}")
-            label = "  ".join(parts)
+            pairs.append((item, photo))
 
-            result.append(
-                JobItem(
-                    path=str(photo.path),
-                    page=photo.page if is_pdf else None,
-                    output_stem=stem,
-                    label=label,
-                    source={
-                        "origin": "tropy-live",
-                        "tropy_item_id": item.item_id,
-                        "item_title": item.title,
-                        "photo_id": photo.photo_id,
-                        "tropy_project": str(Path(project_db).resolve()),
-                        "photo_path_rel": photo_name,
-                        "checksum": photo.checksum,
-                        "mimetype": photo.mimetype,
-                        "orientation": photo.orientation,
-                    },
-                )
+    stems = [
+        page_stem(item.title, Path(photo.path).name, photo.page, photo.mimetype, Path(photo.path))
+        for item, photo in pairs
+    ]
+    discriminators = [
+        stem_discriminator(checksum=photo.checksum, photo_id=photo.photo_id)
+        for _item, photo in pairs
+    ]
+    final_stems = disambiguate_stems(stems, discriminators)
+
+    result: list = []
+    for (item, photo), stem in zip(pairs, final_stems, strict=True):
+        photo_name = Path(photo.path).name
+        resolved = Path(photo.path)
+        is_pdf = photo.mimetype == "application/pdf" or resolved.suffix.lower() == ".pdf"
+        parts = [photo_name]
+        if is_pdf and photo.page is not None:
+            parts.append(f"p.{photo.page + 1}")
+        label = "  ".join(parts)
+
+        result.append(
+            JobItem(
+                path=str(photo.path),
+                page=photo.page if is_pdf else None,
+                output_stem=stem,
+                label=label,
+                source={
+                    "origin": "tropy-live",
+                    "tropy_item_id": item.item_id,
+                    "item_title": item.title,
+                    "photo_id": photo.photo_id,
+                    "tropy_project": str(Path(project_db).resolve()),
+                    "photo_path_rel": photo_name,
+                    "checksum": photo.checksum,
+                    "mimetype": photo.mimetype,
+                    "orientation": photo.orientation,
+                },
             )
+        )
     return result
 
 

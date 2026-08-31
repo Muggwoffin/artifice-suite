@@ -26,7 +26,14 @@ from typing import Any
 
 from ._logging import get_logger
 from .config import get as cfg
-from .pipeline import run_cleanup_step, run_ocr_step, run_title_step, run_translate_step
+from .pipeline import (
+    SKIP_ALREADY_EXISTS,
+    SKIP_NOT_SELECTED,
+    run_cleanup_step,
+    run_ocr_step,
+    run_title_step,
+    run_translate_step,
+)
 
 log = get_logger("jobs")
 
@@ -55,6 +62,13 @@ class StageStatus:
     elapsed: float = 0.0
     chars: int = 0
     error: str = ""
+    # Why `state` is SKIPPED — SKIP_NOT_SELECTED (the user didn't enable this
+    # stage) or SKIP_ALREADY_EXISTS (its output was reused; `skip_key` is the
+    # matched output key). Empty for any non-skipped state. Without this, a
+    # page whose text was reused from a prior run looked identical to one the
+    # user deliberately turned off.
+    skip_reason: str = ""
+    skip_key: str = ""
 
 
 @dataclass
@@ -110,6 +124,14 @@ class JobItem:
             status.elapsed = 0.0
             status.chars = 0
             status.error = ""
+            # Set here so a stage whose phase never calls `_run_stage` at all
+            # (title/translate return early when deselected — see
+            # `_phase_title`/`_phase_translate`) still reports why it's
+            # skipped. A stage that *does* run (ocr/cleanup always do, with
+            # their own skip_* flag) overwrites this with whatever
+            # `_run_stage` actually observes.
+            status.skip_reason = SKIP_NOT_SELECTED if name not in enabled_stages else ""
+            status.skip_key = ""
 
 
 @dataclass
@@ -208,7 +230,7 @@ class JobRunner:
         self._emit(
             "run_started",
             message=f"Pipeline start — {len(self.items)} file(s), "
-                    f"stages: {', '.join(s for s in STAGES if s in self.stages)}",
+            f"stages: {', '.join(s for s in STAGES if s in self.stages)}",
             tag="accent",
         )
 
@@ -220,18 +242,32 @@ class JobRunner:
 
             for item in self.items:
                 if item.state not in (
-                    State.DONE, State.FAILED, State.SKIPPED, State.CANCELLED,
+                    State.DONE,
+                    State.FAILED,
+                    State.SKIPPED,
+                    State.CANCELLED,
                 ):
                     self._finish_item(item, State.DONE)
         finally:
             elapsed = time.monotonic() - t0
             done = sum(1 for i in self.items if i.state is State.DONE)
             failed = sum(1 for i in self.items if i.state is State.FAILED)
+            # Items that finished normally but had at least one stage reuse
+            # existing output — the "every page shows skipped and the run
+            # finishes instantly" case this whole feature exists to surface.
+            reused = sum(
+                1
+                for i in self.items
+                if any(s.skip_reason == SKIP_ALREADY_EXISTS for s in i.stages.values())
+            )
+            message = f"Run finished in {elapsed:.1f}s — {done} ok, {failed} failed"
+            if reused:
+                message += f", {reused} reused existing output (tick Force re-run to redo)"
             self._emit(
                 "run_finished",
-                message=f"Run finished in {elapsed:.1f}s — {done} ok, {failed} failed",
+                message=message,
                 tag="success" if not failed else "warning",
-                payload={"elapsed": elapsed, "done": done, "failed": failed},
+                payload={"elapsed": elapsed, "done": done, "failed": failed, "skipped": reused},
             )
 
     # ---------------------------------------------------------- phase helpers
@@ -254,15 +290,22 @@ class JobRunner:
             if not self._begin_item(item):
                 continue
             raw = self._run_stage(
-                item, "ocr",
-                lambda: run_ocr_step(
-                    item.path, self.output_dir,
+                item,
+                "ocr",
+                # Default-bind `item` — this loop body is the only place the
+                # lambda is called (synchronously, this iteration), but the
+                # extra `source=` reference tipped B023's per-lambda count
+                # over its baseline, and a default arg is the standard fix.
+                lambda item=item: run_ocr_step(
+                    item.path,
+                    self.output_dir,
                     skip_ocr="ocr" not in self.stages,
                     resume=self._resume_enabled,
                     force=self.force,
                     page=item.page,
                     stem=item.output_stem or None,
                     orientation=(item.source or {}).get("orientation", 1),
+                    source=item.source or None,
                 ),
                 chars_key="extracted_text",
             )
@@ -281,9 +324,12 @@ class JobRunner:
                 self._finish_item(item, State.FAILED)
                 continue
             cleaned = self._run_stage(
-                item, "cleanup",
+                item,
+                "cleanup",
                 lambda: run_cleanup_step(
-                    raw, item.stem, self.output_dir,
+                    raw,
+                    item.stem,
+                    self.output_dir,
                     skip_cleanup="cleanup" not in self.stages,
                     resume=self._resume_enabled,
                     force=self.force,
@@ -307,9 +353,12 @@ class JobRunner:
                 self._finish_item(item, State.FAILED)
                 continue
             title_result = self._run_stage(
-                item, "title",
+                item,
+                "title",
                 lambda: run_title_step(
-                    cleaned, item.stem, self.output_dir,
+                    cleaned,
+                    item.stem,
+                    self.output_dir,
                     skip_title="title" not in self.stages,
                     resume=self._resume_enabled,
                     force=self.force,
@@ -334,9 +383,12 @@ class JobRunner:
                 self._finish_item(item, State.FAILED)
                 continue
             translated = self._run_stage(
-                item, "translate",
+                item,
+                "translate",
                 lambda: run_translate_step(
-                    cleaned, item.stem, self.output_dir,
+                    cleaned,
+                    item.stem,
+                    self.output_dir,
                     resume=self._resume_enabled,
                     force=self.force,
                 ),
@@ -369,7 +421,9 @@ class JobRunner:
             item.error = status.error
             log.warning("%s failed for %s: %s", STAGE_LABELS[stage], item.name, exc)
             self._emit(
-                "stage_finished", item=item, stage=stage,
+                "stage_finished",
+                item=item,
+                stage=stage,
                 message=f"[{STAGE_LABELS[stage]}] {item.name} — {status.error}",
                 tag="error",
             )
@@ -379,10 +433,25 @@ class JobRunner:
         status.chars = len(data.get(chars_key) or "")
         skipped = data.get("_skipped", False)
         status.state = State.SKIPPED if skipped else State.DONE
+        status.skip_reason = data.get("_skip_reason", "") if skipped else ""
+        status.skip_key = data.get("_skip_key", "") if skipped else ""
 
-        suffix = " [skipped]" if skipped else f" -> {status.chars} chars ({status.elapsed:.1f}s)"
+        if skipped:
+            if status.skip_reason == SKIP_ALREADY_EXISTS:
+                detail = "already has output"
+                if status.skip_key:
+                    detail += f" ({status.skip_key})"
+            elif status.skip_reason == SKIP_NOT_SELECTED:
+                detail = "not selected"
+            else:
+                detail = "skipped"
+            suffix = f" — {detail}"
+        else:
+            suffix = f" -> {status.chars} chars ({status.elapsed:.1f}s)"
         self._emit(
-            "stage_finished", item=item, stage=stage,
+            "stage_finished",
+            item=item,
+            stage=stage,
             message=f"[{STAGE_LABELS[stage]}] {item.name}{suffix}",
             tag="warning" if skipped else "success",
         )
@@ -393,7 +462,9 @@ class JobRunner:
         if guard.get("ok") is False:
             item.guard_rejected = True
             self._emit(
-                "log", item=item, stage=stage,
+                "log",
+                item=item,
+                stage=stage,
                 message=f"    guard kept raw text — {'; '.join(guard.get('reasons', []))}",
                 tag="warning",
             )
