@@ -27,7 +27,7 @@ from artifice_ocr._prompts import get_structure_prompt
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
-from artifice_ocr.output import stage_dir
+from artifice_ocr.output import record_dir, stage_dir
 
 log = get_logger("structure")
 
@@ -158,7 +158,7 @@ def perform(
 
     base_output_dir = Path(output_dir)
     text_dir = stage_dir(base_output_dir, "structured") / "text"
-    json_dir = stage_dir(base_output_dir, "structured") / "records"
+    json_dir = record_dir(base_output_dir, "structured")
 
     text_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)

@@ -19,3 +19,9 @@ def stage_dir(output_dir: str | Path, stage: str) -> Path:
     if (root / "project.json").is_file() and (root / "pipeline").is_dir():
         return root / "pipeline" / _CANONICAL.get(stage, stage)
     return root / stage
+
+
+def record_dir(output_dir: str | Path, stage: str) -> Path:
+    """Return the metadata directory, retaining ``json`` for legacy roots."""
+    root = Path(output_dir)
+    return stage_dir(root, stage) / ("records" if (root / "project.json").is_file() else "json")

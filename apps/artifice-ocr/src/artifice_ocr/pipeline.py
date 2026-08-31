@@ -9,7 +9,7 @@ from typing import Any
 
 from ._logging import get_logger
 from .config import get as cfg
-from .output import stage_dir
+from .output import record_dir, stage_dir
 from .stages import cleanup, ocr, title, translate
 
 log = get_logger("pipeline")
@@ -39,7 +39,7 @@ def _load_existing_text(stage: str, stem: str, output_dir: str) -> str:
 def _load_ocr_sidecar(stem: str, output_dir: str) -> dict | None:
     """Read the raw_ocr JSON sidecar for `stem`, or None if it doesn't exist
     or can't be parsed."""
-    p = stage_dir(output_dir, "raw_ocr") / "records" / f"{stem}.json"
+    p = record_dir(output_dir, "raw_ocr") / f"{stem}.json"
     if not p.exists():
         p = Path(output_dir) / "raw_ocr" / "json" / f"{stem}.json"
     if not p.exists():

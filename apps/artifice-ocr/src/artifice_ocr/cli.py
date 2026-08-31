@@ -10,7 +10,7 @@ from artifice_ocr._logging import get_logger, setup_logging
 from artifice_ocr._resolution import resolve_models_for_run
 from artifice_ocr.config import _USER_DIR
 from artifice_ocr.config import get as cfg
-from artifice_ocr.output import stage_dir
+from artifice_ocr.output import record_dir, stage_dir
 from artifice_ocr.stages import cleanup as cleanup_stage
 from artifice_ocr.stages import ocr as ocr_stage
 from artifice_ocr.stages import translate as translate_stage
@@ -205,7 +205,7 @@ def audit_translations(
     """
     import json as json_module
 
-    json_dir = stage_dir(output_dir, "translated") / "records"
+    json_dir = record_dir(output_dir, "translated")
     if not json_dir.exists():
         json_dir = Path(output_dir) / "translated" / "json"
     if not json_dir.exists():
