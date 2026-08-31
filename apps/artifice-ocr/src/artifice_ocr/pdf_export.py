@@ -16,31 +16,30 @@ import importlib.resources
 import itertools
 import json
 import re
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
 
 from artifice_output import layout_for_path, slugify
-from .output import stage_dir
-from .validation import validate_path
-
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
     PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
     Table,
     TableStyle,
 )
 
 from artifice_ocr._logging import get_logger
-from artifice_ocr.config import get as cfg
+
+from .output import stage_dir
+from .validation import validate_path
 
 log = get_logger("pdf_export")
 
@@ -824,15 +823,12 @@ def compile(
         pages = structure_pages(
             pages,
             on_progress=on_progress,
-            on_rejected=lambda l: rejected.append(l),
+            on_rejected=lambda label: rejected.append(label),
             output_dir=str(folder_path) if layout_for_path(folder_path) else "output",
         )
 
     title = next((p.item_title for p in pages if p.item_title), None)
-    if output is None:
-        output_path = _default_export_path(folder_path, format)
-    else:
-        output_path = Path(output)
+    output_path = _default_export_path(folder_path, format) if output is None else Path(output)
 
     if format == "md":
         on_progress("Rendering Markdown...")
@@ -843,7 +839,8 @@ def compile(
 
     if rejected:
         on_progress(
-            f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept"
+            f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — "
+            "original text kept"
         )
     on_progress(f"Done: {len(pages)} page(s) -> {result_path}")
     return result_path
@@ -944,7 +941,7 @@ def compile_batch(
         pages = structure_pages(
             pages,
             on_progress=on_progress,
-            on_rejected=lambda l: rejected.append(l),
+            on_rejected=lambda label: rejected.append(label),
             output_dir=output_dir,
         )
 
@@ -968,7 +965,8 @@ def compile_batch(
 
     if rejected:
         on_progress(
-            f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — original text kept"
+            f"Guard rejected structure for {len(rejected)} of {len(pages)} page(s) — "
+            "original text kept"
         )
     on_progress(f"Done: {len(pages)} page(s) -> {result_path}")
     return result_path

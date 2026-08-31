@@ -10,7 +10,6 @@ the strongest defense-evasion signal in the frozen OCR executable.
 
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 OCR_SRC = ROOT / "apps" / "artifice-ocr" / "src" / "artifice_ocr"
 
@@ -39,8 +38,8 @@ def test_ocr_pyinstaller_bundle_is_uncompressed_and_windowed():
 
 
 def test_canonical_stage_mapping(tmp_path):
-    from artifice_output import ProjectLayout
     from artifice_ocr.output import stage_dir
+    from artifice_output import ProjectLayout
 
     layout = ProjectLayout(tmp_path, "Archive", create=True)
     assert stage_dir(layout.project_dir, "raw_ocr") == layout.project_dir / "pipeline" / "raw-ocr"

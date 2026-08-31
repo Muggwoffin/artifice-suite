@@ -9,10 +9,9 @@ import json
 import queue
 from pathlib import Path
 
+from artifice_output import discover_projects
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
-
-from artifice_output import discover_projects
 
 from ... import config
 from ...pdf_export import collect_bilingual_folder, collect_folder

@@ -9,7 +9,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-
 LAYOUT_VERSION = 1
 STAGES = ("raw-ocr", "cleaned", "structured", "translated", "titles")
 EXPORTS = ("pdf", "markdown", "tropy", "ludwiglang", "graph", "obsidian", "transcript", "draft")

@@ -21,19 +21,34 @@ progress feed needs, and `EventSource` reconnects on its own.
 from __future__ import annotations
 
 import asyncio
+import importlib.resources
 import json
 import queue
 import time
 import webbrowser
 from typing import Any
 
+import shared_ui
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from pydantic import BaseModel
+from shared_ui.handoff import cleanup_expired, write_discovery
+from shared_ui.path_validation import PathValidationError, sanitise_path_component
+from shared_ui.server_bootstrap import (
+    ensure_std_streams,
+    free_port,
+    start_server_thread,
+    wait_for_server,
+)
+from shared_ui.suite import get_preferences, suite_apps, update_preferences
+from shared_ui.uploads import UploadTooLarge, read_capped
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from artifice_draft.style_guides import delete_custom_guide, list_guides, save_custom_guide
+from artifice_draft.style_guides.base import StyleGuide
 
 from .routers import byom as byom_router
 from .runtime import (
@@ -45,22 +60,6 @@ from .runtime import (
     serialize_status,
     state,
 )
-
-from artifice_draft.style_guides import delete_custom_guide, list_guides, save_custom_guide
-from artifice_draft.style_guides.base import StyleGuide
-
-import importlib.resources
-import shared_ui
-from shared_ui.handoff import cleanup_expired, write_discovery
-from shared_ui.suite import get_preferences, suite_apps, update_preferences
-from shared_ui.path_validation import PathValidationError, sanitise_path_component
-from shared_ui.server_bootstrap import (
-    ensure_std_streams,
-    free_port,
-    start_server_thread,
-    wait_for_server,
-)
-from shared_ui.uploads import UploadTooLarge, read_capped
 
 # Resolved through importlib.resources, NOT a __file__-relative path.  This
 # app is distributed as a frozen .exe, where __file__ points inside a
@@ -285,7 +284,7 @@ async def preview_guide_file(request: Request, file: UploadFile = File(...)) -> 
     if _content_length_exceeds(request, _MAX_UPLOAD_BYTES):
         raise HTTPException(
             status_code=413,
-            detail=f"File exceeds 50 MB upload limit",
+            detail="File exceeds 50 MB upload limit",
         )
 
     import tempfile
@@ -315,7 +314,6 @@ async def preview_guide_file(request: Request, file: UploadFile = File(...)) -> 
 @app.post("/api/style-guides/save")
 def save_guide(req: GuideSaveRequest) -> dict:
     """Save a scraped/edited StyleGuide as a custom guide."""
-    from artifice_draft.web.runtime import config_from_settings
 
     name = req.name.strip()
     if not name:
@@ -354,7 +352,7 @@ async def upload(request: Request, file: UploadFile = File(...)) -> dict:
     if _content_length_exceeds(request, _MAX_UPLOAD_BYTES):
         raise HTTPException(
             status_code=413,
-            detail=f"File exceeds 50 MB upload limit",
+            detail="File exceeds 50 MB upload limit",
         )
 
     try:
@@ -541,7 +539,15 @@ def index() -> HTMLResponse:
 
 @app.get("/about", response_class=HTMLResponse)
 def about() -> HTMLResponse:
-    return HTMLResponse(_render("about.html", active_tab="", page_title="About", show_inspector=False, show_activity=False))
+    return HTMLResponse(
+        _render(
+            "about.html",
+            active_tab="",
+            page_title="About",
+            show_inspector=False,
+            show_activity=False,
+        )
+    )
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -564,7 +570,6 @@ def import_handoff(handoff: str = ""):
     the URL carries no payload.
     """
     from fastapi.responses import RedirectResponse
-
     from shared_ui.handoff import delete_handoff, read_handoff
 
     global _pending_handoff_text

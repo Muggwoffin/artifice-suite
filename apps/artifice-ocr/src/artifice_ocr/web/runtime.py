@@ -27,8 +27,8 @@ from typing import Any
 from .. import config
 from ..history import HistoryStore
 from ..jobs import STAGES, JobItem, JobRunner, State
-from ..pipeline import run_cleanup_step, run_translate_step
 from ..output import stage_dir
+from ..pipeline import run_cleanup_step, run_translate_step
 from .serializers import serialize_item, serialize_item_preview
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}

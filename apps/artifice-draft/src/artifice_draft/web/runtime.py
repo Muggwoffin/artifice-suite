@@ -28,6 +28,8 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from artifice_output import ProjectLayout, slugify
+
 from artifice_draft._diff import diff_ranges
 from artifice_draft._resolution import resolve_for_run
 from artifice_draft.changelog import format_change_log, generate_change_summary
@@ -43,7 +45,6 @@ from artifice_draft.models import (
     ReviewDecision,
 )
 from artifice_draft.review import apply_decisions, create_review_items
-from artifice_output import ProjectLayout, slugify
 
 logger = logging.getLogger(__name__)
 

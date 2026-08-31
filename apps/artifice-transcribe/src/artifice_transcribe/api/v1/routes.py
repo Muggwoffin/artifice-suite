@@ -13,6 +13,7 @@ from pathlib import Path
 from queue import Empty
 
 import model_harness.registry as reg
+from artifice_output import ProjectLayout, slugify
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from model_harness.contract import EndpointRejected
@@ -21,7 +22,6 @@ from shared_ui.path_validation import PathValidationError, sanitise_path_compone
 from shared_ui.uploads import UploadTooLarge, read_capped
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from artifice_output import ProjectLayout, slugify
 
 from artifice_transcribe.config import settings
 from artifice_transcribe.db.models import (

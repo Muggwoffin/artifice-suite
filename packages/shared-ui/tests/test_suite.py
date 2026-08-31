@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 
 import pytest
-
 from shared_ui.suite import DEFAULT_PREFERENCES, get_preferences, suite_apps, update_preferences
 
 

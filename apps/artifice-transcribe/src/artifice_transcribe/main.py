@@ -83,10 +83,10 @@ async def health():
 
 
 # ── Shared design system (resolved from installed shared-ui package) ───────
-import importlib.resources
+import importlib.resources  # noqa: E402
 
-import shared_ui
-from shared_ui.suite import get_preferences, suite_apps, update_preferences
+import shared_ui  # noqa: E402
+from shared_ui.suite import get_preferences, suite_apps, update_preferences  # noqa: E402
 
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
@@ -106,7 +106,7 @@ async def get_ui_preferences() -> dict[str, object]:
 
 @app.patch("/api/ui/preferences")
 async def patch_ui_preferences(
-    patch: dict[str, object] = Body(...),
+    patch: dict[str, object] = Body(...),  # noqa: B008
 ) -> dict[str, object]:
     """Validate and persist a partial shared UI preference update."""
     return update_preferences(patch)
@@ -196,7 +196,6 @@ def cli():
     import urllib.request
 
     import uvicorn
-
     from shared_ui.handoff import cleanup_expired, write_discovery
 
     # --host and --port defaults come from ARTIFICE_HOST / ARTIFICE_PORT,
