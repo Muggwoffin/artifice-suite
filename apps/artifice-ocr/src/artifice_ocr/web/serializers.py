@@ -39,6 +39,8 @@ def serialize_item(item: JobItem) -> dict[str, Any]:
                 "chars": status.chars,
                 "elapsed": round(status.elapsed, 1),
                 "error": status.error,
+                "skip_reason": status.skip_reason,
+                "skip_key": status.skip_key,
             }
             for name, status in item.stages.items()
         },
@@ -83,11 +85,23 @@ def serialize_item_preview(item: JobItem) -> dict[str, Any]:
         "cleaned": cleaned,
         "original_cleaned": (results.get("cleaned") or {}).get("original_cleaned_text", "") or "",
         "translated": translated,
-        "original_translated": (results.get("translated") or {}).get("original_translated_text", "") or "",
+        "original_translated": (results.get("translated") or {}).get("original_translated_text", "")
+        or "",
         "confidence": item.confidence,
         "confidence_tier": confidence_tier(item.confidence),
         "language": item.language,
         "diff": _diff_payload(raw, cleaned, translated),
+        # Same skip bookkeeping the queue serialiser exposes (see
+        # `serialize_item`) — carried here too so the Preview pane can show
+        # "reused from a previous run" without a second round-trip.
+        "stages": {
+            name: {
+                "state": status.state.value,
+                "skip_reason": status.skip_reason,
+                "skip_key": status.skip_key,
+            }
+            for name, status in item.stages.items()
+        },
     }
 
 

@@ -150,6 +150,45 @@ def page_stem(
     return f"{folder}/{base}"
 
 
+def stem_discriminator(checksum: str = "", photo_id: int | None = None, path_rel: str = "") -> str:
+    """A short, stable per-photo suffix for disambiguating a colliding stem.
+
+    Preferred order: a checksum prefix, then the photo id, then a hash of
+    the photo's own relative path. Deliberately never derived from a batch
+    index or list position — that would change every time the same photos
+    happened to enumerate in a different order, which is not "stable" in
+    the sense a resume check needs.
+    """
+    if checksum:
+        return checksum[:10]
+    if photo_id is not None:
+        return f"id{photo_id}"
+    if path_rel:
+        return hashlib.sha1(path_rel.encode("utf-8")).hexdigest()[:10]
+    return "dup"
+
+
+def disambiguate_stems(stems: list[str], discriminators: list[str]) -> list[str]:
+    """Give the SECOND and later occurrence of a duplicate stem a distinct
+    suffix; the FIRST occurrence is returned unchanged.
+
+    `stems` and `discriminators` must be the same length and in the same
+    order the photos will become JobItems — index *i*'s discriminator
+    belongs to index *i*'s stem. Only actual collisions *within this list*
+    get a suffix, so a batch with none of its own returns every stem
+    byte-identical to the input — which is what keeps every output already
+    on disk (all written under the pre-disambiguation stem format) matching
+    on the next resume.
+    """
+    counts: dict[str, int] = {}
+    result: list[str] = []
+    for stem, disc in zip(stems, discriminators, strict=True):
+        n = counts.get(stem, 0)
+        counts[stem] = n + 1
+        result.append(stem if n == 0 else f"{stem}__{disc}")
+    return result
+
+
 # --------------------------------------------------------------------------- #
 # helpers
 # --------------------------------------------------------------------------- #
@@ -166,9 +205,9 @@ def _as_list(value: Any) -> list:
 
 def _canonical_json(node: dict) -> bytes:
     """Deterministic byte-serialisation for stable group-id hashing."""
-    return json.dumps(
-        node, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode("utf-8")
+    return json.dumps(node, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8"
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -186,9 +225,7 @@ def load_export(raw: str | Path) -> ImportPreview:
     p = Path(raw).expanduser()
     suffix = p.suffix.lower()
     if suffix not in ALLOWED_SUFFIXES:
-        raise TropyImportError(
-            f"File '{p.name}' is not a JSON-LD file (expected .json or .jsonld)"
-        )
+        raise TropyImportError(f"File '{p.name}' is not a JSON-LD file (expected .json or .jsonld)")
     p = p.resolve(strict=False)
     if not p.is_file():
         raise TropyImportError(f"'{p.name}' is not a file")
@@ -228,32 +265,21 @@ def load_export_content(
     try:
         raw_bytes = text.encode("utf-8")
     except UnicodeEncodeError as exc:
-        raise TropyImportError(
-            f"Could not encode export content as UTF-8: {exc}"
-        ) from exc
+        raise TropyImportError(f"Could not encode export content as UTF-8: {exc}") from exc
     if len(raw_bytes) > MAX_FILE_BYTES:
         raise TropyImportError(
-            f"Export content is too large ({len(raw_bytes)} bytes; "
-            f"max {MAX_FILE_BYTES})"
+            f"Export content is too large ({len(raw_bytes)} bytes; max {MAX_FILE_BYTES})"
         )
 
     # Parse from bytes (handles BOM)
     try:
         data = json.loads(raw_bytes)
     except RecursionError:
-        raise TropyImportError(
-            "JSON-LD content is too deeply nested to parse"
-        ) from None
+        raise TropyImportError("JSON-LD content is too deeply nested to parse") from None
     except (json.JSONDecodeError, ValueError) as exc:
-        raise TropyImportError(
-            f"Could not parse JSON-LD content: {exc}"
-        ) from None
+        raise TropyImportError(f"Could not parse JSON-LD content: {exc}") from None
 
-    export_name = (
-        Path(filename).name
-        if filename
-        else "dropped-export.jsonld"
-    )
+    export_name = Path(filename).name if filename else "dropped-export.jsonld"
 
     return _parse_graph(data, export_dir=None, export_name=export_name)
 
@@ -276,9 +302,7 @@ def _parse_graph(
 
     # 2. Shape validation — unwrap envelope
     if isinstance(data, dict):
-        graph: list[dict] = (
-            _as_list(data["@graph"]) if "@graph" in data else [data]
-        )
+        graph: list[dict] = _as_list(data["@graph"]) if "@graph" in data else [data]
     elif isinstance(data, list):
         graph = data
     else:
@@ -294,9 +318,7 @@ def _parse_graph(
             continue
         ntype = _as_list(node.get("@type", []))
 
-        is_item = "Item" in ntype or any(
-            isinstance(t, str) and t.endswith("#Item") for t in ntype
-        )
+        is_item = "Item" in ntype or any(isinstance(t, str) and t.endswith("#Item") for t in ntype)
         if not is_item:
             continue  # skip Template, Field, List without complaint
 
@@ -333,15 +355,11 @@ def _parse_graph(
 
         for pi, pnode in enumerate(raw_photos):
             if not isinstance(pnode, dict):
-                warnings.append(
-                    f"Photo entry {pi + 1} in item '{title}' is not a dict — skipped"
-                )
+                warnings.append(f"Photo entry {pi + 1} in item '{title}' is not a dict — skipped")
                 continue
             raw_path = pnode.get("path")
             if not isinstance(raw_path, str) or not raw_path.strip():
-                warnings.append(
-                    f"Photo entry {pi + 1} in item '{title}' has no path — skipped"
-                )
+                warnings.append(f"Photo entry {pi + 1} in item '{title}' has no path — skipped")
                 continue
 
             # ---- photo path handling ------------------------------------
@@ -361,7 +379,10 @@ def _parse_graph(
 
             if is_absolute:
                 _handle_absolute_photo(
-                    raw_path, path_rel, title, warnings,
+                    raw_path,
+                    path_rel,
+                    title,
+                    warnings,
                 )
                 # _handle_absolute_photo either raises or returns nothing;
                 # the resolved path and missing flag come from the pathcheck
@@ -369,7 +390,8 @@ def _parse_graph(
                 # we inline the pathcheck call here after the function
                 # validates.
                 resolved, missing, is_symlink = _validate_and_resolve_absolute(
-                    raw_path, title,
+                    raw_path,
+                    title,
                 )
                 if is_symlink:
                     warnings.append(
@@ -391,8 +413,7 @@ def _parse_graph(
                 segments = path_rel.split("/")
                 if ".." in segments:
                     raise TropyImportError(
-                        f"Photo path '{path_rel}' in item '{title}' "
-                        f"escapes the export folder"
+                        f"Photo path '{path_rel}' in item '{title}' escapes the export folder"
                     )
 
                 # Resolve and containment
@@ -402,8 +423,7 @@ def _parse_graph(
                     resolved.relative_to(export_dir)
                 except ValueError as err:
                     raise TropyImportError(
-                        f"Photo path '{path_rel}' in item '{title}' "
-                        f"escapes the export folder"
+                        f"Photo path '{path_rel}' in item '{title}' escapes the export folder"
                     ) from err
 
                 missing = not resolved.exists()
@@ -432,9 +452,7 @@ def _parse_graph(
             photo_count_total += 1
 
         if imported_photos:
-            items.append(
-                ImportedItem(group=group, title=title, photos=imported_photos)
-            )
+            items.append(ImportedItem(group=group, title=title, photos=imported_photos))
 
     if photo_count_total == 0:
         warnings.append("No photos with valid paths found in the export")
@@ -491,14 +509,10 @@ def _check_budget(data: Any) -> None:
     while stack:
         node, depth = stack.pop()
         if depth > MAX_DEPTH:
-            raise TropyImportError(
-                f"JSON-LD nesting exceeds maximum depth of {MAX_DEPTH}"
-            )
+            raise TropyImportError(f"JSON-LD nesting exceeds maximum depth of {MAX_DEPTH}")
         visited += 1
         if visited > MAX_NODES:
-            raise TropyImportError(
-                f"JSON-LD exceeds maximum node count of {MAX_NODES}"
-            )
+            raise TropyImportError(f"JSON-LD exceeds maximum node count of {MAX_NODES}")
         if isinstance(node, dict):
             for v in node.values():
                 if isinstance(v, (dict, list)):
@@ -514,9 +528,7 @@ def _check_budget(data: Any) -> None:
 # --------------------------------------------------------------------------- #
 
 
-def photos_to_job_items(
-    preview: ImportPreview, groups: list[str] | None = None
-) -> list:
+def photos_to_job_items(preview: ImportPreview, groups: list[str] | None = None) -> list:
     """Map :class:`ImportedPhoto` objects to :class:`JobItem` objects.
 
     The resulting ``source`` dict uses ``"tropy-jsonld"`` as the origin
@@ -525,47 +537,51 @@ def photos_to_job_items(
     from .jobs import JobItem
 
     group_set = None if groups is None else set(groups)
-    result: list = []
+    pairs: list[tuple] = []  # (item, photo)
 
     for item in preview.items:
         if group_set is not None and item.group not in group_set:
             continue
         for photo in item.photos:
-            stem = page_stem(
-                item.title,
-                Path(photo.path_rel).name,
-                photo.page,
-                photo.mimetype,
-                photo.resolved,
-            )
-            is_pdf = (
-                photo.mimetype == "application/pdf"
-                or photo.resolved.suffix.lower() == ".pdf"
-            )
-            parts = [Path(photo.path_rel).name]
-            if is_pdf and photo.page is not None:
-                parts.append(f"p.{photo.page + 1}")
-            label = "  ".join(parts)
+            pairs.append((item, photo))
 
-            result.append(
-                JobItem(
-                    path=str(photo.resolved),
-                    page=photo.page if is_pdf else None,
-                    output_stem=stem,
-                    label=label,
-                    source={
-                        "origin": "tropy-jsonld",
-                        "tropy_group": photo.group,
-                        "item_node": photo.item_node,
-                        "photo_index": photo.photo_index,
-                        "photo_path_rel": photo.path_rel,
-                        "checksum": photo.checksum,
-                        "mimetype": photo.mimetype,
-                        "item_title": item.title,
-                        "orientation": 1,
-                    },
-                )
+    stems = [
+        page_stem(item.title, Path(photo.path_rel).name, photo.page, photo.mimetype, photo.resolved)
+        for item, photo in pairs
+    ]
+    discriminators = [
+        stem_discriminator(checksum=photo.checksum, path_rel=photo.path_rel)
+        for _item, photo in pairs
+    ]
+    final_stems = disambiguate_stems(stems, discriminators)
+
+    result: list = []
+    for (item, photo), stem in zip(pairs, final_stems, strict=True):
+        is_pdf = photo.mimetype == "application/pdf" or photo.resolved.suffix.lower() == ".pdf"
+        parts = [Path(photo.path_rel).name]
+        if is_pdf and photo.page is not None:
+            parts.append(f"p.{photo.page + 1}")
+        label = "  ".join(parts)
+
+        result.append(
+            JobItem(
+                path=str(photo.resolved),
+                page=photo.page if is_pdf else None,
+                output_stem=stem,
+                label=label,
+                source={
+                    "origin": "tropy-jsonld",
+                    "tropy_group": photo.group,
+                    "item_node": photo.item_node,
+                    "photo_index": photo.photo_index,
+                    "photo_path_rel": photo.path_rel,
+                    "checksum": photo.checksum,
+                    "mimetype": photo.mimetype,
+                    "item_title": item.title,
+                    "orientation": 1,
+                },
             )
+        )
     return result
 
 
@@ -629,6 +645,7 @@ def _generator_string() -> str:
     """Return 'artifice-ocr <version>' without importing the package at module level."""
     try:
         from importlib.metadata import version
+
         return f"artifice-ocr {version('artifice-ocr')}"
     except Exception:
         return "artifice-ocr"
@@ -835,9 +852,7 @@ def write_manifest(
         "pages": entries,
     }
     try:
-        target.write_text(
-            json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
+        target.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     except OSError:
         return None
 

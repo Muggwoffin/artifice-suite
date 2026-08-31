@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import json
 import time
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,14 @@ from .stages import cleanup, ocr, title, translate
 log = get_logger("pipeline")
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
+
+# Why a stage reported `_skipped: True`. Distinct from `_skipped`
+# itself so a caller (jobs.py) can tell "the user never enabled this stage"
+# apart from "this page was already processed" — a re-run of an already-OCR'd
+# folder looked identical to a deselected stage before this existed, which is
+# exactly the bug this pair of constants fixes.
+SKIP_NOT_SELECTED = "not_selected"
+SKIP_ALREADY_EXISTS = "already_exists"
 
 
 def _output_exists(stage: str, stem: str, output_dir: str) -> bool:
@@ -26,6 +35,74 @@ def _load_existing_text(stage: str, stem: str, output_dir: str) -> str:
     return p.read_text(encoding="utf-8")
 
 
+def _load_ocr_sidecar(stem: str, output_dir: str) -> dict | None:
+    """Read the raw_ocr JSON sidecar for `stem`, or None if it doesn't exist
+    or can't be parsed."""
+    p = Path(output_dir) / "raw_ocr" / "json" / f"{stem}.json"
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _source_identity(source: dict | None) -> dict:
+    """Extract the identity fields (checksum, photo id) a source dict
+    carries, dropping anything falsy — an empty checksum string is not an
+    identity worth comparing on."""
+    if not source:
+        return {}
+    ident: dict[str, Any] = {}
+    checksum = source.get("checksum")
+    if checksum:
+        ident["checksum"] = checksum
+    photo_id = source.get("photo_id")
+    if photo_id is not None:
+        ident["photo_id"] = photo_id
+    return ident
+
+
+def _ocr_should_resume(key: str, output_dir: str, source: dict | None) -> bool:
+    """Decide whether OCR should be skipped and the existing output reused.
+
+    Two colliding Tropy photos can share an output key (see
+    ``tropy_jsonld.page_stem``'s docstring) — so existence of ``{key}.txt``
+    alone is not proof this is the SAME photo the caller is about to OCR.
+    When both the current photo and the existing sidecar carry an identity
+    (checksum and/or photo id), they must match or this re-OCRs instead of
+    silently reusing another photo's text.
+
+    Non-destructive by design: every sidecar written before this check
+    existed carries no identity fields at all, and any source lacking an
+    identity (a plain, non-Tropy file) has nothing to compare — both cases
+    fall back to the plain existence check that has always governed resume,
+    so every output already on disk stays valid.
+    """
+    if not _output_exists("raw_ocr", key, output_dir):
+        return False
+
+    current = _source_identity(source)
+    if not current:
+        return True  # nothing to compare against — existence is enough
+
+    sidecar = _load_ocr_sidecar(key, output_dir)
+    if not sidecar:
+        return True  # sidecar missing or unreadable — legacy fallback
+
+    sidecar_identity = {
+        k: sidecar[k] for k in ("checksum", "photo_id") if sidecar.get(k) not in (None, "")
+    }
+    if not sidecar_identity:
+        return True  # sidecar predates identity tracking — legacy fallback
+
+    if "checksum" in current and "checksum" in sidecar_identity:
+        return current["checksum"] == sidecar_identity["checksum"]
+    if "photo_id" in current and "photo_id" in sidecar_identity:
+        return current["photo_id"] == sidecar_identity["photo_id"]
+    return True  # no field comparable on both sides — fall back to existence
+
+
 def run_ocr_step(
     file_path: str | Path,
     output_dir: str,
@@ -36,6 +113,7 @@ def run_ocr_step(
     page: int | None = None,
     stem: str | None = None,
     orientation: int = 1,
+    source: dict | None = None,
 ) -> dict:
     """Run the OCR stage for one file, or resolve it from existing output.
 
@@ -45,10 +123,17 @@ def run_ocr_step(
     1 = normal) — a Tropy-sourced item can be scanned rotated or upside-down
     with nothing in the filename or the image's own EXIF data to say so; this
     is the one place that information travels from the Tropy database to the
-    image the model actually sees.
+    image the model actually sees. `source` is the JobItem's own source dict
+    (checksum / photo id, when the item came from Tropy) — it's what lets the
+    resume check (:func:`_ocr_should_resume`) tell two colliding stems apart,
+    and it's forwarded into the sidecar JSON so a *future* resume can do the
+    same.
 
     Returns the raw_ocr data dict, annotated with `_elapsed` and (when the
-    stage did not actually run) `_skipped`.
+    stage did not actually run) `_skipped` plus `_skip_reason` — either
+    ``SKIP_NOT_SELECTED`` (the user didn't enable OCR) or
+    ``SKIP_ALREADY_EXISTS`` (paired with `_skip_key`, the output key whose
+    existing text was reused).
     """
     f = Path(file_path)
     key = stem or f.stem
@@ -61,14 +146,17 @@ def run_ocr_step(
             "stage": "raw_ocr",
             "extracted_text": "(OCR skipped)",
             "_skipped": True,
+            "_skip_reason": SKIP_NOT_SELECTED,
         }
-    elif resume and not force and _output_exists("raw_ocr", key, output_dir):
+    elif resume and not force and _ocr_should_resume(key, output_dir, source):
         log.info("OCR %s [skip — already done]", key)
         data = {
             "source_file": str(f),
             "stage": "raw_ocr",
             "extracted_text": _load_existing_text("raw_ocr", key, output_dir),
             "_skipped": True,
+            "_skip_reason": SKIP_ALREADY_EXISTS,
+            "_skip_key": key,
         }
     else:
         # Pre-flight: a Tropy-imported photo may have passed pathcheck but
@@ -76,11 +164,15 @@ def run_ocr_step(
         # queues the item). Failing here with an actionable message beats
         # a raw FileNotFoundError from inside the OCR backend.
         if not f.exists():
-            raise FileNotFoundError(
-                f"Source file not found on disk: {f.name}"
-            )
-        data = ocr.perform(str(f), output_dir=output_dir, page=page, stem=stem,
-                           orientation=orientation)
+            raise FileNotFoundError(f"Source file not found on disk: {f.name}")
+        data = ocr.perform(
+            str(f),
+            output_dir=output_dir,
+            page=page,
+            stem=stem,
+            orientation=orientation,
+            source=source,
+        )
 
     data["_elapsed"] = time.monotonic() - t0
     return data
@@ -106,6 +198,7 @@ def run_cleanup_step(
             "cleaned_text": raw_data["extracted_text"],
             "raw_text": raw_data["extracted_text"],
             "_skipped": True,
+            "_skip_reason": SKIP_NOT_SELECTED,
         }
     elif resume and not force and _output_exists("cleaned", stem, output_dir):
         log.info("Cleanup %s [skip — already done]", stem)
@@ -115,6 +208,8 @@ def run_cleanup_step(
             "cleaned_text": _load_existing_text("cleaned", stem, output_dir),
             "raw_text": raw_data["extracted_text"],
             "_skipped": True,
+            "_skip_reason": SKIP_ALREADY_EXISTS,
+            "_skip_key": stem,
         }
     else:
         data = cleanup.perform(
@@ -147,6 +242,7 @@ def run_title_step(
             "stage": "title",
             "title": Path(cleaned_data["source_file"]).stem,
             "_skipped": True,
+            "_skip_reason": SKIP_NOT_SELECTED,
         }
     elif resume and not force and _output_exists("title", stem, output_dir):
         log.info("Title %s [skip — already done]", stem)
@@ -155,6 +251,8 @@ def run_title_step(
             "stage": "title",
             "title": _load_existing_text("title", stem, output_dir),
             "_skipped": True,
+            "_skip_reason": SKIP_ALREADY_EXISTS,
+            "_skip_key": stem,
         }
     else:
         data = title.perform(
@@ -187,6 +285,8 @@ def run_translate_step(
             "translated_text": _load_existing_text("translated", stem, output_dir),
             "cleaned_text": cleaned_data["cleaned_text"],
             "_skipped": True,
+            "_skip_reason": SKIP_ALREADY_EXISTS,
+            "_skip_key": stem,
         }
     else:
         data = translate.perform(
@@ -206,8 +306,7 @@ def _collect_files(input_path: str) -> list[Path]:
     p = Path(input_path).resolve()
     if p.is_dir():
         files = sorted(
-            f for f in p.iterdir()
-            if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
+            f for f in p.iterdir() if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
         )
         if not files:
             raise FileNotFoundError(
@@ -233,7 +332,8 @@ def run_pipeline(
     files = _collect_files(input_path)
     if len(files) == 1:
         return _run_single(
-            files[0], output_dir,
+            files[0],
+            output_dir,
             skip_translate=skip_translate,
             skip_cleanup=skip_cleanup,
             skip_ocr=skip_ocr,
@@ -241,7 +341,8 @@ def run_pipeline(
         )
 
     return run_pipeline_batch(
-        [str(f) for f in files], output_dir,
+        [str(f) for f in files],
+        output_dir,
         skip_translate=skip_translate,
         skip_cleanup=skip_cleanup,
         skip_ocr=skip_ocr,
@@ -268,12 +369,19 @@ def _run_single(
     log.info("Starting pipeline for %s", file_path.name)
 
     raw_data = run_ocr_step(
-        file_path, output_dir,
-        skip_ocr=skip_ocr, resume=resume, force=force,
+        file_path,
+        output_dir,
+        skip_ocr=skip_ocr,
+        resume=resume,
+        force=force,
     )
     cleaned_data = run_cleanup_step(
-        raw_data, stem, output_dir,
-        skip_cleanup=skip_cleanup, resume=resume, force=force,
+        raw_data,
+        stem,
+        output_dir,
+        skip_cleanup=skip_cleanup,
+        resume=resume,
+        force=force,
     )
 
     result = {
@@ -283,14 +391,20 @@ def _run_single(
 
     if cfg("title_enabled"):
         result["title"] = run_title_step(
-            cleaned_data, stem, output_dir,
-            resume=resume, force=force,
+            cleaned_data,
+            stem,
+            output_dir,
+            resume=resume,
+            force=force,
         )
 
     if not skip_translate:
         result["translated"] = run_translate_step(
-            cleaned_data, stem, output_dir,
-            resume=resume, force=force,
+            cleaned_data,
+            stem,
+            output_dir,
+            resume=resume,
+            force=force,
         )
 
     elapsed = time.monotonic() - t_start
@@ -330,8 +444,11 @@ def run_pipeline_batch(
         stem = f.stem
         t0 = time.monotonic()
         result = run_ocr_step(
-            f, output_dir,
-            skip_ocr=skip_ocr, resume=resume, force=force,
+            f,
+            output_dir,
+            skip_ocr=skip_ocr,
+            resume=resume,
+            force=force,
         )
         elapsed = time.monotonic() - t0
         ocr_results[fpath] = result
@@ -339,7 +456,10 @@ def run_pipeline_batch(
         skipped = " [skipped]" if result.get("_skipped") else ""
         log.info(
             "  OCR %s%s -> %d chars (%.1fs)",
-            f.name, skipped, len(result["extracted_text"]), elapsed,
+            f.name,
+            skipped,
+            len(result["extracted_text"]),
+            elapsed,
         )
 
     # Phase 2: Sequential cleanup
@@ -352,8 +472,12 @@ def run_pipeline_batch(
         raw_data = ocr_results[fpath]
         t0 = time.monotonic()
         cleaned_data = run_cleanup_step(
-            raw_data, stem, output_dir,
-            skip_cleanup=skip_cleanup, resume=resume, force=force,
+            raw_data,
+            stem,
+            output_dir,
+            skip_cleanup=skip_cleanup,
+            resume=resume,
+            force=force,
         )
         elapsed = time.monotonic() - t0
         cleanup_results[fpath] = cleaned_data
@@ -371,8 +495,11 @@ def run_pipeline_batch(
             cleaned_data = cleanup_results[fpath]
             t0 = time.monotonic()
             title_data = run_title_step(
-                cleaned_data, stem, output_dir,
-                resume=resume, force=force,
+                cleaned_data,
+                stem,
+                output_dir,
+                resume=resume,
+                force=force,
             )
             elapsed = time.monotonic() - t0
             title_results[fpath] = title_data
@@ -389,8 +516,11 @@ def run_pipeline_batch(
             cleaned_data = cleanup_results[fpath]
             t0 = time.monotonic()
             translated_data = run_translate_step(
-                cleaned_data, stem, output_dir,
-                resume=resume, force=force,
+                cleaned_data,
+                stem,
+                output_dir,
+                resume=resume,
+                force=force,
             )
             elapsed = time.monotonic() - t0
             translate_results[fpath] = translated_data

@@ -7,7 +7,7 @@ import json
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
 from artifice_ocr import _guard
@@ -288,6 +288,23 @@ def _pdf_single_page_image(
     return img_path, total
 
 
+def _source_identity_fields(source: dict[str, Any] | None) -> dict[str, Any]:
+    """Pull the checksum / photo id off a JobItem source dict, dropping
+    anything absent or falsy — a sidecar with no identity fields at all
+    (every file OCR'd before this existed) is the legacy shape resume falls
+    back to, so this must never write an empty placeholder."""
+    fields: dict[str, Any] = {}
+    if not source:
+        return fields
+    checksum = source.get("checksum")
+    if checksum:
+        fields["checksum"] = checksum
+    photo_id = source.get("photo_id")
+    if photo_id is not None:
+        fields["photo_id"] = photo_id
+    return fields
+
+
 def perform(
     input_path: str,
     *,
@@ -295,7 +312,8 @@ def perform(
     page: int | None = None,
     stem: str | None = None,
     orientation: int = 1,
-) -> Dict[str, Any]:
+    source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """OCR a document.
 
     `page` selects a single 0-based page of a PDF instead of the whole file.
@@ -303,6 +321,12 @@ def perform(
     subdirectory (``"Item Title/file_p0002"``) to group results.
     `orientation` is Tropy's `photos.orientation` value (see
     `_exif_orientation_matrix`); 1 (the default) means no correction.
+    `source` is the JobItem's own source dict (checksum / photo id, when the
+    item came from Tropy) — when present, its identity fields are recorded in
+    the raw_ocr sidecar JSON so a future resume can tell two photos that
+    collide on the same output stem apart instead of silently reusing one
+    photo's text for another. Absent (a plain, non-Tropy file), no identity
+    fields are written at all — the sidecar looks exactly as it always has.
     """
     path = Path(input_path).resolve()
     if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
@@ -440,6 +464,7 @@ def perform(
     }
     if guard_result is not None:
         data["guard"] = guard_result.to_dict()
+    data.update(_source_identity_fields(source))
 
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)

@@ -87,6 +87,54 @@ def test_ocr_stage_writes_files(mock_get_client, tmp_path):
 
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
+def test_ocr_stage_records_source_identity_in_sidecar(mock_get_client, tmp_path):
+    """When `source` carries a checksum and/or photo id (a Tropy-sourced
+    photo), the raw_ocr sidecar records it — this is what lets a later
+    resume tell two photos with a colliding stem apart instead of silently
+    reusing one photo's text for another."""
+    mock_client = MagicMock()
+    mock_client.chat.return_value = _mock_backend_response("Hello from OCR")
+    mock_get_client.return_value = mock_client
+
+    from artifice_ocr.stages import ocr
+
+    test_image = tmp_path / "doc.png"
+    test_image.write_bytes(b"\x89PNG fake")
+    out_dir = tmp_path / "output"
+
+    ocr.perform(
+        str(test_image),
+        output_dir=str(out_dir),
+        source={"checksum": "abc123", "photo_id": 7, "origin": "tropy-live"},
+    )
+
+    data = json.loads((out_dir / "raw_ocr" / "json" / "doc.json").read_text(encoding="utf-8"))
+    assert data["checksum"] == "abc123"
+    assert data["photo_id"] == 7
+
+
+@patch("artifice_ocr.stages.ocr._get_backend_client")
+def test_ocr_stage_without_source_omits_identity_fields(mock_get_client, tmp_path):
+    """No `source` (a plain non-Tropy file) -> no identity fields at all,
+    not even empty ones — this is the shape every existing sidecar has."""
+    mock_client = MagicMock()
+    mock_client.chat.return_value = _mock_backend_response("Hello from OCR")
+    mock_get_client.return_value = mock_client
+
+    from artifice_ocr.stages import ocr
+
+    test_image = tmp_path / "doc.png"
+    test_image.write_bytes(b"\x89PNG fake")
+    out_dir = tmp_path / "output"
+
+    ocr.perform(str(test_image), output_dir=str(out_dir))
+
+    data = json.loads((out_dir / "raw_ocr" / "json" / "doc.json").read_text(encoding="utf-8"))
+    assert "checksum" not in data
+    assert "photo_id" not in data
+
+
+@patch("artifice_ocr.stages.ocr._get_backend_client")
 def test_ocr_stage_rejects_unsupported_type(mock_get_client, tmp_path):
     from artifice_ocr.stages import ocr
 

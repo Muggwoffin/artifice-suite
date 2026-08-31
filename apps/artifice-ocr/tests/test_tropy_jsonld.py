@@ -22,11 +22,13 @@ from artifice_ocr.tropy_jsonld import (
     TropyImportError,
     _note_html,
     build_export,
+    disambiguate_stems,
     export_json,
     load_export,
     page_stem,
     photos_to_job_items,
     safe_name,
+    stem_discriminator,
     write_manifest,
 )
 
@@ -1086,6 +1088,53 @@ def test_safe_name_filters_unsafe_chars():
 
 
 # --------------------------------------------------------------------------- #
+# stem_discriminator / disambiguate_stems
+# --------------------------------------------------------------------------- #
+
+
+def test_stem_discriminator_prefers_checksum():
+    assert stem_discriminator(checksum="abcdefghijklmnop") == "abcdefghij"  # first 10 chars
+
+
+def test_stem_discriminator_falls_back_to_photo_id_without_checksum():
+    assert stem_discriminator(checksum="", photo_id=42) == "id42"
+
+
+def test_stem_discriminator_falls_back_to_path_hash_last():
+    disc = stem_discriminator(checksum="", photo_id=None, path_rel="a/b/page1.jpg")
+    assert disc  # non-empty
+    assert disc == stem_discriminator(checksum="", photo_id=None, path_rel="a/b/page1.jpg")
+    assert disc != stem_discriminator(checksum="", photo_id=None, path_rel="c/d/page1.jpg")
+
+
+def test_disambiguate_stems_leaves_first_occurrence_untouched():
+    stems = ["Item/page1", "Item/page1", "Item/page2"]
+    discs = ["chk1", "chk2", "chk3"]
+    result = disambiguate_stems(stems, discs)
+    assert result[0] == "Item/page1"
+    assert result[1] != "Item/page1"
+    assert result[1].startswith("Item/page1")
+    assert result[2] == "Item/page2"
+
+
+def test_disambiguate_stems_is_stable_not_positional():
+    """The discriminator must come from the photo's own stable identity, not
+    from where it sits in the batch — the same (stem, discriminator) pairs
+    in a different order must still resolve to the same final stems."""
+    stems_a = ["X/p", "X/p"]
+    discs_a = ["aaa", "bbb"]
+    stems_b = ["X/p", "X/p"]
+    discs_b = ["bbb", "aaa"]
+    result_a = disambiguate_stems(stems_a, discs_a)
+    result_b = disambiguate_stems(stems_b, discs_b)
+    # First occurrence always wins the bare stem regardless of which
+    # discriminator arrives first; the *set* of final stems is the same.
+    assert result_a[0] == result_b[0] == "X/p"
+    assert set(result_a) == {"X/p", "X/p__bbb"}
+    assert set(result_b) == {"X/p", "X/p__aaa"}
+
+
+# --------------------------------------------------------------------------- #
 # photos_to_job_items
 # --------------------------------------------------------------------------- #
 
@@ -1099,6 +1148,95 @@ def test_pages_to_job_items_carry_origin(tmp_path):
     assert items[0].source["item_title"] == "Test Item"
     assert items[0].source["tropy_group"] is not None
     assert items[0].source["photo_path_rel"] == "a.png"
+
+
+def test_colliding_stems_get_a_stable_discriminator_on_the_second_photo(tmp_path):
+    """Two different non-PDF photos sharing an item title and filename
+    collide on `page_stem` (it only disambiguates PDF pages). The batch
+    mapper must give the SECOND photo a distinct stem while leaving the
+    FIRST byte-identical to plain `page_stem` output — that's the contract
+    that keeps every already-OCR'd file on disk still matching on resume.
+    """
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Letters",
+                "photo": [
+                    {
+                        "@type": "Photo",
+                        "path": "a/page1.jpg",
+                        "checksum": "chk1",
+                        "mimetype": "image/jpeg",
+                    },
+                ],
+            },
+            {
+                "@type": "Item",
+                "title": "Letters",
+                "photo": [
+                    {
+                        "@type": "Photo",
+                        "path": "b/page1.jpg",
+                        "checksum": "chk2",
+                        "mimetype": "image/jpeg",
+                    },
+                ],
+            },
+        ]
+    }
+    f = tmp_path / "e.json"
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    (tmp_path / "a" / "page1.jpg").write_bytes(b"x")
+    (tmp_path / "b" / "page1.jpg").write_bytes(b"y")
+    _make_export(f, export)
+    preview = load_export(f)
+
+    items = photos_to_job_items(preview)
+    assert len(items) == 2
+
+    expected_first = page_stem("Letters", "page1.jpg", None, "image/jpeg", Path("page1.jpg"))
+    assert expected_first == "Letters/page1"
+    assert items[0].output_stem == expected_first  # regression guard: byte-identical
+    assert items[1].output_stem != items[0].output_stem
+    assert items[1].output_stem.startswith(expected_first)
+
+
+def test_non_colliding_stems_are_left_untouched(tmp_path):
+    """No collision in the batch -> stems pass through exactly as `page_stem`
+    would produce them, for every photo, not just the first."""
+    export = {
+        "@graph": [
+            {
+                "@type": "Item",
+                "title": "Diary",
+                "photo": [
+                    {
+                        "@type": "Photo",
+                        "path": "one.jpg",
+                        "checksum": "c1",
+                        "mimetype": "image/jpeg",
+                    },
+                    {
+                        "@type": "Photo",
+                        "path": "two.jpg",
+                        "checksum": "c2",
+                        "mimetype": "image/jpeg",
+                    },
+                ],
+            },
+        ]
+    }
+    f = tmp_path / "e.json"
+    (tmp_path / "one.jpg").write_bytes(b"x")
+    (tmp_path / "two.jpg").write_bytes(b"y")
+    _make_export(f, export)
+    preview = load_export(f)
+
+    items = photos_to_job_items(preview)
+    assert items[0].output_stem == "Diary/one"
+    assert items[1].output_stem == "Diary/two"
 
 
 def test_pages_to_job_items_can_filter_by_group(tmp_path):
