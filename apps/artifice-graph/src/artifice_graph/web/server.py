@@ -129,7 +129,7 @@ async def get_ui_preferences() -> dict[str, object]:
 
 @app.patch("/api/ui/preferences")
 async def patch_ui_preferences(
-    patch: dict[str, object] = Body(...),
+    patch: dict[str, object] = Body(...),  # noqa: B008
 ) -> dict[str, object]:
     """Validate and persist a partial shared UI preference update."""
     return update_preferences(patch)
