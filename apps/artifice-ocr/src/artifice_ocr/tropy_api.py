@@ -167,9 +167,7 @@ class TropyAPIClient:
             raise TropyAPIError("Tropy's Developer API changed; preview again")
 
     def photo(self, photo_id: int) -> dict | None:
-        response = self._request(
-            "GET", f"/project/current/photos/{photo_id}"
-        )
+        response = self._request("GET", f"/project/current/photos/{photo_id}")
         if response.status_code == 404:
             return None
         if response.status_code != 200:

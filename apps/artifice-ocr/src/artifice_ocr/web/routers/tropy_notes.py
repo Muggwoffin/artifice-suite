@@ -61,9 +61,10 @@ def _language(value: str | None) -> str:
 
 
 def _same_path(left: Path, right: Path) -> bool:
-    return str(left.resolve()).replace("\\", "/").casefold() == str(right.resolve()).replace(
-        "\\", "/"
-    ).casefold()
+    return (
+        str(left.resolve()).replace("\\", "/").casefold()
+        == str(right.resolve()).replace("\\", "/").casefold()
+    )
 
 
 def _queue_entries(req: TropyNotesRequest) -> tuple[list[NoteEntry], int]:
