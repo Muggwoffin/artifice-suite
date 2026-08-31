@@ -6,7 +6,7 @@
 {% extends "base.html" %}
 {% block title %}ArtificeGraph — Library{% endblock %}
 
-{% block head %}
+{% block app_head %}
 <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css?v={{ asset_v }}">
   <style>
   .leaflet-popup-content-wrapper, .leaflet-popup-tip {
@@ -229,7 +229,7 @@
 </main>
 {% endblock %}
 
-{% block scripts %}
+{% block app_scripts %}
 <script src="/static/vendor/leaflet/leaflet.js?v={{ asset_v }}"></script>
 <script src="/static/library.js?v={{ asset_v }}"></script>
 {% endblock %}

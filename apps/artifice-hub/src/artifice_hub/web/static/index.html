@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- SPDX-FileCopyrightText: 2026 Maurice Casey -->
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
-<html lang="en">
+<html lang="en" data-app="artifice-hub" data-theme="system">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,43 +10,64 @@
 <link rel="apple-touch-icon" href="/shared/logos/artifice-main.png">
 <link rel="stylesheet" href="/shared/tokens.css">
 <link rel="stylesheet" href="/shared/fonts.css">
+<link rel="stylesheet" href="/shared/shell.css">
 <link rel="stylesheet" href="/static/hub.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to content</a>
 
-<div class="page">
-  <!-- ── Masthead ─────────────────────────────────────────────────────── -->
-  <header class="masthead pywebview-drag-region">
-    <span class="masthead-kicker">ARTIFICE SUITE &middot; LAUNCHER</span>
-    <h1 class="masthead-title">Artifice Hub</h1>
+<div class="app-shell">
+  <header class="shell-titlebar pywebview-drag-region">
+    <a class="shell-brand pywebview-drag-region-exclude" href="#apps-view">Artifice <strong>Hub</strong></a>
+    <span class="shell-context">Suite control centre</span>
+    <div class="shell-title-actions pywebview-drag-region-exclude">
+      <button class="shell-status" type="button" data-hub-view-target="models"><span class="status-dot" aria-hidden="true"></span><span data-model-label>Checking models</span></button>
+      <button class="shell-icon-button" type="button" data-shell-action="theme" aria-label="Change colour theme">◐</button>
+      <button class="shell-icon-button" type="button" data-shell-action="suite" aria-label="Switch Artifice application" aria-expanded="false">✦</button>
+    </div>
     <div class="window-controls">
       <button class="window-control window-minimize" aria-label="Minimize">—</button>
       <button class="window-control window-maximize" aria-label="Maximize">□</button>
       <button class="window-control window-close" aria-label="Close">×</button>
     </div>
-    <hr class="masthead-rule">
   </header>
 
-  <!-- ── Dashboard ────────────────────────────────────────────────────── -->
-  <main id="main-content">
-    <section class="app-grid" id="app-grid">
-      <!-- Populated by hub.js -->
-    </section>
+  <aside class="shell-nav" aria-label="Primary">
+    <p class="suite-nav-label">Control centre</p>
+    <a class="suite-nav-item is-active" href="#apps-view" data-hub-view="apps"><span aria-hidden="true">▦</span> Apps</a>
+    <a class="suite-nav-item" href="#models-view" data-hub-view="models"><span aria-hidden="true">◇</span> Models</a>
+    <a class="suite-nav-item" href="#activity-view" data-hub-view="activity"><span aria-hidden="true">↻</span> Activity</a>
+    <a class="suite-nav-item" href="#about-view" data-hub-view="about"><span aria-hidden="true">i</span> About</a>
+    <p class="suite-version">Hub v<span id="hub-version">—</span><br>uv <span id="hub-uv">—</span></p>
+  </aside>
 
-    <!-- ── Job progress ────────────────────────────────────────────── -->
-    <section class="job-section" id="job-section" aria-live="polite">
-      <!-- Populated by hub.js when a job is active -->
+  <main class="shell-workspace" id="main-content">
+    <section class="hub-view is-active" id="apps-view" data-view="apps">
+      <header class="workspace-heading"><div><p class="workspace-kicker">Your research tools</p><h1>Apps</h1><p>Install, update, and open each specialist workspace.</p></div><span class="status-chip status-installed">Local first</span></header>
+      <section class="app-grid" id="app-grid" aria-live="polite"></section>
+    </section>
+    <section class="hub-view" id="models-view" data-view="models" hidden>
+      <header class="workspace-heading"><div><p class="workspace-kicker">Bring your own model</p><h1>Models</h1><p>Model recommendations and role assignments are available from each installed app.</p></div></header>
+      <div class="empty-state"><span class="empty-state-mark" aria-hidden="true">◇</span><h2>Models stay close to their work</h2><p>Choose Model settings when launching an app to inspect engine health, download recommendations, and assign models by role.</p></div>
+    </section>
+    <section class="hub-view" id="activity-view" data-view="activity" hidden>
+      <header class="workspace-heading"><div><p class="workspace-kicker">Downloads and updates</p><h1>Activity</h1><p>Follow installations, upgrades, and model downloads.</p></div></header>
+      <section class="job-section" id="job-section" aria-live="polite"><div class="empty-state" id="activity-empty"><h2>No active work</h2><p>Installation and update progress will appear here.</p></div></section>
+    </section>
+    <section class="hub-view" id="about-view" data-view="about" hidden>
+      <header class="workspace-heading"><div><p class="workspace-kicker">One suite, four specialist tools</p><h1>About Artifice</h1></div></header>
+      <article class="about-sheet"><p>Artifice is a local-first suite for historians and humanities researchers. Hub coordinates installation, launch, and model readiness while each app keeps ownership of its own documents and specialist workflow.</p><dl><div><dt>Privacy</dt><dd>Work remains on your computer unless you explicitly configure a cloud model.</dd></div><div><dt>Interface</dt><dd>Paper-and-ink workspaces designed for sustained reading and review.</dd></div><div><dt>Architecture</dt><dd>Independent apps, connected by secure handoffs and a unified identity.</dd></div></dl></article>
     </section>
   </main>
 
-  <!-- ── Footer ───────────────────────────────────────────────────────── -->
-  <footer class="footer">
-    <hr class="rule-fade">
-    <p class="footer-text">Artifice Hub v<span id="hub-version">—</span> &middot; uv <span id="hub-uv">—</span></p>
-  </footer>
+  <aside class="shell-inspector" aria-label="Suite status">
+    <p class="suite-nav-label">System</p>
+    <div class="inspector-stat"><span>Package manager</span><strong id="uv-status-detail">Checking…</strong></div>
+    <div class="inspector-note"><strong>Independent by design</strong><p>Launching a tool opens its own focused workspace. Hub never stores your research documents.</p></div>
+  </aside>
   <div class="resize-grip"></div>
 </div>
+<div class="suite-popover" data-suite-popover hidden><strong>Artifice suite</strong><div data-suite-apps></div></div>
 
 <!-- ── Install Modal (Transcribe ASR variant picker) ────────────────── -->
 <dialog class="modal-overlay" id="install-modal">
@@ -139,6 +160,7 @@
   </div>
 </dialog>
 
+<script src="/shared/shell.js"></script>
 <script src="/static/hub.js"></script>
 </body>
 </html>

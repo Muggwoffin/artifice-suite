@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Body, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -86,9 +86,30 @@ async def health():
 import importlib.resources
 
 import shared_ui
+from shared_ui.suite import get_preferences, suite_apps, update_preferences
 
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
+
+@app.get("/api/suite/apps")
+async def get_suite_apps() -> list[dict[str, object]]:
+    """Return the shared launcher model for the suite switcher."""
+    return suite_apps()
+
+
+@app.get("/api/ui/preferences")
+async def get_ui_preferences() -> dict[str, object]:
+    """Return non-sensitive preferences shared by every Artifice app."""
+    return get_preferences()
+
+
+@app.patch("/api/ui/preferences")
+async def patch_ui_preferences(
+    patch: dict[str, object] = Body(...),
+) -> dict[str, object]:
+    """Validate and persist a partial shared UI preference update."""
+    return update_preferences(patch)
 
 # ── Jinja2 — PackageLoader resolves through importlib (freeze-safe), and
 # ChoiceLoader lets templates include shared-ui’s masthead partial.
@@ -104,15 +125,20 @@ _JINJA = Environment(
 
 # ── Masthead context for shared _masthead.html partial ──────────────────
 _TRANSCRIBE_NAV_ITEMS = [
-    {"href": "/", "label": "Transcribe", "key": "transcribe"},
-    {"href": "/about", "label": "About", "key": "about"},
+    {"href": "/?view=transcribe", "label": "Jobs", "key": "jobs"},
+    {"href": "/?view=library", "label": "Transcripts", "key": "transcripts"},
+    {"href": "/?view=dictionary", "label": "People & dictionary", "key": "people"},
+    {"href": "/?view=settings", "label": "Settings", "key": "settings"},
 ]
 
 _MASTHEAD_CTX = {
+    "app_slug": "transcribe",
     "brand_accent": "Transcribe",
-    "brand_tagline": "speech-to-text \u00b7 diarization \u00b7 oral history",
+    "page_title": "Oral history workspace",
+    "document_context": "Local recordings",
     "nav_items": _TRANSCRIBE_NAV_ITEMS,
-    "show_theme_toggle": True,
+    "show_inspector": False,
+    "show_activity": True,
 }
 
 
@@ -143,12 +169,20 @@ def _render(template_name: str, **extra) -> str:
 
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
-    return HTMLResponse(_render("index.html", active_tab="transcribe"))
+    return HTMLResponse(_render("index.html", active_tab="jobs"))
 
 
 @app.get("/about", response_class=HTMLResponse)
 async def about() -> HTMLResponse:
-    return HTMLResponse(_render("about.html", active_tab="about"))
+    return HTMLResponse(
+        _render(
+            "about.html",
+            active_tab="settings",
+            page_title="About ArtificeTranscribe",
+            document_context=None,
+            show_activity=False,
+        )
+    )
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

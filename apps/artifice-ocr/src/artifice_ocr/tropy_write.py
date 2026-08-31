@@ -51,8 +51,6 @@ import json
 import os
 import shutil
 import sqlite3
-import subprocess
-import sys
 from collections.abc import Iterable
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -140,23 +138,15 @@ class WriteReport:
 
 
 def _tropy_is_running() -> bool:
-    """Best-effort check for a live Tropy process."""
-    try:
-        if sys.platform == "win32":
-            result = subprocess.run(
-                ["tasklist", "/FI", "IMAGENAME eq Tropy.exe", "/NH"],
-                capture_output=True,
-                text=True,
-                timeout=15,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-            )
-            return "Tropy.exe" in result.stdout
-        result = subprocess.run(
-            ["pgrep", "-i", "tropy"], capture_output=True, text=True, timeout=15
-        )
-        return result.returncode == 0
-    except (OSError, subprocess.SubprocessError):
-        return False  # can't tell; the lock check below is the backstop
+    """Compatibility hook; process-list probing is intentionally disabled.
+
+    Enumerating the host process table is both unreliable and resembles a
+    defense-evasion pattern to endpoint protection. The SQLite
+    ``BEGIN IMMEDIATE`` probe in :meth:`TropyWriter.blockers` is the reliable,
+    application-specific concurrency check. Tests and downstream callers may
+    still override this hook to model an external blocker.
+    """
+    return False
 
 
 def _prosemirror_state(text: str) -> str:

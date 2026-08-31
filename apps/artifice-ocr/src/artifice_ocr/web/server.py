@@ -276,7 +276,7 @@ async def reveal_file(request: Request) -> dict:
 
     Uses platform-specific commands:
     - macOS: ``open -R <path>``
-    - Windows: ``explorer /select,<path>``
+    - Windows: opens the containing folder with the standard file association
     - Linux: ``xdg-open <parent_dir>``
     """
     import platform
@@ -298,7 +298,9 @@ async def reveal_file(request: Request) -> dict:
         if system == "Darwin":
             subprocess.Popen(["open", "-R", "--", str(p)])
         elif system == "Windows":
-            subprocess.Popen(["explorer", f"/select,{p}"])
+            # ``os.startfile`` delegates to the user's configured file
+            # manager without constructing a child-process command line.
+            os.startfile(str(p.parent))  # type: ignore[attr-defined]
         else:
             subprocess.Popen(["xdg-open", str(p.parent)])
         return {"ok": True}

@@ -81,7 +81,11 @@
             toggle.textContent = shown ? "Hide Log" : "Show Log";
         });
 
+        var empty = $("#activity-empty");
+        if (empty) empty.remove();
         elJobSection.appendChild(card);
+        if (window.ArtificeShell) window.ArtificeShell.publishActivity({ id: jobId, label: actionLabel + " " + name, state: "pending", progress: 10, detail: "In progress" });
+        showView("activity");
         streamJob(jobId, logEl);
     }
 
@@ -208,6 +212,8 @@
             apps = data.apps;
             renderApps();
             elHubUv.textContent = uvFound ? "found" : "not found";
+            var detail = $("#uv-status-detail");
+            if (detail) detail.textContent = uvFound ? "uv ready" : "uv unavailable";
         }).catch(function (e) {
             console.error("Failed to load apps:", e);
             elGrid.innerHTML = '<p class="footer-text" style="text-align:center;padding:var(--space-9) 0;">Could not connect to the Hub server.</p>';
@@ -231,6 +237,26 @@
             console.warn("Failed to load Hub version info:", err);
         });
     }
+
+    function showView(name) {
+        var views = $$('[data-view]');
+        var links = $$('[data-hub-view]');
+        for (var i = 0; i < views.length; i++) {
+            var active = views[i].getAttribute('data-view') === name;
+            views[i].hidden = !active;
+            views[i].classList.toggle('is-active', active);
+        }
+        for (var j = 0; j < links.length; j++) {
+            links[j].classList.toggle('is-active', links[j].getAttribute('data-hub-view') === name);
+        }
+    }
+
+    $$("[data-hub-view]").forEach(function (link) {
+        link.addEventListener("click", function () { showView(link.getAttribute("data-hub-view")); });
+    });
+    $$("[data-hub-view-target]").forEach(function (button) {
+        button.addEventListener("click", function () { showView(button.getAttribute("data-hub-view-target")); });
+    });
 
     /* ── Transcribe modal ───────────────────────────────────────────── */
     function openTranscribeModal(slug) {
@@ -395,6 +421,7 @@
                 if (statusEl) statusEl.textContent = "COMPLETED";
                 if (progressTrack) progressTrack.hidden = true;
                 loadApps(); // refresh dashboard
+                if (window.ArtificeShell) window.ArtificeShell.publishActivity({ id: jobId, label: statusEl ? statusEl.closest('.job-card').querySelector('.job-title').textContent : 'Hub job', state: 'completed', progress: 100, detail: 'Completed' });
             } else {
                 logEl.textContent += "\n[FAILED: " + (data.error_detail || "unknown error") + "]\n";
                 if (statusEl) {
@@ -402,6 +429,7 @@
                     statusEl.style.color = "var(--error)";
                 }
                 if (progressTrack) progressTrack.hidden = true;
+                if (window.ArtificeShell) window.ArtificeShell.publishActivity({ id: jobId, label: 'Hub job', state: 'failed', progress: 100, detail: data.error_detail || 'Failed' });
             }
             logEl.scrollTop = logEl.scrollHeight;
         });
@@ -415,6 +443,7 @@
                 statusEl.style.color = "var(--error)";
             }
             if (progressTrack) progressTrack.hidden = true;
+            if (window.ArtificeShell) window.ArtificeShell.publishActivity({ id: jobId, label: 'Hub job', state: 'failed', progress: 100, detail: 'Connection lost' });
             logEl.scrollTop = logEl.scrollHeight;
         };
     }

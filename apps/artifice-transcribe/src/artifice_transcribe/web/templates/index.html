@@ -9,10 +9,10 @@
 {% block content %}
 
   <nav class="tabs">
-    <button class="tab active" data-tab="transcribe">Transcribe</button>
-    <button class="tab" data-tab="library">Library</button>
-    <button class="tab" data-tab="dictionary">Dictionary</button>
-    <button class="tab" data-tab="settings">Settings &middot; Models</button>
+    <button class="tab active" data-tab="transcribe">Jobs</button>
+    <button class="tab" data-tab="library">Transcripts</button>
+    <button class="tab" data-tab="dictionary">People &amp; dictionary</button>
+    <button class="tab" data-tab="settings">Settings</button>
   </nav>
 
   <div class="panels">
@@ -342,10 +342,10 @@
         </div>
       </div>
 
-      <!-- AI Assistant Card (BYOM) -->
+      <!-- Text tools configuration (BYOM) -->
       <div class="card" style="margin-bottom:1rem;">
         <div class="card-head">
-          <h2>AI Assistant (BYOM)</h2>
+          <h2>Text tools (BYOM)</h2>
           <span class="dim">Post-processing with OpenAI-compatible endpoints</span>
         </div>
         <div style="padding:1rem 1.2rem;">
@@ -423,12 +423,12 @@
     </div>
   </div>
 
-  <!-- AI Assistant Modal -->
+  <!-- Text tools result modal -->
   <div class="modal-overlay hidden" id="ai-modal">
     <div class="modal">
       <div class="card">
         <div class="card-head">
-          <h2 id="ai-modal-title">AI Assistant</h2>
+          <h2 id="ai-modal-title">Text tools</h2>
           <div style="display:flex;gap:0.4rem;align-items:center;">
             <span class="dim" id="ai-modal-status"></span>
             <button class="btn tiny" id="btn-ai-close">&times;</button>
@@ -439,7 +439,7 @@
             <button class="btn" id="btn-ai-copy" type="button">Copy</button>
             <button class="btn" id="btn-ai-download" type="button">Download</button>
           </div>
-          <div id="ai-modal-content" style="max-height:50vh;overflow-y:auto;padding:0.5rem;background:var(--paper-recessed);border-radius:var(--radius-sm);white-space:pre-wrap;font-size:0.9rem;">Waiting for AI response...</div>
+          <div id="ai-modal-content" style="max-height:50vh;overflow-y:auto;padding:0.5rem;background:var(--paper-recessed);border-radius:var(--radius-sm);white-space:pre-wrap;font-size:0.9rem;">Waiting for the text model response...</div>
         </div>
       </div>
     </div>

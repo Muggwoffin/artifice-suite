@@ -246,6 +246,10 @@
         if (tab.dataset.tab === 'library') loadLibrary();
       });
     });
+
+    const requested = new URLSearchParams(window.location.search).get('view');
+    const requestedTab = document.querySelector(`.tab[data-tab="${requested}"]`);
+    if (requestedTab) requestedTab.click();
   }
 
   // ----------------------------------------------------------------- theme

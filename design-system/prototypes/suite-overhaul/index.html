@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Artifice suite overhaul prototype</title><link rel="stylesheet" href="prototype.css"></head>
+<body>
+<a class="skip" href="#main">Skip to workspace</a>
+<div class="shell">
+  <header><button class="icon menu" data-action="nav" aria-label="Open navigation">☰</button><button class="switcher" data-action="switcher" aria-expanded="false"><span class="mark">✦</span><span>Artifice <strong id="product">Hub</strong></span><span>⌄</span></button><span class="document" id="document">Suite control centre</span><button class="model"><i></i> Model ready</button><button class="icon" data-action="theme" aria-label="Toggle theme">◐</button><div class="windows"><button>−</button><button>□</button><button>×</button></div></header>
+  <aside class="nav" id="nav"><p id="sectionLabel">Workspace</p><nav id="navItems"></nav><footer><button data-action="activity">Activity <b id="activityCount">2</b></button><button>Settings</button></footer></aside>
+  <main id="main" tabindex="-1"></main>
+  <aside class="inspector" id="inspector"></aside>
+  <section class="activity" id="activity" aria-live="polite"><div><b>Installing Graph 0.3.0</b><span class="progress"><i style="width:72%"></i></span><small>72%</small></div><div><b>Whisper model</b><span class="progress"><i style="width:100%"></i></span><small>Ready</small></div></section>
+</div>
+<div class="app-menu" id="appMenu" hidden><p>Artifice suite</p><button data-app="hub"><i class="hub"></i><span>Hub<small>Control centre</small></span></button><button data-app="ocr"><i class="ocr"></i><span>OCR<small>Document recognition</small></span></button><button data-app="draft"><i class="draft"></i><span>Draft<small>Editorial review</small></span></button><button data-app="transcribe"><i class="transcribe"></i><span>Transcribe<small>Oral history</small></span></button><button data-app="graph"><i class="graph"></i><span>Graph<small>Knowledge extraction</small></span></button></div>
+<script src="prototype.js"></script></body></html>

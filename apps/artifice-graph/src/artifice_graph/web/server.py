@@ -19,7 +19,7 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import Body, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -109,9 +109,30 @@ _jinja = Environment(
 
 # ── Shared design tokens (resolved from installed shared-ui package) ───────
 import shared_ui
+from shared_ui.suite import get_preferences, suite_apps, update_preferences
 
 _SHARED_UI = importlib.resources.files(shared_ui) / "assets"
 app.mount("/shared", StaticFiles(directory=str(_SHARED_UI)), name="shared")
+
+
+@app.get("/api/suite/apps")
+async def get_suite_apps() -> list[dict[str, object]]:
+    """Return the shared launcher model for the suite switcher."""
+    return suite_apps()
+
+
+@app.get("/api/ui/preferences")
+async def get_ui_preferences() -> dict[str, object]:
+    """Return non-sensitive preferences shared by every Artifice app."""
+    return get_preferences()
+
+
+@app.patch("/api/ui/preferences")
+async def patch_ui_preferences(
+    patch: dict[str, object] = Body(...),
+) -> dict[str, object]:
+    """Validate and persist a partial shared UI preference update."""
+    return update_preferences(patch)
 
 
 # --------------------------------------------------------------------------- #
@@ -1411,6 +1432,17 @@ def _render(template_name: str, **extra) -> str:
     chunks = [TextChunk.model_validate(d) for d in store.load("chunks.json")]
 
     ctx = {
+        "app_slug": "graph",
+        "brand_accent": "Graph",
+        "page_title": "Knowledge graph workspace",
+        "document_context": "Local graph collection",
+        "nav_items": [
+            {"key": "pipeline", "label": "Pipeline", "href": "/"},
+            {"key": "library", "label": "Library", "href": "/library"},
+            {"key": "settings", "label": "Settings", "href": "/settings"},
+        ],
+        "show_inspector": template_name == "index.html",
+        "show_activity": template_name == "index.html",
         "active_tab": template_name.replace(".html", "").replace("index", "pipeline"),
         "asset_v": int(time.time()),
         "config": _redact_config(cfg),
@@ -1440,6 +1472,18 @@ async def library():
 @app.get("/about", response_class=HTMLResponse)
 async def about():
     return _render("about.html", active_tab="about")
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page():
+    return _render(
+        "about.html",
+        active_tab="settings",
+        page_title="Settings & application information",
+        document_context=None,
+        show_inspector=False,
+        show_activity=False,
+    )
 
 
 @app.post("/api/native/pick-file")

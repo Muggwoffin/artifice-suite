@@ -191,14 +191,9 @@ _WORLD_READABLE_SIDS = frozenset(
 def _run_powershell(cmd: str) -> subprocess.CompletedProcess[str]:
     """Run *cmd* under Windows PowerShell, falling back to PowerShell 7.
 
-    Three environment defences, each covering a different observed or
-    plausible reason a bare ``powershell -Command`` fails to reach ``Get-Acl``:
+    Two environment defences cover different reasons a normal PowerShell
+    invocation may fail to reach ``Get-Acl``:
 
-    - **-ExecutionPolicy Bypass** — under Restricted / AllSigned, loading the
-      Microsoft.PowerShell.Security module is refused.  Execution policy
-      guards untrusted *script files* and is documented by Microsoft as not a
-      security boundary; the scope here is one inline command in one child
-      process, so this does not weaken the ACL check.
     - **PSModulePath stripped** — the variable is inherited from the parent
       process, and a value aimed at a different PowerShell edition (as CI
       runners set) leaves Windows PowerShell unable to find its own bundled
@@ -222,8 +217,6 @@ def _run_powershell(cmd: str) -> subprocess.CompletedProcess[str]:
                     exe,
                     "-NoProfile",
                     "-NonInteractive",
-                    "-ExecutionPolicy",
-                    "Bypass",
                     "-Command",
                     cmd,
                 ],
@@ -273,9 +266,9 @@ def _get_acl_via_powershell(path: Path) -> list[dict[str, object]]:
         # "the module could not be loaded" — and Get-Acl then exits 1, which
         # made every ACL verification fail and stopped the apps saving
         # settings at all.  An explicit Import-Module is not redundant with
-        # -ExecutionPolicy below: they address different causes (a blocked
-        # load versus a PSModulePath that does not reach the module), and
-        # only together do they cover both.  SilentlyContinue because a
+        # Explicit module loading is independent of PSModulePath; the
+        # latter is cleared above so Windows PowerShell can rebuild its
+        # default search path. SilentlyContinue because a
         # session that already has the module loaded is fine.
         "Import-Module Microsoft.PowerShell.Security -ErrorAction SilentlyContinue; "
         "Get-Acl -LiteralPath '" + ps_path + "' | "

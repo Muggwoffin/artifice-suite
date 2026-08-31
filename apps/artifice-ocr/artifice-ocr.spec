@@ -77,14 +77,6 @@ HIDDEN_IMPORTS = [
     # pywebview — dynamically loads platform backends at runtime;
     # PyInstaller's static analysis cannot discover these.
     "webview",
-    "webview.platforms.winforms",
-    "webview.platforms.win32",
-    "webview.platforms.gtk",
-    "webview.platforms.cocoa",
-    "webview.platforms.qt",
-    "webview.platforms.cef",
-    "webview.platforms.mshtml",
-    "webview.platforms.edgechromium",
     "webview.dom",
     "webview.dom.element",
     "webview.dom.event",
@@ -102,11 +94,26 @@ HIDDEN_IMPORTS = [
     "webview.models",
     "webview.errors",
     "webview._version",
-    # pythonnet — the bridge pywebview uses to talk to
-    # WinForms / WebView2 on Windows.  Not used on Linux / macOS
-    # but harmless as a hidden import (PyInstaller ignores missing modules).
-    "clr",
 ]
+
+# Freeze only the pywebview backend for the target platform. The previous
+# spec pulled every backend (GTK, Qt, CEF, WinForms, WebView2 and Cocoa) and
+# pythonnet into every executable, producing a much larger and less
+# transparent binary. Core webview modules are discovered normally; these
+# are the platform modules whose imports are selected dynamically at runtime.
+if sys.platform == "win32":
+    HIDDEN_IMPORTS.extend(
+        [
+            "webview.platforms.winforms",
+            "webview.platforms.win32",
+            "webview.platforms.edgechromium",
+            "clr",
+        ]
+    )
+elif sys.platform == "darwin":
+    HIDDEN_IMPORTS.append("webview.platforms.cocoa")
+else:
+    HIDDEN_IMPORTS.append("webview.platforms.gtk")
 
 # ---------------------------------------------------------------------------
 # Data files — collect_data_files() picks up everything declared in
@@ -188,8 +195,20 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    console=True,          # user sees the server-startup banner
+    # UPX compression is disabled for Windows distributions. Packed Python
+    # bootloaders and compressed extension modules are a frequent source of
+    # Defender ML false positives, while an uncompressed onedir bundle is
+    # easier to inspect and sign.
+    upx=False,
+    # The webview app reports startup failures through its native dialog. A
+    # console-bearing GUI executable is unnecessary and looks like a launcher
+    # wrapper to endpoint heuristics.
+    console=False,
+    # Keep the standard least-privilege Windows manifest explicit. The app
+    # stores its data under the user's profile and never needs elevation or
+    # UIAccess; requesting either would be both unsafe and suspicious.
+    uac_admin=False,
+    uac_uiaccess=False,
     icon='../../packages/shared-ui/shared_ui/assets/logos/artifice-ocr.png',
 )
 
@@ -198,7 +217,7 @@ coll = COLLECT(
     a.binaries,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name=APP_NAME,
 )

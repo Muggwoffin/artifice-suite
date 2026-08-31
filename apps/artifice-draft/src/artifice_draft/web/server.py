@@ -52,6 +52,7 @@ from artifice_draft.style_guides.base import StyleGuide
 import importlib.resources
 import shared_ui
 from shared_ui.handoff import cleanup_expired, write_discovery
+from shared_ui.suite import get_preferences, suite_apps, update_preferences
 from shared_ui.path_validation import PathValidationError, sanitise_path_component
 from shared_ui.server_bootstrap import (
     ensure_std_streams,
@@ -106,15 +107,19 @@ _JINJA = Environment(
 
 # ── Masthead context for shared _masthead.html partial ──────────────────
 _DRAFT_NAV_ITEMS = [
-    {"href": "/", "label": "Editor", "key": "editor"},
-    {"href": "/about", "label": "About", "key": "about"},
+    {"href": "/#document-workspace", "label": "Document", "key": "document"},
+    {"href": "/#card-review", "label": "Review", "key": "review"},
+    {"href": "/#settings-workspace", "label": "Style guides", "key": "guides"},
+    {"href": "/#settings-workspace", "label": "Settings", "key": "settings"},
 ]
 
 _MASTHEAD_CTX = {
+    "app_slug": "artifice-draft",
     "brand_accent": "Draft",
-    "brand_tagline": "local-first \u00b7 tracked changes",
+    "page_title": "Document",
     "nav_items": _DRAFT_NAV_ITEMS,
-    "show_theme_toggle": True,
+    "show_inspector": True,
+    "show_activity": True,
 }
 
 app = FastAPI(title="ArtificeDraft")
@@ -201,6 +206,27 @@ class GuideSaveRequest(BaseModel):
 @app.get("/api/settings")
 def get_settings() -> dict:
     return serialize_settings(config_from_settings())
+
+
+@app.get("/api/suite/apps")
+def get_suite_apps() -> list[dict[str, Any]]:
+    return suite_apps()
+
+
+@app.get("/api/ui/preferences")
+def get_ui_preferences() -> dict[str, Any]:
+    return get_preferences()
+
+
+@app.patch("/api/ui/preferences")
+async def patch_ui_preferences(request: Request) -> dict[str, Any]:
+    try:
+        patch = await request.json()
+        if not isinstance(patch, dict):
+            raise ValueError("Preference patch must be an object")
+        return update_preferences(patch)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/settings")
@@ -510,12 +536,12 @@ def _render(template_name: str, **extra) -> str:
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> HTMLResponse:
-    return HTMLResponse(_render("index.html", active_tab="editor"))
+    return HTMLResponse(_render("index.html", active_tab="document", document_context=None))
 
 
 @app.get("/about", response_class=HTMLResponse)
 def about() -> HTMLResponse:
-    return HTMLResponse(_render("about.html", active_tab="about"))
+    return HTMLResponse(_render("about.html", active_tab="", page_title="About", show_inspector=False, show_activity=False))
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

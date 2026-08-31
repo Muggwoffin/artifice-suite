@@ -24,6 +24,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import shared_ui
+from shared_ui.suite import get_preferences, suite_apps, update_preferences
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -147,6 +148,31 @@ async def api_health():
         "version": __version__,
         "uv": uv_path,
     }
+
+
+@app.get("/api/suite/apps")
+async def api_suite_apps():
+    """Return loopback-safe suite switcher destinations."""
+    discovered = {item["slug"]: item for item in suite_apps()}
+    installed = {item["slug"]: item for item in (await api_apps())["apps"]}
+    for slug, item in discovered.items():
+        if slug in installed:
+            item["installed"] = installed[slug]["status"] != "not_installed"
+    return list(discovered.values())
+
+
+@app.get("/api/ui/preferences")
+async def api_ui_preferences():
+    return get_preferences()
+
+
+@app.patch("/api/ui/preferences")
+async def api_update_ui_preferences(request: Request):
+    try:
+        return update_preferences(await request.json())
+    except (TypeError, ValueError) as exc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/api/hardware")

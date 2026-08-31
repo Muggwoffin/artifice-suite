@@ -113,8 +113,8 @@ class TestUnblockFrozenBundle:
         sys.platform != "win32",
         reason="Zone.Identifier ADS is an NTFS/Windows-only concept",
     )
-    def test_unblock_strips_zone_identifier(self, tmp_path: Path) -> None:
-        """Files with a Zone.Identifier stream have it stripped."""
+    def test_unblock_does_not_modify_zone_identifier(self, tmp_path: Path) -> None:
+        """The compatibility hook never removes download-origin metadata."""
         dll_file = tmp_path / "Python.Runtime.dll"
         dll_file.write_text("fake dll content")
 
@@ -124,7 +124,7 @@ class TestUnblockFrozenBundle:
 
         _unblock_frozen_bundle(tmp_path)
 
-        assert not os.path.exists(zone_stream)
+        assert os.path.exists(zone_stream)
 
     @pytest.mark.skipif(
         sys.platform != "win32",

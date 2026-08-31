@@ -6,6 +6,7 @@
 
 from importlib import resources
 
-__all__ = ["ASSETS"]
+__all__ = ["ASSETS", "TEMPLATES"]
 
 ASSETS = resources.files(__name__) / "assets"
+TEMPLATES = resources.files(__name__) / "templates"
