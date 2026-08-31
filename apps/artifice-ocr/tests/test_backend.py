@@ -248,13 +248,21 @@ def test_check_lm_studio_unreachable_string_changed(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# OCR stage uses backend with correct Ollama → ollama_openai mapping
+# OCR stage uses the native Ollama backend, not ollama_openai
 # ---------------------------------------------------------------------------
 
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
-def test_ocr_stage_routes_ollama_to_ollama_openai(mock_get_backend, tmp_path):
-    """When ocr_backend is 'ollama', the OCR stage asks for ollama_openai."""
+def test_ocr_stage_routes_ollama_to_native_ollama(mock_get_backend, tmp_path):
+    """When ocr_backend is 'ollama', the OCR stage asks for the native
+    ``ollama`` client, not ``ollama_openai``.
+
+    This inverts the routing this test asserted before: ``ollama_openai``'s
+    ``extra_body`` num_ctx path is not honoured by Ollama's ``/v1`` endpoint
+    (measured on live Ollama 0.33.2 — see _backend.py), so OCR now goes
+    through the native backend, which converts the OpenAI-shaped vision
+    message itself (see TestNativeVisionMessages in test_backend.py).
+    """
     backend_name = None
 
     def capture_be_name(be_name):
@@ -279,7 +287,7 @@ def test_ocr_stage_routes_ollama_to_ollama_openai(mock_get_backend, tmp_path):
         config.reset()
         config.load_config()
 
-    assert backend_name == "ollama_openai", f"Expected ollama_openai, got {backend_name}"
+    assert backend_name == "ollama", f"Expected ollama, got {backend_name}"
 
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
@@ -674,6 +682,71 @@ def test_ollama_backend_validates_normalised_host(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# LM Studio URL normalisation — one /v1, never two
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "configured",
+    [
+        "http://localhost:1234",
+        "http://localhost:1234/",
+        "http://localhost:1234/v1",
+        "http://localhost:1234/v1/",
+    ],
+)
+def test_lm_studio_client_appends_single_v1(monkeypatch, configured):
+    """All four spellings of the LM Studio base URL yield exactly one ``/v1``.
+
+    Regression: if a stored URL is missing ``/v1`` or has a trailing slash,
+    the probe path (which defensively adds ``/v1``) and the chat path
+    (which uses _base_url() directly) diverge. A health check passes but
+    chat requests 404. The client must normalise the URL before appending
+    ``/v1`` to prevent doubling.
+    """
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(
+        config,
+        "_DEFAULTS",
+        {
+            **config._DEFAULTS,
+            "lm_studio_url": configured,
+        },
+    )
+    config.load_config()
+
+    captured = {}
+    with patch.object(
+        _backend, "OpenAI", side_effect=lambda **kw: captured.update(kw) or MagicMock()
+    ):
+        _backend.LMStudioBackend()._client()
+
+    assert captured["base_url"] == "http://localhost:1234/v1"
+
+
+def test_lm_studio_client_default_url_unchanged(monkeypatch):
+    """When lm_studio_url is unset, the default ``http://localhost:1234/v1`` is used."""
+    monkeypatch.setattr(config, "_config_cache", None)
+    monkeypatch.setattr(
+        config,
+        "_DEFAULTS",
+        {
+            **config._DEFAULTS,
+            "lm_studio_url": "",
+        },
+    )
+    config.load_config()
+
+    captured = {}
+    with patch.object(
+        _backend, "OpenAI", side_effect=lambda **kw: captured.update(kw) or MagicMock()
+    ):
+        _backend.LMStudioBackend()._client()
+
+    assert captured["base_url"] == "http://localhost:1234/v1"
+
+
+# ---------------------------------------------------------------------------
 # Provider 404 wrapping — the message must name what was called
 # ---------------------------------------------------------------------------
 
@@ -931,6 +1004,135 @@ class TestContextSize:
                 "however you requested 5000 tokens"
             )
         )
+
+
+# ---------------------------------------------------------------------------
+# Native-message conversion — OCR's OpenAI-shaped vision content on the
+# native Ollama backend, which is the only one that honours num_ctx.
+#
+# Measured on live Ollama 0.33.2: /v1/chat/completions silently ignores
+# num_ctx (both nested under extra_body.options and as a bare top-level
+# field) — a requested 2048 loaded as Ollama's 4096 default per /api/ps.
+# The native /api/chat with options.num_ctx honoured the request exactly
+# (8192 -> 8192, 2048 -> 2048). That is why OCR's vision call must go
+# through OllamaBackend, and why OllamaBackend must learn to read the
+# OpenAI-shaped ``image_url`` content blocks OCR sends.
+# ---------------------------------------------------------------------------
+
+
+class TestNativeVisionMessages:
+    """``_to_native_messages`` and its use inside ``OllamaBackend.chat``."""
+
+    def test_plain_string_content_passes_through_unchanged(self):
+        """The cleanup/translate path sends plain-string content; it must not
+        regress — no ``images`` key, and the string is untouched."""
+        messages = [{"role": "user", "content": "translate this"}]
+        native = _backend._to_native_messages(messages)
+        assert native == [{"role": "user", "content": "translate this"}]
+        assert "images" not in native[0]
+
+    def test_image_url_block_becomes_native_images_field(self):
+        """An OpenAI-shaped vision message becomes Ollama's native shape:
+        text blocks joined into ``content``, images collected into
+        ``images`` as bare base64 with the ``data:...;base64,`` prefix
+        stripped (Ollama's ``images`` field takes raw base64, not a URI)."""
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Transcribe this page."},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/png;base64,AAAABBBB"},
+                    },
+                ],
+            }
+        ]
+        native = _backend._to_native_messages(messages)
+        assert native == [
+            {
+                "role": "user",
+                "content": "Transcribe this page.",
+                "images": ["AAAABBBB"],
+            }
+        ]
+
+    def test_multiple_text_blocks_are_joined(self):
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "first"},
+                    {"type": "text", "text": "second"},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/png;base64,ZZZZ"},
+                    },
+                ],
+            }
+        ]
+        native = _backend._to_native_messages(messages)
+        assert native[0]["content"] == "first\nsecond"
+        assert native[0]["images"] == ["ZZZZ"]
+
+    def test_non_data_uri_image_url_raises_clear_error(self):
+        """An http(s) image URL is a real limitation, not something to send
+        to Ollama silently mangled — Ollama's ``images`` field only accepts
+        base64, not a URL it would fetch itself."""
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "x"},
+                    {"type": "image_url", "image_url": {"url": "https://example.com/a.png"}},
+                ],
+            }
+        ]
+        with pytest.raises(ValueError, match="data:"):
+            _backend._to_native_messages(messages)
+
+    def test_text_only_list_content_omits_images_key(self):
+        """No image blocks at all -> no ``images`` key, so a text-only list
+        payload stays byte-identical to what a dict-comparison would expect
+        of the old behaviour."""
+        messages = [{"role": "user", "content": [{"type": "text", "text": "just text"}]}]
+        native = _backend._to_native_messages(messages)
+        assert native == [{"role": "user", "content": "just text"}]
+        assert "images" not in native[0]
+
+    def test_ollama_backend_chat_converts_vision_message_and_sends_num_ctx(self, clean_config):
+        """End to end through ``OllamaBackend.chat``: the vision message is
+        converted to native shape *and* num_ctx still rides in options —
+        the two things the OpenAI-compatible path could not do together."""
+        config.apply_overrides({"context_size": 2048, "ollama_url": "http://localhost:11434"})
+        vision_messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "OCR this."},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/png;base64,QUJD"},
+                    },
+                ],
+            }
+        ]
+        with patch("artifice_ocr._backend.ollama.Client") as mock_client:
+            mock_client.return_value.chat.return_value = MagicMock()
+            _backend.OllamaBackend().chat(model="m", messages=vision_messages)
+
+        call_kwargs = mock_client.return_value.chat.call_args.kwargs
+        assert call_kwargs["messages"] == [
+            {"role": "user", "content": "OCR this.", "images": ["QUJD"]}
+        ]
+        assert call_kwargs["options"]["num_ctx"] == 2048
+
+        config.apply_overrides({"context_size": 0})
+        with patch("artifice_ocr._backend.ollama.Client") as mock_client:
+            mock_client.return_value.chat.return_value = MagicMock()
+            _backend.OllamaBackend().chat(model="m", messages=vision_messages)
+
+        assert "num_ctx" not in mock_client.return_value.chat.call_args.kwargs["options"]
 
 
 # ---------------------------------------------------------------------------

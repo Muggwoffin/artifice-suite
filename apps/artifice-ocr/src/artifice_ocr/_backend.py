@@ -218,6 +218,66 @@ class _SimpleResponse:
         self.message = _SimpleMessage(content)
 
 
+_DATA_URI_PREFIX = re.compile(r"^data:[^;]+;base64,")
+
+
+def _to_native_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert OpenAI-shaped chat messages to Ollama's native ``/api/chat`` shape.
+
+    OCR builds every vision request in the OpenAI content-block format
+    (``[{"type": "text", ...}, {"type": "image_url", ...}]``) because that
+    format is shared with LM Studio and the OpenAI-compatible cloud backends.
+    Ollama's native API predates that convention: it wants a plain string
+    ``content`` and a separate ``images`` list of bare base64 strings. This
+    is the seam that lets OCR keep one message-building path while still
+    reaching the *native* endpoint — the only one that honours ``num_ctx``
+    (see the module docstring on :class:`OllamaOpenAIBackend`).
+
+    A plain string ``content`` (the shape cleanup/translate/language-detection
+    already send) passes through completely untouched, including the absence
+    of an ``images`` key — those call sites must see byte-identical behaviour
+    to before this function existed.
+    """
+    native: list[dict[str, Any]] = []
+    for msg in messages:
+        content = msg.get("content")
+        if not isinstance(content, list):
+            # Plain-string content (or anything else non-block-shaped): pass
+            # through unchanged. This is the cleanup/translate path.
+            native.append(msg)
+            continue
+
+        text_parts: list[str] = []
+        images: list[str] = []
+        for block in content:
+            block_type = block.get("type")
+            if block_type == "text":
+                text_parts.append(block.get("text", ""))
+            elif block_type == "image_url":
+                url = block.get("image_url", {}).get("url", "")
+                match = _DATA_URI_PREFIX.match(url)
+                if not match:
+                    raise ValueError(
+                        "Ollama's native API only accepts images as base64 data "
+                        f"URIs (data:<mime>;base64,...); got {url[:60]!r}. A "
+                        "remote image_url cannot be forwarded to the native "
+                        "/api/chat endpoint."
+                    )
+                images.append(url[match.end() :])
+            # Unknown block types are dropped silently, matching how an
+            # OpenAI-compatible endpoint would ignore a field it does not
+            # recognise rather than failing the whole request.
+
+        native_msg: dict[str, Any] = {
+            **{k: v for k, v in msg.items() if k != "content"},
+            "content": "\n".join(text_parts),
+        }
+        if images:
+            native_msg["images"] = images
+        native.append(native_msg)
+    return native
+
+
 class OllamaBackend:
     def chat(
         self,
@@ -233,6 +293,7 @@ class OllamaBackend:
         _validate_url(normalised, "ollama_url")
         _log_base_url_once("ollama", normalised)
         client = ollama.Client(host=normalised)
+        messages = _to_native_messages(messages)
         options: dict[str, Any] = {"temperature": temperature}
         if num_predict is not None:
             options["num_predict"] = num_predict
@@ -279,10 +340,30 @@ class OllamaBackend:
 class OllamaOpenAIBackend:
     """Ollama via its OpenAI-compatible ``/v1`` endpoint.
 
+    .. warning::
+
+       **``extra_body={"options": {"num_ctx": N}}`` is NOT honoured here.**
+       Measured on live Ollama 0.33.2: requesting ``num_ctx=2048`` for
+       ``richardyoung/olmocr2:7b-q8`` through this endpoint loaded a context
+       window of 4096 (Ollama's default) per ``/api/ps`` — the field is
+       silently dropped. A bare top-level ``num_ctx`` was ignored too. Only
+       the native ``/api/chat`` (``OllamaBackend``, with ``options.num_ctx``)
+       honoured the requested size exactly (8192 -> 8192, 2048 -> 2048).
+
+       Because of this, OCR's vision call deliberately no longer uses this
+       backend for ``ollama`` — see ``stages/ocr.py`` and
+       :func:`_to_native_messages`, which teaches ``OllamaBackend`` to accept
+       the same OpenAI-shaped ``image_url`` content blocks this class was
+       originally built to carry. This class is kept, and still reachable via
+       ``get_client("ollama_openai")``, for anything that specifically wants
+       the OpenAI-compatible surface — just not for a call whose context size
+       must be respected.
+
     The native Ollama API carries images in an ``images`` field while
     multimodal vision models are sent ``image_url`` content blocks.  This
-    backend hits the ``/v1`` endpoint so OCR can use the same message format
-    across every backend without a format conversion in the middle.
+    backend hits the ``/v1`` endpoint so a caller can use the OpenAI message
+    format without a format conversion in the middle — the trade being the
+    ignored ``num_ctx`` documented above.
     """
 
     def _base_url(self) -> str:
@@ -310,15 +391,16 @@ class OllamaOpenAIBackend:
         if num_predict is not None:
             kwargs["max_tokens"] = num_predict
 
-        # This is the backend OCR uses for *every* provider (see
-        # stages/ocr.py — images go as image_url content blocks, which the
-        # native API does not take), so it is the path a page image overflows.
-        #
         # `/v1` has no standard field for the context window, so num_ctx rides
         # in `extra_body`, which the OpenAI SDK passes through untouched.
         # Ollama reads `options` from the request body; a server that does not
         # will ignore an unknown key rather than fail. Only sent when the user
         # set a value, so the default path is byte-identical to before.
+        #
+        # **This is measured NOT to work against live Ollama** — see the
+        # class docstring. Kept as-is (rather than dropped) so a future
+        # Ollama release that starts honouring it does not require restoring
+        # code that was deleted here; do not rely on it today.
         context_size = _configured_context_size()
         if context_size is not None:
             kwargs["extra_body"] = {"options": {"num_ctx": context_size}}
@@ -350,7 +432,18 @@ class LMStudioBackend:
     """
 
     def _base_url(self) -> str:
-        return config.get("lm_studio_url") or "http://localhost:1234/v1"
+        raw = config.get("lm_studio_url") or "http://localhost:1234/v1"
+        # Normalise the URL to prevent probe/chat divergence: the health probe
+        # defensively adds /v1 if missing, while chat uses _base_url() directly.
+        # Without normalisation, a stored value of "http://localhost:1234" probes
+        # GREEN but fails on chat (404). The normalise_base_url strips trailing
+        # slashes and any trailing /v1; we then append /v1 only if absent to
+        # ensure both paths agree. See _provider_404 (~line 69) for why doubling
+        # /v1 must never happen.
+        normalised = normalise_base_url(raw)
+        if normalised.endswith("/v1"):
+            return normalised
+        return normalised + "/v1"
 
     def _client(self) -> OpenAI:
         base_url = self._base_url()

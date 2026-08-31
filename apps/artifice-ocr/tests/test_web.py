@@ -1830,6 +1830,140 @@ def test_health_check_real_probe_unreachable_shape(client, httpx_mock: HTTPXMock
     assert body["ollama"]["detail"] is not None
 
 
+def test_health_check_checks_model_against_its_own_configured_backend(client, monkeypatch):
+    """A role's model must be graded against the model list of *its own*
+    configured backend, not Ollama's -- the user's report was "it pings LM
+    Studio, but it does not load the model": the OCR role was on lm_studio,
+    but the old code always compared every model against the Ollama probe.
+    """
+    from model_harness.discovery import ProbeResult
+
+    config.apply_overrides(
+        {
+            "ocr_backend": "lm_studio",
+            "ocr_model": "allenai/olmocr-2-7b",
+            "cleanup_backend": "ollama",
+            "cleanup_model": "",
+            "translate_backend": "ollama",
+            "translate_model": "",
+        }
+    )
+
+    def fake_probe(url, *a, **k):
+        if "1234" in url:
+            return ProbeResult(url=url, reachable=True, models=("allenai/olmocr-2-7b",))
+        return ProbeResult(url=url, reachable=True, models=("llama3.2:3b",))
+
+    monkeypatch.setattr("model_harness.discovery.probe_endpoint_sync", fake_probe)
+
+    res = client.get("/api/health")
+    body = res.json()
+    models = {m["name"]: m for m in body["models"]}
+    assert models["allenai/olmocr-2-7b"]["ok"] is True
+    assert models["allenai/olmocr-2-7b"]["backend"] == "lm_studio"
+
+
+def test_health_check_reports_model_missing_from_its_configured_backend(client, monkeypatch):
+    """Mirror of the above: a model installed on neither server is reported
+    not-OK, still graded against its own role's backend."""
+    from model_harness.discovery import ProbeResult
+
+    config.apply_overrides(
+        {
+            "ocr_backend": "lm_studio",
+            "ocr_model": "not-installed-anywhere",
+            "cleanup_backend": "ollama",
+            "cleanup_model": "",
+            "translate_backend": "ollama",
+            "translate_model": "",
+        }
+    )
+
+    def fake_probe(url, *a, **k):
+        return ProbeResult(url=url, reachable=True, models=("some-other-model",))
+
+    monkeypatch.setattr("model_harness.discovery.probe_endpoint_sync", fake_probe)
+
+    res = client.get("/api/health")
+    body = res.json()
+    models = {m["name"]: m for m in body["models"]}
+    assert models["not-installed-anywhere"]["ok"] is False
+    assert models["not-installed-anywhere"]["backend"] == "lm_studio"
+
+
+def test_health_check_all_ollama_backends_is_unchanged(client, monkeypatch):
+    """Regression guard: with every role on ``ollama`` (the pre-fix common
+    case), behaviour must be unchanged -- each configured model graded
+    against the single Ollama probe."""
+    from model_harness.discovery import ProbeResult
+
+    config.apply_overrides(
+        {
+            "ocr_backend": "ollama",
+            "cleanup_backend": "ollama",
+            "translate_backend": "ollama",
+            "ocr_model": "llama3.2-vision:11b",
+            "cleanup_model": "llama3.2:3b",
+            "translate_model": "llama3.2:3b",
+        }
+    )
+
+    def fake_probe(url, *a, **k):
+        return ProbeResult(
+            url=url,
+            reachable=True,
+            models=("llama3.2-vision:11b", "llama3.2:3b"),
+        )
+
+    monkeypatch.setattr("model_harness.discovery.probe_endpoint_sync", fake_probe)
+
+    res = client.get("/api/health")
+    body = res.json()
+    assert len(body["models"]) == 3
+    assert all(m["ok"] for m in body["models"])
+    assert all(m["backend"] == "ollama" for m in body["models"])
+
+
+def test_health_check_cloud_backend_role_not_a_false_negative(client, monkeypatch):
+    """A role on a cloud backend (api_key / huggingface) has no local model
+    list to check against, so it must never be reported as a plain ``ok:
+    False`` -- that would misrepresent an uncheckable model as a missing one.
+    """
+    from model_harness.discovery import ProbeResult
+
+    config.apply_overrides(
+        {
+            "ocr_backend": "ollama",
+            "ocr_model": "llama3.2-vision:11b",
+            "cleanup_backend": "api_key",
+            "cleanup_model": "gpt-4o-mini",
+            "translate_backend": "ollama",
+            "translate_model": "",
+        }
+    )
+
+    def fake_probe(url, *a, **k):
+        return ProbeResult(url=url, reachable=True, models=("llama3.2-vision:11b",))
+
+    monkeypatch.setattr("model_harness.discovery.probe_endpoint_sync", fake_probe)
+
+    from artifice_ocr import _backend
+
+    class _FakeApiKeyClient:
+        def health_check(self):
+            return True, None
+
+    monkeypatch.setattr(_backend, "get_client", lambda backend: _FakeApiKeyClient())
+
+    res = client.get("/api/health")
+    body = res.json()
+    models = {m["name"]: m for m in body["models"]}
+    cloud_entry = models["gpt-4o-mini"]
+    assert cloud_entry["ok"] is not False
+    assert cloud_entry.get("checkable") is False
+    assert cloud_entry["backend"] == "api_key"
+
+
 # --------------------------------------------------------------------------- #
 # history
 # --------------------------------------------------------------------------- #
