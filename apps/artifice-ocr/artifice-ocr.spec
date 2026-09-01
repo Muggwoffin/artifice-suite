@@ -107,6 +107,11 @@ if sys.platform == "win32":
             "webview.platforms.winforms",
             "webview.platforms.win32",
             "webview.platforms.edgechromium",
+            # winforms falls back to MSHTML when the WebView2 runtime is not
+            # available.  This import is selected dynamically, so PyInstaller
+            # cannot discover it and an omitted module makes pywebview fail
+            # outright (which sends the frozen app to its browser fallback).
+            "webview.platforms.mshtml",
             "clr",
         ]
     )

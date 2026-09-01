@@ -35,6 +35,13 @@ def test_ocr_pyinstaller_bundle_is_uncompressed_and_windowed():
     assert "uac_uiaccess=False" in spec
 
 
+def test_ocr_pyinstaller_bundle_contains_both_windows_webview_renderers():
+    """Keep the desktop window usable with and without WebView2 installed."""
+    spec = (ROOT / "apps" / "artifice-ocr" / "artifice-ocr.spec").read_text(encoding="utf-8")
+    assert '"webview.platforms.edgechromium"' in spec
+    assert '"webview.platforms.mshtml"' in spec
+
+
 def test_canonical_stage_mapping(tmp_path):
     from artifice_ocr.output import stage_dir
     from artifice_output import ProjectLayout
