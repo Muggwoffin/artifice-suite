@@ -48,9 +48,9 @@ def test_every_app_uses_the_suite_shell():
     for relative in template_bases:
         assert '{% extends "_app_shell.html" %}' in (ROOT / relative).read_text(encoding="utf-8")
 
-    hub = (
-        ROOT / "apps/artifice-hub/src/artifice_hub/web/static/index.html"
-    ).read_text(encoding="utf-8")
+    hub = (ROOT / "apps/artifice-hub/src/artifice_hub/web/static/index.html").read_text(
+        encoding="utf-8"
+    )
     assert 'class="app-shell"' in hub
-    assert '/shared/shell.css' in hub
-    assert '/shared/shell.js' in hub
+    assert "/shared/shell.css" in hub
+    assert "/shared/shell.js" in hub
