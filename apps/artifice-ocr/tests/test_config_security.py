@@ -100,9 +100,7 @@ class TestLoadTimePermissionRepair:
         def _failing_restrict(_path):
             raise OSError("Simulated ACL failure — exFAT volume")
 
-        monkeypatch.setattr(
-            "secure_io.restrict_to_current_user", _failing_restrict
-        )
+        monkeypatch.setattr("secure_io.restrict_to_current_user", _failing_restrict)
 
         # Load must succeed despite the repair failure.
         result = config.load_user_settings()
