@@ -123,7 +123,7 @@ jobs:
         # The Hub is a onefile bundle (not onedir), so:
         #  - The binary is at ./dist/artifice-hub, not ./dist/artifice-hub/artifice-hub
         #  - It needs longer startup time for self-extraction (sleep 15)
-        #  - It has no shared masthead (no navByom); check for app-grid instead
+        #  - It has its own static shell; check for app-grid instead
         #  - pkill pattern uses dist/$APP to match both onedir and onefile paths
         run: |
           APP="${{ matrix.app }}"
@@ -149,17 +149,16 @@ jobs:
             echo "  $path -> $code"
             [ "$code" = "200" ] || fail=1
           done
-          # Hub has its own editorial masthead with app-grid; shared-masthead
-          # apps use navByom. The Hub is the only app without the shared
-          # masthead — it loads hub.css and its own layout.
+          # Hub has its own dashboard with app-grid. Other apps use the
+          # shared app-shell layout.
           if [ "$APP" = "artifice-hub" ]; then
             curl -s http://127.0.0.1:18999/ | grep -q app-grid \
               && echo "  hub dashboard rendered: yes" \
               || { echo "  hub dashboard MISSING"; fail=1; }
           else
-            curl -s http://127.0.0.1:18999/ | grep -q navByom \
-              && echo "  shared masthead rendered: yes" \
-              || { echo "  shared masthead MISSING"; fail=1; }
+            curl -s http://127.0.0.1:18999/ | grep -q app-shell \
+              && echo "  shared app shell rendered: yes" \
+              || { echo "  shared app shell MISSING"; fail=1; }
           fi
           pkill -f "dist/$APP" || true
           echo "--- server log ---"; head -20 /tmp/exe.log
@@ -181,7 +180,7 @@ jobs:
         # The Hub is a onefile bundle (not onedir), so:
         #  - The binary is at .\dist\artifice-hub.exe, not .\dist\artifice-hub\artifice-hub.exe
         #  - It needs longer startup time for self-extraction (Start-Sleep 25)
-        #  - It has no shared masthead (no navByom); check for app-grid instead
+        #  - It has its own static shell; check for app-grid instead
         run: |
           $app = "${{ matrix.app }}"
           $apiPath = switch ($app) {
@@ -222,17 +221,16 @@ jobs:
               $fail = 1
             }
           }
-          # Hub has its own editorial masthead with app-grid; shared-masthead
-          # apps use navByom. The Hub is the only app without the shared
-          # masthead — it loads hub.css and its own layout.
+          # Hub has its own dashboard with app-grid. Other apps use the
+          # shared app-shell layout.
           try {
             $body = (Invoke-WebRequest -Uri "http://127.0.0.1:18999/" -UseBasicParsing -TimeoutSec 15).Content
             if ($app -eq "artifice-hub") {
               if ($body -match "app-grid") { Write-Host "  hub dashboard rendered: yes" }
               else { Write-Host "  hub dashboard MISSING"; $fail = 1 }
             } else {
-              if ($body -match "navByom") { Write-Host "  shared masthead rendered: yes" }
-              else { Write-Host "  shared masthead MISSING"; $fail = 1 }
+              if ($body -match "app-shell") { Write-Host "  shared app shell rendered: yes" }
+              else { Write-Host "  shared app shell MISSING"; $fail = 1 }
             }
           } catch { Write-Host "  index fetch FAILED"; $fail = 1 }
           Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
