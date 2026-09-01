@@ -42,6 +42,21 @@ def test_ocr_pyinstaller_bundle_contains_both_windows_webview_renderers():
     assert '"webview.platforms.mshtml"' in spec
 
 
+def test_ocr_distribution_has_no_ludwiglang_surface():
+    """The retired exporter must not return through source or packaged UI."""
+    package = ROOT / "apps" / "artifice-ocr" / "src" / "artifice_ocr"
+    index = (package / "web" / "templates" / "index.html").read_text(encoding="utf-8")
+    base = (package / "web" / "templates" / "base.html").read_text(encoding="utf-8")
+    server = (package / "web" / "server.py").read_text(encoding="utf-8")
+
+    assert not (package / "export_ludwiglang.py").exists()
+    assert not (package / "web" / "routers" / "ludwiglang.py").exists()
+    assert not (package / "web" / "static" / "js" / "ludwiglang.js").exists()
+    assert "LudwigLang" not in index
+    assert "ludwiglang.js" not in base
+    assert "ludwiglang_router" not in server
+
+
 def test_canonical_stage_mapping(tmp_path):
     from artifice_ocr.output import stage_dir
     from artifice_output import ProjectLayout

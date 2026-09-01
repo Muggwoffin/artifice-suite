@@ -88,7 +88,8 @@ button, input, select { font-family: inherit; font-size: inherit; }
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
 }
 
 .tabs {
@@ -433,22 +434,6 @@ button.btn.accent:hover:not(:disabled) { background: var(--accent-deep); }
 
 button.btn.danger { color: var(--error); }
 button.btn.danger:hover:not(:disabled) { background: var(--error); color: var(--paper); border-color: var(--error); }
-
-/* Tertiary action — visually subordinate to the primary/secondary split
-   established by Design_Philosophy.md §8.1. Used for orphan export actions
-   (e.g. "Send to LudwigLang") that should not compete with Browse/Add. */
-button.btn.ghost {
-  color: var(--ink-faint);
-  border-color: transparent;
-  box-shadow: none;
-}
-button.btn.ghost:hover:not(:disabled) {
-  background: var(--accent-wash);
-  border-color: var(--accent);
-  color: var(--accent-deep);
-  transform: none;
-  box-shadow: none;
-}
 
 /* A button that pairs an inline SVG icon (Design_Philosophy.md §8.8) with a
    text label — Run/Pause/Stop today. Flex handles the icon/label baseline

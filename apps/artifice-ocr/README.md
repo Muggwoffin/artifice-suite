@@ -18,7 +18,7 @@ ArtificeOCR is a local-first pipeline built specifically for processing, cleanin
 │   3. Guarded Text Structuring (Gemma 4 via Ollama - Word-for-Word Guard)   │
 │   4. Auto-Generated Page Titles (optional, via cleanup model)              │
 │   5. Historical Translation (TranslateGemma via Ollama - German to English)│
-│   6. Multi-Format Export (PDF / LudwigLang Markdown / Tropy Writeback)     │
+│   6. Multi-Format Export (PDF / Markdown / Tropy Writeback)                │
 └────────────────────────────────────────────────────────────────────────────┘
 
 1. **Deterministic Execution, No Conversational Noise:** ArtificeOCR never "chats" about documents. It processes images or archival manifests through a strict multi-stage pipeline and outputs structured JSON, Markdown, or PDF assets.
@@ -50,7 +50,7 @@ Connects to [Tropy](https://tropy.org) historical research archives via a **JSON
 
 ### 3. Multi-Format Publishing Exports
 * **Typeset PDF Compilation:** Generates continuous reading PDFs with section headings per item, provenance page markers (`[page1]`), and Playfair/Libre Baskerville typography.
-* **LudwigLang Markdown Export:** Exports cleaned and structured text as `.md` files pre-configured with front-matter metadata for the LudwigLang editorial web publisher.
+* **Markdown Export:** Exports cleaned and structured text as portable `.md` files.
 * **Structured JSON Data:** Full audit logs for every page, preserving raw OCR text, accepted cleanup, rejected model attempts, and guard status logs.
 
 #### Guided PDF export and output folders
@@ -105,7 +105,6 @@ artifice-suite/
 │       │   ├── _tropy_pathcheck.py    # Photo-path safety validation
 │       │   ├── pdf_export.py          # Guided PDF/Markdown compilation
 │       │   ├── output.py              # Canonical/legacy stage path resolver
-│       │   ├── export_ludwiglang.py   # LudwigLang Markdown export
 │       │   ├── _guard.py              # Content preservation guards
 │       │   ├── _diff.py               # Diff & marker highlighting
 │       │   ├── stages/                # OCR, Cleanup, Title, Structure, Translate

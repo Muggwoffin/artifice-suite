@@ -726,6 +726,9 @@ document.querySelectorAll(".tab").forEach(tab => {
     TAB_ACTIVATE[tab.dataset.tab]?.();
   });
 });
+const requestedTabName = new URLSearchParams(window.location.search).get("view");
+const requestedTab = document.querySelector(`.tab[data-tab="${requestedTabName}"]`);
+if (requestedTab) requestedTab.click();
 
 // ------------------------------------------------------- shared: comparison
 

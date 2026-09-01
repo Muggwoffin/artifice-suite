@@ -109,13 +109,3 @@ class TropyEnqueueRequest(BaseModel):
     path: str
     item_ids: list[int]
     output_dir: str = "output"
-
-
-class LudwigLangExportRequest(BaseModel):
-    collection: str
-    output_dir: str = "output"
-    medium: str = "print"
-    author: str = ""
-    date: str = ""
-    page_markers: bool = False
-    skip_language_gate: bool = False
