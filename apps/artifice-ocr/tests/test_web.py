@@ -582,6 +582,8 @@ def test_set_config_rejects_link_local_ollama_url(client):
         "/api/config", json={"ocr_backend": "ollama", "ollama_url": "http://169.254.169.254/"}
     )
     assert res.status_code == 400
+    detail = res.json()["detail"]
+    assert "link-local" in detail.lower()
 
 
 def test_set_config_explains_ollama_wildcard_bind_address(client):
@@ -592,8 +594,6 @@ def test_set_config_explains_ollama_wildcard_bind_address(client):
     assert res.status_code == 400
     assert "address Ollama listens on" in res.json()["detail"]
     assert "localhost:11434" in res.json()["detail"]
-    detail = res.json()["detail"]
-    assert "link-local" in detail.lower()
 
 
 def test_set_config_rejects_link_local_lm_studio_url(client):

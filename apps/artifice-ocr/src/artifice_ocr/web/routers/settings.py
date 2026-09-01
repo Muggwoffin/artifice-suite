@@ -261,7 +261,7 @@ def set_config(overrides: dict[str, Any]) -> dict:
 @router.post("/api/config/reset")
 def reset_config() -> dict:
     config.reset()
-    config.load_config()
+    config.load_config(include_user_settings=False)
     return {k: _redact_config(k, config.get(k)) for k in _CONFIG_KEYS}
 
 
