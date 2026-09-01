@@ -123,6 +123,8 @@ const SettingsTab = (function () {
       else el(key).value = value ?? "";
     }
     approvedFolders = Array.isArray(values.approved_folders) ? values.approved_folders.slice() : [];
+    const outputDir = document.getElementById("output-dir");
+    if (outputDir && values.output_dir) outputDir.value = values.output_dir;
     renderApprovedFolders();
     updateDocTypeHint();
     updateConnectionVisibility();
@@ -161,6 +163,8 @@ const SettingsTab = (function () {
       else if (kind === "int") out[key] = parseInt(field.value, 10) || 0;
       else out[key] = field.value;
     }
+    const outputDir = document.getElementById("output-dir");
+    if (outputDir) out.output_dir = outputDir.value || "output";
     return out;
   }
 
@@ -264,6 +268,7 @@ const SettingsTab = (function () {
   async function save() {
     try {
       await api("POST", "/api/config", collect());
+      apply(await api("GET", "/api/config"));
       savedLabel.textContent = "Saved.";
       savedLabel.style.color = "var(--accent)";
       setTimeout(() => { savedLabel.textContent = ""; }, 2500);

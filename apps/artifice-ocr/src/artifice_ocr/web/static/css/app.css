@@ -645,15 +645,20 @@ td.stage-failed { color: var(--error); font-weight: 600; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: 100;
+  padding: min(3vh, var(--space-6));
+  overscroll-behavior: contain;
 }
 
 .modal-backdrop.hidden { display: none; }
 
 .modal {
   width: min(720px, 92vw);
-  max-height: 80vh;
-  overflow: auto;
+  max-height: calc(100dvh - 2rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: var(--paper-raised);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
@@ -1495,14 +1500,19 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   display: grid;
   grid-template-columns: 1fr 1.5fr;
   gap: 0.6rem;
-  min-height: 32vh;
-  max-height: 44vh;
+  height: clamp(14rem, 40dvh, 30rem);
+  min-height: 0;
   overflow: hidden;
   margin-bottom: var(--space-3);
 }
 .tropy-browse-picker-grid.hidden { display: none; }
 
-.tropy-browse-source-pane { overflow-y: auto; }
+.tropy-browse-picker-grid > .tropy-source-pane,
+.tropy-browse-picker-grid > .tropy-item-pane {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 .tropy-browse-item-row {
   display: flex;

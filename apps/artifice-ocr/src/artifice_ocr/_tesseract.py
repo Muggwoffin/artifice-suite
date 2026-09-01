@@ -38,6 +38,13 @@ _WINDOWS_FALLBACK_PATHS = (
 )
 
 
+def _subprocess_window_options() -> dict[str, int]:
+    """Keep command-line OCR helpers consoleless in the Windows desktop app."""
+    if os.name != "nt":
+        return {}
+    return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+
+
 class TesseractError(RuntimeError):
     """Tesseract ran but failed (non-zero exit, or a subprocess error)."""
 
@@ -84,6 +91,7 @@ def version(binary: str | None = None) -> str | None:
             capture_output=True,
             text=True,
             timeout=10,
+            **_subprocess_window_options(),
         )
     except (OSError, subprocess.SubprocessError):
         return None
@@ -132,6 +140,7 @@ def ocr_bytes(data: bytes, *, lang: str | None = None, binary: str | None = None
             capture_output=True,
             text=True,
             timeout=300,
+            **_subprocess_window_options(),
         )
     except (OSError, subprocess.SubprocessError) as exc:
         raise TesseractError(f"Tesseract failed to run: {exc}") from exc

@@ -108,6 +108,17 @@ def test_ocr_bytes_passes_configured_lang(monkeypatch):
     assert captured["cmd"][captured["cmd"].index("-l") + 1] == "deu+eng"
 
 
+def test_tesseract_subprocesses_hide_windows_console(monkeypatch):
+    monkeypatch.setattr(_tesseract.os, "name", "nt")
+    monkeypatch.setattr(_tesseract.subprocess, "CREATE_NO_WINDOW", 0x08000000, raising=False)
+    assert _tesseract._subprocess_window_options() == {"creationflags": 0x08000000}
+
+
+def test_tesseract_subprocesses_need_no_flags_off_windows(monkeypatch):
+    monkeypatch.setattr(_tesseract.os, "name", "posix")
+    assert _tesseract._subprocess_window_options() == {}
+
+
 # --------------------------------------------------------------------------- #
 # Engine dispatch + fallback in the OCR stage
 # --------------------------------------------------------------------------- #

@@ -42,6 +42,19 @@ class TestConfigFilePermissions:
         assert data["api_key"] == "sk-test-123"
         assert data["output_dir"] == "/overwritten"
 
+    def test_saved_settings_are_loaded_after_restart(self, tmp_path, monkeypatch):
+        from artifice_ocr import config
+
+        monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
+        monkeypatch.setattr(config, "_USER_DIR", tmp_path)
+        config.save_user_settings({"ocr_model": "local-vision", "output_dir": "/archive"})
+
+        config.reset()
+        loaded = config.load_config()
+
+        assert loaded["ocr_model"] == "local-vision"
+        assert loaded["output_dir"] == "/archive"
+
 
 class TestLoadTimePermissionRepair:
     """Permissions on pre-existing loose files are repaired at load time.

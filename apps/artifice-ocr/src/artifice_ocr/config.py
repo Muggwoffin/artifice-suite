@@ -231,6 +231,11 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
                 file_cfg = yaml.safe_load(f) or {}
             merged.update(file_cfg)
 
+    # Durable UI settings override shipped/YAML defaults on every process
+    # start. The save path has always written this file, but until now the
+    # load path never merged it, so settings appeared to vanish on restart.
+    merged.update(load_user_settings())
+
     env_overrides = {
         "ocr_model": "OCR_MODEL",
         "cleanup_model": "CLEANUP_MODEL",

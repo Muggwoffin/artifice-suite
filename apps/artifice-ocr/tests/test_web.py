@@ -539,6 +539,29 @@ def test_set_config_only_persists_whitelisted_keys(client):
     assert config.get("not_a_real_setting") is None
 
 
+def test_set_config_returns_canonical_durable_values(client):
+    res = client.post(
+        "/api/config",
+        json={"ocr_model": "  local-vision  ", "output_dir": "archive-output"},
+    )
+    assert res.status_code == 200
+    durable = client.get("/api/config").json()
+    assert durable["ocr_model"] == "local-vision"
+    assert durable["output_dir"] == "archive-output"
+
+
+def test_set_config_does_not_change_runtime_when_persistence_fails(client, monkeypatch):
+    before = config.get("cleanup_model")
+    monkeypatch.setattr(
+        config,
+        "save_user_settings",
+        lambda _values: (_ for _ in ()).throw(PermissionError("read only")),
+    )
+    with pytest.raises(PermissionError, match="read only"):
+        client.post("/api/config", json={"cleanup_model": "not-durable"})
+    assert config.get("cleanup_model") == before
+
+
 def test_config_reset_discards_overrides(client):
     client.post("/api/config", json={"cleanup_model": "a-custom-model"})
     assert client.get("/api/config").json()["cleanup_model"] == "a-custom-model"
@@ -559,6 +582,16 @@ def test_set_config_rejects_link_local_ollama_url(client):
         "/api/config", json={"ocr_backend": "ollama", "ollama_url": "http://169.254.169.254/"}
     )
     assert res.status_code == 400
+
+
+def test_set_config_explains_ollama_wildcard_bind_address(client):
+    res = client.post(
+        "/api/config",
+        json={"ocr_backend": "ollama", "ollama_url": "http://0.0.0.0:11434"},
+    )
+    assert res.status_code == 400
+    assert "address Ollama listens on" in res.json()["detail"]
+    assert "localhost:11434" in res.json()["detail"]
     detail = res.json()["detail"]
     assert "link-local" in detail.lower()
 
