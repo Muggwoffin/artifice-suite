@@ -288,22 +288,42 @@ class TestMainNoWindowFlag:
         finally:
             self._stop_server(proc)
 
-    def test_normal_mode_serves_content(self) -> None:
-        """In non-frozen mode without --no-window, server serves normally.
+class TestWindowFailureReporting:
+    """A packaged desktop failure must not silently become a browser app."""
 
-        We cannot verify the native window opens (WSL has no display), but
-        we verify the server is accessible — which is the fallback behavior
-        on a headless system.
-        """
-        import urllib.request
+    def test_failure_is_shown_in_a_dialog(self, monkeypatch, capsys) -> None:
+        import types
 
-        port = self._free_port()
-        proc = self._start_server(port)
+        calls: list[tuple[str, str]] = []
+        root = mock.Mock()
+        tk = types.ModuleType("tkinter")
+        tk.Tk = mock.Mock(return_value=root)
+        messagebox = types.ModuleType("tkinter.messagebox")
+        messagebox.showerror = lambda title, message: calls.append((title, message))
+        tk.messagebox = messagebox
+        monkeypatch.setitem(sys.modules, "tkinter", tk)
+        monkeypatch.setitem(sys.modules, "tkinter.messagebox", messagebox)
 
-        try:
-            assert self._wait_for_server(port), f"Server on port {port} did not start"
+        from artifice_ocr.web.server import _report_window_failure
 
-            resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/")
-            assert resp.status == 200
-        finally:
-            self._stop_server(proc)
+        _report_window_failure("WebView2 is unavailable")
+
+        assert calls
+        assert "WebView2 is unavailable" in calls[0][1]
+        assert "browser fallback is disabled" in calls[0][1].lower()
+        assert "WebView2 is unavailable" in capsys.readouterr().out
+        root.destroy.assert_called_once_with()
+
+    def test_no_launch_path_opens_a_browser(self) -> None:
+        server = (
+            _REPO_ROOT
+            / "apps"
+            / "artifice-ocr"
+            / "src"
+            / "artifice_ocr"
+            / "web"
+            / "server.py"
+        ).read_text(encoding="utf-8")
+        assert "import webbrowser" not in server
+        assert "webbrowser.open" not in server
+        assert "if getattr(sys, \"frozen\", False)" not in server

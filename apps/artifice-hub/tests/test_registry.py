@@ -14,7 +14,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
-from artifice_hub.registry import APPS
+from artifice_hub.registry import APPS, get_install_spec
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _APPS_DIR = _REPO_ROOT / "apps"
@@ -57,3 +57,9 @@ def test_registry_no_extraneous_entry_points():
     """Every entry_point in the registry must have a real app to verify against."""
     for slug in APPS:
         assert slug in _SLUG_TO_DIR, f"Registry slug {slug} has no _SLUG_TO_DIR mapping"
+
+
+def test_ocr_is_installed_and_launched_as_a_native_window():
+    spec = APPS["artifice-ocr"]
+    assert get_install_spec("artifice-ocr") == "artifice-ocr[web,window]"
+    assert spec.self_opens_browser is False

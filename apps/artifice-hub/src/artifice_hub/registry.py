@@ -28,7 +28,7 @@ class AppSpec:
     slug: str
     display_name: str
     description: str
-    install_spec: str  # full PEP 508 specifier, e.g. "artifice-ocr[web]"
+    install_spec: str  # full PEP 508 specifier, e.g. "artifice-ocr[web,window]"
     entry_point: str  # executable name, e.g. "artifice-ocr-web"
     self_opens_browser: bool
     default_port: int | None  # transcribe: 8000; others None
@@ -42,9 +42,9 @@ APPS: dict[str, AppSpec] = {
         slug="artifice-ocr",
         display_name="Artifice OCR",
         description="Local-first OCR processing for historical documents.",
-        install_spec="artifice-ocr[web]",
+        install_spec="artifice-ocr[web,window]",
         entry_point="artifice-ocr-web",
-        self_opens_browser=True,
+        self_opens_browser=False,
         default_port=None,
         has_asr_variants=False,
         local_path="artifice-ocr",

@@ -15,7 +15,6 @@ import logging
 import os
 import sys
 import time
-import webbrowser
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -682,6 +681,26 @@ def _report_startup_failure(port: int, thread, errors: list[BaseException]) -> N
     report_startup_failure("ArtificeOCR", port, thread, errors)
 
 
+def _report_window_failure(reason: str) -> None:
+    """Tell desktop users why the native window could not be opened."""
+    message = (
+        "ArtificeOCR could not open its desktop window.\n\n"
+        f"{reason}\n\n"
+        "The browser fallback is disabled."
+    )
+    print(f"ERROR: {message}", flush=True)
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror("ArtificeOCR — window unavailable", message)
+        root.destroy()
+    except Exception:
+        pass
+
+
 def main() -> None:
     _ensure_std_streams()
     _assert_loopback_host()
@@ -749,33 +768,22 @@ def main() -> None:
             server_thread.join()
         return
 
-    # ── Frozen executable: try a native window ───────────────────────────
-    if getattr(sys, "frozen", False):
-        from .window import open_native_window  # noqa: PLC0415
+    # ── Desktop mode: require a native window ────────────────────────────
+    # This applies equally to frozen releases and Hub/uv installations.
+    from .window import open_native_window  # noqa: PLC0415
 
-        try:
-            result = open_native_window(url, title="ArtificeOCR")
-            if result.opened:
-                # Window closed by user — exit cleanly.
-                # The daemon server thread dies with the process.
-                return
+    try:
+        result = open_native_window(url, title="ArtificeOCR")
+        if result.opened:
+            # Window closed by user — exit cleanly.
+            # The daemon server thread dies with the process.
+            return
 
-            # Window failed — fall back to browser.
-            print(result.reason, flush=True)
-        except Exception as exc:
-            print(f"Native window failed: {exc}", flush=True)
+        reason = result.reason
+    except Exception as exc:
+        reason = f"Native window failed: {exc}"
 
-        print(f"Falling back — ArtificeOCR running at {url}", flush=True)
-        webbrowser.open(url)
-        with contextlib.suppress(KeyboardInterrupt):
-            server_thread.join()
-        return
-
-    # ── Non-frozen (dev / `uv run artifice-ocr-web`) ─────────────────────
-    print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)
-    webbrowser.open(url)
-    with contextlib.suppress(KeyboardInterrupt):
-        server_thread.join()
+    _report_window_failure(reason)
 
 
 if __name__ == "__main__":
