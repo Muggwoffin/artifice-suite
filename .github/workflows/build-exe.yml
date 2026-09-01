@@ -116,9 +116,12 @@ jobs:
         # doesn't test packaging, it just asserts a URL graph's own template
         # never generates.
         #
+        # Every binary is launched with --no-window because hosted Linux
+        # runners are headless. This exercises the packaged HTTP application
+        # without depending on a GUI backend or a browser fallback.
+        #
         # The Hub is a onefile bundle (not onedir), so:
         #  - The binary is at ./dist/artifice-hub, not ./dist/artifice-hub/artifice-hub
-        #  - It needs --no-window to prevent PyWebView from opening a GUI
         #  - It needs longer startup time for self-extraction (sleep 15)
         #  - It has no shared masthead (no navByom); check for app-grid instead
         #  - pkill pattern uses dist/$APP to match both onedir and onefile paths
@@ -133,14 +136,12 @@ jobs:
           # Hub is onefile — binary is a single file, not a directory
           if [ "$APP" = "artifice-hub" ]; then
             BINARY="./dist/$APP"
-            EXTRA_ARGS="--no-window"
             WAIT=15
           else
             BINARY="./dist/$APP/$APP"
-            EXTRA_ARGS=""
             WAIT=12
           fi
-          setsid nohup "$BINARY" --port 18999 $EXTRA_ARGS > /tmp/exe.log 2>&1 < /dev/null &
+          setsid nohup "$BINARY" --port 18999 --no-window > /tmp/exe.log 2>&1 < /dev/null &
           sleep $WAIT
           fail=0
           for path in / "$API" /shared/tokens.css "$APP_CSS"; do
@@ -174,9 +175,11 @@ jobs:
         #    — a backgrounded server holding the shell is exactly what killed
         #    the agent that built this locally.
         #
+        # Every binary is launched with --no-window so the smoke test checks
+        # the packaged HTTP application without opening a GUI on the runner.
+        #
         # The Hub is a onefile bundle (not onedir), so:
         #  - The binary is at .\dist\artifice-hub.exe, not .\dist\artifice-hub\artifice-hub.exe
-        #  - It needs --no-window to prevent PyWebView from opening a GUI
         #  - It needs longer startup time for self-extraction (Start-Sleep 25)
         #  - It has no shared masthead (no navByom); check for app-grid instead
         run: |
@@ -198,13 +201,12 @@ jobs:
           # Hub is onefile — binary is a single .exe, not in a subdirectory
           if ($app -eq "artifice-hub") {
             $exe = ".\dist\$app.exe"
-            $extraArgs = @("--no-window","--port","18999")
             $waitSec = 25
           } else {
             $exe = ".\dist\$app\$app.exe"
-            $extraArgs = @("--port","18999")
             $waitSec = 20
           }
+          $extraArgs = @("--no-window","--port","18999")
           if (-not (Test-Path $exe)) { Write-Error "no binary at $exe"; exit 1 }
           Write-Host "binary size: $((Get-Item $exe).Length) bytes"
           $p = Start-Process -FilePath $exe -ArgumentList $extraArgs -PassThru

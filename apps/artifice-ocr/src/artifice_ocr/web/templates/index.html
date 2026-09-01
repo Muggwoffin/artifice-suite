@@ -102,7 +102,6 @@
           <div class="spacer"></div>
           <button class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
           <button class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
-          <button class="btn ghost" id="btn-send-ludwiglang">Send to LudwigLang&hellip;</button>
         </div>
 
         <div class="section-divider"></div>
@@ -710,54 +709,6 @@
         <button class="btn" id="btn-send-tropy-close-writeback" type="button">Close</button>
         <button class="btn" id="btn-writeback-preview" type="button">Preview</button>
         <button class="btn accent" id="btn-writeback-commit" type="button" disabled>Write</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- LudwigLang: export as .md -->
-  <div class="modal-backdrop hidden" id="modal-ludwiglang">
-    <div class="modal" style="width:min(640px, 94vw);">
-      <h3>Send to LudwigLang</h3>
-      <button class="modal-close" data-modal-close>&times;</button>
-      <p class="dim">Export a processed collection for LudwigLang's Import page.</p>
-
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
-        <select id="ll-collection" class="select" style="flex:1;">
-          <option value="">-- Select a collection --</option>
-        </select>
-        <button class="btn" id="btn-ll-refresh">Refresh</button>
-      </div>
-
-      <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
-        <label>Medium:
-          <select id="ll-medium">
-            <option value="print">Print</option>
-            <option value="typed">Typed</option>
-            <option value="handwritten">Handwritten</option>
-          </select>
-        </label>
-        <label>Author:
-          <input type="text" id="ll-author" class="input" style="width:12rem;" placeholder="(auto-detected if blank)">
-        </label>
-        <label>Date:
-          <input type="text" id="ll-date" class="input" style="width:8rem;" placeholder="(auto-detected if blank)">
-        </label>
-      </div>
-
-      <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
-        <label class="check"><input type="checkbox" id="ll-page-markers"> Page markers (-- N --)</label>
-        <label class="check"><input type="checkbox" id="ll-skip-language-gate"> Skip language check</label>
-      </div>
-
-      <div id="ll-preview-area" style="max-height:26vh; overflow:auto; background:var(--paper-recessed); border-radius:var(--radius); padding:0.6rem; margin-bottom:0.6rem;">
-        <p class="dim">Select a collection above to export.</p>
-      </div>
-
-      <p id="ll-status" class="dim"></p>
-
-      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
-        <button class="btn" id="btn-ll-close">Close</button>
-        <button class="btn accent" id="btn-ll-export" disabled>Export &amp; Download</button>
       </div>
     </div>
   </div>

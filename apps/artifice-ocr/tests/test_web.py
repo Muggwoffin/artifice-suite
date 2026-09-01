@@ -109,15 +109,19 @@ def test_index_serves_the_frontend(client):
     res = client.get("/")
     assert res.status_code == 200
     assert "ArtificeOCR" in res.text
-    assert "skip-link" in res.text
-    assert "topnav" in res.text
+    assert "shell-skip" in res.text
+    assert "app-shell" in res.text
+    assert 'id="image-viewport"' in res.text
+    assert 'id="btn-add-tropy"' in res.text
+    assert 'id="btn-send-tropy"' in res.text
+    assert "LudwigLang" not in res.text
 
 
 def test_about_page_serves(client):
     res = client.get("/about")
     assert res.status_code == 200
     assert "About ArtificeOCR" in res.text
-    assert "topnav" in res.text
+    assert "app-shell" in res.text
 
 
 def test_static_index_html_is_gone(client):
@@ -2899,161 +2903,6 @@ def test_pdf_export_accepts_valid_paths(client, pdf_text_folder):
 
 
 # --------------------------------------------------------------------------- #
-# path validation — ludwiglang download
-# --------------------------------------------------------------------------- #
-
-
-def test_ludwiglang_download_refuses_path_outside_output_dir(client, tmp_path):
-    """A download path outside the configured output directory is refused."""
-    config.apply_overrides({"output_dir": str(tmp_path / "out")})
-
-    # Create a file adjacent to (not inside) the output directory
-    sibling = tmp_path / "text.md"
-    sibling.write_text("secret", encoding="utf-8")
-
-    res = client.get(
-        "/api/ludwiglang/download",
-        params={
-            "path": str(sibling),
-        },
-    )
-    assert res.status_code == 400
-    assert "not within" in res.json()["detail"].lower()
-
-
-def test_ludwiglang_download_serves_file_within_output_dir(client, tmp_path):
-    """A download path within the configured output directory is served."""
-    out = tmp_path / "out"
-    out.mkdir()
-    (out / "ludwiglang").mkdir()
-    export_file = out / "ludwiglang" / "text.md"
-    export_file.write_text("# Test Document", encoding="utf-8")
-
-    config.apply_overrides({"output_dir": str(out)})
-
-    res = client.get(
-        "/api/ludwiglang/download",
-        params={
-            "path": str(export_file),
-        },
-    )
-    assert res.status_code == 200
-    assert res.headers["content-type"].startswith("text/markdown")
-    assert "# Test Document" in res.text
-
-
-def test_ludwiglang_download_missing_file_returns_404(client, tmp_path):
-    """A file that does not exist inside the permitted output directory is a
-    404, not a 400.
-
-    Containment and existence are separate questions. The validator is asked
-    not to require existence here precisely so that "the thing you named is not
-    there" stays distinguishable from "you may not have that".
-    """
-    out = tmp_path / "out"
-    (out / "ludwiglang").mkdir(parents=True)
-    config.apply_overrides({"output_dir": str(out)})
-
-    res = client.get(
-        "/api/ludwiglang/download",
-        params={
-            "path": str(out / "ludwiglang" / "absent.md"),
-        },
-    )
-    assert res.status_code == 404
-    assert "not found" in res.json()["detail"].lower()
-
-
-def test_ludwiglang_download_refuses_missing_path_outside_output_dir(client, tmp_path):
-    """Containment is checked before existence.
-
-    A nonexistent path *outside* the output directory must still be refused
-    with 400 rather than answered with 404. Answering 404 there would turn the
-    endpoint into an existence oracle for arbitrary filesystem paths — the
-    caller could distinguish "outside and absent" from "outside and present".
-    """
-    out = tmp_path / "out"
-    out.mkdir()
-    config.apply_overrides({"output_dir": str(out)})
-
-    res = client.get(
-        "/api/ludwiglang/download",
-        params={
-            "path": str(tmp_path / "elsewhere" / "absent.md"),
-        },
-    )
-    assert res.status_code == 400
-    assert "not within" in res.json()["detail"].lower()
-
-
-def test_ludwiglang_download_refuses_windows_style_escape(client, tmp_path):
-    """A Windows-style path with backslashes that resolves outside the output
-    directory is rejected, not misinterpreted."""
-    config.apply_overrides({"output_dir": str(tmp_path / "out")})
-
-    # Create a real file outside the output directory so resolve(strict=True)
-    # succeeds, and the rejection comes from containment, not resolution.
-    sibling = tmp_path / "other" / "file.md"
-    sibling.parent.mkdir()
-    sibling.write_text("data", encoding="utf-8")
-
-    # Simulate what a Windows client might send — backslashes for separators
-    res = client.get(
-        "/api/ludwiglang/download",
-        params={
-            "path": str(sibling).replace("/", "\\"),
-        },
-    )
-    assert res.status_code == 400
-    assert "not within" in res.json()["detail"].lower()
-
-
-# --------------------------------------------------------------------------- #
-# path validation — ludwiglang collections / export
-# --------------------------------------------------------------------------- #
-
-
-def test_ludwiglang_collections_refuses_output_dir_outside_allowed_roots(client):
-    res = client.get(
-        "/api/ludwiglang/collections",
-        params={
-            "output_dir": "/opt/rejected/output",
-        },
-    )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
-
-
-def test_ludwiglang_collections_accepts_valid_output_dir(client, tmp_path):
-    out = tmp_path / "out"
-    out.mkdir()
-    res = client.get(
-        "/api/ludwiglang/collections",
-        params={
-            "output_dir": str(out),
-        },
-    )
-    assert res.status_code == 200
-    assert res.json()["collections"] == []
-
-
-def test_ludwiglang_export_refuses_output_dir_outside_allowed_roots(client):
-    res = client.post(
-        "/api/ludwiglang/export",
-        json={
-            "collection": "test",
-            "output_dir": "/opt/rejected/output",
-        },
-    )
-    assert res.status_code == 400
-    detail = res.json()["detail"]
-    assert "outside the directories this server is permitted" in detail.lower()
-    assert str(Path.home()) not in detail
-
-
-# --------------------------------------------------------------------------- #
 # path validation — add_paths
 # --------------------------------------------------------------------------- #
 
@@ -3316,95 +3165,6 @@ def test_validate_contained_rejects_windows_drive_letter_on_posix(tmp_path):
         validate_contained("C:\\Windows", container, "path")
     assert exc_info.value.status_code == 400
     assert "not valid on this platform" in str(exc_info.value.detail)
-
-
-# --------------------------------------------------------------------------- #
-# ludwiglang export — collection path-traversal (platform-independent)
-# --------------------------------------------------------------------------- #
-# ``validate_contained`` decides containment after resolving the fully joined
-# path, so a trajectory that escapes the validated output directory is rejected
-# with 400 regardless of platform.  Asserting on the *containment decision*
-# (400 vs 200) rather than the resolved string makes the test meaningful on
-# POSIX as well as Windows.
-
-
-def test_ludwiglang_export_rejects_traversal_collection(client, tmp_path, monkeypatch):
-    """A collection name that escapes the validated output directory is 400.
-
-    ``../../etc`` resolves outside the container on every platform —
-    POSIX ``Path.__truediv__`` resolves it relative to the joined base,
-    and ``validate_contained`` checks the resolved result against the
-    validated root.  This is the test the brief asks for: it fails on the
-    unfixed code (which just joins and uses the path), and it fails on
-    POSIX, not just Windows.
-    """
-    out = tmp_path / "out"
-    out.mkdir()
-    (out / "cleaned" / "text").mkdir(parents=True)
-
-    # Suppress export_md — we only need the validation check to run.
-    # These are imported inside ludwiglang_export() (lazy), so
-    # monkeypatch the source module rather than the router.
-    monkeypatch.setattr(
-        "artifice_ocr.export_ludwiglang._read_manifest",
-        lambda p: {},
-    )
-    monkeypatch.setattr(
-        "artifice_ocr.export_ludwiglang.export_md",
-        lambda *a, **kw: tmp_path / "out.md",
-    )
-
-    res = client.post(
-        "/api/ludwiglang/export",
-        json={
-            "collection": "../../../etc",
-            "output_dir": str(out),
-        },
-    )
-    assert res.status_code == 400, (
-        f"Expected 400 for traversal collection, got {res.status_code}: {res.json()}"
-    )
-    # The rejection message comes from validate_contained — it must not
-    # disclose the resolved path.
-    detail = res.json()["detail"].lower()
-    assert "not within" in detail, f"Expected containment rejection, got: {detail}"
-
-
-def test_ludwiglang_export_accepts_legitimate_collection(client, tmp_path, monkeypatch):
-    """A plain collection name that stays inside the output directory is allowed.
-
-    This ensures the fix does not break the success path — a legitimate
-    ``collection`` name must still work.
-    """
-    out = tmp_path / "out"
-    out.mkdir()
-    coll_dir = out / "cleaned" / "text" / "my-collection"
-    coll_dir.mkdir(parents=True)
-    # export_md expects page JSON files within the collection directory.
-    (coll_dir / "page0001.json").write_text(
-        '{"extracted_text": "test"}',
-        encoding="utf-8",
-    )
-
-    monkeypatch.setattr(
-        "artifice_ocr.export_ludwiglang._read_manifest",
-        lambda p: {},
-    )
-    monkeypatch.setattr(
-        "artifice_ocr.export_ludwiglang.export_md",
-        lambda *a, **kw: tmp_path / "out.md",
-    )
-
-    res = client.post(
-        "/api/ludwiglang/export",
-        json={
-            "collection": "my-collection",
-            "output_dir": str(out),
-        },
-    )
-    assert res.status_code == 200, (
-        f"Expected 200 for legitimate collection, got {res.status_code}: {res.json()}"
-    )
 
 
 # --------------------------------------------------------------------------- #

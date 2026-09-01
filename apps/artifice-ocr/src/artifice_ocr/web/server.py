@@ -10,10 +10,10 @@ and are included here.
 """
 
 import contextlib
+import importlib.resources
 import json
 import logging
 import os
-import sys
 import time
 from html import escape
 from pathlib import Path
@@ -45,7 +45,6 @@ from .routers import analytics as analytics_router
 from .routers import byom as byom_router
 from .routers import events as events_router
 from .routers import history as history_router
-from .routers import ludwiglang as ludwiglang_router
 from .routers import pdf_export as pdf_export_router
 from .routers import queue as queue_router
 from .routers import run as run_router
@@ -94,11 +93,8 @@ app.include_router(tropy_browse_router.router)
 app.include_router(tropy_notes_router.router)
 app.include_router(tropy_writeback_router.router)
 app.include_router(pdf_export_router.router)
-app.include_router(ludwiglang_router.router)
 
 # ── Static assets (resolved through importlib.resources — freeze-safe) ─────
-import importlib.resources
-
 # Resolved through importlib.resources, NOT a __file__-relative path.  This
 # app is distributed as a frozen .exe/.dmg, where __file__ points inside a
 # temporary extraction directory.  Using importlib keeps the path correct in
@@ -123,15 +119,22 @@ _JINJA = Environment(
 
 # ── Masthead context for shared _masthead.html partial ──────────────────
 _OCR_NAV_ITEMS = [
-    {"href": "/", "label": "Pipeline", "key": "pipeline"},
+    {"href": "/?view=main", "label": "Queue", "key": "pipeline"},
+    {"href": "/?view=preview", "label": "Review", "key": "review"},
+    {"href": "/?view=history", "label": "History", "key": "history"},
+    {"href": "/?view=analytics", "label": "Insights", "key": "insights"},
+    {"href": "/?view=settings", "label": "Settings", "key": "settings"},
     {"href": "/about", "label": "About", "key": "about"},
 ]
 
 _MASTHEAD_CTX = {
+    "app_slug": "artifice-ocr",
     "brand_accent": "OCR",
-    "brand_tagline": "local-first \u00b7 LM Studio + Ollama",
+    "page_title": "Document workspace",
+    "document_context": "Local archival collection",
     "nav_items": _OCR_NAV_ITEMS,
-    "show_theme_toggle": True,
+    "show_inspector": True,
+    "show_activity": True,
 }
 
 
@@ -167,7 +170,9 @@ def index() -> HTMLResponse:
 
 @app.get("/about", response_class=HTMLResponse)
 def about() -> HTMLResponse:
-    return HTMLResponse(_render("about.html", active_tab="about"))
+    return HTMLResponse(
+        _render("about.html", active_tab="about", show_inspector=False, show_activity=False)
+    )
 
 
 @app.post("/api/native/pick-file")

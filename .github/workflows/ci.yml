@@ -133,7 +133,9 @@ jobs:
             echo "Format gate runs on pull_request only; skipping on push."
             exit 0
           fi
-          CHANGED=$(git diff --name-only "$BASE_SHA" HEAD -- '*.py')
+          # Deleted files cannot be formatted and must not be passed back to
+          # Ruff as nonexistent paths. Check only files present in the PR head.
+          CHANGED=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA" HEAD -- '*.py')
           if [ -z "$CHANGED" ]; then
             echo "No changed Python files; format gate passes."
             exit 0

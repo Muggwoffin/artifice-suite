@@ -1,38 +1,25 @@
-<!-- SPDX-FileCopyrightText: 2026 Maurice Casey
-   -
-   - SPDX-License-Identifier: AGPL-3.0-or-later
-  -->
+{# SPDX-FileCopyrightText: 2026 Maurice Casey #}
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{% extends "_app_shell.html" %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}ArtificeTranscribe{% endblock %}</title>
+{% block head %}
   <link rel="icon" type="image/svg+xml" href="/shared/logos/artifice-transcribe-mark.svg?v={{ asset_v }}">
   <link rel="apple-touch-icon" href="/shared/logos/artifice-transcribe.png">
-  <link rel="stylesheet" href="/shared/fonts.css?v={{ asset_v }}">
-  <link rel="stylesheet" href="/shared/tokens.css?v={{ asset_v }}">
-  <link rel="stylesheet" href="/shared/masthead.css?v={{ asset_v }}">
   <link rel="stylesheet" href="/shared/prose.css?v={{ asset_v }}">
-  {% block head %}{% endblock %}
   <link rel="stylesheet" href="/static/css/app.css?v={{ asset_v }}">
   <link rel="stylesheet" href="/shared/byom.css?v={{ asset_v }}">
   <link rel="stylesheet" href="/shared/toast.css?v={{ asset_v }}">
-</head>
-<body>
-<a href="#main-content" class="skip-link">Skip to content</a>
+  {% block app_head %}{% endblock %}
+{% endblock %}
 
-{% include '_masthead.html' %}
+{% block workspace %}
+<div class="masthead-search" id="masthead-search"><input type="text" id="global-search-input" placeholder="Search transcripts (/)" class="search-input"></div>
+<div class="app">{% block content %}{% endblock %}</div>
+{% endblock %}
 
-<div class="masthead-search" id="masthead-search">
-  <input type="text" id="global-search-input" placeholder="Search transcripts (/)" class="search-input">
-</div>
+{% block activity %}<p class="activity-empty">Transcription, diarisation, and export progress appear here.</p>{% endblock %}
 
-<div class="app"{% if active_tab != 'about' %} id="main-content"{% endif %}>
-{% block content %}{% endblock %}
-</div>
-
+{% block scripts %}
 <script src="/shared/byom.js?v={{ asset_v }}"></script>
 <script src="/shared/toast.js?v={{ asset_v }}"></script>
 <script src="/shared/bind.js?v={{ asset_v }}"></script>
@@ -40,12 +27,8 @@
 <script>
 (function () {
   "use strict";
-  var byom = window.ArtificeByom.autostart({
-    appName: "ArtificeTranscribe",
-    onConfigured: function () { byom.close(); }
-  });
+  var byom = window.ArtificeByom.autostart({ appName: "ArtificeTranscribe", onConfigured: function () { byom.close(); } });
 })();
 </script>
-{% block scripts %}{% endblock %}
-</body>
-</html>
+{% block app_scripts %}{% endblock %}
+{% endblock %}

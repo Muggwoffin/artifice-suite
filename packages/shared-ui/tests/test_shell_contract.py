@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: 2026 Maurice Casey
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from importlib.resources import files
+from pathlib import Path
 
 import shared_ui
+
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_shell_assets_and_template_are_packaged():
@@ -33,3 +36,21 @@ def test_shell_javascript_exposes_documented_api():
     )
     for member in members:
         assert member in source
+
+
+def test_every_app_uses_the_suite_shell():
+    template_bases = (
+        "apps/artifice-ocr/src/artifice_ocr/web/templates/base.html",
+        "apps/artifice-draft/src/artifice_draft/web/templates/base.html",
+        "apps/artifice-graph/src/artifice_graph/web/templates/base.html",
+        "apps/artifice-transcribe/src/artifice_transcribe/web/templates/base.html",
+    )
+    for relative in template_bases:
+        assert '{% extends "_app_shell.html" %}' in (ROOT / relative).read_text(encoding="utf-8")
+
+    hub = (ROOT / "apps/artifice-hub/src/artifice_hub/web/static/index.html").read_text(
+        encoding="utf-8"
+    )
+    assert 'class="app-shell"' in hub
+    assert "/shared/shell.css" in hub
+    assert "/shared/shell.js" in hub
