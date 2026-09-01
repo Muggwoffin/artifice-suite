@@ -55,12 +55,30 @@ def test_connect_uses_stable_port_and_verifies_project(tmp_path, httpx_mock, mon
     project = _project(tmp_path)
     monkeypatch.setattr("artifice_ocr.tropy_api.tropy_config_dir", lambda: tmp_path / "missing")
     httpx_mock.add_response(
-        url="http://127.0.0.1:2019/project/current/",
+        url="http://127.0.0.1:2019/",
         json={"project": str(project), "id": "Archive", "version": "1.17", "status": "ok"},
     )
+    httpx_mock.add_response(url="http://127.0.0.1:2019/project/current/", status_code=404)
     connection = connect(project)
     assert connection.port == 2019
     assert connection.project_name == "Archive"
+    assert connection.project_prefix == "/project"
+
+
+def test_connect_uses_named_project_routes_when_available(tmp_path, httpx_mock, monkeypatch):
+    project = _project(tmp_path)
+    monkeypatch.setattr("artifice_ocr.tropy_api.tropy_config_dir", lambda: tmp_path / "missing")
+    httpx_mock.add_response(
+        url="http://127.0.0.1:2019/",
+        json={"project": str(project), "version": "1.18", "status": "ok"},
+    )
+    httpx_mock.add_response(
+        url="http://127.0.0.1:2019/project/current/",
+        json={"project": str(project), "id": "Archive", "version": "1.18", "status": "ok"},
+    )
+    connection = connect(project)
+    assert connection.project_id == "Archive"
+    assert connection.project_prefix == "/project/current"
 
 
 def test_connect_blocks_wrong_open_project(tmp_path, httpx_mock, monkeypatch):
@@ -69,7 +87,7 @@ def test_connect_blocks_wrong_open_project(tmp_path, httpx_mock, monkeypatch):
     monkeypatch.setattr("artifice_ocr.tropy_api.tropy_config_dir", lambda: tmp_path / "missing")
     for port in (2019, 2029):
         httpx_mock.add_response(
-            url=f"http://127.0.0.1:{port}/project/current/",
+            url=f"http://127.0.0.1:{port}/",
             json={"project": str(other), "id": "Other", "version": "1.17"},
         )
     with pytest.raises(TropyAPIError, match="Other.*Expected"):
@@ -89,6 +107,17 @@ def test_note_client_uses_current_note_endpoint_and_form_data(tmp_path, httpx_mo
     assert b"%26lt%3B" in request.content
     assert "/project/import" not in str(request.url)
     assert note_html("A < B") == "<p>A &lt; B</p>"
+
+
+def test_note_client_uses_stable_note_endpoint(tmp_path, httpx_mock):
+    project = _project(tmp_path)
+    connection = TropyConnection(
+        2019, "current", "Archive", project / "project.tpy", "1.17", "/project"
+    )
+    httpx_mock.add_response(
+        method="POST", url="http://127.0.0.1:2019/project/notes", json={"id": [78]}
+    )
+    assert TropyAPIClient(connection).create_note(10, "Text", "en") == [78]
 
 
 class _FakeClient:

@@ -39,6 +39,7 @@ class TropyConnection:
     project_name: str
     project_db: Path
     version: str
+    project_prefix: str = "/project/current"
 
     @property
     def base_url(self) -> str:
@@ -95,7 +96,11 @@ def connect(project_path: str | Path) -> TropyConnection:
     with httpx.Client(timeout=_TIMEOUT, trust_env=False, follow_redirects=False) as client:
         for port in candidate_ports():
             try:
-                response = client.get(f"http://127.0.0.1:{port}/project/current/")
+                # Tropy <= 1.17 reports the current project at the API root and
+                # exposes /project/* routes. Tropy >= 1.18 additionally exposes
+                # named-project routes such as /project/current/*. Start with
+                # the root because it is the common discovery endpoint.
+                response = client.get(f"http://127.0.0.1:{port}/")
             except httpx.HTTPError:
                 continue
             saw_api = True
@@ -109,12 +114,29 @@ def connect(project_path: str | Path) -> TropyConnection:
             if not _same_project(expected, actual):
                 wrong_project = actual
                 continue
+
+            # Prefer the named-project routes when the running Tropy supports
+            # them. Do not follow redirects: on 1.18 the legacy routes redirect
+            # to these routes, while on 1.17 this probe simply returns 404.
+            project_prefix = "/project"
+            project_id = "current"
+            try:
+                named = client.get(f"http://127.0.0.1:{port}/project/current/")
+                if named.status_code == 200:
+                    named_payload = named.json()
+                    named_project = _canonical_project(named_payload["project"])
+                    if _same_project(expected, named_project):
+                        project_prefix = "/project/current"
+                        project_id = str(named_payload.get("id") or "current")
+            except (httpx.HTTPError, KeyError, TypeError, ValueError, OSError):
+                pass
             return TropyConnection(
                 port=port,
-                project_id=str(payload.get("id") or "current"),
+                project_id=project_id,
                 project_name=_project_name(actual),
                 project_db=actual,
                 version=str(payload.get("version") or "unknown"),
+                project_prefix=project_prefix,
             )
 
     if wrong_project is not None:
@@ -167,7 +189,9 @@ class TropyAPIClient:
             raise TropyAPIError("Tropy's Developer API changed; preview again")
 
     def photo(self, photo_id: int) -> dict | None:
-        response = self._request("GET", f"/project/current/photos/{photo_id}")
+        response = self._request(
+            "GET", f"{self.connection.project_prefix}/photos/{photo_id}"
+        )
         if response.status_code == 404:
             return None
         if response.status_code != 200:
@@ -179,7 +203,9 @@ class TropyAPIClient:
         return payload if isinstance(payload, dict) else None
 
     def note_text(self, note_id: int) -> str | None:
-        response = self._request("GET", f"/project/current/notes/{note_id}")
+        response = self._request(
+            "GET", f"{self.connection.project_prefix}/notes/{note_id}"
+        )
         if response.status_code == 404:
             return None
         if response.status_code != 200:
@@ -204,7 +230,7 @@ class TropyAPIClient:
     def create_note(self, photo_id: int, text: str, language: str) -> list[int]:
         response = self._request(
             "POST",
-            "/project/current/notes",
+            f"{self.connection.project_prefix}/notes",
             data={"photo": str(photo_id), "html": note_html(text), "language": language},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
