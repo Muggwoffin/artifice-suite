@@ -201,7 +201,9 @@ PERSISTED_KEYS = (
 _config_cache: dict[str, Any] | None = None
 
 
-def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
+def load_config(
+    config_path: str | Path | None = None, *, include_user_settings: bool = True
+) -> dict[str, Any]:
     """Load configuration from YAML file, merged over defaults.
 
     Resolution order:
@@ -230,6 +232,12 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
             with open(p, encoding="utf-8") as f:
                 file_cfg = yaml.safe_load(f) or {}
             merged.update(file_cfg)
+
+    # Durable UI settings override shipped/YAML defaults on every process
+    # start. The save path has always written this file, but until now the
+    # load path never merged it, so settings appeared to vanish on restart.
+    if include_user_settings:
+        merged.update(load_user_settings())
 
     env_overrides = {
         "ocr_model": "OCR_MODEL",

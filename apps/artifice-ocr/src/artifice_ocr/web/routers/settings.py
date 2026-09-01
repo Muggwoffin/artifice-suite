@@ -6,6 +6,7 @@
 
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException
 from model_harness.contract import EndpointRejected
@@ -108,6 +109,16 @@ def _validate_approved_folder(entry: Any) -> str:
 
 def _validate_base_url(raw: str, field_name: str) -> str:
     """Return *raw* after checking its scheme and host. Fails closed, loudly."""
+    if urlsplit(raw).hostname in {"0.0.0.0", "::"}:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_name}: 0.0.0.0 is the address Ollama listens on, not an "
+                "address clients can connect to. Use http://localhost:11434 on "
+                "this computer, or http://<this-computer's-LAN-IP>:11434 from "
+                "another computer."
+            ),
+        )
     try:
         return _endpoint_policy.validate_url(raw)
     except EndpointRejected as e:
@@ -242,15 +253,15 @@ def set_config(overrides: dict[str, Any]) -> dict:
             )
         allowed["approved_folders"] = [_validate_approved_folder(entry) for entry in folders]
 
-    config.apply_overrides(allowed)
     config.save_user_settings(allowed)
+    config.apply_overrides(allowed)
     return {"ok": True}
 
 
 @router.post("/api/config/reset")
 def reset_config() -> dict:
     config.reset()
-    config.load_config()
+    config.load_config(include_user_settings=False)
     return {k: _redact_config(k, config.get(k)) for k in _CONFIG_KEYS}
 
 

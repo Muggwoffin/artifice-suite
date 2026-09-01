@@ -9,13 +9,13 @@
 {% block content %}
 
   <nav class="tabs">
-    <button class="tab active" data-tab="main"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Main</span></button>
-    <button class="tab" data-tab="preview"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Preview</span></button>
-    <button class="tab" data-tab="history"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>History</span></button>
-    <button class="tab" data-tab="analytics"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span></button>
-    <button class="tab" data-tab="settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="1.6"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="1.6"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="1.6"/></svg><span>Settings</span></button>
+    <button type="button" class="tab active" data-tab="main"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Main</span></button>
+    <button type="button" class="tab" data-tab="preview"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Preview</span></button>
+    <button type="button" class="tab" data-tab="history"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>History</span></button>
+    <button type="button" class="tab" data-tab="analytics"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span></button>
+    <button type="button" class="tab" data-tab="settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="1.6"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="1.6"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="1.6"/></svg><span>Settings</span></button>
     <div class="spacer" style="flex:1;"></div>
-    <button class="tab" id="btn-palette-hint" title="Command Palette (Ctrl+K)" style="font-size:0.8rem; border-bottom:none; color:var(--ink-faint);">
+    <button type="button" class="tab" id="btn-palette-hint" title="Command Palette (Ctrl+K)" style="font-size:0.8rem; border-bottom:none; color:var(--ink-faint);">
       <span class="kbd">Ctrl</span>+<span class="kbd">K</span>
     </button>
   </nav>
@@ -90,18 +90,18 @@
         </div>
 
         <div class="toolbar">
-          <button class="btn" id="btn-browse-files">Browse Files</button>
-          <button class="btn" id="btn-add-folder">Add Folder</button>
-          <button class="btn" id="btn-add-tropy">Add from Tropy&hellip;</button>
-          <button class="btn danger" id="btn-remove">Remove Selected</button>
-          <button class="btn danger" id="btn-clear">Clear All</button>
+          <button type="button" class="btn" id="btn-browse-files">Browse Files</button>
+          <button type="button" class="btn" id="btn-add-folder">Add Folder</button>
+          <button type="button" class="btn" id="btn-add-tropy">Add from Tropy&hellip;</button>
+          <button type="button" class="btn danger" id="btn-remove">Remove Selected</button>
+          <button type="button" class="btn danger" id="btn-clear">Clear All</button>
           <div class="rule-v"></div>
-          <button class="btn" id="btn-skip">Skip</button>
-          <button class="btn" id="btn-retry">Retry</button>
-          <button class="btn" id="btn-batch-correct">Batch Correct&hellip;</button>
+          <button type="button" class="btn" id="btn-skip">Skip</button>
+          <button type="button" class="btn" id="btn-retry">Retry</button>
+          <button type="button" class="btn" id="btn-batch-correct">Batch Correct&hellip;</button>
           <div class="spacer"></div>
-          <button class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
-          <button class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
+          <button type="button" class="btn" id="btn-compile-pdf">Compile PDF&hellip;</button>
+          <button type="button" class="btn" id="btn-send-tropy">Send to Tropy&hellip;</button>
         </div>
 
         <div class="section-divider"></div>
@@ -117,10 +117,10 @@
         <div class="output-row">
           <strong style="font-size:var(--text-sm); white-space:nowrap;">Output</strong>
           <input type="text" id="output-dir" value="output">
-          <button class="btn" id="btn-browse-output">&hellip;</button>
-          <button class="btn accent icon-btn" id="btn-run"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="icon-btn-label">Run Pipeline</span></button>
-          <button class="btn icon-btn" id="btn-pause" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg><span>Pause</span></button>
-          <button class="btn danger icon-btn" id="btn-stop" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg><span>Stop</span></button>
+          <button type="button" class="btn" id="btn-browse-output">&hellip;</button>
+          <button type="button" class="btn accent icon-btn" id="btn-run"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="icon-btn-label">Run Pipeline</span></button>
+          <button type="button" class="btn icon-btn" id="btn-pause" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg><span>Pause</span></button>
+          <button type="button" class="btn danger icon-btn" id="btn-stop" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg><span>Stop</span></button>
         </div>
       </div>
 
@@ -145,9 +145,9 @@
           <div class="image-toolbar">
             <button class="btn" id="btn-image-reset" type="button" title="Reset zoom (or double-click the image)">Reset</button>
             <div class="btn-group">
-              <button class="btn" data-fit="width" title="Fit to width">W</button>
-              <button class="btn" data-fit="height" title="Fit to height">H</button>
-              <button class="btn" data-fit="actual" title="Actual size (100%)">1:1</button>
+              <button type="button" class="btn" data-fit="width" title="Fit to width">W</button>
+              <button type="button" class="btn" data-fit="height" title="Fit to height">H</button>
+              <button type="button" class="btn" data-fit="actual" title="Actual size (100%)">1:1</button>
             </div>
             <span class="dim" id="image-zoom-readout"></span>
           </div>
@@ -211,9 +211,9 @@
           <h2>History</h2>
           <div style="display:flex; gap:0.5rem; align-items:center;">
             <input type="text" id="history-search" placeholder="Find file&hellip;" style="padding:0.4rem 0.6rem; border-radius:var(--radius-sm); border:1px solid var(--rule); background:var(--paper-recessed);">
-            <button class="btn" id="btn-history-refresh">Refresh</button>
-            <button class="btn" id="btn-history-send-tropy" title="Send selected document back to Tropy">Send to Tropy</button>
-            <button class="btn danger" id="btn-history-delete">Delete Run</button>
+            <button type="button" class="btn" id="btn-history-refresh">Refresh</button>
+            <button type="button" class="btn" id="btn-history-send-tropy" title="Send selected document back to Tropy">Send to Tropy</button>
+            <button type="button" class="btn danger" id="btn-history-delete">Delete Run</button>
           </div>
         </div>
         <div class="history-grid">
@@ -243,9 +243,9 @@
           <div class="image-toolbar">
             <button class="btn" id="btn-history-image-reset" type="button" title="Reset zoom (or double-click the image)">Reset</button>
             <div class="btn-group">
-              <button class="btn" data-fit="width" title="Fit to width">W</button>
-              <button class="btn" data-fit="height" title="Fit to height">H</button>
-              <button class="btn" data-fit="actual" title="Actual size (100%)">1:1</button>
+              <button type="button" class="btn" data-fit="width" title="Fit to width">W</button>
+              <button type="button" class="btn" data-fit="height" title="Fit to height">H</button>
+              <button type="button" class="btn" data-fit="actual" title="Actual size (100%)">1:1</button>
             </div>
             <span class="dim" id="history-image-zoom-readout"></span>
           </div>
@@ -305,7 +305,7 @@
     <section class="panel" id="panel-analytics">
       <div class="card-head" style="padding:0 0 0.75rem;">
         <h2 style="font-family:var(--font-display); font-size:var(--text-h3); margin:0;">Analytics</h2>
-        <button class="btn" id="btn-analytics-refresh">Refresh</button>
+        <button type="button" class="btn" id="btn-analytics-refresh">Refresh</button>
       </div>
       <div class="tiles" id="analytics-tiles"></div>
       <div class="charts-grid">
@@ -416,12 +416,12 @@
             <select id="template-select" class="select" style="flex:1;">
               <option value="">-- Select a template --</option>
             </select>
-            <button class="btn" id="btn-template-apply">Apply</button>
-            <button class="btn" id="btn-template-delete">Delete</button>
+            <button type="button" class="btn" id="btn-template-apply">Apply</button>
+            <button type="button" class="btn" id="btn-template-delete">Delete</button>
           </div>
           <div style="display:flex; gap:0.5rem; margin-top:0.6rem;">
             <input type="text" id="template-name" class="input" style="flex:1;" placeholder="Template name">
-            <button class="btn accent" id="btn-template-save">Save Current as Template</button>
+            <button type="button" class="btn accent" id="btn-template-save">Save Current as Template</button>
           </div>
           <span id="template-status" class="dim" style="margin-top:0.5rem; display:inline-block;"></span>
         </div>
@@ -437,12 +437,12 @@
           <div id="health-panel" class="health-panel">
             <p class="dim">Press "Check Connections" to verify your local AI helpers are running.</p>
           </div>
-          <button class="btn" id="btn-preflight" style="margin-top:0.75rem;">Check Connections</button>
+          <button type="button" class="btn" id="btn-preflight" style="margin-top:0.75rem;">Check Connections</button>
         </div>
       </div>
       <div class="run-row" style="padding-left:0;">
-        <button class="btn accent" id="btn-settings-save">Save Settings</button>
-        <button class="btn" id="btn-settings-reset">Reset to Defaults</button>
+        <button type="button" class="btn accent" id="btn-settings-save">Save Settings</button>
+        <button type="button" class="btn" id="btn-settings-reset">Reset to Defaults</button>
         <span class="dim" id="settings-saved"></span>
       </div>
     </section>
@@ -458,11 +458,11 @@
   <div class="modal-backdrop hidden" id="modal-tropy-add">
     <div class="modal" style="width:min(640px, 94vw);">
       <h3>Import from Tropy</h3>
-      <button class="modal-close" data-modal-close aria-label="Close import dialog">&times;</button>
+      <button type="button" class="modal-close" data-modal-close aria-label="Close import dialog">&times;</button>
 
       <div class="tropy-mode-tabs" id="tropy-mode-tabs" role="tablist" aria-label="Import mode">
-        <button class="tropy-mode-tab active" id="tropy-tab-jsonld" role="tab" aria-selected="true" aria-controls="tropy-mode-jsonld" data-mode="jsonld">From file</button>
-        <button class="tropy-mode-tab" id="tropy-tab-browse" role="tab" aria-selected="false" aria-controls="tropy-mode-browse" data-mode="browse">Browse project</button>
+        <button type="button" class="tropy-mode-tab active" id="tropy-tab-jsonld" role="tab" aria-selected="true" aria-controls="tropy-mode-jsonld" data-mode="jsonld">From file</button>
+        <button type="button" class="tropy-mode-tab" id="tropy-tab-browse" role="tab" aria-selected="false" aria-controls="tropy-mode-browse" data-mode="browse">Browse project</button>
       </div>
 
       <div id="tropy-mode-jsonld">
@@ -568,13 +568,13 @@
   <div class="modal-backdrop hidden" id="modal-compile-pdf">
     <div class="modal" style="width:min(640px, 94vw);">
       <h3>Compile PDF</h3>
-      <button class="modal-close" data-modal-close>&times;</button>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
       <p class="dim">Compile processed text files from a folder into one continuous reading PDF.</p>
 
       <label class="field-label" for="pdf-folder">Input folder</label>
       <div style="display:flex; gap:0.5rem; margin-bottom:0.2rem;">
         <input type="text" id="pdf-folder" class="input" style="flex:1;" placeholder="Your output folder, e.g. output">
-        <button class="btn" id="btn-pdf-browse-folder">Browse&hellip;</button>
+        <button type="button" class="btn" id="btn-pdf-browse-folder">Browse&hellip;</button>
       </div>
       <p class="dim" style="margin:0 0 0.6rem; font-size:0.82rem;">
         Pick the pipeline&rsquo;s <strong>output</strong> folder (the one holding <code>cleaned/</code>,
@@ -613,7 +613,7 @@
       <label class="field-label" for="pdf-output">Save PDF to</label>
       <div style="display:flex; gap:0.5rem; margin-bottom:0.2rem;">
         <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Optional — where to save the PDF">
-        <button class="btn" id="btn-pdf-browse-output">Browse&hellip;</button>
+        <button type="button" class="btn" id="btn-pdf-browse-output">Browse&hellip;</button>
       </div>
       <p class="dim" style="margin:0 0 0.6rem; font-size:0.82rem;">
         Leave blank to save into the <code>output</code> folder, named after the input folder.
@@ -623,10 +623,10 @@
       <div id="pdf-log" style="max-height:26vh; overflow:auto; background:var(--paper-recessed); border-radius:var(--radius); padding:0.6rem; font-family:var(--font-mono); font-size:0.82rem; white-space:pre-wrap;"></div>
 
       <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
-        <button class="btn" id="btn-pdf-close">Close</button>
-        <button class="btn danger" id="btn-pdf-cancel" disabled>Cancel export</button>
-        <button class="btn accent" id="btn-pdf-start">Start</button>
-        <button class="btn" id="btn-pdf-download" disabled>Download</button>
+        <button type="button" class="btn" id="btn-pdf-close">Close</button>
+        <button type="button" class="btn danger" id="btn-pdf-cancel" disabled>Cancel export</button>
+        <button type="button" class="btn accent" id="btn-pdf-start">Start</button>
+        <button type="button" class="btn" id="btn-pdf-download" disabled>Download</button>
       </div>
     </div>
   </div>
@@ -635,7 +635,7 @@
   <div class="modal-backdrop hidden" id="modal-tropy-send">
     <div class="modal" style="width:min(560px, 94vw);">
       <h3 id="tropy-modal-title">Export to Tropy</h3>
-      <button class="modal-close" data-modal-close aria-label="Close export dialog">&times;</button>
+      <button type="button" class="modal-close" data-modal-close aria-label="Close export dialog">&times;</button>
 
       <div class="tropy-help">
         <p id="tropy-help-text">Generate a Tropy JSON-LD file containing your OCR results. Import it back into Tropy with <strong>File &rarr; Import</strong>.</p>
@@ -717,7 +717,7 @@
   <div class="modal-backdrop hidden" id="modal-batch-correct">
     <div class="modal" style="width:min(480px, 94vw);">
       <h3>Batch Correct</h3>
-      <button class="modal-close" data-modal-close>&times;</button>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
       <p class="dim" style="margin-bottom:0.6rem;">Apply a find/replace correction to all items or selected items in the queue.</p>
 
       <div style="display:flex; flex-direction:column; gap:0.5rem;">
@@ -740,16 +740,16 @@
           <select id="batch-template-select" class="select" style="flex:1;">
             <option value="">-- Load template --</option>
           </select>
-          <button class="btn" id="btn-batch-template-save">Save</button>
-          <button class="btn danger" id="btn-batch-template-delete">Delete</button>
+          <button type="button" class="btn" id="btn-batch-template-save">Save</button>
+          <button type="button" class="btn danger" id="btn-batch-template-delete">Delete</button>
         </div>
       </div>
 
       <p class="dim" id="batch-status" style="margin-top:0.5rem;"></p>
 
       <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
-        <button class="btn" id="btn-batch-cancel">Close</button>
-        <button class="btn accent" id="btn-batch-apply">Apply</button>
+        <button type="button" class="btn" id="btn-batch-cancel">Close</button>
+        <button type="button" class="btn accent" id="btn-batch-apply">Apply</button>
       </div>
     </div>
   </div>

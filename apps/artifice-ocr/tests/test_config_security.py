@@ -42,6 +42,19 @@ class TestConfigFilePermissions:
         assert data["api_key"] == "sk-test-123"
         assert data["output_dir"] == "/overwritten"
 
+    def test_saved_settings_are_loaded_after_restart(self, tmp_path, monkeypatch):
+        from artifice_ocr import config
+
+        monkeypatch.setattr(config, "_SETTINGS_PATH", tmp_path / "settings.json")
+        monkeypatch.setattr(config, "_USER_DIR", tmp_path)
+        config.save_user_settings({"ocr_model": "local-vision", "output_dir": "/archive"})
+
+        config.reset()
+        loaded = config.load_config()
+
+        assert loaded["ocr_model"] == "local-vision"
+        assert loaded["output_dir"] == "/archive"
+
 
 class TestLoadTimePermissionRepair:
     """Permissions on pre-existing loose files are repaired at load time.
@@ -87,9 +100,7 @@ class TestLoadTimePermissionRepair:
         def _failing_restrict(_path):
             raise OSError("Simulated ACL failure — exFAT volume")
 
-        monkeypatch.setattr(
-            "secure_io.restrict_to_current_user", _failing_restrict
-        )
+        monkeypatch.setattr("secure_io.restrict_to_current_user", _failing_restrict)
 
         # Load must succeed despite the repair failure.
         result = config.load_user_settings()
