@@ -111,6 +111,7 @@ def _relaunch(exe: Path, extra_args: list[str]) -> int:
         subprocess.Popen(
             [str(exe), str(Path(__file__).resolve()), *extra_args],
             cwd=str(ROOT), env=env,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except OSError as exc:
         _show_error("OCR Pipeline (web) failed to start",

@@ -427,6 +427,15 @@ class TropyWriter:
             for plan in plans:
                 entry = plan.entry
                 text = entry.text.strip()
+                # The preview is advisory: another Tropy process (or a
+                # previous entry in this same request) may have attached the
+                # text since it was generated.  Check again while holding
+                # the write lock so a retry can never replace or duplicate an
+                # existing note.  The plain INSERT below is intentional: it
+                # creates a new row and never uses REPLACE/UPSERT semantics.
+                if self._already_present(con, plan.target, entry.photo_id, text):
+                    report.skipped += 1
+                    continue
                 if plan.target == TARGET_NOTES:
                     con.execute(
                         "INSERT INTO notes (id, text, state, language) VALUES (?, ?, ?, ?)",

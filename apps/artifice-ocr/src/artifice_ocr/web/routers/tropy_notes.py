@@ -242,6 +242,7 @@ def tropy_notes_commit(req: TropyNotesCommitRequest) -> dict:
 
     client = TropyAPIClient(connection)
     written = 0
+    skipped = result["counts"]["duplicate"]
     errors: list[dict[str, str]] = []
     note_ids: list[int] = []
     for plan in plans:
@@ -249,6 +250,16 @@ def tropy_notes_commit(req: TropyNotesCommitRequest) -> dict:
             continue
         try:
             client.verify_current()
+            # The preview can be older than the commit.  Re-read the photo
+            # immediately before POSTing so an identical note added in the
+            # meantime is skipped; POST is reserved for creating a new note.
+            photo = client.photo(plan.entry.photo_id)
+            if photo is None:
+                errors.append({"label": plan.entry.label, "message": "photo no longer exists"})
+                break
+            if client.has_identical_note(photo, plan.entry.text):
+                skipped += 1
+                continue
             note_ids.extend(
                 client.create_note(
                     plan.entry.photo_id,
@@ -264,8 +275,13 @@ def tropy_notes_commit(req: TropyNotesCommitRequest) -> dict:
     return {
         "status": "complete" if not errors else "partial",
         "written": written,
-        "skipped": result["counts"]["duplicate"],
-        "remaining": req.expected_write_count - written,
+        "skipped": skipped,
+        "remaining": max(
+            0,
+            req.expected_write_count
+            - written
+            - (skipped - result["counts"]["duplicate"]),
+        ),
         "errors": errors,
         "note_ids": note_ids,
         "project": result["project"],

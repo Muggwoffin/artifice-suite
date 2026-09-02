@@ -326,10 +326,18 @@
 
     <!-- ============================================================ SETTINGS -->
     <section class="panel" id="panel-settings">
+      <div class="settings-intro">
+        <p class="eyebrow">Configuration</p>
+        <h2>OCR settings</h2>
+        <p>Choose how Artifice reads and processes your documents. Changes apply to new runs after you save them.</p>
+      </div>
       <div class="settings-grid">
-        <div class="card settings-card">
-          <h3>AI Models &amp; Connections</h3>
-          <p class="dim" style="margin:0 0 0.5rem;">Choose which service runs each step, and which model it uses.</p>
+        <div class="card settings-card settings-card-primary">
+          <div class="settings-card-heading">
+            <div><p class="eyebrow">01 · Models</p><h3>AI models</h3></div>
+            <span class="settings-badge">Choose one per stage</span>
+          </div>
+          <p class="settings-description">Select the service and model used for OCR, clean-up, and translation. Auto is the easiest starting point.</p>
           <label>OCR backend
             <select id="set-ocr_backend">
               <option value="auto">Auto (detect)</option>
@@ -360,9 +368,9 @@
             </select>
           </label>
           <label>Translate model <input type="text" id="set-translate_model" placeholder="e.g. aya-expanse:8b"></label>
-          <details style="margin-top:0.5rem;">
-            <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Connection settings</summary>
-            <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.4rem;">
+          <details class="settings-disclosure">
+            <summary>Connection settings <span class="settings-summary-hint">URLs and credentials</span></summary>
+            <div class="settings-disclosure-body">
               <label>LM Studio URL <input type="text" id="set-lm_studio_url" placeholder="http://localhost:1234/v1" title="Address where LM Studio is running."></label>
               <label>Ollama URL <input type="text" id="set-ollama_url" placeholder="http://localhost:11434" title="Base address where Ollama is running."></label>
               <label>Hugging Face token <input type="text" id="set-huggingface_token" placeholder="hf_xxx..." title="Your Hugging Face API token (hf_...). Required only when using Hugging Face."></label>
@@ -372,7 +380,10 @@
           </details>
         </div>
         <div class="card settings-card">
-          <h3>Processing</h3>
+          <div class="settings-card-heading">
+            <div><p class="eyebrow">02 · Processing</p><h3>Processing</h3></div>
+          </div>
+          <p class="settings-description">Tune the balance between speed, quality, and recovery when a page is difficult to read.</p>
           <label>Document type
             <select id="set-document_type"></select>
           </label>
@@ -392,9 +403,9 @@
           <label>Fall back to Tesseract on failed pages <input type="checkbox" id="set-tesseract_fallback_on_failure"></label>
           <p class="dim" style="margin:-0.2rem 0 0.3rem;">When a page fails the vision model (loops or errors) and Tesseract is installed, retry that page with Tesseract instead of failing it. Provenance is recorded per page.</p>
           <label>Enable Tropy project browsing <input type="checkbox" id="set-tropy_live_browse_enabled"></label>
-          <details style="margin-top:0.5rem;">
-            <summary class="dim" style="cursor:pointer; font-size:var(--text-sm);">Advanced</summary>
-            <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.4rem;">
+          <details class="settings-disclosure">
+            <summary>Advanced <span class="settings-summary-hint">Less common controls</span></summary>
+            <div class="settings-disclosure-body">
               <label>Max text chunk size <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;" title="How much text the AI processes at once. Leave at default unless you have a reason to change it."></label>
               <label>Context size <input type="number" id="set-context_size" min="0" step="1024" style="width:6rem;" title="The model's context window, in tokens. 0 leaves it to the model's own default."></label>
               <p class="dim" id="context-size-hint" style="margin:0;" aria-live="polite">0 uses the model&rsquo;s own default. Raise this if a page fails with &ldquo;exceeds the available context size&rdquo;.</p>
@@ -409,41 +420,42 @@
             </div>
           </details>
         </div>
-        <div class="card settings-card" style="grid-column: 1 / -1;">
-          <h3>Run Templates</h3>
-          <p class="dim" style="margin:0 0 0.5rem;">Save and load stage/option configurations.</p>
-          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+        <div class="card settings-card settings-card-wide">
+          <div class="settings-card-heading"><div><p class="eyebrow">03 · Shortcuts</p><h3>Run templates</h3></div></div>
+          <p class="settings-description">Save a combination of stages and options so you can reuse it for another batch.</p>
+          <div class="settings-inline-row">
             <select id="template-select" class="select" style="flex:1;">
               <option value="">-- Select a template --</option>
             </select>
             <button type="button" class="btn" id="btn-template-apply">Apply</button>
             <button type="button" class="btn" id="btn-template-delete">Delete</button>
           </div>
-          <div style="display:flex; gap:0.5rem; margin-top:0.6rem;">
+          <div class="settings-inline-row settings-template-save">
             <input type="text" id="template-name" class="input" style="flex:1;" placeholder="Template name">
             <button type="button" class="btn accent" id="btn-template-save">Save Current as Template</button>
           </div>
           <span id="template-status" class="dim" style="margin-top:0.5rem; display:inline-block;"></span>
         </div>
-        <div class="card settings-card" style="grid-column: 1 / -1;">
-          <h3>Approved folders</h3>
-          <p class="dim" style="margin:0 0 0.5rem;">Approving a folder grants Artifice permission to read and write files beneath it.</p>
+        <div class="card settings-card settings-card-wide">
+          <div class="settings-card-heading"><div><p class="eyebrow">04 · Files</p><h3>Approved folders</h3></div></div>
+          <p class="settings-description">Artifice can read and write only inside folders you approve.</p>
           <ul id="approved-folders-list" style="list-style:none; margin:0 0 0.5rem; padding:0; display:flex; flex-direction:column; gap:0.4rem;"></ul>
           <button class="btn" id="btn-approved-folder-add" type="button">Add folder&hellip;</button>
           <span id="approved-folders-status" class="dim" style="margin-left:0.5rem;"></span>
         </div>
-        <div class="card settings-card" style="grid-column: 1 / -1;">
-          <h3>Connection Status</h3>
+        <div class="card settings-card settings-card-wide">
+          <div class="settings-card-heading"><div><p class="eyebrow">05 · Diagnostics</p><h3>Connection status</h3></div></div>
+          <p class="settings-description">Check whether the services selected above are reachable before starting a run.</p>
           <div id="health-panel" class="health-panel">
             <p class="dim">Press "Check Connections" to verify your local AI helpers are running.</p>
           </div>
           <button type="button" class="btn" id="btn-preflight" style="margin-top:0.75rem;">Check Connections</button>
         </div>
       </div>
-      <div class="run-row" style="padding-left:0;">
+      <div class="run-row settings-actions" role="region" aria-label="Save settings">
         <button type="button" class="btn accent" id="btn-settings-save">Save Settings</button>
         <button type="button" class="btn" id="btn-settings-reset">Reset to Defaults</button>
-        <span class="dim" id="settings-saved"></span>
+        <span class="dim settings-save-status" id="settings-saved" role="status" aria-live="polite">No changes</span>
       </div>
     </section>
 

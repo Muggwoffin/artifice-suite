@@ -97,6 +97,9 @@ const SettingsTab = (function () {
   const approvedFoldersList = document.getElementById("approved-folders-list");
   const approvedFoldersStatus = document.getElementById("approved-folders-status");
   let approvedFolders = [];
+  let settingsBusy = false;
+  let savedSnapshot = "";
+  let dirty = false;
 
   let docTypes = {};
 
@@ -166,6 +169,50 @@ const SettingsTab = (function () {
     const outputDir = document.getElementById("output-dir");
     if (outputDir) out.output_dir = outputDir.value || "output";
     return out;
+  }
+
+  function setStatus(message, tone) {
+    savedLabel.textContent = message;
+    savedLabel.style.color = tone === "error" ? "var(--gold)" :
+      tone === "success" ? "var(--accent)" : "";
+  }
+
+  function snapshot(values) {
+    return JSON.stringify(values || collect());
+  }
+
+  function setDirty(value) {
+    dirty = value;
+    if (dirty) setStatus("Unsaved changes", "warning");
+    else if (!settingsBusy) setStatus("No changes");
+  }
+
+  function markChanged() {
+    if (!settingsBusy) setDirty(snapshot() !== savedSnapshot);
+  }
+
+  function validate() {
+    const rules = [
+      ["max_ocr_workers", 1, Infinity, "Enter at least 1 OCR reader."],
+      ["chunk_max_tokens", 100, Infinity, "Enter at least 100 tokens."],
+      ["context_size", 0, Infinity, "Context size cannot be negative."],
+      ["tropy_api_port", 0, 65535, "Enter a port from 0 to 65535."],
+    ];
+    for (const [key, min, max, message] of rules) {
+      const field = el(key);
+      const value = Number(field.value);
+      const raw = String(field.value ?? "").trim();
+      const invalid = raw === "" || !Number.isFinite(value) || value < min || value > max;
+      if (field.disabled) continue;
+      if (field.setAttribute) field.setAttribute("aria-invalid", String(invalid));
+      if (invalid) {
+        setStatus(message, "error");
+        field.focus();
+        return false;
+      }
+      if (field.removeAttribute) field.removeAttribute("aria-invalid");
+    }
+    return true;
   }
 
   function activeBackends() {
@@ -260,29 +307,68 @@ const SettingsTab = (function () {
   }
 
   async function load() {
-    await ensureDocTypes();
-    const cfg = await api("GET", "/api/config");
-    apply(cfg);
+    try {
+      await ensureDocTypes();
+      const cfg = await api("GET", "/api/config");
+      // Do not let a slow initial request wipe edits made while the page was
+      // loading. The user can reload explicitly if they want to discard them.
+      if (dirty) {
+        setStatus("Settings changed while loading; reload to discard edits.", "warning");
+        return;
+      }
+      apply(cfg);
+      savedSnapshot = snapshot(cfg);
+      setDirty(false);
+    } catch (err) {
+      setStatus("Could not load settings: " + err.message, "error");
+    }
+  }
+
+  function setSettingsBusy(busy) {
+    settingsBusy = busy;
+    ["btn-settings-save", "btn-settings-reset"].forEach(id => {
+      const button = document.getElementById(id);
+      if (button) button.disabled = busy;
+    });
   }
 
   async function save() {
+    if (settingsBusy) return;
+    if (!validate()) return;
+    setSettingsBusy(true);
+    setStatus("Saving…");
     try {
       await api("POST", "/api/config", collect());
-      apply(await api("GET", "/api/config"));
-      savedLabel.textContent = "Saved.";
-      savedLabel.style.color = "var(--accent)";
-      setTimeout(() => { savedLabel.textContent = ""; }, 2500);
+      const cfg = await api("GET", "/api/config");
+      apply(cfg);
+      savedSnapshot = snapshot(cfg);
+      setDirty(false);
+      setStatus("Saved.", "success");
+      setTimeout(() => { if (!dirty) setStatus("No changes"); }, 2500);
     } catch (err) {
       if (window.ArtificeToast) window.ArtificeToast.error("Could not save settings: " + err.message);
+      setStatus("Could not save settings: " + err.message, "error");
+    } finally {
+      setSettingsBusy(false);
     }
   }
 
   async function resetDefaults() {
-    const cfg = await api("POST", "/api/config/reset");
-    apply(cfg);
-    savedLabel.textContent = "Reset to defaults (not yet saved).";
-    savedLabel.style.color = "var(--gold)";
-    setTimeout(() => { savedLabel.textContent = ""; }, 3000);
+    if (settingsBusy) return;
+    if (!confirm("Reset the settings on this page to their defaults? Save afterwards to keep them.")) return;
+    setSettingsBusy(true);
+    setStatus("Resetting…");
+    try {
+      const cfg = await api("POST", "/api/config/reset");
+      apply(cfg);
+      setDirty(snapshot(cfg) !== savedSnapshot);
+      setStatus("Defaults loaded. Save to keep them.", "warning");
+    } catch (err) {
+      if (window.ArtificeToast) window.ArtificeToast.error("Could not reset settings: " + err.message);
+      setStatus("Could not reset settings: " + err.message, "error");
+    } finally {
+      setSettingsBusy(false);
+    }
   }
 
   function healthLine(label, ok, detail) {
@@ -292,6 +378,9 @@ const SettingsTab = (function () {
   }
 
   async function runPreflight() {
+    const button = document.getElementById("btn-preflight");
+    if (button?.disabled) return;
+    if (button) button.disabled = true;
     healthPanel.innerHTML = `<p class="dim">Checking connections&hellip;</p>`;
     try {
       const health = await api("GET", "/api/health");
@@ -325,6 +414,8 @@ const SettingsTab = (function () {
       healthPanel.innerHTML = lines.join("");
     } catch (err) {
       healthPanel.innerHTML = `<p class="health-fail">Could not check connections &mdash; is the server running?</p>`;
+    } finally {
+      if (button) button.disabled = false;
     }
   }
 
@@ -350,45 +441,73 @@ const SettingsTab = (function () {
   async function saveTemplate() {
     const name = templateName.value.trim();
     if (!name) { setTemplateStatus("Please enter a template name.", true); return; }
-    const config = collect();
-    config.stages = {
-      ocr: document.getElementById("stage-ocr").checked,
-      cleanup: document.getElementById("stage-cleanup").checked,
-      translate: document.getElementById("stage-translate").checked,
-    };
-    config.force = document.getElementById("stage-force").checked;
-    config.output_dir = document.getElementById("output-dir").value;
-    await api("POST", "/api/templates/save", { name, config });
-    templateName.value = "";
-    await refreshTemplates();
-    setTemplateStatus(`Template "${name}" saved.`);
+    const button = document.getElementById("btn-template-save");
+    if (button?.disabled) return;
+    if (button) button.disabled = true;
+    try {
+      const config = collect();
+      config.stages = {
+        ocr: document.getElementById("stage-ocr").checked,
+        cleanup: document.getElementById("stage-cleanup").checked,
+        translate: document.getElementById("stage-translate").checked,
+      };
+      config.force = document.getElementById("stage-force").checked;
+      config.output_dir = document.getElementById("output-dir").value;
+      await api("POST", "/api/templates/save", { name, config });
+      templateName.value = "";
+      await refreshTemplates();
+      setTemplateStatus(`Template "${name}" saved.`);
+    } catch (err) {
+      setTemplateStatus("Could not save template: " + err.message, true);
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   async function applyTemplate() {
     const name = templateSelect.value;
     if (!name) { setTemplateStatus("Select a template first.", true); return; }
-    await api("POST", "/api/templates/apply", { name });
-    await load();
-    // Also update non-settings fields (stages, output, force) if in template
-    const data = await api("GET", "/api/templates");
-    const templ = data.templates[name] || {};
-    if (templ.stages) {
-      if (templ.stages.ocr !== undefined) document.getElementById("stage-ocr").checked = templ.stages.ocr;
-      if (templ.stages.cleanup !== undefined) document.getElementById("stage-cleanup").checked = templ.stages.cleanup;
-      if (templ.stages.translate !== undefined) document.getElementById("stage-translate").checked = templ.stages.translate;
+    const button = document.getElementById("btn-template-apply");
+    if (button?.disabled) return;
+    if (button) button.disabled = true;
+    try {
+      await api("POST", "/api/templates/apply", { name });
+      await load();
+      // Also update non-settings fields (stages, output, force) if in template
+      const data = await api("GET", "/api/templates");
+      const templ = data.templates[name] || {};
+      if (templ.stages) {
+        if (templ.stages.ocr !== undefined) document.getElementById("stage-ocr").checked = templ.stages.ocr;
+        if (templ.stages.cleanup !== undefined) document.getElementById("stage-cleanup").checked = templ.stages.cleanup;
+        if (templ.stages.translate !== undefined) document.getElementById("stage-translate").checked = templ.stages.translate;
+      }
+      if (templ.force !== undefined) document.getElementById("stage-force").checked = templ.force;
+      if (templ.output_dir) document.getElementById("output-dir").value = templ.output_dir;
+      setDirty(true);
+      setTemplateStatus(`Template "${name}" applied.`);
+    } catch (err) {
+      setTemplateStatus("Could not apply template: " + err.message, true);
+    } finally {
+      if (button) button.disabled = false;
     }
-    if (templ.force !== undefined) document.getElementById("stage-force").checked = templ.force;
-    if (templ.output_dir) document.getElementById("output-dir").value = templ.output_dir;
-    setTemplateStatus(`Template "${name}" applied.`);
   }
 
   async function deleteTemplate() {
     const name = templateSelect.value;
     if (!name) { setTemplateStatus("Select a template first.", true); return; }
     if (!confirm(`Delete template "${name}"?`)) return;
-    await api("POST", "/api/templates/delete", { name });
-    await refreshTemplates();
-    setTemplateStatus(`Template "${name}" deleted.`);
+    const button = document.getElementById("btn-template-delete");
+    if (button?.disabled) return;
+    if (button) button.disabled = true;
+    try {
+      await api("POST", "/api/templates/delete", { name });
+      await refreshTemplates();
+      setTemplateStatus(`Template "${name}" deleted.`);
+    } catch (err) {
+      setTemplateStatus("Could not delete template: " + err.message, true);
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   // Wire up backend dropdown change events to update connection visibility
@@ -410,10 +529,25 @@ const SettingsTab = (function () {
   document.getElementById("btn-template-apply").onclick = applyTemplate;
   document.getElementById("btn-template-delete").onclick = deleteTemplate;
 
+  Object.keys(FIELDS).forEach(key => {
+    const field = el(key);
+    if (field) field.addEventListener("input", markChanged);
+    if (field) field.addEventListener("change", markChanged);
+  });
+  document.getElementById("output-dir")?.addEventListener("input", markChanged);
+  if (window.addEventListener) {
+    window.addEventListener("beforeunload", event => {
+      if (dirty) {
+        event.preventDefault();
+        event.returnValue = "You have unsaved OCR settings.";
+      }
+    });
+  }
+
   let loaded = false;
   TAB_ACTIVATE.settings = () => {
     if (!loaded) { loaded = true; load(); }
-    refreshTemplates();
+    refreshTemplates().catch(err => setTemplateStatus("Could not load templates: " + err.message, true));
   };
 
   return { load };

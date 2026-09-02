@@ -23,7 +23,8 @@ def test_settings_save_includes_queue_output_directory_and_refreshes_from_server
     assert 'document.getElementById("output-dir")' in js
     assert 'out.output_dir = outputDir.value || "output"' in js
     assert "outputDir.value = values.output_dir" in js
-    assert 'apply(await api("GET", "/api/config"))' in js
+    assert 'const cfg = await api("GET", "/api/config")' in js
+    assert "apply(cfg)" in js
 
 
 def test_all_static_buttons_are_non_submitting_controls():
