@@ -17,6 +17,7 @@ from artifice_ocr.tropy_api import (
     TropyConnection,
     candidate_ports,
     connect,
+    normalise_note_text,
     note_html,
 )
 from artifice_ocr.web.runtime import state
@@ -118,6 +119,12 @@ def test_note_client_uses_stable_note_endpoint(tmp_path, httpx_mock):
         method="POST", url="http://127.0.0.1:2019/project/notes", json={"id": [78]}
     )
     assert TropyAPIClient(connection).create_note(10, "Text", "en") == [78]
+
+
+def test_note_comparison_matches_tropy_paragraph_flattening():
+    assert normalise_note_text("First paragraph.\n\nSecond paragraph.") == normalise_note_text(
+        "First paragraph.   Second paragraph."
+    )
 
 
 class _FakeClient:

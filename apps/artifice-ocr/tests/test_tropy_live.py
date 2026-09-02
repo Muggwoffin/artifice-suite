@@ -140,6 +140,12 @@ def _running_tropy(source: Path, project: Path, runtime: Path, port: int):
             "--port",
             str(port),
             "--disable-hardware-acceleration",
+            # Electron 38 no longer enables its software WebGL fallback
+            # implicitly. The isolated process opens only our disposable,
+            # trusted fixture project, so opt in explicitly; without this,
+            # WSLg can terminate the renderer with "GPU process isn't usable"
+            # while a newly-created note is being rendered.
+            "--enable-unsafe-swiftshader",
             "--no-auto-updates",
             str(project),
         ]
