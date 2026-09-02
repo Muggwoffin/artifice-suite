@@ -48,6 +48,11 @@ All five are present in the maintainer's WSL2 environment as of 2026-07-28
 (`rg` 15.1.0, `ffmpeg` 8.0.1, `jq` 1.8.1, `shellcheck` 0.11.0).
 Contributors setting up fresh still need the `apt install` line above.
 
+Real-process Tropy compatibility tests are opt-in and keep upstream source and
+native modules outside the tracked tree. See
+[Desktop interoperability testing](docs/INTEROPERABILITY_TESTING.md) for the
+pinned stable/canary bootstrap, WSLg runner, and Windows-native drive test.
+
 Compressing the vendored web fonts to `.woff2` does **not** need the `brotli`
 apt package — that provides the command-line tool, whereas fontTools needs
 the *Python* Brotli extension. That distinction defeated a previous attempt

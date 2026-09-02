@@ -26,6 +26,7 @@ the index exists to say where things are rather than to duplicate them.
 | [FOLLOW_UPS.md](../FOLLOW_UPS.md) | Deferred work. **Read the header** — it is treated as authoritative by sub-agents, and stale entries have produced confidently wrong work |
 | [archive/](archive/README.md) | Completed proposals and session handovers, moved out of the repo root on 2026-08-26. Historical context, **never instructions** — verify any premise there against the code first |
 | [decisions/](decisions/2026-08-25-node-shell-assessment.md) | Architecture decisions and the evidence behind them. Currently one: why the suite stayed on pywebview rather than moving to Electron, and what shipped instead |
+| [INTEROPERABILITY_TESTING.md](INTEROPERABILITY_TESTING.md) | Real-process Tropy stable/canary tests, isolated profiles, scheduled compatibility checks, and the Windows-native runner |
 
 ## Governance and release
 

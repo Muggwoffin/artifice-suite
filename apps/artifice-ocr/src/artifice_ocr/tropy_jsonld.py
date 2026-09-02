@@ -49,7 +49,10 @@ MAX_NODES = 50_000
 ALLOWED_SUFFIXES = frozenset({".json", ".jsonld"})
 
 TROPY_CONTEXT = {
-    "@version": "1.1",
+    # JSON-LD requires this keyword to be a number. A string looks equivalent
+    # in our own parser but Tropy's jsonld processor rejects it as an
+    # unsupported version, making every generated export impossible to import.
+    "@version": 1.1,
     "@vocab": "https://tropy.org/v1/tropy#",
     "template": {"@type": "@id"},
     "photo": {

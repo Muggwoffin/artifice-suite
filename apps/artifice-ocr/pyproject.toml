@@ -76,6 +76,10 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "live_interop: opt-in test requiring a real third-party desktop application",
+]
+addopts = "-m 'not live_interop'"
 
 [dependency-groups]
 dev = [

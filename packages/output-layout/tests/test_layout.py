@@ -19,3 +19,10 @@ def test_discovery_and_path_lookup(tmp_path: Path):
     projects = discover_projects(tmp_path)
     assert projects[0]["slug"] == "archive"
     assert layout_for_path(layout.project_dir / "exports" / "pdf") is not None
+
+
+def test_path_under_unrelated_projects_directory_is_not_canonical(tmp_path: Path):
+    checkout = tmp_path / "projects" / "artifice-suite"
+    checkout.mkdir(parents=True)
+
+    assert layout_for_path(checkout / "out") is None

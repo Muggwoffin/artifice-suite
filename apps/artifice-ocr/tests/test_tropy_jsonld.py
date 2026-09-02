@@ -1604,7 +1604,8 @@ def test_write_manifest_merges_across_runs(tmp_path):
 
 def test_tropy_context_has_required_keys():
     assert "@version" in TROPY_CONTEXT
-    assert TROPY_CONTEXT["@version"] == "1.1"
+    # The JSON-LD keyword is numeric. Tropy rejects the string "1.1".
+    assert TROPY_CONTEXT["@version"] == 1.1
     assert "@vocab" in TROPY_CONTEXT
     assert "photo" in TROPY_CONTEXT
     assert "note" in TROPY_CONTEXT
