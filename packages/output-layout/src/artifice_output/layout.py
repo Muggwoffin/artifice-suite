@@ -108,6 +108,11 @@ def layout_for_path(path: str | Path) -> ProjectLayout | None:
     """Return the project layout containing *path*, if it is canonical."""
     candidate = Path(path).expanduser().resolve()
     for parent in (candidate, *candidate.parents):
-        if parent.parent.name == "projects":
+        # A directory called ``projects`` is not sufficient evidence: the
+        # maintainer's source checkout itself lives under ~/projects, which
+        # previously made every relative output path look canonical and sent
+        # exports into the repository. ``ensure()`` writes this marker for
+        # every real Artifice project.
+        if parent.parent.name == "projects" and (parent / "project.json").is_file():
             return ProjectLayout(parent.parent.parent, parent.name)
     return None

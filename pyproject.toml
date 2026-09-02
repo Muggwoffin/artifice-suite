@@ -108,5 +108,6 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 markers = [
     "live_smoke: live smoke test requiring a running Ollama server (run with --live-smoke)",
+    "live_interop: opt-in test requiring a real third-party desktop application",
 ]
-addopts = "-m 'not live_smoke'"
+addopts = "-m 'not live_smoke and not live_interop'"

@@ -9,6 +9,35 @@ from pathlib import Path
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def isolate_user_configuration(tmp_path, monkeypatch):
+    """Keep the suite independent of a developer's real saved settings.
+
+    ``config.load_config()`` deliberately merges ``~/.artifice_ocr/settings.json``
+    and model endpoint environment variables. Tests that replace ``_DEFAULTS``
+    otherwise still receive the maintainer's real URLs, making a clean CI run
+    pass while the same suite fails on a configured workstation.
+    """
+    from artifice_ocr import config
+
+    user_dir = tmp_path / "artifice-user"
+    monkeypatch.setattr(config, "_USER_DIR", user_dir)
+    monkeypatch.setattr(config, "_SETTINGS_PATH", user_dir / "settings.json")
+    for name in (
+        "ARTIFICE_OCR_CONFIG",
+        "OCR_MODEL",
+        "CLEANUP_MODEL",
+        "TRANSLATE_MODEL",
+        "LM_STUDIO_URL",
+        "OLLAMA_URL",
+        "OUTPUT_DIR",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    config.reset()
+    yield
+    config.reset()
+
+
 @pytest.fixture
 def safe_tmp_path():
     """Temp directory NOT under any blocked root or blocked home child.

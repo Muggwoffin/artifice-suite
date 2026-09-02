@@ -31,6 +31,7 @@ from importlib.metadata import packages_distributions
 from pathlib import Path
 
 EXCLUDE_DIRS = {
+    ".interop",
     ".venv",
     "build",
     "dist",

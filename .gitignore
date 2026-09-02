@@ -73,3 +73,12 @@ apps/*/data/obsidian_vault/
 scratch-*.sh
 worktrees/
 /.graymatter
+
+# Third-party desktop applications used by opt-in interoperability tests.
+# Their source trees, native modules, profiles, logs, and test projects are
+# large and machine-specific; only the launch/test harness is versioned here.
+/.interop/
+
+# The root package.json exists for a small standalone utility, but an npm
+# install must never make the entire dependency tree eligible for commit.
+/node_modules/
