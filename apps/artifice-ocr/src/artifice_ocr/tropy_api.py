@@ -159,7 +159,14 @@ def note_html(text: str) -> str:
 
 
 def normalise_note_text(text: str) -> str:
-    return text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    """Return the comparison form exposed by Tropy's plain-text API.
+
+    Tropy stores our paragraph HTML correctly, but its API flattens paragraph
+    and hard-break boundaries to runs of spaces in the returned ``text``
+    field. Collapse all whitespace so a multiline result is recognised as the
+    same note after Tropy's HTML-to-text conversion.
+    """
+    return " ".join(text.split())
 
 
 class TropyAPIClient:
@@ -189,9 +196,7 @@ class TropyAPIClient:
             raise TropyAPIError("Tropy's Developer API changed; preview again")
 
     def photo(self, photo_id: int) -> dict | None:
-        response = self._request(
-            "GET", f"{self.connection.project_prefix}/photos/{photo_id}"
-        )
+        response = self._request("GET", f"{self.connection.project_prefix}/photos/{photo_id}")
         if response.status_code == 404:
             return None
         if response.status_code != 200:
@@ -203,9 +208,7 @@ class TropyAPIClient:
         return payload if isinstance(payload, dict) else None
 
     def note_text(self, note_id: int) -> str | None:
-        response = self._request(
-            "GET", f"{self.connection.project_prefix}/notes/{note_id}"
-        )
+        response = self._request("GET", f"{self.connection.project_prefix}/notes/{note_id}")
         if response.status_code == 404:
             return None
         if response.status_code != 200:
