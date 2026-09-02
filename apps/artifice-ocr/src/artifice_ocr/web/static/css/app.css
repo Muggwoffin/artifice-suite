@@ -1565,6 +1565,17 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
   overscroll-behavior: contain;
 }
 
+.tropy-item-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-raised);
+}
+.tropy-item-toolbar .tropy-source-section-label { padding: 0; }
+
 .tropy-browse-item-row {
   display: flex;
   align-items: center;

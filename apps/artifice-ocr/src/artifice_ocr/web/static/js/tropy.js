@@ -34,6 +34,7 @@ const tropyEls = {};
   "tropy-browse-picker", "tropy-browse-source-pane",
   "tropy-browse-lists", "tropy-browse-tags",
   "tropy-browse-item-pane", "tropy-browse-item-empty", "tropy-browse-item-list",
+  "btn-tropy-browse-item-select-all",
   "tropy-browse-summary", "tropy-browse-summary-text",
   "tropy-footer-jsonld", "tropy-footer-browse",
   "btn-tropy-cancel-browse", "btn-tropy-browse-enqueue",
@@ -747,6 +748,11 @@ async function loadTropyBrowseItems() {
 
 function renderTropyBrowseItems() {
   tropyEls["tropy-browse-item-empty"].style.display = tropyBrowseItems.length ? "none" : "";
+  const itemSelectAll = tropyEls["btn-tropy-browse-item-select-all"];
+  const allVisibleSelected = tropyBrowseItems.length > 0 &&
+    tropyBrowseItems.every(it => tropyBrowseSelected.has(it.item_id));
+  itemSelectAll.disabled = tropyBrowseItems.length === 0;
+  itemSelectAll.textContent = allVisibleSelected ? "Deselect all" : "Select all";
   tropyEls["tropy-browse-item-list"].innerHTML = tropyBrowseItems.map(it => {
     const missing = it.missing_count > 0
       ? `<span class="tropy-result-missing-badge">${it.missing_count} missing</span>`
@@ -768,6 +774,19 @@ function renderTropyBrowseItems() {
     };
   });
 }
+
+tropyEls["btn-tropy-browse-item-select-all"].onclick = () => {
+  const allVisibleSelected = tropyBrowseItems.length > 0 &&
+    tropyBrowseItems.every(it => tropyBrowseSelected.has(it.item_id));
+  for (const item of tropyBrowseItems) {
+    if (allVisibleSelected) tropyBrowseSelected.delete(item.item_id);
+    else tropyBrowseSelected.set(item.item_id, true);
+  }
+  renderTropyBrowseItems();
+  updateTropyBrowseSummary();
+  tropyEls["tropy-browse-summary"].classList.toggle("hidden", tropyBrowseSelected.size === 0);
+  tropyEls["btn-tropy-browse-enqueue"].disabled = tropyBrowseSelected.size === 0;
+};
 
 // Show "N of M pages unavailable" as the user selects items — before a run
 // starts, not as N failures during it.
