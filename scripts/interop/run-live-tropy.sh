@@ -24,6 +24,6 @@ export UV_CACHE_DIR="${UV_CACHE_DIR:-$REPO_ROOT/.interop/uv-cache}"
 
 cd "$REPO_ROOT"
 if [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
-  exec xvfb-run uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
+  exec xvfb-run -a uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
 fi
 exec uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
