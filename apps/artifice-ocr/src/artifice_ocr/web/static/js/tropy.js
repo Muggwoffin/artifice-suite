@@ -61,6 +61,9 @@ function resetBrowser() {
   tropy["btn-tropy-browse-enqueue"].disabled = true;
   tropy["btn-tropy-browse-enqueue"].textContent = "Add selected pages";
   tropy["tropy-browse-path"].removeAttribute("aria-invalid");
+  tropy["tropy-browse-path"].disabled = false;
+  tropy["btn-tropy-browse-pick"].disabled = false;
+  tropy["btn-tropy-browse-load"].disabled = false;
   tropy["btn-tropy-browse-load"].removeAttribute("aria-busy");
 }
 
@@ -79,10 +82,25 @@ async function openBrowser() {
       (path) => `<option value="${escapeHtml(path)}">${escapeHtml(path)}</option>`
     ).join("");
     tropy["tropy-browse-recent-row"].classList.toggle("hidden", !projects.length);
-  } catch (_) {
+  } catch (error) {
     tropy["tropy-browse-recent-row"].classList.add("hidden");
+    const disabled = error.message === "Live Tropy browse is not enabled";
+    tropy["tropy-browse-error-text"].textContent = disabled
+      ? "Enable Tropy project browsing in Settings before adding pages."
+      : "Could not load recent Tropy projects: " + error.message;
+    tropy["tropy-browse-error"].classList.remove("hidden");
+    if (disabled) {
+      tropy["tropy-browse-path"].disabled = true;
+      tropy["btn-tropy-browse-pick"].disabled = true;
+      tropy["btn-tropy-browse-load"].disabled = true;
+    }
   }
-  requestAnimationFrame(() => tropy["tropy-browse-path"].focus());
+  requestAnimationFrame(() => {
+    const target = tropy["tropy-browse-path"].disabled
+      ? tropy["modal-tropy-add"].querySelector("[data-modal-close]")
+      : tropy["tropy-browse-path"];
+    target.focus();
+  });
 }
 
 async function pickProject(endpoint, body) {

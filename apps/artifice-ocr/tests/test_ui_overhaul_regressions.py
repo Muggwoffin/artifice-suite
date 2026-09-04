@@ -60,3 +60,10 @@ def test_tropy_workspace_exposes_only_live_browse_and_developer_api():
     assert "/api/tropy/export" not in js
     assert "/api/tropy/writeback" not in js
     assert "tropy_writeback_enabled" not in settings
+
+
+def test_tropy_browser_explains_when_live_browsing_is_disabled():
+    js = (_WEB / "static" / "js" / "tropy.js").read_text(encoding="utf-8")
+    assert 'error.message === "Live Tropy browse is not enabled"' in js
+    assert "Enable Tropy project browsing in Settings before adding pages." in js
+    assert 'tropy["btn-tropy-browse-load"].disabled = true' in js

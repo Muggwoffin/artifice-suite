@@ -1,12 +1,13 @@
+/* SPDX-FileCopyrightText: 2026 Maurice Casey
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 /* Hallmark · component: Tropy dialogs · genre: editorial · theme: existing paper/ink
  * States: default, hover, focus, active, disabled, loading, error, success
  * Pre-emit critique: P4 H5 E4 S5 R5 V4 · contrast: pass (40–41)
  * Mobile: pass (34, 49, 50–57) · reduced motion: pass · slop: pass
  * Structural fingerprint: asymmetric two-pane browser + editorial ledger. */
-/* SPDX-FileCopyrightText: 2026 Maurice Casey
- *
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 /*
   Canonical design tokens (paper/ink, accent, semantic status colours,
