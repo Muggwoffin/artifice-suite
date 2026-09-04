@@ -112,6 +112,17 @@ const HistoryTab = (function () {
     return compareContainer.querySelector(`.compare-pane[data-pane="${key}"] textarea.raw-edit`);
   }
 
+  function hasUnsavedEdits(stage) {
+    const key = stage === "raw_ocr" ? "raw" : stage;
+    const textarea = getPaneTextarea(key);
+    return Boolean(
+      currentItemId &&
+      textarea &&
+      Object.hasOwn(originalText, key) &&
+      textarea.value !== originalText[key]
+    );
+  }
+
   function updateCharWordCount(key) {
     const textarea = getPaneTextarea(key);
     const meta = compareContainer.querySelector(`.compare-pane[data-pane="${key}"] .compare-meta`);
@@ -359,12 +370,10 @@ const HistoryTab = (function () {
     if (!currentItemId) { if (window.ArtificeToast) window.ArtificeToast.warning("Select a document first."); return; }
     try {
       const data = await api("GET", `/api/history/items/${currentItemId}`);
-      if (!data.tropy_exportable) {
+      if (data.photo_id == null || !data.tropy_project_path) {
         if (window.ArtificeToast) {
           window.ArtificeToast.warning(
-            data.photo_id || data.tropy_group
-              ? "This document was imported before the JSON-LD bridge — re-export it from Tropy to send results back."
-              : "This document was not added from Tropy — nothing to send."
+            "This document was not added through Browse Project — nothing to send."
           );
         }
         return;
@@ -388,5 +397,7 @@ const HistoryTab = (function () {
   const historyFindReplace = new FindReplace(compareContainer);
   historyFindReplace.attach();
 
-  return { refresh };
+  return { refresh, hasUnsavedEdits };
 })();
+
+window.HistoryTab = HistoryTab;

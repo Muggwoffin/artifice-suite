@@ -49,6 +49,17 @@ const PreviewTab = (function () {
     return container.querySelector(`.compare-pane[data-pane="${key}"] textarea.raw-edit`);
   }
 
+  function hasUnsavedEdits(stage) {
+    const key = stage === "raw_ocr" ? "raw" : stage;
+    const textarea = getPaneTextarea(key);
+    return Boolean(
+      currentItemId &&
+      textarea &&
+      Object.hasOwn(originalText, key) &&
+      textarea.value !== originalText[key]
+    );
+  }
+
   // Re-run after every render (renderCompare rebuilds the textarea element
   // each time) so the dirty flag and Ctrl+S shortcut stay attached to
   // whichever textarea is currently in the DOM.
@@ -164,7 +175,7 @@ const PreviewTab = (function () {
     previewFindReplace.attach();
   }
 
-  return { open };
+  return { open, hasUnsavedEdits };
 })();
 
 window.PreviewTab = PreviewTab;

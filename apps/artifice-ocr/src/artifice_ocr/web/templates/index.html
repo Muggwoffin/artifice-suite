@@ -415,8 +415,6 @@
               <label>Tesseract path <input type="text" id="set-tesseract_path" style="width:16rem;" placeholder="auto-detect" title="Full path to the tesseract binary. Leave blank to detect it on PATH."></label>
               <label>Tropy API port <input type="number" id="set-tropy_api_port" min="0" max="65535" style="width:7rem;" title="0 detects Tropy automatically. Set a port only if Tropy was started with a custom --port."></label>
               <p class="dim" style="margin:0;">0 detects Tropy automatically (stable 2019, beta 2029).</p>
-              <label><input type="checkbox" id="set-tropy_writeback_enabled"> Enable advanced closed-project database writeback</label>
-              <p class="dim" style="margin:0;">Advanced fallback only. Close Tropy first; Artifice creates a timestamped backup.</p>
             </div>
           </details>
         </div>
@@ -466,79 +464,41 @@
     <span id="stage-text" class="dim"></span>
   </div>
 
-  <!-- Tropy: import from JSON-LD -->
+  <!-- Tropy: browse a live project read-only -->
   <div class="modal-backdrop hidden" id="modal-tropy-add">
-    <div class="modal" style="width:min(640px, 94vw);">
-      <h3>Import from Tropy</h3>
-      <button type="button" class="modal-close" data-modal-close aria-label="Close import dialog">&times;</button>
-
-      <div class="tropy-mode-tabs" id="tropy-mode-tabs" role="tablist" aria-label="Import mode">
-        <button type="button" class="tropy-mode-tab active" id="tropy-tab-jsonld" role="tab" aria-selected="true" aria-controls="tropy-mode-jsonld" data-mode="jsonld">From file</button>
-        <button type="button" class="tropy-mode-tab" id="tropy-tab-browse" role="tab" aria-selected="false" aria-controls="tropy-mode-browse" data-mode="browse">Browse project</button>
-      </div>
-
-      <div id="tropy-mode-jsonld">
-        <div class="tropy-help">
-          <p>Import items from a Tropy JSON-LD export file. In Tropy, choose <strong>File &rarr; Export &rarr; JSON-LD</strong> to create this file.</p>
-          <p class="dim">Tropy exports absolute paths to your original photos. Those paths are preserved when the images are queued for OCR.</p>
+    <div class="modal tropy-dialog tropy-browser-dialog" role="dialog" aria-modal="true" aria-labelledby="tropy-browser-title" aria-describedby="tropy-browser-description">
+      <header class="tropy-dialog-header">
+        <div>
+          <h3 id="tropy-browser-title">Add pages from Tropy</h3>
+          <p id="tropy-browser-description">Open a project, choose a list or tag, then select the items you need.</p>
         </div>
-
-        <div class="tropy-dropzone" id="tropy-dropzone" tabindex="0" role="button" aria-label="Drop a Tropy JSON-LD file here, or press Enter to browse">
-          <div class="tropy-dropzone-state" id="tropy-dropzone-idle">
-            <svg class="tropy-dropzone-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span class="tropy-dropzone-title">Drop a Tropy JSON-LD file here</span>
-            <span class="tropy-dropzone-hint">or press Enter to browse</span>
-          </div>
-          <div class="tropy-dropzone-state hidden" id="tropy-dropzone-parsing">
-            <span class="tropy-spinner" aria-hidden="true"></span>
-            <span class="tropy-dropzone-title">Parsing JSON-LD&hellip;</span>
-          </div>
-          <div class="tropy-dropzone-state tropy-dropzone-state--success hidden" id="tropy-dropzone-success">
-            <svg class="tropy-dropzone-icon tropy-dropzone-check" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-            <span class="tropy-dropzone-title" id="tropy-dropzone-success-text">Ready to import</span>
-          </div>
-          <div class="tropy-dropzone-state tropy-dropzone-state--error hidden" id="tropy-dropzone-error">
-            <svg class="tropy-dropzone-icon tropy-dropzone-error-icon" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span class="tropy-dropzone-title" id="tropy-dropzone-error-text"></span>
-          </div>
-          <div class="tropy-dropzone-live" id="tropy-dropzone-live" aria-live="polite" aria-atomic="true"></div>
-        </div>
-
-      <div class="tropy-dropzone-actions">
-        <input type="text" id="tropy-import-path" class="input" placeholder="No file selected" readonly aria-label="Selected file">
-        <button class="btn btn-small" id="btn-tropy-browse-file" type="button">Browse&hellip;</button>
-      </div>
-
-      <div class="tropy-results hidden" id="tropy-import-results" aria-live="polite">
-        <div class="tropy-results-head">
-          <span id="tropy-import-count" class="dim">0 items found</span>
-          <button class="btn btn-small" id="btn-tropy-import-select-all" type="button">Select all</button>
-        </div>
-        <div class="tropy-results-list" id="tropy-import-list"></div>
-      </div>
-
-      <div class="tropy-summary" id="tropy-import-summary">
-        <span id="tropy-import-summary-text" class="dim">No file selected</span>
-        <span class="spacer"></span>
-        <span id="tropy-import-summary-warning" class="warning"></span>
-      </div>
-      </div><!-- /tropy-mode-jsonld -->
-
-      <!-- Browse-project mode -->
-      <div id="tropy-mode-browse" class="hidden">
+        <button type="button" class="modal-close" data-modal-close aria-label="Close Tropy browser">&times;</button>
+      </header>
+      <p class="tropy-readonly-note">Your project is opened read-only. Artifice does not change it during import.</p>
+      <div id="tropy-mode-browse">
         <div class="tropy-browse-header">
+          <div class="tropy-recent-projects hidden" id="tropy-browse-recent-row">
+            <label class="field-label" for="tropy-browse-recent">Recent project</label>
+            <select class="select" id="tropy-browse-recent">
+              <option value="">Choose a recent project&hellip;</option>
+            </select>
+          </div>
+          <label class="field-label" for="tropy-browse-path">Project folder</label>
           <div class="tropy-browse-path-row">
-            <input type="text" id="tropy-browse-path" class="input" placeholder="Path to a .tropy project file" aria-label="Tropy project file path">
-            <button class="btn btn-small" id="btn-tropy-browse-pick" type="button">Pick&hellip;</button>
-            <button class="btn btn-small accent" id="btn-tropy-browse-load" type="button">Load Project</button>
+            <input type="text" id="tropy-browse-path" class="input" placeholder="Path to a .tropy project folder" aria-describedby="tropy-browse-path-help tropy-browse-error-text">
+            <button class="btn" id="btn-tropy-browse-pick" type="button">Choose folder&hellip;</button>
+            <button class="btn accent" id="btn-tropy-browse-load" type="button">Open project</button>
           </div>
+          <p class="tropy-field-help" id="tropy-browse-path-help">Select the folder whose name ends in <code>.tropy</code>.</p>
           <div class="tropy-browse-project-info hidden" id="tropy-browse-project-info">
-            <span class="tropy-browse-project-name dim" id="tropy-browse-project-name"></span>
+            <span class="tropy-project-open-label">Open</span>
+            <span class="tropy-browse-project-name" id="tropy-browse-project-name"></span>
           </div>
-          <div class="tropy-browse-project-info hidden" id="tropy-browse-loading">
-            <span class="tropy-browse-loading-text dim">Loading&hellip;</span>
+          <div class="tropy-browse-project-info hidden" id="tropy-browse-loading" role="status" aria-live="polite">
+            <span class="tropy-spinner" aria-hidden="true"></span>
+            <span class="tropy-browse-loading-text">Opening project&hellip;</span>
           </div>
-          <div class="tropy-browse-project-info hidden" id="tropy-browse-error">
+          <div class="tropy-browse-project-info hidden" id="tropy-browse-error" role="alert">
             <span class="tropy-browse-error-text error" id="tropy-browse-error-text"></span>
           </div>
         </div>
@@ -548,7 +508,7 @@
           <!-- Left: lists + tags -->
           <div class="tropy-source-pane" id="tropy-browse-source-pane" aria-label="Lists and tags">
             <div class="tropy-source-section-label">Lists</div>
-            <div id="tropy-browse-lists"><span class="dim" style="padding:0.35rem 0.7rem;display:block;">No lists</span></div>
+            <div id="tropy-browse-lists"><span class="dim tropy-source-empty">No lists</span></div>
             <div class="tropy-source-section-label">Tags</div>
             <div id="tropy-browse-tags"></div>
           </div>
@@ -558,24 +518,19 @@
               <span class="tropy-source-section-label">Items</span>
               <button class="btn btn-small" id="btn-tropy-browse-item-select-all" type="button" disabled>Select all</button>
             </div>
-            <div class="empty-state" id="tropy-browse-item-empty">Select a list or tag to browse items</div>
+            <div class="empty-state" id="tropy-browse-item-empty">Choose a list or tag to see its items.</div>
             <div id="tropy-browse-item-list"></div>
           </div>
         </div>
 
-        <div class="tropy-browse-summary hidden" id="tropy-browse-summary">
+        <div class="tropy-browse-summary hidden" id="tropy-browse-summary" role="status" aria-live="polite">
           <span id="tropy-browse-summary-text" class="dim">No items selected</span>
           <span class="spacer"></span>
         </div>
-      </div><!-- /tropy-mode-browse -->
-
-      <div id="tropy-footer-jsonld">
-        <button class="btn" id="btn-tropy-cancel" type="button">Cancel</button>
-        <button class="btn accent" id="btn-tropy-add-queue" type="button" disabled>Add to Queue</button>
       </div>
-      <div id="tropy-footer-browse" class="hidden">
+      <div class="tropy-dialog-footer" id="tropy-footer-browse">
         <button class="btn" id="btn-tropy-cancel-browse" type="button">Cancel</button>
-        <button class="btn accent" id="btn-tropy-browse-enqueue" type="button" disabled>Add to Queue</button>
+        <button class="btn accent" id="btn-tropy-browse-enqueue" type="button" disabled>Add selected pages</button>
       </div>
     </div>
   </div>
@@ -647,66 +602,35 @@
     </div>
   </div>
 
-  <!-- Tropy: export results as JSON-LD -->
+  <!-- Tropy: official Developer API note write-back -->
   <div class="modal-backdrop hidden" id="modal-tropy-send">
-    <div class="modal" style="width:min(560px, 94vw);">
-      <h3 id="tropy-modal-title">Export to Tropy</h3>
-      <button type="button" class="modal-close" data-modal-close aria-label="Close export dialog">&times;</button>
+    <div class="modal tropy-dialog tropy-send-dialog" role="dialog" aria-modal="true" aria-labelledby="tropy-modal-title" aria-describedby="tropy-help-text tropy-help-detail">
+      <header class="tropy-dialog-header">
+        <div>
+          <h3 id="tropy-modal-title">Add notes to Tropy</h3>
+          <p id="tropy-help-text">Send saved text back to the original Tropy photos.</p>
+        </div>
+        <button type="button" class="modal-close" data-modal-close aria-label="Close Tropy note dialog">&times;</button>
+      </header>
+      <p class="tropy-readonly-note" id="tropy-help-detail">Keep the matching project open with the Developer API enabled. Preview checks the project and skips notes that already match.</p>
 
-      <div class="tropy-help">
-        <p id="tropy-help-text">Generate a Tropy JSON-LD file containing your OCR results. Import it back into Tropy with <strong>File &rarr; Import</strong>.</p>
-        <p class="dim" id="tropy-help-detail">Downloads a file. In Tropy: File &rarr; Import Items&hellip; and choose it. Tropy creates new items — your originals are untouched.</p>
-      </div>
+      <dl class="tropy-export-summary" id="tropy-export-summary" aria-label="Note preview summary">
+        <div><dt>Selected</dt><dd id="tropy-export-stat-items">0</dd></div>
+        <div><dt>Matched</dt><dd id="tropy-export-stat-photos">0</dd></div>
+        <div><dt>New notes</dt><dd id="tropy-export-stat-transcriptions">0</dd></div>
+      </dl>
 
-      <div class="tropy-export-summary" id="tropy-export-summary">
-        <div class="tropy-export-stat">
-          <span class="tropy-export-stat-n" id="tropy-export-stat-items">0</span>
-          <span class="tropy-export-stat-l">Items</span>
-        </div>
-        <div class="tropy-export-stat">
-          <span class="tropy-export-stat-n" id="tropy-export-stat-photos">0</span>
-          <span class="tropy-export-stat-l">Photos</span>
-        </div>
-        <div class="tropy-export-stat">
-          <span class="tropy-export-stat-n" id="tropy-export-stat-transcriptions">0</span>
-          <span class="tropy-export-stat-l">Transcriptions</span>
-        </div>
+      <div class="tropy-export-options">
+        <label class="field-label" for="tropy-export-stage" id="tropy-export-label">Saved text to send</label>
+        <select id="tropy-export-stage">
+          <option value="cleaned">Cleaned text</option>
+          <option value="raw_ocr">Raw OCR text</option>
+          <option value="translated">Translation</option>
+        </select>
       </div>
 
       <div class="tropy-writeback-section" id="tropy-writeback-section">
-        <fieldset class="tropy-destination">
-          <legend class="tropy-destination-legend">Destination</legend>
-          <label class="tropy-destination-option">
-            <input type="radio" name="tropy-destination" id="tropy-dest-api" value="api" checked>
-            <span>Add notes to the original Tropy photos</span>
-          </label>
-          <label class="tropy-destination-option">
-            <input type="radio" name="tropy-destination" id="tropy-dest-jsonld" value="jsonld">
-            <span>Export new Tropy items as JSON-LD</span>
-          </label>
-          <label class="tropy-destination-option hidden" id="tropy-dest-writeback-option">
-            <input type="radio" name="tropy-destination" id="tropy-dest-writeback" value="writeback">
-            <span>Advanced: modify the closed project database</span>
-          </label>
-        </fieldset>
-        <div class="tropy-writeback-warning hidden" id="tropy-writeback-warning">
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5L14.5 13H1.5L8 1.5Z"/><line x1="8" y1="6" x2="8" y2="9"/><circle cx="8" cy="11.5" r=".6" fill="currentColor" stroke="none"/></svg>
-          <span>Close Tropy first. This modifies its database directly; a timestamped backup is taken automatically.</span>
-        </div>
-        <div class="tropy-writeback-preview hidden" id="tropy-writeback-preview" aria-live="polite" aria-atomic="true"></div>
-      </div>
-
-      <div class="tropy-export-options">
-        <!-- The id sits on the span, not the label: the destination swap sets
-             textContent on this element, and the <select> below is a child of
-             the label. Targeting the label wiped the select out of the DOM. -->
-        <label><span id="tropy-export-label">Text to export</span>
-          <select id="tropy-export-stage">
-            <option value="cleaned">Cleaned text</option>
-            <option value="raw_ocr">Raw OCR text</option>
-            <option value="translated">Translation</option>
-          </select>
-        </label>
+        <div class="tropy-writeback-preview hidden" id="tropy-writeback-preview" role="status" aria-live="polite" aria-atomic="true"></div>
       </div>
 
       <div class="tropy-export-loading hidden" id="tropy-export-loading">
@@ -714,17 +638,12 @@
         <span id="tropy-export-loading-text">Generating Tropy export&hellip;</span>
       </div>
 
-      <div class="tropy-export-status dim" id="tropy-export-status"></div>
+      <div class="tropy-export-status dim" id="tropy-export-status" role="status" aria-live="polite"></div>
 
-      <div class="tropy-export-footer" id="tropy-export-footer">
-        <button class="btn" id="btn-send-tropy-close" type="button">Close</button>
-        <button class="btn accent" id="btn-send-tropy-write" type="button">Generate &amp; Export</button>
-      </div>
-
-      <div class="tropy-writeback-footer hidden" id="tropy-writeback-footer">
+      <div class="tropy-writeback-footer" id="tropy-writeback-footer">
         <button class="btn" id="btn-send-tropy-close-writeback" type="button">Close</button>
-        <button class="btn" id="btn-writeback-preview" type="button">Preview</button>
-        <button class="btn accent" id="btn-writeback-commit" type="button" disabled>Write</button>
+        <button class="btn" id="btn-writeback-preview" type="button">Check again</button>
+        <button class="btn accent" id="btn-writeback-commit" type="button" disabled>Add notes</button>
       </div>
     </div>
   </div>

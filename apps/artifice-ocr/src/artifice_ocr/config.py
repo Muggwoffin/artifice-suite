@@ -43,12 +43,6 @@ _DEFAULTS: dict[str, Any] = {
     # defaults (2019/2029). A non-zero value is an advanced override for a
     # Tropy instance launched with a custom ``--port``.
     "tropy_api_port": 0,
-    # Direct write-back of OCR results into the Tropy project's notes /
-    # transcriptions tables. Opt-in and default OFF: writing to the user's
-    # research database is the highest-risk operation in the suite, so it is
-    # never on unless the user turns it on explicitly. Restored 2026-08-25,
-    # knowingly reversing ebd89e6, as an opt-in alongside the JSON-LD bridge.
-    "tropy_writeback_enabled": False,
     "title_max_chars": 120,
     "resume": True,
     "max_ocr_workers": 2,
@@ -191,10 +185,8 @@ PERSISTED_KEYS = (
     "api_key",
     "api_base_url",
     "tropy_last_path",
-    "tropy_last_export_path",
     "tropy_live_browse_enabled",
     "tropy_api_port",
-    "tropy_writeback_enabled",
     "approved_folders",
 )
 
