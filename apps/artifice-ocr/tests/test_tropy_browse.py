@@ -49,9 +49,6 @@ from artifice_ocr.web.routers import (
     run as _run_router,
 )
 from artifice_ocr.web.routers import (
-    tropy_bridge as _tropy_router,
-)
-from artifice_ocr.web.routers import (
     tropy_browse as _tropy_browse_router,
 )
 from artifice_ocr.web.runtime import RunState
@@ -339,7 +336,6 @@ def _client_with_state(tmp_path, monkeypatch) -> TestClient:
     monkeypatch.setattr(_events_router, "state", fresh)
     monkeypatch.setattr(_history_router, "state", fresh)
     monkeypatch.setattr(_analytics_router, "state", fresh)
-    monkeypatch.setattr(_tropy_router, "state", fresh)
     monkeypatch.setattr(_tropy_browse_router, "state", fresh)
     monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
 

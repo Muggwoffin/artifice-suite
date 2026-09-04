@@ -19,7 +19,7 @@ const SettingsTab = (function () {
     api_key: "text", api_base_url: "text",
     document_type: "select",
     max_ocr_workers: "int", chunk_max_tokens: "int", context_size: "int",
-    resume: "bool", confidence_enabled: "bool", preprocess_enabled: "bool", ollama_think: "bool", tropy_live_browse_enabled: "bool", tropy_writeback_enabled: "bool",
+    resume: "bool", confidence_enabled: "bool", preprocess_enabled: "bool", ollama_think: "bool", tropy_live_browse_enabled: "bool",
     tropy_api_port: "int",
     ocr_engine: "select", tesseract_lang: "text", tesseract_path: "text", tesseract_fallback_on_failure: "bool",
   };

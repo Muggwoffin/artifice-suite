@@ -41,9 +41,6 @@ def client(tmp_path, monkeypatch):
     from artifice_ocr.web.routers import (
         run as _run_router,
     )
-    from artifice_ocr.web.routers import (
-        tropy_bridge as _tropy_router,
-    )
     from artifice_ocr.web.runtime import RunState
 
     fresh = RunState()
@@ -52,7 +49,6 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(_events_router, "state", fresh)
     monkeypatch.setattr(_history_router, "state", fresh)
     monkeypatch.setattr(_analytics_router, "state", fresh)
-    monkeypatch.setattr(_tropy_router, "state", fresh)
     monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
     # pdf_export uses its own separate state
     import artifice_ocr.web.routers.pdf_export as _pe

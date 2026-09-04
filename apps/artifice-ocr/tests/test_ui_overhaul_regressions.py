@@ -33,3 +33,37 @@ def test_all_static_buttons_are_non_submitting_controls():
     buttons = re.findall(r"<button\b[^>]*>", html, flags=re.IGNORECASE)
     missing = [button for button in buttons if 'type="button"' not in button.lower()]
     assert not missing, f"buttons missing type=button: {missing[:5]}"
+
+
+def test_tropy_handoff_can_detect_unsaved_editor_text():
+    preview = (_WEB / "static" / "js" / "preview.js").read_text(encoding="utf-8")
+    history = (_WEB / "static" / "js" / "history.js").read_text(encoding="utf-8")
+    assert "hasUnsavedEdits" in preview
+    assert "hasUnsavedEdits" in history
+
+
+def test_history_tropy_handoff_uses_live_browse_provenance():
+    history = (_WEB / "static" / "js" / "history.js").read_text(encoding="utf-8")
+    assert "data.photo_id == null || !data.tropy_project_path" in history
+    assert "data.tropy_exportable" not in history
+
+
+def test_tropy_workspace_exposes_only_live_browse_and_developer_api():
+    html = (_WEB / "templates" / "index.html").read_text(encoding="utf-8")
+    js = (_WEB / "static" / "js" / "tropy.js").read_text(encoding="utf-8")
+    settings = (_WEB / "static" / "js" / "settings.js").read_text(encoding="utf-8")
+    assert "tropy-mode-jsonld" not in html
+    assert "tropy-dest-jsonld" not in html
+    assert "tropy-dest-writeback" not in html
+    assert "/api/tropy/notes/preview" in js
+    assert "/api/tropy/notes/commit" in js
+    assert "/api/tropy/export" not in js
+    assert "/api/tropy/writeback" not in js
+    assert "tropy_writeback_enabled" not in settings
+
+
+def test_tropy_browser_explains_when_live_browsing_is_disabled():
+    js = (_WEB / "static" / "js" / "tropy.js").read_text(encoding="utf-8")
+    assert 'error.message === "Live Tropy browse is not enabled"' in js
+    assert "Enable Tropy project browsing in Settings before adding pages." in js
+    assert 'tropy["btn-tropy-browse-load"].disabled = true' in js
