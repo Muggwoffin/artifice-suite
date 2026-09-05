@@ -23,7 +23,14 @@ export ARTIFICE_TROPY_SOURCE="$source_dir"
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$REPO_ROOT/.interop/uv-cache}"
 
 cd "$REPO_ROOT"
-if [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
-  exec xvfb-run -a uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
+if [[ "${ARTIFICE_LIVE_HEADED:-0}" == "1" ]]; then
+  if [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
+    echo "error: ARTIFICE_LIVE_HEADED=1 requires a graphical display" >&2
+    exit 1
+  fi
+  exec uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
 fi
-exec uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
+# A private X server prevents WSLg's WebGL renderer from intermittently
+# crashing while Playwright and Tropy are alive together. Set
+# ARTIFICE_LIVE_HEADED=1 for an observable manual run.
+exec xvfb-run -a uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v

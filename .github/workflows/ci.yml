@@ -276,6 +276,38 @@ jobs:
         if: matrix.app == 'artifice-ocr'
         run: uv run pytest -q tests/test_critical_workflows.py tests/test_tropy_browse.py tests/test_tropy_api.py tests/test_tropy_route_surface.py
 
+  # Deterministic browser interaction and API state-machine fuzzing. This is
+  # deliberately separate from the unit-test matrix so a missing browser can
+  # never turn into a silent skip of the release-critical OCR interface.
+  ocr-ui-stress:
+    needs: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install OCR web and stress dependencies
+        run: uv sync --group dev --extra ocr-web
+
+      - name: Install deterministic Chromium runtime
+        run: uv run playwright install --with-deps chromium
+
+      - name: Run blocking UI stress gate
+        run: scripts/stress/run-ui-stress.sh
+
+      - name: Upload replay artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ocr-ui-stress-artifacts
+          path: .artifacts/ui-stress
+          if-no-files-found: ignore
+
   # ── Wheel-content assertions ──────────────────────────────────────────────
   # Tests run against `src/` and cannot see bugs that only exist in the built
   # artifact: missing font files, prompt templates that resolve outside their

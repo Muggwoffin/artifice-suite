@@ -485,6 +485,11 @@ const SettingsTab = (function () {
       load().then(runPreflight);
     }
   };
+  // app.js applies ?view=settings before this deferred tab module loads.
+  // Honour that initial activation now that its callback exists.
+  if (document.getElementById("panel-settings")?.classList?.contains("active")) {
+    TAB_ACTIVATE.settings();
+  }
 
   return { load };
 })();

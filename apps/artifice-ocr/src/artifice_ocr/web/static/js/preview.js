@@ -190,7 +190,14 @@ const PreviewTab = (function () {
 
   select.addEventListener("change", () => { if (select.value) open(select.value); });
 
-  TAB_ACTIVATE.preview = () => refreshList(true);
+  TAB_ACTIVATE.preview = () => {
+    refreshList(true);
+    // A populated native select visually chooses its first option without
+    // emitting a change event. Load that item explicitly so Review never
+    // opens with a selected filename beside an empty comparison.
+    if (select.value) open(select.value);
+  };
+  if (container.classList.contains("active")) TAB_ACTIVATE.preview();
 
   // Find & Replace
   if (container) {
