@@ -259,18 +259,19 @@ The men stood quietly in the rain, waiting for word from the committee. By noon 
   <aside class="annotation"><strong>Review prototype</strong><br>Use the top navigation or workflow actions to inspect four workflow states plus Settings. The controls are illustrative; layout, hierarchy, language, and workflow are ready for feedback.</aside>
   <script>
     const views = [...document.querySelectorAll('[data-view]')];
+    const scrollBehavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
     function show(name) {
       document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${name}`));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.toggle('active', el.dataset.view === name || (name === 'process' && el.dataset.view === 'source')));
       document.querySelectorAll('.top-actions [data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === name));
       const step = name === 'source' ? 'source' : name;
       document.querySelectorAll('.workflow li').forEach(el => el.classList.toggle('active', el.dataset.step === step));
-      scrollTo({ top: 0, behavior: 'smooth' });
+      scrollTo({ top: 0, behavior: scrollBehavior });
     }
     views.forEach(el => el.addEventListener('click', () => show(el.dataset.view)));
     document.querySelectorAll('.settings-menu button').forEach((button, index) => button.addEventListener('click', () => {
       document.querySelectorAll('.settings-menu button').forEach(el => el.classList.toggle('active', el === button));
-      ['settings-models', 'settings-processing', 'settings-tropy', 'settings-diagnostics'][index] && document.getElementById(['settings-models', 'settings-processing', 'settings-tropy', 'settings-diagnostics'][index]).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      ['settings-models', 'settings-processing', 'settings-tropy', 'settings-diagnostics'][index] && document.getElementById(['settings-models', 'settings-processing', 'settings-tropy', 'settings-diagnostics'][index]).scrollIntoView({ behavior: scrollBehavior, block: 'start' });
     }));
     const picker = document.getElementById('picker');
     document.getElementById('open-picker').onclick = () => picker.classList.add('open');

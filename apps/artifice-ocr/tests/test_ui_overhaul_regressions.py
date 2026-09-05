@@ -66,6 +66,22 @@ def test_fabricated_review_controls_and_export_are_present():
     assert "/api/history/fabricated-results" in history
 
 
+def test_stage_defaults_use_canonical_raw_ocr_key():
+    app = (_WEB / "static" / "js" / "app.js").read_text(encoding="utf-8")
+    pdf = (_WEB / "static" / "js" / "pdf_export.js").read_text(encoding="utf-8")
+    assert 'return "raw_ocr"' in app
+    assert 'preferredStage() || "raw_ocr"' in pdf
+    assert 'preferredStage() || "raw"' not in pdf
+
+
+def test_mockup_respects_reduced_motion_for_programmatic_scrolls():
+    mockup = (
+        Path(__file__).resolve().parents[3] / "mockups" / "artifice-ocr-tropy-workbench.html"
+    ).read_text(encoding="utf-8")
+    assert "prefers-reduced-motion: reduce" in mockup
+    assert mockup.count("behavior: scrollBehavior") == 2
+
+
 def test_all_static_buttons_are_non_submitting_controls():
     """Future form wrappers must not turn a toolbar click into navigation."""
     html = (_WEB / "templates" / "index.html").read_text(encoding="utf-8")

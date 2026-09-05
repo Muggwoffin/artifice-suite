@@ -175,7 +175,9 @@ def serialize_fabricated_result(row: sqlite3.Row) -> dict[str, Any]:
         "run_started": row["run_started"],
         "fabricated_at": row["fabricated_at"],
         "name": row["name"],
-        "source_file": row["source_file"],
+        # Exports are intended to be shared with a coding model. Do not leak
+        # usernames or local archive layout through an absolute path.
+        "source_file": Path(row["source_file"]).name,
         "page": row["page"],
         "raw_text": row["raw_text"] or "",
         "confidence": row["confidence"],

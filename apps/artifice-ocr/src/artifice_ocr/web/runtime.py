@@ -25,11 +25,14 @@ from pathlib import Path
 from typing import Any
 
 from .. import config
+from .._logging import get_logger
 from ..history import HistoryStore
 from ..jobs import STAGES, JobItem, JobRunner, State
 from ..output import stage_dir
 from ..pipeline import run_cleanup_step, run_translate_step
 from .serializers import serialize_item, serialize_item_preview
+
+log = get_logger("web.runtime")
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
 
@@ -184,10 +187,18 @@ def set_fabricated_result(item: JobItem, value: bool) -> dict[str, Any]:
     if not json_path.exists():
         json_path = Path(output_dir) / "raw_ocr" / "json" / f"{item.stem}.json"
     if json_path.exists():
-        data = json.loads(json_path.read_text(encoding="utf-8"))
-        data["fabricated_result"] = item.fabricated_result
-        data["fabricated_reviewed_at"] = reviewed_at if item.fabricated_result else None
-        json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        try:
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise TypeError("OCR metadata root is not an object")
+            data["fabricated_result"] = item.fabricated_result
+            data["fabricated_reviewed_at"] = reviewed_at if item.fabricated_result else None
+            json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except (json.JSONDecodeError, OSError, TypeError, UnicodeDecodeError) as exc:
+            # The in-memory flag is still authoritative and will be recorded
+            # in history when the run finishes. Never destroy a corrupt record
+            # merely to add review metadata; leave it intact for diagnosis.
+            log.warning("Could not update OCR metadata %s: %s", json_path, exc)
 
     if item.history_item_id is not None:
         state.history.set_fabricated_result(item.history_item_id, item.fabricated_result)

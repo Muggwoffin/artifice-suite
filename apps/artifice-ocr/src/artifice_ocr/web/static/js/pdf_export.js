@@ -43,7 +43,7 @@ function openPdfExport() {
   // "No pages found" every time and contradicted the Stage selector.
   const outputDir = window.QueueTab?.outputDirectory() || "output";
   pdfEls["pdf-folder"].value = outputDir;
-  pdfEls["pdf-stage"].value = window.QueueTab?.preferredStage() || "raw";
+  pdfEls["pdf-stage"].value = window.QueueTab?.preferredStage() || "raw_ocr";
   pdfEls["pdf-output"].value = "";
   refreshPdfPreview();
 }

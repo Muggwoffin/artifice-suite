@@ -1104,7 +1104,7 @@ window.QueueTab = {
     const selected = selectedQueueIds().map((id) => items.get(id)).filter(Boolean);
     if (selected.length && selected.every((item) => item.stages?.translate?.state === "done")) return "translated";
     if (selected.length && selected.every((item) => item.stages?.cleanup?.state === "done")) return "cleaned";
-    return "raw";
+    return "raw_ocr";
   },
 };
 

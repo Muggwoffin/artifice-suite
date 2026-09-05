@@ -1509,6 +1509,26 @@ def test_queue_fabricated_result_404s_for_unknown_item(client):
     assert response.status_code == 404
 
 
+@pytest.mark.parametrize("invalid_json", ["{truncated", "[]"])
+def test_queue_fabricated_result_survives_invalid_ocr_metadata(client, tmp_path, invalid_json):
+    output_dir = tmp_path / "output"
+    json_dir = output_dir / "raw_ocr" / "json"
+    json_dir.mkdir(parents=True)
+    source = tmp_path / "page.png"
+    source.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(source)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+    record_path = json_dir / f"{item.stem}.json"
+    record_path.write_text(invalid_json, encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    response = client.post(f"/api/queue/{item_id}/fabricated-result", json={"fabricated": True})
+    assert response.status_code == 200
+    assert response.json()["fabricated_result"] is True
+    assert record_path.read_text(encoding="utf-8") == invalid_json
+
+
 def test_raw_text_save_overwrites_disk_output_preserving_other_provenance(client, tmp_path):
     import json as jsonlib
 
@@ -2134,6 +2154,7 @@ def test_history_fabricated_result_can_be_flagged_and_exported(client):
     assert body["schema_version"] == 1
     assert body["items"][0]["item_id"] == item_id
     assert body["items"][0]["raw_text"] == "raw text"
+    assert body["items"][0]["source_file"] == "letter.png"
     assert "tropy_item_node" not in body["items"][0]
 
 
