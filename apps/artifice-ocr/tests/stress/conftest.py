@@ -69,7 +69,9 @@ def stress_server(tmp_path):
     state.clear()
     state.runner = None
     state.run_id = None
-    state._history = None
+    if state._history is not None:
+        state._history.close()
+        state._history = None
     seed_completed_queue(tmp_path)
 
     port = _free_port()
@@ -97,6 +99,9 @@ def stress_server(tmp_path):
     thread.join(timeout=5)
     state.clear()
     state.runner = None
+    if state._history is not None:
+        state._history.close()
+        state._history = None
 
 
 @pytest.fixture(scope="session")

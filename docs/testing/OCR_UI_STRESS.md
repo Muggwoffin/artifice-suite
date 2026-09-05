@@ -15,6 +15,10 @@ uv run playwright install chromium
 scripts/stress/run-ui-stress.sh
 ```
 
+On a fresh Linux/WSL installation, use `uv run playwright install --with-deps
+chromium` to install Chromium's required system libraries as well (this may
+request sudo). Hosted CI uses this form.
+
 The PR profile runs eight fixed seeds with 30 browser actions each and 50
 bounded state-machine examples. Replay a failure exactly with the seed shown in
 the test name or artifact directory:
@@ -43,10 +47,11 @@ exactly one visible-interface OCR job through Ollama and one through LM Studio,
 then browses and round-trips an isolated real Tropy project:
 
 ```bash
-scripts/interop/run-live-release-gate.sh --local-only
+bash scripts/interop/run-live-release-gate.sh --local-only
 ```
 
 Use `--publish-status` on the commit that will be built. OCR packaging refuses
 to proceed without a successful `live-interop/release-gate` status. Set
 `ARTIFICE_LIVE_HEADED=1` when manually observing Tropy; the default private X
-server is more deterministic under WSL.
+server is more deterministic under WSL. If Xvfb is unavailable, the gate uses
+an existing graphical display; it fails explicitly if neither is available.

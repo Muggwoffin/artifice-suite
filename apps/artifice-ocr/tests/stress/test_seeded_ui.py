@@ -43,6 +43,10 @@ def _assert_invariants(page) -> None:
         "rows => rows.map(row => row.dataset.id)"
     )
     assert len(ids) == len(set(ids))
+    connection = page.locator('[data-shell-action="model"]')
+    connection_state = connection.get_attribute("data-state")
+    if connection_state is not None:
+        expect(connection.locator(".status-dot")).to_have_attribute("data-state", connection_state)
 
 
 def _actions(page, rng: random.Random):

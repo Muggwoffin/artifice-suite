@@ -33,4 +33,12 @@ fi
 # A private X server prevents WSLg's WebGL renderer from intermittently
 # crashing while Playwright and Tropy are alive together. Set
 # ARTIFICE_LIVE_HEADED=1 for an observable manual run.
-exec xvfb-run -a uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
+if command -v xvfb-run >/dev/null 2>&1; then
+  exec xvfb-run -a uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
+fi
+if [[ -n "${DISPLAY:-}" || -n "${WAYLAND_DISPLAY:-}" ]]; then
+  echo "[live gate] xvfb-run unavailable; using the existing graphical display"
+  exec uv run pytest -m live_interop apps/artifice-ocr/tests/test_tropy_live.py -v
+fi
+echo "error: install xvfb or provide a graphical display to run live Tropy" >&2
+exit 1

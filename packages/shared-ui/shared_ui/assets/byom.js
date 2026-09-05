@@ -1306,7 +1306,9 @@
           : "Connection not configured. Open connection settings."
       );
       var label = btn.querySelector("[data-model-label]");
-      if (label) label.textContent = configured ? "Model configured" : "Set up model";
+      if (label) label.textContent = configured ? "Connection configured" : "Set up model";
+      var dot = btn.querySelector(".status-dot");
+      if (dot) dot.setAttribute("data-state", configured ? "configured" : "unconfigured");
     });
   }
 
