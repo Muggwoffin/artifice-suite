@@ -173,7 +173,9 @@ def test_notes_routes_preview_commit_and_skip_duplicate(tmp_path, monkeypatch):
     monkeypatch.setattr("artifice_ocr.web.routers.tropy_notes.TropyAPIClient", _FakeClient)
     _FakeClient.writes = []
     _FakeClient.duplicate = False
-    state.add_items([_queue_item(project)])
+    item = _queue_item(project)
+    state.add_items([item])
+    selected = [str(id(item))]
 
     from artifice_ocr.web.routers.tropy_notes import (
         TropyNotesCommitRequest,
@@ -183,7 +185,9 @@ def test_notes_routes_preview_commit_and_skip_duplicate(tmp_path, monkeypatch):
     )
 
     preview = tropy_notes_preview(
-        TropyNotesRequest(source="queue", stage="cleaned", project_path=str(project))
+        TropyNotesRequest(
+            source="queue", item_ids=selected, stage="cleaned", project_path=str(project)
+        )
     )
     assert preview["write_count"] == 1
     assert preview["project"]["name"] == "Archive"
@@ -191,6 +195,7 @@ def test_notes_routes_preview_commit_and_skip_duplicate(tmp_path, monkeypatch):
     commit = tropy_notes_commit(
         TropyNotesCommitRequest(
             source="queue",
+            item_ids=selected,
             stage="cleaned",
             project_path=str(project),
             expected_write_count=1,
@@ -201,7 +206,9 @@ def test_notes_routes_preview_commit_and_skip_duplicate(tmp_path, monkeypatch):
 
     _FakeClient.duplicate = True
     duplicate = tropy_notes_preview(
-        TropyNotesRequest(source="queue", stage="cleaned", project_path=str(project))
+        TropyNotesRequest(
+            source="queue", item_ids=selected, stage="cleaned", project_path=str(project)
+        )
     )
     assert duplicate["write_count"] == 0
     assert duplicate["counts"]["duplicate"] == 1
@@ -219,7 +226,45 @@ def test_notes_route_never_falls_back_to_another_stage(tmp_path, monkeypatch):
     from artifice_ocr.web.routers.tropy_notes import TropyNotesRequest, tropy_notes_preview
 
     data = tropy_notes_preview(
-        TropyNotesRequest(source="queue", stage="cleaned", project_path=str(project))
+        TropyNotesRequest(
+            source="queue",
+            item_ids=[str(id(item))],
+            stage="cleaned",
+            project_path=str(project),
+        )
     )
     assert data["write_count"] == 0
     assert data["counts"]["empty"] == 1
+
+
+def test_notes_route_requires_an_explicit_selection(tmp_path):
+    project = _project(tmp_path)
+    state.add_items([_queue_item(project)])
+
+    from artifice_ocr.web.routers.tropy_notes import TropyNotesRequest, tropy_notes_preview
+
+    data = tropy_notes_preview(
+        TropyNotesRequest(source="queue", stage="cleaned", project_path=str(project))
+    )
+    assert data["write_count"] == 0
+    assert data["blockers"] == ["No results were selected"]
+
+
+def test_fabricated_queue_result_is_never_written_to_tropy(tmp_path):
+    project = _project(tmp_path)
+    item = _queue_item(project)
+    item.fabricated_result = True
+    state.add_items([item])
+
+    from artifice_ocr.web.routers.tropy_notes import TropyNotesRequest, tropy_notes_preview
+
+    data = tropy_notes_preview(
+        TropyNotesRequest(
+            source="queue",
+            item_ids=[str(id(item))],
+            stage="cleaned",
+            project_path=str(project),
+        )
+    )
+    assert data["write_count"] == 0
+    assert data["counts"]["ineligible"] == 1

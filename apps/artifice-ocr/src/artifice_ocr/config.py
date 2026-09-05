@@ -102,9 +102,10 @@ _DEFAULTS: dict[str, Any] = {
     "tesseract_path": "",  # explicit binary path when it is not on PATH
     # Independent safety net: when a vision-model page fails (repetition-guard
     # rejection or exhausted retries) and Tesseract is available, retry that page
-    # with Tesseract rather than failing it. Off by default; provenance is
-    # recorded as "tesseract-fallback" in the page metadata.
-    "tesseract_fallback_on_failure": False,
+    # with Tesseract rather than failing it. Detection is automatic; when the
+    # binary or requested language data is unavailable the normal model failure
+    # remains visible. Provenance is recorded as "tesseract-fallback".
+    "tesseract_fallback_on_failure": True,
     # Content-preservation guard for cleanup. When the model's output looks
     # lossy or has altered a proper noun, the raw text is kept instead, so a
     # page is either cleaned or untouched — never quietly truncated.
@@ -173,7 +174,6 @@ PERSISTED_KEYS = (
     "tesseract_fallback_on_failure",
     "gui_theme",
     "ollama_think",
-    "run_templates",
     "onboarding_dismissed",
     "ocr_backend",
     "title_enabled",

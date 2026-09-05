@@ -33,9 +33,6 @@ import uvicorn
 from artifice_ocr import config
 from artifice_ocr.web import runtime, server
 from artifice_ocr.web.routers import (
-    analytics as _analytics_router,
-)
-from artifice_ocr.web.routers import (
     events as _events_router,
 )
 from artifice_ocr.web.routers import (
@@ -70,7 +67,6 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(_run_router, "state", fresh)
     monkeypatch.setattr(_events_router, "state", fresh)
     monkeypatch.setattr(_history_router, "state", fresh)
-    monkeypatch.setattr(_analytics_router, "state", fresh)
     # pdf_export router does NOT import state, only pdf_export_state
     monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
 
@@ -183,7 +179,6 @@ def events_server(tmp_path, monkeypatch):
     monkeypatch.setattr(_run_router, "state", fresh)
     monkeypatch.setattr(_queue_router, "state", fresh)
     monkeypatch.setattr(_history_router, "state", fresh)
-    monkeypatch.setattr(_analytics_router, "state", fresh)
     monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
 
     base = _start_test_server(server.app)
@@ -443,7 +438,17 @@ def test_start_run_rejects_no_stages(client, tmp_path):
 
     res = client.post("/api/run/start", json={"stages": []})
     assert res.status_code == 409
-    assert "stage" in res.json()["detail"].lower()
+    assert "ocr is required" in res.json()["detail"].lower()
+
+
+def test_start_run_rejects_postprocessing_without_ocr(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+
+    res = client.post("/api/run/start", json={"stages": ["cleanup", "translate"]})
+    assert res.status_code == 409
+    assert "ocr is required" in res.json()["detail"].lower()
 
 
 def test_skip_unknown_item_reports_not_ok(client):
@@ -1476,6 +1481,54 @@ def test_raw_text_save_updates_in_memory_only_when_no_output_exists(client, tmp_
     assert not (tmp_path / "raw_ocr").exists()
 
 
+def test_queue_fabricated_result_persists_to_ocr_metadata(client, tmp_path):
+    output_dir = tmp_path / "output"
+    json_dir = output_dir / "raw_ocr" / "json"
+    json_dir.mkdir(parents=True)
+    source = tmp_path / "page.png"
+    source.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(source)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+    item.results = {"raw": {"extracted_text": "invented prose"}}
+    record_path = json_dir / f"{item.stem}.json"
+    record_path.write_text('{"engine":"ollama","model":"vision"}', encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    response = client.post(f"/api/queue/{item_id}/fabricated-result", json={"fabricated": True})
+    assert response.status_code == 200
+    assert response.json()["fabricated_result"] is True
+    assert runtime.state.get(item_id).fabricated_result is True
+    saved = json.loads(record_path.read_text(encoding="utf-8"))
+    assert saved["fabricated_result"] is True
+    assert saved["fabricated_reviewed_at"]
+
+
+def test_queue_fabricated_result_404s_for_unknown_item(client):
+    response = client.post("/api/queue/does-not-exist/fabricated-result", json={"fabricated": True})
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize("invalid_json", ["{truncated", "[]"])
+def test_queue_fabricated_result_survives_invalid_ocr_metadata(client, tmp_path, invalid_json):
+    output_dir = tmp_path / "output"
+    json_dir = output_dir / "raw_ocr" / "json"
+    json_dir.mkdir(parents=True)
+    source = tmp_path / "page.png"
+    source.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(source)]}).json()
+    item_id = added["items"][0]["id"]
+    item = runtime.state.get(item_id)
+    record_path = json_dir / f"{item.stem}.json"
+    record_path.write_text(invalid_json, encoding="utf-8")
+    config.apply_overrides({"output_dir": str(output_dir)})
+
+    response = client.post(f"/api/queue/{item_id}/fabricated-result", json={"fabricated": True})
+    assert response.status_code == 200
+    assert response.json()["fabricated_result"] is True
+    assert record_path.read_text(encoding="utf-8") == invalid_json
+
+
 def test_raw_text_save_overwrites_disk_output_preserving_other_provenance(client, tmp_path):
     import json as jsonlib
 
@@ -1846,8 +1899,10 @@ def test_health_check_real_probe_returns_from_threadpool(client, httpx_mock: HTT
     body = res.json()
     # Key set consumed by ocr/web/static/js/settings.js
     assert set(body.keys()) == {"lm_studio", "ollama", "models"}
-    assert set(body["lm_studio"].keys()) == {"ok", "detail", "url"}
-    assert set(body["ollama"].keys()) == {"ok", "detail", "url"}
+    assert set(body["lm_studio"].keys()) == {"ok", "detail", "url", "models"}
+    assert set(body["ollama"].keys()) == {"ok", "detail", "url", "models"}
+    assert body["lm_studio"]["models"] == ["lm-studio-model"]
+    assert body["ollama"]["models"] == ["ollama-ocr", "ollama-cleanup", "ollama-translate"]
     assert body["lm_studio"]["ok"] is True
     assert body["ollama"]["ok"] is True
     assert all(m["ok"] for m in body["models"])
@@ -1871,8 +1926,10 @@ def test_health_check_real_probe_unreachable_shape(client, httpx_mock: HTTPXMock
     assert res.status_code == 200
     body = res.json()
     assert set(body.keys()) == {"lm_studio", "ollama", "models"}
-    assert set(body["lm_studio"].keys()) == {"ok", "detail", "url"}
-    assert set(body["ollama"].keys()) == {"ok", "detail", "url"}
+    assert set(body["lm_studio"].keys()) == {"ok", "detail", "url", "models"}
+    assert set(body["ollama"].keys()) == {"ok", "detail", "url", "models"}
+    assert body["lm_studio"]["models"] == []
+    assert body["ollama"]["models"] == []
     assert body["lm_studio"]["ok"] is False
     assert body["ollama"]["ok"] is False
     assert body["lm_studio"]["detail"] is not None
@@ -2079,6 +2136,33 @@ def test_history_item_detail_includes_page(client):
     assert "page" in body
 
 
+def test_history_fabricated_result_can_be_flagged_and_exported(client):
+    run_id = _seed_history_run(runtime.state)
+    item_id = client.get(f"/api/history/runs/{run_id}/items").json()["items"][0]["item_id"]
+
+    flagged = client.post(
+        f"/api/history/items/{item_id}/fabricated-result", json={"fabricated": True}
+    )
+    assert flagged.status_code == 200
+    assert flagged.json()["fabricated_result"] is True
+    listed = client.get(f"/api/history/runs/{run_id}/items").json()["items"]
+    assert listed[0]["fabricated_result"] is True
+
+    export = client.get("/api/history/fabricated-results")
+    assert export.status_code == 200
+    body = export.json()
+    assert body["schema_version"] == 1
+    assert body["items"][0]["item_id"] == item_id
+    assert body["items"][0]["raw_text"] == "raw text"
+    assert body["items"][0]["source_file"] == "letter.png"
+    assert "tropy_item_node" not in body["items"][0]
+
+
+def test_history_fabricated_result_404s_for_unknown_item(client):
+    response = client.post("/api/history/items/999999/fabricated-result", json={"fabricated": True})
+    assert response.status_code == 404
+
+
 def test_history_image_route_404_for_unknown_item(client):
     res = client.get("/api/history/items/999999/image")
     assert res.status_code == 404
@@ -2242,25 +2326,13 @@ def test_delete_run_removes_it_but_not_output_files(client):
 
 
 # --------------------------------------------------------------------------- #
-# analytics
+# removed workspace surfaces
 # --------------------------------------------------------------------------- #
 
 
-def test_analytics_stats_before_any_run(client):
-    res = client.get("/api/analytics/stats")
-    body = res.json()
-    assert body["runs"] == 0
-    assert body["confidences"] == []
-
-
-def test_analytics_stats_reflects_seeded_run(client):
-    _seed_history_run(runtime.state)
-
-    res = client.get("/api/analytics/stats")
-    body = res.json()
-    assert body["runs"] == 1
-    assert body["files"] == 1
-    assert 88 in body["confidences"]
+def test_unrelated_workspace_routes_are_removed(client):
+    assert client.get("/api/analytics/stats").status_code == 404
+    assert client.get("/api/templates").status_code == 404
 
 
 # --------------------------------------------------------------------------- #

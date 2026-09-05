@@ -34,6 +34,13 @@ die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 [ -d "$APP_DIR" ]  || die "no app directory found at $APP_DIR"
 [ -f "$SPEC" ]     || die "$SPEC not found — write one first"
 
+# OCR's core value depends on three external applications whose real behaviour
+# cannot be proved by a protocol stub. Keep this ahead of cleanup and Freeze so
+# a failed live integration produces no new executable at all.
+if [ "$APP_NAME" = "artifice-ocr" ]; then
+    bash "$REPO_ROOT/scripts/interop/run-live-release-gate.sh" --local-only
+fi
+
 # ── Clean previous build artefacts ──────────────────────────────────────
 # PyInstaller puts build/ and dist/ at the CWD (the repo root), not under
 # the app directory.  Clear both sets so nothing stale survives.

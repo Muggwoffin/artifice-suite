@@ -1,0 +1,42 @@
+/* SPDX-FileCopyrightText: 2026 Maurice Casey
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Review-only mirror of the production ArtificeOCR design tokens.
+ */
+:root {
+  --paper: #f6f3ea;
+  --paper-raised: #fbf9f3;
+  --paper-recessed: #efebdf;
+  --ink: #1b1813;
+  --ink-soft: #4b463d;
+  --ink-faint: #635e51;
+  --rule: #ddd6c6;
+  --rule-strong: #a49b89;
+  --accent: #017259;
+  --accent-deep: #005942;
+  --accent-wash: rgba(1, 114, 89, 0.07);
+  --success: #455f2b;
+  --warning: #7c5e1a;
+  --error: #a8322b;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Libre Baskerville", Georgia, serif;
+  --font-sans: "Archivo", "Franklin Gothic Medium", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #161310;
+    --paper-raised: #1f1b16;
+    --paper-recessed: #100e0b;
+    --ink: #e8e2d3;
+    --ink-soft: #beb5a3;
+    --ink-faint: #a39a88;
+    --rule: #38332b;
+    --rule-strong: #5b554a;
+    --accent: #43b89a;
+    --accent-deep: #78d8bd;
+    --accent-wash: rgba(67, 184, 154, 0.1);
+    --success: #67a04b;
+    --warning: #e4cb81;
+    --error: #dd5555;
+  }
+}

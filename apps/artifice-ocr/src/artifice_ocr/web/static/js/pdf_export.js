@@ -32,7 +32,7 @@ function openPdfExport() {
   pdfEls["btn-pdf-download"].disabled = true;
   pdfEls["btn-pdf-start"].disabled = false;
   pdfEls["btn-pdf-cancel"].disabled = true;
-  setPdfStatus("Point at your output folder, choose a stage, then press Start.", "");
+  setPdfStatus("Choose the saved text stage, then press Start.", "");
 
   // Default the input to the pipeline's output ROOT, not a per-item leaf.
   // The backend reads <folder>/<stage>/text/*.txt, so the output root is
@@ -41,8 +41,9 @@ function openPdfExport() {
   // never a real directory of .txt files (text is written as <stem>.txt files
   // directly in cleaned/text/, not in a per-item subfolder) — so it produced
   // "No pages found" every time and contradicted the Stage selector.
-  const outputDir = (els["output-dir"] && els["output-dir"].value) || "output";
+  const outputDir = window.QueueTab?.outputDirectory() || "output";
   pdfEls["pdf-folder"].value = outputDir;
+  pdfEls["pdf-stage"].value = window.QueueTab?.preferredStage() || "raw_ocr";
   pdfEls["pdf-output"].value = "";
   refreshPdfPreview();
 }
@@ -153,7 +154,7 @@ async function startPdfExport() {
       appendPdfLog(data.message);
     } else if (data.type === "done") {
       appendPdfLog("Done: " + data.output_path);
-      setPdfStatus("PDF compiled successfully.", "success");
+      setPdfStatus(`${pdfEls["pdf-format"].value.toUpperCase()} compiled successfully.`, "success");
       pdfEls["btn-pdf-download"].disabled = false;
       pdfEls["btn-pdf-start"].disabled = false;
       pdfEls["btn-pdf-cancel"].disabled = true;

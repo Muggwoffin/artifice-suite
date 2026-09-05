@@ -15,14 +15,11 @@ OCR_SRC = ROOT / "apps" / "artifice-ocr" / "src" / "artifice_ocr"
 
 
 def test_ocr_runtime_does_not_enumerate_processes_or_strip_download_metadata():
-    tropy = (OCR_SRC / "tropy_write.py").read_text(encoding="utf-8")
     window = (ROOT / "packages" / "shared-ui" / "shared_ui" / "window.py").read_text(
         encoding="utf-8"
     )
 
-    assert '"tasklist"' not in tropy
-    assert '"pgrep"' not in tropy
-    assert "CREATE_NO_WINDOW" not in tropy
+    assert not (OCR_SRC / "tropy_write.py").exists()
     assert "Zone.Identifier" not in window
     assert "os.remove" not in window
 

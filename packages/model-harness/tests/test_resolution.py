@@ -131,6 +131,18 @@ def test_vision_role_uses_registry_vision_recommendation_when_installed():
     assert result.source is ResolutionSource.RECOMMENDED
 
 
+def test_vision_role_recognises_native_lm_studio_olmocr_name():
+    """The upstream Hugging Face ID is the model name LM Studio exposes."""
+    result = resolve_model(
+        role="vision",
+        installed=["allenai/olmocr-2-7b", "text-embedding-nomic-embed-text-v1.5"],
+        app="artifice-ocr",
+        tier=HardwareTier.DESKTOP,
+    )
+    assert result.model_name == "allenai/olmocr-2-7b"
+    assert result.source is ResolutionSource.RECOMMENDED
+
+
 def test_vision_role_does_not_use_translation_recommendation():
     """A translation recommendation (role='translation', vision=False) must not
     satisfy a vision role even though it is installed and in the same app."""

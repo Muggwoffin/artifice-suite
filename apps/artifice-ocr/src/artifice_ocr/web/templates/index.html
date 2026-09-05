@@ -8,11 +8,10 @@
 
 {% block content %}
 
-  <nav class="tabs">
-    <button type="button" class="tab active" data-tab="main"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Main</span></button>
+  <nav class="tabs" aria-label="Tropy workflow">
+    <button type="button" class="tab active" data-tab="main"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span>Source &amp; process</span></button>
     <button type="button" class="tab" data-tab="preview"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Preview</span></button>
     <button type="button" class="tab" data-tab="history"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>History</span></button>
-    <button type="button" class="tab" data-tab="analytics"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span></button>
     <button type="button" class="tab" data-tab="settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="1.6"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="1.6"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="1.6"/></svg><span>Settings</span></button>
     <div class="spacer" style="flex:1;"></div>
     <button type="button" class="tab" id="btn-palette-hint" title="Command Palette (Ctrl+K)" style="font-size:0.8rem; border-bottom:none; color:var(--ink-faint);">
@@ -22,16 +21,30 @@
 
   <div class="panels">
 
+    <ol class="workflow-rail" aria-label="Tropy round trip">
+      <li class="active"><span>1</span><strong>Source</strong><small>Choose Tropy pages</small></li>
+      <li><span>2</span><strong>Process</strong><small>OCR and clean</small></li>
+      <li><span>3</span><strong>Review</strong><small>Edit beside the scan</small></li>
+      <li><span>4</span><strong>Return</strong><small>Add notes or compile</small></li>
+    </ol>
+
     <!-- ================================================================ MAIN -->
     <section class="panel active" id="panel-main">
 
       <!-- Queue card -->
       <div class="card" style="margin-bottom:1rem;">
         <div class="card-head">
-          <h2>Queue</h2>
+          <div><p class="workspace-kicker">Tropy source</p><h2>Pages to transcribe</h2></div>
           <span class="dim" id="queue-count">0 files</span>
         </div>
 
+        <div class="source-primary-action">
+          <div><strong>Start from your archive</strong><span>Choose lists, items, and individual pages from a read-only Tropy project.</span></div>
+          <button type="button" class="btn accent" id="btn-add-tropy">Choose Tropy pages&hellip;</button>
+        </div>
+
+        <details class="manual-source-disclosure">
+          <summary>Or add files outside Tropy</summary>
         <div class="dropzone" id="dropzone" tabindex="0" role="button"
              aria-label="Drop image files here, or press Enter to browse">
           <div class="dropzone-state" id="dropzone-idle">
@@ -69,6 +82,7 @@
           </div>
           <div class="dropzone-live" id="dropzone-live" aria-live="polite" aria-atomic="true"></div>
         </div>
+        </details>
 
         <div class="queue-wrap">
           <table class="queue">
@@ -78,6 +92,7 @@
                 <th>File</th>
                 <th class="c">OCR</th>
                 <th class="c">Cleanup</th>
+                <th class="c">Title</th>
                 <th class="c">Translate</th>
                 <th class="c" title="Quality score: how confident the AI is that it read the text correctly (0–100)">Conf</th>
                 <th class="c">Time</th>
@@ -90,9 +105,8 @@
         </div>
 
         <div class="toolbar">
-          <button type="button" class="btn" id="btn-browse-files">Browse Files</button>
-          <button type="button" class="btn" id="btn-add-folder">Add Folder</button>
-          <button type="button" class="btn" id="btn-add-tropy">Add from Tropy&hellip;</button>
+          <button type="button" class="btn" id="btn-browse-files">Browse files</button>
+          <button type="button" class="btn" id="btn-add-folder">Add folder</button>
           <button type="button" class="btn danger" id="btn-remove">Remove Selected</button>
           <button type="button" class="btn danger" id="btn-clear">Clear All</button>
           <div class="rule-v"></div>
@@ -108,8 +122,9 @@
 
         <div class="run-row">
           <strong style="font-size:var(--text-sm);">Stages</strong>
-          <label class="check"><input type="checkbox" id="stage-ocr" checked> OCR</label>
-          <label class="check"><input type="checkbox" id="stage-cleanup"> Cleanup</label>
+          <label class="check" title="OCR is required for every new run"><input type="checkbox" id="stage-ocr" checked disabled> OCR <span class="dim">required</span></label>
+          <label class="check"><input type="checkbox" id="stage-cleanup" checked> Cleanup</label>
+          <label class="check"><input type="checkbox" id="stage-title"> Generate titles</label>
           <label class="check"><input type="checkbox" id="stage-translate"> Translate</label>
           <label class="check" title="Ignore existing output and OCR/clean/translate every selected file again."><input type="checkbox" id="stage-force"> Force re-run (ignore existing output)</label>
         </div>
@@ -118,7 +133,7 @@
           <strong style="font-size:var(--text-sm); white-space:nowrap;">Output</strong>
           <input type="text" id="output-dir" value="output">
           <button type="button" class="btn" id="btn-browse-output">&hellip;</button>
-          <button type="button" class="btn accent icon-btn" id="btn-run"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="icon-btn-label">Run Pipeline</span></button>
+          <button type="button" class="btn accent icon-btn" id="btn-run"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="icon-btn-label">Run OCR</span></button>
           <button type="button" class="btn icon-btn" id="btn-pause" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg><span>Pause</span></button>
           <button type="button" class="btn danger icon-btn" id="btn-stop" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg><span>Stop</span></button>
         </div>
@@ -161,10 +176,11 @@
           <h2 class="compare-title">No document selected</h2>
           <select id="preview-item-select" class="select"></select>
           <span class="compare-conf dim"></span>
+          <label class="fabricated-toggle" title="Mark OCR that invents text not present in the source image">
+            <input type="checkbox" id="preview-fabricated-result" disabled> Fabricated result
+          </label>
           <button class="btn" id="btn-reprocess" type="button" disabled style="margin-left:0.5rem;" title="Re-run downstream stages after correction">Re-process</button>
           <span class="spacer"></span>
-          <button class="btn" id="btn-send-draft" type="button" disabled style="margin-left:0.5rem;" title="Send extracted text to ArtificeDraft for copy editing">Send to Draft</button>
-          <button class="btn" id="btn-send-graph" type="button" disabled style="margin-left:0.25rem;" title="Send extracted text to ArtificeGraph for entity extraction">Send to Graph</button>
         </div>
         <div class="compare-panes">
           <div class="compare-pane" data-pane="raw">
@@ -212,6 +228,7 @@
           <div style="display:flex; gap:0.5rem; align-items:center;">
             <input type="text" id="history-search" placeholder="Find file&hellip;" style="padding:0.4rem 0.6rem; border-radius:var(--radius-sm); border:1px solid var(--rule); background:var(--paper-recessed);">
             <button type="button" class="btn" id="btn-history-refresh">Refresh</button>
+            <button type="button" class="btn" id="btn-history-export-fabricated" title="Open reviewer-labelled OCR examples as JSON">Export flagged OCR</button>
             <button type="button" class="btn" id="btn-history-send-tropy" title="Send selected document back to Tropy">Send to Tropy</button>
             <button type="button" class="btn danger" id="btn-history-delete">Delete Run</button>
           </div>
@@ -230,7 +247,7 @@
             <h3 class="dim" style="margin:0.75rem 0 0.5rem;">Documents</h3>
             <div class="queue-wrap" style="max-height:26vh;">
               <table class="queue">
-                <thead><tr><th>File</th><th>State</th><th>Language</th><th class="c" title="Quality score: how confident the AI is that it read the text correctly (0–100)">Conf</th></tr></thead>
+                <thead><tr><th>File</th><th>State</th><th>Language</th><th class="c" title="Quality score: how confident the AI is that it read the text correctly (0–100)">Conf</th><th>Review</th></tr></thead>
                 <tbody id="history-items-body"></tbody>
               </table>
             </div>
@@ -259,6 +276,9 @@
         <div class="compare-bar">
           <h2 class="compare-title">No document selected</h2>
           <span class="compare-conf dim"></span>
+          <label class="fabricated-toggle" title="Mark OCR that invents text not present in the source image">
+            <input type="checkbox" id="history-fabricated-result" disabled> Fabricated result
+          </label>
         </div>
         <div class="compare-panes">
           <div class="compare-pane" data-pane="raw">
@@ -301,153 +321,101 @@
       </div>
     </section>
 
-    <!-- =========================================================== ANALYTICS -->
-    <section class="panel" id="panel-analytics">
-      <div class="card-head" style="padding:0 0 0.75rem;">
-        <h2 style="font-family:var(--font-display); font-size:var(--text-h3); margin:0;">Analytics</h2>
-        <button type="button" class="btn" id="btn-analytics-refresh">Refresh</button>
-      </div>
-      <div class="tiles" id="analytics-tiles"></div>
-      <div class="charts-grid">
-        <div class="card chart-card">
-          <h3>Throughput <span class="dim">(chars / second)</span></h3>
-          <div id="chart-throughput"></div>
-        </div>
-        <div class="card chart-card">
-          <h3>Confidence distribution</h3>
-          <div id="chart-confidence"></div>
-        </div>
-      </div>
-      <div class="card chart-card" style="margin-top:1rem;">
-        <h3>Recent runs <span class="dim">(seconds per document)</span></h3>
-        <div id="chart-recent"></div>
-      </div>
-    </section>
-
     <!-- ============================================================ SETTINGS -->
     <section class="panel" id="panel-settings">
       <div class="settings-intro">
-        <p class="eyebrow">Configuration</p>
         <h2>OCR settings</h2>
         <p>Choose how Artifice reads and processes your documents. Changes apply to new runs after you save them.</p>
       </div>
-      <div class="settings-grid">
-        <div class="card settings-card settings-card-primary">
-          <div class="settings-card-heading">
-            <div><p class="eyebrow">01 · Models</p><h3>AI models</h3></div>
-            <span class="settings-badge">Choose one per stage</span>
-          </div>
-          <p class="settings-description">Select the service and model used for OCR, clean-up, and translation. Auto is the easiest starting point.</p>
-          <label>OCR backend
-            <select id="set-ocr_backend">
-              <option value="auto">Auto (detect)</option>
-              <option value="lm_studio">LM Studio</option>
-              <option value="ollama">Ollama</option>
-              <option value="huggingface">Hugging Face</option>
-              <option value="api_key">API Key (cloud)</option>
-            </select>
-          </label>
-          <label>OCR model <input type="text" id="set-ocr_model" placeholder="leave blank to pick automatically"></label>
-          <label>Cleanup backend
-            <select id="set-cleanup_backend">
-              <option value="auto">Auto (detect)</option>
-              <option value="ollama">Ollama</option>
-              <option value="lm_studio">LM Studio</option>
-              <option value="huggingface">Hugging Face</option>
-              <option value="api_key">API Key (cloud)</option>
-            </select>
-          </label>
-          <label>Cleanup model <input type="text" id="set-cleanup_model" placeholder="e.g. aya-expanse:8b"></label>
-          <label>Translate backend
-            <select id="set-translate_backend">
-              <option value="auto">Auto (detect)</option>
-              <option value="ollama">Ollama</option>
-              <option value="lm_studio">LM Studio</option>
-              <option value="huggingface">Hugging Face</option>
-              <option value="api_key">API Key (cloud)</option>
-            </select>
-          </label>
-          <label>Translate model <input type="text" id="set-translate_model" placeholder="e.g. aya-expanse:8b"></label>
-          <details class="settings-disclosure">
-            <summary>Connection settings <span class="settings-summary-hint">URLs and credentials</span></summary>
-            <div class="settings-disclosure-body">
-              <label>LM Studio URL <input type="text" id="set-lm_studio_url" placeholder="http://localhost:1234/v1" title="Address where LM Studio is running."></label>
-              <label>Ollama URL <input type="text" id="set-ollama_url" placeholder="http://localhost:11434" title="Base address where Ollama is running."></label>
-              <label>Hugging Face token <input type="text" id="set-huggingface_token" placeholder="hf_xxx..." title="Your Hugging Face API token (hf_...). Required only when using Hugging Face."></label>
-              <label>API key <input type="password" id="set-api_key" placeholder="sk-..." title="Your cloud API key. Works with any OpenAI-compatible provider (OpenAI, Together, Groq, etc.)."></label>
-              <label>API base URL <input type="text" id="set-api_base_url" placeholder="https://api.openai.com/v1" title="The API endpoint URL. Change this for non-OpenAI providers."></label>
+      <div class="settings-workbench">
+        <nav class="settings-section-nav" aria-label="Settings sections">
+          <button type="button" class="active" data-settings-target="settings-models">Local models <span>&rarr;</span></button>
+          <button type="button" data-settings-target="settings-processing">Processing <span>&rarr;</span></button>
+          <button type="button" data-settings-target="settings-tropy">Tropy &amp; folders <span>&rarr;</span></button>
+          <button type="button" data-settings-target="settings-diagnostics">Diagnostics <span>&rarr;</span></button>
+        </nav>
+        <div class="settings-sheet">
+          <section class="settings-section" id="settings-models">
+            <div class="settings-section-head"><h3>Local models</h3><p>Automatic detects Ollama and LM Studio, then chooses a suitable installed model when a run starts.</p></div>
+            <div class="settings-form-grid">
+              <label>OCR service
+                <select id="set-ocr_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
+              </label>
+              <label>OCR model
+                <input type="text" id="set-ocr_model" list="detected-local-models" placeholder="Automatic — detect a vision model">
+              </label>
+              <label>Cleanup service
+                <select id="set-cleanup_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
+              </label>
+              <label>Cleanup model
+                <input type="text" id="set-cleanup_model" list="detected-local-models" placeholder="Automatic — detect a text model">
+              </label>
+              <label>Translation service
+                <select id="set-translate_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
+              </label>
+              <label>Translation model
+                <input type="text" id="set-translate_model" list="detected-local-models" placeholder="Automatic — detect a text model">
+              </label>
+              <datalist id="detected-local-models"></datalist>
+              <p class="settings-field-help settings-full">Leave a model blank to let Artifice select from the models actually served on this computer.</p>
+              <details class="settings-disclosure settings-full">
+                <summary>Other providers and connection addresses <span class="settings-summary-hint">Optional</span></summary>
+                <div class="settings-disclosure-body settings-form-grid">
+                  <label>LM Studio address <input type="text" id="set-lm_studio_url" placeholder="http://localhost:1234/v1"></label>
+                  <label>Ollama address <input type="text" id="set-ollama_url" placeholder="http://localhost:11434"></label>
+                  <label>Hugging Face token <input type="text" id="set-huggingface_token" placeholder="Not set"></label>
+                  <label>API key <input type="password" id="set-api_key" placeholder="Not set"></label>
+                  <label>API base URL <input type="text" id="set-api_base_url" placeholder="https://api.openai.com/v1"></label>
+                </div>
+              </details>
             </div>
-          </details>
-        </div>
-        <div class="card settings-card">
-          <div class="settings-card-heading">
-            <div><p class="eyebrow">02 · Processing</p><h3>Processing</h3></div>
-          </div>
-          <p class="settings-description">Tune the balance between speed, quality, and recovery when a page is difficult to read.</p>
-          <label>Document type
-            <select id="set-document_type"></select>
-          </label>
-          <p class="dim" id="doc-type-hint" style="margin:0.2rem 0 0.5rem;"></p>
-          <label>Parallel OCR readers <input type="number" id="set-max_ocr_workers" min="1" style="width:5rem;"></label>
-          <label>Resume (skip existing outputs) <input type="checkbox" id="set-resume"></label>
-          <label>Enable confidence scoring <input type="checkbox" id="set-confidence_enabled"></label>
-          <label>Enhance faint or bright scans <input type="checkbox" id="set-preprocess_enabled"></label>
-          <p class="dim" style="margin:-0.2rem 0 0.3rem;">Deterministic clean-up (greyscale, even out lighting, stretch contrast) before OCR. Helps washed-out or over-exposed photos; leave off for clean scans.</p>
-          <label>OCR engine
-            <select id="set-ocr_engine">
-              <option value="vision_model">Vision model (default)</option>
-              <option value="tesseract">Tesseract (local, offline)</option>
-            </select>
-          </label>
-          <p class="dim" id="tesseract-status" style="margin:-0.1rem 0 0.3rem;" aria-live="polite">Checking for Tesseract&hellip;</p>
-          <label>Fall back to Tesseract on failed pages <input type="checkbox" id="set-tesseract_fallback_on_failure"></label>
-          <p class="dim" style="margin:-0.2rem 0 0.3rem;">When a page fails the vision model (loops or errors) and Tesseract is installed, retry that page with Tesseract instead of failing it. Provenance is recorded per page.</p>
-          <label>Enable Tropy project browsing <input type="checkbox" id="set-tropy_live_browse_enabled"></label>
-          <details class="settings-disclosure">
-            <summary>Advanced <span class="settings-summary-hint">Less common controls</span></summary>
-            <div class="settings-disclosure-body">
-              <label>Max text chunk size <input type="number" id="set-chunk_max_tokens" min="100" style="width:6rem;" title="How much text the AI processes at once. Leave at default unless you have a reason to change it."></label>
-              <label>Context size <input type="number" id="set-context_size" min="0" step="1024" style="width:6rem;" title="The model's context window, in tokens. 0 leaves it to the model's own default."></label>
-              <p class="dim" id="context-size-hint" style="margin:0;" aria-live="polite">0 uses the model&rsquo;s own default. Raise this if a page fails with &ldquo;exceeds the available context size&rdquo;.</p>
-              <label><input type="checkbox" id="set-ollama_think"> Think step-by-step (slow &mdash; not recommended)</label>
-              <p class="dim" style="margin:0;">Much slower with no visible improvement.</p>
-              <label>Tesseract language <input type="text" id="set-tesseract_lang" style="width:8rem;" placeholder="eng" title="Tesseract language code(s), e.g. eng, deu, or deu+eng. You need the matching traineddata installed."></label>
-              <label>Tesseract path <input type="text" id="set-tesseract_path" style="width:16rem;" placeholder="auto-detect" title="Full path to the tesseract binary. Leave blank to detect it on PATH."></label>
-              <label>Tropy API port <input type="number" id="set-tropy_api_port" min="0" max="65535" style="width:7rem;" title="0 detects Tropy automatically. Set a port only if Tropy was started with a custom --port."></label>
-              <p class="dim" style="margin:0;">0 detects Tropy automatically (stable 2019, beta 2029).</p>
+          </section>
+
+          <section class="settings-section" id="settings-processing">
+            <div class="settings-section-head"><h3>Processing defaults</h3><p>Safe starting values for mixed historical documents. Change them only when the collection needs it.</p></div>
+            <div class="settings-form-grid">
+              <label>Document type <select id="set-document_type"></select><span class="settings-field-help" id="doc-type-hint"></span></label>
+              <label>Pages processed at once <input type="number" id="set-max_ocr_workers" min="1"></label>
+              <div class="settings-checks settings-full">
+                <label><input type="checkbox" id="set-resume"><span>Reuse completed text<small>Skip stages whose saved output already exists.</small></span></label>
+                <label><input type="checkbox" id="set-confidence_enabled"><span>Score OCR confidence<small>Flag difficult pages for closer review.</small></span></label>
+                <label><input type="checkbox" id="set-preprocess_enabled"><span>Enhance faint scans before OCR<small>Even out lighting and stretch contrast without changing the source.</small></span></label>
+                <label><input type="checkbox" id="set-tesseract_fallback_on_failure"><span>Fall back to Tesseract after a model failure<small>Used only when Tesseract and the requested language data are available.</small></span></label>
+              </div>
+              <label>OCR engine <select id="set-ocr_engine"><option value="vision_model">Vision model (recommended)</option><option value="tesseract">Tesseract</option></select><span class="settings-field-help" id="tesseract-status" aria-live="polite">Checking for Tesseract&hellip;</span></label>
+              <details class="settings-disclosure settings-full">
+                <summary>Advanced model limits <span class="settings-summary-hint">Less common controls</span></summary>
+                <div class="settings-disclosure-body settings-form-grid">
+                  <label>Maximum text chunk <input type="number" id="set-chunk_max_tokens" min="100"></label>
+                  <label>Context size <input type="number" id="set-context_size" min="0" step="1024"><span class="settings-field-help" id="context-size-hint" aria-live="polite">0 uses the model&rsquo;s default.</span></label>
+                  <label>Tesseract language <input type="text" id="set-tesseract_lang" placeholder="eng"></label>
+                  <label>Tesseract path <input type="text" id="set-tesseract_path" placeholder="Automatic — detect on PATH"></label>
+                  <label class="settings-checkbox"><input type="checkbox" id="set-ollama_think"> Think step-by-step with Ollama <span class="settings-field-help">Slower and usually unnecessary for OCR cleanup.</span></label>
+                </div>
+              </details>
             </div>
-          </details>
-        </div>
-        <div class="card settings-card settings-card-wide">
-          <div class="settings-card-heading"><div><p class="eyebrow">03 · Shortcuts</p><h3>Run templates</h3></div></div>
-          <p class="settings-description">Save a combination of stages and options so you can reuse it for another batch.</p>
-          <div class="settings-inline-row">
-            <select id="template-select" class="select" style="flex:1;">
-              <option value="">-- Select a template --</option>
-            </select>
-            <button type="button" class="btn" id="btn-template-apply">Apply</button>
-            <button type="button" class="btn" id="btn-template-delete">Delete</button>
-          </div>
-          <div class="settings-inline-row settings-template-save">
-            <input type="text" id="template-name" class="input" style="flex:1;" placeholder="Template name">
-            <button type="button" class="btn accent" id="btn-template-save">Save Current as Template</button>
-          </div>
-          <span id="template-status" class="dim" style="margin-top:0.5rem; display:inline-block;"></span>
-        </div>
-        <div class="card settings-card settings-card-wide">
-          <div class="settings-card-heading"><div><p class="eyebrow">04 · Files</p><h3>Approved folders</h3></div></div>
-          <p class="settings-description">Artifice can read and write only inside folders you approve.</p>
-          <ul id="approved-folders-list" style="list-style:none; margin:0 0 0.5rem; padding:0; display:flex; flex-direction:column; gap:0.4rem;"></ul>
-          <button class="btn" id="btn-approved-folder-add" type="button">Add folder&hellip;</button>
-          <span id="approved-folders-status" class="dim" style="margin-left:0.5rem;"></span>
-        </div>
-        <div class="card settings-card settings-card-wide">
-          <div class="settings-card-heading"><div><p class="eyebrow">05 · Diagnostics</p><h3>Connection status</h3></div></div>
-          <p class="settings-description">Check whether the services selected above are reachable before starting a run.</p>
-          <div id="health-panel" class="health-panel">
-            <p class="dim">Press "Check Connections" to verify your local AI helpers are running.</p>
-          </div>
-          <button type="button" class="btn" id="btn-preflight" style="margin-top:0.75rem;">Check Connections</button>
+          </section>
+
+          <section class="settings-section" id="settings-tropy">
+            <div class="settings-section-head"><h3>Tropy and folders</h3><p>Projects are read directly; reviewed text returns through Tropy&rsquo;s Developer API. Artifice never edits the project database.</p></div>
+            <div class="settings-form-grid">
+              <label class="settings-checkbox settings-full"><input type="checkbox" id="set-tropy_live_browse_enabled"> Enable Tropy project browsing</label>
+              <label>Developer API port <input type="number" id="set-tropy_api_port" min="0" max="65535"><span class="settings-field-help">0 automatically detects Tropy&rsquo;s configured, stable, or beta port.</span></label>
+              <div class="settings-full">
+                <h4>Approved folders</h4>
+                <p class="settings-field-help">Artifice can read and write only inside locations you approve.</p>
+                <ul id="approved-folders-list" class="approved-folders-list"></ul>
+                <button class="btn" id="btn-approved-folder-add" type="button">Add folder&hellip;</button>
+                <span id="approved-folders-status" class="dim"></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-section" id="settings-diagnostics">
+            <div class="settings-section-head"><h3>Diagnostics</h3><p>Connection checks run automatically when Settings opens and can be repeated before a large collection.</p></div>
+            <div id="health-panel" class="health-panel" aria-live="polite"><p class="dim">Checking local services&hellip;</p></div>
+            <button type="button" class="btn" id="btn-preflight">Check connections again</button>
+          </section>
         </div>
       </div>
       <div class="run-row settings-actions" role="region" aria-label="Save settings">
@@ -540,18 +508,9 @@
     <div class="modal" style="width:min(640px, 94vw);">
       <h3>Compile PDF</h3>
       <button type="button" class="modal-close" data-modal-close>&times;</button>
-      <p class="dim">Compile processed text files from a folder into one continuous reading PDF.</p>
+      <p class="dim">Compile the saved text in this project into one continuous reading document.</p>
 
-      <label class="field-label" for="pdf-folder">Input folder</label>
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.2rem;">
-        <input type="text" id="pdf-folder" class="input" style="flex:1;" placeholder="Your output folder, e.g. output">
-        <button type="button" class="btn" id="btn-pdf-browse-folder">Browse&hellip;</button>
-      </div>
-      <p class="dim" style="margin:0 0 0.6rem; font-size:0.82rem;">
-        Pick the pipeline&rsquo;s <strong>output</strong> folder (the one holding <code>cleaned/</code>,
-        <code>raw_ocr/</code>&hellip;), not a single file. The <strong>Stage</strong> selector below
-        chooses which processed text is read.
-      </p>
+      <input type="hidden" id="pdf-folder">
 
       <div style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem;">
         <label>Stage:
@@ -581,14 +540,17 @@
         Requires both cleaned/ and translated/ outputs in the folder.  Structure pass is skipped unless you check it below.
       </p>
 
-      <label class="field-label" for="pdf-output">Save PDF to</label>
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.2rem;">
-        <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Optional — where to save the PDF">
-        <button type="button" class="btn" id="btn-pdf-browse-output">Browse&hellip;</button>
-      </div>
-      <p class="dim" style="margin:0 0 0.6rem; font-size:0.82rem;">
-        Leave blank to save into the <code>output</code> folder, named after the input folder.
-      </p>
+      <details class="settings-disclosure">
+        <summary>Change destination</summary>
+        <div class="settings-disclosure-body">
+          <label class="field-label" for="pdf-output">Save to</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="pdf-output" class="input" style="flex:1;" placeholder="Default: current project folder">
+            <button type="button" class="btn" id="btn-pdf-browse-output">Browse&hellip;</button>
+          </div>
+        </div>
+      </details>
+      <button type="button" class="hidden" id="btn-pdf-browse-folder" aria-hidden="true" tabindex="-1"></button>
 
       <p class="dim" id="pdf-status"></p>
       <div id="pdf-log" style="max-height:26vh; overflow:auto; background:var(--paper-recessed); border-radius:var(--radius); padding:0.6rem; font-family:var(--font-mono); font-size:0.82rem; white-space:pre-wrap;"></div>
@@ -670,14 +632,6 @@
         <label class="check" style="margin-top:0.3rem;">
           <input type="checkbox" id="batch-apply-selected"> Selected items only
         </label>
-        <div style="display:flex; gap:0.5rem; align-items:center; margin-top:0.3rem;">
-          <span class="dim">Templates:</span>
-          <select id="batch-template-select" class="select" style="flex:1;">
-            <option value="">-- Load template --</option>
-          </select>
-          <button type="button" class="btn" id="btn-batch-template-save">Save</button>
-          <button type="button" class="btn danger" id="btn-batch-template-delete">Delete</button>
-        </div>
       </div>
 
       <p class="dim" id="batch-status" style="margin-top:0.5rem;"></p>

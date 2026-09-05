@@ -160,6 +160,20 @@ def test_explicit_lm_studio_backend_honoured(monkeypatch):
     assert _resolution.backend_for("vision") == "lm_studio"
 
 
+def test_lm_studio_auto_detects_native_olmocr_name(monkeypatch):
+    """The empty-model default recognises LM Studio's upstream olmOCR ID."""
+    config.apply_overrides({"ocr_model": "", "ocr_backend": "lm_studio"})
+    _patch_probes(
+        monkeypatch,
+        {LM_STUDIO: _ok(LM_STUDIO, ["allenai/olmocr-2-7b", "nomic-embed-text"])},
+    )
+
+    _resolution.resolve_models_for_run(stages={"ocr"})
+
+    assert _resolution.model_for("vision") == "allenai/olmocr-2-7b"
+    assert _resolution.backend_for("vision") == "lm_studio"
+
+
 def test_accessor_falls_back_to_config_when_unresolved():
     """Before any resolution pass, the accessors return the raw configured
     values (empty/auto) — so an explicit choice set in config still wins when

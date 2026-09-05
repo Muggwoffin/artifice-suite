@@ -28,6 +28,23 @@ bash scripts/interop/bootstrap-tropy.sh canary
 bash scripts/interop/run-live-tropy.sh canary
 ```
 
+Before an OCR release or standalone build, run the combined live gate while
+Tropy, Ollama, and LM Studio are available:
+
+```bash
+bash scripts/interop/run-live-release-gate.sh --publish-status
+```
+
+The gate auto-detects model servers on WSL localhost and its Windows-host
+gateway. Model names are resolved from the servers by the same production
+preflight used by the app; `ARTIFICE_LIVE_OLLAMA_MODEL` and
+`ARTIFICE_LIVE_LM_STUDIO_MODEL` remain explicit overrides. It uses a disposable
+Tropy profile/project, sends the repository's archival fixture scan through
+both production OCR SDK paths, and publishes a commit status only after all
+three applications pass. The executable workflow refuses to freeze OCR for a
+commit without that status. `scripts/build-exe.sh artifice-ocr` runs the same
+live gate locally before deleting old artifacts or invoking PyInstaller.
+
 The bootstrap downloads a checksum-pinned Node runtime, checks out the pinned
 Tropy revision, rebuilds Electron native modules, and creates Tropy's bundle.
 Use `bash scripts/interop/doctor.sh stable` for a read-only diagnosis.

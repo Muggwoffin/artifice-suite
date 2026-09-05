@@ -25,11 +25,14 @@ from pathlib import Path
 from typing import Any
 
 from .. import config
+from .._logging import get_logger
 from ..history import HistoryStore
 from ..jobs import STAGES, JobItem, JobRunner, State
 from ..output import stage_dir
 from ..pipeline import run_cleanup_step, run_translate_step
 from .serializers import serialize_item, serialize_item_preview
+
+log = get_logger("web.runtime")
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
 
@@ -172,6 +175,34 @@ def save_cleaned_text(item: JobItem, text: str) -> dict[str, Any]:
 def save_translated_text(item: JobItem, text: str) -> dict[str, Any]:
     """Persist a manual correction to an item's translated text."""
     return _save_stage_text(item, "translated", text)
+
+
+def set_fabricated_result(item: JobItem, value: bool) -> dict[str, Any]:
+    """Capture a reviewer label in memory, history, and raw OCR metadata."""
+    item.fabricated_result = bool(value)
+    reviewed_at = datetime.now(UTC).isoformat()
+
+    output_dir = state.runner.output_dir if state.runner else config.get("output_dir")
+    json_path = stage_dir(output_dir, "raw_ocr") / "records" / f"{item.stem}.json"
+    if not json_path.exists():
+        json_path = Path(output_dir) / "raw_ocr" / "json" / f"{item.stem}.json"
+    if json_path.exists():
+        try:
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise TypeError("OCR metadata root is not an object")
+            data["fabricated_result"] = item.fabricated_result
+            data["fabricated_reviewed_at"] = reviewed_at if item.fabricated_result else None
+            json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except (json.JSONDecodeError, OSError, TypeError, UnicodeDecodeError) as exc:
+            # The in-memory flag is still authoritative and will be recorded
+            # in history when the run finishes. Never destroy a corrupt record
+            # merely to add review metadata; leave it intact for diagnosis.
+            log.warning("Could not update OCR metadata %s: %s", json_path, exc)
+
+    if item.history_item_id is not None:
+        state.history.set_fabricated_result(item.history_item_id, item.fabricated_result)
+    return serialize_item_preview(item)
 
 
 def reprocess_item(item: JobItem, from_stage: str, stages: list[str]) -> dict[str, Any]:
@@ -427,7 +458,7 @@ class RunState:
         for item in self.items:
             if item.state in (State.DONE, State.FAILED):
                 with contextlib.suppress(Exception):
-                    self.history.record_item(self.run_id, item)
+                    item.history_item_id = self.history.record_item(self.run_id, item)
 
     def finish_run(self, payload: dict) -> None:
         if self.run_id is not None:

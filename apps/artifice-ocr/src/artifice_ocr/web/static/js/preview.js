@@ -16,6 +16,7 @@ const PreviewTab = (function () {
   const btnSaveRaw = document.getElementById("btn-save-raw");
   const btnSaveCleaned = document.getElementById("btn-save-cleaned");
   const btnSaveTranslated = document.getElementById("btn-save-translated");
+  const fabricatedToggle = document.getElementById("preview-fabricated-result");
 
   let currentItemId = null;
   const originalText = { raw: "", cleaned: "", translated: "" };
@@ -135,6 +136,20 @@ const PreviewTab = (function () {
   if (btnSaveCleaned) btnSaveCleaned.addEventListener("click", () => savePaneText("cleaned"));
   if (btnSaveTranslated) btnSaveTranslated.addEventListener("click", () => savePaneText("translated"));
   if (btnReprocess) btnReprocess.addEventListener("click", reprocessItem);
+  if (fabricatedToggle) fabricatedToggle.addEventListener("change", async () => {
+    if (!currentItemId) return;
+    const requested = fabricatedToggle.checked;
+    fabricatedToggle.disabled = true;
+    try {
+      await api("POST", `/api/queue/${currentItemId}/fabricated-result`, { fabricated: requested });
+      log(requested ? "Marked as a fabricated OCR result." : "Removed fabricated-result mark.", "accent");
+    } catch (err) {
+      fabricatedToggle.checked = !requested;
+      log(`Could not save review flag: ${err.message}`, "error");
+    } finally {
+      fabricatedToggle.disabled = false;
+    }
+  });
 
   async function open(id) {
     refreshList(false);
@@ -148,6 +163,10 @@ const PreviewTab = (function () {
       wireOriginalToggles(container);
       wireCrossHighlight(container);
       if (btnReprocess) btnReprocess.disabled = !data.raw;
+      if (fabricatedToggle) {
+        fabricatedToggle.checked = !!data.fabricated_result;
+        fabricatedToggle.disabled = false;
+      }
     } catch (err) {
       clearCompare(container);
       container.querySelector(".compare-title").textContent = `Could not load: ${err.message}`;
@@ -155,6 +174,10 @@ const PreviewTab = (function () {
       if (btnSaveCleaned) btnSaveCleaned.disabled = true;
       if (btnSaveTranslated) btnSaveTranslated.disabled = true;
       if (btnReprocess) btnReprocess.disabled = true;
+      if (fabricatedToggle) {
+        fabricatedToggle.checked = false;
+        fabricatedToggle.disabled = true;
+      }
     }
 
     if (window.PreviewImage) window.PreviewImage.load(`/api/queue/${id}/image`);

@@ -27,9 +27,6 @@ def client(tmp_path, monkeypatch):
     config.apply_overrides({"history_db": str(tmp_path / "history.db")})
 
     from artifice_ocr.web.routers import (
-        analytics as _analytics_router,
-    )
-    from artifice_ocr.web.routers import (
         events as _events_router,
     )
     from artifice_ocr.web.routers import (
@@ -48,7 +45,6 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(_run_router, "state", fresh)
     monkeypatch.setattr(_events_router, "state", fresh)
     monkeypatch.setattr(_history_router, "state", fresh)
-    monkeypatch.setattr(_analytics_router, "state", fresh)
     monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
     # pdf_export uses its own separate state
     import artifice_ocr.web.routers.pdf_export as _pe

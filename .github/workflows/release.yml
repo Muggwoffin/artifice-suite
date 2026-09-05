@@ -10,6 +10,7 @@ on:
 # below — job-level permissions take precedence over this default.
 permissions:
   contents: read
+  statuses: read
 
 jobs:
   version-guard:
@@ -17,6 +18,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      - name: Require the live OCR release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/status" \
+            --jq '[.statuses[] | select(.context == "live-interop/release-gate")][0].state // ""')
+          if [ "$state" != "success" ]; then
+            echo "No successful live-interop/release-gate status exists for ${GITHUB_SHA}."
+            echo "Run scripts/interop/run-live-release-gate.sh --publish-status from WSL first."
+            exit 1
+          fi
 
       - name: Set up Python
         uses: astral-sh/setup-uv@v7

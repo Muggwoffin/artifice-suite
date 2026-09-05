@@ -32,6 +32,7 @@ def serialize_item(item: JobItem) -> dict[str, Any]:
         "error": item.error,
         "elapsed": round(item.elapsed, 1),
         "guard_rejected": item.guard_rejected,
+        "fabricated_result": item.fabricated_result,
         "source": item.source,
         "stages": {
             name: {
@@ -90,6 +91,7 @@ def serialize_item_preview(item: JobItem) -> dict[str, Any]:
         "confidence": item.confidence,
         "confidence_tier": confidence_tier(item.confidence),
         "language": item.language,
+        "fabricated_result": item.fabricated_result,
         "diff": _diff_payload(raw, cleaned, translated),
         # Same skip bookkeeping the queue serialiser exposes (see
         # `serialize_item`) — carried here too so the Preview pane can show
@@ -126,6 +128,7 @@ def serialize_history_item(row: sqlite3.Row) -> dict[str, Any]:
         "state": row["state"],
         "language": row["language"],
         "confidence": row["confidence"],
+        "fabricated_result": bool(row["fabricated_result"]),
     }
 
 
@@ -143,6 +146,10 @@ def serialize_history_item_detail(row: sqlite3.Row) -> dict[str, Any]:
         "confidence": row["confidence"],
         "confidence_tier": confidence_tier(row["confidence"]),
         "error": row["error"],
+        "fabricated_result": bool(row["fabricated_result"]),
+        "fabricated_at": row["fabricated_at"],
+        "ocr_engine": row["ocr_engine"] or "",
+        "ocr_model_resolved": row["ocr_model_resolved"] or "",
         "raw": raw,
         "original_raw": row["original_raw_text"] or "",
         "cleaned": cleaned,
@@ -157,4 +164,30 @@ def serialize_history_item_detail(row: sqlite3.Row) -> dict[str, Any]:
         "tropy_photo_path": row["tropy_photo_path"] or "",
         "tropy_exportable": row["tropy_item_node"] is not None,
         "diff": _diff_payload(raw, cleaned, translated),
+    }
+
+
+def serialize_fabricated_result(row: sqlite3.Row) -> dict[str, Any]:
+    """A compact, useful training/rules fixture without internal Tropy JSON."""
+    return {
+        "item_id": row["item_id"],
+        "run_id": row["run_id"],
+        "run_started": row["run_started"],
+        "fabricated_at": row["fabricated_at"],
+        "name": row["name"],
+        # Exports are intended to be shared with a coding model. Do not leak
+        # usernames or local archive layout through an absolute path.
+        "source_file": Path(row["source_file"]).name,
+        "page": row["page"],
+        "raw_text": row["raw_text"] or "",
+        "confidence": row["confidence"],
+        "language": row["language"] or "",
+        "error": row["error"] or "",
+        "ocr_engine": row["ocr_engine"] or "",
+        "ocr_model_resolved": row["ocr_model_resolved"] or "",
+        "ocr_model_configured": row["configured_ocr_model"] or "",
+        "document_type": row["doc_type"] or "",
+        "photo_id": row["photo_id"],
+        "tropy_item_id": row["tropy_item_id"],
+        "tropy_item_title": row["tropy_item_title"] or "",
     }

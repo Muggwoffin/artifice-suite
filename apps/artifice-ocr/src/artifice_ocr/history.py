@@ -4,9 +4,9 @@
 
 """Local SQLite history of completed pipeline runs.
 
-Kept deliberately small: two tables, no ORM, no migrations framework. The
-Analytics view queries this directly, which is why it is SQLite rather than a
-JSON log — aggregate queries over a few thousand rows stay instant.
+Kept deliberately small: two tables, no ORM, no migrations framework. SQLite
+keeps run history searchable and makes aggregate diagnostics over a few
+thousand rows effectively instant.
 """
 
 import json
@@ -47,6 +47,10 @@ CREATE TABLE IF NOT EXISTS run_items (
     language    TEXT,
     confidence  INTEGER,
     error       TEXT,
+    fabricated_result INTEGER NOT NULL DEFAULT 0,
+    fabricated_at TEXT,
+    ocr_engine TEXT,
+    ocr_model_resolved TEXT,
     stage_json  TEXT NOT NULL,
     raw_text        TEXT,
     cleaned_text    TEXT,
@@ -82,6 +86,10 @@ _MIGRATED_COLUMNS = {
     "tropy_group": "TEXT",
     "tropy_photo_path": "TEXT",
     "tropy_item_node": "TEXT",
+    "fabricated_result": "INTEGER NOT NULL DEFAULT 0",
+    "fabricated_at": "TEXT",
+    "ocr_engine": "TEXT",
+    "ocr_model_resolved": "TEXT",
 }
 
 _ITEM_NODE_MAX_BYTES = 256 * 1024  # 256 KB
@@ -151,7 +159,7 @@ class HistoryStore:
             self._conn.commit()
             return int(cur.lastrowid)
 
-    def record_item(self, run_id: int, item) -> None:
+    def record_item(self, run_id: int, item) -> int:
         """Persist one finished :class:`jobs.JobItem`."""
         stage_json = json.dumps(
             {
@@ -165,6 +173,7 @@ class HistoryStore:
             }
         )
         results = item.results
+        raw_result = results.get("raw") or {}
         src = item.source or {}
 
         # Tropy JSON-LD bridge columns (additive — do not drop old columns)
@@ -184,14 +193,16 @@ class HistoryStore:
             item_node_json = None
 
         with self._lock:
-            self._conn.execute(
+            cur = self._conn.execute(
                 """INSERT INTO run_items
                    (run_id, source_file, name, state, language, confidence,
-                    error, stage_json, raw_text, cleaned_text, translated_text,
+                    error, fabricated_result, fabricated_at, ocr_engine,
+                    ocr_model_resolved, stage_json, raw_text, cleaned_text, translated_text,
                     page, photo_id, tropy_item_id, tropy_item_title,
                     tropy_project_path, tropy_group, tropy_photo_path,
                     tropy_item_node, created)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     run_id,
                     item.path,
@@ -200,8 +211,12 @@ class HistoryStore:
                     item.language,
                     item.confidence,
                     item.error,
+                    int(bool(item.fabricated_result)),
+                    _now() if item.fabricated_result else None,
+                    raw_result.get("engine"),
+                    raw_result.get("model"),
                     stage_json,
-                    (results.get("raw") or {}).get("extracted_text"),
+                    raw_result.get("extracted_text"),
                     (results.get("cleaned") or {}).get("cleaned_text"),
                     (results.get("translated") or {}).get("translated_text"),
                     item.page,
@@ -216,6 +231,28 @@ class HistoryStore:
                 ),
             )
             self._conn.commit()
+            return int(cur.lastrowid)
+
+    def set_fabricated_result(self, item_id: int, value: bool) -> None:
+        """Persist a human review label for an invented OCR transcription."""
+        with self._lock:
+            self._conn.execute(
+                "UPDATE run_items SET fabricated_result = ?, fabricated_at = ? WHERE item_id = ?",
+                (int(value), _now() if value else None, item_id),
+            )
+            self._conn.commit()
+
+    def list_fabricated_results(self, limit: int = 200) -> list[sqlite3.Row]:
+        """Return flagged examples with model provenance for rule development."""
+        with self._lock:
+            return self._conn.execute(
+                """SELECT i.*, r.started AS run_started, r.doc_type,
+                          r.ocr_model AS configured_ocr_model
+                   FROM run_items i JOIN runs r ON r.run_id = i.run_id
+                   WHERE i.fabricated_result = 1
+                   ORDER BY i.fabricated_at DESC, i.item_id DESC LIMIT ?""",
+                (limit,),
+            ).fetchall()
 
     def update_raw_text(self, item_id: int, text: str) -> None:
         """Persist a manual correction made from the History pane.
@@ -322,9 +359,9 @@ class HistoryStore:
                 (like, like, like, limit),
             ).fetchall()
 
-    # ------------------------------------------------------------- analytics
+    # ------------------------------------------------------------ diagnostics
     def stats(self) -> dict[str, Any]:
-        """Aggregates for the Analytics view."""
+        """Aggregate run diagnostics retained for internal reporting."""
         with self._lock:
             totals = self._conn.execute(
                 """SELECT COUNT(*) AS runs,

@@ -15,25 +15,26 @@
   </header>
 
   <p>
-    ArtificeOCR turns a folder of scanned or photographed pages into corrected,
-    searchable text &mdash; and, where the source language isn't English, a
-    translation &mdash; without sending a single page to a remote service. Add
-    files by drag-and-drop, by browsing to a folder, or by pulling items
-    directly from a read-only Tropy project; queue them; choose which stages
-    to run; and watch the queue update live as each document moves through
-    the pipeline.
+    ArtificeOCR is a Tropy-first workbench for turning selected document pages
+    into corrected, searchable text without sending a page to a remote
+    service. Choose individual pages from a read-only Tropy project, run them
+    through local OCR, review the results, then return selected text to the
+    same Tropy project as notes or transcriptions. Files outside Tropy remain
+    available as a secondary source.
   </p>
 
   <h2 class="section-head">Pipeline stages</h2>
   <ol>
     <li><strong>OCR</strong> &mdash; reads each page image with a vision-capable
-        model. The default route is a local model served by LM Studio; Ollama,
-        Hugging Face and a cloud API key are configurable alternatives in
-        Settings, one per stage.</li>
+        model served locally by either Ollama or LM Studio. Both routes are
+        release-gated end to end; Hugging Face and cloud-compatible APIs remain
+        optional alternatives.</li>
     <li><strong>Cleanup</strong> &mdash; a language model pass corrects
         recognition errors and normalises layout while a content-preservation
         guard keeps the original wording whenever the edit looks lossy, so a
         page is either cleaned or left untouched, never silently reworded.</li>
+    <li><strong>Title</strong> &mdash; generates a concise title for each page
+        when the option is enabled.</li>
     <li><strong>Translate</strong> &mdash; renders the cleaned text into
         English. A confident language-detection pass skips already-English
         pages rather than risking an LLM "helpfully" rewriting text that
@@ -50,19 +51,16 @@
     behind "Original" so a correction never hides what the model actually
     produced. History keeps every past run and document searchable, with the
     same compare view and a thumbnail strip across the source images. Batch
-    Correct applies a single find/replace across the whole queue or a
-    selection, with its own template list for corrections you make often.
+    Correct applies a single find/replace across the whole queue or an explicit
+    selection.
   </p>
 
-  <h2 class="section-head">Templates and quick actions</h2>
+  <h2 class="section-head">Quick actions</h2>
   <p>
-    Settings &rarr; Run Templates saves a stage-and-option combination under a
-    name, so a recurring job configuration is one click instead of six.
     <span class="kbd">Ctrl</span>+<span class="kbd">K</span> (<span class="kbd">Cmd</span>+<span class="kbd">K</span> on macOS) opens a
-    command palette that jumps to any tab, runs a queue action, or applies a
-    template without leaving the keyboard. The same palette also toggles
-    light and dark themes, as does the icon at the right of the top
-    navigation bar.
+    command palette that jumps to any tab or runs a queue action without
+    leaving the keyboard. The same palette also toggles light and dark themes,
+    as does the icon at the right of the top navigation bar.
   </p>
 
   <h2 class="section-head">Design language</h2>

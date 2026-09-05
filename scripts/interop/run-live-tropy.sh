@@ -14,7 +14,7 @@ channel=${1:-stable}
 source_dir="$REPO_ROOT/.interop/tropy-$channel"
 runtime_dir="$REPO_ROOT/.interop/runtime/node-v$NODE_VERSION-linux-x64"
 
-"$SCRIPT_DIR/doctor.sh" "$channel"
+bash "$SCRIPT_DIR/doctor.sh" "$channel"
 export PATH="$runtime_dir/bin:$PATH"
 export ARTIFICE_LIVE_TROPY=1
 export ARTIFICE_TROPY_SOURCE="$source_dir"

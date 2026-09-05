@@ -278,6 +278,18 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 ),
             ),
             ModelRecommendation(
+                model_name="allenai/olmocr-2-7b",
+                provider="lm-studio",
+                vision=True,
+                min_vram_gb=12.0,
+                role="vision",
+                ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
+                notes=(
+                    "Allen AI's native olmOCR-2 model served through LM Studio; on an 8 GB "
+                    "GPU, LM Studio may need CPU fallback or a lower offload setting."
+                ),
+            ),
+            ModelRecommendation(
                 model_name="aya-expanse:8b",
                 provider="ollama",
                 vision=False,
@@ -302,6 +314,15 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 ),
             ),
             ModelRecommendation(
+                model_name="allenai/olmocr-2-7b",
+                provider="lm-studio",
+                vision=True,
+                min_vram_gb=12.0,
+                role="vision",
+                ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
+                notes="Allen AI's native olmOCR-2 model served through LM Studio.",
+            ),
+            ModelRecommendation(
                 model_name="aya-expanse:32b",
                 provider="ollama",
                 vision=False,
@@ -322,6 +343,15 @@ _RECOMMENDATIONS: Mapping[str, Mapping[HardwareTier, Sequence[ModelRecommendatio
                 notes=(
                     "Allen AI's olmOCR-2: open-research document OCR, runs locally on a single GPU."
                 ),
+            ),
+            ModelRecommendation(
+                model_name="allenai/olmocr-2-7b",
+                provider="lm-studio",
+                vision=True,
+                min_vram_gb=12.0,
+                role="vision",
+                ethos_badges=["Strict Open Data", "Transparent Training", "Allen AI Open Science"],
+                notes="Allen AI's native olmOCR-2 model served through LM Studio.",
             ),
             ModelRecommendation(
                 model_name="aya-expanse:8b",

@@ -93,6 +93,7 @@ const SettingsTab = (function () {
   const docTypeHint = document.getElementById("doc-type-hint");
   const savedLabel = document.getElementById("settings-saved");
   const healthPanel = document.getElementById("health-panel");
+  const detectedModels = document.getElementById("detected-local-models");
 
   const approvedFoldersList = document.getElementById("approved-folders-list");
   const approvedFoldersStatus = document.getElementById("approved-folders-status");
@@ -254,8 +255,8 @@ const SettingsTab = (function () {
   function renderApprovedFolders() {
     approvedFoldersList.innerHTML = approvedFolders.length
       ? approvedFolders.map((folder, i) =>
-          `<li style="display:flex; align-items:center; gap:0.5rem;">
-             <span class="dim" style="flex:1; word-break:break-all;">${escapeHtml(folder)}</span>
+          `<li class="approved-folder-row">
+             <span class="dim">${escapeHtml(folder)}</span>
              <button class="btn btn-small" data-remove-folder="${i}" type="button">Remove</button>
            </li>`).join("")
       : `<li class="dim">No folders approved yet.</li>`;
@@ -371,10 +372,21 @@ const SettingsTab = (function () {
     }
   }
 
-  function healthLine(label, ok, detail) {
+  function healthLine(label, ok, detail, models) {
     const cls = ok ? "health-ok" : "health-fail";
     const status = ok ? "OK" : "FAIL";
-    return `<div class="${cls}">${label}   ${status}${detail ? `   ${escapeHtml(detail)}` : ""}</div>`;
+    const count = ok && Array.isArray(models) ? `   ${models.length} model${models.length === 1 ? "" : "s"}` : "";
+    return `<div class="health-row ${cls}"><strong>${escapeHtml(label)}</strong><span>${status}${count}${detail ? `   ${escapeHtml(detail)}` : ""}</span></div>`;
+  }
+
+  function updateDetectedModels(health) {
+    if (!detectedModels) return;
+    const names = new Set();
+    for (const key of ["ollama", "lm_studio"]) {
+      for (const name of health[key]?.models || []) names.add(name);
+    }
+    detectedModels.innerHTML = [...names].sort()
+      .map(name => `<option value="${escapeHtml(name)}"></option>`).join("");
   }
 
   async function runPreflight() {
@@ -384,13 +396,17 @@ const SettingsTab = (function () {
     healthPanel.innerHTML = `<p class="dim">Checking connections&hellip;</p>`;
     try {
       const health = await api("GET", "/api/health");
+      updateDetectedModels(health);
       const lines = [];
       if (health.lm_studio) {
         lines.push(healthLine("LM Studio", health.lm_studio.ok,
-                   health.lm_studio.ok ? health.lm_studio.url : health.lm_studio.detail));
+                   health.lm_studio.ok ? health.lm_studio.url : health.lm_studio.detail,
+                   health.lm_studio.models));
       }
       if (health.ollama) {
-        lines.push(healthLine("Ollama", health.ollama.ok, health.ollama.ok ? "" : health.ollama.detail));
+        lines.push(healthLine("Ollama", health.ollama.ok,
+                   health.ollama.ok ? health.ollama.url : health.ollama.detail,
+                   health.ollama.models));
       }
       if (health.models) {
         // Each model was checked against the backend its own role is
@@ -419,97 +435,6 @@ const SettingsTab = (function () {
     }
   }
 
-  // ---- templates ----
-
-  const templateSelect = document.getElementById("template-select");
-  const templateName = document.getElementById("template-name");
-  const templateStatus = document.getElementById("template-status");
-
-  function setTemplateStatus(msg, isError) {
-    templateStatus.textContent = msg;
-    templateStatus.style.color = isError ? "var(--gold)" : "";
-  }
-
-  async function refreshTemplates() {
-    const data = await api("GET", "/api/templates");
-    const names = Object.keys(data.templates);
-    templateSelect.innerHTML = '<option value="">-- Select a template --</option>' +
-      names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
-    return data.templates;
-  }
-
-  async function saveTemplate() {
-    const name = templateName.value.trim();
-    if (!name) { setTemplateStatus("Please enter a template name.", true); return; }
-    const button = document.getElementById("btn-template-save");
-    if (button?.disabled) return;
-    if (button) button.disabled = true;
-    try {
-      const config = collect();
-      config.stages = {
-        ocr: document.getElementById("stage-ocr").checked,
-        cleanup: document.getElementById("stage-cleanup").checked,
-        translate: document.getElementById("stage-translate").checked,
-      };
-      config.force = document.getElementById("stage-force").checked;
-      config.output_dir = document.getElementById("output-dir").value;
-      await api("POST", "/api/templates/save", { name, config });
-      templateName.value = "";
-      await refreshTemplates();
-      setTemplateStatus(`Template "${name}" saved.`);
-    } catch (err) {
-      setTemplateStatus("Could not save template: " + err.message, true);
-    } finally {
-      if (button) button.disabled = false;
-    }
-  }
-
-  async function applyTemplate() {
-    const name = templateSelect.value;
-    if (!name) { setTemplateStatus("Select a template first.", true); return; }
-    const button = document.getElementById("btn-template-apply");
-    if (button?.disabled) return;
-    if (button) button.disabled = true;
-    try {
-      await api("POST", "/api/templates/apply", { name });
-      await load();
-      // Also update non-settings fields (stages, output, force) if in template
-      const data = await api("GET", "/api/templates");
-      const templ = data.templates[name] || {};
-      if (templ.stages) {
-        if (templ.stages.ocr !== undefined) document.getElementById("stage-ocr").checked = templ.stages.ocr;
-        if (templ.stages.cleanup !== undefined) document.getElementById("stage-cleanup").checked = templ.stages.cleanup;
-        if (templ.stages.translate !== undefined) document.getElementById("stage-translate").checked = templ.stages.translate;
-      }
-      if (templ.force !== undefined) document.getElementById("stage-force").checked = templ.force;
-      if (templ.output_dir) document.getElementById("output-dir").value = templ.output_dir;
-      setDirty(true);
-      setTemplateStatus(`Template "${name}" applied.`);
-    } catch (err) {
-      setTemplateStatus("Could not apply template: " + err.message, true);
-    } finally {
-      if (button) button.disabled = false;
-    }
-  }
-
-  async function deleteTemplate() {
-    const name = templateSelect.value;
-    if (!name) { setTemplateStatus("Select a template first.", true); return; }
-    if (!confirm(`Delete template "${name}"?`)) return;
-    const button = document.getElementById("btn-template-delete");
-    if (button?.disabled) return;
-    if (button) button.disabled = true;
-    try {
-      await api("POST", "/api/templates/delete", { name });
-      await refreshTemplates();
-      setTemplateStatus(`Template "${name}" deleted.`);
-    } catch (err) {
-      setTemplateStatus("Could not delete template: " + err.message, true);
-    } finally {
-      if (button) button.disabled = false;
-    }
-  }
-
   // Wire up backend dropdown change events to update connection visibility
   ["ocr_backend", "cleanup_backend", "translate_backend"].forEach(key => {
     el(key).addEventListener("change", updateConnectionVisibility);
@@ -525,9 +450,18 @@ const SettingsTab = (function () {
   document.getElementById("btn-settings-reset").onclick = resetDefaults;
   document.getElementById("btn-preflight").onclick = runPreflight;
   document.getElementById("btn-approved-folder-add").onclick = addApprovedFolder;
-  document.getElementById("btn-template-save").onclick = saveTemplate;
-  document.getElementById("btn-template-apply").onclick = applyTemplate;
-  document.getElementById("btn-template-delete").onclick = deleteTemplate;
+  const settingsSectionButtons = document.querySelectorAll
+    ? document.querySelectorAll("[data-settings-target]") : [];
+  settingsSectionButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      settingsSectionButtons.forEach(item => {
+        item.classList.toggle("active", item === button);
+      });
+      document.getElementById(button.dataset.settingsTarget)?.scrollIntoView({
+        behavior: "smooth", block: "start",
+      });
+    });
+  });
 
   Object.keys(FIELDS).forEach(key => {
     const field = el(key);
@@ -546,8 +480,10 @@ const SettingsTab = (function () {
 
   let loaded = false;
   TAB_ACTIVATE.settings = () => {
-    if (!loaded) { loaded = true; load(); }
-    refreshTemplates().catch(err => setTemplateStatus("Could not load templates: " + err.message, true));
+    if (!loaded) {
+      loaded = true;
+      load().then(runPreflight);
+    }
   };
 
   return { load };

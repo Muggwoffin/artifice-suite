@@ -21,7 +21,7 @@ let project = null;
 let lists = [];
 let tags = [];
 let visibleItems = [];
-let selected = new Map();
+let selectedPhotos = new Map();
 let filter = null;
 let sendContext = null;
 let notePreview = null;
@@ -54,7 +54,7 @@ function resetBrowser() {
   lists = [];
   tags = [];
   visibleItems = [];
-  selected = new Map();
+  selectedPhotos = new Map();
   filter = null;
   ["tropy-browse-project-info", "tropy-browse-loading", "tropy-browse-error",
     "tropy-browse-picker", "tropy-browse-summary"].forEach((id) => tropy[id].classList.add("hidden"));
@@ -209,42 +209,64 @@ async function loadItems() {
 }
 
 function renderItems() {
-  const allSelected = visibleItems.length > 0 && visibleItems.every((item) => selected.has(item.item_id));
+  const visiblePhotos = visibleItems.flatMap((item) => item.photos || []).filter((photo) => !photo.missing);
+  const allSelected = visiblePhotos.length > 0 && visiblePhotos.every((photo) => selectedPhotos.has(photo.photo_id));
   tropy["tropy-browse-item-empty"].style.display = visibleItems.length ? "none" : "";
-  tropy["btn-tropy-browse-item-select-all"].disabled = !visibleItems.length;
+  tropy["btn-tropy-browse-item-select-all"].disabled = !visiblePhotos.length;
   tropy["btn-tropy-browse-item-select-all"].textContent = allSelected ? "Deselect all" : "Select all";
   tropy["tropy-browse-item-list"].innerHTML = visibleItems.map((item) => {
-    const missing = item.missing_count ? `<span class="tropy-result-missing-badge">${item.missing_count} missing</span>` : "";
-    const photos = `${item.photo_count} ${item.photo_count === 1 ? "photo" : "photos"}`;
-    return `<label class="tropy-browse-item-row"><input type="checkbox" class="tropy-browse-item-check" ` +
-      `data-item-id="${item.item_id}" ${selected.has(item.item_id) ? "checked" : ""}>` +
-      `<span class="item-title">${escapeHtml(item.title || "Untitled item")}</span><span class="item-meta">${photos}</span>${missing}</label>`;
+    const available = (item.photos || []).filter((photo) => !photo.missing);
+    const itemSelected = available.length > 0 && available.every((photo) => selectedPhotos.has(photo.photo_id));
+    const someSelected = available.some((photo) => selectedPhotos.has(photo.photo_id));
+    const pages = (item.photos || []).map((photo, index) => {
+      const label = photo.page == null ? `Photo ${index + 1}` : `Page ${photo.page + 1}`;
+      const unavailable = photo.missing ? '<span class="tropy-result-missing-badge">Unavailable</span>' : "";
+      return `<label class="tropy-browse-page-row${photo.missing ? " unavailable" : ""}">` +
+        `<input type="checkbox" class="tropy-browse-page-check" data-item-id="${item.item_id}" ` +
+        `data-photo-id="${photo.photo_id}" ${selectedPhotos.has(photo.photo_id) ? "checked" : ""} ${photo.missing ? "disabled" : ""}>` +
+        `<span>${escapeHtml(label)}</span><span class="page-file">${escapeHtml((photo.path || "").split(/[\\/]/).pop())}</span>${unavailable}</label>`;
+    }).join("");
+    return `<section class="tropy-browse-item-group" data-item-id="${item.item_id}">` +
+      `<label class="tropy-browse-item-row"><input type="checkbox" class="tropy-browse-item-check" ` +
+      `data-item-id="${item.item_id}" ${itemSelected ? "checked" : ""} data-partial="${someSelected && !itemSelected}">` +
+      `<span class="item-title">${escapeHtml(item.title || "Untitled item")}</span>` +
+      `<span class="item-meta">${item.photo_count} ${item.photo_count === 1 ? "page" : "pages"}</span></label>` +
+      `<div class="tropy-browse-pages" aria-label="Pages in ${escapeHtml(item.title || "Untitled item")}">${pages}</div></section>`;
   }).join("");
   tropy["tropy-browse-item-list"].querySelectorAll(".tropy-browse-item-check").forEach((checkbox) => {
+    checkbox.indeterminate = checkbox.dataset.partial === "true";
     checkbox.onchange = () => {
       const id = Number(checkbox.dataset.itemId);
-      if (checkbox.checked) selected.set(id, true); else selected.delete(id);
-      updateSummary();
+      const item = visibleItems.find((entry) => entry.item_id === id);
+      (item?.photos || []).filter((photo) => !photo.missing).forEach((photo) => {
+        if (checkbox.checked) selectedPhotos.set(photo.photo_id, { ...photo, item_id: id });
+        else selectedPhotos.delete(photo.photo_id);
+      });
+      renderItems();
+    };
+  });
+  tropy["tropy-browse-item-list"].querySelectorAll(".tropy-browse-page-check").forEach((checkbox) => {
+    checkbox.onchange = () => {
+      const itemId = Number(checkbox.dataset.itemId);
+      const photoId = Number(checkbox.dataset.photoId);
+      const item = visibleItems.find((entry) => entry.item_id === itemId);
+      const photo = item?.photos?.find((entry) => entry.photo_id === photoId);
+      if (checkbox.checked && photo) selectedPhotos.set(photoId, { ...photo, item_id: itemId });
+      else selectedPhotos.delete(photoId);
+      renderItems();
     };
   });
   updateSummary();
 }
 
 function updateSummary() {
-  let missing = 0;
-  let total = 0;
-  visibleItems.forEach((item) => {
-    if (selected.has(item.item_id)) {
-      missing += item.missing_count || 0;
-      total += item.photo_count || 0;
-    }
-  });
-  let text = `${selected.size} ${selected.size === 1 ? "item" : "items"} selected`;
-  if (missing) text += ` — ${missing} of ${total} ${total === 1 ? "page is" : "pages are"} unavailable`;
+  const itemCount = new Set([...selectedPhotos.values()].map((photo) => photo.item_id)).size;
+  const pageCount = selectedPhotos.size;
+  const text = `${pageCount} ${pageCount === 1 ? "page" : "pages"} selected from ${itemCount} ${itemCount === 1 ? "item" : "items"}`;
   tropy["tropy-browse-summary-text"].textContent = text;
-  tropy["tropy-browse-summary-text"].classList.toggle("warning", missing > 0);
-  tropy["tropy-browse-summary"].classList.toggle("hidden", selected.size === 0);
-  tropy["btn-tropy-browse-enqueue"].disabled = selected.size === 0;
+  tropy["tropy-browse-summary-text"].classList.remove("warning");
+  tropy["tropy-browse-summary"].classList.toggle("hidden", pageCount === 0);
+  tropy["btn-tropy-browse-enqueue"].disabled = pageCount === 0;
 }
 
 async function enqueueSelection() {
@@ -256,7 +278,8 @@ async function enqueueSelection() {
     const data = await api("POST", "/api/tropy/browse/enqueue", {
       path: project.path,
       output_dir: document.getElementById("output-dir")?.value || "output",
-      item_ids: [...selected.keys()],
+      item_ids: [...new Set([...selectedPhotos.values()].map((photo) => photo.item_id))],
+      photo_ids: [...selectedPhotos.keys()],
     });
     setQueue(data.items);
     tropy["modal-tropy-add"].classList.add("hidden");
@@ -274,7 +297,7 @@ async function enqueueSelection() {
 function sendBody() {
   return {
     source: sendContext?.isHistory ? "history" : "queue",
-    item_ids: sendContext?.itemIds || null,
+    item_ids: sendContext?.itemIds || [],
     stage: tropy["tropy-export-stage"].value,
   };
 }
@@ -375,14 +398,22 @@ tropy["btn-tropy-browse-pick"].onclick = async () => {
 };
 tropy["btn-tropy-browse-load"].onclick = loadProject;
 tropy["btn-tropy-browse-item-select-all"].onclick = () => {
-  const all = visibleItems.length && visibleItems.every((item) => selected.has(item.item_id));
-  visibleItems.forEach((item) => all ? selected.delete(item.item_id) : selected.set(item.item_id, true));
+  const photos = visibleItems.flatMap((item) => (item.photos || []).map((photo) => ({ ...photo, item_id: item.item_id }))).filter((photo) => !photo.missing);
+  const all = photos.length && photos.every((photo) => selectedPhotos.has(photo.photo_id));
+  photos.forEach((photo) => all ? selectedPhotos.delete(photo.photo_id) : selectedPhotos.set(photo.photo_id, photo));
   renderItems();
 };
 tropy["btn-tropy-browse-enqueue"].onclick = enqueueSelection;
 tropy["btn-tropy-cancel-browse"].onclick = closeBrowser;
 tropy["modal-tropy-add"].querySelector("[data-modal-close]").onclick = closeBrowser;
-tropy["btn-send-tropy"].onclick = () => openTropyExport({ isHistory: false });
+tropy["btn-send-tropy"].onclick = () => {
+  const itemIds = window.QueueTab?.selectedIds?.() || [];
+  if (!itemIds.length) {
+    notify("warning", "Select one or more completed Tropy pages in the queue first.");
+    return;
+  }
+  openTropyExport({ itemIds, isHistory: false });
+};
 tropy["btn-send-tropy-close-writeback"].onclick = closeSend;
 tropy["modal-tropy-send"].querySelector("[data-modal-close]").onclick = closeSend;
 tropy["btn-writeback-preview"].onclick = previewNotes;

@@ -4,7 +4,7 @@
 
 /*
  * Command palette (Ctrl+K / Cmd+K) — search tabs, jump to actions, run
- * templates. Lightweight fuzzy-ish matcher over a static command list.
+ * core workflow actions. Lightweight fuzzy-ish matcher over a static command list.
  */
 
 const Palette = (function () {
@@ -20,8 +20,7 @@ const Palette = (function () {
       { label: "Main", icon: Icons.chevron, action: () => activateTab("main"), shortcut: "1" },
       { label: "Preview", icon: Icons.chevron, action: () => activateTab("preview"), shortcut: "2" },
       { label: "History", icon: Icons.chevron, action: () => activateTab("history"), shortcut: "3" },
-      { label: "Analytics", icon: Icons.chevron, action: () => activateTab("analytics"), shortcut: "4" },
-      { label: "Settings", icon: Icons.chevron, action: () => activateTab("settings"), shortcut: "5" },
+      { label: "Settings", icon: Icons.chevron, action: () => activateTab("settings"), shortcut: "4" },
       // Queue actions
       { label: "Browse Files", icon: Icons.file, action: () => document.getElementById("btn-browse-files")?.click() },
       { label: "Add Folder", icon: Icons.folderPlus, action: () => document.getElementById("btn-add-folder")?.click() },
@@ -45,26 +44,6 @@ const Palette = (function () {
       { label: "Toggle Dark Mode", icon: Icons.moon, action: () => window.ThemeToggle?.toggle(), shortcut: "D" },
     ];
 
-    // Add templates as commands
-    try {
-      const stored = localStorage.getItem("ocr_templates");
-      if (stored) {
-        const templates = JSON.parse(stored);
-        for (const name of Object.keys(templates)) {
-          commands.push({
-            label: `Apply template: ${name}`,
-            icon: Icons.clipboard,
-            action: () => applyTemplate(name),
-          });
-        }
-      }
-    } catch { /* ignore */ }
-  }
-
-  function applyTemplate(name) {
-    api("POST", "/api/templates/apply", { name })
-      .then(() => window.ArtificeToast.success(`Template "${name}" applied.`))
-      .catch(e => window.ArtificeToast.error(`Template apply failed: ${e.message}`));
   }
 
   function activateTab(tabName) {

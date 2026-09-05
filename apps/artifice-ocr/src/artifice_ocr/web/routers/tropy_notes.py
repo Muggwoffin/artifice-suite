@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ...tropy_api import TropyAPIClient, TropyAPIError, TropyConnection, connect
 from ...tropy_db import resolve_project_db_path
@@ -29,7 +29,7 @@ _STAGE_FIELDS = {
 
 class TropyNotesRequest(BaseModel):
     source: Literal["queue", "history"] = "queue"
-    item_ids: list[str | int] | None = None
+    item_ids: list[str | int] = Field(default_factory=list)
     stage: str = "cleaned"
     project_path: str | None = None
 
@@ -68,15 +68,16 @@ def _same_path(left: Path, right: Path) -> bool:
 
 
 def _queue_entries(req: TropyNotesRequest) -> tuple[list[NoteEntry], int]:
-    if req.item_ids is None:
-        items = list(state.items)
-    else:
-        items = [state.get(str(value)) for value in req.item_ids]
-        items = [item for item in items if item is not None]
+    items = [state.get(str(value)) for value in req.item_ids]
+    items = [item for item in items if item is not None]
 
     bucket, field, _history_field = _STAGE_FIELDS[req.stage]
     entries: list[NoteEntry] = []
     for item in items:
+        # A reviewer has explicitly said this transcription contains invented
+        # text. Keep it as a diagnostic example, but never write it to Tropy.
+        if item.fabricated_result:
+            continue
         src = item.source or {}
         photo_id = src.get("photo_id")
         project = src.get("tropy_project")
@@ -97,7 +98,7 @@ def _queue_entries(req: TropyNotesRequest) -> tuple[list[NoteEntry], int]:
 
 
 def _history_entries(req: TropyNotesRequest) -> tuple[list[NoteEntry], int]:
-    if req.item_ids is None:
+    if not req.item_ids:
         return [], 0
     _bucket, _field, history_field = _STAGE_FIELDS[req.stage]
     rows = []
@@ -111,6 +112,8 @@ def _history_entries(req: TropyNotesRequest) -> tuple[list[NoteEntry], int]:
 
     entries: list[NoteEntry] = []
     for row in rows:
+        if row["fabricated_result"]:
+            continue
         if row["photo_id"] is None or not row["tropy_project_path"]:
             continue
         entries.append(
@@ -156,11 +159,11 @@ def _preview(req: TropyNotesRequest) -> tuple[dict, list[NotePlan], TropyConnect
         "item_mismatch": 0,
         "ineligible": selected - len(entries),
     }
-    blockers: list[str] = []
+    blockers: list[str] = ["No results were selected"] if selected == 0 else []
     plans: list[NotePlan] = []
     connection: TropyConnection | None = None
 
-    if target is None:
+    if selected and target is None:
         blockers.append("Select results from one Tropy project")
     else:
         for entry in entries:
@@ -198,9 +201,7 @@ def _preview(req: TropyNotesRequest) -> tuple[dict, list[NotePlan], TropyConnect
         except TropyAPIError as exc:
             blockers.append(str(exc))
 
-    if selected == 0:
-        blockers.append("No results were selected")
-    elif not entries:
+    if selected and not entries:
         blockers.append("The selected results were not imported through Browse Project")
 
     result = {
@@ -278,9 +279,7 @@ def tropy_notes_commit(req: TropyNotesCommitRequest) -> dict:
         "skipped": skipped,
         "remaining": max(
             0,
-            req.expected_write_count
-            - written
-            - (skipped - result["counts"]["duplicate"]),
+            req.expected_write_count - written - (skipped - result["counts"]["duplicate"]),
         ),
         "errors": errors,
         "note_ids": note_ids,
