@@ -1,0 +1,32 @@
+name: OCR UI stress (scheduled)
+
+on:
+  schedule:
+    - cron: "17 3 * * 2,5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extended-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --group dev --extra ocr-web
+      - run: uv run playwright install --with-deps chromium
+      - name: Run 50 seeds with 75 actions each
+        run: scripts/stress/run-ui-stress.sh --scheduled
+      - name: Upload replay artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: scheduled-ocr-ui-stress-artifacts
+          path: .artifacts/ui-stress
+          if-no-files-found: ignore

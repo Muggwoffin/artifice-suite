@@ -1,4 +1,5 @@
 # Byte-compiled / packaging artifacts
+.artifacts/
 __pycache__/
 *.py[cod]
 *.egg-info/

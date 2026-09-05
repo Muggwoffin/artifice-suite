@@ -423,6 +423,9 @@ const HistoryTab = (function () {
   searchBox.addEventListener("keydown", (e) => { if (e.key === "Enter") search(); });
 
   TAB_ACTIVATE.history = refresh;
+  if (document.getElementById("panel-history")?.classList?.contains("active")) {
+    TAB_ACTIVATE.history();
+  }
 
   // Find & Replace
   const historyFindReplace = new FindReplace(compareContainer);

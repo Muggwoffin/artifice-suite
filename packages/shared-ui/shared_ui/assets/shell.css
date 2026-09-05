@@ -26,6 +26,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important; } }
 [data-reduced-motion="true"] *,[data-reduced-motion="true"] *::before,[data-reduced-motion="true"] *::after { transition-duration:.01ms!important;animation-duration:.01ms!important; }
 
+.status-dot { background:var(--ink-faint); }
+.status-dot[data-state="configured"],.status-dot[data-state="ready"] { background:var(--success); }
+
 /* Suite-overhaul visual language: a stable dark index beside a quiet paper workspace. */
 .shell-nav { background:#1b1915; border-color:#343027; color:#f2ecdc; }
 .shell-nav-heading { color:#bdb49f; }

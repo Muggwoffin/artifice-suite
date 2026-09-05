@@ -110,6 +110,16 @@ jobs:
         # workflow must produce no distributable bundle.
         run: uv run pytest -q apps/artifice-ocr/tests/test_critical_workflows.py apps/artifice-ocr/tests/test_tropy_browse.py apps/artifice-ocr/tests/test_tropy_api.py apps/artifice-ocr/tests/test_tropy_route_surface.py
 
+      - name: Install Chromium for packaged OCR UI smoke
+        if: matrix.app == 'artifice-ocr'
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            uv run --with playwright playwright install --with-deps chromium
+          else
+            uv run --with playwright playwright install chromium
+          fi
+
       - name: Freeze
         # Run from the repo root — the spec resolves paths relative to it, and
         # collect_data_files() needs the workspace packages importable.
@@ -186,6 +196,8 @@ jobs:
               curl -s http://127.0.0.1:18999/ | grep -q "Tropy round trip" \
                 && echo "  Tropy-first workspace rendered: yes" \
                 || { echo "  Tropy-first workspace MISSING"; fail=1; }
+              uv run --with playwright python scripts/stress/packaged-ui-smoke.py http://127.0.0.1:18999 \
+                || fail=1
             fi
           fi
           pkill -f "dist/$APP" || true
@@ -262,6 +274,8 @@ jobs:
               if ($app -eq "artifice-ocr") {
                 if ($body -match "Tropy round trip") { Write-Host "  Tropy-first workspace rendered: yes" }
                 else { Write-Host "  Tropy-first workspace MISSING"; $fail = 1 }
+                uv run --with playwright python scripts/stress/packaged-ui-smoke.py http://127.0.0.1:18999
+                if ($LASTEXITCODE -ne 0) { $fail = 1 }
               }
             }
           } catch { Write-Host "  index fetch FAILED"; $fail = 1 }

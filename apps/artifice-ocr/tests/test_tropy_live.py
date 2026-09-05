@@ -11,22 +11,27 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import signal
 import socket
 import subprocess
+import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
 
 import httpx
 import pytest
+import uvicorn
 from artifice_ocr import config
 from artifice_ocr.tropy_api import connect
 from artifice_ocr.tropy_jsonld import ExportPhoto, build_export
-from artifice_ocr.web.models import TropyBrowseRequest, TropyEnqueueRequest
-from artifice_ocr.web.routers import tropy_browse, tropy_notes
+from artifice_ocr.web.routers import tropy_notes
 from artifice_ocr.web.runtime import state
+from artifice_ocr.web.server import app
+from PIL import Image, ImageDraw
+from playwright.sync_api import expect, sync_playwright
 
 pytestmark = [
     pytest.mark.live_interop,
@@ -142,13 +147,15 @@ def _running_tropy(source: Path, project: Path, runtime: Path, port: int):
             str(logs),
             "--port",
             str(port),
-            "--disable-hardware-acceleration",
             # Electron 38 no longer enables its software WebGL fallback
             # implicitly. The isolated process opens only our disposable,
-            # trusted fixture project, so opt in explicitly; without this,
-            # WSLg can terminate the renderer with "GPU process isn't usable"
-            # while a newly-created note is being rendered.
+            # trusted fixture project, so opt in explicitly. Do not also call
+            # disableHardwareAcceleration: Pixi still requests WebGL and then
+            # crashes when Electron reports it as unavailable.
             "--enable-unsafe-swiftshader",
+            "--use-angle=swiftshader",
+            "--use-gl=angle",
+            "--ignore-gpu-blocklist",
             "--no-auto-updates",
             str(project),
         ]
@@ -180,6 +187,31 @@ def _running_tropy(source: Path, project: Path, runtime: Path, port: int):
                     process.wait(timeout=5)
 
 
+@contextmanager
+def _running_artifice_web():
+    port = _free_port()
+    server = uvicorn.Server(
+        uvicorn.Config(app, host="127.0.0.1", port=port, lifespan="off", log_level="warning")
+    )
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    base_url = f"http://127.0.0.1:{port}"
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        try:
+            if httpx.get(f"{base_url}/api/queue", timeout=0.25).status_code == 200:
+                break
+        except httpx.HTTPError:
+            time.sleep(0.05)
+    else:
+        pytest.fail("Artifice OCR live UI server did not start")
+    try:
+        yield base_url
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5)
+
+
 def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
     """Browse a real project, queue its photo, then write and dedupe its OCR."""
     source = _source()
@@ -189,7 +221,9 @@ def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
     _create_project(source, project)
 
     image = tmp_path / "contract.jpg"
-    shutil.copyfile(source / "test" / "fixtures" / "images" / "PA140105.JPG", image)
+    fixture_image = Image.new("RGB", (640, 360), "white")
+    ImageDraw.Draw(fixture_image).text((24, 24), "Artifice live Tropy contract", fill="black")
+    fixture_image.save(image, quality=90)
     exported = build_export(
         [
             ExportPhoto(
@@ -243,19 +277,33 @@ def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
             # production Tropy-first path: read the live project's SQLite
             # database without writing it, turn the selected photo into a
             # queue item, and send reviewed OCR back through the notes router.
-            browse_request = TropyBrowseRequest(path=str(project))
-            browsed = tropy_browse.browse_items(browse_request, list_id=None, tag=None)
-            assert len(browsed["items"]) == 1
             output = tmp_path / "output"
             output.mkdir()
-            queued = tropy_browse.enqueue_from_tropy(
-                TropyEnqueueRequest(
-                    path=str(project),
-                    item_ids=[browsed["items"][0]["item_id"]],
-                    output_dir=str(output),
+            config.apply_overrides({"output_dir": str(output), "ocr_model": "live-ui-fixture"})
+            with _running_artifice_web() as artifice_url, sync_playwright() as playwright:
+                # Tropy's Electron renderer already uses WSL's software GPU.
+                # Keep the simultaneous browser on CPU rendering so Chromium
+                # cannot destabilise Tropy's GPU process during this gate.
+                browser = playwright.chromium.launch(headless=True, args=["--disable-gpu"])
+                page = browser.new_page(viewport={"width": 1440, "height": 1000})
+                page.goto(artifice_url, wait_until="domcontentloaded")
+                expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
+                    "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
                 )
-            )
-            assert queued["added"] == 1
+                if page.locator(".byom-overlay").count():
+                    page.locator(".byom-close").click()
+                page.locator("#btn-add-tropy").click()
+                expect(page.locator("#modal-tropy-add")).to_be_visible()
+                page.locator("#tropy-browse-path").fill(str(project))
+                page.locator("#btn-tropy-browse-load").click()
+                expect(
+                    page.locator("#tropy-browse-item-list .tropy-browse-page-check")
+                ).to_have_count(1, timeout=15_000)
+                page.locator("#tropy-browse-item-list .tropy-browse-page-check").check()
+                page.locator("#btn-tropy-browse-enqueue").click()
+                expect(page.locator("#queue-body tr[data-id]")).to_have_count(1, timeout=10_000)
+                browser.close()
+
             jobs = list(state.items)
             assert len(jobs) == 1
             assert jobs[0].source["origin"] == "tropy-live"
@@ -272,25 +320,39 @@ def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
                 item_ids=[selected_id],
                 stage="raw_ocr",
             )
-            preview = tropy_notes.tropy_notes_preview(request)
-            assert preview["blockers"] == []
-            assert preview["write_count"] == 1
 
-            committed = tropy_notes.tropy_notes_commit(
-                tropy_notes.TropyNotesCommitRequest(
-                    source="queue",
-                    item_ids=[selected_id],
-                    stage="raw_ocr",
-                    expected_write_count=1,
+            # Restart the isolated desktop between read and write. Besides
+            # exercising reconnection, this avoids a Tropy 1.17/WSL renderer
+            # crash that occurs roughly two seconds after first image import;
+            # the Developer API itself persists the project correctly.
+            if _process.poll() is None:
+                os.killpg(_process.pid, signal.SIGTERM)
+                _process.wait(timeout=10)
+            write_runtime = tmp_path / "write-runtime"
+            write_runtime.mkdir()
+            write_port = _free_port()
+            config.apply_overrides({"tropy_api_port": write_port})
+            with _running_tropy(source, project, write_runtime, write_port):
+                preview = tropy_notes.tropy_notes_preview(request)
+                assert preview["blockers"] == []
+                assert preview["write_count"] == 1
+
+                committed = tropy_notes.tropy_notes_commit(
+                    tropy_notes.TropyNotesCommitRequest(
+                        source="queue",
+                        item_ids=[selected_id],
+                        stage="raw_ocr",
+                        expected_write_count=1,
+                    )
                 )
-            )
-            assert committed["status"] == "complete"
-            assert committed["written"] == 1
-            assert len(committed["note_ids"]) == 1
+                assert committed["errors"] == [], committed["errors"]
+                assert committed["status"] == "complete", committed
+                assert committed["written"] == 1
+                assert len(committed["note_ids"]) == 1
 
-            duplicate = tropy_notes.tropy_notes_preview(request)
-            assert duplicate["write_count"] == 0
-            assert duplicate["counts"]["duplicate"] == 1
+                duplicate = tropy_notes.tropy_notes_preview(request)
+                assert duplicate["write_count"] == 0
+                assert duplicate["counts"]["duplicate"] == 1
     finally:
         state.clear()
         config.reset()

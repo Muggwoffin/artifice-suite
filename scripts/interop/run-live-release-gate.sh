@@ -101,7 +101,9 @@ echo "[live gate] LM Studio: $ARTIFICE_LIVE_LM_STUDIO_URL"
 echo "[live gate] Tropy:     $channel (isolated profile and project)"
 
 cd "$REPO_ROOT"
-uv run pytest -m live_interop apps/artifice-ocr/tests/test_live_model_interop.py -v
+# Exactly two paid/expensive model calls: one per backend, both initiated from
+# the same visible Source controls users exercise in the packaged app.
+uv run pytest -m live_interop apps/artifice-ocr/tests/test_live_ui_model_interop.py -v
 bash scripts/interop/run-live-tropy.sh "$channel"
 
 if (( publish_status )); then
