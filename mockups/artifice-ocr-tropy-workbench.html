@@ -1,0 +1,283 @@
+<!--
+SPDX-FileCopyrightText: 2026 Maurice Casey
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ArtificeOCR — Tropy Workbench Mockups</title>
+  <link rel="stylesheet" href="tokens.css">
+  <style>
+    /* Hallmark · genre: editorial · macrostructure: Workbench · design-system: design.md · designed-as-app
+     * pre-emit critique: Philosophy 5 · Hierarchy 5 · Execution 4 · Specificity 5 · Restraint 5 · Variety 4
+     */
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink, #172522); background: var(--paper, #f4efe3); font-family: var(--font-sans, system-ui, sans-serif); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { min-height: 100vh; display: grid; grid-template-rows: auto auto 1fr; }
+    .topbar { min-height: 64px; padding: 0 clamp(20px, 4vw, 64px); display: flex; align-items: center; gap: 28px; border-bottom: 1px solid var(--rule, #c7c0b2); background: var(--paper-raised, #faf7ef); }
+    .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display, Georgia, serif); font-size: 21px; }
+    .brand-mark { width: 26px; height: 26px; display: grid; place-items: center; color: white; background: var(--accent, #126b5d); font: 700 12px var(--font-sans, system-ui); }
+    .topbar nav { display: flex; align-self: stretch; gap: 4px; }
+    .nav-btn { padding: 0 14px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--ink-soft, #53605c); }
+    .nav-btn.active { color: var(--ink, #172522); border-color: var(--accent, #126b5d); }
+    .top-actions { margin-left: auto; display: flex; gap: 8px; }
+    .top-actions [data-view].active { color: var(--accent-deep); background: var(--accent-wash); }
+    .workflow { margin: 0; padding: 0 clamp(20px, 4vw, 64px); display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; border-bottom: 1px solid var(--rule, #c7c0b2); background: var(--paper-recessed, #eee8db); }
+    .workflow li { min-height: 70px; padding: 14px 18px; border-right: 1px solid var(--rule, #c7c0b2); color: var(--ink-faint, #6e7874); }
+    .workflow li:first-child { border-left: 1px solid var(--rule, #c7c0b2); }
+    .workflow .active { background: var(--paper-raised, #faf7ef); color: var(--ink, #172522); box-shadow: inset 0 -3px var(--accent, #126b5d); }
+    .step-no { display: block; margin-bottom: 4px; color: var(--accent, #126b5d); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .workspace { width: min(1460px, 100%); margin: 0 auto; padding: 32px clamp(20px, 4vw, 64px) 56px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .view-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 22px; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 6px; font: 600 clamp(30px, 4vw, 52px)/1.03 var(--font-display, Georgia, serif); letter-spacing: -.025em; }
+    h2 { margin-bottom: 4px; font: 600 24px/1.15 var(--font-display, Georgia, serif); }
+    h3 { margin-bottom: 4px; font-size: 15px; }
+    .dek { max-width: 68ch; margin-bottom: 0; color: var(--ink-soft, #53605c); line-height: 1.55; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(290px, .7fr); gap: 18px; }
+    .card { border: 1px solid var(--rule, #c7c0b2); background: var(--paper-raised, #faf7ef); box-shadow: 0 10px 26px rgba(30, 38, 35, .05); }
+    .card-head { padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--rule, #c7c0b2); }
+    .card-body { padding: 20px; }
+    .source-callout { min-height: 164px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 28px; padding: 28px; background: linear-gradient(120deg, var(--accent-wash, #dfece7), transparent 72%); border-bottom: 1px solid var(--rule, #c7c0b2); }
+    .source-callout p { margin-bottom: 0; max-width: 54ch; color: var(--ink-soft, #53605c); line-height: 1.5; }
+    .btn { min-height: 38px; padding: 8px 14px; border: 1px solid var(--rule-strong, #9f998e); border-radius: 2px; color: var(--ink, #172522); background: var(--paper-raised, #faf7ef); }
+    .btn:hover { border-color: var(--accent, #126b5d); }
+    .btn.primary { color: white; border-color: var(--accent, #126b5d); background: var(--accent, #126b5d); font-weight: 700; }
+    .btn.ghost { border-color: transparent; background: transparent; }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .manual { padding: 16px 20px; color: var(--ink-soft, #53605c); }
+    .manual summary { cursor: pointer; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 10px 12px; text-align: left; color: var(--ink-faint, #6e7874); background: var(--paper-recessed, #eee8db); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+    td { padding: 12px; border-top: 1px solid var(--rule, #c7c0b2); }
+    .center { text-align: center; }
+    .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
+    .status::before { content: ''; width: 7px; height: 7px; background: var(--success, #2d7654); }
+    .status.running::before { background: var(--accent, #126b5d); animation: pulse 1.2s infinite; }
+    @keyframes pulse { 50% { opacity: .25; } }
+    .settings-list { display: grid; gap: 18px; }
+    .setting { display: grid; gap: 7px; }
+    .setting label { font-size: 12px; font-weight: 800; letter-spacing: .03em; }
+    select, input[type=text] { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--rule-strong, #9f998e); background: var(--paper, #f4efe3); color: inherit; }
+    .model-health { padding: 12px; display: flex; gap: 9px; align-items: center; border: 1px solid var(--success, #2d7654); background: color-mix(in srgb, var(--success, #2d7654) 8%, transparent); font-size: 12px; }
+    .actions { padding: 16px 20px; display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--rule, #c7c0b2); }
+    .spacer { flex: 1; }
+    .stage-options { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .stage-options label { font-size: 13px; }
+    .progress { height: 8px; margin: 16px 0 10px; background: var(--paper-recessed, #eee8db); }
+    .progress span { display: block; width: 68%; height: 100%; background: var(--accent, #126b5d); }
+    .review-grid { display: grid; grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); gap: 18px; }
+    .scan { min-height: 550px; padding: 38px; display: grid; place-items: center; background: #d9d3c7; }
+    .paper { width: min(390px, 92%); aspect-ratio: .72; padding: 12% 10%; color: #292822; background: #f8f2df; box-shadow: 0 18px 50px rgba(37, 32, 24, .2); font: 18px/1.6 Georgia, serif; transform: rotate(-.7deg); }
+    .paper b { display: block; margin-bottom: 18px; font-size: 23px; text-align: center; }
+    .editor-tabs { display: flex; border-bottom: 1px solid var(--rule, #c7c0b2); }
+    .editor-tabs button { padding: 13px 16px; border: 0; border-right: 1px solid var(--rule, #c7c0b2); background: var(--paper-recessed, #eee8db); }
+    .editor-tabs .active { background: var(--paper-raised, #faf7ef); box-shadow: inset 0 -3px var(--accent, #126b5d); }
+    .editor { width: 100%; min-height: 420px; padding: 26px; border: 0; resize: vertical; color: inherit; background: var(--paper-raised, #faf7ef); font: 17px/1.72 var(--font-body, Georgia, serif); }
+    .return-summary { padding: 16px; border: 1px solid var(--success, #2d7654); background: color-mix(in srgb, var(--success, #2d7654) 7%, transparent); }
+    .return-list { display: grid; gap: 0; }
+    .return-row { padding: 16px 0; display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; border-bottom: 1px solid var(--rule, #c7c0b2); }
+    .dim { color: var(--ink-faint, #6e7874); }
+    .annotation { position: fixed; right: 16px; bottom: 16px; max-width: 330px; padding: 12px 14px; border: 1px solid var(--accent, #126b5d); background: var(--paper-raised, #faf7ef); box-shadow: 0 10px 28px rgba(0,0,0,.12); font-size: 12px; line-height: 1.45; }
+    .modal-wrap { position: fixed; inset: 0; z-index: 10; display: none; place-items: center; padding: 28px; background: rgba(20, 28, 26, .5); }
+    .modal-wrap.open { display: grid; }
+    .modal { width: min(880px, 100%); max-height: 88vh; overflow: auto; background: var(--paper-raised, #faf7ef); border: 1px solid var(--rule-strong, #9f998e); box-shadow: 0 24px 80px rgba(0,0,0,.22); }
+    .project-row { padding: 14px 20px; display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 12px; border-top: 1px solid var(--rule, #c7c0b2); }
+    .page-row { padding: 10px 20px 10px 60px; display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; background: var(--paper-recessed, #eee8db); border-top: 1px solid var(--rule, #c7c0b2); }
+    .settings-layout { display: grid; grid-template-columns: minmax(190px, .42fr) minmax(0, 1.58fr); border: 1px solid var(--rule); background: var(--paper-raised); box-shadow: var(--shadow-paper, 0 10px 26px rgba(30, 38, 35, .05)); }
+    .settings-menu { padding: 14px 0; border-right: 1px solid var(--rule); background: var(--paper-recessed); }
+    .settings-menu button { width: 100%; min-height: 44px; padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; border: 0; border-left: 3px solid transparent; color: var(--ink-soft); background: transparent; text-align: left; white-space: nowrap; }
+    .settings-menu button:hover, .settings-menu button.is-hover { color: var(--ink); background: var(--accent-wash); }
+    .settings-menu button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .settings-menu button:active, .settings-menu button.is-active { color: var(--accent-deep); }
+    .settings-menu button.active { border-left-color: var(--accent); color: var(--ink); background: var(--paper-raised); font-weight: 700; }
+    .settings-menu button:disabled { opacity: .45; cursor: default; }
+    .settings-sheet { min-width: 0; }
+    .settings-section { padding: 28px clamp(20px, 4vw, 44px); border-bottom: 1px solid var(--rule); }
+    .settings-section:last-child { border-bottom: 0; }
+    .settings-section-head { max-width: 68ch; margin-bottom: 24px; }
+    .settings-section-head p { margin: 7px 0 0; color: var(--ink-soft); line-height: 1.5; }
+    .settings-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px 22px; }
+    .settings-field { min-width: 0; display: grid; gap: 7px; }
+    .settings-field > label, .field-label { color: var(--ink); font-size: 12px; font-weight: 800; letter-spacing: .03em; }
+    .field-help { color: var(--ink-faint); font-size: 12px; line-height: 1.45; }
+    .full { grid-column: 1 / -1; }
+    .provider-line { min-height: 44px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--rule); background: var(--paper); }
+    .provider-line strong { min-width: 86px; }
+    .provider-line .provider-address { overflow: hidden; color: var(--ink-faint); font-family: var(--font-mono, monospace); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+    .provider-line .status { margin-left: auto; white-space: nowrap; }
+    .status.off::before { background: var(--ink-faint); }
+    .settings-checks { display: grid; gap: 12px; }
+    .settings-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; line-height: 1.45; }
+    .settings-check input { margin-top: 3px; }
+    .settings-check small { display: block; margin-top: 2px; color: var(--ink-faint); }
+    .folder-row { min-height: 46px; padding: 10px 12px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--rule); background: var(--paper); }
+    .folder-row code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .folder-row button { margin-left: auto; }
+    .settings-disclosure { border-top: 1px solid var(--rule); }
+    .settings-disclosure summary { padding: 16px 0; cursor: pointer; font-weight: 700; }
+    .settings-footer { position: sticky; bottom: 0; z-index: 2; padding: 14px clamp(20px, 4vw, 44px); display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--rule); background: color-mix(in srgb, var(--paper-raised) 94%, transparent); backdrop-filter: blur(8px); }
+    @media (max-width: 850px) { .grid, .review-grid, .settings-layout { grid-template-columns: 1fr; } .workflow { grid-template-columns: 1fr 1fr; } .workflow li { border-bottom: 1px solid var(--rule, #c7c0b2); } .source-callout { grid-template-columns: 1fr; } .topbar nav { display: none; } .settings-menu { display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--rule); } .settings-menu button { width: auto; border-left: 0; border-bottom: 3px solid transparent; } .settings-menu button.active { border-bottom-color: var(--accent); } }
+    @media (max-width: 540px) { html, body { overflow-x: clip; } .settings-form-grid { grid-template-columns: minmax(0, 1fr); } .full { grid-column: auto; } .settings-footer { align-items: stretch; flex-direction: column; } .settings-footer .spacer { display: none; } .settings-footer .btn { width: 100%; white-space: nowrap; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">AO</span> ArtificeOCR</div>
+      <nav aria-label="Mockup states">
+        <button class="nav-btn active" data-view="source">Source &amp; process</button>
+        <button class="nav-btn" data-view="review">Review</button>
+        <button class="nav-btn" data-view="return">Return to Tropy</button>
+      </nav>
+      <div class="top-actions"><button class="btn ghost" data-view="settings">Settings</button><button class="btn ghost">?</button></div>
+    </header>
+    <ol class="workflow" aria-label="Tropy round trip">
+      <li class="active" data-step="source"><span class="step-no">01 · Source</span>Choose Tropy pages</li>
+      <li data-step="process"><span class="step-no">02 · Process</span>Run local OCR</li>
+      <li data-step="review"><span class="step-no">03 · Review</span>Correct the text</li>
+      <li data-step="return"><span class="step-no">04 · Return</span>Write notes to Tropy</li>
+    </ol>
+
+    <main class="workspace">
+      <section class="view active" id="view-source">
+        <div class="view-head"><div><h1>Pages to transcribe</h1><p class="dek">Bring in only the pages you need. Tropy stays read-only until you explicitly return reviewed text.</p></div><span class="dim">Archive.tpy · connected</span></div>
+        <div class="grid">
+          <div class="card">
+            <div class="source-callout"><div><h2>Start with Tropy</h2><p>Open a project, search its collections, then choose individual document pages for this run.</p></div><button class="btn primary" id="open-picker">Choose Tropy pages…</button></div>
+            <details class="manual"><summary>Or add files outside Tropy</summary><p class="dim">Browse files, add a folder, or drop scans here.</p></details>
+            <table><thead><tr><th></th><th>Page</th><th>Tropy item</th><th>Title</th><th>OCR</th><th>Status</th></tr></thead><tbody>
+              <tr><td><input type="checkbox" checked></td><td>page_001.jpg</td><td>Dock strike, 1934</td><td>The Men at the Gate</td><td class="center">✓ 1,284</td><td><span class="status">done</span></td></tr>
+              <tr><td><input type="checkbox" checked></td><td>page_002.jpg</td><td>Dock strike, 1934</td><td>—</td><td class="center">✓ 1,106</td><td><span class="status">done</span></td></tr>
+              <tr><td><input type="checkbox"></td><td>letter_recto.tif</td><td>Casey correspondence</td><td>—</td><td class="center">▸</td><td><span class="status running">reading</span></td></tr>
+            </tbody></table>
+            <div class="actions"><button class="btn">Remove</button><button class="btn">Batch correct…</button><span class="spacer"></span><button class="btn">Compile export…</button><button class="btn" data-view="return">Return to Tropy…</button></div>
+          </div>
+          <aside class="card">
+            <div class="card-head"><div><h2>Process</h2><span class="dim">3 pages selected</span></div></div>
+            <div class="card-body settings-list">
+              <div class="model-health"><span class="status"></span><span>Ollama · qwen2.5-vl:7b ready</span></div>
+              <div class="stage-options"><label><input type="checkbox" checked disabled> OCR <span class="dim">required</span></label><label><input type="checkbox" checked> Cleanup</label><label><input type="checkbox"> Titles</label><label><input type="checkbox"> Translate</label></div>
+              <div class="setting"><label>Save project to</label><input type="text" value="Documents/ArtificeOCR/Dock strike"></div>
+              <div><strong>2 of 3 complete</strong><div class="progress"><span></span></div><span class="dim">Reading letter_recto.tif with local vision model…</span></div>
+              <button class="btn primary" data-view="process">Run OCR</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-process">
+        <div class="view-head"><div><h1>Local OCR in progress</h1><p class="dek">The run stays on this machine. Each page advances independently and can be reviewed as soon as it completes.</p></div><button class="btn" data-view="review">Review completed pages →</button></div>
+        <div class="card"><div class="card-head"><h2>Dock strike, 1934</h2><span>2 of 3 pages complete</span></div><div class="card-body"><div class="progress"><span></span></div><table><tbody><tr><td>page_001.jpg</td><td>OCR</td><td><span class="status">complete</span></td><td>8.4 s</td></tr><tr><td>page_002.jpg</td><td>Cleanup</td><td><span class="status">complete</span></td><td>11.2 s</td></tr><tr><td>letter_recto.tif</td><td>OCR via Ollama</td><td><span class="status running">reading</span></td><td>4.1 s</td></tr></tbody></table></div><div class="actions"><button class="btn">Pause</button><button class="btn">Stop after this page</button></div></div>
+      </section>
+
+      <section class="view" id="view-review">
+        <div class="view-head"><div><h1>Review the transcription</h1><p class="dek">The source remains visible while you correct the saved text. Unsaved edits are called out before returning to Tropy.</p></div><div><button class="btn">Previous</button> <button class="btn">Next</button></div></div>
+        <div class="review-grid">
+          <div class="card"><div class="card-head"><h2>Source page</h2><span class="dim">page_001.jpg</span></div><div class="scan"><div class="paper"><b>THE MEN AT THE GATE</b>The men stood quietly in the rain, waiting for word from the committee. By noon the whole quay had stopped.</div></div></div>
+          <div class="card"><div class="card-head"><div><h2>The Men at the Gate</h2><span class="dim">Dock strike, 1934 · page 1</span></div><span class="status">saved</span></div><div class="editor-tabs"><button>Raw OCR</button><button class="active">Cleaned</button><button>Translation</button></div><textarea class="editor">THE MEN AT THE GATE
+
+The men stood quietly in the rain, waiting for word from the committee. By noon the whole quay had stopped.</textarea><div class="actions"><button class="btn">Restore saved</button><span class="spacer"></span><button class="btn primary" data-view="return">Save &amp; return to Tropy…</button></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-return">
+        <div class="view-head"><div><h1>Return reviewed text</h1><p class="dek">Only checked pages are written. Preview verifies the open Tropy project and skips matching notes.</p></div><span class="dim">Developer API · localhost:2019</span></div>
+        <div class="grid">
+          <div class="card"><div class="card-head"><h2>Selected pages</h2><span>2 ready</span></div><div class="card-body return-list"><label class="return-row"><input type="checkbox" checked><span><strong>The Men at the Gate</strong><br><span class="dim">Dock strike, 1934 · page_001.jpg</span></span><span class="status">ready</span></label><label class="return-row"><input type="checkbox" checked><span><strong>Dock strike, page 2</strong><br><span class="dim">Dock strike, 1934 · page_002.jpg</span></span><span class="status">ready</span></label><label class="return-row"><input type="checkbox" disabled><span><strong>Casey correspondence</strong><br><span class="dim">OCR has not finished</span></span><span class="dim">not ready</span></label></div></div>
+          <aside class="card"><div class="card-head"><h2>Write-back preview</h2></div><div class="card-body settings-list"><div class="setting"><label>Text stage</label><select><option>Cleaned text</option><option>Raw OCR</option><option>Translation</option></select></div><div class="setting"><label>Destination</label><label><input type="radio" name="dest" checked> Add as Tropy notes</label><label><input type="radio" name="dest"> Replace photo transcriptions</label></div><div class="return-summary"><strong>Archive.tpy matches</strong><p class="dim" style="margin:6px 0 0">2 notes will be added · 0 duplicates · 0 blockers</p></div><button class="btn primary">Write 2 notes to Tropy</button></div></aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-settings">
+        <div class="view-head"><div><h1>Settings</h1><p class="dek">Set up local OCR once, then leave the machinery out of the way. Changes apply to the next run.</p></div><span class="dim">Saved on this computer</span></div>
+        <div class="settings-layout">
+          <aside class="settings-menu" aria-label="Settings sections">
+            <button class="active" type="button">Local models <span>→</span></button>
+            <button type="button">Processing <span>→</span></button>
+            <button type="button">Tropy &amp; folders <span>→</span></button>
+            <button type="button">Diagnostics <span>→</span></button>
+          </aside>
+          <div class="settings-sheet">
+            <section class="settings-section" id="settings-models">
+              <header class="settings-section-head"><h2>Local models</h2><p>Choose the local service used for each text stage. OCR always runs; cleanup and translation run only when selected in the workbench.</p></header>
+              <div class="settings-form-grid">
+                <div class="settings-field"><label for="mock-ocr-provider">OCR service</label><select id="mock-ocr-provider"><option selected>Ollama</option><option>LM Studio</option><option>Auto-detect</option></select><span class="field-help">A vision-capable model is required.</span></div>
+                <div class="settings-field"><label for="mock-ocr-model">OCR model</label><select id="mock-ocr-model"><option selected>qwen2.5-vl:7b</option><option>llava:13b</option><option>Choose automatically</option></select><span class="field-help">Models are read from the selected service.</span></div>
+                <div class="settings-field"><label for="mock-clean-provider">Cleanup service</label><select id="mock-clean-provider"><option selected>Ollama</option><option>LM Studio</option><option>Same as OCR</option></select></div>
+                <div class="settings-field"><label for="mock-clean-model">Cleanup model</label><select id="mock-clean-model"><option selected>aya-expanse:8b</option><option>qwen2.5:7b</option><option>Choose automatically</option></select></div>
+                <div class="settings-field"><label for="mock-translate-provider">Translation service</label><select id="mock-translate-provider"><option selected>LM Studio</option><option>Ollama</option><option>Same as cleanup</option></select></div>
+                <div class="settings-field"><label for="mock-translate-model">Translation model</label><select id="mock-translate-model"><option selected>local/aya-expanse-8b</option><option>Choose automatically</option></select></div>
+                <div class="full settings-field"><span class="field-label">Connection status</span><div class="provider-line"><strong>Ollama</strong><span class="provider-address">http://localhost:11434</span><span class="status">ready · 6 models</span></div><div class="provider-line"><strong>LM Studio</strong><span class="provider-address">http://localhost:1234/v1</span><span class="status">ready · 1 model</span></div></div>
+                <details class="full settings-disclosure"><summary>Other providers and connection addresses</summary><div class="settings-form-grid"><div class="settings-field"><label for="mock-ollama-url">Ollama address</label><input id="mock-ollama-url" type="text" value="http://localhost:11434"></div><div class="settings-field"><label for="mock-lm-url">LM Studio address</label><input id="mock-lm-url" type="text" value="http://localhost:1234/v1"></div><div class="settings-field"><label for="mock-other-provider">Optional provider</label><select id="mock-other-provider"><option>None</option><option>Hugging Face</option><option>OpenAI-compatible API</option></select></div><div class="settings-field"><label for="mock-api-key">API key</label><input id="mock-api-key" type="text" placeholder="Not set"></div></div></details>
+              </div>
+            </section>
+
+            <section class="settings-section" id="settings-processing">
+              <header class="settings-section-head"><h2>Processing defaults</h2><p>These are safe defaults for a mixed historical collection. Per-run choices remain in the main workbench.</p></header>
+              <div class="settings-form-grid">
+                <div class="settings-field"><label for="mock-doc-type">Document type</label><select id="mock-doc-type"><option selected>Mixed historical documents</option><option>Printed pages</option><option>Handwritten pages</option></select></div>
+                <div class="settings-field"><label for="mock-workers">Pages processed at once</label><select id="mock-workers"><option>1 · lowest memory</option><option selected>2 · recommended</option><option>4 · high memory</option></select></div>
+                <div class="full settings-checks"><label class="settings-check"><input type="checkbox" checked><span><strong>Reuse completed text</strong><small>Skip page stages whose saved output already exists.</small></span></label><label class="settings-check"><input type="checkbox" checked><span><strong>Score OCR confidence</strong><small>Flag difficult pages for closer review.</small></span></label><label class="settings-check"><input type="checkbox"><span><strong>Enhance faint scans before OCR</strong><small>Even out lighting and stretch contrast without changing the source file.</small></span></label><label class="settings-check"><input type="checkbox" checked><span><strong>Fall back to Tesseract after a model failure</strong><small>Use installed language data only when local vision OCR cannot finish a page.</small></span></label></div>
+                <details class="full settings-disclosure"><summary>Advanced model limits</summary><div class="settings-form-grid"><div class="settings-field"><label for="mock-context">Context size</label><input id="mock-context" type="text" value="Automatic"></div><div class="settings-field"><label for="mock-chunk">Maximum text chunk</label><input id="mock-chunk" type="text" value="4,000 tokens"></div></div></details>
+              </div>
+            </section>
+
+            <section class="settings-section" id="settings-tropy">
+              <header class="settings-section-head"><h2>Tropy and folders</h2><p>Artifice reads Tropy projects directly and writes reviewed text through Tropy’s Developer API. It never edits the project database.</p></header>
+              <div class="settings-form-grid">
+                <div class="full settings-checks"><label class="settings-check"><input type="checkbox" checked><span><strong>Enable Tropy project browsing</strong><small>Open <code>.tpy</code> projects read-only and choose individual pages.</small></span></label></div>
+                <div class="settings-field"><label for="mock-port">Developer API port</label><select id="mock-port"><option selected>Automatic · 2019 / 2029</option><option>2019</option><option>2029</option></select><span class="field-help">Keep Tropy open when returning notes.</span></div>
+                <div class="settings-field"><span class="field-label">Tropy status</span><div class="provider-line"><strong>Archive.tpy</strong><span class="status">connected</span></div></div>
+                <div class="full settings-field"><span class="field-label">Approved folders</span><div class="folder-row"><code>C:\Users\Research\Tropy</code><button class="btn ghost" type="button">Remove</button></div><div class="folder-row"><code>C:\Users\Research\Documents\ArtificeOCR</code><button class="btn ghost" type="button">Remove</button></div><div><button class="btn" type="button">Add folder…</button></div><span class="field-help">Artifice can read and write only inside these locations.</span></div>
+              </div>
+            </section>
+
+            <section class="settings-section" id="settings-diagnostics">
+              <header class="settings-section-head"><h2>Diagnostics</h2><p>Check the complete local workflow before starting a large collection.</p></header>
+              <div class="settings-form-grid">
+                <div class="full"><div class="provider-line"><strong>Ollama OCR</strong><span class="dim">Image request and response</span><span class="status">passed</span></div><div class="provider-line"><strong>LM Studio OCR</strong><span class="dim">OpenAI-compatible vision request</span><span class="status">passed</span></div><div class="provider-line"><strong>Tropy return</strong><span class="dim">Project match and Developer API</span><span class="status">passed</span></div><div class="provider-line"><strong>Tesseract</strong><span class="dim">Optional fallback · English installed</span><span class="status">available</span></div></div>
+                <div class="full"><button class="btn" type="button">Check connections again</button></div>
+              </div>
+            </section>
+
+            <footer class="settings-footer"><span class="dim">No unsaved changes</span><span class="spacer"></span><button class="btn" type="button">Reset defaults</button><button class="btn primary" type="button">Save settings</button></footer>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-wrap" id="picker"><div class="modal"><div class="card-head"><div><h2>Choose pages from Tropy</h2><span class="dim">The project is opened read-only</span></div><button class="btn ghost" id="close-picker">Close</button></div><div class="card-body"><div class="setting"><label>Project</label><input type="text" value="C:\Users\Research\Tropy\Archive.tpy"></div><div style="height:12px"></div><div class="setting"><label>Search collections and items</label><input type="text" value="dock strike"></div></div><label class="project-row"><input type="checkbox" checked><span><strong>Dock strike, 1934</strong><br><span class="dim">Labour archive / Photographs · 3 pages</span></span><span>3 pages</span></label><label class="page-row"><input type="checkbox" checked><span>page_001.jpg</span><span>2048 × 3072</span></label><label class="page-row"><input type="checkbox" checked><span>page_002.jpg</span><span>2048 × 3072</span></label><label class="page-row"><input type="checkbox"><span>page_003.jpg</span><span>2048 × 3072</span></label><label class="project-row"><input type="checkbox"><span><strong>Casey correspondence</strong><br><span class="dim">Personal papers · 12 pages</span></span><span>12 pages</span></label><div class="actions"><span class="dim">2 pages selected from 1 item</span><span class="spacer"></span><button class="btn" id="cancel-picker">Cancel</button><button class="btn primary" id="add-pages">Add selected pages</button></div></div></div>
+  <aside class="annotation"><strong>Review prototype</strong><br>Use the top navigation or workflow actions to inspect four workflow states plus Settings. The controls are illustrative; layout, hierarchy, language, and workflow are ready for feedback.</aside>
+  <script>
+    const views = [...document.querySelectorAll('[data-view]')];
+    function show(name) {
+      document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `view-${name}`));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.toggle('active', el.dataset.view === name || (name === 'process' && el.dataset.view === 'source')));
+      document.querySelectorAll('.top-actions [data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === name));
+      const step = name === 'source' ? 'source' : name;
+      document.querySelectorAll('.workflow li').forEach(el => el.classList.toggle('active', el.dataset.step === step));
+      scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    views.forEach(el => el.addEventListener('click', () => show(el.dataset.view)));
+    document.querySelectorAll('.settings-menu button').forEach((button, index) => button.addEventListener('click', () => {
+      document.querySelectorAll('.settings-menu button').forEach(el => el.classList.toggle('active', el === button));
+      ['settings-models', 'settings-processing', 'settings-tropy', 'settings-diagnostics'][index] && document.getElementById(['settings-models', 'settings-processing', 'settings-tropy', 'settings-diagnostics'][index]).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+    const picker = document.getElementById('picker');
+    document.getElementById('open-picker').onclick = () => picker.classList.add('open');
+    ['close-picker', 'cancel-picker', 'add-pages'].forEach(id => document.getElementById(id).onclick = () => picker.classList.remove('open'));
+    picker.addEventListener('click', e => { if (e.target === picker) picker.classList.remove('open'); });
+    const initialView = new URLSearchParams(location.search).get('view');
+    if (['source', 'process', 'review', 'return', 'settings'].includes(initialView)) show(initialView);
+  </script>
+</body>
+</html>

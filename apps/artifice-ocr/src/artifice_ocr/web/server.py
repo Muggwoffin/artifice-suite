@@ -31,7 +31,6 @@ from shared_ui.filedialog import (
     pick_folder_async,
     save_file_async,
 )
-from shared_ui.handoff import cleanup_expired, write_discovery
 from shared_ui.server_bootstrap import (
     ensure_std_streams,
     free_port,
@@ -41,7 +40,6 @@ from shared_ui.server_bootstrap import (
     wait_for_server,
 )
 
-from .routers import analytics as analytics_router
 from .routers import byom as byom_router
 from .routers import events as events_router
 from .routers import history as history_router
@@ -85,7 +83,6 @@ app.include_router(run_router.router)
 app.include_router(events_router.router)
 app.include_router(settings_router.router)
 app.include_router(history_router.router)
-app.include_router(analytics_router.router)
 app.include_router(tropy_browse_router.router)
 app.include_router(tropy_notes_router.router)
 app.include_router(pdf_export_router.router)
@@ -115,10 +112,9 @@ _JINJA = Environment(
 
 # ── Masthead context for shared _masthead.html partial ──────────────────
 _OCR_NAV_ITEMS = [
-    {"href": "/?view=main", "label": "Queue", "key": "pipeline"},
+    {"href": "/?view=main", "label": "Source", "key": "pipeline"},
     {"href": "/?view=preview", "label": "Review", "key": "review"},
     {"href": "/?view=history", "label": "History", "key": "history"},
-    {"href": "/?view=analytics", "label": "Insights", "key": "insights"},
     {"href": "/?view=settings", "label": "Settings", "key": "settings"},
     {"href": "/about", "label": "About", "key": "about"},
 ]
@@ -605,39 +601,6 @@ def byom_preview(app: str = "artifice-ocr", state: str = "not-found") -> HTMLRes
 # ── Handoff discovery: check if another app is running ──────────────────
 
 
-@app.get("/api/handoff/discovery/{slug}")
-def check_discovery(slug: str):
-    """Return port info for a running app, or indicate it's not running."""
-    from shared_ui.handoff import read_discovery
-
-    info = read_discovery(slug)
-    if info:
-        return {"running": True, "port": info.get("port")}
-    return {"running": False}
-
-
-@app.post("/api/handoff/create")
-async def create_handoff_route(request: Request):
-    """Create a handoff package and return its UUID token.
-
-    The body must contain ``target`` (slug) and ``body`` (text).
-    """
-    from shared_ui.handoff import HandoffError, create_handoff
-
-    try:
-        data = await request.json()
-        target = data.get("target", "")
-        body = data.get("body", "")
-        if not target or not body:
-            return {"error": "target and body are required"}
-        uuid_str = create_handoff("artifice-ocr", target, body)
-        return {"uuid": uuid_str}
-    except HandoffError as exc:
-        return {"error": exc.public_message}
-    except Exception:
-        return {"error": "Failed to create handoff"}
-
-
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -759,9 +722,6 @@ def main() -> None:
     url = f"http://127.0.0.1:{port}"
 
     # ── Discovery: register this running instance for handoff ──────────
-    write_discovery("artifice-ocr", port, os.getpid())
-    cleanup_expired()
-
     # ── Server-only mode (--no-window) ────────────────────────────────────
     if args.no_window:
         print(f"ArtificeOCR running at {url}  (Ctrl+C to stop)", flush=True)

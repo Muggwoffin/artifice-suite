@@ -14,6 +14,7 @@ from shared_ui.uploads import UploadTooLarge, read_capped
 from ..models import (
     AddPathsRequest,
     BatchReplaceRequest,
+    FabricatedResultRequest,
     RawTextRequest,
     RemoveRequest,
     ReorderRequest,
@@ -28,6 +29,7 @@ from ..runtime import (
     save_cleaned_text,
     save_raw_text,
     save_translated_text,
+    set_fabricated_result,
     state,
 )
 from ..serializers import serialize_item_preview
@@ -119,6 +121,14 @@ def save_translated_text_route(item_id: str, req: RawTextRequest) -> dict:
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found in the queue")
     return save_translated_text(item, req.text)
+
+
+@router.post("/api/queue/{item_id}/fabricated-result")
+def set_fabricated_result_route(item_id: str, req: FabricatedResultRequest) -> dict:
+    item = state.get(item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Item not found in the queue")
+    return set_fabricated_result(item, req.fabricated)
 
 
 @router.post("/api/queue/{item_id}/reprocess")

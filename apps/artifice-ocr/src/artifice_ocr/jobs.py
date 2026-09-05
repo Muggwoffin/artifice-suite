@@ -94,6 +94,8 @@ class JobItem:
     label: str = ""
     source: dict[str, Any] = field(default_factory=dict)
     guard_rejected: bool = False
+    fabricated_result: bool = False
+    history_item_id: int | None = None
 
     def __post_init__(self):
         if not self.stages:
@@ -119,6 +121,8 @@ class JobItem:
         self.confidence = None
         self.language = ""
         self.guard_rejected = False
+        self.fabricated_result = False
+        self.history_item_id = None
         for name, status in self.stages.items():
             status.state = State.PENDING if name in enabled_stages else State.SKIPPED
             status.elapsed = 0.0

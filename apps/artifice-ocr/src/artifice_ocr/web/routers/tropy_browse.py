@@ -225,9 +225,20 @@ def enqueue_from_tropy(req: TropyEnqueueRequest) -> dict:
         db_path = _resolve_db_path(req.path)
         output_dir = _resolve_output_dir(req.output_dir)
         items = []
+        requested_photos = set(req.photo_ids or [])
         for item_id in req.item_ids:
             item = get_item(db_path, item_id)
             if item is not None:
+                if req.photo_ids is not None:
+                    item = type(item)(
+                        item_id=item.item_id,
+                        title=item.title,
+                        photos=[
+                            photo for photo in item.photos if photo.photo_id in requested_photos
+                        ],
+                    )
+                    if not item.photos:
+                        continue
                 items.append(item)
         missing, total = missing_asset_count(items)
         job_items = items_to_job_items(items, project_db=db_path, output_dir=output_dir)

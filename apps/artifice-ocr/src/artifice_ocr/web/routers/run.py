@@ -18,6 +18,8 @@ router = APIRouter(tags=["run"])
 @router.post("/api/run/start")
 def start_run(req: StartRunRequest) -> dict:
     stages = {s for s in req.stages if s in STAGES}
+    if "ocr" not in stages:
+        raise HTTPException(status_code=409, detail="OCR is required for every new run")
     output_dir = validate_directory(req.output_dir, "output_dir")
     if req.project or req.output_dir == "output":
         layout = ProjectLayout(output_dir, req.project or "OCR project", create=True)
@@ -26,7 +28,7 @@ def start_run(req: StartRunRequest) -> dict:
         state.start_run(stages=stages, output_dir=output_dir, force=req.force)
     except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return {"ok": True}
+    return {"ok": True, "output_dir": output_dir}
 
 
 @router.post("/api/run/pause")

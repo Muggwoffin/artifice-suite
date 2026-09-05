@@ -34,9 +34,6 @@ from artifice_ocr.tropy_db import (
 )
 from artifice_ocr.web import runtime
 from artifice_ocr.web.routers import (
-    analytics as _analytics_router,
-)
-from artifice_ocr.web.routers import (
     events as _events_router,
 )
 from artifice_ocr.web.routers import (
@@ -335,7 +332,6 @@ def _client_with_state(tmp_path, monkeypatch) -> TestClient:
     monkeypatch.setattr(_run_router, "state", fresh)
     monkeypatch.setattr(_events_router, "state", fresh)
     monkeypatch.setattr(_history_router, "state", fresh)
-    monkeypatch.setattr(_analytics_router, "state", fresh)
     monkeypatch.setattr(_tropy_browse_router, "state", fresh)
     monkeypatch.setattr("artifice_ocr.web.runtime.state", fresh)
 
@@ -1033,6 +1029,29 @@ class TestBrowseRoutesEnabled:
         assert resp.status_code == 200
         data = resp.json()
         assert data["added"] == 2  # item 1 has 2 photos
+
+    def test_enqueue_adds_only_explicitly_selected_pages(self, tmp_path, monkeypatch):
+        client = _client_with_state(tmp_path, monkeypatch)
+        monkeypatch.setattr(
+            "artifice_ocr.tropy_db.validate_absolute_photo",
+            _mock_pathcheck,
+        )
+        tpy = _create_tpy(tmp_path / "test.tpy")
+
+        resp = client.post(
+            "/api/tropy/browse/enqueue",
+            json={
+                "path": str(tpy),
+                "item_ids": [1],
+                "photo_ids": [12],
+                "output_dir": "/tmp/output",
+            },
+        )
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["added"] == 1
+        assert body["items"][0]["source"]["photo_id"] == 12
 
     def test_invalid_path_rejected(self, tmp_path, monkeypatch):
         client = _client_with_state(tmp_path, monkeypatch)

@@ -10,9 +10,10 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, Response
 
-from ..models import RawTextRequest
+from ..models import FabricatedResultRequest, RawTextRequest
 from ..runtime import _IMAGE_PASSTHROUGH_TYPES, render_page_image_from, state
 from ..serializers import (
+    serialize_fabricated_result,
     serialize_history_item,
     serialize_history_item_detail,
     serialize_history_run,
@@ -27,6 +28,18 @@ _SEARCH_LIMIT = 200
 @router.get("/api/history/runs")
 def history_runs() -> dict:
     return {"runs": [serialize_history_run(r) for r in state.history.list_runs()]}
+
+
+@router.get("/api/history/fabricated-results")
+def history_fabricated_results() -> dict:
+    """Export reviewer-labelled examples for deterministic guard development."""
+    return {
+        "schema_version": 1,
+        "description": "Human-labelled OCR outputs that contain invented text",
+        "items": [
+            serialize_fabricated_result(row) for row in state.history.list_fabricated_results()
+        ],
+    }
 
 
 @router.get("/api/history/runs/{run_id}/items")
@@ -122,3 +135,11 @@ def history_item_save_translated_text(item_id: int, req: RawTextRequest) -> dict
     state.history.update_translated_text(item_id, req.text)
     updated = state.history.get_item(item_id)
     return serialize_history_item_detail(updated)
+
+
+@router.post("/api/history/items/{item_id}/fabricated-result")
+def history_item_set_fabricated_result(item_id: int, req: FabricatedResultRequest) -> dict:
+    if state.history.get_item(item_id) is None:
+        raise HTTPException(status_code=404, detail="History item not found")
+    state.history.set_fabricated_result(item_id, req.fabricated)
+    return serialize_history_item_detail(state.history.get_item(item_id))

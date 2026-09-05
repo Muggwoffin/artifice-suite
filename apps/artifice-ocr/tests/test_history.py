@@ -19,6 +19,7 @@ from artifice_ocr.jobs import JobItem, State
 # helpers
 # --------------------------------------------------------------------------- #
 
+
 @pytest.fixture
 def store(tmp_path):
     s = HistoryStore(tmp_path / "history.db")
@@ -49,6 +50,7 @@ def _finished_item(confidence=90, state=State.DONE):
 # HistoryStore
 # --------------------------------------------------------------------------- #
 
+
 def test_history_round_trip(store):
     run_id = store.start_run(stages=["ocr", "cleanup"], output_dir="out", total=1)
     store.record_item(run_id, _finished_item())
@@ -67,6 +69,26 @@ def test_history_round_trip(store):
     assert items[0]["confidence"] == 90
     assert items[0]["raw_text"] == "raw"
     assert items[0]["translated_text"] == "trans"
+
+
+def test_fabricated_result_round_trip_records_model_provenance(store):
+    run_id = store.start_run(stages=["ocr"], output_dir="out", total=1)
+    item = _finished_item()
+    item.fabricated_result = True
+    item.results["raw"].update({"engine": "ollama", "model": "vision:latest"})
+
+    item_id = store.record_item(run_id, item)
+    row = store.get_item(item_id)
+    assert row["fabricated_result"] == 1
+    assert row["fabricated_at"] is not None
+    assert row["ocr_engine"] == "ollama"
+    assert row["ocr_model_resolved"] == "vision:latest"
+    assert store.list_fabricated_results()[0]["item_id"] == item_id
+
+    store.set_fabricated_result(item_id, False)
+    assert store.get_item(item_id)["fabricated_result"] == 0
+    assert store.get_item(item_id)["fabricated_at"] is None
+    assert store.list_fabricated_results() == []
 
 
 def test_history_search_and_delete(store):
@@ -185,6 +207,8 @@ def test_history_migrates_a_database_missing_the_new_columns(tmp_path):
         assert rows[0]["page"] is None
         assert rows[0]["edited"] == 0
         assert rows[0]["edited_at"] is None
+        assert rows[0]["fabricated_result"] == 0
+        assert rows[0]["fabricated_at"] is None
 
         store.update_raw_text(rows[0]["item_id"], "fixed")
         assert store.get_item(rows[0]["item_id"])["raw_text"] == "fixed"

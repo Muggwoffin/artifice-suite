@@ -87,6 +87,14 @@ jobs:
             *)               uv sync --extra ocr-web ;;
           esac
 
+      - name: Gate OCR on Ollama, LM Studio, and Tropy round trips
+        if: matrix.app == 'artifice-ocr'
+        # This suite drives the production SDK clients over real loopback HTTP,
+        # runs an image through the JobRunner, then previews, commits, and
+        # duplicate-checks a Tropy note.  Keep it before Freeze: a failing core
+        # workflow must produce no distributable bundle.
+        run: uv run pytest -q apps/artifice-ocr/tests/test_critical_workflows.py apps/artifice-ocr/tests/test_tropy_browse.py apps/artifice-ocr/tests/test_tropy_api.py apps/artifice-ocr/tests/test_tropy_route_surface.py
+
       - name: Freeze
         # Run from the repo root — the spec resolves paths relative to it, and
         # collect_data_files() needs the workspace packages importable.
@@ -159,6 +167,11 @@ jobs:
             curl -s http://127.0.0.1:18999/ | grep -q app-shell \
               && echo "  shared app shell rendered: yes" \
               || { echo "  shared app shell MISSING"; fail=1; }
+            if [ "$APP" = "artifice-ocr" ]; then
+              curl -s http://127.0.0.1:18999/ | grep -q "Tropy round trip" \
+                && echo "  Tropy-first workspace rendered: yes" \
+                || { echo "  Tropy-first workspace MISSING"; fail=1; }
+            fi
           fi
           pkill -f "dist/$APP" || true
           echo "--- server log ---"; head -20 /tmp/exe.log
@@ -231,6 +244,10 @@ jobs:
             } else {
               if ($body -match "app-shell") { Write-Host "  shared app shell rendered: yes" }
               else { Write-Host "  shared app shell MISSING"; $fail = 1 }
+              if ($app -eq "artifice-ocr") {
+                if ($body -match "Tropy round trip") { Write-Host "  Tropy-first workspace rendered: yes" }
+                else { Write-Host "  Tropy-first workspace MISSING"; $fail = 1 }
+              }
             }
           } catch { Write-Host "  index fetch FAILED"; $fail = 1 }
           Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue

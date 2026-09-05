@@ -25,6 +25,7 @@ const HistoryTab = (function () {
   const btnSaveTranslated = document.getElementById("btn-history-save-translated");
   const diffToggle = document.getElementById("btn-history-diff-toggle");
   const thumbStrip = document.getElementById("history-thumbnails");
+  const fabricatedToggle = document.getElementById("history-fabricated-result");
 
   let runsById = new Map();
   let itemsById = new Map();
@@ -70,6 +71,7 @@ const HistoryTab = (function () {
     itemsBody.innerHTML = "";
     itemsById.clear();
     currentItemIds = [];
+    if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
     clearCompare(compareContainer);
     clearProvenanceChips();
     if (window.HistoryImage) window.HistoryImage.clear();
@@ -89,13 +91,17 @@ const HistoryTab = (function () {
   function renderItems(rows) {
     itemsById = new Map(rows.map((r) => [String(r.item_id), r]));
     currentItemIds = rows.map((r) => String(r.item_id));
+    currentItemId = null;
+    selectedItemRow = null;
+    if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
     itemsBody.innerHTML = rows.map((r) => `
       <tr data-id="${r.item_id}" class="history-state-${r.state}">
         <td>${escapeHtml(r.name)}</td>
         <td>${escapeHtml(r.state)}</td>
         <td>${escapeHtml(r.language || "\u2014")}</td>
         <td class="c">${r.confidence ?? "\u2014"}</td>
-      </tr>`).join("") || `<tr><td colspan="4" class="table-empty-cell"><span class="panel-empty-title">No documents.</span><span class="panel-empty-desc">Select a run from the table above to view its documents.</span></td></tr>`;
+        <td>${r.fabricated_result ? '<span class="fabricated-badge">Fabricated</span>' : "\u2014"}</td>
+      </tr>`).join("") || `<tr><td colspan="5" class="table-empty-cell"><span class="panel-empty-title">No documents.</span><span class="panel-empty-desc">Select a run from the table above to view its documents.</span></td></tr>`;
 
     itemsBody.querySelectorAll("tr[data-id]").forEach((tr) => {
       tr.addEventListener("click", () => selectItem(tr));
@@ -304,6 +310,10 @@ const HistoryTab = (function () {
     wireAllPanes();
     wireOriginalToggles(compareContainer);
     renderProvenanceChips(data);
+    if (fabricatedToggle) {
+      fabricatedToggle.checked = !!data.fabricated_result;
+      fabricatedToggle.disabled = false;
+    }
 
     if (window.HistoryImage) window.HistoryImage.load(`/api/history/items/${currentItemId}/image`);
     renderThumbnails(currentItemId);
@@ -341,6 +351,7 @@ const HistoryTab = (function () {
       selectedItemRow?.classList.remove("selected");
       selectedItemRow = null;
       currentItemId = null;
+      if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
     }
   });
 
@@ -365,6 +376,9 @@ const HistoryTab = (function () {
   }
 
   document.getElementById("btn-history-refresh").onclick = refresh;
+  document.getElementById("btn-history-export-fabricated")?.addEventListener("click", () => {
+    window.open("/api/history/fabricated-results", "_blank", "noopener");
+  });
   document.getElementById("btn-history-delete").onclick = deleteSelectedRun;
   document.getElementById("btn-history-send-tropy").onclick = async () => {
     if (!currentItemId) { if (window.ArtificeToast) window.ArtificeToast.warning("Select a document first."); return; }
@@ -386,6 +400,23 @@ const HistoryTab = (function () {
       if (window.ArtificeToast) window.ArtificeToast.error(`Could not load item: ${err.message}`);
     }
   };
+  if (fabricatedToggle) fabricatedToggle.addEventListener("change", async () => {
+    if (!currentItemId) return;
+    const requested = fabricatedToggle.checked;
+    fabricatedToggle.disabled = true;
+    try {
+      const data = await api("POST", `/api/history/items/${currentItemId}/fabricated-result`, { fabricated: requested });
+      const row = itemsBody.querySelector(`tr[data-id="${currentItemId}"]`);
+      if (row) row.lastElementChild.innerHTML = data.fabricated_result
+        ? '<span class="fabricated-badge">Fabricated</span>' : "\u2014";
+      if (window.ArtificeToast) window.ArtificeToast.success(requested ? "Review flag saved." : "Review flag removed.");
+    } catch (err) {
+      fabricatedToggle.checked = !requested;
+      if (window.ArtificeToast) window.ArtificeToast.error(`Could not save review flag: ${err.message}`);
+    } finally {
+      fabricatedToggle.disabled = false;
+    }
+  });
   if (btnSaveRaw) btnSaveRaw.addEventListener("click", () => savePaneText("raw"));
   if (btnSaveCleaned) btnSaveCleaned.addEventListener("click", () => savePaneText("cleaned"));
   if (btnSaveTranslated) btnSaveTranslated.addEventListener("click", () => savePaneText("translated"));

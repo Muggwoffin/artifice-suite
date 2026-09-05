@@ -8,7 +8,7 @@ Consolidated here so every router file can import them without circular
 references or duplicating model definitions across modules.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AddPathsRequest(BaseModel):
@@ -32,6 +32,10 @@ class SkipRequest(BaseModel):
 
 class RawTextRequest(BaseModel):
     text: str
+
+
+class FabricatedResultRequest(BaseModel):
+    fabricated: bool
 
 
 class PdfExportRequest(BaseModel):
@@ -69,5 +73,6 @@ class TropyBrowseRequest(BaseModel):
 
 class TropyEnqueueRequest(BaseModel):
     path: str
-    item_ids: list[int]
+    item_ids: list[int] = Field(default_factory=list)
+    photo_ids: list[int] | None = None
     output_dir: str = "output"

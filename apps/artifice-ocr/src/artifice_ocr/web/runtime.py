@@ -174,6 +174,26 @@ def save_translated_text(item: JobItem, text: str) -> dict[str, Any]:
     return _save_stage_text(item, "translated", text)
 
 
+def set_fabricated_result(item: JobItem, value: bool) -> dict[str, Any]:
+    """Capture a reviewer label in memory, history, and raw OCR metadata."""
+    item.fabricated_result = bool(value)
+    reviewed_at = datetime.now(UTC).isoformat()
+
+    output_dir = state.runner.output_dir if state.runner else config.get("output_dir")
+    json_path = stage_dir(output_dir, "raw_ocr") / "records" / f"{item.stem}.json"
+    if not json_path.exists():
+        json_path = Path(output_dir) / "raw_ocr" / "json" / f"{item.stem}.json"
+    if json_path.exists():
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+        data["fabricated_result"] = item.fabricated_result
+        data["fabricated_reviewed_at"] = reviewed_at if item.fabricated_result else None
+        json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    if item.history_item_id is not None:
+        state.history.set_fabricated_result(item.history_item_id, item.fabricated_result)
+    return serialize_item_preview(item)
+
+
 def reprocess_item(item: JobItem, from_stage: str, stages: list[str]) -> dict[str, Any]:
     """Re-run downstream stages after a manual correction.
 
@@ -427,7 +447,7 @@ class RunState:
         for item in self.items:
             if item.state in (State.DONE, State.FAILED):
                 with contextlib.suppress(Exception):
-                    self.history.record_item(self.run_id, item)
+                    item.history_item_id = self.history.record_item(self.run_id, item)
 
     def finish_run(self, payload: dict) -> None:
         if self.run_id is not None:

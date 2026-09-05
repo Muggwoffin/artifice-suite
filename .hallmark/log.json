@@ -1,0 +1,10 @@
+[
+  {
+    "date": "2026-09-04",
+    "scope": "app",
+    "macrostructure": "Workbench",
+    "theme": "existing paper/ink with OCR viridian",
+    "enrichment": "none",
+    "brief": "Make Tropy source, OCR, review, and return the primary workflow"
+  }
+]

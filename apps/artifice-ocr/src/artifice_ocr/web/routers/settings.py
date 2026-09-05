@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Settings, document types, templates, and health-check routes."""
+"""Settings, document types, and health-check routes."""
 
 from pathlib import Path
 from typing import Any
@@ -259,49 +259,6 @@ def reset_config() -> dict:
     return {k: _redact_config(k, config.get(k)) for k in _CONFIG_KEYS}
 
 
-@router.get("/api/templates")
-def list_templates() -> dict:
-    templates = config.get("run_templates") or {}
-    return {"templates": templates}
-
-
-@router.post("/api/templates/save")
-def save_template(data: dict) -> dict:
-    name = data.get("name")
-    template_config = data.get("config", {})
-    if not name:
-        raise HTTPException(status_code=400, detail="Template name is required")
-    templates = dict(config.get("run_templates") or {})
-    templates[name] = template_config
-    config.apply_overrides({"run_templates": templates})
-    config.save_user_settings({"run_templates": templates})
-    return {"ok": True, "templates": templates}
-
-
-@router.post("/api/templates/delete")
-def delete_template(data: dict) -> dict:
-    name = data.get("name")
-    if not name:
-        raise HTTPException(status_code=400, detail="Template name is required")
-    templates = dict(config.get("run_templates") or {})
-    templates.pop(name, None)
-    config.apply_overrides({"run_templates": templates})
-    config.save_user_settings({"run_templates": templates})
-    return {"ok": True, "templates": templates}
-
-
-@router.post("/api/templates/apply")
-def apply_template(data: dict) -> dict:
-    name = data.get("name")
-    templates = config.get("run_templates") or {}
-    if name not in templates:
-        raise HTTPException(status_code=404, detail=f"Template '{name}' not found")
-    overrides = templates[name]
-    config.apply_overrides(overrides)
-    config.save_user_settings(overrides)
-    return {"ok": True}
-
-
 @router.get("/api/document-types")
 def document_types() -> dict:
     return {"types": DOCUMENT_TYPES}
@@ -341,6 +298,7 @@ def health_check() -> dict:
             "ok": probe.reachable,
             "detail": None if probe.reachable else (probe.hint or "Cannot reach LM Studio"),
             "url": lm_studio_url,
+            "models": list(probe.models) if probe.reachable else [],
         }
 
     if "ollama" in backends or wants_auto:
@@ -350,6 +308,7 @@ def health_check() -> dict:
             "ok": probe.reachable,
             "detail": None if probe.reachable else (probe.hint or "Cannot reach Ollama"),
             "url": ollama_url,
+            "models": list(probe.models) if probe.reachable else [],
         }
 
     if "huggingface" in backends:

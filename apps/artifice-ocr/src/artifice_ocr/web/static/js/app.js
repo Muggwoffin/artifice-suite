@@ -17,14 +17,14 @@ const STATE_GLYPH = {
   skipped: "–", failed: "✕", cancelled: "—",
 };
 
-const STAGE_KEYS = ["ocr", "cleanup", "translate"];
+const STAGE_KEYS = ["ocr", "cleanup", "title", "translate"];
 
 const els = {};
 ["queue-body", "queue-count", "dropzone", "log", "output-dir",
  "btn-browse-files", "btn-add-folder", "btn-remove",
  "btn-clear", "btn-skip", "btn-retry", "btn-browse-output",
  "btn-run", "btn-pause", "btn-stop", "progress-bar", "progress-value",
- "status-text", "stage-text", "stage-ocr", "stage-cleanup", "stage-translate", "stage-force",
+ "status-text", "stage-text", "stage-ocr", "stage-cleanup", "stage-title", "stage-translate", "stage-force",
  "dropzone-idle", "dropzone-uploading", "dropzone-success",
  "dropzone-error", "dropzone-hint", "dropzone-live",
  "dropzone-success-text", "dropzone-error-text",
@@ -49,6 +49,10 @@ function updateSelectAllState() {
   selectAllBox.disabled = n === 0;
   selectAllBox.checked = n > 0 && s === n;
   selectAllBox.indeterminate = s > 0 && s < n;
+}
+
+function selectedQueueIds() {
+  return [...selected];
 }
 
 if (selectAllBox) {
@@ -110,7 +114,7 @@ function renderAll() {
       ? "Use Browse Files to add documents."
       : "Drop image files above, or use Browse Files to add documents.";
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="9" class="table-empty-cell">
+    tr.innerHTML = `<td colspan="10" class="table-empty-cell">
       <p class="panel-empty-title">No documents queued</p>
       <p class="panel-empty-desc">${hint}</p>
     </td>`;
@@ -188,6 +192,7 @@ function rowFor(item) {
     <td>${escapeHtml(item.name)}</td>
     ${stageCell(item, "ocr")}
     ${stageCell(item, "cleanup")}
+    ${stageCell(item, "title")}
     ${stageCell(item, "translate")}
     <td class="c">${item.confidence ?? "—"}</td>
     <td class="c">${item.elapsed ? item.elapsed.toFixed(1) + "s" : "—"}</td>
@@ -587,16 +592,18 @@ els["btn-run"].onclick = async () => {
   const stages = [];
   if (els["stage-ocr"].checked) stages.push("ocr");
   if (els["stage-cleanup"].checked) stages.push("cleanup");
+  if (els["stage-title"].checked) stages.push("title");
   if (els["stage-translate"].checked) stages.push("translate");
   if (!items.size) { log("Add at least one document first.", "warning"); return; }
-  if (!stages.length) { log("Enable at least one step (OCR, Cleanup, or Translate).", "warning"); return; }
+  if (!stages.includes("ocr")) { log("OCR is required for every new run.", "warning"); return; }
 
   try {
-    await api("POST", "/api/run/start", {
+    const result = await api("POST", "/api/run/start", {
       stages, output_dir: els["output-dir"].value || "output",
       project: (els["output-dir"].value || "output") === "output" ? "OCR project" : null,
       force: els["stage-force"].checked,
     });
+    if (result.output_dir) els["output-dir"].value = result.output_dir;
     setRunning(true);
     els["progress-bar"].style.width = "0%";
     const pv = els["progress-value"];
@@ -1090,9 +1097,18 @@ const ColVis = (function () {
 
 window.ColVis = ColVis;
 
-// -------------------------------------------------------- batch correct
+window.QueueTab = {
+  selectedIds: selectedQueueIds,
+  outputDirectory: () => els["output-dir"]?.value || "output",
+  preferredStage: () => {
+    const selected = selectedQueueIds().map((id) => items.get(id)).filter(Boolean);
+    if (selected.length && selected.every((item) => item.stages?.translate?.state === "done")) return "translated";
+    if (selected.length && selected.every((item) => item.stages?.cleanup?.state === "done")) return "cleaned";
+    return "raw";
+  },
+};
 
-const TEMPLATE_STORAGE_KEY = "ocr_batch_templates";
+// -------------------------------------------------------- batch correct
 
 const BatchCorrect = (function () {
   const modal = document.getElementById("modal-batch-correct");
@@ -1103,30 +1119,12 @@ const BatchCorrect = (function () {
   const stageTranslated = document.getElementById("batch-stage-translated");
   const applySelected = document.getElementById("batch-apply-selected");
   const statusEl = document.getElementById("batch-status");
-  const templateSelect = document.getElementById("batch-template-select");
   const btnApply = document.getElementById("btn-batch-apply");
-  const btnSave = document.getElementById("btn-batch-template-save");
-  const btnDelete = document.getElementById("btn-batch-template-delete");
   const btnClose = document.getElementById("btn-batch-cancel");
-
-  function loadTemplates() {
-    try { return JSON.parse(localStorage.getItem(TEMPLATE_STORAGE_KEY)) || []; } catch { return []; }
-  }
-
-  function saveTemplates(templates) {
-    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
-  }
-
-  function renderTemplates(selectEl) {
-    const templates = loadTemplates();
-    selectEl.innerHTML = `<option value="">-- Load template --</option>`
-      + templates.map((t, i) => `<option value="${i}">${escapeHtml(t.name)}</option>`).join("");
-  }
 
   function open() {
     if (!modal) return;
     modal.classList.remove("hidden");
-    renderTemplates(templateSelect);
     statusEl.textContent = "";
   }
 
@@ -1165,51 +1163,6 @@ const BatchCorrect = (function () {
     }
   }
 
-  function saveTemplate() {
-    const name = prompt("Template name:");
-    if (!name) return;
-    const templates = loadTemplates();
-    templates.push({
-      name,
-      find: findInput.value,
-      replace: replaceInput.value,
-      stages: {
-        raw: stageRaw.checked,
-        cleaned: stageCleaned.checked,
-        translated: stageTranslated.checked,
-      },
-    });
-    saveTemplates(templates);
-    renderTemplates(templateSelect);
-    templateSelect.value = templates.length - 1;
-  }
-
-  function loadTemplate() {
-    const idx = parseInt(templateSelect.value, 10);
-    if (isNaN(idx)) return;
-    const templates = loadTemplates();
-    const t = templates[idx];
-    if (!t) return;
-    findInput.value = t.find || "";
-    replaceInput.value = t.replace || "";
-    stageRaw.checked = t.stages?.raw ?? true;
-    stageCleaned.checked = t.stages?.cleaned ?? true;
-    stageTranslated.checked = t.stages?.translated ?? true;
-  }
-
-  function deleteTemplate() {
-    const idx = parseInt(templateSelect.value, 10);
-    if (isNaN(idx)) return;
-    if (!confirm("Delete this template?")) return;
-    const templates = loadTemplates();
-    templates.splice(idx, 1);
-    saveTemplates(templates);
-    renderTemplates(templateSelect);
-  }
-
-  templateSelect.addEventListener("change", loadTemplate);
-  btnSave.addEventListener("click", saveTemplate);
-  btnDelete.addEventListener("click", deleteTemplate);
   btnApply.addEventListener("click", apply);
   btnClose.addEventListener("click", close);
   modal?.querySelector("[data-modal-close]")?.addEventListener("click", close);

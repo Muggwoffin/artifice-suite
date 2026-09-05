@@ -272,6 +272,10 @@ jobs:
       - name: Run tests
         run: uv run pytest -q ${{ matrix.extra-args }}
 
+      - name: Report critical OCR workflow gate
+        if: matrix.app == 'artifice-ocr'
+        run: uv run pytest -q tests/test_critical_workflows.py tests/test_tropy_browse.py tests/test_tropy_api.py tests/test_tropy_route_surface.py
+
   # ── Wheel-content assertions ──────────────────────────────────────────────
   # Tests run against `src/` and cannot see bugs that only exist in the built
   # artifact: missing font files, prompt templates that resolve outside their
