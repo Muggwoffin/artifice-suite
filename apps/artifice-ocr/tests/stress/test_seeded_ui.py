@@ -7,6 +7,7 @@
 import json
 import os
 import random
+import re
 from pathlib import Path
 
 import pytest
@@ -21,14 +22,22 @@ def _seeds() -> list[int]:
     return list(range(104729, 104729 + count))
 
 
+def _dismiss_onboarding(page) -> None:
+    # autostart sets data-state and opens its overlay in the same JS callback.
+    # Wait for that callback, not an arbitrary delay after DOMContentLoaded.
+    expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
+        "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
+    )
+    if page.locator(".byom-overlay").count():
+        page.locator(".byom-close").click()
+
+
 def _tab(page, name: str) -> None:
     # Exercise the visible application-shell navigation. The legacy .tab
     # controls remain in the DOM as the panel controller but are intentionally
     # visually clipped by shell.css.
     page.locator(f'.shell-nav a[href="/?view={name}"]').click()
-    onboarding = page.locator(".byom-overlay")
-    if onboarding.count():
-        page.locator(".byom-close").click()
+    _dismiss_onboarding(page)
     expect(page.locator(f"#panel-{name}")).to_be_visible()
     if name == "settings":
         expect(page.locator("#set-max_ocr_workers")).not_to_have_value("")
@@ -137,6 +146,7 @@ def _actions(page, rng: random.Random):
 
     def reload_page():
         page.reload(wait_until="domcontentloaded")
+        _dismiss_onboarding(page)
         expect(page.locator(".panel.active")).to_be_visible()
 
     return [
@@ -182,9 +192,7 @@ def test_seeded_browser_actions(seed, stress_server, chromium_browser):
     failed = False
     try:
         page.goto(stress_server, wait_until="domcontentloaded")
-        onboarding = page.locator(".byom-overlay")
-        if onboarding.count():
-            page.locator(".byom-close").click()
+        _dismiss_onboarding(page)
         expect(page.locator("#queue-body tr[data-id]")).to_have_count(4)
         rng = random.Random(seed)
         actions = _actions(page, rng)

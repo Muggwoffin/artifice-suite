@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import signal
 import socket
@@ -286,6 +287,11 @@ def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
                 browser = playwright.chromium.launch(headless=True, args=["--disable-gpu"])
                 page = browser.new_page(viewport={"width": 1440, "height": 1000})
                 page.goto(artifice_url, wait_until="domcontentloaded")
+                expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
+                    "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
+                )
+                if page.locator(".byom-overlay").count():
+                    page.locator(".byom-close").click()
                 page.locator("#btn-add-tropy").click()
                 expect(page.locator("#modal-tropy-add")).to_be_visible()
                 page.locator("#tropy-browse-path").fill(str(project))

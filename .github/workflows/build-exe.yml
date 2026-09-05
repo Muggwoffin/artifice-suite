@@ -112,7 +112,13 @@ jobs:
 
       - name: Install Chromium for packaged OCR UI smoke
         if: matrix.app == 'artifice-ocr'
-        run: uv run --with playwright playwright install chromium
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            uv run --with playwright playwright install --with-deps chromium
+          else
+            uv run --with playwright playwright install chromium
+          fi
 
       - name: Freeze
         # Run from the repo root — the spec resolves paths relative to it, and

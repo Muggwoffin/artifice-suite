@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 
 from playwright.sync_api import expect, sync_playwright
@@ -20,6 +21,9 @@ def main() -> int:
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(sys.argv[1], wait_until="domcontentloaded")
+        expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
+            "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
+        )
         overlay = page.locator(".byom-overlay")
         if overlay.count():
             page.locator(".byom-close").click()

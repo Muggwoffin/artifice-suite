@@ -110,6 +110,9 @@ def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key):
             browser = playwright.chromium.launch(headless=True, args=["--disable-gpu"])
             page = browser.new_page(viewport={"width": 1440, "height": 1000})
             page.goto(base_url, wait_until="domcontentloaded")
+            expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
+                "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
+            )
             overlay = page.locator(".byom-overlay")
             if overlay.count():
                 page.locator(".byom-close").click()
