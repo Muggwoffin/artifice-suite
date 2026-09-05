@@ -22,8 +22,11 @@ from pathlib import Path
 import httpx
 import pytest
 from artifice_ocr import config
-from artifice_ocr.tropy_api import TropyAPIClient, connect
+from artifice_ocr.tropy_api import connect
 from artifice_ocr.tropy_jsonld import ExportPhoto, build_export
+from artifice_ocr.web.models import TropyBrowseRequest, TropyEnqueueRequest
+from artifice_ocr.web.routers import tropy_browse, tropy_notes
+from artifice_ocr.web.runtime import state
 
 pytestmark = [
     pytest.mark.live_interop,
@@ -177,8 +180,8 @@ def _running_tropy(source: Path, project: Path, runtime: Path, port: int):
                     process.wait(timeout=5)
 
 
-def test_real_tropy_jsonld_and_note_contract(tmp_path):
-    """Prove Artifice's JSON-LD and note client against the real application."""
+def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
+    """Browse a real project, queue its photo, then write and dedupe its OCR."""
     source = _source()
     project = tmp_path / "Artifice Contract.tropy"
     runtime = tmp_path / "runtime"
@@ -236,12 +239,58 @@ def test_real_tropy_jsonld_and_note_contract(tmp_path):
                 assert connection.project_prefix == "/project"
             else:
                 assert connection.project_prefix == "/project/current"
-            api = TropyAPIClient(connection)
-            photo = api.photo(int(photos[0]["id"]))
-            assert photo is not None
-            note_ids = api.create_note(int(photo["id"]), "Live contract note", "en")
-            assert len(note_ids) == 1
-            assert api.note_text(note_ids[0]) == "Live contract note"
-            assert api.has_identical_note(api.photo(int(photo["id"])), "Live contract note")
+            # The import above is fixture setup only. From here on this is the
+            # production Tropy-first path: read the live project's SQLite
+            # database without writing it, turn the selected photo into a
+            # queue item, and send reviewed OCR back through the notes router.
+            browse_request = TropyBrowseRequest(path=str(project))
+            browsed = tropy_browse.browse_items(browse_request, list_id=None, tag=None)
+            assert len(browsed["items"]) == 1
+            output = tmp_path / "output"
+            output.mkdir()
+            queued = tropy_browse.enqueue_from_tropy(
+                TropyEnqueueRequest(
+                    path=str(project),
+                    item_ids=[browsed["items"][0]["item_id"]],
+                    output_dir=str(output),
+                )
+            )
+            assert queued["added"] == 1
+            jobs = list(state.items)
+            assert len(jobs) == 1
+            assert jobs[0].source["origin"] == "tropy-live"
+            assert jobs[0].source["photo_id"] == int(photos[0]["id"])
+            jobs[0].results["raw"] = {
+                "extracted_text": "Live production round-trip note",
+                "engine": "live-contract",
+            }
+            jobs[0].language = "en"
+
+            selected_id = str(id(jobs[0]))
+            request = tropy_notes.TropyNotesRequest(
+                source="queue",
+                item_ids=[selected_id],
+                stage="raw_ocr",
+            )
+            preview = tropy_notes.tropy_notes_preview(request)
+            assert preview["blockers"] == []
+            assert preview["write_count"] == 1
+
+            committed = tropy_notes.tropy_notes_commit(
+                tropy_notes.TropyNotesCommitRequest(
+                    source="queue",
+                    item_ids=[selected_id],
+                    stage="raw_ocr",
+                    expected_write_count=1,
+                )
+            )
+            assert committed["status"] == "complete"
+            assert committed["written"] == 1
+            assert len(committed["note_ids"]) == 1
+
+            duplicate = tropy_notes.tropy_notes_preview(request)
+            assert duplicate["write_count"] == 0
+            assert duplicate["counts"]["duplicate"] == 1
     finally:
+        state.clear()
         config.reset()

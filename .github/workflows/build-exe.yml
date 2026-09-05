@@ -38,6 +38,7 @@ on:
 # (upload-artifact needs no elevated token scope) — read-only is sufficient.
 permissions:
   contents: read
+  statuses: read
 
 jobs:
   build:
@@ -65,6 +66,20 @@ jobs:
         with:
           python-version: "3.12"
           enable-cache: true
+
+      - name: Require the live OCR release gate
+        if: matrix.app == 'artifice-ocr'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/status" \
+            --jq '[.statuses[] | select(.context == "live-interop/release-gate")][0].state // ""')
+          if [ "$state" != "success" ]; then
+            echo "No successful live-interop/release-gate status exists for ${GITHUB_SHA}."
+            echo "Run scripts/interop/run-live-release-gate.sh --publish-status from WSL first."
+            exit 1
+          fi
 
       - name: Install the app and PyInstaller
         shell: bash

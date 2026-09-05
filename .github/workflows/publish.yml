@@ -91,6 +91,24 @@ on:
           - all
 
 jobs:
+  live-interop-status:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: read
+    steps:
+      - name: Require the live OCR release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/status" \
+            --jq '[.statuses[] | select(.context == "live-interop/release-gate")][0].state // ""')
+          if [ "$state" != "success" ]; then
+            echo "No successful live-interop/release-gate status exists for ${GITHUB_SHA}."
+            echo "Run scripts/interop/run-live-release-gate.sh --publish-status from WSL first."
+            exit 1
+          fi
+
   # ── Stage 1: the three shared packages ────────────────────────────────────
   # ORDER IS LOAD-BEARING.  Every app declares artifice-model-harness,
   # artifice-secure-io and artifice-shared-ui by name with `>=0.1.0`.  If the
@@ -99,6 +117,7 @@ jobs:
   # yet.  uv hides this locally because [tool.uv.sources] resolves them from
   # the workspace.
   shared-packages:
+    needs: live-interop-status
     runs-on: ubuntu-latest
     environment: ${{ matrix.environment }}
     permissions:
