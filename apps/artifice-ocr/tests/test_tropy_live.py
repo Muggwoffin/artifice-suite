@@ -316,9 +316,7 @@ def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
             }
             jobs[0].language = "en"
 
-            run_id = state.history.start_run(
-                stages=["ocr"], output_dir=str(output), total=1
-            )
+            run_id = state.history.start_run(stages=["ocr"], output_dir=str(output), total=1)
             history_item_id = state.history.record_item(run_id, jobs[0])
             state.history.finish_run(run_id, succeeded=1, failed=0, elapsed=1.0)
 
@@ -346,14 +344,10 @@ def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
                 run = page.locator("#history-runs-body tr[data-id]").first
                 expect(run).to_be_visible(timeout=10_000)
                 run.click()
-                item = page.locator(
-                    f'#history-items-body tr[data-id="{history_item_id}"]'
-                )
+                item = page.locator(f'#history-items-body tr[data-id="{history_item_id}"]')
                 expect(item).to_be_visible()
                 item.click()
-                expect(page.locator("#panel-history .compare-title")).to_have_text(
-                    jobs[0].name
-                )
+                expect(page.locator("#panel-history .compare-title")).to_have_text(jobs[0].name)
                 # Choose the only populated stage before Tropy starts. The
                 # hidden modal retains this value, avoiding a second preview
                 # request during Tropy 1.17's short stable API window.

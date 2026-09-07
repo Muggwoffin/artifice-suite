@@ -114,9 +114,7 @@ def _actions(page, rng: random.Random):
         preview_item()
         textarea = page.locator('#panel-preview .compare-pane[data-pane="raw"] textarea')
         if textarea.count():
-            textarea.fill(
-                textarea.input_value() + f"\nseeded correction {rng.randrange(1000)}"
-            )
+            textarea.fill(textarea.input_value() + f"\nseeded correction {rng.randrange(1000)}")
             save = page.locator("#btn-save-raw")
             expect(save).to_be_enabled()
             save.click()
@@ -133,9 +131,7 @@ def _actions(page, rng: random.Random):
         row.click()
         expect(page.locator("#panel-history .compare-title")).to_have_text(expected_title)
         textarea = page.locator('#panel-history .compare-pane[data-pane="raw"] textarea')
-        textarea.fill(
-            textarea.input_value() + f"\nhistory correction {rng.randrange(1000)}"
-        )
+        textarea.fill(textarea.input_value() + f"\nhistory correction {rng.randrange(1000)}")
         save = page.locator("#btn-history-save-raw")
         expect(save).to_be_enabled()
         save.click()
@@ -151,14 +147,10 @@ def _actions(page, rng: random.Random):
         expect(send).to_be_enabled()
         send.click()
         expect(page.locator("#modal-tropy-send")).to_be_visible()
-        expect(page.locator('[data-workflow-step="4"]')).to_have_attribute(
-            "aria-current", "step"
-        )
+        expect(page.locator('[data-workflow-step="4"]')).to_have_attribute("aria-current", "step")
         page.locator("#btn-send-tropy-close-writeback").click()
         expect(page.locator("#modal-tropy-send")).to_be_hidden()
-        expect(page.locator('[data-workflow-step="3"]')).to_have_attribute(
-            "aria-current", "step"
-        )
+        expect(page.locator('[data-workflow-step="3"]')).to_have_attribute("aria-current", "step")
 
     def open_close_tropy():
         _tab(page, "main")
