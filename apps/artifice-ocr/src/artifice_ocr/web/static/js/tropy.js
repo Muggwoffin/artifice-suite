@@ -385,7 +385,10 @@ function closeSend() {
   sendContext = null;
   notePreview = null;
   const activeTab = document.querySelector(".tab.active")?.dataset.tab;
-  window.setWorkflowStep?.(activeTab === "preview" || activeTab === "history" ? 3 : 1);
+  const step = typeof window.workflowStepForTab === "function"
+    ? window.workflowStepForTab(activeTab)
+    : (activeTab === "preview" || activeTab === "history" ? 3 : 1);
+  window.setWorkflowStep?.(step);
   sendReturnFocus?.focus?.();
 }
 

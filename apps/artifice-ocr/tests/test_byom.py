@@ -116,6 +116,20 @@ class TestByomState:
         assert body["configured"] is True
         assert body["endpoint"] == "http://localhost:1234/v1"
 
+    def test_selected_lm_studio_endpoint_takes_precedence_over_stored_api_key(self, client):
+        config.apply_overrides(
+            {
+                "api_key": "sk-stale",
+                "api_base_url": "https://api.example.com/v1",
+                "ocr_backend": "lm_studio",
+                "lm_studio_url": "http://localhost:1234/v1",
+            }
+        )
+
+        body = client.get("/api/byom/state").json()
+
+        assert body["endpoint"] == "http://localhost:1234/v1"
+
     def test_recommendations_have_correct_fields(self, client):
         """Recommendations use model_name, provider, vision, min_vram_gb, ethos_badges, role, notes."""
         r = client.get("/api/byom/state")

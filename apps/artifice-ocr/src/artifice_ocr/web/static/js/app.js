@@ -604,6 +604,7 @@ function workflowStepForTab(tabName) {
 }
 
 window.setWorkflowStep = setWorkflowStep;
+window.workflowStepForTab = workflowStepForTab;
 
 function applyRunStatus(status) {
   setRunning(!!status.running);

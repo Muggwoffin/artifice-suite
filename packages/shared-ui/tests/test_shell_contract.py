@@ -43,6 +43,7 @@ def test_frameless_window_resize_grip_has_runtime_styles():
     javascript = (files(shared_ui) / "assets/window-controls.js").read_text()
 
     assert ".pywebview-active .window-resize-grip" in css
+    assert "z-index:50" in css
     assert 'grip.id = "windowResizeGrip"' in javascript
     assert "window.pywebview.api.resize" in javascript
 

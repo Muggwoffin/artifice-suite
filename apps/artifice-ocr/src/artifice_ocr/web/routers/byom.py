@@ -147,8 +147,9 @@ def byom_state() -> dict:
     ollama_url = config.get("ollama_url") or "http://localhost:11434"
     lm_studio_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
     ocr_model = config.get("ocr_model") or ""
+    ocr_backend = config.get("ocr_backend") or "auto"
     role_backends = {
-        config.get("ocr_backend") or "auto",
+        ocr_backend,
         config.get("cleanup_backend") or "auto",
         config.get("translate_backend") or "auto",
     }
@@ -172,10 +173,12 @@ def byom_state() -> dict:
         "app": "artifice-ocr",
         "configured": configured,
         "endpoint": (
-            api_base_url
+            lm_studio_url
+            if ocr_backend == "lm_studio"
+            else ollama_url
+            if ocr_backend == "ollama"
+            else api_base_url
             if api_key
-            else lm_studio_url
-            if "lm_studio" in role_backends
             else ollama_url
         ),
         "model": ocr_model or None,

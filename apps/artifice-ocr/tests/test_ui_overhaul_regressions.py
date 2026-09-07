@@ -114,7 +114,9 @@ def test_workflow_rail_follows_navigation_processing_and_tropy_return():
     assert "function setWorkflowStep(step)" in app
     assert "setWorkflowStep(workflowStepForTab(tab.dataset.tab))" in app
     assert "setWorkflowStep(2)" in app
+    assert "window.workflowStepForTab = workflowStepForTab" in app
     assert "window.setWorkflowStep?.(4)" in tropy
+    assert "window.workflowStepForTab(activeTab)" in tropy
 
 
 def test_tropy_workspace_exposes_only_live_browse_and_developer_api():
