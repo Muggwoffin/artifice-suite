@@ -19,6 +19,7 @@ const PreviewTab = (function () {
   const fabricatedToggle = document.getElementById("preview-fabricated-result");
 
   let currentItemId = null;
+  let openRequest = 0;
   const originalText = { raw: "", cleaned: "", translated: "" };
   const btnReprocess = document.getElementById("btn-reprocess");
 
@@ -152,12 +153,14 @@ const PreviewTab = (function () {
   });
 
   async function open(id) {
+    const request = ++openRequest;
     refreshList(false);
     select.value = id;
     currentItemId = id;
 
     try {
       const data = await api("GET", `/api/queue/${id}/preview`);
+      if (request !== openRequest) return;
       renderCompare(container, data, { editableStages: new Set(["raw", "cleaned", "translated"]) });
       wireAllPanes();
       wireOriginalToggles(container);
@@ -168,6 +171,7 @@ const PreviewTab = (function () {
         fabricatedToggle.disabled = false;
       }
     } catch (err) {
+      if (request !== openRequest) return;
       clearCompare(container);
       container.querySelector(".compare-title").textContent = `Could not load: ${err.message}`;
       if (btnSaveRaw) btnSaveRaw.disabled = true;

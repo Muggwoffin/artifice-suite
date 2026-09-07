@@ -4,13 +4,18 @@
 
 """Settings, document types, and health-check routes."""
 
+import asyncio
+import os
+import platform
+import socket
+import struct
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from fastapi import APIRouter, HTTPException
 from model_harness.contract import EndpointRejected
-from model_harness.discovery import normalise_base_url
+from model_harness.discovery import normalise_base_url, probe_endpoint
 from model_harness.endpoint_policy import EndpointPolicy
 from shared_ui.path_validation import PathValidationError, normalise_path
 
@@ -28,6 +33,56 @@ router = APIRouter(tags=["settings"])
 # rationale and constraint set.
 
 _endpoint_policy = EndpointPolicy()
+
+_LOCAL_BACKENDS = {
+    "ollama": ("ollama_url", "http://localhost:11434", 11434),
+    "lm_studio": ("lm_studio_url", "http://localhost:1234/v1", 1234),
+}
+
+
+def _wsl_host() -> str | None:
+    """Return the Windows host address when the server is running in WSL2."""
+    if not (os.environ.get("WSL_INTEROP") or "microsoft" in platform.release().lower()):
+        return None
+    try:
+        for line in Path("/proc/net/route").read_text(encoding="ascii").splitlines()[1:]:
+            fields = line.split()
+            if len(fields) >= 3 and fields[1] == "00000000":
+                return socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
+    except (OSError, ValueError, struct.error):
+        return None
+    return None
+
+
+def _canonical_local_url(backend: str, raw: str) -> str:
+    value = raw.strip().rstrip("/")
+    if backend == "ollama":
+        return normalise_base_url(value)
+    parts = urlsplit(value)
+    segments = [segment for segment in parts.path.split("/") if segment]
+    if "v1" in segments:
+        segments = segments[: segments.index("v1") + 1]
+    else:
+        segments.append("v1")
+    path = "/" + "/".join(segments)
+    return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
+
+
+def _local_endpoint_candidates(backend: str, requested_url: str) -> list[str]:
+    key, default, port = _LOCAL_BACKENDS[backend]
+    raw = [requested_url, config.get(key) or "", default]
+    wsl_host = _wsl_host()
+    if wsl_host:
+        raw.append(f"http://{wsl_host}:{port}")
+
+    candidates: list[str] = []
+    for value in raw:
+        if not value:
+            continue
+        candidate = _canonical_local_url(backend, value)
+        if candidate not in candidates:
+            candidates.append(candidate)
+    return candidates
 
 
 def _validate_approved_folder(entry: Any) -> str:
@@ -262,6 +317,63 @@ def reset_config() -> dict:
 @router.get("/api/document-types")
 def document_types() -> dict:
     return {"types": DOCUMENT_TYPES}
+
+
+@router.get("/api/local-models")
+async def local_models(backend: str, url: str = "") -> dict:
+    """Discover one selected local backend and return its installed models.
+
+    The configured address is tried first, followed by the normal localhost
+    address and the Windows host when Artifice runs inside WSL2. This keeps
+    endpoint details out of the normal setup path while still allowing an
+    advanced address override.
+    """
+    if backend not in _LOCAL_BACKENDS:
+        raise HTTPException(status_code=400, detail="backend must be 'ollama' or 'lm_studio'")
+
+    candidates = _local_endpoint_candidates(backend, url)
+    allowed: list[str] = []
+    rejected = 0
+    for candidate in candidates:
+        try:
+            _endpoint_policy.validate_url(candidate)
+        except EndpointRejected:
+            rejected += 1
+            continue
+        allowed.append(candidate)
+
+    probes = await asyncio.gather(
+        *(probe_endpoint(candidate, policy=_endpoint_policy, timeout_s=5) for candidate in allowed),
+        return_exceptions=True,
+    )
+    for candidate, probe in zip(allowed, probes, strict=True):
+        if isinstance(probe, Exception) or not probe.reachable:
+            continue
+        # Ollama exposes both its native and OpenAI-compatible APIs. Do not
+        # mistake a different OpenAI server for Ollama merely because it was
+        # entered in the Ollama row.
+        if backend == "ollama" and probe.provider != "ollama":
+            continue
+        if backend == "lm_studio" and probe.provider == "ollama":
+            continue
+        return {
+            "ok": True,
+            "backend": backend,
+            "url": candidate,
+            "models": list(probe.models),
+        }
+
+    return {
+        "ok": False,
+        "backend": backend,
+        "url": allowed[0] if allowed else "",
+        "models": [],
+        "detail": (
+            "No permitted local endpoint address was provided."
+            if not allowed and rejected
+            else f"Could not find a running {backend.replace('_', ' ').title()} server."
+        ),
+    }
 
 
 # Local backends that carry a probeable model list (mirrors

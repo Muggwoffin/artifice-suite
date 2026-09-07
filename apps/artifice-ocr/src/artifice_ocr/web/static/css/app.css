@@ -1295,6 +1295,14 @@ tr.history-state-cancelled td { color: var(--ink-faint); }
 .health-panel .health-ok { color: var(--accent); }
 .health-panel .health-fail { color: var(--error); }
 
+.local-model-picker[hidden], .model-name-input[hidden] { display: none; }
+.settings-model-discovery {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
 /* ------------------------------------------------------------------- tropy */
 
 .tropy-picker-grid {

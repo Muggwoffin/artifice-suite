@@ -81,6 +81,7 @@ def _actions(page, rng: random.Random):
             expect(page.locator("#panel-preview .compare-title")).not_to_have_text(
                 "No document selected"
             )
+            expect(page.locator("#btn-reprocess")).to_be_enabled()
 
     def toggle_fabricated():
         preview_item()
@@ -93,7 +94,9 @@ def _actions(page, rng: random.Random):
         textarea = page.locator('.compare-pane[data-pane="raw"] textarea')
         if textarea.count():
             textarea.fill(f"seeded correction {rng.randrange(1000)}")
-            page.locator("#btn-save-raw").click()
+            save = page.locator("#btn-save-raw")
+            expect(save).to_be_enabled()
+            save.click()
 
     def open_close_tropy():
         _tab(page, "main")
@@ -132,7 +135,10 @@ def _actions(page, rng: random.Random):
         _tab(page, "settings")
         backend = rng.choice(["auto", "ollama", "lm_studio"])
         page.locator("#set-ocr_backend").select_option(backend)
-        page.locator("#set-ocr_model").fill("stress-model")
+        # Local backends use the discovered-model selector. CI deliberately
+        # has no live model server, so exercise its supported Automatic choice
+        # rather than the hosted-backend free-text input, which is hidden.
+        page.locator("#pick-ocr_model").select_option("")
         page.locator("#btn-settings-save").click()
         expect(page.locator("#settings-saved")).to_contain_text("Saved", timeout=5000)
 

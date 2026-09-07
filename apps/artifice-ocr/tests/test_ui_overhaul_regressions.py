@@ -51,7 +51,9 @@ def test_simplified_settings_use_auto_detecting_defaults_and_sections():
     ):
         assert f'id="{section}"' in html
     assert 'id="detected-local-models"' in html
-    assert "load().then(runPreflight)" in js
+    assert 'id="pick-ocr_model"' in html
+    assert 'id="btn-refresh-models"' in html
+    assert "load().then(refreshLocalModels).then(runPreflight)" in js
 
 
 def test_fabricated_review_controls_and_export_are_present():

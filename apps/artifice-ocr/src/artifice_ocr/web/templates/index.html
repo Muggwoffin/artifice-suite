@@ -342,22 +342,29 @@
                 <select id="set-ocr_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
               </label>
               <label>OCR model
-                <input type="text" id="set-ocr_model" list="detected-local-models" placeholder="Automatic — detect a vision model">
+                <select id="pick-ocr_model" class="local-model-picker" aria-label="Available OCR models"></select>
+                <input type="text" id="set-ocr_model" class="model-name-input" list="detected-local-models" placeholder="Enter a model name">
               </label>
               <label>Cleanup service
                 <select id="set-cleanup_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
               </label>
               <label>Cleanup model
-                <input type="text" id="set-cleanup_model" list="detected-local-models" placeholder="Automatic — detect a text model">
+                <select id="pick-cleanup_model" class="local-model-picker" aria-label="Available cleanup models"></select>
+                <input type="text" id="set-cleanup_model" class="model-name-input" list="detected-local-models" placeholder="Enter a model name">
               </label>
               <label>Translation service
                 <select id="set-translate_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
               </label>
               <label>Translation model
-                <input type="text" id="set-translate_model" list="detected-local-models" placeholder="Automatic — detect a text model">
+                <select id="pick-translate_model" class="local-model-picker" aria-label="Available translation models"></select>
+                <input type="text" id="set-translate_model" class="model-name-input" list="detected-local-models" placeholder="Enter a model name">
               </label>
               <datalist id="detected-local-models"></datalist>
-              <p class="settings-field-help settings-full">Leave a model blank to let Artifice select from the models actually served on this computer.</p>
+              <div class="settings-model-discovery settings-full">
+                <span id="local-model-status" class="settings-field-help" aria-live="polite">Choose a local service to see its installed models.</span>
+                <button type="button" class="btn btn-small" id="btn-refresh-models">Refresh available models</button>
+              </div>
+              <p class="settings-field-help settings-full">Automatic lets Artifice choose a suitable installed model. Connection addresses are discovered for you when possible.</p>
               <details class="settings-disclosure settings-full">
                 <summary>Other providers and connection addresses <span class="settings-summary-hint">Optional</span></summary>
                 <div class="settings-disclosure-body settings-form-grid">
