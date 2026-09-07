@@ -42,8 +42,9 @@ preflight used by the app; `ARTIFICE_LIVE_OLLAMA_MODEL` and
 Tropy profile/project, sends the repository's archival fixture scan through
 both production OCR SDK paths, and publishes a commit status only after all
 three applications pass. The executable workflow refuses to freeze OCR for a
-commit without that status. `scripts/build-exe.sh artifice-ocr` runs the same
-live gate locally before deleting old artifacts or invoking PyInstaller.
+tagged release without that status. `scripts/build-exe.sh artifice-ocr` runs
+the same live gate locally before deleting old artifacts or invoking
+PyInstaller.
 
 The bootstrap downloads a checksum-pinned Node runtime, checks out the pinned
 Tropy revision, rebuilds Electron native modules, and creates Tropy's bundle.
