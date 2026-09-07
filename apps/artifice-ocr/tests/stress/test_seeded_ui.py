@@ -81,6 +81,7 @@ def _actions(page, rng: random.Random):
             expect(page.locator("#panel-preview .compare-title")).not_to_have_text(
                 "No document selected"
             )
+            expect(page.locator("#btn-reprocess")).to_be_enabled()
 
     def toggle_fabricated():
         preview_item()
@@ -93,7 +94,9 @@ def _actions(page, rng: random.Random):
         textarea = page.locator('.compare-pane[data-pane="raw"] textarea')
         if textarea.count():
             textarea.fill(f"seeded correction {rng.randrange(1000)}")
-            page.locator("#btn-save-raw").click()
+            save = page.locator("#btn-save-raw")
+            expect(save).to_be_enabled()
+            save.click()
 
     def open_close_tropy():
         _tab(page, "main")
