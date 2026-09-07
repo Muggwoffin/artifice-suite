@@ -1860,6 +1860,34 @@ def test_local_models_normalises_ollama_address_and_rejects_wrong_provider(clien
     assert calls == ["http://localhost:11434"]
 
 
+def test_local_models_normalises_lm_studio_api_path():
+    assert (
+        _settings_router._canonical_local_url(
+            "lm_studio", "http://localhost:1234/v1/models?source=settings#models"
+        )
+        == "http://localhost:1234/v1"
+    )
+
+
+def test_local_models_does_not_echo_rejected_address(client, monkeypatch):
+    monkeypatch.setattr(
+        _settings_router,
+        "_local_endpoint_candidates",
+        lambda *_args: ["https://models.example.com/v1"],
+    )
+    monkeypatch.setattr(
+        _settings_router._endpoint_policy,
+        "validate_url",
+        lambda _url: (_ for _ in ()).throw(_settings_router.EndpointRejected("public endpoint")),
+    )
+
+    res = client.get("/api/local-models?backend=lm_studio")
+
+    assert res.status_code == 200
+    assert res.json()["url"] == ""
+    assert res.json()["detail"] == "No permitted local endpoint address was provided."
+
+
 def test_local_models_rejects_non_local_backend(client):
     res = client.get("/api/local-models?backend=api_key")
     assert res.status_code == 400

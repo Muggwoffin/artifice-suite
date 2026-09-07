@@ -11,7 +11,7 @@ import socket
 import struct
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from fastapi import APIRouter, HTTPException
 from model_harness.contract import EndpointRejected
@@ -58,9 +58,14 @@ def _canonical_local_url(backend: str, raw: str) -> str:
     value = raw.strip().rstrip("/")
     if backend == "ollama":
         return normalise_base_url(value)
-    if not urlsplit(value).path.rstrip("/").endswith("/v1"):
-        value += "/v1"
-    return value
+    parts = urlsplit(value)
+    segments = [segment for segment in parts.path.split("/") if segment]
+    if "v1" in segments:
+        segments = segments[: segments.index("v1") + 1]
+    else:
+        segments.append("v1")
+    path = "/" + "/".join(segments)
+    return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
 
 
 def _local_endpoint_candidates(backend: str, requested_url: str) -> list[str]:
@@ -328,10 +333,12 @@ async def local_models(backend: str, url: str = "") -> dict:
 
     candidates = _local_endpoint_candidates(backend, url)
     allowed: list[str] = []
+    rejected = 0
     for candidate in candidates:
         try:
             _endpoint_policy.validate_url(candidate)
         except EndpointRejected:
+            rejected += 1
             continue
         allowed.append(candidate)
 
@@ -359,9 +366,13 @@ async def local_models(backend: str, url: str = "") -> dict:
     return {
         "ok": False,
         "backend": backend,
-        "url": candidates[0] if candidates else "",
+        "url": allowed[0] if allowed else "",
         "models": [],
-        "detail": f"Could not find a running {backend.replace('_', ' ').title()} server.",
+        "detail": (
+            "No permitted local endpoint address was provided."
+            if not allowed and rejected
+            else f"Could not find a running {backend.replace('_', ' ').title()} server."
+        ),
     }
 
 
