@@ -589,6 +589,23 @@ function setRunning(isRunning) {
   }
 }
 
+function setWorkflowStep(step) {
+  document.querySelectorAll(".workflow-rail [data-workflow-step]").forEach(item => {
+    const active = Number(item.dataset.workflowStep) === Number(step);
+    item.classList.toggle("active", active);
+    if (active) item.setAttribute("aria-current", "step");
+    else item.removeAttribute("aria-current");
+  });
+}
+
+function workflowStepForTab(tabName) {
+  if (tabName === "preview" || tabName === "history") return 3;
+  return running ? 2 : 1;
+}
+
+window.setWorkflowStep = setWorkflowStep;
+window.workflowStepForTab = workflowStepForTab;
+
 function applyRunStatus(status) {
   setRunning(!!status.running);
   if (status.paused) setPauseButtonLabel(true);
@@ -611,6 +628,7 @@ els["btn-run"].onclick = async () => {
     });
     if (result.output_dir) els["output-dir"].value = result.output_dir;
     setRunning(true);
+    setWorkflowStep(2);
     els["progress-bar"].style.width = "0%";
     const pv = els["progress-value"];
     if (pv) pv.textContent = "0%";
@@ -691,6 +709,7 @@ function connectEvents() {
         startTime = Date.now();
         finishedCount = 0;
         setRunning(true);
+        setWorkflowStep(2);
         els["stage-text"].textContent = "";
         break;
       case "stage_started":
@@ -736,6 +755,7 @@ document.querySelectorAll(".tab").forEach(tab => {
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
     tab.classList.add("active");
     document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+    setWorkflowStep(workflowStepForTab(tab.dataset.tab));
     TAB_ACTIVATE[tab.dataset.tab]?.();
   });
 });

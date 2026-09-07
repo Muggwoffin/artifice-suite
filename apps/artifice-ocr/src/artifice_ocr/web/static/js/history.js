@@ -26,6 +26,7 @@ const HistoryTab = (function () {
   const diffToggle = document.getElementById("btn-history-diff-toggle");
   const thumbStrip = document.getElementById("history-thumbnails");
   const fabricatedToggle = document.getElementById("history-fabricated-result");
+  const btnSendRun = document.getElementById("btn-history-send-tropy");
 
   let runsById = new Map();
   let itemsById = new Map();
@@ -71,6 +72,7 @@ const HistoryTab = (function () {
     itemsBody.innerHTML = "";
     itemsById.clear();
     currentItemIds = [];
+    if (btnSendRun) btnSendRun.disabled = true;
     if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
     clearCompare(compareContainer);
     clearProvenanceChips();
@@ -86,11 +88,14 @@ const HistoryTab = (function () {
     const runId = tr.dataset.id;
     const data = await api("GET", `/api/history/runs/${runId}/items`);
     renderItems(data.items);
+    const firstItem = itemsBody.querySelector("tr[data-id]");
+    if (firstItem) await selectItem(firstItem);
   }
 
   function renderItems(rows) {
     itemsById = new Map(rows.map((r) => [String(r.item_id), r]));
     currentItemIds = rows.map((r) => String(r.item_id));
+    if (btnSendRun) btnSendRun.disabled = currentItemIds.length === 0;
     currentItemId = null;
     selectedItemRow = null;
     if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
@@ -380,24 +385,10 @@ const HistoryTab = (function () {
     window.open("/api/history/fabricated-results", "_blank", "noopener");
   });
   document.getElementById("btn-history-delete").onclick = deleteSelectedRun;
-  document.getElementById("btn-history-send-tropy").onclick = async () => {
-    if (!currentItemId) { if (window.ArtificeToast) window.ArtificeToast.warning("Select a document first."); return; }
-    try {
-      const data = await api("GET", `/api/history/items/${currentItemId}`);
-      if (data.photo_id == null || !data.tropy_project_path) {
-        if (window.ArtificeToast) {
-          window.ArtificeToast.warning(
-            "This document was not added through Browse Project — nothing to send."
-          );
-        }
-        return;
-      }
-      // Open the export modal and pre-fill the summary stat fetch
-      if (typeof openTropyExport === "function") {
-        openTropyExport({ itemIds: [currentItemId], isHistory: true });
-      }
-    } catch (err) {
-      if (window.ArtificeToast) window.ArtificeToast.error(`Could not load item: ${err.message}`);
+  btnSendRun.onclick = () => {
+    if (!currentItemIds.length) return;
+    if (typeof openTropyExport === "function") {
+      openTropyExport({ itemIds: [...currentItemIds], isHistory: true });
     }
   };
   if (fabricatedToggle) fabricatedToggle.addEventListener("change", async () => {

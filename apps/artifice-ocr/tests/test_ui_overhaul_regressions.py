@@ -97,10 +97,26 @@ def test_tropy_handoff_can_detect_unsaved_editor_text():
     assert "hasUnsavedEdits" in history
 
 
-def test_history_tropy_handoff_uses_live_browse_provenance():
+def test_history_tropy_handoff_sends_the_open_run_through_shared_panel():
+    html = (_WEB / "templates" / "index.html").read_text(encoding="utf-8")
     history = (_WEB / "static" / "js" / "history.js").read_text(encoding="utf-8")
-    assert "data.photo_id == null || !data.tropy_project_path" in history
-    assert "data.tropy_exportable" not in history
+    assert "Send run to Tropy" in html
+    assert "if (firstItem) await selectItem(firstItem)" in history
+    assert "openTropyExport({ itemIds: [...currentItemIds], isHistory: true })" in history
+
+
+def test_workflow_rail_follows_navigation_processing_and_tropy_return():
+    html = (_WEB / "templates" / "index.html").read_text(encoding="utf-8")
+    app = (_WEB / "static" / "js" / "app.js").read_text(encoding="utf-8")
+    tropy = (_WEB / "static" / "js" / "tropy.js").read_text(encoding="utf-8")
+
+    assert html.count("data-workflow-step=") == 4
+    assert "function setWorkflowStep(step)" in app
+    assert "setWorkflowStep(workflowStepForTab(tab.dataset.tab))" in app
+    assert "setWorkflowStep(2)" in app
+    assert "window.workflowStepForTab = workflowStepForTab" in app
+    assert "window.setWorkflowStep?.(4)" in tropy
+    assert "window.workflowStepForTab(activeTab)" in tropy
 
 
 def test_tropy_workspace_exposes_only_live_browse_and_developer_api():
