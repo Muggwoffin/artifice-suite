@@ -110,7 +110,9 @@ globalThis.api = async (method, path, body) => {
   if (element("set-lm_studio_url").row.style.display !== "") throw new Error("LM row hidden");
   if (element("set-ollama_url").row.style.display !== "none") throw new Error("Ollama row visible");
   if (element("pick-ocr_model").hidden) throw new Error("LM model picker hidden");
-  if (!element("pick-ocr_model").innerHTML.includes("vision-live")) throw new Error("LM models absent");
+  if (!element("pick-ocr_model").innerHTML.includes("vision-live")) {
+    throw new Error("LM models absent");
+  }
 
   element("pick-ocr_model").value = "vision-live";
   element("pick-ocr_model").dispatch("change");
