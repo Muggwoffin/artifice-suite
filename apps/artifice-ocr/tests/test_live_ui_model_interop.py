@@ -50,8 +50,8 @@ def _free_port() -> int:
         ),
     ],
 )
-def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key):
-    """Run one real OCR job from the visible Source controls for each backend."""
+def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key, monkeypatch):
+    """Choose a discovered model in Settings, save it, then run real OCR."""
     url = os.environ.get(url_env, "").strip()
     model = os.environ.get(model_env, "").strip()
     if not url:
@@ -63,6 +63,7 @@ def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key):
     shutil.copyfile(Path(__file__).parent / "fixtures" / "proceedings_usnm_173.jpg", image)
     output = case_dir / "output"
     job = JobItem(path=str(image))
+    monkeypatch.setattr(config, "_SETTINGS_PATH", case_dir / "settings.json")
 
     config.reset()
     config.load_config(include_user_settings=False)
@@ -80,6 +81,13 @@ def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key):
         }
     )
     _resolution.reset()
+    _resolution.resolve_models_for_run(stages={"ocr"})
+    expected_model = _resolution.model_for("vision")
+    _resolution.reset()
+    # Start where a user does. The browser must select and persist the
+    # backend/model pair; injecting it here would let a broken Settings route
+    # pass this release gate again.
+    config.apply_overrides({"ocr_backend": "auto", "ocr_model": ""})
     state.clear()
     state.runner = None
     state.run_id = None
@@ -116,6 +124,22 @@ def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key):
             overlay = page.locator(".byom-overlay")
             if overlay.count():
                 page.locator(".byom-close").click()
+            page.locator('.shell-nav a[href="/?view=settings"]').click()
+            expect(page.locator("#panel-settings")).to_have_class(
+                re.compile("active"), timeout=10_000
+            )
+            expect(page.locator("#settings-saved")).to_have_text("No changes", timeout=20_000)
+            page.locator("#set-ocr_backend").select_option(backend)
+            model_option = page.locator(f'#pick-ocr_model option[value="{expected_model}"]')
+            expect(model_option).to_have_count(1, timeout=20_000)
+            page.locator("#pick-ocr_model").select_option(expected_model)
+            page.locator("#btn-settings-save").click()
+            expect(page.locator("#settings-saved")).to_have_text("Saved.", timeout=10_000)
+            assert config.get("ocr_backend") == backend
+            assert config.get("ocr_model") == expected_model
+            assert config.get(url_key) == url
+
+            page.locator('.shell-nav a[href="/?view=main"]').click()
             expect(page.locator("#queue-body tr[data-id]")).to_have_count(1)
             if page.locator("#stage-cleanup").is_checked():
                 page.locator("#stage-cleanup").uncheck()

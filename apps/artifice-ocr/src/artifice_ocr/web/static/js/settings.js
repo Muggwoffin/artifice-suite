@@ -94,6 +94,15 @@ const SettingsTab = (function () {
   const savedLabel = document.getElementById("settings-saved");
   const healthPanel = document.getElementById("health-panel");
   const detectedModels = document.getElementById("detected-local-models");
+  const localModelStatus = document.getElementById("local-model-status");
+
+  const MODEL_BACKENDS = {
+    ocr_model: "ocr_backend",
+    cleanup_model: "cleanup_backend",
+    translate_model: "translate_backend",
+  };
+  const discoveredModels = new Map();
+  let discoveryGeneration = 0;
 
   const approvedFoldersList = document.getElementById("approved-folders-list");
   const approvedFoldersStatus = document.getElementById("approved-folders-status");
@@ -133,7 +142,99 @@ const SettingsTab = (function () {
     updateDocTypeHint();
     updateConnectionVisibility();
     updateContextSizeState();
+    renderModelControls();
     refreshTesseractStatus();
+  }
+
+  function modelsForBackend(backend) {
+    if (backend === "auto") {
+      return [...new Set([
+        ...(discoveredModels.get("ollama") || []),
+        ...(discoveredModels.get("lm_studio") || []),
+      ])].sort();
+    }
+    return (discoveredModels.get(backend) || []).slice().sort();
+  }
+
+  function renderModelControl(modelKey) {
+    const backend = el(MODEL_BACKENDS[modelKey]).value;
+    const input = el(modelKey);
+    const picker = document.getElementById(`pick-${modelKey}`);
+    if (!input || !picker) return;
+
+    const local = backend === "auto" || backend === "ollama" || backend === "lm_studio";
+    picker.hidden = !local;
+    input.hidden = local;
+    if (!local) return;
+
+    const current = input.value || "";
+    const models = modelsForBackend(backend);
+    const options = [{ value: "", label: "Automatic — choose a suitable installed model" }];
+    if (current && !models.includes(current)) {
+      options.push({ value: current, label: `${current} (currently selected)` });
+    }
+    options.push(...models.map(name => ({ value: name, label: name })));
+    picker.innerHTML = options.map(option =>
+      `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`
+    ).join("");
+    picker.value = current;
+  }
+
+  function renderModelControls() {
+    Object.keys(MODEL_BACKENDS).forEach(renderModelControl);
+  }
+
+  function renderDiscoveredModelList() {
+    if (!detectedModels) return;
+    const names = new Set();
+    for (const models of discoveredModels.values()) {
+      for (const name of models) names.add(name);
+    }
+    detectedModels.innerHTML = [...names].sort()
+      .map(name => `<option value="${escapeHtml(name)}"></option>`).join("");
+  }
+
+  async function refreshLocalModels() {
+    const generation = ++discoveryGeneration;
+    const backends = activeBackends();
+    const wanted = ["ollama", "lm_studio"].filter(backend => backends.has(backend));
+    if (!wanted.length) {
+      if (localModelStatus) localModelStatus.textContent =
+        "Model names for hosted services are entered manually.";
+      renderModelControls();
+      return;
+    }
+
+    if (localModelStatus) localModelStatus.textContent = "Finding local services and models…";
+    const results = await Promise.all(wanted.map(async backend => {
+      const urlKey = backend === "ollama" ? "ollama_url" : "lm_studio_url";
+      const url = el(urlKey).value || "";
+      try {
+        return await api("GET", `/api/local-models?backend=${encodeURIComponent(backend)}&url=${encodeURIComponent(url)}`);
+      } catch (error) {
+        return { ok: false, backend, models: [], detail: error.message };
+      }
+    }));
+    if (generation !== discoveryGeneration) return;
+
+    const summaries = [];
+    for (const result of results) {
+      discoveredModels.set(result.backend, result.ok ? result.models || [] : []);
+      if (result.ok) {
+        const urlKey = result.backend === "ollama" ? "ollama_url" : "lm_studio_url";
+        const urlInput = el(urlKey);
+        if (urlInput && result.url && urlInput.value !== result.url) {
+          urlInput.value = result.url;
+          markChanged();
+        }
+        summaries.push(`${result.backend === "ollama" ? "Ollama" : "LM Studio"}: ${(result.models || []).length} model${(result.models || []).length === 1 ? "" : "s"}`);
+      } else {
+        summaries.push(`${result.backend === "ollama" ? "Ollama" : "LM Studio"}: not found`);
+      }
+    }
+    renderDiscoveredModelList();
+    renderModelControls();
+    if (localModelStatus) localModelStatus.textContent = summaries.join(" · ");
   }
 
   // Report whether the Tesseract binary is actually detected. A control that
@@ -380,13 +481,11 @@ const SettingsTab = (function () {
   }
 
   function updateDetectedModels(health) {
-    if (!detectedModels) return;
-    const names = new Set();
     for (const key of ["ollama", "lm_studio"]) {
-      for (const name of health[key]?.models || []) names.add(name);
+      if (health[key]?.ok) discoveredModels.set(key, health[key].models || []);
     }
-    detectedModels.innerHTML = [...names].sort()
-      .map(name => `<option value="${escapeHtml(name)}"></option>`).join("");
+    renderDiscoveredModelList();
+    renderModelControls();
   }
 
   async function runPreflight() {
@@ -437,7 +536,18 @@ const SettingsTab = (function () {
 
   // Wire up backend dropdown change events to update connection visibility
   ["ocr_backend", "cleanup_backend", "translate_backend"].forEach(key => {
-    el(key).addEventListener("change", updateConnectionVisibility);
+    el(key).addEventListener("change", () => {
+      updateConnectionVisibility();
+      renderModelControls();
+      refreshLocalModels();
+    });
+  });
+
+  Object.keys(MODEL_BACKENDS).forEach(modelKey => {
+    document.getElementById(`pick-${modelKey}`)?.addEventListener("change", event => {
+      el(modelKey).value = event.target.value;
+      markChanged();
+    });
   });
 
   // Context size follows the *vision* backend specifically: the OCR stage is
@@ -449,6 +559,7 @@ const SettingsTab = (function () {
   document.getElementById("btn-settings-save").onclick = save;
   document.getElementById("btn-settings-reset").onclick = resetDefaults;
   document.getElementById("btn-preflight").onclick = runPreflight;
+  document.getElementById("btn-refresh-models").onclick = refreshLocalModels;
   document.getElementById("btn-approved-folder-add").onclick = addApprovedFolder;
   const settingsSectionButtons = document.querySelectorAll
     ? document.querySelectorAll("[data-settings-target]") : [];
@@ -482,7 +593,7 @@ const SettingsTab = (function () {
   TAB_ACTIVATE.settings = () => {
     if (!loaded) {
       loaded = true;
-      load().then(runPreflight);
+      load().then(refreshLocalModels).then(runPreflight);
     }
   };
   // app.js applies ?view=settings before this deferred tab module loads.

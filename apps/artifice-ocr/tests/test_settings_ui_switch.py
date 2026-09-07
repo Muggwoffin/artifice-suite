@@ -84,6 +84,12 @@ globalThis.api = async (method, path, body) => {
   calls.push({ method, path, body });
   if (path === "/api/config" && method === "GET") return fields;
   if (path === "/api/tesseract/status") return { available: false };
+  if (path.startsWith("/api/local-models")) {
+    const backend = new URL(path, "http://artifice.test").searchParams.get("backend");
+    return backend === "lm_studio"
+      ? { ok: true, backend, url: fields.lm_studio_url, models: ["vision-live", "text-live"] }
+      : { ok: true, backend, url: fields.ollama_url, models: ["ollama-live"] };
+  }
   return { ok: true };
 };
 """
@@ -100,8 +106,14 @@ globalThis.api = async (method, path, body) => {
     element("set-" + key).value = "lm_studio";
   }
   element("set-ocr_backend").dispatch("change");
+  await element("btn-refresh-models").onclick();
   if (element("set-lm_studio_url").row.style.display !== "") throw new Error("LM row hidden");
   if (element("set-ollama_url").row.style.display !== "none") throw new Error("Ollama row visible");
+  if (element("pick-ocr_model").hidden) throw new Error("LM model picker hidden");
+  if (!element("pick-ocr_model").innerHTML.includes("vision-live")) throw new Error("LM models absent");
+
+  element("pick-ocr_model").value = "vision-live";
+  element("pick-ocr_model").dispatch("change");
 
   await element("btn-settings-save").onclick();
   const post = calls.find((call) => call.method === "POST" && call.path === "/api/config");
@@ -109,6 +121,7 @@ globalThis.api = async (method, path, body) => {
   if (post.body.lm_studio_url !== fields.lm_studio_url) throw new Error("LM URL omitted");
   if (Object.hasOwn(post.body, "ollama_url")) throw new Error("inactive Ollama URL posted");
   if (post.body.ocr_backend !== "lm_studio") throw new Error("backend switch omitted");
+  if (post.body.ocr_model !== "vision-live") throw new Error("discovered model choice omitted");
   console.log("settings-switch-ok");
 })().catch((error) => { console.error(error.stack); process.exit(1); });
 """
