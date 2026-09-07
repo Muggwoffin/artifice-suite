@@ -30,6 +30,13 @@ from contextlib import suppress
 from pathlib import Path
 
 
+def _subprocess_window_options() -> dict[str, int]:
+    """Keep Windows security helpers from flashing console windows."""
+    if sys.platform != "win32":
+        return {}
+    return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+
+
 def write_private_json(path: Path, data: object) -> None:
     """Persist *data* as JSON at *path*, restricting access to the current user.
 
@@ -224,6 +231,7 @@ def _run_powershell(cmd: str) -> subprocess.CompletedProcess[str]:
                 text=True,
                 check=True,
                 env=env,
+                **_subprocess_window_options(),
             )
         except (FileNotFoundError, subprocess.CalledProcessError) as exc:
             last_exc = exc
@@ -385,6 +393,7 @@ def _get_current_user_sid() -> str:
         capture_output=True,
         text=True,
         check=True,
+        **_subprocess_window_options(),
     )
     # Output format:  "DOMAIN\\username","S-1-5-21-..."
     parts = result.stdout.strip().rsplit(",", 1)
@@ -403,6 +412,7 @@ def _run_icacls(path: Path, args: list[str]) -> None:
         capture_output=True,
         text=True,
         check=True,
+        **_subprocess_window_options(),
     )
 
 

@@ -51,7 +51,9 @@
 
 .toast-container {
   position: fixed;
-  top: var(--space-5);
+  /* Keep transient notices below the suite title bar so model and window
+     controls remain clickable while a notice is visible. */
+  top: calc(var(--shell-title, 3rem) + var(--space-5));
   right: var(--space-5);
   /* Above the app's own modal overlay (draft's .modal-overlay: 500) and
      skip-link (600, apps/artifice-draft/.../app.css:125) — a status about a

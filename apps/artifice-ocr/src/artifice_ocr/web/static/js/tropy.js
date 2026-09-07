@@ -374,6 +374,7 @@ async function openTropyExport(context) {
     tropy[id].textContent = "0";
   });
   tropy["modal-tropy-send"].classList.remove("hidden");
+  window.setWorkflowStep?.(4);
   tropy["tropy-writeback-preview"].classList.add("hidden");
   requestAnimationFrame(() => tropy["tropy-export-stage"].focus());
   await previewNotes();
@@ -383,6 +384,8 @@ function closeSend() {
   tropy["modal-tropy-send"].classList.add("hidden");
   sendContext = null;
   notePreview = null;
+  const activeTab = document.querySelector(".tab.active")?.dataset.tab;
+  window.setWorkflowStep?.(activeTab === "preview" || activeTab === "history" ? 3 : 1);
   sendReturnFocus?.focus?.();
 }
 

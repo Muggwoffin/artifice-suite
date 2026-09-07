@@ -38,6 +38,15 @@ def test_shell_javascript_exposes_documented_api():
         assert member in source
 
 
+def test_frameless_window_resize_grip_has_runtime_styles():
+    css = (files(shared_ui) / "assets/shell.css").read_text()
+    javascript = (files(shared_ui) / "assets/window-controls.js").read_text()
+
+    assert ".pywebview-active .window-resize-grip" in css
+    assert 'grip.id = "windowResizeGrip"' in javascript
+    assert "window.pywebview.api.resize" in javascript
+
+
 def test_every_app_uses_the_suite_shell():
     template_bases = (
         "apps/artifice-ocr/src/artifice_ocr/web/templates/base.html",

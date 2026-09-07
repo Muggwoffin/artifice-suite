@@ -13,7 +13,22 @@ import sys
 from pathlib import Path
 
 import pytest
+import secure_io
 from secure_io import is_restricted, restrict_to_current_user, write_private_json
+
+
+def test_windows_subprocesses_are_consoleless(monkeypatch):
+    monkeypatch.setattr(secure_io.sys, "platform", "win32")
+    monkeypatch.setattr(secure_io.subprocess, "CREATE_NO_WINDOW", 0x08000000, raising=False)
+
+    assert secure_io._subprocess_window_options() == {"creationflags": 0x08000000}
+
+
+def test_non_windows_subprocesses_do_not_receive_windows_flags(monkeypatch):
+    monkeypatch.setattr(secure_io.sys, "platform", "linux")
+
+    assert secure_io._subprocess_window_options() == {}
+
 
 # ---------------------------------------------------------------------------
 # write_private_json

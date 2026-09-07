@@ -22,10 +22,10 @@
   <div class="panels">
 
     <ol class="workflow-rail" aria-label="Tropy round trip">
-      <li class="active"><span>1</span><strong>Source</strong><small>Choose Tropy pages</small></li>
-      <li><span>2</span><strong>Process</strong><small>OCR and clean</small></li>
-      <li><span>3</span><strong>Review</strong><small>Edit beside the scan</small></li>
-      <li><span>4</span><strong>Return</strong><small>Add notes or compile</small></li>
+      <li class="active" data-workflow-step="1" aria-current="step"><span>1</span><strong>Source</strong><small>Choose Tropy pages</small></li>
+      <li data-workflow-step="2"><span>2</span><strong>Process</strong><small>OCR and clean</small></li>
+      <li data-workflow-step="3"><span>3</span><strong>Review</strong><small>Edit beside the scan</small></li>
+      <li data-workflow-step="4"><span>4</span><strong>Return</strong><small>Add notes or compile</small></li>
     </ol>
 
     <!-- ================================================================ MAIN -->
@@ -229,7 +229,7 @@
             <input type="text" id="history-search" placeholder="Find file&hellip;" style="padding:0.4rem 0.6rem; border-radius:var(--radius-sm); border:1px solid var(--rule); background:var(--paper-recessed);">
             <button type="button" class="btn" id="btn-history-refresh">Refresh</button>
             <button type="button" class="btn" id="btn-history-export-fabricated" title="Open reviewer-labelled OCR examples as JSON">Export flagged OCR</button>
-            <button type="button" class="btn" id="btn-history-send-tropy" title="Send selected document back to Tropy">Send to Tropy</button>
+            <button type="button" class="btn" id="btn-history-send-tropy" title="Add notes for every eligible document in this run to Tropy" disabled>Send run to Tropy&hellip;</button>
             <button type="button" class="btn danger" id="btn-history-delete">Delete Run</button>
           </div>
         </div>

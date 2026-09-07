@@ -103,6 +103,19 @@ class TestByomState:
         assert r.status_code == 200
         assert r.json()["configured"] is True
 
+    def test_lm_studio_backend_is_reported_as_the_configured_endpoint(self, client):
+        config.apply_overrides(
+            {
+                "ocr_backend": "lm_studio",
+                "lm_studio_url": "http://localhost:1234/v1",
+            }
+        )
+
+        body = client.get("/api/byom/state").json()
+
+        assert body["configured"] is True
+        assert body["endpoint"] == "http://localhost:1234/v1"
+
     def test_recommendations_have_correct_fields(self, client):
         """Recommendations use model_name, provider, vision, min_vram_gb, ethos_badges, role, notes."""
         r = client.get("/api/byom/state")
@@ -276,6 +289,30 @@ class TestByomTest:
             # Config was NOT saved.
             state_r = client.get("/api/byom/state")
             assert state_r.json()["configured"] is False
+
+    def test_successful_lm_studio_probe_selects_the_local_backend(self, client):
+        with patch("artifice_ocr.web.routers.byom.probe_endpoint") as mock_probe:
+            mock_probe.return_value = ProbeResult(
+                url="http://localhost:1234/v1",
+                reachable=True,
+                provider="lm-studio",
+                models=("local-vision-model",),
+                hint=None,
+            )
+
+            response = client.post(
+                "/api/byom/test",
+                json={"url": "http://localhost:1234/v1", "api_key": ""},
+            )
+
+        assert response.status_code == 200
+        saved = config.load_user_settings()
+        assert saved["lm_studio_url"] == "http://localhost:1234/v1"
+        assert saved["ocr_backend"] == "lm_studio"
+        assert saved["cleanup_backend"] == "lm_studio"
+        assert saved["translate_backend"] == "lm_studio"
+        assert "api_base_url" not in saved
+        assert client.get("/api/byom/state").json()["endpoint"] == "http://localhost:1234/v1"
 
     def test_api_key_persisted_on_success(self, client):
         """The api_key is saved via save_user_settings → secure_io."""
