@@ -157,6 +157,11 @@ const PreviewTab = (function () {
     refreshList(false);
     select.value = id;
     currentItemId = id;
+    if (btnSaveRaw) btnSaveRaw.disabled = true;
+    if (btnSaveCleaned) btnSaveCleaned.disabled = true;
+    if (btnSaveTranslated) btnSaveTranslated.disabled = true;
+    if (btnReprocess) btnReprocess.disabled = true;
+    if (fabricatedToggle) fabricatedToggle.disabled = true;
 
     try {
       const data = await api("GET", `/api/queue/${id}/preview`);

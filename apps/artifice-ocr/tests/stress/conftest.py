@@ -72,7 +72,15 @@ def stress_server(tmp_path):
     if state._history is not None:
         state._history.close()
         state._history = None
-    seed_completed_queue(tmp_path)
+    items = seed_completed_queue(tmp_path)
+    run_id = state.history.start_run(
+        stages=["ocr", "cleanup", "translate"],
+        output_dir=str(tmp_path / "output"),
+        total=len(items),
+    )
+    for item in items:
+        state.history.record_item(run_id, item)
+    state.history.finish_run(run_id, succeeded=len(items), failed=0, elapsed=1.25)
 
     port = _free_port()
     server = uvicorn.Server(

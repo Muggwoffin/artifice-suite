@@ -33,6 +33,7 @@ const HistoryTab = (function () {
   let selectedRunRow = null;
   let selectedItemRow = null;
   let currentItemId = null;
+  let itemRequest = 0;
   const originalText = { raw: "", cleaned: "", translated: "" };
   let autoSaveTimer = null;
   let currentItemIds = [];
@@ -299,12 +300,14 @@ const HistoryTab = (function () {
   // ---- item selection ----
 
   async function selectItem(tr) {
+    const request = ++itemRequest;
     selectedItemRow?.classList.remove("selected");
     tr.classList.add("selected");
     selectedItemRow = tr;
     currentItemId = tr.dataset.id;
 
     const data = await api("GET", `/api/history/items/${currentItemId}`);
+    if (request !== itemRequest) return;
     renderCompare(compareContainer, {
       title: data.name, raw: data.raw, original_raw: data.original_raw || "",
       cleaned: data.cleaned, original_cleaned: data.original_cleaned || "",
