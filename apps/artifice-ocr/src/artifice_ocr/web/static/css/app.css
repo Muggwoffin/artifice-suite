@@ -811,7 +811,9 @@ select.select, .output-row select, .run-row select, label select {
 
 .compare-pane-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 0.35rem 0.6rem;
   padding: 0.5rem 0.9rem 0.25rem;
   font-size: 0.72rem;
   font-weight: 600;
@@ -902,7 +904,14 @@ select.select, .output-row select, .run-row select, label select {
   font-style: italic;
 }
 
-.compare-pane-actions { display: flex; align-items: center; gap: 0.6rem; }
+.compare-pane-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  min-width: 0;
+}
 
 .raw-edit {
   width: 100%;

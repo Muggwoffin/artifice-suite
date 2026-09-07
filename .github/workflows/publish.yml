@@ -137,9 +137,9 @@ jobs:
             stage: wave-1-shared
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           python-version: "3.12"
 
@@ -165,7 +165,7 @@ jobs:
           github.event_name == 'workflow_dispatch'
           && inputs.target == 'testpypi'
           && (inputs.stage == 'all' || inputs.stage == matrix.stage)
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
           repository-url: https://test.pypi.org/legacy/
@@ -180,7 +180,7 @@ jobs:
           github.event_name == 'push'
           || (inputs.target == 'pypi'
               && (inputs.stage == 'all' || inputs.stage == matrix.stage))
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
           # WHY skip-existing IS ON, AND WHAT IT COSTS
@@ -232,9 +232,9 @@ jobs:
             stage: wave-3-apps
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           python-version: "3.12"
 
@@ -254,7 +254,7 @@ jobs:
           github.event_name == 'workflow_dispatch'
           && inputs.target == 'testpypi'
           && (inputs.stage == 'all' || inputs.stage == matrix.stage)
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
           repository-url: https://test.pypi.org/legacy/
@@ -269,7 +269,7 @@ jobs:
           github.event_name == 'push'
           || (inputs.target == 'pypi'
               && (inputs.stage == 'all' || inputs.stage == matrix.stage))
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           packages-dir: ${{ matrix.directory }}/dist
           # WHY skip-existing IS ON, AND WHAT IT COSTS

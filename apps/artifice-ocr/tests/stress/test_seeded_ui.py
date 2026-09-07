@@ -41,6 +41,10 @@ def _tab(page, name: str) -> None:
     expect(page.locator(f"#panel-{name}")).to_be_visible()
     if name == "settings":
         expect(page.locator("#set-max_ocr_workers")).not_to_have_value("")
+    expected_step = 3 if name in {"preview", "history"} else 1
+    expect(page.locator(f'[data-workflow-step="{expected_step}"]')).to_have_attribute(
+        "aria-current", "step"
+    )
 
 
 def _assert_invariants(page) -> None:
@@ -73,6 +77,23 @@ def _actions(page, rng: random.Random):
         page.locator("#select-all-rows").click()
         page.locator("#select-all-rows").click()
 
+    def reorder_queue():
+        _tab(page, "main")
+        rows = page.locator("#queue-body tr[data-id]")
+        if rows.count() > 1:
+            before = rows.evaluate_all("nodes => nodes.map(node => node.dataset.id)")
+            rows.first.drag_to(rows.last)
+            expect(rows).to_have_count(len(before))
+            page.wait_for_function(
+                """before => JSON.stringify(
+                    [...document.querySelectorAll('#queue-body tr[data-id]')]
+                      .map(node => node.dataset.id)
+                  ) !== JSON.stringify(before)""",
+                arg=before,
+            )
+            after = rows.evaluate_all("nodes => nodes.map(node => node.dataset.id)")
+            assert after != before
+
     def preview_item():
         _tab(page, "preview")
         picker = page.locator("#preview-item-select")
@@ -91,12 +112,45 @@ def _actions(page, rng: random.Random):
 
     def edit_review_text():
         preview_item()
-        textarea = page.locator('.compare-pane[data-pane="raw"] textarea')
+        textarea = page.locator('#panel-preview .compare-pane[data-pane="raw"] textarea')
         if textarea.count():
-            textarea.fill(f"seeded correction {rng.randrange(1000)}")
+            textarea.fill(textarea.input_value() + f"\nseeded correction {rng.randrange(1000)}")
             save = page.locator("#btn-save-raw")
             expect(save).to_be_enabled()
             save.click()
+
+    def history_review_text():
+        _tab(page, "history")
+        run = page.locator("#history-runs-body tr[data-id]").first
+        expect(run).to_be_visible()
+        run.click()
+        items = page.locator("#history-items-body tr[data-id]")
+        expect(items).to_have_count(4)
+        row = items.nth(rng.randrange(items.count()))
+        expected_title = row.locator("td").first.inner_text()
+        row.click()
+        expect(page.locator("#panel-history .compare-title")).to_have_text(expected_title)
+        textarea = page.locator('#panel-history .compare-pane[data-pane="raw"] textarea')
+        textarea.fill(textarea.input_value() + f"\nhistory correction {rng.randrange(1000)}")
+        save = page.locator("#btn-history-save-raw")
+        expect(save).to_be_enabled()
+        save.click()
+        expect(save).to_be_disabled()
+
+    def history_open_tropy_panel():
+        _tab(page, "history")
+        run = page.locator("#history-runs-body tr[data-id]").first
+        expect(run).to_be_visible()
+        run.click()
+        expect(page.locator("#history-items-body tr[data-id]")).to_have_count(4)
+        send = page.locator("#btn-history-send-tropy")
+        expect(send).to_be_enabled()
+        send.click()
+        expect(page.locator("#modal-tropy-send")).to_be_visible()
+        expect(page.locator('[data-workflow-step="4"]')).to_have_attribute("aria-current", "step")
+        page.locator("#btn-send-tropy-close-writeback").click()
+        expect(page.locator("#modal-tropy-send")).to_be_hidden()
+        expect(page.locator('[data-workflow-step="3"]')).to_have_attribute("aria-current", "step")
 
     def open_close_tropy():
         _tab(page, "main")
@@ -155,13 +209,24 @@ def _actions(page, rng: random.Random):
         _dismiss_onboarding(page)
         expect(page.locator(".panel.active")).to_be_visible()
 
+    def resize_viewport():
+        page.set_viewport_size({"width": 800, "height": 700})
+        expect(page.locator(".app-shell")).to_be_visible()
+        assert page.evaluate(
+            "document.documentElement.scrollWidth <= document.documentElement.clientWidth"
+        )
+        page.set_viewport_size({"width": 1440, "height": 1000})
+
     return [
         switch_tab,
         toggle_selection,
         select_all_twice,
+        reorder_queue,
         preview_item,
         toggle_fabricated,
         edit_review_text,
+        history_review_text,
+        history_open_tropy_panel,
         open_close_tropy,
         open_close_connection_setup,
         malformed_tropy_path,
@@ -169,7 +234,26 @@ def _actions(page, rng: random.Random):
         settings_round_trip,
         invalid_setting,
         reload_page,
+        resize_viewport,
     ]
+
+
+@pytest.mark.ui_stress
+def test_every_browser_action_once(stress_server, chromium_browser):
+    """Keep random coverage honest by guaranteeing every action has one CI execution."""
+    context = chromium_browser.new_context(viewport={"width": 1440, "height": 1000})
+    context.set_default_timeout(5000)
+    page = context.new_page()
+    page.on("dialog", lambda dialog: dialog.accept())
+    page.goto(stress_server, wait_until="domcontentloaded")
+    _dismiss_onboarding(page)
+    expect(page.locator("#queue-body tr[data-id]")).to_have_count(4)
+    try:
+        for action in _actions(page, random.Random(918_273)):
+            action()
+            _assert_invariants(page)
+    finally:
+        context.close()
 
 
 @pytest.mark.ui_stress

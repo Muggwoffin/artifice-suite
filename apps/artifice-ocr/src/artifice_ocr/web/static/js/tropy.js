@@ -320,6 +320,7 @@ async function previewNotes() {
   tropy["btn-writeback-commit"].disabled = true;
   if (hasUnsavedText()) return showNoteStatus("Save the current edits before sending this text to Tropy.", "error");
   showNoteStatus("Checking the open Tropy project…");
+  tropy["tropy-export-stage"].disabled = true;
   tropy["btn-writeback-preview"].disabled = true;
   tropy["btn-writeback-preview"].setAttribute("aria-busy", "true");
   try {
@@ -338,6 +339,7 @@ async function previewNotes() {
   } catch (error) {
     showNoteStatus("Could not check Tropy: " + error.message, "error");
   } finally {
+    tropy["tropy-export-stage"].disabled = false;
     tropy["btn-writeback-preview"].disabled = false;
     tropy["btn-writeback-preview"].removeAttribute("aria-busy");
   }
