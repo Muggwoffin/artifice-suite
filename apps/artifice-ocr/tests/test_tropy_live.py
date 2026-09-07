@@ -287,24 +287,26 @@ def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
                 # Keep the simultaneous browser on CPU rendering so Chromium
                 # cannot destabilise Tropy's GPU process during this gate.
                 browser = playwright.chromium.launch(headless=True, args=["--disable-gpu"])
-                page = browser.new_page(viewport={"width": 1440, "height": 1000})
-                page.goto(artifice_url, wait_until="domcontentloaded")
-                expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
-                    "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
-                )
-                if page.locator(".byom-overlay").count():
-                    page.locator(".byom-close").click()
-                page.locator("#btn-add-tropy").click()
-                expect(page.locator("#modal-tropy-add")).to_be_visible()
-                page.locator("#tropy-browse-path").fill(str(project))
-                page.locator("#btn-tropy-browse-load").click()
-                expect(
-                    page.locator("#tropy-browse-item-list .tropy-browse-page-check")
-                ).to_have_count(1, timeout=15_000)
-                page.locator("#tropy-browse-item-list .tropy-browse-page-check").check()
-                page.locator("#btn-tropy-browse-enqueue").click()
-                expect(page.locator("#queue-body tr[data-id]")).to_have_count(1, timeout=10_000)
-                browser.close()
+                try:
+                    page = browser.new_page(viewport={"width": 1440, "height": 1000})
+                    page.goto(artifice_url, wait_until="domcontentloaded")
+                    expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
+                        "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
+                    )
+                    if page.locator(".byom-overlay").count():
+                        page.locator(".byom-close").click()
+                    page.locator("#btn-add-tropy").click()
+                    expect(page.locator("#modal-tropy-add")).to_be_visible()
+                    page.locator("#tropy-browse-path").fill(str(project))
+                    page.locator("#btn-tropy-browse-load").click()
+                    expect(
+                        page.locator("#tropy-browse-item-list .tropy-browse-page-check")
+                    ).to_have_count(1, timeout=15_000)
+                    page.locator("#tropy-browse-item-list .tropy-browse-page-check").check()
+                    page.locator("#btn-tropy-browse-enqueue").click()
+                    expect(page.locator("#queue-body tr[data-id]")).to_have_count(1, timeout=10_000)
+                finally:
+                    browser.close()
 
             jobs = list(state.items)
             assert len(jobs) == 1
@@ -333,51 +335,53 @@ def test_real_tropy_browse_queue_and_note_round_trip(tmp_path):
             config.apply_overrides({"tropy_api_port": write_port})
             with _running_artifice_web() as artifice_url, sync_playwright() as playwright:
                 browser = playwright.chromium.launch(headless=True, args=["--disable-gpu"])
-                page = browser.new_page(viewport={"width": 1440, "height": 1000})
-                page.goto(artifice_url, wait_until="domcontentloaded")
-                expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
-                    "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
-                )
-                if page.locator(".byom-overlay").count():
-                    page.locator(".byom-close").click()
-                page.locator('.shell-nav a[href="/?view=history"]').click()
-                run = page.locator("#history-runs-body tr[data-id]").first
-                expect(run).to_be_visible(timeout=10_000)
-                run.click()
-                item = page.locator(f'#history-items-body tr[data-id="{history_item_id}"]')
-                expect(item).to_be_visible()
-                item.click()
-                expect(page.locator("#panel-history .compare-title")).to_have_text(jobs[0].name)
-                # Choose the only populated stage before Tropy starts. The
-                # hidden modal retains this value, avoiding a second preview
-                # request during Tropy 1.17's short stable API window.
-                stage = page.locator("#tropy-export-stage")
-                stage.evaluate("element => { element.value = 'raw_ocr'; }")
+                try:
+                    page = browser.new_page(viewport={"width": 1440, "height": 1000})
+                    page.goto(artifice_url, wait_until="domcontentloaded")
+                    expect(page.locator('[data-shell-action="model"]')).to_have_attribute(
+                        "data-state", re.compile("^(configured|unconfigured)$"), timeout=15_000
+                    )
+                    if page.locator(".byom-overlay").count():
+                        page.locator(".byom-close").click()
+                    page.locator('.shell-nav a[href="/?view=history"]').click()
+                    run = page.locator("#history-runs-body tr[data-id]").first
+                    expect(run).to_be_visible(timeout=10_000)
+                    run.click()
+                    item = page.locator(f'#history-items-body tr[data-id="{history_item_id}"]')
+                    expect(item).to_be_visible()
+                    item.click()
+                    expect(page.locator("#panel-history .compare-title")).to_have_text(jobs[0].name)
+                    # Choose the only populated stage before Tropy starts. The
+                    # hidden modal retains this value, avoiding a second preview
+                    # request during Tropy 1.17's short stable API window.
+                    stage = page.locator("#tropy-export-stage")
+                    stage.evaluate("element => { element.value = 'raw_ocr'; }")
 
-                with _running_tropy(source, project, write_runtime, write_port):
-                    send = page.locator("#btn-history-send-tropy")
-                    expect(send).to_be_enabled()
-                    send.click()
-                    expect(page.locator("#modal-tropy-send")).to_be_visible()
-                    expect(page.locator("#tropy-writeback-preview")).to_contain_text(
-                        "1 ready", timeout=15_000
-                    )
-                    commit = page.locator("#btn-writeback-commit")
-                    expect(commit).to_be_enabled()
-                    commit.click()
-                    expect(page.locator("#tropy-writeback-preview")).to_contain_text(
-                        "1 added", timeout=15_000
-                    )
-                    duplicate = tropy_notes.tropy_notes_preview(
-                        tropy_notes.TropyNotesRequest(
-                            source="history",
-                            item_ids=[str(history_item_id)],
-                            stage="raw_ocr",
+                    with _running_tropy(source, project, write_runtime, write_port):
+                        send = page.locator("#btn-history-send-tropy")
+                        expect(send).to_be_enabled()
+                        send.click()
+                        expect(page.locator("#modal-tropy-send")).to_be_visible()
+                        expect(page.locator("#tropy-writeback-preview")).to_contain_text(
+                            "1 ready", timeout=15_000
                         )
-                    )
-                    assert duplicate["write_count"] == 0
-                    assert duplicate["counts"]["duplicate"] == 1
-                browser.close()
+                        commit = page.locator("#btn-writeback-commit")
+                        expect(commit).to_be_enabled()
+                        commit.click()
+                        expect(page.locator("#tropy-writeback-preview")).to_contain_text(
+                            "1 added", timeout=15_000
+                        )
+                        duplicate = tropy_notes.tropy_notes_preview(
+                            tropy_notes.TropyNotesRequest(
+                                source="history",
+                                item_ids=[str(history_item_id)],
+                                stage="raw_ocr",
+                            )
+                        )
+                        assert duplicate["write_count"] == 0
+                        assert duplicate["counts"]["duplicate"] == 1
+                finally:
+                    browser.close()
     finally:
         state.clear()
         config.reset()
