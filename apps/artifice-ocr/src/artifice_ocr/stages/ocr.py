@@ -217,28 +217,58 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
     image_b64, mime = _encode_image(image_path, orientation, max_edge=_configured_max_image_edge())
     backend = backend_for("vision")
     model = model_for("vision")
-
     client = _get_backend_client(backend)
 
-    response = client.chat(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                # Order is load-bearing: olmOCR-2 was trained with text
-                # before image (arXiv:2510.19817 s4, "Better prompting") —
-                # reversing it is a training/inference mismatch that
-                # measurably hurt benchmark performance upstream. Do not
-                # "clean up" this ordering in a refactor.
-                "content": [
-                    {"type": "text", "text": OCR_PROMPT},
-                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
-                ],
-            }
-        ],
-        temperature=0.0,
+    def _call(temperature: float) -> str:
+        response = client.chat(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    # Order is load-bearing: olmOCR-2 was trained with text
+                    # before image (arXiv:2510.19817 s4, "Better prompting") —
+                    # reversing it is a training/inference mismatch that
+                    # measurably hurt benchmark performance upstream. Do not
+                    # "clean up" this ordering in a refactor.
+                    "content": [
+                        {"type": "text", "text": OCR_PROMPT},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
+                    ],
+                }
+            ],
+            temperature=temperature,
+        )
+        return response.message.content or ""
+
+    if not cfg("ocr_temperature_ladder_enabled"):
+        return _call(0.0)
+
+    start = float(cfg("ocr_temperature_ladder_start", 0.1) or 0.1)
+    step = float(cfg("ocr_temperature_ladder_step", 0.1) or 0.1)
+    ceiling = float(cfg("ocr_temperature_ladder_max", 0.8) or 0.8)
+    guard_on = bool(cfg("ocr_repetition_guard"))
+
+    text = ""
+    temperature = start
+    last_guard = None
+    # Ladder: sample at rising temperatures; a page that never trips the
+    # repetition guard returns on the first rung, matching the pre-ladder
+    # cost exactly. Rejection has no source text to keep — see
+    # _guard.check_no_repetition_loop's docstring — so each rung fully
+    # replaces the previous rung's output.
+    while temperature <= ceiling + 1e-9:
+        text = _call(temperature)
+        if not guard_on:
+            return text
+        last_guard = _guard.check_no_repetition_loop(text)
+        if last_guard.ok:
+            return text
+        temperature += step
+
+    reasons = "; ".join(last_guard.reasons) if last_guard else "unknown"
+    raise RuntimeError(
+        f"OCR repetition guard rejected every temperature rung up to {ceiling}: {reasons}"
     )
-    return response.message.content or ""
 
 
 def _tesseract_from_image(image_path: Path, orientation: int = 1) -> str:

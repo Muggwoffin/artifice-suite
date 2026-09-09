@@ -99,6 +99,21 @@ _DEFAULTS: dict[str, Any] = {
     # this fails the item outright instead of silently writing the loop to
     # raw_ocr/ as if it were a real transcription.
     "ocr_repetition_guard": True,
+    # Per-page temperature ladder: on a repetition-guard rejection, resample
+    # the SAME page at a higher temperature instead of discarding the whole
+    # document to Tesseract. olmOCR 2 (arXiv:2510.19817 s4, "Dynamic
+    # temperature scaling") starts at 0.1 and steps to 0.2, 0.3, ... on each
+    # rejection, up to 0.8, reporting ~0.3 accuracy points and a failure rate
+    # drop to ~0.01% over fixed-temperature decoding. ``0.0`` (greedy) is
+    # MORE loop-prone than the paper's own starting point, not less.
+    #
+    # ``ocr_temperature_ladder_enabled=False`` restores the exact previous
+    # behaviour (temperature 0.0, no ladder) so before/after can be A/B'd
+    # with scripts/measure_ocr_accuracy.py.
+    "ocr_temperature_ladder_enabled": True,
+    "ocr_temperature_ladder_start": 0.1,
+    "ocr_temperature_ladder_step": 0.1,
+    "ocr_temperature_ladder_max": 0.8,
     # Phase 1 deterministic image pre-processing, applied before the page is
     # sent to the vision model. Off by default: a clean scan needs none of it,
     # and it must never change behaviour for an existing user who has not asked
@@ -182,6 +197,10 @@ PERSISTED_KEYS = (
     "chunk_max_tokens",
     "context_size",
     "ocr_max_image_edge",
+    "ocr_temperature_ladder_enabled",
+    "ocr_temperature_ladder_start",
+    "ocr_temperature_ladder_step",
+    "ocr_temperature_ladder_max",
     "preprocess_enabled",
     "preprocess_grayscale",
     "preprocess_illumination",
