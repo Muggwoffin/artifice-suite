@@ -209,6 +209,7 @@ _CONFIG_KEYS = (
     "translate_model",
     "ocr_model",
     "document_type",
+    "ocr_prompt_instruction",
     "max_ocr_workers",
     "chunk_max_tokens",
     "context_size",

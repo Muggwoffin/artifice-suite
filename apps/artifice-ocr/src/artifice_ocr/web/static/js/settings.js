@@ -17,7 +17,7 @@ const SettingsTab = (function () {
     ocr_model: "text", cleanup_model: "text", translate_model: "text",
     lm_studio_url: "text", ollama_url: "text", huggingface_token: "text",
     api_key: "text", api_base_url: "text",
-    document_type: "select",
+    document_type: "select", ocr_prompt_instruction: "text",
     max_ocr_workers: "int", chunk_max_tokens: "int", context_size: "int",
     resume: "bool", confidence_enabled: "bool", preprocess_enabled: "bool", ollama_think: "bool", tropy_live_browse_enabled: "bool",
     tropy_api_port: "int",

@@ -525,6 +525,7 @@ def test_get_config_returns_expected_keys(client):
     body = res.json()
     assert "cleanup_model" in body
     assert "ollama_think" in body
+    assert "ocr_prompt_instruction" in body
 
 
 def test_set_config_only_persists_whitelisted_keys(client):
