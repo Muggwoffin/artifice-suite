@@ -59,7 +59,14 @@ WORKSPACE_PACKAGES = {
 
 # pytest infrastructure, not a real package: `from conftest import ...` works
 # because pytest inserts the test directory on sys.path.  Never a ghost.
-PYTEST_INTERNAL = {"conftest"}
+#
+# `measure_ocr_accuracy` is the same shape for a different reason: it is a
+# standalone script under apps/artifice-ocr/scripts/, deliberately not part
+# of the installed artifice_ocr package (see
+# scripts/measure_ocr_accuracy.py's own docstring). Its test imports it via
+# a runtime sys.path.insert of that scripts/ directory, not a real
+# dependency — same "sys.path trick, not a package" pattern as conftest.
+PYTEST_INTERNAL = {"conftest", "measure_ocr_accuracy"}
 
 # Import root -> distribution name, for packages whose import root differs
 # from the name they are declared under.
