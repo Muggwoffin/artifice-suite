@@ -11,8 +11,10 @@ from typing import Any
 
 
 from artifice_ocr import _guard
+from artifice_ocr import _rotation
 from artifice_ocr import _tesseract
 from artifice_ocr._backend import get_client as _get_backend_client
+from artifice_ocr._blank import is_near_blank
 from artifice_ocr._logging import get_logger
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
@@ -30,6 +32,19 @@ OCR_PROMPT = (
     "Do not add commentary, labels, or formatting."
 )
 
+# Experimental only — see OLMOCR2_OPTIMISATION_FINDINGS.md s3. olmOCR-2 was
+# SFT'd/RLVR'd toward YAML-front-matter + Markdown-body output; this addendum
+# asks for that shape instead of the raw-text default. Gated by
+# ocr_prompt_style, default "raw". DO NOT flip the default without measured
+# results from scripts/measure_ocr_accuracy.py AND explicit maintainer
+# sign-off — switching stage 1's output shape changes the contract with
+# cleanup/structure/pdf_export downstream, which nothing here has verified.
+_STRUCTURED_PROMPT_ADDENDUM = (
+    "Return your transcription as YAML front matter (between --- lines) "
+    "describing the page, followed by the transcribed content as Markdown, "
+    "preserving tables, headers, and reading order."
+)
+
 _MIME_MAP = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -37,6 +52,25 @@ _MIME_MAP = {
     ".tif": "image/tiff",
     ".tiff": "image/tiff",
 }
+
+
+def _effective_prompt(instruction: str, *, style: str = "raw") -> str:
+    """OCR_PROMPT, plus an optional appended domain instruction, plus an
+    experimental structured-output addendum when ``style="structured"``.
+
+    Appended, never a replacement: the base prompt's "return only raw text,
+    no commentary/labels/formatting" contract must survive regardless of
+    ``instruction``, since downstream stages (cleanup, structure) depend on
+    it. ``style="structured"`` is an intentional, explicit exception to that
+    contract for the purpose of measuring it — see _STRUCTURED_PROMPT_ADDENDUM.
+    """
+    parts = [OCR_PROMPT]
+    if style == "structured":
+        parts.append(_STRUCTURED_PROMPT_ADDENDUM)
+    instruction = (instruction or "").strip()
+    if instruction:
+        parts.append(instruction)
+    return "\n\n".join(parts)
 
 
 def _exif_orientation_matrix(orientation: int, width: float, height: float):
@@ -71,7 +105,70 @@ def _exif_orientation_matrix(orientation: int, width: float, height: float):
     return matrices.get(orientation)
 
 
-def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
+def _configured_max_image_edge() -> int | None:
+    """The longest-edge pixel cap for the vision request, or ``None`` for none.
+
+    ``None`` rather than ``0`` for "do not resize", for the same reason
+    :func:`artifice_ocr._backend._configured_context_size` returns ``None``:
+    ``0`` reads well in the UI but is a valid-looking pixel count, and two
+    call sites writing ``if cap:`` and ``if cap is not None:`` would disagree.
+
+    A malformed or non-positive setting reads as ``None`` rather than raising —
+    a bad value must not fail a page, it must fall back to the behaviour from
+    before the setting existed.
+    """
+    try:
+        value = int(cfg("ocr_max_image_edge", 1288) or 0)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _resize_to_max_edge(data: bytes, max_edge: int) -> tuple[bytes, str] | None:
+    """Downscale *data* so its longest edge is *max_edge*, as PNG bytes.
+
+    Returns ``None`` when no change is warranted — the image already fits, or
+    it could not be decoded. ``None`` is the signal to keep the original bytes
+    and mime untouched, so a decode failure degrades to the previous behaviour
+    rather than failing the page (the same contract
+    :func:`artifice_ocr.stages.preprocess.maybe_process` uses).
+
+    Only ever shrinks. Upscaling a small page invents detail the scan does not
+    contain and costs visual tokens for nothing.
+    """
+    import io
+
+    from PIL import Image
+
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            longest = max(img.size)
+            if longest <= max_edge:
+                return None
+            scale = max_edge / longest
+            size = (
+                max(1, round(img.width * scale)),
+                max(1, round(img.height * scale)),
+            )
+            resized = img.resize(size, Image.LANCZOS)
+            buf = io.BytesIO()
+            resized.save(buf, format="PNG")
+            log.debug(
+                "Capped page image %sx%s -> %sx%s for the vision request",
+                img.width,
+                img.height,
+                size[0],
+                size[1],
+            )
+            return buf.getvalue(), "image/png"
+    except Exception as exc:  # pragma: no cover - defensive
+        log.warning("Could not resize page image, sending it unchanged: %s", exc)
+        return None
+
+
+def _encode_image(
+    path: Path, orientation: int = 1, *, max_edge: int | None = None
+) -> tuple[str, str]:
     """Returns (base64, mime). Applies an orientation correction (see
     `_exif_orientation_matrix`) when `orientation` isn't 1 — the corrected
     bytes are always a fresh PNG render regardless of the source format.
@@ -118,6 +215,15 @@ def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
     if processed is not None:
         data, mime = processed, "image/png"
 
+    # Longest-edge cap for the vision model, applied last so it bounds whatever
+    # the orientation correction and pre-processing produced. ``max_edge`` is
+    # None on the Tesseract path, which must keep full resolution — see
+    # _tesseract_from_image and the ocr_max_image_edge comment in config.py.
+    if max_edge is not None:
+        capped = _resize_to_max_edge(data, max_edge)
+        if capped is not None:
+            data, mime = capped
+
     return base64.standard_b64encode(data).decode("utf-8"), mime
 
 
@@ -142,32 +248,94 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
     exactly what made "Context size" a no-op for OCR, because Ollama does
     not honour ``num_ctx`` on the OpenAI-compatible endpoint.
     """
-    image_b64, mime = _encode_image(image_path, orientation)
+    image_b64, mime = _encode_image(image_path, orientation, max_edge=_configured_max_image_edge())
     backend = backend_for("vision")
     model = model_for("vision")
-
     client = _get_backend_client(backend)
 
-    response = client.chat(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": OCR_PROMPT},
-                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
-                ],
-            }
-        ],
-        temperature=0.0,
+    def _call(temperature: float) -> str:
+        response = client.chat(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    # Order is load-bearing: olmOCR-2 was trained with text
+                    # before image (arXiv:2510.19817 s4, "Better prompting") —
+                    # reversing it is a training/inference mismatch that
+                    # measurably hurt benchmark performance upstream. Do not
+                    # "clean up" this ordering in a refactor.
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": _effective_prompt(
+                                cfg("ocr_prompt_instruction", ""),
+                                style=cfg("ocr_prompt_style", "raw"),
+                            ),
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:{mime};base64,{image_b64}"},
+                        },
+                    ],
+                }
+            ],
+            temperature=temperature,
+        )
+        return response.message.content or ""
+
+    if not cfg("ocr_temperature_ladder_enabled"):
+        return _call(0.0)
+
+    start = float(cfg("ocr_temperature_ladder_start", 0.1) or 0.1)
+    step = float(cfg("ocr_temperature_ladder_step", 0.1) or 0.1)
+    ceiling = float(cfg("ocr_temperature_ladder_max", 0.8) or 0.8)
+    guard_on = bool(cfg("ocr_repetition_guard"))
+
+    # A malformed negative step would move the temperature AWAY from the
+    # ceiling on every rung, so the loop condition below never became false
+    # — a genuine infinite loop (``or`` above already excludes 0, but not
+    # negatives; NaN fails ``> 0`` too, so it is caught here as well).
+    # Clamp to a positive floor so the temperature always rises, and cap the
+    # rung count so no configuration — however malformed, including an
+    # ``inf`` ceiling — can loop unboundedly. Sane values are untouched:
+    # 0.1..0.8 at step 0.1 is still exactly 8 rungs.
+    step = max(step, 0.01) if step > 0 else 0.01
+    rungs_left = 50 if start <= ceiling else 0
+
+    text = ""
+    temperature = start
+    last_guard = None
+    # Ladder: sample at rising temperatures; a page that never trips the
+    # repetition guard returns on the first rung, matching the pre-ladder
+    # cost exactly. Rejection has no source text to keep — see
+    # _guard.check_no_repetition_loop's docstring — so each rung fully
+    # replaces the previous rung's output.
+    while temperature <= ceiling + 1e-9 and rungs_left > 0:
+        text = _call(temperature)
+        if not guard_on:
+            return text
+        last_guard = _guard.check_no_repetition_loop(text)
+        if last_guard.ok:
+            return text
+        temperature += step
+        rungs_left -= 1
+
+    reasons = "; ".join(last_guard.reasons) if last_guard else "unknown"
+    raise RuntimeError(
+        f"OCR repetition guard rejected every temperature rung up to {ceiling}: {reasons}"
     )
-    return response.message.content or ""
 
 
 def _tesseract_from_image(image_path: Path, orientation: int = 1) -> str:
     """Run Tesseract on an image, reusing ``_encode_image`` so the bytes carry
     the same orientation correction and (when enabled) deterministic
-    pre-processing the vision path would apply."""
+    pre-processing the vision path would apply.
+
+    Deliberately passes no ``max_edge``: the 1288px cap is a Qwen2.5-VL
+    constraint, not a general one. Tesseract benefits from *more* resolution,
+    so capping here would degrade the very fallback that exists to rescue a
+    page the vision model could not read.
+    """
     image_b64, _mime = _encode_image(image_path, orientation)
     return _tesseract.ocr_bytes(base64.standard_b64decode(image_b64))
 
@@ -184,6 +352,12 @@ def _ocr_single_image(image_path: Path, orientation: int = 1) -> tuple[str, str]
     A historian citing a transcription needs to know which engine read each
     page, so this is deliberately explicit rather than assumed.
     """
+    if cfg("ocr_blank_page_skip"):
+        raw_bytes = image_path.read_bytes()
+        if is_near_blank(raw_bytes):
+            log.info("Skipping OCR for near-blank page %s", getattr(image_path, "name", image_path))
+            return "", "blank-skip"
+
     if cfg("ocr_engine", "vision_model") == "tesseract":
         return _tesseract_from_image(image_path, orientation), "tesseract"
 
@@ -197,7 +371,11 @@ def _ocr_single_image(image_path: Path, orientation: int = 1) -> tuple[str, str]
                 exc,
             )
             text = _tesseract_from_image(image_path, orientation)
-            if text.strip():
+            # Defence in depth: the fallback must never replace the vision
+            # error with an error of its own. If Tesseract yields nothing
+            # usable, the original — actionable — failure is what the user
+            # needs to see.
+            if (text or "").strip():
                 return text, "tesseract-fallback"
             log.warning("Tesseract fallback produced no text; re-raising vision failure")
         raise
@@ -336,6 +514,21 @@ def perform(
     log.info("Starting OCR for %s", path.name)
 
     is_pdf = path.suffix.lower() == ".pdf"
+
+    # The OSD probe is an image-bytes check (it writes whatever it is given
+    # to a .png-suffixed temp file for Tesseract) — raw PDF bytes are not
+    # image bytes, and a PDF's pages are rendered to proper images below, so
+    # there is nothing valid to probe here.
+    if orientation == 1 and not is_pdf and cfg("ocr_auto_rotation_detect"):
+        try:
+            detected = _rotation.detect_orientation(path.read_bytes())
+        except Exception as exc:  # pragma: no cover - defensive
+            log.warning("Rotation auto-detection failed for %s: %s", path.name, exc)
+            detected = None
+        if detected is not None:
+            log.info("Auto-detected rotation for %s: orientation %d", path.name, detected)
+            orientation = detected
+
     model = model_for("vision")
     page_number = 1
     # Provenance: which engine(s) actually read the page(s). Collected across
@@ -402,7 +595,7 @@ def perform(
                     path, page=page, is_pdf=is_pdf, orientation=orientation
                 )
                 recheck = _guard.check_no_repetition_loop(recovered)
-                if recovered.strip() and recheck.ok:
+                if (recovered or "").strip() and recheck.ok:
                     extracted_text = recovered
                     engine_used = "tesseract-fallback"
                     guard_result = recheck
@@ -423,7 +616,10 @@ def perform(
                             "rejected_extracted_text": extracted_text,
                             "engine": engine_used,
                             "model": model,
-                            "ocr_prompt": OCR_PROMPT,
+                            "ocr_prompt": _effective_prompt(
+                                cfg("ocr_prompt_instruction", ""),
+                                style=cfg("ocr_prompt_style", "raw"),
+                            ),
                             "timestamp": datetime.now(timezone.utc).isoformat(),
                             "page": page_number,
                             "total_pages": num_pages,
@@ -458,7 +654,9 @@ def perform(
         "extracted_text": extracted_text,
         "engine": engine_used,
         "model": model,
-        "ocr_prompt": OCR_PROMPT,
+        "ocr_prompt": _effective_prompt(
+            cfg("ocr_prompt_instruction", ""), style=cfg("ocr_prompt_style", "raw")
+        ),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "page": page_number,
         "total_pages": num_pages,

@@ -108,6 +108,80 @@ def test_ocr_bytes_passes_configured_lang(monkeypatch):
     assert captured["cmd"][captured["cmd"].index("-l") + 1] == "deu+eng"
 
 
+def test_ocr_bytes_decodes_as_utf8_not_the_windows_locale(monkeypatch):
+    """Tesseract writes UTF-8; the subprocess must be told so explicitly.
+
+    Regression: ``subprocess.run(..., text=True)`` with no ``encoding`` decodes
+    with ``locale.getpreferredencoding()``, which is cp1252 on a stock Windows
+    install. A single byte outside cp1252 (0x9d) raised ``UnicodeDecodeError``
+    *inside the subprocess reader thread*, where it is not propagated —
+    ``proc.stdout`` silently became ``None`` and the caller crashed on
+    ``.strip()``. Observed on a real frozen Windows build.
+    """
+    captured = {}
+
+    def fake_run(cmd, *a, **k):
+        captured.update(k)
+        return _Proc(0, "text")
+
+    monkeypatch.setattr(_tesseract, "resolve_binary", lambda: "/usr/bin/tesseract")
+    monkeypatch.setattr(_tesseract, "cfg", _cfg_from({}))
+    monkeypatch.setattr(_tesseract.subprocess, "run", fake_run)
+    _tesseract.ocr_bytes(b"pngbytes")
+    assert captured.get("encoding") == "utf-8"
+    # An undecodable byte must degrade to a replacement character, never kill
+    # the reader thread.
+    assert captured.get("errors") == "replace"
+
+
+def test_version_decodes_as_utf8_not_the_windows_locale(monkeypatch):
+    """``version()`` shares the same trap and the same fix."""
+    captured = {}
+
+    def fake_run(cmd, *a, **k):
+        captured.update(k)
+        return _Proc(0, "tesseract 5.3.3\n")
+
+    monkeypatch.setattr(_tesseract.subprocess, "run", fake_run)
+    assert _tesseract.version("/usr/bin/tesseract") == "tesseract 5.3.3"
+    assert captured.get("encoding") == "utf-8"
+    assert captured.get("errors") == "replace"
+
+
+def test_ocr_bytes_returns_empty_string_when_stdout_is_none(monkeypatch):
+    """``proc.stdout`` can be ``None`` even on a zero exit code.
+
+    Returning it unguarded is what turned a legible context-overflow error into
+    ``'NoneType' object has no attribute 'strip'`` three frames later. The
+    annotated contract is ``-> str``; honour it.
+    """
+    monkeypatch.setattr(_tesseract, "resolve_binary", lambda: "/usr/bin/tesseract")
+    monkeypatch.setattr(_tesseract, "cfg", _cfg_from({}))
+    monkeypatch.setattr(_tesseract.subprocess, "run", lambda *a, **k: _Proc(0, None))
+    assert _tesseract.ocr_bytes(b"pngbytes") == ""
+
+
+def test_dispatch_reraises_original_error_when_tesseract_returns_none(monkeypatch):
+    """The fallback must not mask the vision failure with an AttributeError.
+
+    End-to-end shape of the observed Windows bug: the vision call fails with an
+    actionable context-overflow message, Tesseract then yields nothing usable,
+    and the user must still be shown the *vision* error.
+    """
+    from artifice_ocr.stages import ocr
+
+    monkeypatch.setattr(ocr, "cfg", _cfg_from({"tesseract_fallback_on_failure": True}))
+    monkeypatch.setattr(ocr._tesseract, "is_available", lambda: True)
+    monkeypatch.setattr(ocr, "_tesseract_from_image", lambda *a, **k: None)
+
+    def boom(*a, **k):
+        raise RuntimeError("The page needs 4145 tokens but the context window is 4096.")
+
+    monkeypatch.setattr(ocr, "_ocr_vision", boom)
+    with pytest.raises(RuntimeError, match="4145 tokens"):
+        ocr._ocr_single_image(Path("page.png"))
+
+
 def test_tesseract_subprocesses_hide_windows_console(monkeypatch):
     monkeypatch.setattr(_tesseract.os, "name", "nt")
     monkeypatch.setattr(_tesseract.subprocess, "CREATE_NO_WINDOW", 0x08000000, raising=False)

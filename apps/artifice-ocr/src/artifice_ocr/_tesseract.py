@@ -38,6 +38,16 @@ _WINDOWS_FALLBACK_PATHS = (
 )
 
 
+# Tesseract writes UTF-8 on every platform. ``text=True`` alone decodes with
+# ``locale.getpreferredencoding()``, which is cp1252 on a stock Windows install,
+# and a single byte outside that codepage (0x9d, seen on a real archive scan)
+# raises UnicodeDecodeError *inside subprocess's reader thread*. That exception
+# is never propagated: ``run()`` returns normally with ``stdout=None``, and the
+# caller crashes several frames later on ``.strip()`` with no trace of the real
+# cause. ``errors="replace"`` keeps a stray byte from costing a whole page.
+_DECODE_AS_UTF8: dict[str, str] = {"encoding": "utf-8", "errors": "replace"}
+
+
 def _subprocess_window_options() -> dict[str, int]:
     """Keep command-line OCR helpers consoleless in the Windows desktop app."""
     if os.name != "nt":
@@ -90,6 +100,7 @@ def version(binary: str | None = None) -> str | None:
             [binary, "--version"],
             capture_output=True,
             text=True,
+            **_DECODE_AS_UTF8,
             timeout=10,
             **_subprocess_window_options(),
         )
@@ -139,6 +150,7 @@ def ocr_bytes(data: bytes, *, lang: str | None = None, binary: str | None = None
             [binary, tmp_name, "stdout", "-l", lang],
             capture_output=True,
             text=True,
+            **_DECODE_AS_UTF8,
             timeout=300,
             **_subprocess_window_options(),
         )
@@ -151,4 +163,7 @@ def ocr_bytes(data: bytes, *, lang: str | None = None, binary: str | None = None
     if proc.returncode != 0:
         message = (proc.stderr or "").strip() or f"tesseract exited {proc.returncode}"
         raise TesseractError(message)
-    return proc.stdout
+    # ``stdout`` can be None even on a zero exit code (see _DECODE_AS_UTF8).
+    # The annotated contract is ``-> str``; a None here became the opaque
+    # "'NoneType' object has no attribute 'strip'" the fallback used to fail with.
+    return proc.stdout or ""

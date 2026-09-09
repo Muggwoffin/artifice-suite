@@ -17,7 +17,7 @@ const SettingsTab = (function () {
     ocr_model: "text", cleanup_model: "text", translate_model: "text",
     lm_studio_url: "text", ollama_url: "text", huggingface_token: "text",
     api_key: "text", api_base_url: "text",
-    document_type: "select",
+    document_type: "select", ocr_prompt_instruction: "text",
     max_ocr_workers: "int", chunk_max_tokens: "int", context_size: "int",
     resume: "bool", confidence_enabled: "bool", preprocess_enabled: "bool", ollama_think: "bool", tropy_live_browse_enabled: "bool",
     tropy_api_port: "int",
@@ -103,6 +103,7 @@ const SettingsTab = (function () {
   };
   const discoveredModels = new Map();
   let discoveryGeneration = 0;
+  let statusRevertTimer = null;
 
   const approvedFoldersList = document.getElementById("approved-folders-list");
   const approvedFoldersStatus = document.getElementById("approved-folders-status");
@@ -446,7 +447,10 @@ const SettingsTab = (function () {
       savedSnapshot = snapshot(cfg);
       setDirty(false);
       setStatus("Saved.", "success");
-      setTimeout(() => { if (!dirty) setStatus("No changes"); }, 2500);
+      // Cancel any revert timer still pending from an earlier save, or the
+      // stale timer will later overwrite this save's "Saved." with "No changes".
+      clearTimeout(statusRevertTimer);
+      statusRevertTimer = setTimeout(() => { if (!dirty) setStatus("No changes"); }, 2500);
     } catch (err) {
       if (window.ArtificeToast) window.ArtificeToast.error("Could not save settings: " + err.message);
       setStatus("Could not save settings: " + err.message, "error");

@@ -56,6 +56,19 @@ def test_simplified_settings_use_auto_detecting_defaults_and_sections():
     assert "load().then(refreshLocalModels).then(runPreflight)" in js
 
 
+def test_domain_instruction_field_renders_beside_document_type_and_is_wired():
+    html = (_WEB / "templates" / "index.html").read_text(encoding="utf-8")
+    js = (_WEB / "static" / "js" / "settings.js").read_text(encoding="utf-8")
+    assert 'type="text" id="set-ocr_prompt_instruction"' in html
+    assert "Domain instruction (optional)" in html
+    assert 'ocr_prompt_instruction: "text"' in js
+    # The field belongs in the processing section, right after Document type.
+    start = html.index('id="settings-processing"')
+    end = html.index('id="settings-tropy"')
+    field = html.index('id="set-ocr_prompt_instruction"')
+    assert start < html.index('id="set-document_type"') < field < end
+
+
 def test_fabricated_review_controls_and_export_are_present():
     html = (_WEB / "templates" / "index.html").read_text(encoding="utf-8")
     preview = (_WEB / "static" / "js" / "preview.js").read_text(encoding="utf-8")

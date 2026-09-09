@@ -61,9 +61,42 @@ _DEFAULTS: dict[str, Any] = {
     # Only Ollama honours it. LM Studio fixes context when it *loads* a model,
     # and hosted APIs set it server-side — for those the UI says where to
     # change it rather than sending a value that is silently ignored.
-    "context_size": 0,
+    # 8192 rather than 0. ``0`` means "leave it to the backend", and Ollama's
+    # own default is 4096 — which a single page image overflows. A real
+    # 4653x3445 archive scan needed 4145 tokens and failed on a stock install
+    # before the user touched anything. 8192 leaves room for a page capped at
+    # ``ocr_max_image_edge`` plus its transcription, at a modest VRAM cost.
+    # Set 0 to restore the backend's own default.
+    "context_size": 8192,
     "confidence_enabled": True,
     "document_type": "default",
+    # Longest-edge cap, in pixels, for the image sent to the *vision* model.
+    # olmOCR-2 is built on Qwen2.5-VL, which tiles at native resolution up to
+    # its max_pixels: an unresized 4653x3445 scan becomes far more visual
+    # tokens than the model ever saw in training, paid for twice — in latency
+    # and in distribution mismatch. olmOCR 2 (arXiv:2510.19817 s4, "Image
+    # Resizing") swept image sizes and picked 1288px on the longest edge.
+    #
+    # Only ever downscales; a smaller page is passed through untouched. ``0``
+    # disables the cap and restores full-resolution behaviour. Deliberately
+    # NOT applied on the Tesseract path, which benefits from more resolution
+    # rather than less — see stages/ocr.py::_tesseract_from_image.
+    "ocr_max_image_edge": 1288,
+    # Free-text domain instruction, appended to OCR_PROMPT (not a replacement
+    # — the "return only raw text" contract stays intact). [CENT]
+    # (arXiv:2608.30616) Table 4: a zero-shot domain instruction prompt took
+    # olmOCR2's SpACER-M error from 15.58% to 6.77% and field EMR from 30.55%
+    # to 74.64%, with no training. Empty string (default) leaves OCR_PROMPT
+    # exactly as it was. Already recorded per-run in the raw_ocr sidecar as
+    # part of "ocr_prompt" — see stages/ocr.py::perform.
+    "ocr_prompt_instruction": "",
+    # Experimental. "raw" (default) is this app's original prompt contract;
+    # "structured" asks for the YAML-front-matter + Markdown shape
+    # olmOCR-2-7B-1025 was actually trained toward. See stages/ocr.py's
+    # _STRUCTURED_PROMPT_ADDENDUM docstring — do not flip this default
+    # without measured results and maintainer sign-off; it changes stage 1's
+    # output contract with cleanup/structure/pdf_export.
+    "ocr_prompt_style": "raw",
     # P7: throughput. Reasoning models burn ~17x the tokens they need on
     # mechanical cleanup; leaving this False keeps the cleanup stage fast.
     # Set True only if you swap in a model whose reasoning you actually want.
@@ -81,6 +114,33 @@ _DEFAULTS: dict[str, Any] = {
     # this fails the item outright instead of silently writing the loop to
     # raw_ocr/ as if it were a real transcription.
     "ocr_repetition_guard": True,
+    # Per-page temperature ladder: on a repetition-guard rejection, resample
+    # the SAME page at a higher temperature instead of discarding the whole
+    # document to Tesseract. olmOCR 2 (arXiv:2510.19817 s4, "Dynamic
+    # temperature scaling") starts at 0.1 and steps to 0.2, 0.3, ... on each
+    # rejection, up to 0.8, reporting ~0.3 accuracy points and a failure rate
+    # drop to ~0.01% over fixed-temperature decoding. ``0.0`` (greedy) is
+    # MORE loop-prone than the paper's own starting point, not less.
+    #
+    # ``ocr_temperature_ladder_enabled=False`` restores the exact previous
+    # behaviour (temperature 0.0, no ladder) so before/after can be A/B'd
+    # with scripts/measure_ocr_accuracy.py.
+    "ocr_temperature_ladder_enabled": True,
+    "ocr_temperature_ladder_start": 0.1,
+    "ocr_temperature_ladder_step": 0.1,
+    "ocr_temperature_ladder_max": 0.8,
+    # Skip the OCR call entirely for a near-blank page (a verso, a flyleaf).
+    # olmOCR 2 (arXiv:2510.19817 s4, "Handle blank pages"): a model never
+    # trained on blank pages hallucinates rather than recognising there is
+    # nothing there. See _blank.py.
+    "ocr_blank_page_skip": True,
+    # Probe a page with Tesseract OSD for rotation ONLY when Tropy's own
+    # orientation metadata says "normal" (1) — an explicit non-1 value is
+    # trusted as a deliberate correction and never second-guessed. Off by
+    # default: it costs a Tesseract subprocess call per page and Tesseract
+    # is an optional dependency. arXiv:2510.19817 s4, "automatic rotation
+    # correction". See _rotation.py.
+    "ocr_auto_rotation_detect": False,
     # Phase 1 deterministic image pre-processing, applied before the page is
     # sent to the vision model. Off by default: a clean scan needs none of it,
     # and it must never change behaviour for an existing user who has not asked
@@ -163,6 +223,21 @@ PERSISTED_KEYS = (
     "confidence_enabled",
     "chunk_max_tokens",
     "context_size",
+    "ocr_max_image_edge",
+    "ocr_prompt_instruction",
+    # NOTE: "ocr_prompt_style" is deliberately NOT here. It stays in
+    # _DEFAULTS (so ARTIFICE_OCR_CONFIG YAML and direct config-file edits
+    # work) but is config-file/env-only: the settings-save API path filters
+    # POST bodies against PERSISTED_KEYS, so listing it here made a raw API
+    # POST able to flip this experimental stage-1 output-contract flag even
+    # though it is invisible in GET /api/config and the UI (Copilot review,
+    # PR #101).
+    "ocr_temperature_ladder_enabled",
+    "ocr_temperature_ladder_start",
+    "ocr_temperature_ladder_step",
+    "ocr_temperature_ladder_max",
+    "ocr_blank_page_skip",
+    "ocr_auto_rotation_detect",
     "preprocess_enabled",
     "preprocess_grayscale",
     "preprocess_illumination",

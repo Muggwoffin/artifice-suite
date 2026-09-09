@@ -382,6 +382,7 @@
             <div class="settings-section-head"><h3>Processing defaults</h3><p>Safe starting values for mixed historical documents. Change them only when the collection needs it.</p></div>
             <div class="settings-form-grid">
               <label>Document type <select id="set-document_type"></select><span class="settings-field-help" id="doc-type-hint"></span></label>
+              <label>Domain instruction (optional) <input type="text" id="set-ocr_prompt_instruction" placeholder="This is a 19th-century archaeological field catalogue in German Kurrentschrift"><span class="settings-field-help">A sentence about the collection, appended to the OCR prompt. Leave empty to use the standard prompt.</span></label>
               <label>Pages processed at once <input type="number" id="set-max_ocr_workers" min="1"></label>
               <div class="settings-checks settings-full">
                 <label><input type="checkbox" id="set-resume"><span>Reuse completed text<small>Skip stages whose saved output already exists.</small></span></label>
