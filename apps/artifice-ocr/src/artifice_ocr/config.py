@@ -90,6 +90,13 @@ _DEFAULTS: dict[str, Any] = {
     # exactly as it was. Already recorded per-run in the raw_ocr sidecar as
     # part of "ocr_prompt" — see stages/ocr.py::perform.
     "ocr_prompt_instruction": "",
+    # Experimental. "raw" (default) is this app's original prompt contract;
+    # "structured" asks for the YAML-front-matter + Markdown shape
+    # olmOCR-2-7B-1025 was actually trained toward. See stages/ocr.py's
+    # _STRUCTURED_PROMPT_ADDENDUM docstring — do not flip this default
+    # without measured results and maintainer sign-off; it changes stage 1's
+    # output contract with cleanup/structure/pdf_export.
+    "ocr_prompt_style": "raw",
     # P7: throughput. Reasoning models burn ~17x the tokens they need on
     # mechanical cleanup; leaving this False keeps the cleanup stage fast.
     # Set True only if you swap in a model whose reasoning you actually want.
@@ -218,6 +225,7 @@ PERSISTED_KEYS = (
     "context_size",
     "ocr_max_image_edge",
     "ocr_prompt_instruction",
+    "ocr_prompt_style",
     "ocr_temperature_ladder_enabled",
     "ocr_temperature_ladder_start",
     "ocr_temperature_ladder_step",

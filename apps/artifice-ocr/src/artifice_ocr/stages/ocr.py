@@ -32,6 +32,19 @@ OCR_PROMPT = (
     "Do not add commentary, labels, or formatting."
 )
 
+# Experimental only — see OLMOCR2_OPTIMISATION_FINDINGS.md s3. olmOCR-2 was
+# SFT'd/RLVR'd toward YAML-front-matter + Markdown-body output; this addendum
+# asks for that shape instead of the raw-text default. Gated by
+# ocr_prompt_style, default "raw". DO NOT flip the default without measured
+# results from scripts/measure_ocr_accuracy.py AND explicit maintainer
+# sign-off — switching stage 1's output shape changes the contract with
+# cleanup/structure/pdf_export downstream, which nothing here has verified.
+_STRUCTURED_PROMPT_ADDENDUM = (
+    "Return your transcription as YAML front matter (between --- lines) "
+    "describing the page, followed by the transcribed content as Markdown, "
+    "preserving tables, headers, and reading order."
+)
+
 _MIME_MAP = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -41,18 +54,23 @@ _MIME_MAP = {
 }
 
 
-def _effective_prompt(instruction: str) -> str:
-    """OCR_PROMPT, plus an optional appended domain instruction.
+def _effective_prompt(instruction: str, *, style: str = "raw") -> str:
+    """OCR_PROMPT, plus an optional appended domain instruction, plus an
+    experimental structured-output addendum when ``style="structured"``.
 
     Appended, never a replacement: the base prompt's "return only raw text,
-    no commentary/labels/formatting" contract must survive regardless of what
-    the domain instruction says, since downstream stages (cleanup, structure)
-    depend on it.
+    no commentary/labels/formatting" contract must survive regardless of
+    ``instruction``, since downstream stages (cleanup, structure) depend on
+    it. ``style="structured"`` is an intentional, explicit exception to that
+    contract for the purpose of measuring it — see _STRUCTURED_PROMPT_ADDENDUM.
     """
+    parts = [OCR_PROMPT]
+    if style == "structured":
+        parts.append(_STRUCTURED_PROMPT_ADDENDUM)
     instruction = (instruction or "").strip()
-    if not instruction:
-        return OCR_PROMPT
-    return f"{OCR_PROMPT}\n\n{instruction}"
+    if instruction:
+        parts.append(instruction)
+    return "\n\n".join(parts)
 
 
 def _exif_orientation_matrix(orientation: int, width: float, height: float):
@@ -247,7 +265,7 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
                     # measurably hurt benchmark performance upstream. Do not
                     # "clean up" this ordering in a refactor.
                     "content": [
-                        {"type": "text", "text": _effective_prompt(cfg("ocr_prompt_instruction", ""))},
+                        {"type": "text", "text": _effective_prompt(cfg("ocr_prompt_instruction", ""), style=cfg("ocr_prompt_style", "raw"))},
                         {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
                     ],
                 }
@@ -573,7 +591,7 @@ def perform(
                             "rejected_extracted_text": extracted_text,
                             "engine": engine_used,
                             "model": model,
-                            "ocr_prompt": _effective_prompt(cfg("ocr_prompt_instruction", "")),
+                            "ocr_prompt": _effective_prompt(cfg("ocr_prompt_instruction", ""), style=cfg("ocr_prompt_style", "raw")),
                             "timestamp": datetime.now(timezone.utc).isoformat(),
                             "page": page_number,
                             "total_pages": num_pages,
@@ -608,7 +626,7 @@ def perform(
         "extracted_text": extracted_text,
         "engine": engine_used,
         "model": model,
-        "ocr_prompt": _effective_prompt(cfg("ocr_prompt_instruction", "")),
+        "ocr_prompt": _effective_prompt(cfg("ocr_prompt_instruction", ""), style=cfg("ocr_prompt_style", "raw")),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "page": page_number,
         "total_pages": num_pages,
