@@ -26,28 +26,44 @@ def _osd_stdout(rotate_degrees: int) -> str:
 
 def test_no_rotation_needed_returns_none(monkeypatch):
     monkeypatch.setattr(_rotation._tesseract, "resolve_binary", lambda: "/usr/bin/tesseract")
-    monkeypatch.setattr(_rotation.subprocess, "run", lambda *a, **k: MagicMock(returncode=0, stdout=_osd_stdout(0), stderr=""))
+    monkeypatch.setattr(
+        _rotation.subprocess,
+        "run",
+        lambda *a, **k: MagicMock(returncode=0, stdout=_osd_stdout(0), stderr=""),
+    )
 
     assert _rotation.detect_orientation(b"fake-png-bytes") is None
 
 
 def test_upside_down_page_maps_to_orientation_3(monkeypatch):
     monkeypatch.setattr(_rotation._tesseract, "resolve_binary", lambda: "/usr/bin/tesseract")
-    monkeypatch.setattr(_rotation.subprocess, "run", lambda *a, **k: MagicMock(returncode=0, stdout=_osd_stdout(180), stderr=""))
+    monkeypatch.setattr(
+        _rotation.subprocess,
+        "run",
+        lambda *a, **k: MagicMock(returncode=0, stdout=_osd_stdout(180), stderr=""),
+    )
 
     assert _rotation.detect_orientation(b"fake-png-bytes") == 3
 
 
 def test_rotated_90_maps_to_orientation_6(monkeypatch):
     monkeypatch.setattr(_rotation._tesseract, "resolve_binary", lambda: "/usr/bin/tesseract")
-    monkeypatch.setattr(_rotation.subprocess, "run", lambda *a, **k: MagicMock(returncode=0, stdout=_osd_stdout(90), stderr=""))
+    monkeypatch.setattr(
+        _rotation.subprocess,
+        "run",
+        lambda *a, **k: MagicMock(returncode=0, stdout=_osd_stdout(90), stderr=""),
+    )
 
     assert _rotation.detect_orientation(b"fake-png-bytes") == 6
 
 
 def test_rotated_270_maps_to_orientation_8(monkeypatch):
     monkeypatch.setattr(_rotation._tesseract, "resolve_binary", lambda: "/usr/bin/tesseract")
-    monkeypatch.setattr(_rotation.subprocess, "run", lambda *a, **k: MagicMock(returncode=0, stdout=_osd_stdout(270), stderr=""))
+    monkeypatch.setattr(
+        _rotation.subprocess,
+        "run",
+        lambda *a, **k: MagicMock(returncode=0, stdout=_osd_stdout(270), stderr=""),
+    )
 
     assert _rotation.detect_orientation(b"fake-png-bytes") == 8
 
@@ -62,8 +78,11 @@ def test_osd_failure_returns_none_not_raise(monkeypatch):
     """Low-text pages make OSD fail (`Too few characters`) — must degrade, not crash a page."""
     monkeypatch.setattr(_rotation._tesseract, "resolve_binary", lambda: "/usr/bin/tesseract")
     monkeypatch.setattr(
-        _rotation.subprocess, "run",
-        lambda *a, **k: MagicMock(returncode=1, stdout="", stderr="Too few characters. Skipping this page"),
+        _rotation.subprocess,
+        "run",
+        lambda *a, **k: MagicMock(
+            returncode=1, stdout="", stderr="Too few characters. Skipping this page"
+        ),
     )
 
     assert _rotation.detect_orientation(b"fake-png-bytes") is None

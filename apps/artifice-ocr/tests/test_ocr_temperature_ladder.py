@@ -45,7 +45,9 @@ def _patch_common(monkeypatch, cfg_overrides):
     monkeypatch.setattr(ocr, "backend_for", lambda role: "ollama")
     monkeypatch.setattr(ocr, "model_for", lambda role: "richardyoung/olmocr2:7b-q8")
     monkeypatch.setattr(
-        ocr, "_encode_image", lambda path, orientation=1, *, max_edge=None: ("YmFzZTY0", "image/png")
+        ocr,
+        "_encode_image",
+        lambda path, orientation=1, *, max_edge=None: ("YmFzZTY0", "image/png"),
     )
 
 

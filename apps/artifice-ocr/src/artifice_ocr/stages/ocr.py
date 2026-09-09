@@ -265,8 +265,17 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
                     # measurably hurt benchmark performance upstream. Do not
                     # "clean up" this ordering in a refactor.
                     "content": [
-                        {"type": "text", "text": _effective_prompt(cfg("ocr_prompt_instruction", ""), style=cfg("ocr_prompt_style", "raw"))},
-                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
+                        {
+                            "type": "text",
+                            "text": _effective_prompt(
+                                cfg("ocr_prompt_instruction", ""),
+                                style=cfg("ocr_prompt_style", "raw"),
+                            ),
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:{mime};base64,{image_b64}"},
+                        },
                     ],
                 }
             ],
@@ -607,7 +616,10 @@ def perform(
                             "rejected_extracted_text": extracted_text,
                             "engine": engine_used,
                             "model": model,
-                            "ocr_prompt": _effective_prompt(cfg("ocr_prompt_instruction", ""), style=cfg("ocr_prompt_style", "raw")),
+                            "ocr_prompt": _effective_prompt(
+                                cfg("ocr_prompt_instruction", ""),
+                                style=cfg("ocr_prompt_style", "raw"),
+                            ),
                             "timestamp": datetime.now(timezone.utc).isoformat(),
                             "page": page_number,
                             "total_pages": num_pages,
@@ -642,7 +654,9 @@ def perform(
         "extracted_text": extracted_text,
         "engine": engine_used,
         "model": model,
-        "ocr_prompt": _effective_prompt(cfg("ocr_prompt_instruction", ""), style=cfg("ocr_prompt_style", "raw")),
+        "ocr_prompt": _effective_prompt(
+            cfg("ocr_prompt_instruction", ""), style=cfg("ocr_prompt_style", "raw")
+        ),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "page": page_number,
         "total_pages": num_pages,

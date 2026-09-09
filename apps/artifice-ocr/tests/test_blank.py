@@ -51,7 +51,11 @@ def test_ocr_single_image_skips_the_call_on_a_blank_page(tmp_path, monkeypatch):
     path = tmp_path / "blank.png"
     path.write_bytes(_solid_png(600, 800, 255))
 
-    monkeypatch.setattr(ocr, "cfg", lambda key, default=None: {"ocr_blank_page_skip": True}.get(key, default))
+    monkeypatch.setattr(
+        ocr,
+        "cfg",
+        lambda key, default=None: {"ocr_blank_page_skip": True}.get(key, default),
+    )
 
     def _fail_if_called(*args, **kwargs):
         raise AssertionError("OCR engine must not be called for a blank page")

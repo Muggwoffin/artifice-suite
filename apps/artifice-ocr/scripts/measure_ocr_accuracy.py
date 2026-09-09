@@ -75,7 +75,9 @@ def _ocr_page(image_path: Path, orientation: int) -> str:
     return text
 
 
-def measure_page(image_path: Path, ground_truth_path: Path, *, orientation: int = 1) -> dict[str, Any]:
+def measure_page(
+    image_path: Path, ground_truth_path: Path, *, orientation: int = 1
+) -> dict[str, Any]:
     """OCR one page and score it against its ground truth. Returns a dict
     with ``page``, ``cer``, ``wall_time_s``, ``reference_chars``."""
     reference = ground_truth_path.read_text(encoding="utf-8")
@@ -98,7 +100,11 @@ def _discover_pages(corpus_dir: Path) -> list[tuple[Path, Path, int]]:
     for txt_path in sorted(corpus_dir.glob("*.txt")):
         stem = txt_path.stem
         image_path = next(
-            (corpus_dir / f"{stem}{suffix}" for suffix in _IMAGE_SUFFIXES if (corpus_dir / f"{stem}{suffix}").exists()),
+            (
+                corpus_dir / f"{stem}{suffix}"
+                for suffix in _IMAGE_SUFFIXES
+                if (corpus_dir / f"{stem}{suffix}").exists()
+            ),
             None,
         )
         if image_path is None:
@@ -111,8 +117,12 @@ def _discover_pages(corpus_dir: Path) -> list[tuple[Path, Path, int]]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("corpus_dir", type=Path, help="Directory of <stem>.{png,jpg,...} + <stem>.txt pairs")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "corpus_dir", type=Path, help="Directory of <stem>.{png,jpg,...} + <stem>.txt pairs"
+    )
     args = parser.parse_args()
 
     pages = _discover_pages(args.corpus_dir)

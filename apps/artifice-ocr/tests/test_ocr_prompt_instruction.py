@@ -18,7 +18,9 @@ def test_empty_instruction_leaves_prompt_unchanged():
 
 
 def test_instruction_is_appended_not_replacing_the_base_prompt():
-    prompt = ocr._effective_prompt("This is a 19th-century field catalogue in German Kurrentschrift.")
+    prompt = ocr._effective_prompt(
+        "This is a 19th-century field catalogue in German Kurrentschrift."
+    )
     assert prompt.startswith(ocr.OCR_PROMPT)
     assert "19th-century field catalogue" in prompt
 
@@ -31,7 +33,9 @@ def test_vision_call_uses_the_effective_prompt(tmp_path, monkeypatch):
     monkeypatch.setattr(ocr, "backend_for", lambda role: "ollama")
     monkeypatch.setattr(ocr, "model_for", lambda role: "richardyoung/olmocr2:7b-q8")
     monkeypatch.setattr(
-        ocr, "_encode_image", lambda path, orientation=1, *, max_edge=None: ("YmFzZTY0", "image/png")
+        ocr,
+        "_encode_image",
+        lambda path, orientation=1, *, max_edge=None: ("YmFzZTY0", "image/png"),
     )
 
     seen = {}
