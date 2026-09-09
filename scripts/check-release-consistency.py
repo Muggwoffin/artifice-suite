@@ -8,23 +8,34 @@ from collections import defaultdict
 
 try:
     import tomllib
+
     HAS_TOMLLIB = True
 except ImportError:
     HAS_TOMLLIB = False
 
 try:
     import yaml
+
     HAS_YAML = True
 except ImportError:
     HAS_YAML = False
 
+# Apps paused 2026-09-09 (see CLAUDE.md and README.md#development-status).
+# Their pyproject.toml versions are reported below like everything else, but
+# excluded from the equality/--expected checks: they are not being actively
+# released, so forcing a version bump with no corresponding code change on
+# every tag would just be churn. Remove an app from this set to bring it
+# back under the lockstep gate once it resumes active development.
+PAUSED_APPS = {"artifice-draft", "artifice-graph"}
+
+
 def parse_pyproject(file_path):
     if not HAS_TOMLLIB:
         raise RuntimeError("tomllib not available; cannot parse TOML")
-    
+
     with open(file_path, "rb") as f:
         data = tomllib.load(f)
-    
+
     return data.get("project", {}).get("version", "")
 
 
@@ -36,18 +47,20 @@ def parse_citation_cff(file_path):
     else:
         # Fallback regex approach
         import re
+
         with open(file_path) as f:
             content = f.read()
-        
+
         version_match = re.search(r"^version:\s*([^\n]+)", content, re.MULTILINE)
         if not version_match:
             raise ValueError("Could not find version in CITATION.cff")
-        
+
         version = version_match.group(1).strip("'\" ")
         date_match = re.search(r"^date-released:\s*([^\n]+)", content, re.MULTILINE)
         date_released = date_match.group(1).strip("'\" ") if date_match else None
-        
+
         return version, date_released
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -56,9 +69,9 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--expect-equal", action="store_true", help="Check all versions are equal")
     group.add_argument("--expected", type=str, help="Check all versions equal this value")
-    
+
     args = parser.parse_args()
-    
+
     # Discover pyproject.toml files: the root one, plus every app and package.
     # Scoped on purpose — a blind "**" glob could pick up stray pyproject.toml
     # files inside .venv/, dist/ or build/ trees.
@@ -66,18 +79,28 @@ def main():
     pyproject_files = [root_dir / "pyproject.toml"]
     pyproject_files += sorted((root_dir / "apps").glob("*/pyproject.toml"))
     pyproject_files += sorted((root_dir / "packages").glob("*/pyproject.toml"))
-    
-    # Parse pyproject.toml files
+
+    def is_paused(file_path):
+        # apps/<name>/pyproject.toml -> parent dir name is <name>.
+        return file_path.parent.name in PAUSED_APPS
+
+    # Parse pyproject.toml files. `versions` is what the equality/--expected
+    # checks run against; `excluded` is reported but never gates anything.
     versions = defaultdict(list)
+    excluded = defaultdict(list)
     for file_path in pyproject_files:
         try:
             version = parse_pyproject(file_path)
-            versions[version].append(file_path)
         except Exception as e:
             print(f"Error parsing {file_path}: {e}", file=sys.stderr)
             sys.exit(1)
-    
-    # Parse CITATION.cff
+        if is_paused(file_path):
+            excluded[version].append(file_path)
+        else:
+            versions[version].append(file_path)
+
+    # Parse CITATION.cff — always gated. It is the suite's single citable
+    # version record, never a paused app's.
     citation_path = root_dir / "CITATION.cff"
     try:
         citation_version, date_released = parse_citation_cff(citation_path)
@@ -85,14 +108,20 @@ def main():
     except Exception as e:
         print(f"Error parsing {citation_path}: {e}", file=sys.stderr)
         sys.exit(1)
-    
+
     # Print version table
     print("Version consistency report:")
     for version, files in sorted(versions.items()):
         print(f"{version}: {len(files)} files")
         for file_path in sorted(files):
             print(f"  - {file_path}")
-    
+    if excluded:
+        print("Excluded from the gate (paused apps — see PAUSED_APPS above):")
+        for version, files in sorted(excluded.items()):
+            print(f"{version}: {len(files)} files")
+            for file_path in sorted(files):
+                print(f"  - {file_path}")
+
     # Check conditions
     if args.expect_equal:
         if len(versions) == 1:
@@ -120,6 +149,7 @@ def main():
         else:
             print("Version mismatch detected", file=sys.stderr)
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

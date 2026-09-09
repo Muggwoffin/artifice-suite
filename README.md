@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/badge/Licence-AGPL--3.0--or--later-blue" alt="Licence: AGPL-3.0-or-later">
   </a>
   <a href=".github/workflows/ci.yml">
-    <img src="https://img.shields.io/badge/CI-four%20apps%20%C3%97%20three%20platforms-blue" alt="CI">
+    <img src="https://img.shields.io/badge/CI-OCR%20%26%20Transcribe%20%C3%97%20three%20platforms-blue" alt="CI">
   </a>
   <a href="pyproject.toml">
     <img src="https://img.shields.io/badge/Python-3.11%2B-blue" alt="Python 3.11+">
@@ -18,15 +18,27 @@
 
 A collection of local-first and open-source tools that place a user-friendly interface over models. Buttons, forms, and human-in-the-loop checks create predictable results rather than open-ended chatbot surprises. Designed to support digital humanities research.
 
+## Development status
+
+**Artifice OCR and Artifice Transcribe are in active development.** They cover tasks —
+transcription and speech-to-text — where current local models are genuinely strong.
+
+**Artifice Draft and Artifice Graph are paused (as of 2026-09-09).** Current local-model quality
+for open-ended copy-editing and structured knowledge extraction doesn't yet clear the bar this
+suite holds itself to, so active feature work is on hold. They remain installable and their
+existing test suites still gate every change — this is a pause on new investment, not a removal.
+Development resumes once OCR and Transcribe are stable and/or local-model quality on these tasks
+improves.
+
 ## Applications
 
-| App | What it does | Model backends |
-|---|---|---|
-| 🖥️ **Artifice Hub** | Native GUI launcher and installer. Manages installation, updating, and launching of all four apps. Handles the PyTorch CUDA hardware probe natively. Ships frozen only (not on PyPI). | — |
-| 📷 **Artifice OCR** | Local-first OCR processing: edit raw OCR output, clean up text, auto-generate archival page titles (optional), and translate documents in one workflow. Integrates with Tropy via JSON-LD and live read-only `.tpy` browse; previewed Developer API write-back attaches notes to original photos. | Ollama, LM Studio, OpenAI-compatible, Hugging Face |
-| 🎧 **Artifice Transcribe** | Oral history transcription with a speech-to-text model of your choice, coupled with pyannote diarization for speaker labels. Produces OHMS- and TEI-compliant transcripts. | Whisper / Parakeet, pyannote |
-| 🗺️ **Artifice Graph** | Knowledge graph creator extracting entities and relationships into a variety of formats. Integrated with Obsidian for navigable graphs. | Ollama, LM Studio, OpenAI-compatible |
-| 📝 **Artifice Draft** | Copy and paste an academic journal style guide for precise edits of your writing. Outputs a track-changed Word file: you veto any change. | Ollama, LM Studio, OpenAI-compatible, Anthropic |
+| App | What it does | Model backends | Status |
+|---|---|---|---|
+| 🖥️ **Artifice Hub** | Native GUI launcher and installer. Manages installation, updating, and launching of all four apps. Handles the PyTorch CUDA hardware probe natively. Ships frozen only (not on PyPI). | — | Active |
+| 📷 **Artifice OCR** | Local-first OCR processing: edit raw OCR output, clean up text, auto-generate archival page titles (optional), and translate documents in one workflow. Integrates with Tropy via JSON-LD and live read-only `.tpy` browse; previewed Developer API write-back attaches notes to original photos. | Ollama, LM Studio, OpenAI-compatible, Hugging Face | Active |
+| 🎧 **Artifice Transcribe** | Oral history transcription with a speech-to-text model of your choice, coupled with pyannote diarization for speaker labels. Produces OHMS- and TEI-compliant transcripts. | Whisper / Parakeet, pyannote | Active (next up once OCR stabilises) |
+| 🗺️ **Artifice Graph** | Knowledge graph creator extracting entities and relationships into a variety of formats. Integrated with Obsidian for navigable graphs. | Ollama, LM Studio, OpenAI-compatible | **Paused** |
+| 📝 **Artifice Draft** | Copy and paste an academic journal style guide for precise edits of your writing. Outputs a track-changed Word file: you veto any change. | Ollama, LM Studio, OpenAI-compatible, Anthropic | **Paused** |
 
 ## Quick start
 

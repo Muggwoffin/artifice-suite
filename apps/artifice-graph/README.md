@@ -4,6 +4,12 @@
 
 *Part of the [Artifice Suite](../../README.md) — Local-First, Model-Agnostic Software Harnesses for Humanities Research.*
 
+> **Development status: Paused (2026-09-09).** Current local-model quality for structured
+> knowledge/entity extraction doesn't yet clear this suite's bar, so active feature work is on
+> hold in favour of Artifice OCR and Artifice Transcribe. ArtificeGraph remains installable,
+> published, and covered by its existing test suite — this is a pause on new investment, not a
+> removal. See the [suite README](../../README.md#development-status) for the full picture.
+
 ---
 
 ## 🏛️ Philosophy: The Software Harness vs. The Chatbot
