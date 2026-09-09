@@ -103,6 +103,7 @@ const SettingsTab = (function () {
   };
   const discoveredModels = new Map();
   let discoveryGeneration = 0;
+  let statusRevertTimer = null;
 
   const approvedFoldersList = document.getElementById("approved-folders-list");
   const approvedFoldersStatus = document.getElementById("approved-folders-status");
@@ -446,7 +447,10 @@ const SettingsTab = (function () {
       savedSnapshot = snapshot(cfg);
       setDirty(false);
       setStatus("Saved.", "success");
-      setTimeout(() => { if (!dirty) setStatus("No changes"); }, 2500);
+      // Cancel any revert timer still pending from an earlier save, or the
+      // stale timer will later overwrite this save's "Saved." with "No changes".
+      clearTimeout(statusRevertTimer);
+      statusRevertTimer = setTimeout(() => { if (!dirty) setStatus("No changes"); }, 2500);
     } catch (err) {
       if (window.ArtificeToast) window.ArtificeToast.error("Could not save settings: " + err.message);
       setStatus("Could not save settings: " + err.message, "error");
