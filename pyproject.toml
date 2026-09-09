@@ -15,6 +15,26 @@ draft-web = ["artifice-draft[web]", "artifice-model-harness>=0.2.0", "artifice-s
 graph = ["artifice-graph", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
 graph-web = ["artifice-graph[web,window]", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
 transcribe = ["artifice-transcribe", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
+# transcribe plus the speech-recognition stack (WhisperX, torch, pyannote).
+#
+# These exist because the app prints `uv sync --extra asr` as its install hint
+# when transcription is unavailable (api/v1/routes.py::_INSTALL_HINT), and
+# without a matching extra HERE that command fails from the workspace root
+# with "Extra `asr` is not defined in the optional-dependencies table for
+# artifice-suite". The hint was correct about intent and wrong about location:
+# `asr` is declared on artifice-transcribe, but `uv sync` resolves extras
+# against the workspace root. Keep these two names in step with _INSTALL_HINT
+# and _INSTALL_HINT_CUDA.
+#
+# Multi-gigabyte, and deliberately NOT part of `all`: the app is designed to
+# run without them (see the AsrUnavailable guard and /api/v1/capabilities), so
+# a default install stays small and transcription is an upgrade.
+asr = ["artifice-transcribe[asr]", "artifice-model-harness>=0.2.0", "artifice-shared-ui>=0.2.0"]
+asr-cuda = [
+    "artifice-transcribe[asr-cuda]",
+    "artifice-model-harness>=0.2.0",
+    "artifice-shared-ui>=0.2.0",
+]
 all = [
     "artifice-ocr",
     # web extra included so that --extra all carries the packages
