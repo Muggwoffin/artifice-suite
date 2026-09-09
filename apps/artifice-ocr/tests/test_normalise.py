@@ -31,6 +31,7 @@ FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 # Helpers
 # --------------------------------------------------------------------------- #
 
+
 def _load_fixture(name: str) -> str:
     return (FIXTURE_DIR / name).read_text(encoding="utf-8")
 
@@ -38,6 +39,7 @@ def _load_fixture(name: str) -> str:
 # --------------------------------------------------------------------------- #
 # Rule 1: hyphen prefix keep
 # --------------------------------------------------------------------------- #
+
 
 class TestPrefixKeep:
     """Known prefixes keep their hyphen on lowercase continuation."""
@@ -143,6 +145,7 @@ class TestPrefixKeep:
 # Rule 2a: hyphen rejoin (lowercase continuation)
 # --------------------------------------------------------------------------- #
 
+
 class TestHyphenRejoin:
     def test_lowercase_continuation(self):
         text, n = _rejoin_hyphenated_lower("Be-\nricht")
@@ -175,6 +178,7 @@ class TestHyphenRejoin:
 # Rule 2b: hyphen keep (uppercase continuation)
 # --------------------------------------------------------------------------- #
 
+
 class TestHyphenKeepUpper:
     def test_uppercase_compound(self):
         text, n = _keep_hyphen_upper("Kaiser-\nWilhelm")
@@ -195,6 +199,7 @@ class TestHyphenKeepUpper:
 # --------------------------------------------------------------------------- #
 # Rule 3: em-dash line break
 # --------------------------------------------------------------------------- #
+
 
 class TestEmdashBreak:
     def test_emdash_at_line_end_lowercase_next(self):
@@ -241,6 +246,7 @@ class TestEmdashBreak:
 # Rule 4: mid-sentence join
 # --------------------------------------------------------------------------- #
 
+
 class TestMidSentence:
     def test_lowercase_to_lowercase(self):
         text, n = _join_mid_sentence_breaks("der Bericht\nwar")
@@ -274,6 +280,7 @@ class TestMidSentence:
 # Rule 5a: collapse spaces
 # --------------------------------------------------------------------------- #
 
+
 class TestCollapseSpaces:
     def test_double_space(self):
         text, n = _collapse_spaces("word.  Next")
@@ -296,6 +303,7 @@ class TestCollapseSpaces:
 # Rule 5b: space before punctuation
 # --------------------------------------------------------------------------- #
 
+
 class TestSpaceBeforePunct:
     def test_comma(self):
         text, n = _fix_space_before_punct("scheint , dass")
@@ -316,6 +324,7 @@ class TestSpaceBeforePunct:
 # --------------------------------------------------------------------------- #
 # Rule ordering
 # --------------------------------------------------------------------------- #
+
 
 class TestRuleOrder:
     """Rule ordering is load-bearing: later rules must not undo earlier ones."""
@@ -356,6 +365,7 @@ class TestRuleOrder:
 # --------------------------------------------------------------------------- #
 # Integration: full normalise() on proceedings_usnm_173 fixture
 # --------------------------------------------------------------------------- #
+
 
 class TestProceedingsFixture:
     """End-to-end test over the real ground-truth fixture."""
@@ -403,6 +413,7 @@ class TestProceedingsFixture:
         result, _ = normalise(raw)
         # No runs of two or more horizontal spaces should remain
         import re
+
         assert not re.search(r"[ \t]{2,}", result)
 
     def test_ocr_errors_left_unchanged(self, raw):
@@ -435,6 +446,7 @@ class TestProceedingsFixture:
     def test_no_line_break_hyphens_remain(self, raw, groundtruth):
         """After normalise, no ASCII-hyphen-at-line-break should survive."""
         import re
+
         result, _ = normalise(raw)
         assert not re.search(r"-\s*\r?\n", result)
 
@@ -443,15 +455,12 @@ class TestProceedingsFixture:
 # Defensive pre-pass: leaked YAML front matter
 # --------------------------------------------------------------------------- #
 
+
 def test_leaked_yaml_front_matter_is_stripped_before_normalisation():
     from artifice_ocr._normalise import normalise
 
     text = (
-        "---\n"
-        "primary_language: en\n"
-        "is_rotation_valid: true\n"
-        "---\n"
-        "This is the actual page text.\n"
+        "---\nprimary_language: en\nis_rotation_valid: true\n---\nThis is the actual page text.\n"
     )
     cleaned, stats = normalise(text)
 

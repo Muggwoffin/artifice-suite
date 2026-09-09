@@ -92,9 +92,14 @@ def test_perform_probes_rotation_only_when_orientation_is_normal(tmp_path, monke
     from artifice_ocr.stages import ocr
 
     calls = []
-    monkeypatch.setattr(ocr, "cfg", lambda key, default=None: {
-        "ocr_auto_rotation_detect": True, "ocr_repetition_guard": False,
-    }.get(key, default))
+    monkeypatch.setattr(
+        ocr,
+        "cfg",
+        lambda key, default=None: {
+            "ocr_auto_rotation_detect": True,
+            "ocr_repetition_guard": False,
+        }.get(key, default),
+    )
     monkeypatch.setattr(ocr, "_ocr_single_image", lambda path, orientation=1: ("text", "ollama"))
     monkeypatch.setattr(_rotation, "detect_orientation", lambda data: calls.append(data) or 3)
 
@@ -109,9 +114,14 @@ def test_perform_skips_the_probe_when_orientation_already_set(tmp_path, monkeypa
     from artifice_ocr.stages import ocr
 
     calls = []
-    monkeypatch.setattr(ocr, "cfg", lambda key, default=None: {
-        "ocr_auto_rotation_detect": True, "ocr_repetition_guard": False,
-    }.get(key, default))
+    monkeypatch.setattr(
+        ocr,
+        "cfg",
+        lambda key, default=None: {
+            "ocr_auto_rotation_detect": True,
+            "ocr_repetition_guard": False,
+        }.get(key, default),
+    )
     monkeypatch.setattr(ocr, "_ocr_single_image", lambda path, orientation=1: ("text", "ollama"))
     monkeypatch.setattr(_rotation, "detect_orientation", lambda data: calls.append(data) or 3)
 
@@ -132,9 +142,14 @@ def test_perform_skips_the_rotation_probe_for_pdfs(tmp_path, monkeypatch):
     from artifice_ocr.stages import ocr
 
     calls = []
-    monkeypatch.setattr(ocr, "cfg", lambda key, default=None: {
-        "ocr_auto_rotation_detect": True, "ocr_repetition_guard": False,
-    }.get(key, default))
+    monkeypatch.setattr(
+        ocr,
+        "cfg",
+        lambda key, default=None: {
+            "ocr_auto_rotation_detect": True,
+            "ocr_repetition_guard": False,
+        }.get(key, default),
+    )
     monkeypatch.setattr(ocr, "_ocr_single_image", lambda path, orientation=1: ("text", "ollama"))
     monkeypatch.setattr(
         ocr, "_pdf_to_page_images", lambda path, orientation=1: [tmp_path / "page_0001.png"]

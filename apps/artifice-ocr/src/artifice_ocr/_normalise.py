@@ -66,7 +66,7 @@ def _strip_leaked_front_matter(text: str) -> tuple[str, bool]:
     match = _FRONT_MATTER_RE.match(text)
     if not match:
         return text, False
-    return text[match.end():], True
+    return text[match.end() :], True
 
 
 # --------------------------------------------------------------------------- #
@@ -83,10 +83,27 @@ def _strip_leaked_front_matter(text: str) -> tuple[str, bool]:
 # German equivalents of "self-" and well-established borrowings are
 # included.  Most Latinate prefixes ("co-", "ex-", "anti-", …) are
 # shared across the two languages.
-_HYPHEN_PREFIXES: tuple[str, ...] = tuple(sorted((
-    "anti", "co", "ex", "non", "post", "pre", "pseudo",
-    "quasi", "re", "self", "selbst", "semi", "well",
-), key=len, reverse=True))
+_HYPHEN_PREFIXES: tuple[str, ...] = tuple(
+    sorted(
+        (
+            "anti",
+            "co",
+            "ex",
+            "non",
+            "post",
+            "pre",
+            "pseudo",
+            "quasi",
+            "re",
+            "self",
+            "selbst",
+            "semi",
+            "well",
+        ),
+        key=len,
+        reverse=True,
+    )
+)
 
 _PREFIX_PATTERN = "|".join(_HYPHEN_PREFIXES)
 
@@ -115,9 +132,7 @@ def _keep_hyphen_prefix(text: str) -> tuple[str, int]:
 
 # ---- 2a: soft hyphen — continuation is lowercase, strip the hyphen ----
 
-_RE_HYPHEN_REJOIN = re.compile(
-    rf"([{_L}])- *\r?\n *([{_LC}])"
-)
+_RE_HYPHEN_REJOIN = re.compile(rf"([{_L}])- *\r?\n *([{_LC}])")
 
 
 def _rejoin_hyphenated_lower(text: str) -> tuple[str, int]:
@@ -134,9 +149,7 @@ def _rejoin_hyphenated_lower(text: str) -> tuple[str, int]:
 
 # ---- 2b: real compound hyphen — continuation is uppercase, keep it ----
 
-_RE_HYPHEN_KEEP = re.compile(
-    rf"([{_L}])- *\r?\n *([{_UC}])"
-)
+_RE_HYPHEN_KEEP = re.compile(rf"([{_L}])- *\r?\n *([{_UC}])")
 
 
 def _keep_hyphen_upper(text: str) -> tuple[str, int]:
@@ -241,6 +254,7 @@ def _fix_space_before_punct(text: str) -> tuple[str, int]:
 # --------------------------------------------------------------------------- #
 # Public API
 # --------------------------------------------------------------------------- #
+
 
 def normalise(text: str) -> tuple[str, dict]:
     """Apply deterministic OCR artifact repairs to *text*.

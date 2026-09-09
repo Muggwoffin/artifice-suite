@@ -224,10 +224,14 @@ def test_perform_sidecar_records_the_effective_ocr_prompt(tmp_path, monkeypatch)
     ``OCR_PROMPT`` constant."""
     from artifice_ocr.stages import ocr
 
-    monkeypatch.setattr(ocr, "cfg", lambda key, default=None: {
-        "ocr_prompt_instruction": "Expect handwritten German Kurrentschrift.",
-        "ocr_repetition_guard": False,
-    }.get(key, default))
+    monkeypatch.setattr(
+        ocr,
+        "cfg",
+        lambda key, default=None: {
+            "ocr_prompt_instruction": "Expect handwritten German Kurrentschrift.",
+            "ocr_repetition_guard": False,
+        }.get(key, default),
+    )
     monkeypatch.setattr(ocr, "_ocr_single_image", lambda path, orientation=1: ("text", "ollama"))
 
     img = tmp_path / "doc.png"

@@ -57,8 +57,8 @@ def character_error_rate(reference: str, hypothesis: str) -> float:
         for j, h_ch in enumerate(hyp, start=1):
             cost = 0 if r_ch == h_ch else 1
             curr[j] = min(
-                prev[j] + 1,       # deletion
-                curr[j - 1] + 1,   # insertion
+                prev[j] + 1,  # deletion
+                curr[j - 1] + 1,  # insertion
                 prev[j - 1] + cost,  # substitution/match
             )
         prev = curr
