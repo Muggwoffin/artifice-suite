@@ -42,10 +42,14 @@ class TranscriptionEngine:
         model_size: str = "base",
         device: str = "auto",
         hf_token: str = "",
+        diarization_model: str = "",
     ):
         self._model_size = model_size
         self._device = self._resolve_device(device)
         self._hf_token = hf_token
+        # Empty means "let WhisperX choose", which is not the same as naming a
+        # model — see _ensure_models for why that distinction is load-bearing.
+        self._diarization_model = (diarization_model or "").strip()
 
         self._whisper_model = None
         self._align_models: dict[str, tuple] = {}
@@ -81,10 +85,31 @@ class TranscriptionEngine:
 
         if self._diarize_model is None:
             try:
-                logger.info("Loading diarization model...")
                 from whisperx.diarize import DiarizationPipeline
 
-                self._diarize_model = DiarizationPipeline(token=self._hf_token, device=self._device)
+                # Pass None, never "", for both of these.
+                #
+                # model_name: WhisperX does `model_name or <its own default>`,
+                # so None means "use WhisperX's default" — which tracks the
+                # pyannote version it is pinned against. Naming a model here
+                # overrides that, and a stale name silently forces a download
+                # of a model that may be gated or may not match the installed
+                # pyannote major version. Only send a name the user actually
+                # chose.
+                #
+                # token: an empty string is a *present but blank* credential to
+                # huggingface_hub, which is not the same as "no credential" and
+                # reports differently on a gated repo.
+                model_name = self._diarization_model or None
+                logger.info(
+                    "Loading diarization model: %s",
+                    model_name or "(WhisperX default)",
+                )
+                self._diarize_model = DiarizationPipeline(
+                    model_name=model_name,
+                    token=self._hf_token or None,
+                    device=self._device,
+                )
             except Exception as exc:
                 self._last_error = redact_token(str(exc))
                 self._models_ready = False

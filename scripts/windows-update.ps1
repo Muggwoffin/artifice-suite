@@ -27,13 +27,25 @@
 .PARAMETER NoSync
     Pull only; skip the uv dependency sync.
 
+.PARAMETER Asr
+    Also install the ASR stack (WhisperX, torch, pyannote) for automatic
+    transcription. Several GB. Not needed for hand transcription, uploads,
+    editing or export.
+
+    You rarely need this switch: if the ASR stack is already installed, it is
+    detected and kept automatically. `uv sync` reconciles the environment to
+    exactly the extras it is given, so without that detection a routine update
+    would silently uninstall a multi-gigabyte stack the user had deliberately
+    added.
+
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-update.ps1
 #>
 [CmdletBinding()]
 param(
     [string]$Branch = "main",
-    [switch]$NoSync
+    [switch]$NoSync,
+    [switch]$Asr
 )
 
 $ErrorActionPreference = "Stop"
@@ -123,13 +135,37 @@ if (-not $uv) {
     exit 1
 }
 
-Write-Host ""
-Write-Host "  Syncing dependencies (no ASR stack - that stays opt-in)..." -ForegroundColor Gray
+# Is the ASR stack already present? `uv sync` reconciles the environment to
+# exactly the extras it is given, so omitting --extra asr on a machine that has
+# it would silently uninstall several GB the user chose to add. Detect and
+# preserve rather than surprise them.
+$asrInstalled = $false
+$venvPy = Join-Path $repo ".venv\Scripts\python.exe"
+if (Test-Path $venvPy) {
+    & $venvPy -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('whisperx') else 1)" 2>$null
+    $asrInstalled = ($LASTEXITCODE -eq 0)
+}
 
-# ocr-web  : artifice-ocr[web,window] - keeps the OCR desktop window working
-# transcribe: artifice-transcribe core - FastAPI/SQLAlchemy, deliberately no torch
-# all      : the remaining apps, so the whole workspace stays importable
-uv sync --extra all --extra ocr-web --extra transcribe
+$extras = @("--extra", "all", "--extra", "ocr-web", "--extra", "transcribe")
+
+if ($Asr -or $asrInstalled) {
+    $extras += @("--extra", "asr")
+    if ($asrInstalled -and -not $Asr) {
+        Write-Host ""
+        Write-Host "  ASR stack detected - keeping it (pass -NoSync to skip entirely)." -ForegroundColor Gray
+    } else {
+        Write-Host ""
+        Write-Host "  Installing the ASR stack. This is a multi-GB download." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host ""
+    Write-Host "  Syncing dependencies (no ASR stack - that stays opt-in)..." -ForegroundColor Gray
+}
+
+# ocr-web   : artifice-ocr[web,window] - keeps the OCR desktop window working
+# transcribe: artifice-transcribe core - FastAPI/SQLAlchemy, no torch
+# all       : the remaining apps, so the whole workspace stays importable
+uv sync @extras
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  uv sync failed." -ForegroundColor Red
     exit 1
@@ -137,6 +173,10 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "  Done." -ForegroundColor Green
-Write-Host "  ASR (Whisper/pyannote) is not installed. To add it later:" -ForegroundColor Gray
-Write-Host "      uv sync --extra all --extra ocr-web --extra transcribe --extra asr" -ForegroundColor Gray
+if ($Asr -or $asrInstalled) {
+    Write-Host "  ASR stack is installed - automatic transcription available." -ForegroundColor Gray
+} else {
+    Write-Host "  ASR (Whisper/pyannote) is not installed. To add it:" -ForegroundColor Gray
+    Write-Host "      scripts\windows-update.ps1 -Asr" -ForegroundColor Gray
+}
 Write-Host ""
