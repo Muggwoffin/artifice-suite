@@ -225,6 +225,11 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
         messages=[
             {
                 "role": "user",
+                # Order is load-bearing: olmOCR-2 was trained with text
+                # before image (arXiv:2510.19817 s4, "Better prompting") —
+                # reversing it is a training/inference mismatch that
+                # measurably hurt benchmark performance upstream. Do not
+                # "clean up" this ordering in a refactor.
                 "content": [
                     {"type": "text", "text": OCR_PROMPT},
                     {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
