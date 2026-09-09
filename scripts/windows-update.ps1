@@ -78,13 +78,60 @@ Write-Host "  Fetching from github..." -ForegroundColor Gray
 git fetch github --prune
 if ($LASTEXITCODE -ne 0) { Write-Host "  git fetch failed." -ForegroundColor Red; exit 1 }
 
+$current = git rev-parse --abbrev-ref HEAD
+
+# Switching branches is only ever done on an explicit request. Defaulting
+# $Branch to "main" and switching to it silently moved a checkout off a feature
+# branch carrying unpushed commits and announced it as "Updated <newer> ->
+# <older>" — a downgrade reported as an upgrade. The commits survived on their
+# branch, but the surprise is the bug. Absent -Branch, update whatever branch
+# is already checked out.
+if (-not $PSBoundParameters.ContainsKey('Branch')) {
+    $Branch = $current
+}
+
 $before = git rev-parse --short HEAD
-$target = git rev-parse --short "github/$Branch"
+
+# Guard the branch switch itself: refuse to leave a branch holding commits that
+# exist nowhere else.
+if ($Branch -ne $current) {
+    git rev-parse --verify --quiet "refs/remotes/github/$current" > $null
+    $currentIsPushed = ($LASTEXITCODE -eq 0)
+    $unpushed = if ($currentIsPushed) {
+        git rev-list --count "github/$current..$current"
+    } else {
+        git rev-list --count "$current" --not --remotes=github
+    }
+
+    if ([int]$unpushed -gt 0) {
+        Write-Host "  '$current' has $unpushed commit(s) not on the github remote." -ForegroundColor Yellow
+        Write-Host "  Refusing to switch to '$Branch' and leave them behind." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "  Push them, or re-run without -Branch to update '$current' in place." -ForegroundColor Yellow
+        exit 1
+    }
+}
+
+# Does the target branch exist on the remote? A purely local branch has nothing
+# to pull, and asking for github/<name> would fail.
+git rev-parse --verify --quiet "refs/remotes/github/$Branch" > $null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  '$Branch' is local-only (no github/$Branch) - nothing to pull." -ForegroundColor Gray
+    Write-Host "  Branch: $current   HEAD: $(git log --oneline -1)"
+    $target = $before
+} else {
+    $target = git rev-parse --short "github/$Branch"
+}
 
 if ($before -eq $target) {
     Write-Host "  Already up to date at $before ($Branch)." -ForegroundColor Green
 } else {
     $behind = git rev-list --count "HEAD..github/$Branch"
+    if ([int]$behind -eq 0) {
+        Write-Host "  '$Branch' is ahead of github/$Branch by $(git rev-list --count "github/$Branch..HEAD") commit(s)." -ForegroundColor Gray
+        Write-Host "  Nothing to pull." -ForegroundColor Green
+        $target = $before
+    } else {
     Write-Host "  $behind commit(s) behind github/$Branch. Updating..." -ForegroundColor Gray
 
     # Ask whether the local branch exists rather than trying the checkout and
@@ -117,6 +164,7 @@ if ($before -eq $target) {
         exit 1
     }
     Write-Host "  Updated $before -> $(git rev-parse --short HEAD)" -ForegroundColor Green
+    }
 }
 
 Write-Host "  Branch: $(git rev-parse --abbrev-ref HEAD)   HEAD: $(git log --oneline -1)"
