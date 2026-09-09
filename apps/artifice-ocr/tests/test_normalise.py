@@ -437,3 +437,46 @@ class TestProceedingsFixture:
         import re
         result, _ = normalise(raw)
         assert not re.search(r"-\s*\r?\n", result)
+
+
+# --------------------------------------------------------------------------- #
+# Defensive pre-pass: leaked YAML front matter
+# --------------------------------------------------------------------------- #
+
+def test_leaked_yaml_front_matter_is_stripped_before_normalisation():
+    from artifice_ocr._normalise import normalise
+
+    text = (
+        "---\n"
+        "primary_language: en\n"
+        "is_rotation_valid: true\n"
+        "---\n"
+        "This is the actual page text.\n"
+    )
+    cleaned, stats = normalise(text)
+
+    assert "primary_language" not in cleaned
+    assert "---" not in cleaned
+    assert "This is the actual page text." in cleaned
+    assert stats.get("front_matter_stripped") is True
+
+
+def test_text_without_front_matter_is_unaffected():
+    from artifice_ocr._normalise import normalise
+
+    text = "Just ordinary transcribed text, no --- anywhere relevant.\n"
+    cleaned, stats = normalise(text)
+
+    assert cleaned.strip() == text.strip()
+    assert stats.get("front_matter_stripped", False) is False
+
+
+def test_a_lone_leading_dash_line_is_not_mistaken_for_front_matter():
+    """A page whose real content starts with a horizontal rule must survive."""
+    from artifice_ocr._normalise import normalise
+
+    text = "---\nNo closing delimiter follows, so this is not front matter.\n"
+    cleaned, stats = normalise(text)
+
+    assert cleaned.strip().startswith("---")
+    assert stats.get("front_matter_stripped", False) is False

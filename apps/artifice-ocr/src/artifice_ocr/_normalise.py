@@ -46,6 +46,30 @@ _UC = r"A-ZÄÖÜ"
 _L = rf"{_LC}{_UC}"
 
 # --------------------------------------------------------------------------- #
+# Defensive pre-pass: leaked YAML front matter
+# --------------------------------------------------------------------------- #
+
+_FRONT_MATTER_RE = re.compile(r"\A---\s*\n(.*?\n)?---\s*\n", re.DOTALL)
+
+
+def _strip_leaked_front_matter(text: str) -> tuple[str, bool]:
+    """Remove a leading ``---``-delimited YAML block if present.
+
+    OCR_PROMPT asks for raw text with no formatting, but a model RLVR'd
+    toward YAML-front-matter-plus-Markdown output (see
+    OLMOCR2_OPTIMISATION_FINDINGS.md s3) can still emit one. Nothing else in
+    this pipeline recognises it, so left unstripped it is written to
+    raw_ocr/text/*.txt as if it were transcribed page content. Requires a
+    matching closing ``---`` — a page whose genuine content happens to open
+    with a horizontal rule (a single ``---`` with no closer) is left alone.
+    """
+    match = _FRONT_MATTER_RE.match(text)
+    if not match:
+        return text, False
+    return text[match.end():], True
+
+
+# --------------------------------------------------------------------------- #
 # Rule 1: Known hyphenated prefixes — keep the hyphen always
 # --------------------------------------------------------------------------- #
 
@@ -232,8 +256,11 @@ def normalise(text: str) -> tuple[str, dict]:
 
     # Rule order matters.
     #
-    # Prefix-keep runs first: a prefix-hyphen at line end must be protected
-    # before the general rejoin rule strips it.
+    # Front-matter stripping runs before every artifact rule: leaked YAML
+    # is not page content, and no artifact rule may see it.
+    #
+    # Prefix-keep runs first among the artifact rules: a prefix-hyphen at
+    # line end must be protected before the general rejoin rule strips it.
     #
     # Hyphenation (rejoin + keep-upper) runs before mid-sentence joins:
     # a ``-\\n`` that rule 2 resolves should not also be considered by rule 4.
@@ -243,6 +270,9 @@ def normalise(text: str) -> tuple[str, dict]:
     # already in place.
     #
     # Space normalisation runs last because earlier rules insert spaces.
+
+    text, stripped = _strip_leaked_front_matter(text)
+    counts["front_matter_stripped"] = stripped
 
     text, n = _keep_hyphen_prefix(text)
     counts["hyphen_prefix_keep"] = n
