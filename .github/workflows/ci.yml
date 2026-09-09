@@ -551,9 +551,16 @@ jobs:
           "
 
   # ── Multi-platform smoke test ─────────────────────────────────────────────
-  # All four apps × three platforms.  Previously this job covered only
-  # artifice-ocr, so artifice-draft, artifice-graph and
-  # artifice-transcribe had never been exercised on Windows or macOS in CI.
+  # Full three-platform coverage for artifice-ocr and artifice-transcribe,
+  # the two apps in active development. artifice-draft and artifice-graph
+  # were paused 2026-09-09 (maintainer decision: current local-model quality
+  # for copy-editing and structured extraction doesn't yet justify the
+  # ongoing cost of testing them on every platform) — they keep their
+  # single-platform coverage in the `tests` job above so a real regression
+  # still fails CI, they just lose the extra Windows/macOS legs here. This
+  # is a cost cut, not a correctness one, and is meant to be reversible:
+  # delete the `exclude` block below to restore full coverage if either app
+  # resumes active development.
   #
   # transcribe pulls large ML dependencies (whisperx, torch, pyannote) and
   # its suite takes ~35 s locally.  If a hosted runner cannot install its
@@ -566,12 +573,22 @@ jobs:
     strategy:
       # The whole point of this job is comparing platforms.  Cancelling the
       # other combinations the moment one fails destroys exactly the signal
-      # it exists to produce.  fail-fast: false is *more* important now that
-      # there are 12 combinations instead of 3.
+      # it exists to produce.  fail-fast: false stays important even at a
+      # reduced 8 combinations.
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         app: [artifice-ocr, artifice-draft, artifice-graph, artifice-transcribe]
+        exclude:
+          # Paused apps: ubuntu-only. See the job comment above.
+          - os: windows-latest
+            app: artifice-draft
+          - os: macos-latest
+            app: artifice-draft
+          - os: windows-latest
+            app: artifice-graph
+          - os: macos-latest
+            app: artifice-graph
     defaults:
       run:
         working-directory: apps/${{ matrix.app }}

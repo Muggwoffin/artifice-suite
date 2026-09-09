@@ -16,6 +16,29 @@ You oversee the development of four local-first, BYOM (Bring-Your-Own-Model) aca
 …and a fifth app that is **not** a harness, added later and easy to miss:
 - `apps/artifice-hub` (native GUI launcher — installs, updates and launches the other four)
 
+> **`artifice-draft` and `artifice-graph` are PAUSED — maintainer decision, 2026-09-09.** The
+> maintainer judged this suite a victim of some scope creep: only OCR and Transcribe are genuinely
+> well-served by current local-model quality (copy-editing and structured knowledge extraction are
+> not there yet). Draft and Graph are frozen at their current feature set — **no active feature
+> work**, existing tests still gate every change so they don't silently rot, still installable and
+> published, nothing deleted. This is deliberately **reversible, not archival**: it can be undone by
+> reverting the CI/doc changes below if either app's local-model story improves or the maintainer
+> returns to them.
+>
+> **What actually changed, so "four apps" claims elsewhere in this file are not automatically
+> wrong, but need this context:** `.github/workflows/ci.yml`'s `tests-cross-platform` job now
+> `exclude`s Draft and Graph from the Windows/macOS legs of its matrix — they keep single-platform
+> (`ubuntu-latest`) coverage via the `tests` job, just not the fuller cross-platform sweep OCR and
+> Transcribe get. `README.md` gained a "Development status" section and a Status column in the
+> Applications table. `build-exe.yml` was deliberately **left untouched** — it only fires on
+> `workflow_dispatch` or a `v*` tag push, not on every PR, so it carries no routine cost; a paused
+> app can still be frozen into an executable on request.
+>
+> **Active development order, per the maintainer:** OCR first (current focus, this is where most
+> sessions will be), then Transcribe once OCR is stable. Do not read "four apps" in the rest of
+> this file as "four apps under equal active development" — check this note for what's actually
+> live before assuming Draft or Graph work is wanted.
+
 > **"Four apps" was wrong from the day the Hub landed and stayed wrong for two weeks —
 > corrected 2026-08-24.** `apps/artifice-hub` has 43 tests, its own `artifice-hub.spec`, a
 > `window.py`, and a slot in `build-exe.yml`'s app choice. It is deliberately **frozen-only**:
