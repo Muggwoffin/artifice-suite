@@ -13,6 +13,7 @@ from typing import Any
 from artifice_ocr import _guard
 from artifice_ocr import _tesseract
 from artifice_ocr._backend import get_client as _get_backend_client
+from artifice_ocr._blank import is_near_blank
 from artifice_ocr._logging import get_logger
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
@@ -297,6 +298,12 @@ def _ocr_single_image(image_path: Path, orientation: int = 1) -> tuple[str, str]
     A historian citing a transcription needs to know which engine read each
     page, so this is deliberately explicit rather than assumed.
     """
+    if cfg("ocr_blank_page_skip"):
+        raw_bytes = image_path.read_bytes()
+        if is_near_blank(raw_bytes):
+            log.info("Skipping OCR for near-blank page %s", getattr(image_path, "name", image_path))
+            return "", "blank-skip"
+
     if cfg("ocr_engine", "vision_model") == "tesseract":
         return _tesseract_from_image(image_path, orientation), "tesseract"
 

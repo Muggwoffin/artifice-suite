@@ -217,6 +217,7 @@ _CONFIG_KEYS = (
     "ocr_temperature_ladder_start",
     "ocr_temperature_ladder_step",
     "ocr_temperature_ladder_max",
+    "ocr_blank_page_skip",
     "resume",
     "confidence_enabled",
     "preprocess_enabled",

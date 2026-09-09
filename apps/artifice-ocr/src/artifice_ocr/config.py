@@ -114,6 +114,11 @@ _DEFAULTS: dict[str, Any] = {
     "ocr_temperature_ladder_start": 0.1,
     "ocr_temperature_ladder_step": 0.1,
     "ocr_temperature_ladder_max": 0.8,
+    # Skip the OCR call entirely for a near-blank page (a verso, a flyleaf).
+    # olmOCR 2 (arXiv:2510.19817 s4, "Handle blank pages"): a model never
+    # trained on blank pages hallucinates rather than recognising there is
+    # nothing there. See _blank.py.
+    "ocr_blank_page_skip": True,
     # Phase 1 deterministic image pre-processing, applied before the page is
     # sent to the vision model. Off by default: a clean scan needs none of it,
     # and it must never change behaviour for an existing user who has not asked
@@ -201,6 +206,7 @@ PERSISTED_KEYS = (
     "ocr_temperature_ladder_start",
     "ocr_temperature_ladder_step",
     "ocr_temperature_ladder_max",
+    "ocr_blank_page_skip",
     "preprocess_enabled",
     "preprocess_grayscale",
     "preprocess_illumination",
