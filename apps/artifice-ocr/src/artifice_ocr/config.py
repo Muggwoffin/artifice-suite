@@ -119,6 +119,13 @@ _DEFAULTS: dict[str, Any] = {
     # trained on blank pages hallucinates rather than recognising there is
     # nothing there. See _blank.py.
     "ocr_blank_page_skip": True,
+    # Probe a page with Tesseract OSD for rotation ONLY when Tropy's own
+    # orientation metadata says "normal" (1) — an explicit non-1 value is
+    # trusted as a deliberate correction and never second-guessed. Off by
+    # default: it costs a Tesseract subprocess call per page and Tesseract
+    # is an optional dependency. arXiv:2510.19817 s4, "automatic rotation
+    # correction". See _rotation.py.
+    "ocr_auto_rotation_detect": False,
     # Phase 1 deterministic image pre-processing, applied before the page is
     # sent to the vision model. Off by default: a clean scan needs none of it,
     # and it must never change behaviour for an existing user who has not asked
@@ -207,6 +214,7 @@ PERSISTED_KEYS = (
     "ocr_temperature_ladder_step",
     "ocr_temperature_ladder_max",
     "ocr_blank_page_skip",
+    "ocr_auto_rotation_detect",
     "preprocess_enabled",
     "preprocess_grayscale",
     "preprocess_illumination",

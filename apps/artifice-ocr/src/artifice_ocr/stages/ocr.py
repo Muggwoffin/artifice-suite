@@ -11,6 +11,7 @@ from typing import Any
 
 
 from artifice_ocr import _guard
+from artifice_ocr import _rotation
 from artifice_ocr import _tesseract
 from artifice_ocr._backend import get_client as _get_backend_client
 from artifice_ocr._blank import is_near_blank
@@ -460,6 +461,17 @@ def perform(
     log.info("Starting OCR for %s", path.name)
 
     is_pdf = path.suffix.lower() == ".pdf"
+
+    if orientation == 1 and cfg("ocr_auto_rotation_detect"):
+        try:
+            detected = _rotation.detect_orientation(path.read_bytes())
+        except Exception as exc:  # pragma: no cover - defensive
+            log.warning("Rotation auto-detection failed for %s: %s", path.name, exc)
+            detected = None
+        if detected is not None:
+            log.info("Auto-detected rotation for %s: orientation %d", path.name, detected)
+            orientation = detected
+
     model = model_for("vision")
     page_number = 1
     # Provenance: which engine(s) actually read the page(s). Collected across
