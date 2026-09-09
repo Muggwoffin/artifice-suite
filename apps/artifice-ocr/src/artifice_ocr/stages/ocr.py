@@ -71,7 +71,70 @@ def _exif_orientation_matrix(orientation: int, width: float, height: float):
     return matrices.get(orientation)
 
 
-def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
+def _configured_max_image_edge() -> int | None:
+    """The longest-edge pixel cap for the vision request, or ``None`` for none.
+
+    ``None`` rather than ``0`` for "do not resize", for the same reason
+    :func:`artifice_ocr._backend._configured_context_size` returns ``None``:
+    ``0`` reads well in the UI but is a valid-looking pixel count, and two
+    call sites writing ``if cap:`` and ``if cap is not None:`` would disagree.
+
+    A malformed or non-positive setting reads as ``None`` rather than raising —
+    a bad value must not fail a page, it must fall back to the behaviour from
+    before the setting existed.
+    """
+    try:
+        value = int(cfg("ocr_max_image_edge", 1288) or 0)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _resize_to_max_edge(data: bytes, max_edge: int) -> tuple[bytes, str] | None:
+    """Downscale *data* so its longest edge is *max_edge*, as PNG bytes.
+
+    Returns ``None`` when no change is warranted — the image already fits, or
+    it could not be decoded. ``None`` is the signal to keep the original bytes
+    and mime untouched, so a decode failure degrades to the previous behaviour
+    rather than failing the page (the same contract
+    :func:`artifice_ocr.stages.preprocess.maybe_process` uses).
+
+    Only ever shrinks. Upscaling a small page invents detail the scan does not
+    contain and costs visual tokens for nothing.
+    """
+    import io
+
+    from PIL import Image
+
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            longest = max(img.size)
+            if longest <= max_edge:
+                return None
+            scale = max_edge / longest
+            size = (
+                max(1, round(img.width * scale)),
+                max(1, round(img.height * scale)),
+            )
+            resized = img.resize(size, Image.LANCZOS)
+            buf = io.BytesIO()
+            resized.save(buf, format="PNG")
+            log.debug(
+                "Capped page image %sx%s -> %sx%s for the vision request",
+                img.width,
+                img.height,
+                size[0],
+                size[1],
+            )
+            return buf.getvalue(), "image/png"
+    except Exception as exc:  # pragma: no cover - defensive
+        log.warning("Could not resize page image, sending it unchanged: %s", exc)
+        return None
+
+
+def _encode_image(
+    path: Path, orientation: int = 1, *, max_edge: int | None = None
+) -> tuple[str, str]:
     """Returns (base64, mime). Applies an orientation correction (see
     `_exif_orientation_matrix`) when `orientation` isn't 1 — the corrected
     bytes are always a fresh PNG render regardless of the source format.
@@ -118,6 +181,15 @@ def _encode_image(path: Path, orientation: int = 1) -> tuple[str, str]:
     if processed is not None:
         data, mime = processed, "image/png"
 
+    # Longest-edge cap for the vision model, applied last so it bounds whatever
+    # the orientation correction and pre-processing produced. ``max_edge`` is
+    # None on the Tesseract path, which must keep full resolution — see
+    # _tesseract_from_image and the ocr_max_image_edge comment in config.py.
+    if max_edge is not None:
+        capped = _resize_to_max_edge(data, max_edge)
+        if capped is not None:
+            data, mime = capped
+
     return base64.standard_b64encode(data).decode("utf-8"), mime
 
 
@@ -142,7 +214,7 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
     exactly what made "Context size" a no-op for OCR, because Ollama does
     not honour ``num_ctx`` on the OpenAI-compatible endpoint.
     """
-    image_b64, mime = _encode_image(image_path, orientation)
+    image_b64, mime = _encode_image(image_path, orientation, max_edge=_configured_max_image_edge())
     backend = backend_for("vision")
     model = model_for("vision")
 
@@ -167,7 +239,13 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
 def _tesseract_from_image(image_path: Path, orientation: int = 1) -> str:
     """Run Tesseract on an image, reusing ``_encode_image`` so the bytes carry
     the same orientation correction and (when enabled) deterministic
-    pre-processing the vision path would apply."""
+    pre-processing the vision path would apply.
+
+    Deliberately passes no ``max_edge``: the 1288px cap is a Qwen2.5-VL
+    constraint, not a general one. Tesseract benefits from *more* resolution,
+    so capping here would degrade the very fallback that exists to rescue a
+    page the vision model could not read.
+    """
     image_b64, _mime = _encode_image(image_path, orientation)
     return _tesseract.ocr_bytes(base64.standard_b64decode(image_b64))
 
@@ -197,7 +275,11 @@ def _ocr_single_image(image_path: Path, orientation: int = 1) -> tuple[str, str]
                 exc,
             )
             text = _tesseract_from_image(image_path, orientation)
-            if text.strip():
+            # Defence in depth: the fallback must never replace the vision
+            # error with an error of its own. If Tesseract yields nothing
+            # usable, the original — actionable — failure is what the user
+            # needs to see.
+            if (text or "").strip():
                 return text, "tesseract-fallback"
             log.warning("Tesseract fallback produced no text; re-raising vision failure")
         raise
@@ -402,7 +484,7 @@ def perform(
                     path, page=page, is_pdf=is_pdf, orientation=orientation
                 )
                 recheck = _guard.check_no_repetition_loop(recovered)
-                if recovered.strip() and recheck.ok:
+                if (recovered or "").strip() and recheck.ok:
                     extracted_text = recovered
                     engine_used = "tesseract-fallback"
                     guard_result = recheck

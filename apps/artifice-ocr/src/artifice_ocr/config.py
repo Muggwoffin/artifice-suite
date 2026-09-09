@@ -61,9 +61,27 @@ _DEFAULTS: dict[str, Any] = {
     # Only Ollama honours it. LM Studio fixes context when it *loads* a model,
     # and hosted APIs set it server-side — for those the UI says where to
     # change it rather than sending a value that is silently ignored.
-    "context_size": 0,
+    # 8192 rather than 0. ``0`` means "leave it to the backend", and Ollama's
+    # own default is 4096 — which a single page image overflows. A real
+    # 4653x3445 archive scan needed 4145 tokens and failed on a stock install
+    # before the user touched anything. 8192 leaves room for a page capped at
+    # ``ocr_max_image_edge`` plus its transcription, at a modest VRAM cost.
+    # Set 0 to restore the backend's own default.
+    "context_size": 8192,
     "confidence_enabled": True,
     "document_type": "default",
+    # Longest-edge cap, in pixels, for the image sent to the *vision* model.
+    # olmOCR-2 is built on Qwen2.5-VL, which tiles at native resolution up to
+    # its max_pixels: an unresized 4653x3445 scan becomes far more visual
+    # tokens than the model ever saw in training, paid for twice — in latency
+    # and in distribution mismatch. olmOCR 2 (arXiv:2510.19817 s4, "Image
+    # Resizing") swept image sizes and picked 1288px on the longest edge.
+    #
+    # Only ever downscales; a smaller page is passed through untouched. ``0``
+    # disables the cap and restores full-resolution behaviour. Deliberately
+    # NOT applied on the Tesseract path, which benefits from more resolution
+    # rather than less — see stages/ocr.py::_tesseract_from_image.
+    "ocr_max_image_edge": 1288,
     # P7: throughput. Reasoning models burn ~17x the tokens they need on
     # mechanical cleanup; leaving this False keeps the cleanup stage fast.
     # Set True only if you swap in a model whose reasoning you actually want.
@@ -163,6 +181,7 @@ PERSISTED_KEYS = (
     "confidence_enabled",
     "chunk_max_tokens",
     "context_size",
+    "ocr_max_image_edge",
     "preprocess_enabled",
     "preprocess_grayscale",
     "preprocess_illumination",

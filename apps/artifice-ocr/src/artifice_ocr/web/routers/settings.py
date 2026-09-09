@@ -212,6 +212,7 @@ _CONFIG_KEYS = (
     "max_ocr_workers",
     "chunk_max_tokens",
     "context_size",
+    "ocr_max_image_edge",
     "resume",
     "confidence_enabled",
     "preprocess_enabled",
