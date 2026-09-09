@@ -18,6 +18,15 @@ try:
 except ImportError:
     HAS_YAML = False
 
+# Apps paused 2026-09-09 (see CLAUDE.md and README.md#development-status).
+# Their pyproject.toml versions are reported below like everything else, but
+# excluded from the equality/--expected checks: they are not being actively
+# released, so forcing a version bump with no corresponding code change on
+# every tag would just be churn. Remove an app from this set to bring it
+# back under the lockstep gate once it resumes active development.
+PAUSED_APPS = {"artifice-draft", "artifice-graph"}
+
+
 def parse_pyproject(file_path):
     if not HAS_TOMLLIB:
         raise RuntimeError("tomllib not available; cannot parse TOML")
@@ -66,18 +75,28 @@ def main():
     pyproject_files = [root_dir / "pyproject.toml"]
     pyproject_files += sorted((root_dir / "apps").glob("*/pyproject.toml"))
     pyproject_files += sorted((root_dir / "packages").glob("*/pyproject.toml"))
-    
-    # Parse pyproject.toml files
+
+    def is_paused(file_path):
+        # apps/<name>/pyproject.toml -> parent dir name is <name>.
+        return file_path.parent.name in PAUSED_APPS
+
+    # Parse pyproject.toml files. `versions` is what the equality/--expected
+    # checks run against; `excluded` is reported but never gates anything.
     versions = defaultdict(list)
+    excluded = defaultdict(list)
     for file_path in pyproject_files:
         try:
             version = parse_pyproject(file_path)
-            versions[version].append(file_path)
         except Exception as e:
             print(f"Error parsing {file_path}: {e}", file=sys.stderr)
             sys.exit(1)
-    
-    # Parse CITATION.cff
+        if is_paused(file_path):
+            excluded[version].append(file_path)
+        else:
+            versions[version].append(file_path)
+
+    # Parse CITATION.cff — always gated. It is the suite's single citable
+    # version record, never a paused app's.
     citation_path = root_dir / "CITATION.cff"
     try:
         citation_version, date_released = parse_citation_cff(citation_path)
@@ -85,14 +104,20 @@ def main():
     except Exception as e:
         print(f"Error parsing {citation_path}: {e}", file=sys.stderr)
         sys.exit(1)
-    
+
     # Print version table
     print("Version consistency report:")
     for version, files in sorted(versions.items()):
         print(f"{version}: {len(files)} files")
         for file_path in sorted(files):
             print(f"  - {file_path}")
-    
+    if excluded:
+        print("Excluded from the gate (paused apps — see PAUSED_APPS above):")
+        for version, files in sorted(excluded.items()):
+            print(f"{version}: {len(files)} files")
+            for file_path in sorted(files):
+                print(f"  - {file_path}")
+
     # Check conditions
     if args.expect_equal:
         if len(versions) == 1:
