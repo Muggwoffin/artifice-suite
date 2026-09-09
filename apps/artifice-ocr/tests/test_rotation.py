@@ -101,3 +101,29 @@ def test_perform_skips_the_probe_when_orientation_already_set(tmp_path, monkeypa
     ocr.perform(str(path), output_dir=str(tmp_path / "out"), orientation=6)
 
     assert calls == []  # not probed — orientation was already explicit
+
+
+def test_perform_skips_the_rotation_probe_for_pdfs(tmp_path, monkeypatch):
+    """detect_orientation() is an image-bytes probe — it writes whatever
+    bytes it is given to a .png-suffixed temp file for Tesseract. Feeding it
+    raw PDF bytes is wasted work and noisy (and a PDF's pages are rendered
+    to proper images later anyway), so a .pdf path must never be probed,
+    even with orientation=1 and detection enabled (Copilot review, PR #101).
+    """
+    from artifice_ocr.stages import ocr
+
+    calls = []
+    monkeypatch.setattr(ocr, "cfg", lambda key, default=None: {
+        "ocr_auto_rotation_detect": True, "ocr_repetition_guard": False,
+    }.get(key, default))
+    monkeypatch.setattr(ocr, "_ocr_single_image", lambda path, orientation=1: ("text", "ollama"))
+    monkeypatch.setattr(
+        ocr, "_pdf_to_page_images", lambda path, orientation=1: [tmp_path / "page_0001.png"]
+    )
+    monkeypatch.setattr(_rotation, "detect_orientation", lambda data: calls.append(data) or 3)
+
+    path = tmp_path / "document.pdf"
+    path.write_bytes(b"fake-pdf-bytes")
+    ocr.perform(str(path), output_dir=str(tmp_path / "out"), orientation=1)
+
+    assert calls == []  # not probed — PDF bytes are not image bytes

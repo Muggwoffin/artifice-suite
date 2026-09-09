@@ -282,6 +282,17 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
     ceiling = float(cfg("ocr_temperature_ladder_max", 0.8) or 0.8)
     guard_on = bool(cfg("ocr_repetition_guard"))
 
+    # A malformed negative step would move the temperature AWAY from the
+    # ceiling on every rung, so the loop condition below never became false
+    # — a genuine infinite loop (``or`` above already excludes 0, but not
+    # negatives; NaN fails ``> 0`` too, so it is caught here as well).
+    # Clamp to a positive floor so the temperature always rises, and cap the
+    # rung count so no configuration — however malformed, including an
+    # ``inf`` ceiling — can loop unboundedly. Sane values are untouched:
+    # 0.1..0.8 at step 0.1 is still exactly 8 rungs.
+    step = max(step, 0.01) if step > 0 else 0.01
+    rungs_left = 50 if start <= ceiling else 0
+
     text = ""
     temperature = start
     last_guard = None
@@ -290,7 +301,7 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
     # cost exactly. Rejection has no source text to keep — see
     # _guard.check_no_repetition_loop's docstring — so each rung fully
     # replaces the previous rung's output.
-    while temperature <= ceiling + 1e-9:
+    while temperature <= ceiling + 1e-9 and rungs_left > 0:
         text = _call(temperature)
         if not guard_on:
             return text
@@ -298,6 +309,7 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
         if last_guard.ok:
             return text
         temperature += step
+        rungs_left -= 1
 
     reasons = "; ".join(last_guard.reasons) if last_guard else "unknown"
     raise RuntimeError(
@@ -494,7 +506,11 @@ def perform(
 
     is_pdf = path.suffix.lower() == ".pdf"
 
-    if orientation == 1 and cfg("ocr_auto_rotation_detect"):
+    # The OSD probe is an image-bytes check (it writes whatever it is given
+    # to a .png-suffixed temp file for Tesseract) — raw PDF bytes are not
+    # image bytes, and a PDF's pages are rendered to proper images below, so
+    # there is nothing valid to probe here.
+    if orientation == 1 and not is_pdf and cfg("ocr_auto_rotation_detect"):
         try:
             detected = _rotation.detect_orientation(path.read_bytes())
         except Exception as exc:  # pragma: no cover - defensive

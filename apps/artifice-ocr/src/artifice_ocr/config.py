@@ -225,7 +225,13 @@ PERSISTED_KEYS = (
     "context_size",
     "ocr_max_image_edge",
     "ocr_prompt_instruction",
-    "ocr_prompt_style",
+    # NOTE: "ocr_prompt_style" is deliberately NOT here. It stays in
+    # _DEFAULTS (so ARTIFICE_OCR_CONFIG YAML and direct config-file edits
+    # work) but is config-file/env-only: the settings-save API path filters
+    # POST bodies against PERSISTED_KEYS, so listing it here made a raw API
+    # POST able to flip this experimental stage-1 output-contract flag even
+    # though it is invisible in GET /api/config and the UI (Copilot review,
+    # PR #101).
     "ocr_temperature_ladder_enabled",
     "ocr_temperature_ladder_start",
     "ocr_temperature_ladder_step",

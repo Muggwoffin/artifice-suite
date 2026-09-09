@@ -38,6 +38,14 @@ def is_near_blank(data: bytes, *, std_threshold: float = 6.0) -> bool:
     try:
         with Image.open(io.BytesIO(data)) as img:
             grey = img.convert("L")
+            # Variance survives downsampling — a blank page is near-zero-std
+            # at ANY resolution — so probe a <=256x256 thumbnail instead of
+            # allocating a full-resolution float32 array (tens of MB for a
+            # 4653x3445 scan) on every page. This check runs by default
+            # (ocr_blank_page_skip=True), so the cost mattered. In-place,
+            # aspect-preserving, and a no-op for images already within the
+            # box.
+            grey.thumbnail((256, 256))
             arr = np.asarray(grey, dtype=np.float32)
     except Exception as exc:  # pragma: no cover - defensive
         log.warning("Could not decode image for blank-page check: %s", exc)

@@ -707,6 +707,10 @@ def test_ocr_stage_rejects_a_repetition_loop(mock_get_client, tmp_path):
     # perform()'s document-level guard path, so disable the ladder first:
     # the mocked client's single call at temperature=0.0 returns the looped
     # text and perform()'s own check_no_repetition_loop rejects it.
+    # Restore the CAPTURED prior value, not a hardcoded True — otherwise this
+    # test forces the ladder on for every test that runs after it, making the
+    # suite order-dependent.
+    prior = config.get("ocr_temperature_ladder_enabled")
     config.apply_overrides({"ocr_temperature_ladder_enabled": False})
     try:
         img = tmp_path / "bad_scan.png"
@@ -727,7 +731,7 @@ def test_ocr_stage_rejects_a_repetition_loop(mock_get_client, tmp_path):
         assert data["guard"]["ok"] is False
         assert data["rejected_extracted_text"] == looped_text
     finally:
-        config.apply_overrides({"ocr_temperature_ladder_enabled": True})
+        config.apply_overrides({"ocr_temperature_ladder_enabled": prior})
 
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
