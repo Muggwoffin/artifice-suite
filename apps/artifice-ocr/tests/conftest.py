@@ -152,3 +152,20 @@ def sent_vision_image_sizes(monkeypatch):
 
     monkeypatch.setattr(ocr_stage, "_encode_image", _spy)
     return sizes
+
+
+@pytest.fixture(autouse=True)
+def isolate_logging(tmp_path, monkeypatch):
+    """Keep the suite from writing into the developer's real log directory.
+
+    ``setup_logging`` now installs a rotating file handler under
+    ``~/.artifice_ocr/logs`` by default. Without this the test suite would
+    append to the user's actual application log — and, worse, a test asserting
+    on log contents would read whatever a previous real run had left there.
+    """
+    from artifice_ocr import _logging
+
+    monkeypatch.setenv("ARTIFICE_OCR_LOG_DIR", str(tmp_path / "logs"))
+    _logging.reset()
+    yield
+    _logging.reset()
