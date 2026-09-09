@@ -41,6 +41,20 @@ _MIME_MAP = {
 }
 
 
+def _effective_prompt(instruction: str) -> str:
+    """OCR_PROMPT, plus an optional appended domain instruction.
+
+    Appended, never a replacement: the base prompt's "return only raw text,
+    no commentary/labels/formatting" contract must survive regardless of what
+    the domain instruction says, since downstream stages (cleanup, structure)
+    depend on it.
+    """
+    instruction = (instruction or "").strip()
+    if not instruction:
+        return OCR_PROMPT
+    return f"{OCR_PROMPT}\n\n{instruction}"
+
+
 def _exif_orientation_matrix(orientation: int, width: float, height: float):
     """Matrix that corrects a Tropy `photos.orientation` value for a
     page/image of the given (pre-transform) size. Tropy uses the same 1-8
@@ -233,7 +247,7 @@ def _ocr_vision(image_path: Path, orientation: int = 1) -> str:
                     # measurably hurt benchmark performance upstream. Do not
                     # "clean up" this ordering in a refactor.
                     "content": [
-                        {"type": "text", "text": OCR_PROMPT},
+                        {"type": "text", "text": _effective_prompt(cfg("ocr_prompt_instruction", ""))},
                         {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
                     ],
                 }
@@ -559,7 +573,7 @@ def perform(
                             "rejected_extracted_text": extracted_text,
                             "engine": engine_used,
                             "model": model,
-                            "ocr_prompt": OCR_PROMPT,
+                            "ocr_prompt": _effective_prompt(cfg("ocr_prompt_instruction", "")),
                             "timestamp": datetime.now(timezone.utc).isoformat(),
                             "page": page_number,
                             "total_pages": num_pages,
@@ -594,7 +608,7 @@ def perform(
         "extracted_text": extracted_text,
         "engine": engine_used,
         "model": model,
-        "ocr_prompt": OCR_PROMPT,
+        "ocr_prompt": _effective_prompt(cfg("ocr_prompt_instruction", "")),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "page": page_number,
         "total_pages": num_pages,

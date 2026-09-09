@@ -82,6 +82,14 @@ _DEFAULTS: dict[str, Any] = {
     # NOT applied on the Tesseract path, which benefits from more resolution
     # rather than less — see stages/ocr.py::_tesseract_from_image.
     "ocr_max_image_edge": 1288,
+    # Free-text domain instruction, appended to OCR_PROMPT (not a replacement
+    # — the "return only raw text" contract stays intact). [CENT]
+    # (arXiv:2608.30616) Table 4: a zero-shot domain instruction prompt took
+    # olmOCR2's SpACER-M error from 15.58% to 6.77% and field EMR from 30.55%
+    # to 74.64%, with no training. Empty string (default) leaves OCR_PROMPT
+    # exactly as it was. Already recorded per-run in the raw_ocr sidecar as
+    # part of "ocr_prompt" — see stages/ocr.py::perform.
+    "ocr_prompt_instruction": "",
     # P7: throughput. Reasoning models burn ~17x the tokens they need on
     # mechanical cleanup; leaving this False keeps the cleanup stage fast.
     # Set True only if you swap in a model whose reasoning you actually want.
@@ -209,6 +217,7 @@ PERSISTED_KEYS = (
     "chunk_max_tokens",
     "context_size",
     "ocr_max_image_edge",
+    "ocr_prompt_instruction",
     "ocr_temperature_ladder_enabled",
     "ocr_temperature_ladder_start",
     "ocr_temperature_ladder_step",
