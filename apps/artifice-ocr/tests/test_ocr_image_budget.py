@@ -134,3 +134,46 @@ def test_default_context_size_leaves_room_for_a_capped_page():
     from artifice_ocr.config import _DEFAULTS
 
     assert _DEFAULTS["context_size"] >= 8192
+
+
+# --------------------------------------------------------------------------- #
+# The live gate's own page — why this bug reached a user through a green gate
+# --------------------------------------------------------------------------- #
+
+
+def test_live_gate_page_is_large_enough_to_have_failed(
+    tmp_path, archive_resolution_page, live_gate_page_spec
+):
+    """The live gate must send a page in the failing size class.
+
+    This is the guard the gate was missing. Both live interop tests now build
+    their page through ``make_archive_resolution_page``; if someone shrinks it
+    back — or points the gate at the raw fixture again — this fails in the fast
+    suite rather than silently narrowing the release gate to pages that cannot
+    overflow a context window.
+    """
+    page = archive_resolution_page(tmp_path / "page.jpg")
+    with Image.open(page) as img:
+        assert max(img.size) >= live_gate_page_spec["longest_edge"], (
+            f"longest edge too small: {img.size}"
+        )
+        assert img.width * img.height >= live_gate_page_spec["min_pixels"], (
+            f"too few pixels: {img.size}"
+        )
+
+
+def test_committed_fixture_alone_could_not_have_caught_the_overflow(live_gate_page_spec):
+    """Documents the gap, so the reasoning is not lost with this conversation.
+
+    ``proceedings_usnm_173.jpg`` is a perfectly good OCR fixture and stays the
+    source image. It is simply far too small — by roughly 7.5x in pixel count —
+    to reach the token budget that broke a real archive scan. A gate built only
+    on it reports green for a bug that is live in the field.
+    """
+    with Image.open(live_gate_page_spec["fixture"]) as img:
+        fixture_pixels = img.width * img.height
+
+    assert fixture_pixels < live_gate_page_spec["min_pixels"] / 5, (
+        "the committed fixture is now large enough to overflow on its own — "
+        "if that is deliberate, this test and the upscaling helper can go"
+    )

@@ -50,8 +50,21 @@ def _free_port() -> int:
         ),
     ],
 )
-def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key, monkeypatch):
-    """Choose a discovered model in Settings, save it, then run real OCR."""
+def test_real_vision_ocr_from_visible_ui(
+    backend,
+    url_env,
+    model_env,
+    url_key,
+    monkeypatch,
+    archive_resolution_page,
+    sent_vision_image_sizes,
+):
+    """Choose a discovered model in Settings, save it, then run real OCR.
+
+    Uses an archive-resolution page so this gate covers the token budget as
+    well as the UI wiring. The two model calls here are the gate's whole
+    paid budget, so the page they carry should be the demanding one.
+    """
     url = os.environ.get(url_env, "").strip()
     model = os.environ.get(model_env, "").strip()
     if not url:
@@ -60,7 +73,7 @@ def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key, m
     case_dir = Path.cwd() / "build" / "live-interop" / f"{backend}-{os.getpid()}"
     case_dir.mkdir(parents=True, exist_ok=True)
     image = case_dir / f"live-ui-{backend}.jpg"
-    shutil.copyfile(Path(__file__).parent / "fixtures" / "proceedings_usnm_173.jpg", image)
+    archive_resolution_page(image)
     output = case_dir / "output"
     job = JobItem(path=str(image))
     monkeypatch.setattr(config, "_SETTINGS_PATH", case_dir / "settings.json")
@@ -166,6 +179,12 @@ def test_real_vision_ocr_from_visible_ui(backend, url_env, model_env, url_key, m
         assert result["model"]
         assert len(result["extracted_text"].strip()) >= 100
         assert (output / "raw_ocr" / "text" / f"{image.stem}.txt").is_file()
+
+        cap = config.get("ocr_max_image_edge")
+        assert sent_vision_image_sizes, "no vision image recorded — the spy never fired"
+        assert all(max(size) <= cap for size in sent_vision_image_sizes), (
+            f"vision request exceeded the {cap}px cap: {sent_vision_image_sizes}"
+        )
     finally:
         server.should_exit = True
         thread.join(timeout=5)
