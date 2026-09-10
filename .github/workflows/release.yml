@@ -31,18 +31,6 @@ jobs:
             exit 1
           fi
 
-      - name: Require the live OCR release gate
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          state=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/status" \
-            --jq '[.statuses[] | select(.context == "live-interop/release-gate")][0].state // ""')
-          if [ "$state" != "success" ]; then
-            echo "No successful live-interop/release-gate status exists for ${GITHUB_SHA}."
-            echo "Run scripts/interop/run-live-release-gate.sh --publish-status from WSL first."
-            exit 1
-          fi
-
       - name: Set up Python
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:

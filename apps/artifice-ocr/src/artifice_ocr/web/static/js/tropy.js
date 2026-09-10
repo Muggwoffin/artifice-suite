@@ -344,6 +344,12 @@ async function previewNotes() {
 
   const controller = new AbortController();
   previewAbortController = controller;
+  // A newer previewNotes() call replaces previewAbortController before this
+  // one's fetch settles (cancelInFlightPreview() runs at the top of every
+  // call). Without this guard, the stale call's success/catch/finally would
+  // still fire and clobber the newer call's ticker, buttons, and cancel
+  // handle once its own await resolves.
+  const isCurrent = () => previewAbortController === controller;
   const startedAt = Date.now();
   const itemCount = sendContext?.itemIds?.length || 0;
   const tick = () => {
@@ -359,6 +365,7 @@ async function previewNotes() {
   tropy["btn-writeback-preview"].setAttribute("aria-busy", "true");
   try {
     const data = await api("POST", "/api/tropy/notes/preview", sendBody(), { signal: controller.signal });
+    if (!isCurrent()) return;
     stopPreviewTicker();
     notePreview = data;
     const count = data.counts || {};
@@ -375,14 +382,17 @@ async function previewNotes() {
     tropy["btn-writeback-commit"].disabled = blockers.length > 0 || data.write_count < 1;
     tropy["btn-writeback-commit"].textContent = `Add ${data.write_count || 0} note${data.write_count === 1 ? "" : "s"}`;
   } catch (error) {
+    if (!isCurrent()) return;
     stopPreviewTicker();
     if (error.name === "AbortError") return;
     showNoteStatus("Could not check Tropy: " + error.message, "error");
   } finally {
-    previewAbortController = null;
-    tropy["tropy-export-stage"].disabled = false;
-    tropy["btn-writeback-preview"].disabled = false;
-    tropy["btn-writeback-preview"].removeAttribute("aria-busy");
+    if (isCurrent()) {
+      previewAbortController = null;
+      tropy["tropy-export-stage"].disabled = false;
+      tropy["btn-writeback-preview"].disabled = false;
+      tropy["btn-writeback-preview"].removeAttribute("aria-busy");
+    }
   }
 }
 
