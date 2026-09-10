@@ -19,7 +19,6 @@ from __future__ import annotations
 import importlib.util
 
 import pytest
-
 from artifice_transcribe.services.asr_backend import ASRBackend, Segment, TranscriptionResult
 
 _ASR_AVAILABLE = importlib.util.find_spec("torch") is not None
