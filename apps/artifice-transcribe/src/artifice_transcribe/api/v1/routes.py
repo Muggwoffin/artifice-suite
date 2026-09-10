@@ -841,9 +841,13 @@ async def create_transcription(
     min_speakers: int | None = None,
     max_speakers: int | None = None,
     custom_vocabulary: str | None = None,
+    mode: str = "auto",
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> JobCreated:
+    if mode not in ("auto", "manual"):
+        raise HTTPException(status_code=400, detail="mode must be 'auto' or 'manual'")
+
     try:
         contents = await read_capped(file, settings.max_upload_size)
     except UploadTooLarge as e:
@@ -855,6 +859,7 @@ async def create_transcription(
         custom_vocabulary=custom_vocabulary,
         options=json.dumps(
             {
+                "mode": mode,
                 "language": language,
                 "min_speakers": min_speakers,
                 "max_speakers": max_speakers,
@@ -871,6 +876,25 @@ async def create_transcription(
     audio_path = settings.upload_path / f"{job.id}_{safe_filename}"
     _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
+
+    if mode == "manual":
+        # Hand-transcription job: skip ASR entirely. The uploaded audio is
+        # kept for the editor's audio player, but nothing is queued — the job
+        # is already complete and seeded with one empty segment to type into.
+        job.status = JobStatus.completed
+        job.progress_percentage = 100.0
+        job.completed_at = datetime.now(UTC)
+        db.add(
+            TranscriptSegment(
+                job_id=job.id,
+                speaker_label="SPEAKER_00",
+                start_time=0.0,
+                end_time=0.0,
+                text="",
+            )
+        )
+        await db.commit()
+        return JobCreated(job_id=job.id, status=JobStatus.completed)
 
     opts = TranscriptionOptions(
         language=language,

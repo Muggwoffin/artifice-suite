@@ -181,3 +181,54 @@ async def test_transcribe_marks_job_failed_when_engine_raises(api, monkeypatch):
     assert "no model weights here" in status["error_message"]
     # unload() runs even on the failure path.
     assert engine.unloaded
+
+
+async def test_transcribe_manual_mode_skips_engine(api, monkeypatch):
+    """mode=manual creates a completed job with one empty segment and never
+    touches the transcription engine or the background worker."""
+    ran = []
+    monkeypatch.setattr(
+        "artifice_transcribe.api.v1.routes._run_transcription",
+        lambda *a, **k: ran.append(True),
+    )
+
+    resp = await api.client.post(
+        "/api/v1/transcribe",
+        files={"file": ("interview.wav", b"fake-audio-data")},
+        params={"mode": "manual"},
+    )
+    assert resp.status_code == 202
+    assert resp.json()["status"] == "completed"
+    job_id = resp.json()["job_id"]
+
+    # No background task was queued, so the worker never ran.
+    assert ran == []
+
+    status = (await api.client.get(f"/api/v1/jobs/{job_id}")).json()
+    assert status["status"] == "completed"
+    assert status["progress_percentage"] == 100.0
+    assert status["completed_at"] is not None
+    assert status["error_message"] is None
+
+    # Exactly one empty segment for the editor to open.
+    transcript = (await api.client.get(f"/api/v1/jobs/{job_id}/transcript")).json()
+    assert len(transcript["segments"]) == 1
+    seg = transcript["segments"][0]
+    assert seg["speaker_label"] == "SPEAKER_00"
+    assert seg["start_time"] == 0.0
+    assert seg["end_time"] == 0.0
+    assert seg["text"] == ""
+
+    # The uploaded audio is still stored for the editor's audio player.
+    assert (api.upload_dir / f"{job_id}_interview.wav").exists()
+
+
+async def test_transcribe_rejects_unknown_mode(api):
+    """Any mode other than auto/manual is rejected with 400 before any work."""
+    resp = await api.client.post(
+        "/api/v1/transcribe",
+        files={"file": ("interview.wav", b"fake-audio-data")},
+        params={"mode": "not-a-mode"},
+    )
+    assert resp.status_code == 400
+    assert "mode" in resp.json()["detail"]
