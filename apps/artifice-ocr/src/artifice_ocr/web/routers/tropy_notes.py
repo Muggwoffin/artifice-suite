@@ -198,15 +198,22 @@ def _preview(req: TropyNotesRequest) -> tuple[dict, list[NotePlan], TropyConnect
                         photo = client.photo(entry.photo_id)
                         if photo is None:
                             counts["missing_photo"] += 1
-                            plans.append(NotePlan(entry, "missing_photo", "photo no longer exists"))
-                        elif entry.item_id is not None and int(photo.get("item", -1)) != entry.item_id:
+                            plans.append(
+                                NotePlan(entry, "missing_photo", "photo no longer exists")
+                            )
+                        elif (
+                            entry.item_id is not None
+                            and int(photo.get("item", -1)) != entry.item_id
+                        ):
                             counts["item_mismatch"] += 1
                             plans.append(
                                 NotePlan(entry, "item_mismatch", "photo belongs to another item")
                             )
                         elif client.has_identical_note(photo, entry.text):
                             counts["duplicate"] += 1
-                            plans.append(NotePlan(entry, "duplicate", "identical note already exists"))
+                            plans.append(
+                                NotePlan(entry, "duplicate", "identical note already exists")
+                            )
                         else:
                             counts["ready"] += 1
                             plans.append(NotePlan(entry, "ready"))
