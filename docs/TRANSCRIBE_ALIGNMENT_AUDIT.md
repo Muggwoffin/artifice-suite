@@ -265,12 +265,28 @@ synchronised, speaker-aware transcript editor and OHMS/TEI-compliant export, whe
 ASR is an **upgrade rather than a precondition**. For a historian transcribing a
 single interview carefully by hand, that is arguably the better default.
 
-### Unverified — measure before relying on it
+### Measured — core-only freeze, 2026-09-10
 
-**The core-only frozen size has not been measured.** The claim that it is "small" is
-inference from the dependency list, not a number. OCR's frozen bundle is ~249 MB
-(per `CLAUDE.md`), and core Transcribe has no PyMuPDF but does carry `numpy`. Build
-one and measure before putting a size in any user-facing document.
+Built via `apps/artifice-transcribe/artifice-transcribe.spec` (Item 2, this phase)
+and measured directly: the `dist/artifice-transcribe/` onedir bundle is **~203 MB**
+on Linux — smaller than OCR's ~249 MB, consistent with core Transcribe carrying no
+PyMuPDF while OCR does. The built binary was started with `--no-window` and smoke-
+tested over HTTP (`/`, `/api/v1/capabilities`, `/static/css/app.css`,
+`/shared/tokens.css` all 200; the shared app-shell renders) — the ASR stack is
+confirmed absent from the bundle (no torch/whisperx import errors are possible; the
+spec `excludes`s them explicitly regardless of what is installed on the build
+machine).
+
+One packaging bug surfaced only by actually running the built binary, not by
+writing or reading the spec: SQLAlchemy's async sqlite dialect
+(`sqlalchemy.dialects.sqlite.aiosqlite`) loads the `aiosqlite` DBAPI module
+dynamically by string name at `create_async_engine()` time, which PyInstaller's
+static bytecode scan cannot see. Without an explicit `hiddenimports` entry for
+`aiosqlite` and `sqlalchemy.dialects.sqlite.aiosqlite`, the frozen binary built and
+looked correct, then crashed on first launch with
+`ModuleNotFoundError: No module named 'aiosqlite'` — the exact "tests cannot see
+packaging bugs" failure mode this file warns about elsewhere. Fixed in the spec;
+recorded here as the reason that hidden-import pair exists.
 
 ---
 
