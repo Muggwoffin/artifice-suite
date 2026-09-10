@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import logging
 import time
 import webbrowser
 from contextlib import asynccontextmanager
@@ -17,6 +16,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 
+from artifice_transcribe._logging import get_logger
 from artifice_transcribe.api.v1.routes import router as v1_router
 from artifice_transcribe.config import settings
 from artifice_transcribe.db.models import Base
@@ -25,8 +25,7 @@ from artifice_transcribe.web.routers.byom import router as byom_router
 
 STATIC_DIR = Path(__file__).parent / "web" / "static"
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-logger = logging.getLogger(__name__)
+logger = get_logger("main")
 
 
 @asynccontextmanager
@@ -190,6 +189,15 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 def cli():
+    # Configure logging before the CLI does anything else, so failures during
+    # argument parsing or server startup land in the rotating log file rather
+    # than disappearing with ``sys.stderr`` in the frozen build. Mirrors the
+    # setup OCR's ``cli.py`` performs at import time; idempotent, so the
+    # module-level ``get_logger("main")`` above does not duplicate handlers.
+    from artifice_transcribe._logging import setup_logging
+
+    setup_logging()
+
     import argparse
     import contextlib
     import os

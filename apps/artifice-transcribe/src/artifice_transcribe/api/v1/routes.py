@@ -82,6 +82,7 @@ from artifice_transcribe.schemas.transcription import (
     TranscriptionOptions,
     TranscriptResponse,
 )
+from artifice_transcribe.services.asr_backend import ASRBackend
 from artifice_transcribe.services.download import (
     find_registry_key,
     get_download_manager,
@@ -250,7 +251,7 @@ def _save_inference_config(cfg: dict) -> None:
 
 
 # Module-level engine singleton (lazy init)
-_engine = None
+_engine: ASRBackend | None = None
 
 _INSTALL_HINT = "uv sync --extra asr"
 _INSTALL_HINT_CUDA = "uv sync --extra asr-cuda"
@@ -284,11 +285,11 @@ async def _reload_engine_with_new_model(new_model: str):
         old_engine.unload()
 
     try:
-        from artifice_transcribe.services.transcription import TranscriptionEngine
+        from artifice_transcribe.services.transcription import WhisperXEngine
     except ImportError as exc:
         raise AsrUnavailable() from exc
 
-    _engine = TranscriptionEngine(
+    _engine = WhisperXEngine(
         model_size=settings.whisper_model,
         device=settings.device,
         hf_token=_load_hf_token(),
@@ -301,11 +302,11 @@ def _get_engine():
     global _engine
     if _engine is None:
         try:
-            from artifice_transcribe.services.transcription import TranscriptionEngine
+            from artifice_transcribe.services.transcription import WhisperXEngine
         except ImportError as exc:
             raise AsrUnavailable() from exc
 
-        _engine = TranscriptionEngine(
+        _engine = WhisperXEngine(
             model_size=settings.whisper_model,
             device=settings.device,
             hf_token=_load_hf_token(),
@@ -841,9 +842,13 @@ async def create_transcription(
     min_speakers: int | None = None,
     max_speakers: int | None = None,
     custom_vocabulary: str | None = None,
+    mode: str = "auto",
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> JobCreated:
+    if mode not in ("auto", "manual"):
+        raise HTTPException(status_code=400, detail="mode must be 'auto' or 'manual'")
+
     try:
         contents = await read_capped(file, settings.max_upload_size)
     except UploadTooLarge as e:
@@ -855,6 +860,7 @@ async def create_transcription(
         custom_vocabulary=custom_vocabulary,
         options=json.dumps(
             {
+                "mode": mode,
                 "language": language,
                 "min_speakers": min_speakers,
                 "max_speakers": max_speakers,
@@ -871,6 +877,25 @@ async def create_transcription(
     audio_path = settings.upload_path / f"{job.id}_{safe_filename}"
     _assert_contained(audio_path, settings.upload_path)
     audio_path.write_bytes(contents)
+
+    if mode == "manual":
+        # Hand-transcription job: skip ASR entirely. The uploaded audio is
+        # kept for the editor's audio player, but nothing is queued — the job
+        # is already complete and seeded with one empty segment to type into.
+        job.status = JobStatus.completed
+        job.progress_percentage = 100.0
+        job.completed_at = datetime.now(UTC)
+        db.add(
+            TranscriptSegment(
+                job_id=job.id,
+                speaker_label="SPEAKER_00",
+                start_time=0.0,
+                end_time=0.0,
+                text="",
+            )
+        )
+        await db.commit()
+        return JobCreated(job_id=job.id, status=JobStatus.completed)
 
     opts = TranscriptionOptions(
         language=language,
@@ -1481,14 +1506,7 @@ async def enroll_speaker(
     except AsrUnavailable as exc:
         raise HTTPException(status_code=503, detail=exc.public_message) from exc
 
-    engine._ensure_models()
-
-    # Extract embedding using the diarization pipeline's internal model
-    embedder = engine._diarize_model.model._embedding
-    from pyannote.audio import Inference  # type: ignore[import-untyped]
-
-    inference = Inference(embedder, window="whole")
-    embedding = inference(str(audio_path))
+    embedding = engine.extract_speaker_embedding(audio_path)
 
     emb_bytes = pack_embedding(embedding)
     spk = KnownSpeaker(

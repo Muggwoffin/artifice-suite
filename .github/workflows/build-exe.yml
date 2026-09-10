@@ -30,6 +30,7 @@ on:
           - artifice-draft
           - artifice-graph
           - artifice-hub
+          - artifice-transcribe
   push:
     tags:
       - 'v*'
@@ -53,7 +54,7 @@ jobs:
         # conditional string is the standard per-trigger matrix idiom.
         app: ${{ fromJSON(github.event_name == 'workflow_dispatch'
               && format('["{0}"]', inputs.app)
-              || '["artifice-ocr","artifice-draft","artifice-graph","artifice-hub"]') }}
+              || '["artifice-ocr","artifice-draft","artifice-graph","artifice-hub","artifice-transcribe"]') }}
 
     steps:
       # v7 to match every other workflow. Dependabot's checkout/setup-uv bumps
@@ -91,6 +92,13 @@ jobs:
         # explicit rather than derived from the app name because the extra
         # names do not follow a strict naming convention.
         #
+        # transcribe is the exception that proves the rule: it has no
+        # `transcribe-web` extra because its only entry point IS its API
+        # (artifice_transcribe.main:app), so fastapi/uvicorn are core deps
+        # (see apps/artifice-transcribe/pyproject.toml). Its workspace extra
+        # is plain `transcribe`, and its ASR stack ([asr]/[asr-cuda]) is
+        # deliberately NOT synced here — the frozen bundle is core-only.
+        #
         # The Hub is NOT in the root `all` extra (it ships frozen, not via
         # PyPI), so it needs an explicit editable install after syncing the
         # workspace — `uv sync --extra all` pulls in shared-ui and the other
@@ -99,10 +107,11 @@ jobs:
         run: |
           APP="${{ matrix.app }}"
           case "$APP" in
-            artifice-draft) uv sync --extra draft-web ;;
-            artifice-graph) uv sync --extra graph-web ;;
-            artifice-hub)   uv sync --extra all && uv pip install -e apps/artifice-hub ;;
-            *)               uv sync --extra ocr-web ;;
+            artifice-draft)      uv sync --extra draft-web ;;
+            artifice-graph)      uv sync --extra graph-web ;;
+            artifice-hub)        uv sync --extra all && uv pip install -e apps/artifice-hub ;;
+            artifice-transcribe) uv sync --extra transcribe ;;
+            *)                   uv sync --extra ocr-web ;;
           esac
 
       - name: Gate OCR on Ollama, LM Studio, and Tropy round trips
@@ -142,7 +151,8 @@ jobs:
         # broken four times.
         #
         # API path is per-app: /api/queue for ocr, /api/settings for draft,
-        # /api/state for graph, /api/health for hub.
+        # /api/state for graph, /api/health for hub, /api/v1/capabilities for
+        # transcribe (cheap, answers 200 with no ASR installed).
         # /shared/tokens.css is shared. The app-specific CSS path is NOT
         # uniform: ocr and draft both serve /static/css/app.css, but graph's
         # own base.html references /static/app.css directly (no css/
@@ -164,10 +174,11 @@ jobs:
         run: |
           APP="${{ matrix.app }}"
           case "$APP" in
-            artifice-draft) API="/api/settings"; APP_CSS="/static/css/app.css" ;;
-            artifice-graph) API="/api/state"; APP_CSS="/static/app.css" ;;
-            artifice-hub)   API="/api/health"; APP_CSS="/static/hub.css" ;;
-            *)               API="/api/queue"; APP_CSS="/static/css/app.css" ;;
+            artifice-draft)      API="/api/settings"; APP_CSS="/static/css/app.css" ;;
+            artifice-graph)      API="/api/state"; APP_CSS="/static/app.css" ;;
+            artifice-hub)        API="/api/health"; APP_CSS="/static/hub.css" ;;
+            artifice-transcribe) API="/api/v1/capabilities"; APP_CSS="/static/css/app.css" ;;
+            *)                   API="/api/queue"; APP_CSS="/static/css/app.css" ;;
           esac
           # Hub is onefile — binary is a single file, not a directory
           if [ "$APP" = "artifice-hub" ]; then
@@ -230,14 +241,17 @@ jobs:
             "artifice-draft" { "/api/settings" }
             "artifice-graph" { "/api/state" }
             "artifice-hub" { "/api/health" }
+            "artifice-transcribe" { "/api/v1/capabilities" }
             default { "/api/queue" }
           }
           # graph's base.html references /static/app.css directly (no css/
           # subdirectory, unlike ocr and draft) - see the Linux step's comment.
-          # Hub serves hub.css from its own static tree.
+          # Hub serves hub.css from its own static tree. Transcribe serves the
+          # same /static/css/app.css as ocr and draft (the default below).
           $appCss = switch ($app) {
             "artifice-graph" { "/static/app.css" }
             "artifice-hub" { "/static/hub.css" }
+            "artifice-transcribe" { "/static/css/app.css" }
             default { "/static/css/app.css" }
           }
           # Hub is onefile — binary is a single .exe, not in a subdirectory
@@ -324,10 +338,10 @@ jobs:
           path: dist
 
       # A release asset must be a single file, and the onedir builds (ocr,
-      # draft, graph) are directories — so archive each bundle into one tarball
-      # (Linux) or zip (Windows). The Hub is onefile (a bare binary) but is
-      # archived the same way for a uniform asset set and a name a user can
-      # make sense of. `${{ github.ref_name }}` supplies the version.
+      # draft, graph, transcribe) are directories — so archive each bundle into
+      # one tarball (Linux) or zip (Windows). The Hub is onefile (a bare
+      # binary) but is archived the same way for a uniform asset set and a name
+      # a user can make sense of. `${{ github.ref_name }}` supplies the version.
       - name: Archive each bundle into a single release asset
         shell: bash
         run: |
@@ -335,7 +349,7 @@ jobs:
           VER="${{ github.ref_name }}"
           cd "$GITHUB_WORKSPACE"
 
-          for app in artifice-ocr artifice-draft artifice-graph artifice-hub; do
+          for app in artifice-ocr artifice-draft artifice-graph artifice-hub artifice-transcribe; do
             for os in Linux Windows; do
               (
                 cd "dist/$app-$os"
@@ -394,4 +408,6 @@ jobs:
             "artifice-graph-Windows-$VER.zip" \
             "artifice-hub-Linux-$VER.tar.gz" \
             "artifice-hub-Windows-$VER.zip" \
+            "artifice-transcribe-Linux-$VER.tar.gz" \
+            "artifice-transcribe-Windows-$VER.zip" \
             --clobber
