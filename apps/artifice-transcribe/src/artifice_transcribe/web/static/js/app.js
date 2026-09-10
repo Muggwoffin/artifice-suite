@@ -1621,10 +1621,35 @@ async function loadModelConfig() {
       if (diarizationModel) diarizationModel.value = cfg.diarization_model || '';
       const alignmentCache = $('setting-alignment-cache');
       if (alignmentCache) alignmentCache.checked = cfg.enable_alignment_model_cache !== false;
+      const asrBackend = $('setting-asr-backend');
+      if (asrBackend) asrBackend.value = cfg.asr_backend || 'whisperx';
+      const initialPrompt = $('setting-initial-prompt');
+      if (initialPrompt) initialPrompt.value = cfg.whisper_initial_prompt || '';
+      updateAsrBackendFieldStates();
     }
   } catch (err) {
     console.warn('Failed to load model config:', err);
   }
+}
+
+function updateAsrBackendFieldStates() {
+  const backend = $('setting-asr-backend')?.value || 'whisperx';
+  const isParakeet = backend === 'parakeet';
+
+  const modelSize = $('setting-model-size');
+  if (modelSize) modelSize.disabled = isParakeet;
+  const noteModel = $('note-model-parakeet');
+  if (noteModel) noteModel.style.display = isParakeet ? 'block' : 'none';
+
+  const device = $('setting-device');
+  if (device) device.disabled = isParakeet;
+  const noteDevice = $('note-device-parakeet');
+  if (noteDevice) noteDevice.style.display = isParakeet ? 'block' : 'none';
+
+  const initialPrompt = $('setting-initial-prompt');
+  if (initialPrompt) initialPrompt.disabled = isParakeet;
+  const notePrompt = $('note-initial-prompt-parakeet');
+  if (notePrompt) notePrompt.style.display = isParakeet ? 'block' : 'none';
 }
 
 async function saveModelConfig() {
@@ -1635,6 +1660,8 @@ async function saveModelConfig() {
     diarization_provider: $('setting-diarization-provider')?.value || 'pyannote',
     diarization_model: $('setting-diarization-model')?.value?.trim() || '',
     enable_alignment_model_cache: $('setting-alignment-cache')?.checked !== false,
+    asr_backend: $('setting-asr-backend')?.value || 'whisperx',
+    whisper_initial_prompt: $('setting-initial-prompt')?.value?.trim() || '',
   };
 
   const status = $('model-applied-status');
@@ -1778,6 +1805,7 @@ function initSettingsPanel() {
   $('btn-test-connection').addEventListener('click', testInferenceConnection);
   $('btn-save-settings').addEventListener('click', saveInferenceConfig);
   $('btn-apply-model').addEventListener('click', saveModelConfig);
+  $('setting-asr-backend').addEventListener('change', updateAsrBackendFieldStates);
 
   loadModelConfig();
   loadInferenceConfig();

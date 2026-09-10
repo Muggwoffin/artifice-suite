@@ -275,6 +275,14 @@
             <p class="asr-unavailable-text" id="asr-notice-settings-reason"></p>
           </div>
 
+          <div class="form-row" style="margin-bottom:0.75rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">ASR Backend</label>
+            <select id="setting-asr-backend" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+              <option value="whisperx" selected>WhisperX</option>
+              <option value="parakeet">Parakeet (NVIDIA NeMo, CUDA-only, English-only)</option>
+            </select>
+          </div>
+
           <div class="form-row" style="margin-bottom:0.75rem; display:flex; gap:0.5rem; align-items:flex-end;">
             <div style="flex:1;">
               <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Model</label>
@@ -285,6 +293,7 @@
                 <option value="medium">medium</option>
                 <option value="large-v3">large-v3</option>
               </select>
+              <small class="dim" id="note-model-parakeet" style="display:none; margin-top:0.25rem;">Parakeet uses a fixed model (Parakeet TDT 1.1B) — this selector applies to WhisperX only.</small>
             </div>
             <button class="btn" id="btn-apply-model" type="button" aria-describedby="asr-notice-settings-reason">Apply</button>
           </div>
@@ -297,12 +306,20 @@
                 <option value="cuda">cuda</option>
                 <option value="cpu">cpu</option>
               </select>
+              <small class="dim" id="note-device-parakeet" style="display:none; margin-top:0.25rem;">Parakeet requires a CUDA GPU and has no CPU fallback.</small>
             </div>
           </div>
 
           <div class="form-row" style="margin-bottom:0.75rem;">
             <label style="display:block; font-weight:600; margin-bottom:0.2rem;">HuggingFace Token</label>
             <input type="password" id="setting-hf-token" value="" placeholder="hf_..." style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+          </div>
+
+          <div class="form-row" style="margin-bottom:0.75rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Domain instruction (optional)</label>
+            <input type="text" id="setting-initial-prompt" placeholder="e.g. An oral history interview about post-war shipbuilding in Belfast, with names of yards and trades" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+            <small class="dim" style="display:block; margin-top:0.25rem;">A sentence about the recording's subject, appended to Whisper's decoding prompt to improve accuracy on names, places and domain vocabulary. Leave empty for standard decoding.</small>
+            <small class="dim" id="note-initial-prompt-parakeet" style="display:none; margin-top:0.25rem;">Not used by Parakeet — no prompt-conditioning mechanism.</small>
           </div>
 
           <div id="model-applied-status" style="display:none; margin-top:0.5rem; padding:0.5rem; border-radius:var(--radius-sm); background:var(--paper-recessed);">
