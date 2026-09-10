@@ -35,8 +35,17 @@ project, item, page, orientation, and photo identifiers for note write-back.
 
 ## Developer API notes ("Send to Tropy…")
 
-**Main → Send to Tropy…**, available after a run. Only pages processed by
-artifice-ocr are eligible.
+Two entry points share the same modal and preview/commit logic:
+
+- **Main → Send to Tropy…** sends the currently selected queue items.
+- **History → Send run to Tropy…** sends every eligible document in the
+  selected run at once (single-document selection was the original behaviour
+  and was a bug — History only sent whichever one row happened to be
+  selected).
+
+Only pages processed by artifice-ocr, and imported through Browse Project
+(carrying a numeric photo id), are eligible; everything else is reported as
+"ineligible" in the preview rather than silently skipped.
 
 The Send to Tropy modal uses only the notes API. Tropy must be
 running, the target project must be open, and **Preferences → Developer API**
@@ -44,6 +53,14 @@ must be enabled. Artifice OCR discovers stable port 2019 and beta port 2029 (or
 uses the custom port in Settings), verifies the open project, checks each photo
 and parent item, previews blockers and duplicates, and only then enables commit.
 Identical notes are skipped, so retrying after a partial failure is safe.
+
+Checking is one HTTP round trip per photo (more for photos that already carry
+notes), so a run of hundreds of pages can take a while if Tropy itself is busy
+rendering its own window. The modal shows live elapsed time, a batch larger
+than 150 pages asks for confirmation before starting, and closing the modal
+cancels an in-flight check rather than leaving it to finish unobserved. A
+single photo's failure is recorded and skipped — it no longer discards every
+other page's already-checked result.
 
 The preview checks project identity, missing photos, item mismatches, empty
 stages, and duplicate notes. Commit rechecks the project and photo immediately
@@ -151,9 +168,9 @@ The corresponding CLI commands (`tropy-import`, `tropy-export`) and the
 history entries, and output files are left in place for compatibility; they are
 not imported, exported, or written back by this application.
 
-`tropy_write.py` is retained as a legacy implementation detail for old callers,
-but it is not registered as a web router and has no supported configuration
-switch. All new writes go through `tropy_notes.py` and `tropy_api.py`.
+`tropy_write.py`, `tropy_bridge.py`, and `tropy_writeback.py` are deleted, not
+retained — there is no legacy fallback. All writes go through `tropy_notes.py`
+and `tropy_api.py`.
 
 
 ## Known Limits
