@@ -188,16 +188,21 @@ if (-not $uv) {
 # it would silently uninstall several GB the user chose to add. Detect and
 # preserve rather than surprise them.
 $asrInstalled = $false
+$asrExtra = "asr"
 $venvPy = Join-Path $repo ".venv\Scripts\python.exe"
 if (Test-Path $venvPy) {
     & $venvPy -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('whisperx') else 1)" 2>$null
     $asrInstalled = ($LASTEXITCODE -eq 0)
+    if ($asrInstalled) {
+        & $venvPy -c "import importlib.util,sys; spec=importlib.util.find_spec('torch'); torch=__import__('torch') if spec else None; sys.exit(0 if (torch and getattr(torch.version,'cuda',None)) else 1)" 2>$null
+        if ($LASTEXITCODE -eq 0) { $asrExtra = "asr-cuda" }
+    }
 }
 
 $extras = @("--extra", "all", "--extra", "ocr-web", "--extra", "transcribe")
 
 if ($Asr -or $asrInstalled) {
-    $extras += @("--extra", "asr")
+    $extras += @("--extra", $asrExtra)
     if ($asrInstalled -and -not $Asr) {
         Write-Host ""
         Write-Host "  ASR stack detected - keeping it (pass -NoSync to skip entirely)." -ForegroundColor Gray
