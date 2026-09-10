@@ -14,9 +14,34 @@ from model_harness.registry import HardwareTier
 from model_harness.resolution import resolve_model
 from openai import AsyncOpenAI
 
+from artifice_transcribe._retry import retry
+
 logger = logging.getLogger(__name__)
 
 _inference_endpoint_policy = EndpointPolicy()
+
+
+@retry(max_attempts=4, base_delay=1.0, label="chat.completions.create")
+async def _create_chat_completion(
+    client: AsyncOpenAI,
+    model_name: str,
+    messages: list[dict[str, Any]],
+    temperature: float,
+    max_tokens: int,
+):
+    """One OpenAI-compatible chat completion, retried on transient network failures.
+
+    ``chat.completions.create`` is the app's transient-failure-prone network
+    call — a connection drop or timeout mid-request should be retried, not
+    surfaced as a failed summary/cleanup. The decorator retries on the SDK's
+    own ``APIConnectionError`` / ``APITimeoutError``.
+    """
+    return await client.chat.completions.create(
+        model=model_name,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
 
 
 async def get_available_models(base_url: str, api_key: str | None = None) -> list[str]:
@@ -173,11 +198,8 @@ class InferenceEngine:
         if stream:
             return self._stream_response(messages, temperature, max_tokens)
         else:
-            response = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
+            response = await _create_chat_completion(
+                self.client, self.model_name, messages, temperature, max_tokens
             )
             return response.choices[0].message.content or ""
 
