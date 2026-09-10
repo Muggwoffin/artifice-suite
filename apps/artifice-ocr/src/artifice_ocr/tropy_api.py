@@ -170,21 +170,32 @@ def normalise_note_text(text: str) -> str:
 
 
 class TropyAPIClient:
-    """Operations bound to one already-verified Tropy project."""
+    """Operations bound to one already-verified Tropy project.
+
+    Owns one persistent HTTP connection for its whole lifetime instead of
+    opening and tearing down a fresh one per call. A batch operation
+    (checking hundreds of photos for a large Tropy send) previously paid a
+    full connect/close cycle for every single request; reusing one
+    connection removes that overhead entirely. Call :meth:`close` (or use
+    as a context manager) once the batch is done.
+    """
 
     def __init__(self, connection: TropyConnection):
         self.connection = connection
+        self._client = httpx.Client(timeout=_TIMEOUT, trust_env=False, follow_redirects=False)
+
+    def close(self) -> None:
+        self._client.close()
+
+    def __enter__(self) -> TropyAPIClient:
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
 
     def _request(self, method: str, path: str, **kwargs) -> httpx.Response:
         try:
-            response = httpx.request(
-                method,
-                f"{self.connection.base_url}{path}",
-                timeout=_TIMEOUT,
-                trust_env=False,
-                follow_redirects=False,
-                **kwargs,
-            )
+            response = self._client.request(method, f"{self.connection.base_url}{path}", **kwargs)
         except httpx.HTTPError as exc:
             raise TropyAPIError("Lost the connection to Tropy") from exc
         return response

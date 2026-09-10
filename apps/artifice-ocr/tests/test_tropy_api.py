@@ -150,6 +150,15 @@ class _FakeClient:
         self.writes.append((photo_id, text, language))
         return [100 + len(self.writes)]
 
+    def close(self):
+        return None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return None
+
 
 def _queue_item(project: Path) -> JobItem:
     return JobItem(
@@ -212,6 +221,93 @@ def test_notes_routes_preview_commit_and_skip_duplicate(tmp_path, monkeypatch):
     )
     assert duplicate["write_count"] == 0
     assert duplicate["counts"]["duplicate"] == 1
+
+
+class _FlakyOnOneClient:
+    """Stands in for a Tropy Developer API that trips on exactly one photo.
+
+    Mirrors the failure a large batch is statistically bound to hit: hundreds
+    of sequential requests to a real (possibly momentarily overloaded) Tropy
+    instance mean *some* single request is likely to fail even when the
+    project itself is fine. That single failure must not cost every other
+    already-checked item in the batch its result.
+    """
+
+    writes: list[tuple[int, str, str]] = []
+    failing_photo_id = 20
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def photo(self, photo_id):
+        if photo_id == self.failing_photo_id:
+            raise TropyAPIError("Tropy could not inspect photo 20")
+        return {"id": photo_id, "item": 1, "notes": []}
+
+    def note_text(self, note_id):
+        return "Clean text"
+
+    def has_identical_note(self, photo, text):
+        return False
+
+    def verify_current(self):
+        return None
+
+    def create_note(self, photo_id, text, language):
+        self.writes.append((photo_id, text, language))
+        return [100 + len(self.writes)]
+
+    def close(self):
+        return None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return None
+
+
+def test_notes_preview_isolates_one_bad_photo_from_the_rest_of_a_large_batch(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    connection = TropyConnection(2019, "Archive", "Archive", project / "project.tpy", "1.17")
+    monkeypatch.setattr("artifice_ocr.web.routers.tropy_notes.connect", lambda path: connection)
+    monkeypatch.setattr("artifice_ocr.web.routers.tropy_notes.TropyAPIClient", _FlakyOnOneClient)
+    _FlakyOnOneClient.writes = []
+
+    items = []
+    for photo_id in range(10, 40, 10):  # 10, 20, 30 — 20 is the flaky one
+        item = JobItem(
+            path=str(project / "assets" / f"page-{photo_id}.jpg"),
+            language="en",
+            source={
+                "origin": "tropy-live",
+                "photo_id": photo_id,
+                "tropy_item_id": 1,
+                "tropy_project": str(project / "project.tpy"),
+                "item_title": "Letter",
+            },
+            results={"cleaned": {"cleaned_text": "Clean text"}},
+        )
+        items.append(item)
+    state.add_items(items)
+
+    from artifice_ocr.web.routers.tropy_notes import TropyNotesRequest, tropy_notes_preview
+
+    data = tropy_notes_preview(
+        TropyNotesRequest(
+            source="queue",
+            item_ids=[str(id(item)) for item in items],
+            stage="cleaned",
+            project_path=str(project),
+        )
+    )
+    assert data["blockers"] == []
+    assert data["counts"]["error"] == 1
+    assert data["counts"]["ready"] == 2
+    assert data["write_count"] == 2
+    assert data["item_errors"] == [
+        {"label": "page-20.jpg", "message": "Tropy could not inspect photo 20"}
+    ]
 
 
 def test_notes_route_never_falls_back_to_another_stage(tmp_path, monkeypatch):

@@ -78,17 +78,44 @@ const TAB_ACTIVATE = {};
 
 // --------------------------------------------------------------- fetch helpers
 
-async function api(method, path, body) {
+async function api(method, path, body, { signal } = {}) {
   const res = await fetch(path, {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
+    signal,
   });
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
     throw new Error(detail.detail || res.statusText);
   }
   return res.json();
+}
+
+// Trigger a native "Save As" for server-generated content (an export, a
+// compiled PDF). `window.open(url, "_blank")` is a browser-only trick — this
+// app also runs inside a frameless pywebview desktop window, and nothing
+// here creates a second native window for a script-triggered popup to open
+// into, so window.open silently goes nowhere in that mode. Fetching the
+// bytes and driving a Blob download works identically in both.
+async function downloadFile(path, fallbackFilename) {
+  const res = await fetch(path);
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || res.statusText);
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  const filename = (match && decodeURIComponent(match[1])) || fallbackFilename;
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // -------------------------------------------------------------------- queue

@@ -157,6 +157,7 @@ def _preview(req: TropyNotesRequest) -> tuple[dict, list[NotePlan], TropyConnect
         "foreign": 0,
         "missing_photo": 0,
         "item_mismatch": 0,
+        "error": 0,
         "ineligible": selected - len(entries),
     }
     blockers: list[str] = ["No results were selected"] if selected == 0 else []
@@ -180,26 +181,38 @@ def _preview(req: TropyNotesRequest) -> tuple[dict, list[NotePlan], TropyConnect
     if target is not None and not blockers:
         try:
             connection = connect(target)
-            client = TropyAPIClient(connection)
-            already_planned = {id(plan.entry) for plan in plans}
-            for entry in entries:
-                if id(entry) in already_planned:
-                    continue
-                photo = client.photo(entry.photo_id)
-                if photo is None:
-                    counts["missing_photo"] += 1
-                    plans.append(NotePlan(entry, "missing_photo", "photo no longer exists"))
-                elif entry.item_id is not None and int(photo.get("item", -1)) != entry.item_id:
-                    counts["item_mismatch"] += 1
-                    plans.append(NotePlan(entry, "item_mismatch", "photo belongs to another item"))
-                elif client.has_identical_note(photo, entry.text):
-                    counts["duplicate"] += 1
-                    plans.append(NotePlan(entry, "duplicate", "identical note already exists"))
-                else:
-                    counts["ready"] += 1
-                    plans.append(NotePlan(entry, "ready"))
         except TropyAPIError as exc:
             blockers.append(str(exc))
+        else:
+            already_planned = {id(plan.entry) for plan in plans}
+            with TropyAPIClient(connection) as client:
+                for entry in entries:
+                    if id(entry) in already_planned:
+                        continue
+                    # A single slow or flaky photo must not sink the whole
+                    # batch: a project of hundreds of pages has hundreds of
+                    # chances to hit one bad Tropy response, and losing every
+                    # other result's progress to it just forces a full,
+                    # equally fragile retry. Record it and keep checking.
+                    try:
+                        photo = client.photo(entry.photo_id)
+                        if photo is None:
+                            counts["missing_photo"] += 1
+                            plans.append(NotePlan(entry, "missing_photo", "photo no longer exists"))
+                        elif entry.item_id is not None and int(photo.get("item", -1)) != entry.item_id:
+                            counts["item_mismatch"] += 1
+                            plans.append(
+                                NotePlan(entry, "item_mismatch", "photo belongs to another item")
+                            )
+                        elif client.has_identical_note(photo, entry.text):
+                            counts["duplicate"] += 1
+                            plans.append(NotePlan(entry, "duplicate", "identical note already exists"))
+                        else:
+                            counts["ready"] += 1
+                            plans.append(NotePlan(entry, "ready"))
+                    except TropyAPIError as exc:
+                        counts["error"] += 1
+                        plans.append(NotePlan(entry, "error", str(exc)))
 
     if selected and not entries:
         blockers.append("The selected results were not imported through Browse Project")
@@ -208,6 +221,11 @@ def _preview(req: TropyNotesRequest) -> tuple[dict, list[NotePlan], TropyConnect
         "blockers": blockers,
         "counts": counts,
         "write_count": counts["ready"],
+        "item_errors": [
+            {"label": plan.entry.label, "message": plan.reason}
+            for plan in plans
+            if plan.action == "error"
+        ],
         "project": (
             {
                 "name": connection.project_name,
@@ -241,37 +259,43 @@ def tropy_notes_commit(req: TropyNotesCommitRequest) -> dict:
     if connection is None:
         raise HTTPException(status_code=409, detail="Tropy is not connected")
 
-    client = TropyAPIClient(connection)
     written = 0
     skipped = result["counts"]["duplicate"]
     errors: list[dict[str, str]] = []
     note_ids: list[int] = []
-    for plan in plans:
-        if plan.action != "ready":
-            continue
+    with TropyAPIClient(connection) as client:
         try:
             client.verify_current()
-            # The preview can be older than the commit.  Re-read the photo
-            # immediately before POSTing so an identical note added in the
-            # meantime is skipped; POST is reserved for creating a new note.
-            photo = client.photo(plan.entry.photo_id)
-            if photo is None:
-                errors.append({"label": plan.entry.label, "message": "photo no longer exists"})
-                break
-            if client.has_identical_note(photo, plan.entry.text):
-                skipped += 1
-                continue
-            note_ids.extend(
-                client.create_note(
-                    plan.entry.photo_id,
-                    plan.entry.text.strip(),
-                    plan.entry.language,
-                )
-            )
-            written += 1
         except TropyAPIError as exc:
-            errors.append({"label": plan.entry.label, "message": str(exc)})
-            break
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+        for plan in plans:
+            if plan.action != "ready":
+                continue
+            try:
+                # The preview can be older than the commit.  Re-read the photo
+                # immediately before POSTing so an identical note added in the
+                # meantime is skipped; POST is reserved for creating a new note.
+                photo = client.photo(plan.entry.photo_id)
+                if photo is None:
+                    errors.append({"label": plan.entry.label, "message": "photo no longer exists"})
+                    continue
+                if client.has_identical_note(photo, plan.entry.text):
+                    skipped += 1
+                    continue
+                note_ids.extend(
+                    client.create_note(
+                        plan.entry.photo_id,
+                        plan.entry.text.strip(),
+                        plan.entry.language,
+                    )
+                )
+                written += 1
+            except TropyAPIError as exc:
+                # One photo's worth of trouble (a slow response, a note Tropy
+                # rejected) must not cost every other "ready" item in a large
+                # batch its already-checked, already-earned write.
+                errors.append({"label": plan.entry.label, "message": str(exc)})
 
     return {
         "status": "complete" if not errors else "partial",

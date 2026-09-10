@@ -26,6 +26,7 @@ const HistoryTab = (function () {
   const diffToggle = document.getElementById("btn-history-diff-toggle");
   const thumbStrip = document.getElementById("history-thumbnails");
   const fabricatedToggle = document.getElementById("history-fabricated-result");
+  const btnSendTropy = document.getElementById("btn-history-send-tropy");
 
   let runsById = new Map();
   let itemsById = new Map();
@@ -72,6 +73,7 @@ const HistoryTab = (function () {
     itemsById.clear();
     currentItemIds = [];
     if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
+    if (btnSendTropy) btnSendTropy.disabled = true;
     clearCompare(compareContainer);
     clearProvenanceChips();
     if (window.HistoryImage) window.HistoryImage.clear();
@@ -94,6 +96,7 @@ const HistoryTab = (function () {
     currentItemId = null;
     selectedItemRow = null;
     if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
+    if (btnSendTropy) btnSendTropy.disabled = true;
     itemsBody.innerHTML = rows.map((r) => `
       <tr data-id="${r.item_id}" class="history-state-${r.state}">
         <td>${escapeHtml(r.name)}</td>
@@ -314,6 +317,11 @@ const HistoryTab = (function () {
       fabricatedToggle.checked = !!data.fabricated_result;
       fabricatedToggle.disabled = false;
     }
+    // Reflect eligibility up front — a click that can only ever end in a
+    // toast (the document wasn't added through Browse Project, so there's
+    // no photo to write a note back to) is easy to mistake for a dead
+    // button if the toast goes unnoticed.
+    if (btnSendTropy) btnSendTropy.disabled = data.photo_id == null || !data.tropy_project_path;
 
     if (window.HistoryImage) window.HistoryImage.load(`/api/history/items/${currentItemId}/image`);
     renderThumbnails(currentItemId);
@@ -352,6 +360,7 @@ const HistoryTab = (function () {
       selectedItemRow = null;
       currentItemId = null;
       if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
+      if (btnSendTropy) btnSendTropy.disabled = true;
     }
   });
 
@@ -376,8 +385,12 @@ const HistoryTab = (function () {
   }
 
   document.getElementById("btn-history-refresh").onclick = refresh;
-  document.getElementById("btn-history-export-fabricated")?.addEventListener("click", () => {
-    window.open("/api/history/fabricated-results", "_blank", "noopener");
+  document.getElementById("btn-history-export-fabricated")?.addEventListener("click", async () => {
+    try {
+      await downloadFile("/api/history/fabricated-results", "fabricated-ocr-results.json");
+    } catch (err) {
+      if (window.ArtificeToast) window.ArtificeToast.error(`Could not export flagged OCR: ${err.message}`);
+    }
   });
   document.getElementById("btn-history-delete").onclick = deleteSelectedRun;
   document.getElementById("btn-history-send-tropy").onclick = async () => {

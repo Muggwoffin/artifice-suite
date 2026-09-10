@@ -27,6 +27,27 @@ let sendContext = null;
 let notePreview = null;
 let browserReturnFocus = null;
 let sendReturnFocus = null;
+let previewAbortController = null;
+let previewTickTimer = null;
+
+// Above this many pages, checking each one individually against Tropy's
+// Developer API (one HTTP round trip per page, more for pages that already
+// carry notes) can run for minutes if Tropy is busy with its own UI. Warn
+// before starting rather than leaving the user staring at a status line
+// with no sense of whether it is working or stuck.
+const LARGE_BATCH_WARNING_THRESHOLD = 150;
+
+function stopPreviewTicker() {
+  if (previewTickTimer) { clearInterval(previewTickTimer); previewTickTimer = null; }
+}
+
+// A fresh check (or closing the modal) supersedes whatever Tropy request is
+// still in flight — abort it instead of letting it finish unobserved and
+// possibly race a newer response into the status line.
+function cancelInFlightPreview() {
+  stopPreviewTicker();
+  if (previewAbortController) { previewAbortController.abort(); previewAbortController = null; }
+}
 
 function notify(kind, message) {
   if (!window.ArtificeToast) return;
@@ -316,28 +337,48 @@ function showNoteStatus(message, state = "default") {
 }
 
 async function previewNotes() {
+  cancelInFlightPreview();
   notePreview = null;
   tropy["btn-writeback-commit"].disabled = true;
   if (hasUnsavedText()) return showNoteStatus("Save the current edits before sending this text to Tropy.", "error");
-  showNoteStatus("Checking the open Tropy project…");
+
+  const controller = new AbortController();
+  previewAbortController = controller;
+  const startedAt = Date.now();
+  const itemCount = sendContext?.itemIds?.length || 0;
+  const tick = () => {
+    const elapsed = Math.round((Date.now() - startedAt) / 1000);
+    const of = itemCount > 1 ? ` of up to ${itemCount} pages` : "";
+    showNoteStatus(`Checking the open Tropy project… (${elapsed}s${of} — close this dialog to cancel)`);
+  };
+  tick();
+  previewTickTimer = setInterval(tick, 1000);
+
   tropy["btn-writeback-preview"].disabled = true;
   tropy["btn-writeback-preview"].setAttribute("aria-busy", "true");
   try {
-    const data = await api("POST", "/api/tropy/notes/preview", sendBody());
+    const data = await api("POST", "/api/tropy/notes/preview", sendBody(), { signal: controller.signal });
+    stopPreviewTicker();
     notePreview = data;
     const count = data.counts || {};
     tropy["tropy-export-stat-items"].textContent = String(count.selected || 0);
     tropy["tropy-export-stat-photos"].textContent = String((count.ready || 0) + (count.duplicate || 0));
     tropy["tropy-export-stat-transcriptions"].textContent = String(count.ready || 0);
     const blockers = data.blockers || [];
+    const itemErrors = data.item_errors || [];
     const message = `${count.ready || 0} ready · ${count.duplicate || 0} duplicate · ${count.empty || 0} empty · ${(count.foreign || 0) + (count.ineligible || 0)} blocked` +
-      (blockers.length ? "\n" + blockers.join("\n") : "");
-    showNoteStatus(message, blockers.length > 0 ? "error" : "success");
+      (count.error ? ` · ${count.error} could not be checked` : "") +
+      (blockers.length ? "\n" + blockers.join("\n") : "") +
+      (itemErrors.length ? "\n" + itemErrors.map((entry) => `${entry.label}: ${entry.message}`).join("\n") : "");
+    showNoteStatus(message, blockers.length > 0 || itemErrors.length > 0 ? "error" : "success");
     tropy["btn-writeback-commit"].disabled = blockers.length > 0 || data.write_count < 1;
     tropy["btn-writeback-commit"].textContent = `Add ${data.write_count || 0} note${data.write_count === 1 ? "" : "s"}`;
   } catch (error) {
+    stopPreviewTicker();
+    if (error.name === "AbortError") return;
     showNoteStatus("Could not check Tropy: " + error.message, "error");
   } finally {
+    previewAbortController = null;
     tropy["btn-writeback-preview"].disabled = false;
     tropy["btn-writeback-preview"].removeAttribute("aria-busy");
   }
@@ -367,6 +408,14 @@ async function commitNotes() {
 }
 
 async function openTropyExport(context) {
+  const itemIds = context?.itemIds || [];
+  if (itemIds.length > LARGE_BATCH_WARNING_THRESHOLD) {
+    const proceed = confirm(
+      `Sending ${itemIds.length} pages to Tropy checks each one individually and can take ` +
+      "several minutes if Tropy is busy with its own window open. Continue?"
+    );
+    if (!proceed) return;
+  }
   sendReturnFocus = document.activeElement;
   sendContext = context || null;
   notePreview = null;
@@ -380,6 +429,7 @@ async function openTropyExport(context) {
 }
 
 function closeSend() {
+  cancelInFlightPreview();
   tropy["modal-tropy-send"].classList.add("hidden");
   sendContext = null;
   notePreview = null;

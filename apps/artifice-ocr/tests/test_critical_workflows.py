@@ -249,6 +249,7 @@ def test_tropy_page_ocr_and_note_round_trip_over_real_protocols(
             "foreign": 0,
             "missing_photo": 0,
             "item_mismatch": 0,
+            "error": 0,
             "ineligible": 0,
         }
         result = tropy_notes.tropy_notes_commit(
