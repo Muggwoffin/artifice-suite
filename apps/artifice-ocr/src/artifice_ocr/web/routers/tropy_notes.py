@@ -198,9 +198,7 @@ def _preview(req: TropyNotesRequest) -> tuple[dict, list[NotePlan], TropyConnect
                         photo = client.photo(entry.photo_id)
                         if photo is None:
                             counts["missing_photo"] += 1
-                            plans.append(
-                                NotePlan(entry, "missing_photo", "photo no longer exists")
-                            )
+                            plans.append(NotePlan(entry, "missing_photo", "photo no longer exists"))
                         elif (
                             entry.item_id is not None
                             and int(photo.get("item", -1)) != entry.item_id
