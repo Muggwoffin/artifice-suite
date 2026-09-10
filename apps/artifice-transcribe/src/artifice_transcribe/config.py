@@ -40,7 +40,15 @@ class Settings(BaseSettings):
     default_device: str = "auto"
     default_hf_token: str = ""
     diarization_provider: str = "pyannote"
-    diarization_model: str = "pyannote/speaker-diarization-3.0"
+    # Empty means "let WhisperX pick", which is the safe default: WhisperX
+    # tracks the pyannote major version it is pinned against (3.8.6 defaults
+    # to pyannote/speaker-diarization-community-1). Naming a model here pins
+    # it forever. This previously defaulted to
+    # "pyannote/speaker-diarization-3.0", which no longer matches the pinned
+    # pyannote 4.x and would force a gated download — harmless only because
+    # nothing ever passed the value to WhisperX. See
+    # services/transcription.py::_ensure_models.
+    diarization_model: str = ""
     enable_alignment_model_cache: bool = True
 
     def model_post_init(self, __context: object) -> None:

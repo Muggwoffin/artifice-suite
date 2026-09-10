@@ -64,7 +64,7 @@
       <strong>How to Get Diarisation</strong>:
     </p>
     <ul class="dim" style="margin:0.25rem 0;padding-left:1.2rem;font-size:0.85rem;">
-      <li>Open Source: <code>pannous/PyAnnote for speaker diarisation</code> <a href="https://huggingface.co/pyannote/speaker-diarization-3.0" target="_blank" style="color:var(--accent);">https://huggingface.co/pyannote/speaker-diarization-3.0</a></li>
+      <li>Open source: <code>pyannote.audio</code> for speaker diarisation — <a href="https://huggingface.co/pyannote/speaker-diarization-community-1" target="_blank" rel="noopener" style="color:var(--accent);">pyannote/speaker-diarization-community-1</a>, the model WhisperX uses by default</li>
       <li>Tool to run locally: <code>diarisation-tool</code> (CNNDiarization, pyannote.audio-silero)</li>
       <li>Cloud SaaS: <code>AssemblyAI Async API</code>, <code>Deepgram Live API</code></li>
       <li>On-prem: Docker containers with <code>vits-gnu</code> + <code>whisperx</code></li>
@@ -331,7 +331,8 @@
 
           <div class="form-row" style="margin-bottom:0.75rem;">
             <label style="display:block; font-weight:600; margin-bottom:0.2rem;">Diarization Model</label>
-            <input type="text" id="setting-diarization-model" value="pyannote/speaker-diarization-3.0" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+            <input type="text" id="setting-diarization-model" placeholder="Leave empty to use the recommended default" style="width:100%; padding:0.5rem; border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--paper-recessed); color:var(--ink);">
+            <small class="dim" style="display:block; margin-top:0.25rem;">Empty uses the model WhisperX recommends for its installed pyannote version. Only set this to pin a specific model.</small>
           </div>
 
           <div class="form-row" style="margin-bottom:0.75rem; display:flex; align-items:center; gap:0.6rem;">

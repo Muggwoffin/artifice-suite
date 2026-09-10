@@ -67,9 +67,15 @@ Issues = "https://github.com/Muggwoffin/artifice-suite/issues"
 # is workspace-only — there is no standardised per-extra index selection
 # in PEP 621.
 #
-# ``--extra asr-cuda`` is a convenience alias for ``asr`` that exists so
-# that ``uv sync --extra asr-cuda`` resolves torch from default PyPI
-# rather than the CPU index.  On PyPI the two extras are identical.
+# ``--extra asr-cuda`` selects the CUDA build instead, via the cu128 index
+# below.  It must NOT be written as ``artifice-transcribe[asr]``: the source
+# mappings are keyed on the extra name, so inheriting ``asr`` also inherits
+# its CPU pin, and ``uv sync --extra asr-cuda`` silently produced the same
+# CPU wheels as ``--extra asr`` while documenting the opposite.  Verified
+# with ``--dry-run``: against the old definition it reported "Would make no
+# changes" when switching between the two extras.  The package list is
+# therefore duplicated on purpose — the two extras differ only in which
+# index their torch wheels come from.
 asr = [
     "whisperx>=3.8.0",
     "torch>=2.8.0,<2.9.0",
@@ -80,7 +86,13 @@ asr = [
     "transformers>=4.0",
 ]
 asr-cuda = [
-    "artifice-transcribe[asr]",
+    "whisperx>=3.8.0",
+    "torch>=2.8.0,<2.9.0",
+    "torchaudio>=2.8.0,<2.9.0",
+    "torchvision>=0.23.0,<0.24.0",
+    "torchcodec>=0.11.0,<0.12.0",
+    "pyannote.audio>=4.0",
+    "transformers>=4.0",
 ]
 window = [
     "pywebview>=5.0",
@@ -100,24 +112,56 @@ where = ["src"]
 "artifice_transcribe.web" = ["static/**", "templates/**/*.html"]
 
 [tool.uv]
+# `asr` and `asr-cuda` install the same packages from different indexes, so
+# they can never be active together. Without this declaration uv has to prove
+# the lockfile resolvable for every combination of extras, hits asr+asr-cuda,
+# and fails with "Requirements contain conflicting indexes for package torch".
+# Declaring the conflict lets it lock each extra separately.
+conflicts = [
+    [
+        { extra = "asr" },
+        { extra = "asr-cuda" },
+    ],
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
+# cu128 rather than an older CUDA line: Blackwell cards (RTX 50-series, compute
+# capability sm_120) are not covered by the cu126 wheels, and torch silently
+# falls back to CPU on an unsupported architecture rather than failing loudly.
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+# One entry per extra per package. uv picks the mapping whose extra is active,
+# so `--extra asr` gets CPU wheels and `--extra asr-cuda` gets CUDA ones.
+# Passing BOTH extras at once is ambiguous and uv will say so — pick one.
 [tool.uv.sources]
 torch = [
     { index = "pytorch-cpu", extra = "asr", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu128", extra = "asr-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 torchaudio = [
     { index = "pytorch-cpu", extra = "asr", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu128", extra = "asr-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 torchvision = [
     { index = "pytorch-cpu", extra = "asr", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu128", extra = "asr-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+# torchcodec is the exception: the cu128 index publishes it for Linux only
+# (manylinux aarch64/x86_64), so a Windows CUDA install has to take it from the
+# CPU index. It is an audio/video decoder, not a compute path — pairing a CPU
+# torchcodec with CUDA torch costs nothing, and on Windows its native DLL
+# fails to load anyway (WhisperX warns and falls back to another decoder).
 torchcodec = [
     { index = "pytorch-cpu", extra = "asr", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-cu128", extra = "asr-cuda", marker = "sys_platform == 'linux'" },
+    { index = "pytorch-cpu", extra = "asr-cuda", marker = "sys_platform == 'win32'" },
 ]
 
 [tool.pytest.ini_options]
