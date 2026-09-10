@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Literal
 
 from platformdirs import user_data_dir
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -39,6 +40,11 @@ class Settings(BaseSettings):
     default_whisper_model: str = "base"
     default_device: str = "auto"
     default_hf_token: str = ""
+    # Which ASR engine backs the transcription pipeline. "whisperx" is the
+    # original WhisperX+alignment backend (CPU or CUDA); "parakeet" selects
+    # NVIDIA's Parakeet TDT 1.1B via NeMo (CUDA-only, English-only). The
+    # default preserves existing behavior exactly.
+    asr_backend: Literal["whisperx", "parakeet"] = "whisperx"
     diarization_provider: str = "pyannote"
     # Empty means "let WhisperX pick", which is the safe default: WhisperX
     # tracks the pyannote major version it is pinned against (3.8.6 defaults

@@ -94,6 +94,31 @@ asr-cuda = [
     "pyannote.audio>=4.0",
     "transformers>=4.0",
 ]
+# ``--extra asr-parakeet`` installs the NVIDIA Parakeet (NeMo) ASR backend
+# (`nemo_toolkit[asr]`), a large dependency graph (~3.8 GB of new wheels at
+# 2026-09-10: pyarrow 1.5 GB, llvmlite 1.0 GB, onnx 329 MB, cytoolz 285 MB,
+# wandb 195 MB, cuda-bindings 126 MB, numba 68 MB, sentencepiece 61 MB — see
+# docs/TRANSCRIBE_ALIGNMENT_AUDIT.md §7).  It is CUDA-only by design: the
+# engine raises ParakeetRequiresCuda at model-load time when no GPU is present
+# (services/parakeet_engine.py); there is deliberately no CPU fallback.
+#
+# Parakeet has no speaker diarization of its own — diarization stays
+# pyannote-based via WhisperX's thin wrapper, so a complete setup combines
+# this extra with ``--extra asr-cuda`` (cu128 torch + whisperx + pyannote).
+# ``--extra asr-parakeet`` alone pulls torch 2.8.0 from PyPI (CPU), which the
+# CUDA check then rejects at load time.
+#
+# System prerequisites, NOT pip-installable (same class of requirement
+# WhisperX already has via ffmpeg):
+#   - libsndfile1  (NeMo decodes audio with soundfile/librosa)
+#   - ffmpeg       (shared with WhisperX)
+# On Debian/Ubuntu: `sudo apt install libsndfile1 ffmpeg`.
+#
+# NeMo historically carried a `numpy<2` pin; as of 2.7.3/3.0.0 that is lifted
+# (`numpy>=1.22`) and the extra resolves against this workspace's numpy 2.x.
+asr-parakeet = [
+    "nemo_toolkit[asr]>=2.7.3",
+]
 window = [
     "pywebview>=5.0",
 ]

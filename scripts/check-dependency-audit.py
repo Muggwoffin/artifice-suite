@@ -89,6 +89,11 @@ PYTEST_INTERNAL = {"conftest", "measure_ocr_accuracy"}
 # name to look for.
 IMPORT_ROOT_TO_DIST = {
     "pyannote": "pyannote-audio",
+    # Same shape as pyannote above: `nemo_toolkit[asr]` is declared under
+    # artifice-transcribe's `asr-parakeet` extra, which CI's lint job does not
+    # install (same ~GB-scale reason `asr`/`asr-cuda` are skipped), so the
+    # import root `nemo` never resolves through packages_distributions().
+    "nemo": "nemo-toolkit",
 }
 
 

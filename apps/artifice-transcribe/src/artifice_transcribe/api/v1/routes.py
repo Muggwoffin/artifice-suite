@@ -102,6 +102,7 @@ from artifice_transcribe.services.inference import (
 from artifice_transcribe.services.inference import (
     test_connection as test_inf_conn,
 )
+from artifice_transcribe.services.parakeet_engine import ParakeetRequiresCuda
 from artifice_transcribe.services.token_redaction import redact_token
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,10 @@ _engine: ASRBackend | None = None
 _INSTALL_HINT = "uv sync --extra asr"
 _INSTALL_HINT_CUDA = "uv sync --extra asr-cuda"
 
+# ASR backends selectable via settings.asr_backend. Kept in step with
+# ModelConfigResponse.available_asr_backends (schemas/transcription.py).
+_ASR_BACKENDS = frozenset({"whisperx", "parakeet"})
+
 
 class AsrUnavailable(Exception):
     """Raised when the ASR stack (torch, whisperx, pyannote) is not installed.
@@ -275,43 +280,64 @@ class AsrUnavailable(Exception):
         super().__init__(self.public_message)
 
 
-async def _reload_engine_with_new_model(new_model: str):
-    """Reload the transcription engine with a new Whisper model while preserving the settings."""
-    global _engine
-    logger.info("Reloading engine with new Whisper model: %s", new_model)
+def _build_engine() -> ASRBackend:
+    """Construct the ASR backend selected by ``settings.asr_backend``.
 
-    old_engine = _engine
-    if old_engine:
-        old_engine.unload()
-
+    This is the seam the :class:`ASRBackend` protocol was built for: both
+    engines share ``device`` / ``hf_token`` / ``diarization_model``, and differ
+    only in their model identifier.  The heavy imports happen here (and only
+    here) so a base install can import this module; an absent stack surfaces as
+    :class:`AsrUnavailable`, as it always has.
+    """
     try:
+        if settings.asr_backend == "parakeet":
+            from artifice_transcribe.services.parakeet_engine import ParakeetEngine
+
+            return ParakeetEngine(
+                device=settings.device,
+                hf_token=_load_hf_token(),
+                diarization_model=settings.diarization_model,
+            )
         from artifice_transcribe.services.transcription import WhisperXEngine
-    except ImportError as exc:
-        raise AsrUnavailable() from exc
 
-    _engine = WhisperXEngine(
-        model_size=settings.whisper_model,
-        device=settings.device,
-        hf_token=_load_hf_token(),
-        diarization_model=settings.diarization_model,
-    )
-    logger.info("Engine reloaded successfully with model: %s", new_model)
-
-
-def _get_engine():
-    global _engine
-    if _engine is None:
-        try:
-            from artifice_transcribe.services.transcription import WhisperXEngine
-        except ImportError as exc:
-            raise AsrUnavailable() from exc
-
-        _engine = WhisperXEngine(
+        return WhisperXEngine(
             model_size=settings.whisper_model,
             device=settings.device,
             hf_token=_load_hf_token(),
             diarization_model=settings.diarization_model,
         )
+    except ImportError as exc:
+        raise AsrUnavailable() from exc
+
+
+async def _reload_engine():
+    """Rebuild the engine in place, unloading the previous one first.
+
+    Generalized from the old ``_reload_engine_with_new_model``, which took a
+    WhisperX model-size string as an argument.  With two backends the engine
+    identity is no longer a single model string, so the reload now reads
+    ``settings.asr_backend`` (and ``settings.whisper_model``) directly and the
+    call site simply checks *which* fields changed.
+    """
+    global _engine
+    logger.info(
+        "Reloading engine (backend=%s, whisper_model=%s)",
+        settings.asr_backend,
+        settings.whisper_model,
+    )
+
+    old_engine = _engine
+    if old_engine:
+        old_engine.unload()
+
+    _engine = _build_engine()
+    logger.info("Engine reloaded successfully")
+
+
+def _get_engine():
+    global _engine
+    if _engine is None:
+        _engine = _build_engine()
     return _engine
 
 
@@ -515,6 +541,7 @@ def _redact_model_config(key: str, value: str) -> str:
 async def get_config():
     fields = {
         "whisper_model": settings.whisper_model,
+        "asr_backend": settings.asr_backend,
         "device": settings.device,
         "hf_token": _load_hf_token(),
         "diarization_provider": settings.diarization_provider,
@@ -531,6 +558,14 @@ async def update_config(body: ModelConfigRequest):
 
     if "whisper_model" in updates:
         settings.whisper_model = updates["whisper_model"]
+    if "asr_backend" in updates:
+        if updates["asr_backend"] not in _ASR_BACKENDS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown ASR backend: {updates['asr_backend']!r}. "
+                f"Choose one of {sorted(_ASR_BACKENDS)}.",
+            )
+        settings.asr_backend = updates["asr_backend"]
     if "device" in updates:
         settings.device = updates["device"]
     if "hf_token" in updates and updates["hf_token"] != _REDACTED_PLACEHOLDER:
@@ -542,9 +577,9 @@ async def update_config(body: ModelConfigRequest):
     if "enable_alignment_model_cache" in updates:
         settings.enable_alignment_model_cache = updates["enable_alignment_model_cache"]
 
-    if "whisper_model" in updates:
+    if "whisper_model" in updates or "asr_backend" in updates:
         try:
-            await _reload_engine_with_new_model(settings.whisper_model)
+            await _reload_engine()
         except AsrUnavailable as exc:
             raise HTTPException(status_code=503, detail=exc.public_message) from exc
 
@@ -1506,7 +1541,10 @@ async def enroll_speaker(
     except AsrUnavailable as exc:
         raise HTTPException(status_code=503, detail=exc.public_message) from exc
 
-    embedding = engine.extract_speaker_embedding(audio_path)
+    try:
+        embedding = engine.extract_speaker_embedding(audio_path)
+    except ParakeetRequiresCuda as exc:
+        raise HTTPException(status_code=503, detail=exc.public_message) from exc
 
     emb_bytes = pack_embedding(embedding)
     spk = KnownSpeaker(

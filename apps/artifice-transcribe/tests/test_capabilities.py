@@ -143,11 +143,11 @@ class TestAsrUnavailableHandlers:
         model changes.  An AsrUnavailable during that reload must return
         HTTP 503, not 500."""
 
-        def _fail_on_reload(new_model: str):
+        def _fail_on_reload():
             raise AsrUnavailable()
 
         monkeypatch.setattr(
-            "artifice_transcribe.api.v1.routes._reload_engine_with_new_model",
+            "artifice_transcribe.api.v1.routes._reload_engine",
             _fail_on_reload,
         )
 
@@ -191,3 +191,42 @@ class TestAsrUnavailableHandlers:
 def _raise_asr_unavailable():
     """Helper to use as a monkeypatched _get_engine target."""
     raise AsrUnavailable()
+
+
+# ── asr_backend config wiring (Parakeet engine selection) ─────────────────
+
+
+@pytest.mark.asyncio
+class TestAsrBackendConfig:
+    """GET/PATCH /api/v1/config must expose and honour ``asr_backend`` the same
+    way it does ``whisper_model`` — without importing the ASR stack."""
+
+    async def test_get_config_includes_asr_backend(self, api):
+        resp = await api.client.get("/api/v1/config")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["asr_backend"] == "whisperx"  # default preserves behavior
+        assert set(data["available_asr_backends"]) == {"whisperx", "parakeet"}
+
+    async def test_patch_asr_backend_triggers_reload(self, api, monkeypatch):
+        from artifice_transcribe.config import settings
+
+        # Snapshot/restore the singleton so this test cannot leak a backend
+        # change into later tests.
+        monkeypatch.setattr(settings, "asr_backend", settings.asr_backend)
+
+        reloaded = []
+
+        async def _reload():
+            reloaded.append(True)
+
+        monkeypatch.setattr("artifice_transcribe.api.v1.routes._reload_engine", _reload)
+
+        resp = await api.client.patch("/api/v1/config", json={"asr_backend": "parakeet"})
+        assert resp.status_code == 200
+        assert reloaded == [True], "changing asr_backend must reload the engine"
+
+    async def test_patch_rejects_unknown_asr_backend(self, api):
+        resp = await api.client.patch("/api/v1/config", json={"asr_backend": "not-a-backend"})
+        assert resp.status_code == 400
+        assert "not-a-backend" in resp.json()["detail"]

@@ -35,6 +35,17 @@ asr-cuda = [
     "artifice-model-harness>=0.2.0",
     "artifice-shared-ui>=0.2.0",
 ]
+# The NVIDIA Parakeet (NeMo) ASR backend. CUDA-only by design: ParakeetEngine
+# raises ParakeetRequiresCuda at model-load time when no GPU is present (see
+# services/parakeet_engine.py). NeMo pulls its own torch from PyPI when this
+# extra is installed alone; combine it with ``--extra asr-cuda`` to get the
+# cu128 torch plus whisperx/pyannote for diarization (Parakeet has no speaker
+# diarization of its own — it reuses whisperx.diarize.DiarizationPipeline).
+asr-parakeet = [
+    "artifice-transcribe[asr-parakeet]",
+    "artifice-model-harness>=0.2.0",
+    "artifice-shared-ui>=0.2.0",
+]
 all = [
     "artifice-ocr",
     # web extra included so that --extra all carries the packages

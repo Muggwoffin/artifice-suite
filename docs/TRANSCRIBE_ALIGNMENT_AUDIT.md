@@ -315,6 +315,69 @@ not depend on item 0. Item 0 gates the credibility of anything accuracy-shaped
 
 ---
 
+## 7. Parakeet (NeMo) backend dependency footprint — measured 2026-09-10
+
+Item A of the Parakeet-backend phase adds a second ASR engine (`ParakeetEngine`,
+CUDA-only, English-only) behind the `ASRBackend` protocol.  Because this repo has
+twice shipped a spec/dependency claim that turned out wrong on the first real
+build (the aiosqlite hidden-import bug, the lazy-torch-import regression), the
+extra's footprint is recorded here from `uv sync --extra asr-parakeet --dry-run`
+rather than asserted.
+
+**Pinned version.** `nemo_toolkit[asr]>=2.7.3`, which resolves to **3.0.0**
+(2026-08-07) as of this date.  Chosen because:
+
+- `numpy>=1.22` with no upper bound — the historical `numpy<2` pin is lifted in
+  the current 2.7.x/3.0.0 releases, so the extra resolves against the
+  workspace's numpy 2.4.6/2.5.1 **unchanged**.  (NeMo still carries a numpy-2.x
+  workaround in `numexpr<2.14.0` — "WAR for attempted use of nonexistent
+  numpy.typing" — so numpy 2.x is metadata-compatible; runtime behaviour is not
+  exercised here, no GPU in CI.)
+- `EncDecRNNTBPEModel` + the TDT decoding submodules are still present in 3.0.0,
+  so `ASRModel.from_pretrained("nvidia/parakeet-tdt-1.1b")` (the load path the
+  model card documents) has its `target` class.  There is **no**
+  `EncDecTDTModel` class — the model is an RNNT-BPE model with a TDT decoder, so
+  nothing TDT-specific was removed.
+
+**Notable side effect — two downgrades the lock had to accept.**  NeMo pins
+`lightning<=2.4.0` and `omegaconf<=2.3`, while pyannote.audio 4.0.7 requires
+`lightning>=2.4`.  The intersection is exactly `lightning==2.4.0` (and
+`omegaconf==2.3.0`, pulled down from 2.3.1), so adding NeMo downgrades the
+*WhisperX* path too.  This is accepted and validated-by-resolution (pyannote's
+`>=2.4` is still satisfied at exactly 2.4.0), but it is the kind of cascade a
+future maintainer should know about before "bumping" either extra.
+
+**Resolved dependency list (new packages introduced by the extra; wheel-only
+sizes).**  Total **~3.76 GB** of new wheels, dominated by:
+
+| Package | Wheel size |
+|---|---|
+| pyarrow (via datasets) | 1.51 GB |
+| llvmlite (via numba) | 1.04 GB |
+| onnx | 329 MB |
+| cytoolz | 285 MB |
+| wandb | 195 MB |
+| cuda-bindings | 126 MB |
+| numba | 68 MB |
+| sentencepiece | 61 MB |
+| text2num | 33 MB |
+| msgpack / ml-dtypes | ~20 MB each |
+| nemo-toolkit 3.0.0 | 5 MB |
+
+…plus ~45 smaller packages (aistore, lhotse, librosa, soundfile, sacrebleu,
+whisper-normalizer, hydra-core 1.3.2, datasets 5.0.1, tensorboard, webdataset,
+the `nv_one_logger_*` trio, and their transitive deps).  `torch` itself is
+shared with the existing `asr`/`asr-cuda` extras (2.8.0); installing
+`asr-parakeet` alone additionally pulls the plain-PyPI CPU torch, which the
+CUDA check rejects at load time.
+
+**System prerequisites (not pip-installable):** `libsndfile1` (NeMo decodes
+audio via soundfile/librosa) and `ffmpeg` (already required by WhisperX).  Both
+are documented in the `asr-parakeet` extra's comment in
+`apps/artifice-transcribe/pyproject.toml`.
+
+---
+
 ## Open questions for the maintainer
 
 1. **Should Transcribe be release-gated like OCR?** Extending
