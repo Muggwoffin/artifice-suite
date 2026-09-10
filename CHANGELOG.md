@@ -9,6 +9,26 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 ## [Unreleased]
 
 ### Added
+- **olmOCR-2 inference-side optimisations** (`docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md`).
+  Per-page temperature ladder in `_ocr_vision` — a repetition-guard rejection now
+  resamples the same page at rising temperature (0.1→0.8) instead of discarding
+  the whole document to Tesseract; `ocr_temperature_ladder_enabled` (default on)
+  reproduces the exact prior fixed-`0.0` behaviour when off. Near-blank page
+  short-circuit (`_blank.py`) skips the model call entirely on a greyscale-variance
+  check. Auto-rotation detection (`_rotation.py`) via Tesseract OSD, opt-in and
+  only probed when Tropy's own orientation metadata is unset. Defensive YAML
+  front-matter stripping in `_normalise.py`, independent of prompt style.
+  Configurable per-collection domain instruction prompt (`ocr_prompt_instruction`),
+  exposed as a Settings-tab field beside Document type — [CENT] (arXiv:2608.30616)
+  measured this taking olmOCR2's field-level exact-match from 30.55% to 74.64%
+  with no training. Experimental structured-output prompt style
+  (`ocr_prompt_style`), config-file-only, default `"raw"` unchanged — a genuine
+  trade the findings doc says needs measurement before any default change. New
+  CER-based accuracy/wall-time measurement harness
+  (`scripts/measure_ocr_accuracy.py`); `eval_corpus/` ships empty with a README,
+  since populating it with real ground-truth pages is a maintainer follow-up.
+  Live-tested against a real Ollama endpoint (`richardyoung/olmocr2:7b-q8`) and a
+  real, isolated Tropy process, not just the mocked suite. (#101)
 - **Tropy write-back is reachable by a user.** `tropy_write.py` had been
   complete, tested and unwired since `eba87a2` — its own commit said "nothing
   wires it to a route, a stage, or a button". Two gated routes
@@ -39,6 +59,17 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   likewise replaced `prompt()` with a native path field and drag-and-drop zone.
 
 ### Changed
+- **`artifice-draft` and `artifice-graph` paused (maintainer decision, 2026-09-09).**
+  Current local-model quality for open-ended copy-editing and structured
+  knowledge extraction doesn't yet clear this suite's bar; active feature work
+  is on hold in favour of `artifice-ocr` and `artifice-transcribe`. Reversible,
+  not a removal: both apps stay installable and published, and their existing
+  test suites still gate every change. `tests-cross-platform` in
+  `.github/workflows/ci.yml` now excludes both from its Windows/macOS legs
+  (12→8 combinations); they keep single-platform coverage via `tests`.
+  `scripts/check-release-consistency.py` exempts both from the version-lockstep
+  gate, so a release no longer needs an empty version bump on either just to
+  tag. (#102)
 - **Upload guards have one home.** `_read_capped` was copy-pasted into four apps
   and `_sanitise_path_component` into three, with `artifice-draft` missing the
   filename guard entirely. Both now live in `packages/shared-ui`

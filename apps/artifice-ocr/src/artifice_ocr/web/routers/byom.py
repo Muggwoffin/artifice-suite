@@ -145,19 +145,42 @@ def byom_state() -> dict:
     api_key = config.get("api_key") or ""
     api_base_url = config.get("api_base_url") or "https://api.openai.com/v1"
     ollama_url = config.get("ollama_url") or "http://localhost:11434"
+    lm_studio_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
     ocr_model = config.get("ocr_model") or ""
+    ocr_backend = config.get("ocr_backend") or "auto"
+    role_backends = {
+        ocr_backend,
+        config.get("cleanup_backend") or "auto",
+        config.get("translate_backend") or "auto",
+    }
 
     # "Configured" means the user has intentionally set something beyond the
     # default out-of-the-box endpoints — including choosing a model, which
     # counts even when both endpoints are still the shipped defaults.
-    configured = is_configured(
-        api_base_url, api_key, defaults=("https://api.openai.com/v1",), model=ocr_model
-    ) or is_configured(ollama_url, defaults=("http://localhost:11434",))
+    configured = (
+        is_configured(
+            api_base_url, api_key, defaults=("https://api.openai.com/v1",), model=ocr_model
+        )
+        or is_configured(ollama_url, defaults=("http://localhost:11434",))
+        or is_configured(
+            lm_studio_url,
+            defaults=("http://localhost:1234/v1",),
+        )
+        or "lm_studio" in role_backends
+    )
 
     return {
         "app": "artifice-ocr",
         "configured": configured,
-        "endpoint": api_base_url if api_key else ollama_url,
+        "endpoint": (
+            lm_studio_url
+            if ocr_backend == "lm_studio"
+            else ollama_url
+            if ocr_backend == "ollama"
+            else api_base_url
+            if api_key
+            else ollama_url
+        ),
         "model": ocr_model or None,
         # The roles this app supports, in stable order. Derived from the same
         # mapping POST /model honours (_ROLE_SETTING) so the picker can never
@@ -221,6 +244,18 @@ async def byom_test(req: TestRequest) -> dict:
             overrides["api_key"] = req.api_key
         if result.provider == "ollama":
             overrides["ollama_url"] = normalise_base_url(base_url)
+        elif result.provider == "lm-studio":
+            # LM Studio is a first-class local backend. Storing it as the
+            # generic API URL made onboarding appear successful while runs
+            # continued auto-selecting another server.
+            overrides["lm_studio_url"] = base_url.strip().rstrip("/")
+            overrides.update(
+                {
+                    "ocr_backend": "lm_studio",
+                    "cleanup_backend": "lm_studio",
+                    "translate_backend": "lm_studio",
+                }
+            )
         else:
             overrides["api_base_url"] = base_url.strip()
         config.apply_overrides(overrides)

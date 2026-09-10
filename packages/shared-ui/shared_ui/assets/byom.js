@@ -1270,13 +1270,19 @@
 
   var _instance = null;
 
-  // Element ID of the masthead control that reopens the screen — see
-  // _masthead.html and, for artifice-graph (which does not use that
-  // shared partial), its own base.html. Looked up by ID rather than
-  // wired from the host template because the markup is shared across
-  // four different DOMs and this keeps all of its behaviour in one file
-  // rather than duplicated per app.
+  // The legacy masthead uses #navByom; the simplified application shell uses
+  // [data-shell-action=model]. Support both while apps migrate so the visible
+  // shell control cannot become a dead button.
   var NAV_TRIGGER_ID = "navByom";
+
+  function _navTriggers() {
+    var result = [];
+    var legacy = document.getElementById(NAV_TRIGGER_ID);
+    var shell = document.querySelector("[data-shell-action=model]");
+    if (legacy) result.push(legacy);
+    if (shell && shell !== legacy) result.push(shell);
+    return result;
+  }
 
   // Sets the masthead control's accessible name and its non-colour state
   // signal (filled vs. hollow dot, driven by [data-state] in
@@ -1289,29 +1295,29 @@
   // §9 ("Color is never the sole indicator of state") is why the dot's
   // meaning is also carried in the aria-label text, not by colour alone.
   function _setNavTriggerState(configured) {
-    var btn = document.getElementById(NAV_TRIGGER_ID);
-    if (!btn) return;
-    btn.setAttribute("data-state", configured ? "configured" : "unconfigured");
-    // "Connection", not "Model". GET /api/byom/state derives `configured`
-    // from the endpoint and credentials — and, since the model-resolution
-    // work, from whether a model has been explicitly chosen. It has never
-    // measured whether a *model* is present and usable, so the old wording
-    // claimed something the flag does not know. An app with no model chosen
-    // is not misconfigured: it resolves one per run from what the endpoint
-    // serves, which is the normal state.
-    btn.setAttribute(
-      "aria-label",
-      configured
-        ? "Connection configured. Open connection settings."
-        : "Connection not configured. Open connection settings."
-    );
+    _navTriggers().forEach(function (btn) {
+      btn.setAttribute("data-state", configured ? "configured" : "unconfigured");
+      // "Connection", not "Model". GET /api/byom/state derives `configured`
+      // from durable configuration; it does not make a liveness claim.
+      btn.setAttribute(
+        "aria-label",
+        configured
+          ? "Connection configured. Open connection settings."
+          : "Connection not configured. Open connection settings."
+      );
+      var label = btn.querySelector("[data-model-label]");
+      if (label) label.textContent = configured ? "Connection configured" : "Set up model";
+      var dot = btn.querySelector(".status-dot");
+      if (dot) dot.setAttribute("data-state", configured ? "configured" : "unconfigured");
+    });
   }
 
   function _wireNavTrigger(instance) {
-    var btn = document.getElementById(NAV_TRIGGER_ID);
-    if (!btn || btn.getAttribute("data-byom-wired") === "true") return;
-    btn.setAttribute("data-byom-wired", "true");
-    btn.addEventListener("click", function () { instance.open(); });
+    _navTriggers().forEach(function (btn) {
+      if (btn.getAttribute("data-byom-wired") === "true") return;
+      btn.setAttribute("data-byom-wired", "true");
+      btn.addEventListener("click", function () { instance.open(); });
+    });
   }
 
   // Creates the singleton (once) and performs exactly the auto-open check

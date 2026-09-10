@@ -1,6 +1,6 @@
 [project]
 name = "artifice-output-layout"
-version = "0.1.0"
+version = "0.3.0"
 description = "Shared, human-readable output layout for the Artifice suite"
 requires-python = ">=3.11"
 license = {text = "AGPL-3.0-or-later"}

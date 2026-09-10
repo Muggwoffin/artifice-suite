@@ -44,6 +44,7 @@ from artifice_ocr.web.routers import (
 from artifice_ocr.web.routers import (
     run as _run_router,
 )
+from artifice_ocr.web.routers import settings as _settings_router
 from artifice_ocr.web.runtime import RunState
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -524,6 +525,7 @@ def test_get_config_returns_expected_keys(client):
     body = res.json()
     assert "cleanup_model" in body
     assert "ollama_think" in body
+    assert "ocr_prompt_instruction" in body
 
 
 def test_set_config_only_persists_whitelisted_keys(client):
@@ -1803,6 +1805,93 @@ def test_document_types_lists_known_types(client):
     types = res.json()["types"]
     assert "default" in types
     assert "handwritten" in types
+
+
+def test_local_models_discovers_lm_studio_on_wsl_host(client, monkeypatch):
+    from model_harness.discovery import ProbeResult
+
+    calls = []
+
+    async def fake_probe(url, **_kwargs):
+        calls.append(url)
+        return ProbeResult(
+            url=url,
+            reachable=url == "http://172.21.176.1:1234/v1",
+            provider="lm-studio",
+            models=("allenai/olmocr-2-7b",),
+        )
+
+    monkeypatch.setattr(_settings_router, "_wsl_host", lambda: "172.21.176.1")
+    monkeypatch.setattr(_settings_router, "probe_endpoint", fake_probe)
+
+    res = client.get("/api/local-models?backend=lm_studio")
+
+    assert res.status_code == 200
+    assert res.json() == {
+        "ok": True,
+        "backend": "lm_studio",
+        "url": "http://172.21.176.1:1234/v1",
+        "models": ["allenai/olmocr-2-7b"],
+    }
+    assert "http://localhost:1234/v1" in calls
+    assert "http://172.21.176.1:1234/v1" in calls
+
+
+def test_local_models_normalises_ollama_address_and_rejects_wrong_provider(client, monkeypatch):
+    from model_harness.discovery import ProbeResult
+
+    calls = []
+
+    async def fake_probe(url, **_kwargs):
+        calls.append(url)
+        return ProbeResult(
+            url=url,
+            reachable=True,
+            provider="lm-studio",
+            models=("some-model",),
+        )
+
+    monkeypatch.setattr(_settings_router, "_wsl_host", lambda: None)
+    monkeypatch.setattr(_settings_router, "probe_endpoint", fake_probe)
+
+    res = client.get("/api/local-models?backend=ollama&url=http://localhost:11434/v1/")
+
+    assert res.status_code == 200
+    assert res.json()["ok"] is False
+    assert calls == ["http://localhost:11434"]
+
+
+def test_local_models_normalises_lm_studio_api_path():
+    assert (
+        _settings_router._canonical_local_url(
+            "lm_studio", "http://localhost:1234/v1/models?source=settings#models"
+        )
+        == "http://localhost:1234/v1"
+    )
+
+
+def test_local_models_does_not_echo_rejected_address(client, monkeypatch):
+    monkeypatch.setattr(
+        _settings_router,
+        "_local_endpoint_candidates",
+        lambda *_args: ["https://models.example.com/v1"],
+    )
+    monkeypatch.setattr(
+        _settings_router._endpoint_policy,
+        "validate_url",
+        lambda _url: (_ for _ in ()).throw(_settings_router.EndpointRejected("public endpoint")),
+    )
+
+    res = client.get("/api/local-models?backend=lm_studio")
+
+    assert res.status_code == 200
+    assert res.json()["url"] == ""
+    assert res.json()["detail"] == "No permitted local endpoint address was provided."
+
+
+def test_local_models_rejects_non_local_backend(client):
+    res = client.get("/api/local-models?backend=api_key")
+    assert res.status_code == 400
 
 
 def test_health_check_reports_service_status(client, monkeypatch):

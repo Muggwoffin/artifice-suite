@@ -22,10 +22,10 @@
   <div class="panels">
 
     <ol class="workflow-rail" aria-label="Tropy round trip">
-      <li class="active"><span>1</span><strong>Source</strong><small>Choose Tropy pages</small></li>
-      <li><span>2</span><strong>Process</strong><small>OCR and clean</small></li>
-      <li><span>3</span><strong>Review</strong><small>Edit beside the scan</small></li>
-      <li><span>4</span><strong>Return</strong><small>Add notes or compile</small></li>
+      <li class="active" data-workflow-step="1" aria-current="step"><span>1</span><strong>Source</strong><small>Choose Tropy pages</small></li>
+      <li data-workflow-step="2"><span>2</span><strong>Process</strong><small>OCR and clean</small></li>
+      <li data-workflow-step="3"><span>3</span><strong>Review</strong><small>Edit beside the scan</small></li>
+      <li data-workflow-step="4"><span>4</span><strong>Return</strong><small>Add notes or compile</small></li>
     </ol>
 
     <!-- ================================================================ MAIN -->
@@ -229,7 +229,7 @@
             <input type="text" id="history-search" placeholder="Find file&hellip;" style="padding:0.4rem 0.6rem; border-radius:var(--radius-sm); border:1px solid var(--rule); background:var(--paper-recessed);">
             <button type="button" class="btn" id="btn-history-refresh">Refresh</button>
             <button type="button" class="btn" id="btn-history-export-fabricated" title="Open reviewer-labelled OCR examples as JSON">Export flagged OCR</button>
-            <button type="button" class="btn" id="btn-history-send-tropy" title="Send selected document back to Tropy" disabled>Send to Tropy</button>
+            <button type="button" class="btn" id="btn-history-send-tropy" title="Add notes for every eligible document in this run to Tropy" disabled>Send run to Tropy&hellip;</button>
             <button type="button" class="btn danger" id="btn-history-delete">Delete Run</button>
           </div>
         </div>
@@ -342,22 +342,29 @@
                 <select id="set-ocr_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
               </label>
               <label>OCR model
-                <input type="text" id="set-ocr_model" list="detected-local-models" placeholder="Automatic — detect a vision model">
+                <select id="pick-ocr_model" class="local-model-picker" aria-label="Available OCR models"></select>
+                <input type="text" id="set-ocr_model" class="model-name-input" list="detected-local-models" placeholder="Enter a model name">
               </label>
               <label>Cleanup service
                 <select id="set-cleanup_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
               </label>
               <label>Cleanup model
-                <input type="text" id="set-cleanup_model" list="detected-local-models" placeholder="Automatic — detect a text model">
+                <select id="pick-cleanup_model" class="local-model-picker" aria-label="Available cleanup models"></select>
+                <input type="text" id="set-cleanup_model" class="model-name-input" list="detected-local-models" placeholder="Enter a model name">
               </label>
               <label>Translation service
                 <select id="set-translate_backend"><option value="auto">Automatic (recommended)</option><option value="ollama">Ollama</option><option value="lm_studio">LM Studio</option><option value="huggingface">Hugging Face</option><option value="api_key">API key</option></select>
               </label>
               <label>Translation model
-                <input type="text" id="set-translate_model" list="detected-local-models" placeholder="Automatic — detect a text model">
+                <select id="pick-translate_model" class="local-model-picker" aria-label="Available translation models"></select>
+                <input type="text" id="set-translate_model" class="model-name-input" list="detected-local-models" placeholder="Enter a model name">
               </label>
               <datalist id="detected-local-models"></datalist>
-              <p class="settings-field-help settings-full">Leave a model blank to let Artifice select from the models actually served on this computer.</p>
+              <div class="settings-model-discovery settings-full">
+                <span id="local-model-status" class="settings-field-help" aria-live="polite">Choose a local service to see its installed models.</span>
+                <button type="button" class="btn btn-small" id="btn-refresh-models">Refresh available models</button>
+              </div>
+              <p class="settings-field-help settings-full">Automatic lets Artifice choose a suitable installed model. Connection addresses are discovered for you when possible.</p>
               <details class="settings-disclosure settings-full">
                 <summary>Other providers and connection addresses <span class="settings-summary-hint">Optional</span></summary>
                 <div class="settings-disclosure-body settings-form-grid">
@@ -375,6 +382,7 @@
             <div class="settings-section-head"><h3>Processing defaults</h3><p>Safe starting values for mixed historical documents. Change them only when the collection needs it.</p></div>
             <div class="settings-form-grid">
               <label>Document type <select id="set-document_type"></select><span class="settings-field-help" id="doc-type-hint"></span></label>
+              <label>Domain instruction (optional) <input type="text" id="set-ocr_prompt_instruction" placeholder="This is a 19th-century archaeological field catalogue in German Kurrentschrift"><span class="settings-field-help">A sentence about the collection, appended to the OCR prompt. Leave empty to use the standard prompt.</span></label>
               <label>Pages processed at once <input type="number" id="set-max_ocr_workers" min="1"></label>
               <div class="settings-checks settings-full">
                 <label><input type="checkbox" id="set-resume"><span>Reuse completed text<small>Skip stages whose saved output already exists.</small></span></label>

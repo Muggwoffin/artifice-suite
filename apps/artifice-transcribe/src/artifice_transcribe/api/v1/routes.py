@@ -292,6 +292,7 @@ async def _reload_engine_with_new_model(new_model: str):
         model_size=settings.whisper_model,
         device=settings.device,
         hf_token=_load_hf_token(),
+        diarization_model=settings.diarization_model,
     )
     logger.info("Engine reloaded successfully with model: %s", new_model)
 
@@ -308,6 +309,7 @@ def _get_engine():
             model_size=settings.whisper_model,
             device=settings.device,
             hf_token=_load_hf_token(),
+            diarization_model=settings.diarization_model,
         )
     return _engine
 

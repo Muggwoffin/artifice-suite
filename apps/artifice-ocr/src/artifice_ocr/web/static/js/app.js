@@ -132,6 +132,12 @@ function setQueue(list) {
   items = new Map(list.map(it => [it.id, it]));
   selected = new Set([...selected].filter(id => items.has(id)));
   renderAll();
+  // A deep link can activate Review before the initial queue request returns.
+  // Refresh it again once the data exists instead of leaving its first item
+  // visibly selected beside an empty comparison.
+  if (document.getElementById("panel-preview")?.classList.contains("active")) {
+    TAB_ACTIVATE.preview?.();
+  }
 }
 
 function renderAll() {
@@ -610,6 +616,23 @@ function setRunning(isRunning) {
   }
 }
 
+function setWorkflowStep(step) {
+  document.querySelectorAll(".workflow-rail [data-workflow-step]").forEach(item => {
+    const active = Number(item.dataset.workflowStep) === Number(step);
+    item.classList.toggle("active", active);
+    if (active) item.setAttribute("aria-current", "step");
+    else item.removeAttribute("aria-current");
+  });
+}
+
+function workflowStepForTab(tabName) {
+  if (tabName === "preview" || tabName === "history") return 3;
+  return running ? 2 : 1;
+}
+
+window.setWorkflowStep = setWorkflowStep;
+window.workflowStepForTab = workflowStepForTab;
+
 function applyRunStatus(status) {
   setRunning(!!status.running);
   if (status.paused) setPauseButtonLabel(true);
@@ -632,6 +655,7 @@ els["btn-run"].onclick = async () => {
     });
     if (result.output_dir) els["output-dir"].value = result.output_dir;
     setRunning(true);
+    setWorkflowStep(2);
     els["progress-bar"].style.width = "0%";
     const pv = els["progress-value"];
     if (pv) pv.textContent = "0%";
@@ -712,6 +736,7 @@ function connectEvents() {
         startTime = Date.now();
         finishedCount = 0;
         setRunning(true);
+        setWorkflowStep(2);
         els["stage-text"].textContent = "";
         break;
       case "stage_started":
@@ -757,7 +782,26 @@ document.querySelectorAll(".tab").forEach(tab => {
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
     tab.classList.add("active");
     document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+    setWorkflowStep(workflowStepForTab(tab.dataset.tab));
     TAB_ACTIVATE[tab.dataset.tab]?.();
+  });
+});
+
+// The simplified shell owns the visible navigation while the compact legacy
+// tab buttons remain the panel controller. Bridge them in-page: a normal click
+// must not reload the entire local app, discard queue selection, and restart
+// endpoint detection merely to move from Source to Review.
+document.querySelectorAll(".shell-nav a").forEach(link => {
+  const url = new URL(link.href, window.location.href);
+  const view = url.searchParams.get("view");
+  const controller = view ? document.querySelector(`.tab[data-tab="${view}"]`) : null;
+  if (!controller || url.pathname !== window.location.pathname) return;
+  link.addEventListener("click", event => {
+    event.preventDefault();
+    controller.click();
+    document.querySelectorAll(".shell-nav a").forEach(item => item.removeAttribute("aria-current"));
+    link.setAttribute("aria-current", "page");
+    window.history.replaceState(null, "", url.pathname + url.search);
   });
 });
 const requestedTabName = new URLSearchParams(window.location.search).get("view");

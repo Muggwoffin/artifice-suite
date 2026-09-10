@@ -6,8 +6,6 @@
 from __future__ import annotations
 
 import os
-import shutil
-from pathlib import Path
 
 import pytest
 from artifice_ocr import _resolution, config
@@ -34,15 +32,29 @@ pytestmark = [
         ),
     ],
 )
-def test_real_vision_model_ocr_pipeline(tmp_path, backend, url_env, model_env, url_key):
-    """Send a real scan through the production JobRunner and selected SDK."""
+def test_real_vision_model_ocr_pipeline(
+    tmp_path,
+    backend,
+    url_env,
+    model_env,
+    url_key,
+    archive_resolution_page,
+    sent_vision_image_sizes,
+):
+    """Send an archive-resolution scan through the production JobRunner and SDK.
+
+    The page is deliberately the size of the one that overflowed a 4096-token
+    context window in the field, not the committed fixture's 2.1 MPix — see
+    ``make_archive_resolution_page`` in conftest for why the smaller page could
+    never have caught this.
+    """
     url = os.environ.get(url_env, "").strip()
     model = os.environ.get(model_env, "").strip()
     if not url:
         pytest.fail(f"Live release gate requires {url_env}")
 
     image = tmp_path / "proceedings_usnm_173.jpg"
-    shutil.copyfile(Path(__file__).parent / "fixtures" / image.name, image)
+    archive_resolution_page(image)
     output = tmp_path / "output"
     job = JobItem(path=str(image))
 
@@ -77,6 +89,15 @@ def test_real_vision_model_ocr_pipeline(tmp_path, backend, url_env, model_env, u
         assert result["model"] == resolved_model
         assert len(result["extracted_text"].strip()) >= 100
         assert (output / "raw_ocr" / "text" / f"{image.stem}.txt").is_file()
+
+        # What actually reached the model must respect the cap. Asserting only
+        # that the run finished would let a dropped resize pass whenever the
+        # context window happened to be roomy enough.
+        cap = config.get("ocr_max_image_edge")
+        assert sent_vision_image_sizes, "no vision image recorded — the spy never fired"
+        assert all(max(size) <= cap for size in sent_vision_image_sizes), (
+            f"vision request exceeded the {cap}px cap: {sent_vision_image_sizes}"
+        )
     finally:
         _resolution.reset()
         config.reset()

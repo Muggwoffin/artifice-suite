@@ -26,13 +26,14 @@ const HistoryTab = (function () {
   const diffToggle = document.getElementById("btn-history-diff-toggle");
   const thumbStrip = document.getElementById("history-thumbnails");
   const fabricatedToggle = document.getElementById("history-fabricated-result");
-  const btnSendTropy = document.getElementById("btn-history-send-tropy");
+  const btnSendRun = document.getElementById("btn-history-send-tropy");
 
   let runsById = new Map();
   let itemsById = new Map();
   let selectedRunRow = null;
   let selectedItemRow = null;
   let currentItemId = null;
+  let itemRequest = 0;
   const originalText = { raw: "", cleaned: "", translated: "" };
   let autoSaveTimer = null;
   let currentItemIds = [];
@@ -72,8 +73,8 @@ const HistoryTab = (function () {
     itemsBody.innerHTML = "";
     itemsById.clear();
     currentItemIds = [];
+    if (btnSendRun) btnSendRun.disabled = true;
     if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
-    if (btnSendTropy) btnSendTropy.disabled = true;
     clearCompare(compareContainer);
     clearProvenanceChips();
     if (window.HistoryImage) window.HistoryImage.clear();
@@ -88,15 +89,17 @@ const HistoryTab = (function () {
     const runId = tr.dataset.id;
     const data = await api("GET", `/api/history/runs/${runId}/items`);
     renderItems(data.items);
+    const firstItem = itemsBody.querySelector("tr[data-id]");
+    if (firstItem) await selectItem(firstItem);
   }
 
   function renderItems(rows) {
     itemsById = new Map(rows.map((r) => [String(r.item_id), r]));
     currentItemIds = rows.map((r) => String(r.item_id));
+    if (btnSendRun) btnSendRun.disabled = currentItemIds.length === 0;
     currentItemId = null;
     selectedItemRow = null;
     if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
-    if (btnSendTropy) btnSendTropy.disabled = true;
     itemsBody.innerHTML = rows.map((r) => `
       <tr data-id="${r.item_id}" class="history-state-${r.state}">
         <td>${escapeHtml(r.name)}</td>
@@ -297,12 +300,14 @@ const HistoryTab = (function () {
   // ---- item selection ----
 
   async function selectItem(tr) {
+    const request = ++itemRequest;
     selectedItemRow?.classList.remove("selected");
     tr.classList.add("selected");
     selectedItemRow = tr;
     currentItemId = tr.dataset.id;
 
     const data = await api("GET", `/api/history/items/${currentItemId}`);
+    if (request !== itemRequest) return;
     renderCompare(compareContainer, {
       title: data.name, raw: data.raw, original_raw: data.original_raw || "",
       cleaned: data.cleaned, original_cleaned: data.original_cleaned || "",
@@ -317,11 +322,6 @@ const HistoryTab = (function () {
       fabricatedToggle.checked = !!data.fabricated_result;
       fabricatedToggle.disabled = false;
     }
-    // Reflect eligibility up front — a click that can only ever end in a
-    // toast (the document wasn't added through Browse Project, so there's
-    // no photo to write a note back to) is easy to mistake for a dead
-    // button if the toast goes unnoticed.
-    if (btnSendTropy) btnSendTropy.disabled = data.photo_id == null || !data.tropy_project_path;
 
     if (window.HistoryImage) window.HistoryImage.load(`/api/history/items/${currentItemId}/image`);
     renderThumbnails(currentItemId);
@@ -360,7 +360,6 @@ const HistoryTab = (function () {
       selectedItemRow = null;
       currentItemId = null;
       if (fabricatedToggle) { fabricatedToggle.checked = false; fabricatedToggle.disabled = true; }
-      if (btnSendTropy) btnSendTropy.disabled = true;
     }
   });
 
@@ -393,24 +392,10 @@ const HistoryTab = (function () {
     }
   });
   document.getElementById("btn-history-delete").onclick = deleteSelectedRun;
-  document.getElementById("btn-history-send-tropy").onclick = async () => {
-    if (!currentItemId) { if (window.ArtificeToast) window.ArtificeToast.warning("Select a document first."); return; }
-    try {
-      const data = await api("GET", `/api/history/items/${currentItemId}`);
-      if (data.photo_id == null || !data.tropy_project_path) {
-        if (window.ArtificeToast) {
-          window.ArtificeToast.warning(
-            "This document was not added through Browse Project — nothing to send."
-          );
-        }
-        return;
-      }
-      // Open the export modal and pre-fill the summary stat fetch
-      if (typeof openTropyExport === "function") {
-        openTropyExport({ itemIds: [currentItemId], isHistory: true });
-      }
-    } catch (err) {
-      if (window.ArtificeToast) window.ArtificeToast.error(`Could not load item: ${err.message}`);
+  btnSendRun.onclick = () => {
+    if (!currentItemIds.length) return;
+    if (typeof openTropyExport === "function") {
+      openTropyExport({ itemIds: [...currentItemIds], isHistory: true });
     }
   };
   if (fabricatedToggle) fabricatedToggle.addEventListener("change", async () => {
@@ -436,6 +421,9 @@ const HistoryTab = (function () {
   searchBox.addEventListener("keydown", (e) => { if (e.key === "Enter") search(); });
 
   TAB_ACTIVATE.history = refresh;
+  if (document.getElementById("panel-history")?.classList?.contains("active")) {
+    TAB_ACTIVATE.history();
+  }
 
   // Find & Replace
   const historyFindReplace = new FindReplace(compareContainer);

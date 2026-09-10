@@ -693,6 +693,8 @@ def test_encode_image_applies_preprocessing_when_enabled(tmp_path, monkeypatch):
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")
 def test_ocr_stage_rejects_a_repetition_loop(mock_get_client, tmp_path):
+    from artifice_ocr import config
+
     mock_client = MagicMock()
     looped_text = "\n\n".join(["Same hallucinated sentence over and over."] * 40)
     mock_client.chat.return_value = _mock_backend_response(looped_text)
@@ -700,21 +702,36 @@ def test_ocr_stage_rejects_a_repetition_loop(mock_get_client, tmp_path):
 
     from artifice_ocr.stages import ocr
 
-    img = tmp_path / "bad_scan.png"
-    img.write_bytes(b"\x89PNG fake")
-    out_dir = tmp_path / "output"
+    # The per-page temperature ladder (on by default) owns repetition-guard
+    # rejections before perform() ever sees the text. This test exercises
+    # perform()'s document-level guard path, so disable the ladder first:
+    # the mocked client's single call at temperature=0.0 returns the looped
+    # text and perform()'s own check_no_repetition_loop rejects it.
+    # Restore the CAPTURED prior value, not a hardcoded True — otherwise this
+    # test forces the ladder on for every test that runs after it, making the
+    # suite order-dependent.
+    prior = config.get("ocr_temperature_ladder_enabled")
+    config.apply_overrides({"ocr_temperature_ladder_enabled": False})
+    try:
+        img = tmp_path / "bad_scan.png"
+        img.write_bytes(b"\x89PNG fake")
+        out_dir = tmp_path / "output"
 
-    with pytest.raises(RuntimeError, match="OCR rejected"):
-        ocr.perform(str(img), output_dir=str(out_dir), stem="bad_scan")
+        with pytest.raises(RuntimeError, match="OCR rejected"):
+            ocr.perform(str(img), output_dir=str(out_dir), stem="bad_scan")
 
-    # A rejected page has nothing safe to write as "the" text.
-    assert not (out_dir / "raw_ocr" / "text" / "bad_scan.txt").exists()
+        # A rejected page has nothing safe to write as "the" text.
+        assert not (out_dir / "raw_ocr" / "text" / "bad_scan.txt").exists()
 
-    # But the JSON is kept for forensic review, with the verdict + the text
-    # that was rejected, mirroring structure.py's rejected_structured_text.
-    data = json.loads((out_dir / "raw_ocr" / "json" / "bad_scan.json").read_text(encoding="utf-8"))
-    assert data["guard"]["ok"] is False
-    assert data["rejected_extracted_text"] == looped_text
+        # But the JSON is kept for forensic review, with the verdict + the text
+        # that was rejected, mirroring structure.py's rejected_structured_text.
+        data = json.loads(
+            (out_dir / "raw_ocr" / "json" / "bad_scan.json").read_text(encoding="utf-8")
+        )
+        assert data["guard"]["ok"] is False
+        assert data["rejected_extracted_text"] == looped_text
+    finally:
+        config.apply_overrides({"ocr_temperature_ladder_enabled": prior})
 
 
 @patch("artifice_ocr.stages.ocr._get_backend_client")

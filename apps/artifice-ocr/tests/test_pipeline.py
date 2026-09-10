@@ -211,3 +211,37 @@ class TestTranslateStepSkipReason:
         result = run_translate_step(cleaned_data, "doc", str(tmp_path), resume=True)
         assert result["_skip_reason"] == SKIP_ALREADY_EXISTS
         assert result["_skip_key"] == "doc"
+
+
+# --------------------------------------------------------------------------- #
+# ocr.perform — the raw_ocr sidecar records the effective prompt
+# --------------------------------------------------------------------------- #
+
+
+def test_perform_sidecar_records_the_effective_ocr_prompt(tmp_path, monkeypatch):
+    """With ``ocr_prompt_instruction`` set, the sidecar's ``ocr_prompt`` must
+    record the prompt actually sent (base prompt + instruction), not the bare
+    ``OCR_PROMPT`` constant."""
+    from artifice_ocr.stages import ocr
+
+    monkeypatch.setattr(
+        ocr,
+        "cfg",
+        lambda key, default=None: {
+            "ocr_prompt_instruction": "Expect handwritten German Kurrentschrift.",
+            "ocr_repetition_guard": False,
+        }.get(key, default),
+    )
+    monkeypatch.setattr(ocr, "_ocr_single_image", lambda path, orientation=1: ("text", "ollama"))
+
+    img = tmp_path / "doc.png"
+    img.write_bytes(b"fake-image-bytes")
+    data = ocr.perform(str(img), output_dir=str(tmp_path / "out"), stem="doc")
+
+    effective = ocr._effective_prompt("Expect handwritten German Kurrentschrift.")
+    assert data["ocr_prompt"] == effective
+    assert data["ocr_prompt"] != ocr.OCR_PROMPT
+
+    sidecar_path = tmp_path / "out" / "raw_ocr" / "json" / "doc.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    assert sidecar["ocr_prompt"] == effective

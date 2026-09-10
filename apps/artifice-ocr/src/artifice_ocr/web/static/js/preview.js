@@ -19,6 +19,7 @@ const PreviewTab = (function () {
   const fabricatedToggle = document.getElementById("preview-fabricated-result");
 
   let currentItemId = null;
+  let openRequest = 0;
   const originalText = { raw: "", cleaned: "", translated: "" };
   const btnReprocess = document.getElementById("btn-reprocess");
 
@@ -152,12 +153,19 @@ const PreviewTab = (function () {
   });
 
   async function open(id) {
+    const request = ++openRequest;
     refreshList(false);
     select.value = id;
     currentItemId = id;
+    if (btnSaveRaw) btnSaveRaw.disabled = true;
+    if (btnSaveCleaned) btnSaveCleaned.disabled = true;
+    if (btnSaveTranslated) btnSaveTranslated.disabled = true;
+    if (btnReprocess) btnReprocess.disabled = true;
+    if (fabricatedToggle) fabricatedToggle.disabled = true;
 
     try {
       const data = await api("GET", `/api/queue/${id}/preview`);
+      if (request !== openRequest) return;
       renderCompare(container, data, { editableStages: new Set(["raw", "cleaned", "translated"]) });
       wireAllPanes();
       wireOriginalToggles(container);
@@ -168,6 +176,7 @@ const PreviewTab = (function () {
         fabricatedToggle.disabled = false;
       }
     } catch (err) {
+      if (request !== openRequest) return;
       clearCompare(container);
       container.querySelector(".compare-title").textContent = `Could not load: ${err.message}`;
       if (btnSaveRaw) btnSaveRaw.disabled = true;
@@ -190,7 +199,14 @@ const PreviewTab = (function () {
 
   select.addEventListener("change", () => { if (select.value) open(select.value); });
 
-  TAB_ACTIVATE.preview = () => refreshList(true);
+  TAB_ACTIVATE.preview = () => {
+    refreshList(true);
+    // A populated native select visually chooses its first option without
+    // emitting a change event. Load that item explicitly so Review never
+    // opens with a selected filename beside an empty comparison.
+    if (select.value) open(select.value);
+  };
+  if (container.classList.contains("active")) TAB_ACTIVATE.preview();
 
   // Find & Replace
   if (container) {

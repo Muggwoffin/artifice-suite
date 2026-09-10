@@ -60,15 +60,18 @@ jobs:
       # (#29, #30) were raised before this file existed, so they did not cover
       # it — a new workflow added between a Dependabot PR being opened and
       # merged inherits the old pins silently, and only a later run notices.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           python-version: "3.12"
           enable-cache: true
 
       - name: Require the live OCR release gate
-        if: matrix.app == 'artifice-ocr'
+        # Tag builds are release candidates, so they keep the live gate hard
+        # requirement. Manual dispatches are for ad hoc freezes and can run
+        # without the pre-published local status.
+        if: matrix.app == 'artifice-ocr' && github.event_name == 'push'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -109,6 +112,16 @@ jobs:
         # duplicate-checks a Tropy note.  Keep it before Freeze: a failing core
         # workflow must produce no distributable bundle.
         run: uv run pytest -q apps/artifice-ocr/tests/test_critical_workflows.py apps/artifice-ocr/tests/test_tropy_browse.py apps/artifice-ocr/tests/test_tropy_api.py apps/artifice-ocr/tests/test_tropy_route_surface.py
+
+      - name: Install Chromium for packaged OCR UI smoke
+        if: matrix.app == 'artifice-ocr'
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            uv run --with playwright playwright install --with-deps chromium
+          else
+            uv run --with playwright playwright install chromium
+          fi
 
       - name: Freeze
         # Run from the repo root — the spec resolves paths relative to it, and
@@ -186,6 +199,8 @@ jobs:
               curl -s http://127.0.0.1:18999/ | grep -q "Tropy round trip" \
                 && echo "  Tropy-first workspace rendered: yes" \
                 || { echo "  Tropy-first workspace MISSING"; fail=1; }
+              uv run --with playwright python scripts/stress/packaged-ui-smoke.py http://127.0.0.1:18999 \
+                || fail=1
             fi
           fi
           pkill -f "dist/$APP" || true
@@ -262,6 +277,8 @@ jobs:
               if ($app -eq "artifice-ocr") {
                 if ($body -match "Tropy round trip") { Write-Host "  Tropy-first workspace rendered: yes" }
                 else { Write-Host "  Tropy-first workspace MISSING"; $fail = 1 }
+                uv run --with playwright python scripts/stress/packaged-ui-smoke.py http://127.0.0.1:18999
+                if ($LASTEXITCODE -ne 0) { $fail = 1 }
               }
             }
           } catch { Write-Host "  index fetch FAILED"; $fail = 1 }
@@ -269,7 +286,7 @@ jobs:
           exit $fail
 
       - name: Upload the bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ matrix.app }}-${{ runner.os }}
           # Three paths cover both packaging modes without per-app conditionals:
@@ -302,7 +319,7 @@ jobs:
       actions: read   # download-artifact needs this once job-level perms zero the defaults
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: dist
 

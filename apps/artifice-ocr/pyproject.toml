@@ -78,8 +78,9 @@ where = ["src"]
 testpaths = ["tests"]
 markers = [
     "live_interop: opt-in test requiring real third-party desktop/model applications",
+    "ui_stress: deterministic browser and state-machine stress tests",
 ]
-addopts = "-m 'not live_interop'"
+addopts = "-m 'not live_interop and not ui_stress'"
 
 [dependency-groups]
 dev = [

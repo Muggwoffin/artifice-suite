@@ -1615,7 +1615,10 @@ async function loadModelConfig() {
       const diarizationProvider = $('setting-diarization-provider');
       if (diarizationProvider) diarizationProvider.value = cfg.diarization_provider || 'pyannote';
       const diarizationModel = $('setting-diarization-model');
-      if (diarizationModel) diarizationModel.value = cfg.diarization_model || 'pyannote/speaker-diarization-3.0';
+      // Empty means "let WhisperX choose"; do not substitute a concrete model
+      // name here, or an unset value round-trips back to the server as a hard
+      // pin on whatever this fallback happens to say.
+      if (diarizationModel) diarizationModel.value = cfg.diarization_model || '';
       const alignmentCache = $('setting-alignment-cache');
       if (alignmentCache) alignmentCache.checked = cfg.enable_alignment_model_cache !== false;
     }
@@ -1630,7 +1633,7 @@ async function saveModelConfig() {
     device: $('setting-device')?.value || 'auto',
     hf_token: $('setting-hf-token')?.value || '',
     diarization_provider: $('setting-diarization-provider')?.value || 'pyannote',
-    diarization_model: $('setting-diarization-model')?.value || 'pyannote/speaker-diarization-3.0',
+    diarization_model: $('setting-diarization-model')?.value?.trim() || '',
     enable_alignment_model_cache: $('setting-alignment-cache')?.checked !== false,
   };
 
@@ -1942,8 +1945,8 @@ function openDownloadDialog(triggerEl) {
       _setDlgError('No ASR models are registered. This may be a configuration error.');
       return;
     }
-    // Auto-select the first registered model (pyannote/speaker-diarization-3.0
-    // is typically the primary one; the list order is the registry order).
+    // Auto-select the first registered model; the list order is the registry
+    // order, so the primary model comes first.
     _selectModel(_dlgAllModels[0].key);
   }).catch((err) => {
     _setDlgError(`Could not reach the server: ${err.message}`);

@@ -25,7 +25,7 @@ from artifice_ocr.jobs import JobRunner, State
 from artifice_ocr.tropy_db import TropyItem, TropyPhoto, items_to_job_items
 from artifice_ocr.web.routers import tropy_notes
 from artifice_ocr.web.runtime import state
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 class _ProtocolHandler(BaseHTTPRequestHandler):
@@ -147,7 +147,11 @@ def _project(tmp_path: Path) -> tuple[Path, Path]:
     con.commit()
     con.close()
     image = project / "page.png"
-    Image.new("RGB", (12, 12), "white").save(image)
+    # Real content, not a blank sheet: the near-blank short-circuit in
+    # _ocr_single_image must not skip this fixture's OCR call.
+    page = Image.new("RGB", (200, 100), "white")
+    ImageDraw.Draw(page).text((20, 20), "Archive page with real content", fill="black")
+    page.save(image)
     return project, image
 
 
