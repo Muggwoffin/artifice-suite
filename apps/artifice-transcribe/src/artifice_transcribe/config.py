@@ -45,6 +45,18 @@ class Settings(BaseSettings):
     # NVIDIA's Parakeet TDT 1.1B via NeMo (CUDA-only, English-only). The
     # default preserves existing behavior exactly.
     asr_backend: Literal["whisperx", "parakeet"] = "whisperx"
+    # Free-text domain instruction passed to Whisper's ``initial_prompt``
+    # decoder-conditioning parameter — a plain-language description of the
+    # collection, e.g. "This is a 19th-century archaeological field catalogue
+    # in German Kurrentschrift". Whisper prepends this to the decoder's prompt,
+    # which measurably improves proper-noun and domain-vocabulary accuracy
+    # (place names, personal names, organisational acronyms) — exactly the
+    # pain point for oral history. Empty string (default) means Whisper's
+    # standard decoding with no extra context. Recorded per-job in the job's
+    # options sidecar for methods-section citation. Used by the WhisperX
+    # backend only — Parakeet TDT has no prompt-conditioning mechanism (see
+    # services/parakeet_engine.py, which accepts but ignores it).
+    whisper_initial_prompt: str = ""
     diarization_provider: str = "pyannote"
     # Empty means "let WhisperX pick", which is the safe default: WhisperX
     # tracks the pyannote major version it is pinned against (3.8.6 defaults

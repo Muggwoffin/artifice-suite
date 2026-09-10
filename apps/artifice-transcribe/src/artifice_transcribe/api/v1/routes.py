@@ -297,6 +297,7 @@ def _build_engine() -> ASRBackend:
                 device=settings.device,
                 hf_token=_load_hf_token(),
                 diarization_model=settings.diarization_model,
+                initial_prompt=settings.whisper_initial_prompt,
             )
         from artifice_transcribe.services.transcription import WhisperXEngine
 
@@ -305,6 +306,7 @@ def _build_engine() -> ASRBackend:
             device=settings.device,
             hf_token=_load_hf_token(),
             diarization_model=settings.diarization_model,
+            initial_prompt=settings.whisper_initial_prompt,
         )
     except ImportError as exc:
         raise AsrUnavailable() from exc
@@ -547,6 +549,7 @@ async def get_config():
         "diarization_provider": settings.diarization_provider,
         "diarization_model": settings.diarization_model,
         "enable_alignment_model_cache": settings.enable_alignment_model_cache,
+        "whisper_initial_prompt": settings.whisper_initial_prompt,
     }
     return {k: _redact_model_config(k, v) for k, v in fields.items()}
 
@@ -576,8 +579,14 @@ async def update_config(body: ModelConfigRequest):
         settings.diarization_model = updates["diarization_model"]
     if "enable_alignment_model_cache" in updates:
         settings.enable_alignment_model_cache = updates["enable_alignment_model_cache"]
+    if "whisper_initial_prompt" in updates:
+        settings.whisper_initial_prompt = updates["whisper_initial_prompt"]
 
-    if "whisper_model" in updates or "asr_backend" in updates:
+    if (
+        "whisper_model" in updates
+        or "asr_backend" in updates
+        or "whisper_initial_prompt" in updates
+    ):
         try:
             await _reload_engine()
         except AsrUnavailable as exc:
@@ -899,6 +908,7 @@ async def create_transcription(
                 "language": language,
                 "min_speakers": min_speakers,
                 "max_speakers": max_speakers,
+                "initial_prompt": settings.whisper_initial_prompt,
             }
         ),
     )

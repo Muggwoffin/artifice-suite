@@ -294,6 +294,32 @@ def test_transcribe_warns_on_non_english_language(monkeypatch, caplog):
     assert any("English-only" in rec.message for rec in caplog.records)
 
 
+def test_engine_stores_initial_prompt():
+    """The constructor accepts ``initial_prompt`` for interface parity with
+    WhisperXEngine, storing a stripped value (empty stays empty)."""
+    assert ParakeetEngine()._initial_prompt == ""
+    assert ParakeetEngine(initial_prompt="  field catalogue  ")._initial_prompt == "field catalogue"
+
+
+def test_transcribe_warns_on_initial_prompt(monkeypatch, caplog):
+    """A non-empty ``initial_prompt`` is a no-op but must warn (not fail) —
+    Parakeet TDT has no prompt-conditioning mechanism, the same posture as
+    ``custom_vocabulary``/``hotwords``."""
+    hypotheses = [FakeHypothesis(timestamp={"segment": []})]
+    asr_model = FakeASRModel(hypotheses)
+    _install_stack(monkeypatch, asr_model=asr_model, diarize_turns=[], embeddings={})
+    monkeypatch.setattr(
+        "artifice_transcribe.services.parakeet_engine.is_near_silent", lambda p: False
+    )
+
+    with caplog.at_level("WARNING"):
+        result = ParakeetEngine(initial_prompt="field catalogue").transcribe("fake.wav")
+
+    # Completed without raising, building no segments from an empty timestamp set.
+    assert result.segments == []
+    assert any("initial_prompt" in rec.message for rec in caplog.records)
+
+
 def test_default_model_name_is_the_registry_checkpoint():
     # Keep in step with model_harness.registry.ASR_MODELS["parakeet-tdt-1.1b"].
     assert DEFAULT_MODEL_NAME == "nvidia/parakeet-tdt-1.1b"

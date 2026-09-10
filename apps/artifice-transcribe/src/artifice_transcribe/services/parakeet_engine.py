@@ -120,12 +120,18 @@ class ParakeetEngine:
         device: str = "auto",
         hf_token: str = "",
         diarization_model: str = "",
+        initial_prompt: str = "",
     ):
         self._model_name = model_name
         self._device = self._resolve_device(device)
         # Used only for pyannote diarization, never for the ASR model itself.
         self._hf_token = hf_token
         self._diarization_model = (diarization_model or "").strip()
+        # Accepted for interface parity with WhisperXEngine, but a no-op:
+        # Parakeet TDT has no prompt-conditioning mechanism (same posture as
+        # custom_vocabulary/hotwords). A non-empty value is warned about in
+        # transcribe() rather than silently dropped.
+        self._initial_prompt = (initial_prompt or "").strip()
 
         self._asr_model = None
         self._diarize_model = None
@@ -301,6 +307,8 @@ class ParakeetEngine:
 
         ``custom_vocabulary`` and ``hotwords`` are accepted for interface
         parity but are no-ops: Parakeet TDT has no keyword-biasing mechanism.
+        Same for ``initial_prompt`` (the constructor), which is logged and
+        ignored when non-empty.
         """
         # Near-silence short-circuit — same convention as WhisperXEngine, and
         # easy to forget because it is not part of the ASRBackend protocol.
@@ -317,6 +325,16 @@ class ParakeetEngine:
                 "Parakeet is English-only; ignoring requested language=%r and "
                 "transcribing in English",
                 language,
+            )
+
+        # Parakeet TDT has no prompt-conditioning mechanism: a non-empty
+        # initial_prompt (the Whisper-only domain-vocabulary field) is logged
+        # and ignored rather than hard-failing, the same posture as
+        # custom_vocabulary/hotwords.
+        if self._initial_prompt:
+            logger.warning(
+                "Parakeet TDT has no prompt-conditioning mechanism; ignoring initial_prompt=%r",
+                self._initial_prompt,
             )
 
         self._ensure_models()
