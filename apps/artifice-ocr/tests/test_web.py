@@ -1908,10 +1908,11 @@ def test_health_check_reports_service_status(client, monkeypatch):
         reachable=True,
         models=(cleanup_model, translate_model, ocr_model),
     )
-    monkeypatch.setattr(
-        "model_harness.discovery.probe_endpoint_sync",
-        lambda *a, **k: ok_result,
-    )
+
+    async def fake_probe(*a, **k):
+        return ok_result
+
+    monkeypatch.setattr(_settings_router, "probe_endpoint", fake_probe)
 
     res = client.get("/api/health")
     body = res.json()
@@ -1928,10 +1929,11 @@ def test_health_check_surfaces_unreachable_services(client, monkeypatch):
         reachable=False,
         hint="Cannot reach Ollama",
     )
-    monkeypatch.setattr(
-        "model_harness.discovery.probe_endpoint_sync",
-        lambda *a, **k: fail_result,
-    )
+
+    async def fake_probe(*a, **k):
+        return fail_result
+
+    monkeypatch.setattr(_settings_router, "probe_endpoint", fake_probe)
 
     res = client.get("/api/health")
     body = res.json()
@@ -1941,12 +1943,17 @@ def test_health_check_surfaces_unreachable_services(client, monkeypatch):
 
 
 def test_health_check_real_probe_returns_from_threadpool(client, httpx_mock: HTTPXMock):
-    """GET /api/health exercises the real probe_endpoint_sync inside FastAPI's threadpool.
+    """GET /api/health exercises the real probe_endpoint against mocked HTTP.
 
-    Existing tests mock the sync wrapper.  This test mocks the HTTP layer so
-    the wrapper is genuinely called from a ``def`` route and must return rather
-    than deadlock.  A wall-clock timeout on the future keeps a regression from
-    freezing the suite.
+    The route is `async def` and awaits `probe_endpoint` directly — LM Studio
+    and Ollama concurrently via `asyncio.gather` rather than sequentially, so
+    two 5-10s timeouts are never paid back-to-back when neither answers.
+    Other tests mock `probe_endpoint` itself; this one mocks the HTTP layer
+    underneath it so the full async path actually runs. The submit-to-a-
+    thread-with-a-timeout shape predates the route's move to `async def`
+    (it used to matter for the sync-wrapping-async bridge); kept as a cheap
+    belt-and-suspenders regression guard against a future change reintroducing
+    a blocking call that hangs the route.
     """
     # Default config probes LM Studio (port 1234) and Ollama (port 11434).
     # Align the Ollama model names with the config so the per-model checks pass.
@@ -2044,12 +2051,12 @@ def test_health_check_checks_model_against_its_own_configured_backend(client, mo
         }
     )
 
-    def fake_probe(url, *a, **k):
+    async def fake_probe(url, *a, **k):
         if "1234" in url:
             return ProbeResult(url=url, reachable=True, models=("allenai/olmocr-2-7b",))
         return ProbeResult(url=url, reachable=True, models=("llama3.2:3b",))
 
-    monkeypatch.setattr("model_harness.discovery.probe_endpoint_sync", fake_probe)
+    monkeypatch.setattr(_settings_router, "probe_endpoint", fake_probe)
 
     res = client.get("/api/health")
     body = res.json()
@@ -2074,10 +2081,10 @@ def test_health_check_reports_model_missing_from_its_configured_backend(client, 
         }
     )
 
-    def fake_probe(url, *a, **k):
+    async def fake_probe(url, *a, **k):
         return ProbeResult(url=url, reachable=True, models=("some-other-model",))
 
-    monkeypatch.setattr("model_harness.discovery.probe_endpoint_sync", fake_probe)
+    monkeypatch.setattr(_settings_router, "probe_endpoint", fake_probe)
 
     res = client.get("/api/health")
     body = res.json()
@@ -2103,14 +2110,14 @@ def test_health_check_all_ollama_backends_is_unchanged(client, monkeypatch):
         }
     )
 
-    def fake_probe(url, *a, **k):
+    async def fake_probe(url, *a, **k):
         return ProbeResult(
             url=url,
             reachable=True,
             models=("llama3.2-vision:11b", "llama3.2:3b"),
         )
 
-    monkeypatch.setattr("model_harness.discovery.probe_endpoint_sync", fake_probe)
+    monkeypatch.setattr(_settings_router, "probe_endpoint", fake_probe)
 
     res = client.get("/api/health")
     body = res.json()
@@ -2137,10 +2144,10 @@ def test_health_check_cloud_backend_role_not_a_false_negative(client, monkeypatc
         }
     )
 
-    def fake_probe(url, *a, **k):
+    async def fake_probe(url, *a, **k):
         return ProbeResult(url=url, reachable=True, models=("llama3.2-vision:11b",))
 
-    monkeypatch.setattr("model_harness.discovery.probe_endpoint_sync", fake_probe)
+    monkeypatch.setattr(_settings_router, "probe_endpoint", fake_probe)
 
     from artifice_ocr import _backend
 
