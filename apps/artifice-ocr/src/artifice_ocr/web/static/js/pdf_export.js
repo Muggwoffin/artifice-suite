@@ -177,7 +177,11 @@ async function startPdfExport() {
 
 async function downloadPdf() {
   if (pdfEls["btn-pdf-download"].disabled) return;
-  window.open("/api/pdf-export/download", "_blank");
+  try {
+    await downloadFile("/api/pdf-export/download", "export.pdf");
+  } catch (err) {
+    if (window.ArtificeToast) window.ArtificeToast.error(`Could not download: ${err.message}`);
+  }
 }
 
 // ------------------------------------------------------------- event wiring

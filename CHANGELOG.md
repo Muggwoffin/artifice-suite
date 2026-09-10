@@ -57,8 +57,38 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   fallback using the OS native dialog (replacing a typed-path `prompt()`);
   browser-mode file picker surfaced in the UI. The "Add from Tropy…" modal
   likewise replaced `prompt()` with a native path field and drag-and-drop zone.
+- **Deterministic browser UI stress suite** (`ui_stress` pytest marker,
+  `ocr-ui-stress` CI job). Eight fixed seeds exercise 30 browser actions each
+  against the live OCR interface — queue, review, settings, malformed Tropy
+  paths, modal dismissal — with exact seed replay and failure
+  traces/screenshots on failure; a scheduled advisory run expands to 50 seeds.
+  Kept separate from the unit-test matrix so a missing browser can never turn
+  into a silent skip of this gate. (#96, #100)
+- **Fabricated OCR result flagging.** A reviewer can mark a transcription as
+  containing invented text; flagged items are excluded from Tropy writeback
+  automatically and exportable as JSON with model provenance
+  (`GET /api/history/fabricated-results`) for guard-rule development. (#95)
 
 ### Changed
+- **Tropy integration reduced to one supported round trip: browse, OCR, send
+  notes back.** The JSON-LD import/export bridge and the direct SQLite
+  write-back path (`tropy_write.py`, `tropy_bridge.py`, `tropy_writeback.py`,
+  ~1,000 lines) are deleted, not deprecated — all writes now go through
+  Tropy's official Developer API (`tropy_api.py`, `tropy_notes.py`).
+  **This supersedes the "Tropy write-back is reachable by a user" entry in
+  Added, above** — the `tropy_write.py` path it describes no longer exists;
+  `apps/artifice-ocr/docs/TROPY_INTEGRATION.md` has the current architecture.
+  The cross-project write guard survives unchanged, just against the new
+  write mechanism. (#94, #95)
+- **History "Send to Tropy" sends every eligible document in the run**, not
+  just the one row that happened to be selected — the single-document
+  behaviour was a bug, not a design choice. Selecting a run now also opens its
+  first document automatically. (#98)
+- **Local OCR backend selection now auto-discovers the working address**
+  (configured value, plain `localhost`, and the Windows host under WSL)
+  instead of requiring an exact manual address; installed models populate
+  per-role selectors once a backend is chosen. Hosted backends keep manual
+  model-name entry. (#99)
 - **`artifice-draft` and `artifice-graph` paused (maintainer decision, 2026-09-09).**
   Current local-model quality for open-ended copy-editing and structured
   knowledge extraction doesn't yet clear this suite's bar; active feature work
@@ -92,6 +122,37 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   updated accordingly.
 
 ### Fixed
+- **A large Send to Tropy (900+ pages) could hang and appear to crash.**
+  `TropyAPIClient` opened a fresh HTTP connection per photo checked, with no
+  per-item error isolation, so one slow or flaky response mid-batch discarded
+  every other page's already-checked progress with no visible feedback beyond
+  a static "Checking…" message. `TropyAPIClient` now reuses one connection for
+  a whole batch, `commit` re-verifies the Tropy connection once instead of
+  once per note, and per-item failures are recorded and skipped rather than
+  aborting the rest. The send modal shows live elapsed time, a batch over 150
+  pages asks for confirmation first, and closing the modal cancels an
+  in-flight check via `AbortController` instead of leaving it running
+  unobserved. Nothing in the suite exercised Tropy at more than a handful of
+  items before this — the live interop test sends one photo, and the
+  deterministic UI stress harness seeds four and never reaches a live
+  backend for Send to Tropy at all. `test_tropy_send_scale.py` and
+  `test_tropy_browse_scale.py` now run a synthetic Developer API and a
+  synthetic large `.tpy` project at 600-900 items respectively, checking
+  wall-clock ceilings, per-item failure isolation, and — structurally, by
+  counting the fake server's own accepted connections — that a batch reuses
+  one connection instead of opening one per photo. (#106)
+- **`window.open()` silently did nothing for "Export flagged OCR" and PDF
+  download** in the packaged pywebview desktop app. Nothing in this codebase
+  creates a second native window for a script-triggered popup to open into —
+  the same category of desktop/browser gap already handled for file and
+  folder pickers elsewhere in the app. Both now fetch the bytes and drive a
+  `Blob` download, which works identically in a browser tab and the desktop
+  shell. (#106)
+- Three UI races found by the stress-testing pass: a stale History item
+  response could replace a since-selected newer one, Preview's action
+  controls stayed enabled while a new item was still loading, and changing
+  the Tropy stage dropdown mid-check could let two previews race into the
+  same status line. (#100)
 - **`backend_name` was passed to the provider SDK**, breaking OCR on every
   backend with `Completions.create() got an unexpected keyword argument`. The
   keyword belongs to our own `_guarded_chat` wrapper; a script adding it to

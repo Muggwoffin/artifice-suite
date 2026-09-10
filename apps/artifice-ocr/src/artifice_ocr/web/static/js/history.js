@@ -384,8 +384,12 @@ const HistoryTab = (function () {
   }
 
   document.getElementById("btn-history-refresh").onclick = refresh;
-  document.getElementById("btn-history-export-fabricated")?.addEventListener("click", () => {
-    window.open("/api/history/fabricated-results", "_blank", "noopener");
+  document.getElementById("btn-history-export-fabricated")?.addEventListener("click", async () => {
+    try {
+      await downloadFile("/api/history/fabricated-results", "fabricated-ocr-results.json");
+    } catch (err) {
+      if (window.ArtificeToast) window.ArtificeToast.error(`Could not export flagged OCR: ${err.message}`);
+    }
   });
   document.getElementById("btn-history-delete").onclick = deleteSelectedRun;
   btnSendRun.onclick = () => {

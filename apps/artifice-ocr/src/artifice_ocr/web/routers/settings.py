@@ -391,9 +391,7 @@ _BACKEND_URL_KEYS_HEALTH = frozenset({"lm_studio", "ollama"})
 
 
 @router.get("/api/health")
-def health_check() -> dict:
-    from model_harness.discovery import probe_endpoint_sync
-
+async def health_check() -> dict:
     backends = {
         config.get("ocr_backend") or "auto",
         config.get("cleanup_backend") or "auto",
@@ -411,8 +409,18 @@ def health_check() -> dict:
     lm_studio_url = config.get("lm_studio_url") or "http://localhost:1234/v1"
     ollama_url = config.get("ollama_url") or "http://localhost:11434"
 
+    # Both probes are independent network calls with their own timeouts (5s,
+    # 10s) — run concurrently, matching /api/local-models next to this route,
+    # instead of paying both timeouts back-to-back when neither server answers.
+    tasks: dict[str, Any] = {}
     if "lm_studio" in backends or wants_auto:
-        probe = probe_endpoint_sync(lm_studio_url, policy=_endpoint_policy, timeout_s=5)
+        tasks["lm_studio"] = probe_endpoint(lm_studio_url, policy=_endpoint_policy, timeout_s=5)
+    if "ollama" in backends or wants_auto:
+        tasks["ollama"] = probe_endpoint(ollama_url, policy=_endpoint_policy, timeout_s=10)
+    gathered = dict(zip(tasks.keys(), await asyncio.gather(*tasks.values()), strict=True))
+
+    if "lm_studio" in gathered:
+        probe = gathered["lm_studio"]
         probes["lm_studio"] = probe
         results["lm_studio"] = {
             "ok": probe.reachable,
@@ -421,8 +429,8 @@ def health_check() -> dict:
             "models": list(probe.models) if probe.reachable else [],
         }
 
-    if "ollama" in backends or wants_auto:
-        probe = probe_endpoint_sync(ollama_url, policy=_endpoint_policy, timeout_s=10)
+    if "ollama" in gathered:
+        probe = gathered["ollama"]
         probes["ollama"] = probe
         results["ollama"] = {
             "ok": probe.reachable,
