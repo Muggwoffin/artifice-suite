@@ -259,6 +259,7 @@ class ModelConfigRequest(BaseModel):
     diarization_provider: str | None = None
     diarization_model: str | None = None
     enable_alignment_model_cache: bool | None = None
+    whisper_initial_prompt: str | None = None
 
 
 class ModelConfigResponse(BaseModel):
@@ -269,6 +270,7 @@ class ModelConfigResponse(BaseModel):
     diarization_provider: str
     diarization_model: str
     enable_alignment_model_cache: bool
+    whisper_initial_prompt: str
     available_whisper_models: list[str] = Field(
         default_factory=lambda: ["tiny", "base", "small", "medium", "large-v3"]
     )

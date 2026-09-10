@@ -38,6 +38,7 @@ class WhisperXEngine:
         device: str = "auto",
         hf_token: str = "",
         diarization_model: str = "",
+        initial_prompt: str = "",
     ):
         self._model_size = model_size
         self._device = self._resolve_device(device)
@@ -45,6 +46,10 @@ class WhisperXEngine:
         # Empty means "let WhisperX choose", which is not the same as naming a
         # model — see _ensure_models for why that distinction is load-bearing.
         self._diarization_model = (diarization_model or "").strip()
+        # Domain-vocabulary conditioning prompt (see config.Settings
+        # whisper_initial_prompt). Empty means "no prompt", which we translate
+        # to None at the options object in transcribe().
+        self._initial_prompt = (initial_prompt or "").strip()
 
         self._whisper_model = None
         self._align_models: dict[str, tuple] = {}
@@ -299,6 +304,14 @@ class WhisperXEngine:
             self._whisper_model.options.hotwords = merged_vocab
         elif self._whisper_model.options.hotwords:
             self._whisper_model.options.hotwords = None
+
+        # Domain-vocabulary conditioning prompt. ``initial_prompt`` is a
+        # distinct field from ``hotwords`` on the same faster-whisper
+        # TranscriptionOptions object (the former is tokenized and prepended to
+        # the decoder prompt; the latter feeds keyword biasing) — do not
+        # confuse the two. Empty string behaves as "no prompt", matching how
+        # the hotwords block above treats an empty merged_vocab.
+        self._whisper_model.options.initial_prompt = self._initial_prompt or None
 
         # 1. Transcribe
         logger.info("Transcribing %s", audio_path)
