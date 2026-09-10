@@ -132,7 +132,15 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   aborting the rest. The send modal shows live elapsed time, a batch over 150
   pages asks for confirmation first, and closing the modal cancels an
   in-flight check via `AbortController` instead of leaving it running
-  unobserved. (#106)
+  unobserved. Nothing in the suite exercised Tropy at more than a handful of
+  items before this — the live interop test sends one photo, and the
+  deterministic UI stress harness seeds four and never reaches a live
+  backend for Send to Tropy at all. `test_tropy_send_scale.py` and
+  `test_tropy_browse_scale.py` now run a synthetic Developer API and a
+  synthetic large `.tpy` project at 600-900 items respectively, checking
+  wall-clock ceilings, per-item failure isolation, and — structurally, by
+  counting the fake server's own accepted connections — that a batch reuses
+  one connection instead of opening one per photo. (#106)
 - **`window.open()` silently did nothing for "Export flagged OCR" and PDF
   download** in the packaged pywebview desktop app. Nothing in this codebase
   creates a second native window for a script-triggered popup to open into —
