@@ -42,7 +42,7 @@ class FakeResult:
 
 @dataclass
 class FakeEngine:
-    """Duck-type stand-in for TranscriptionEngine.
+    """Duck-type stand-in for the ASR backend (WhisperXEngine).
 
     Exposes exactly the surface the background worker touches:
     ``transcribe(**kwargs) -> result with .segments / .speaker_embeddings``

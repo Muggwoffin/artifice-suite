@@ -6,34 +6,27 @@ from __future__ import annotations
 
 import gc
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import torch
 
 from artifice_transcribe._silence import is_near_silent
 
+from .asr_backend import Segment, TranscriptionResult
 from .token_redaction import redact_token
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Segment:
-    speaker: str
-    start: float
-    end: float
-    text: str
+class WhisperXEngine:
+    """WhisperX implementation of :class:`artifice_transcribe.services.asr_backend.ASRBackend`.
 
-
-@dataclass
-class TranscriptionResult:
-    segments: list[Segment]
-    speaker_embeddings: dict[str, list[float]]
-
-
-class TranscriptionEngine:
-    """Wraps WhisperX for transcription, alignment, and diarization.
+    Wraps WhisperX for transcription, alignment, and diarization.  The
+    ``Segment`` / ``TranscriptionResult`` data contract and the ``ASRBackend``
+    protocol it satisfies live in :mod:`artifice_transcribe.services.asr_backend`
+    so a future engine (e.g. NVIDIA Parakeet via NeMo) can slot in behind the
+    same interface.
 
     On first use the models are lazy-loaded and cached on the instance.
     Calling `unload()` frees VRAM explicitly.
@@ -241,6 +234,22 @@ class TranscriptionEngine:
             return {"ok": True, "message": "All models loaded successfully"}
         except Exception as exc:
             return {"ok": False, "error": redact_token(str(exc))}
+
+    def extract_speaker_embedding(self, audio_path: str | Path) -> np.ndarray:
+        """Return the raw speaker embedding for the given audio clip.
+
+        Uses the diarization pipeline's internal embedding model.  Exposed as
+        a named method on the :class:`ASRBackend` interface so callers such as
+        ``enroll_speaker`` do not need to reach into WhisperX's
+        ``_diarize_model.model._embedding`` internals — a future Parakeet
+        engine would return its own embedding behind this same name.
+        """
+        self._ensure_models()
+        embedder = self._diarize_model.model._embedding
+        from pyannote.audio import Inference  # type: ignore[import-untyped]
+
+        inference = Inference(embedder, window="whole")
+        return inference(str(audio_path))
 
     def transcribe(
         self,
