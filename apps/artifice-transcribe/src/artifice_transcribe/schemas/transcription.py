@@ -253,6 +253,7 @@ class InferenceGenerateRequest(BaseModel):
 
 class ModelConfigRequest(BaseModel):
     whisper_model: str | None = None
+    asr_backend: str | None = None
     device: str | None = None
     hf_token: str | None = None
     diarization_provider: str | None = None
@@ -262,6 +263,7 @@ class ModelConfigRequest(BaseModel):
 
 class ModelConfigResponse(BaseModel):
     whisper_model: str
+    asr_backend: str
     device: str
     hf_token: str
     diarization_provider: str
@@ -270,6 +272,7 @@ class ModelConfigResponse(BaseModel):
     available_whisper_models: list[str] = Field(
         default_factory=lambda: ["tiny", "base", "small", "medium", "large-v3"]
     )
+    available_asr_backends: list[str] = Field(default_factory=lambda: ["whisperx", "parakeet"])
     available_diarization_providers: list[str] = Field(default_factory=lambda: ["pyannote"])
 
 
