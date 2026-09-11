@@ -138,7 +138,9 @@ class TranscriptSegment(Base):
     __tablename__ = "transcript_segments"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
-    job_id: Mapped[str] = mapped_column(ForeignKey("transcription_jobs.id", ondelete="CASCADE"))
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("transcription_jobs.id", ondelete="CASCADE"), index=True
+    )
     speaker_label: Mapped[str] = mapped_column(String(32))
     start_time: Mapped[float] = mapped_column(Float)
     end_time: Mapped[float] = mapped_column(Float)
@@ -152,7 +154,9 @@ class SpeakerMapping(Base):
     __tablename__ = "speaker_mappings"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
-    job_id: Mapped[str] = mapped_column(ForeignKey("transcription_jobs.id", ondelete="CASCADE"))
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("transcription_jobs.id", ondelete="CASCADE"), index=True
+    )
     speaker_label: Mapped[str] = mapped_column(String(32))
     custom_name: Mapped[str] = mapped_column(String(128))
 
@@ -192,7 +196,7 @@ class SpeakerEmbedding(Base):
     __tablename__ = "speaker_embeddings"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
-    job_id: Mapped[str] = mapped_column(String(32))
+    job_id: Mapped[str] = mapped_column(String(32), index=True)
     speaker_label: Mapped[str] = mapped_column(String(32))
     embedding: Mapped[bytes] = mapped_column(LargeBinary)  # raw float32 bytes (pack_embedding)
     model_name: Mapped[str] = mapped_column(String(64), default="pyannote/embedding")
@@ -204,9 +208,9 @@ class SegmentEditVersion(Base):
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
     segment_id: Mapped[str] = mapped_column(
-        ForeignKey("transcript_segments.id", ondelete="CASCADE")
+        ForeignKey("transcript_segments.id", ondelete="CASCADE"), index=True
     )
-    job_id: Mapped[str] = mapped_column(String(32))
+    job_id: Mapped[str] = mapped_column(String(32), index=True)
     text_before: Mapped[str] = mapped_column(Text)
     text_after: Mapped[str] = mapped_column(Text)
     edited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)

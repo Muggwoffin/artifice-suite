@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
+from sqlalchemy import text
 
 from artifice_transcribe._logging import get_logger
 from artifice_transcribe.api.v1.routes import router as v1_router
@@ -36,6 +37,47 @@ async def lifespan(app: FastAPI):
     data_path.mkdir(parents=True, exist_ok=True)
     async with engine.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # ``create_all`` uses checkfirst=True: for a table that already
+        # exists on disk it skips that table's DDL entirely, so an index
+        # newly declared on an existing column (index=True added to a
+        # `mapped_column`) is never retrofitted onto an already-running
+        # deployment's database file — verified empirically, not assumed
+        # (reopening a pre-existing un-indexed SQLite file and re-running
+        # create_all with the new, indexed model produced no new index).
+        # This repo has no migration framework, so ensure the five indexes
+        # exist via idempotent raw SQL, using the exact names SQLAlchemy's
+        # default ``ix_<table>_<column>`` convention assigns them on a
+        # fresh database, so create_all-generated and manually-created
+        # indexes never collide under the same name.
+        await conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_transcript_segments_job_id "
+                "ON transcript_segments (job_id)"
+            )
+        )
+        await conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_speaker_mappings_job_id ON speaker_mappings (job_id)"
+            )
+        )
+        await conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_speaker_embeddings_job_id "
+                "ON speaker_embeddings (job_id)"
+            )
+        )
+        await conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_segment_edit_versions_segment_id "
+                "ON segment_edit_versions (segment_id)"
+            )
+        )
+        await conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_segment_edit_versions_job_id "
+                "ON segment_edit_versions (job_id)"
+            )
+        )
         await conn.commit()
         logger.info("Tables created")
     logger.info("Database tables ensured")

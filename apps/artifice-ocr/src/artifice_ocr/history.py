@@ -341,7 +341,8 @@ class HistoryStore:
         like = f"%{term}%"
         with self._lock:
             return self._conn.execute(
-                "SELECT * FROM run_items WHERE name LIKE ? OR source_file LIKE ? "
+                "SELECT item_id, name, state, language, confidence, fabricated_result "
+                "FROM run_items WHERE name LIKE ? OR source_file LIKE ? "
                 "ORDER BY item_id DESC LIMIT ?",
                 (like, like, limit),
             ).fetchall()
