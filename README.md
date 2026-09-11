@@ -20,7 +20,7 @@ A collection of local-first and open-source tools that place a user-friendly int
 
 ## Development status
 
-⚠️ Warning: Active Development
+⚠️ **WARNING:** Active Development
 This is an open-source project currently in early development. It is provided as-is and is intended for developers and advanced users who are comfortable troubleshooting and know their way around local models. Expect bugs, breaking changes and possible security vulnerabilities.
 
 **Artifice OCR and Artifice Transcribe are in active development.** They cover tasks —
