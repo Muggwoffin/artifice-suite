@@ -83,6 +83,20 @@ def sanitise_path_component(raw: str, field_name: str = "filename") -> str:
     return cleaned
 
 
+def assert_contained(path: Path, container: Path, *, field_name: str = "path") -> None:
+    """Raise :class:`PathValidationError` if *path* resolves outside *container*.
+
+    A narrower, cheaper check than :func:`validate_path` — for verifying a
+    path this process just constructed itself (e.g. ``upload_dir / filename``)
+    didn't somehow escape the directory it was built under, not for
+    validating an arbitrary user-supplied path against a general allowlist.
+    """
+    resolved = path.resolve()
+    base = container.resolve()
+    if not (base in resolved.parents or resolved == base):
+        raise PathValidationError(f"{field_name}: path traversal detected")
+
+
 def build_allowed_roots(env_var: str, extra_roots: Iterable[str] = ()) -> list[Path]:
     """Return the set of directory roots permitted for user-supplied paths.
 

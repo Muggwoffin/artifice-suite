@@ -17,6 +17,11 @@ Porting is tracked as Phase 3 in ``IMPLEMENTATION_PLAN.md``.
 
 from __future__ import annotations
 
+from model_harness.byom import (
+    TestRequest,
+    byom_recommendations,
+    name_for_probe,
+)
 from model_harness.contract import (
     EndpointPolicy,
     EndpointRejected,
@@ -88,10 +93,13 @@ __all__ = [
     "StructuredOutputMode",
     "StructuredOutputUnsupported",
     "StructuredRequest",
+    "TestRequest",
+    "byom_recommendations",
     "detect_local_servers",
     "get_asr_model",
     "get_endpoint",
     "is_configured",
+    "name_for_probe",
     "normalise_base_url",
     "probe_endpoint",
     "probe_endpoint_sync",

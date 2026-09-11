@@ -14,19 +14,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
+from model_harness.byom import TestRequest
+from model_harness.byom import byom_recommendations as _byom_recommendations
+from model_harness.byom import name_for_probe as _name_for_probe
 from model_harness.contract import EndpointRejected
 from model_harness.discovery import (
-    ProbeResult,
     detect_local_servers,
     probe_endpoint,
 )
 from model_harness.endpoint_policy import EndpointPolicy
-from model_harness.registry import (
-    KNOWN_ENDPOINTS,
-    HardwareTier,
-    is_configured,
-    recommendations_for_app,
-)
+from model_harness.registry import is_configured
 from pydantic import BaseModel
 
 from ...api.v1.routes import _load_inference_config, _save_inference_config
@@ -35,69 +32,11 @@ router = APIRouter(prefix="/api/byom", tags=["byom"])
 
 _policy = EndpointPolicy()
 
-# ── Display-name mapping ─────────────────────────────────────────────────────
-
-
-def _name_for_probe(r: ProbeResult) -> str:
-    """Return a human-readable name for a probe result, derived from the
-    registry when the provider matches a known endpoint."""
-    for info in KNOWN_ENDPOINTS.values():
-        if info.provider == r.provider:
-            return info.display_name
-    return str(r.provider) if r.provider else r.url
-
-
-# ── Recommendations helper ──────────────────────────────────────────────────
-#
-# As of 2026-08, the registry carries text-only model recommendations for
-# ``artifice-transcribe``'s optional post-transcription inference endpoint
-# (summarize / cleanup).  The ``try/except KeyError`` guard was written when
-# the registry deliberately omitted transcribe, and it remains as correct
-# defensive code for any app that might be absent in the future.
-# Transcribe separately uses ``ASR_MODELS`` for the transcription engines
-# themselves — those are ASR models pulled from Hugging Face, not LLMs.
-
-
-def _byom_recommendations(app_key: str) -> dict:
-    """Serialise :func:`recommendations_for_app` for all three hardware tiers.
-
-    Returns text-only model recommendations for transcribe's post-
-    transcription inference endpoint.  Transcribe uses
-    :data:`~model_harness.registry.ASR_MODELS` separately for the
-    transcription engines themselves.
-    """
-    tier_keys = {
-        "laptop": HardwareTier.LAPTOP,
-        "desktop": HardwareTier.DESKTOP,
-        "mac_unified": HardwareTier.MAC_UNIFIED,
-    }
-    result: dict[str, list[dict]] = {}
-    for key, tier in tier_keys.items():
-        try:
-            recs = recommendations_for_app(app_key, tier)
-        except KeyError:
-            recs = []
-        result[key] = [
-            {
-                "model_name": r.model_name,
-                "provider": r.provider,
-                "vision": r.vision,
-                "min_vram_gb": r.min_vram_gb,
-                "ethos_badges": list(r.ethos_badges),
-                "role": r.role,
-                "notes": r.notes,
-            }
-            for r in recs
-        ]
-    return result
-
-
-# ── Request model ────────────────────────────────────────────────────────────
-
-
-class TestRequest(BaseModel):
-    url: str
-    api_key: str = ""
+# ``_byom_recommendations`` (imported above from ``model_harness.byom``) is
+# transcribe's post-transcription inference endpoint's model list —
+# transcribe separately uses :data:`~model_harness.registry.ASR_MODELS` for
+# the transcription engines themselves (Whisper / Parakeet), which are ASR
+# models pulled from Hugging Face, not LLMs, and are not part of this router.
 
 
 # ── GET /api/byom/state ─────────────────────────────────────────────────────
