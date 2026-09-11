@@ -7,9 +7,11 @@
 from __future__ import annotations
 
 import asyncio
+import tempfile
 
 import pytest
-from shared_ui.uploads import UploadTooLarge, read_capped
+import shared_ui.uploads as uploads_module
+from shared_ui.uploads import UploadTooLarge, read_capped, read_capped_to_tempfile
 
 _CHUNK = 64 * 1024
 
@@ -65,6 +67,75 @@ class TestReadCapped:
         assert -1 not in upload.requested_sizes
         # The whole body was never consumed.
         assert upload.served < len(body)
+
+
+class TestReadCappedToTempfile:
+    """Tests for read_capped_to_tempfile()."""
+
+    def test_body_under_limit_round_trips(self) -> None:
+        body = b"hello world" * 100
+        spooled = asyncio.run(read_capped_to_tempfile(_RecordingUpload(body), 100_000))
+        try:
+            assert spooled.read() == body
+        finally:
+            spooled.close()
+
+    def test_body_exceeding_spool_max_size_spills_to_disk_and_round_trips(self) -> None:
+        # spool_max_size is tiny relative to the body, forcing
+        # SpooledTemporaryFile to roll over to a real file on disk — this is
+        # the path that a purely in-memory test would never exercise.
+        body = b"x" * 10_000
+        spooled = asyncio.run(
+            read_capped_to_tempfile(_RecordingUpload(body), 100_000, spool_max_size=100)
+        )
+        try:
+            assert spooled.read() == body
+        finally:
+            spooled.close()
+
+    def test_oversized_raises_and_closes_the_spooled_file(self, monkeypatch) -> None:
+        created: list[tempfile.SpooledTemporaryFile] = []
+        real_cls = tempfile.SpooledTemporaryFile
+
+        class _Tracking(real_cls):
+            def __init__(self, *args, **kwargs) -> None:
+                super().__init__(*args, **kwargs)
+                created.append(self)
+
+        monkeypatch.setattr(uploads_module.tempfile, "SpooledTemporaryFile", _Tracking)
+
+        body = b"x" * 200_000
+        upload = _RecordingUpload(body)
+        with pytest.raises(UploadTooLarge):
+            asyncio.run(read_capped_to_tempfile(upload, 100_000))
+        # The reads stay bounded at 64 KB each, exactly like read_capped.
+        assert upload.requested_sizes == [_CHUNK, _CHUNK]
+        assert -1 not in upload.requested_sizes
+        # No leaked open file handle: the spooled file was closed before the
+        # exception propagated.
+        assert len(created) == 1
+        assert created[0].closed
+
+    def test_oversized_with_small_spool_also_closes_the_spilled_file(self, monkeypatch) -> None:
+        # Same as above but forces the disk-spill path first, so the file
+        # being closed on error is a real filesystem handle, not just an
+        # in-memory buffer.
+        created: list[tempfile.SpooledTemporaryFile] = []
+        real_cls = tempfile.SpooledTemporaryFile
+
+        class _Tracking(real_cls):
+            def __init__(self, *args, **kwargs) -> None:
+                super().__init__(*args, **kwargs)
+                created.append(self)
+
+        monkeypatch.setattr(uploads_module.tempfile, "SpooledTemporaryFile", _Tracking)
+
+        body = b"x" * 200_000
+        upload = _RecordingUpload(body)
+        with pytest.raises(UploadTooLarge):
+            asyncio.run(read_capped_to_tempfile(upload, 100_000, spool_max_size=100))
+        assert len(created) == 1
+        assert created[0].closed
 
 
 class TestUploadTooLarge:

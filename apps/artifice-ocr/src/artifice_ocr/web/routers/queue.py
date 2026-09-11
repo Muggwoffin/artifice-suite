@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from shared_ui.path_validation import PathValidationError, sanitise_path_component
-from shared_ui.uploads import UploadTooLarge, read_capped
+from shared_ui.uploads import UploadTooLarge, read_capped_to_tempfile
 
 from ..models import (
     AddPathsRequest,
@@ -251,7 +251,7 @@ async def upload_files(files: list[UploadFile] = File(...)) -> dict:
             continue
 
         try:
-            contents = await read_capped(upload, _MAX_UPLOAD_BYTES)
+            spooled = await read_capped_to_tempfile(upload, _MAX_UPLOAD_BYTES)
         except UploadTooLarge:
             results.append(
                 {
@@ -263,7 +263,14 @@ async def upload_files(files: list[UploadFile] = File(...)) -> dict:
             continue
 
         dest = _unique_dest(staging, safe_name)
-        await asyncio.to_thread(dest.write_bytes, contents)
+
+        def _persist(spooled_file, dest_path):
+            import shutil
+
+            with spooled_file, open(dest_path, "wb") as out:
+                shutil.copyfileobj(spooled_file, out)
+
+        await asyncio.to_thread(_persist, spooled, dest)
         staged_paths.append(str(dest))
         results.append({"filename": safe_name, "status": "ok"})
 

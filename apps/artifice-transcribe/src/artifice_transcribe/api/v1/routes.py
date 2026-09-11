@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
 from shared_ui.path_validation import PathValidationError, sanitise_path_component
-from shared_ui.uploads import UploadTooLarge, read_capped
+from shared_ui.uploads import UploadTooLarge, read_capped_to_tempfile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -904,7 +904,7 @@ async def create_transcription(
         raise HTTPException(status_code=400, detail="mode must be 'auto' or 'manual'")
 
     try:
-        contents = await read_capped(file, settings.max_upload_size)
+        spooled = await read_capped_to_tempfile(file, settings.max_upload_size)
     except UploadTooLarge as e:
         raise HTTPException(status_code=413, detail=e.public_message) from e
 
@@ -931,7 +931,14 @@ async def create_transcription(
         raise HTTPException(status_code=400, detail=e.public_message) from e
     audio_path = settings.upload_path / f"{job.id}_{safe_filename}"
     _assert_contained(audio_path, settings.upload_path)
-    await asyncio.to_thread(audio_path.write_bytes, contents)
+
+    def _persist(spooled_file, dest_path):
+        import shutil
+
+        with spooled_file, open(dest_path, "wb") as out:
+            shutil.copyfileobj(spooled_file, out)
+
+    await asyncio.to_thread(_persist, spooled, audio_path)
 
     if mode == "manual":
         # Hand-transcription job: skip ASR entirely. The uploaded audio is
@@ -1540,7 +1547,7 @@ async def enroll_speaker(
     """Enroll a known speaker by uploading a short audio clip of their voice."""
 
     try:
-        contents = await read_capped(file, settings.max_upload_size)
+        spooled = await read_capped_to_tempfile(file, settings.max_upload_size)
     except UploadTooLarge as e:
         raise HTTPException(status_code=413, detail=e.public_message) from e
 
@@ -1554,7 +1561,14 @@ async def enroll_speaker(
         raise HTTPException(status_code=400, detail=e.public_message) from e
     audio_path = settings.upload_path / f"enroll_{safe_name}_{safe_filename}"
     _assert_contained(audio_path, settings.upload_path)
-    await asyncio.to_thread(audio_path.write_bytes, contents)
+
+    def _persist(spooled_file, dest_path):
+        import shutil
+
+        with spooled_file, open(dest_path, "wb") as out:
+            shutil.copyfileobj(spooled_file, out)
+
+    await asyncio.to_thread(_persist, spooled, audio_path)
 
     try:
         engine = _get_engine()
