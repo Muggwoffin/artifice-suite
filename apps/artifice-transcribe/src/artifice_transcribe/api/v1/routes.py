@@ -668,26 +668,32 @@ async def inference_generate(body: InferenceGenerateRequest):
     if body.stream:
 
         async def stream_generator():
-            gen = await engine.generate(
-                prompt=body.prompt,
-                image_base64=body.image_base64,
-                stream=True,
-                temperature=body.temperature,
-                max_tokens=body.max_tokens,
-            )
-            async for chunk in gen:
-                yield chunk
+            try:
+                gen = await engine.generate(
+                    prompt=body.prompt,
+                    image_base64=body.image_base64,
+                    stream=True,
+                    temperature=body.temperature,
+                    max_tokens=body.max_tokens,
+                )
+                async for chunk in gen:
+                    yield chunk
+            finally:
+                await engine.aclose()
 
         return StreamingResponse(stream_generator(), media_type="text/event-stream")
     else:
-        res = await engine.generate(
-            prompt=body.prompt,
-            image_base64=body.image_base64,
-            stream=False,
-            temperature=body.temperature,
-            max_tokens=body.max_tokens,
-        )
-        return {"response": res}
+        try:
+            res = await engine.generate(
+                prompt=body.prompt,
+                image_base64=body.image_base64,
+                stream=False,
+                temperature=body.temperature,
+                max_tokens=body.max_tokens,
+            )
+            return {"response": res}
+        finally:
+            await engine.aclose()
 
 
 async def _build_transcript_prompt(job_id: str, db: AsyncSession, action: str) -> str:
@@ -772,6 +778,8 @@ async def summarize_job(job_id: str, db: AsyncSession = Depends(get_db)):
                 yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'text': redact_token(str(exc))})}\n\n"
+        finally:
+            await engine.aclose()
         yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
@@ -811,6 +819,8 @@ async def cleanup_job(job_id: str, db: AsyncSession = Depends(get_db)):
                 yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'text': redact_token(str(exc))})}\n\n"
+        finally:
+            await engine.aclose()
         yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")

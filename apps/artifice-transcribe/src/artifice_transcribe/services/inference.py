@@ -112,6 +112,10 @@ class InferenceEngine:
         self.vision_enabled = vision_enabled
         self.client = AsyncOpenAI(base_url=self.base_url, api_key=self.api_key)
 
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client's connection pool."""
+        await self.client.close()
+
     async def _resolve_model_name(self) -> str:
         """Pick a model when none is configured, from what the server serves.
 
