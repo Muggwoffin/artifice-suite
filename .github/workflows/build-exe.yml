@@ -265,8 +265,17 @@ jobs:
           $extraArgs = @("--no-window","--port","18999")
           if (-not (Test-Path $exe)) { Write-Error "no binary at $exe"; exit 1 }
           Write-Host "binary size: $((Get-Item $exe).Length) bytes"
-          $p = Start-Process -FilePath $exe -ArgumentList $extraArgs -PassThru
+          # Redirected so a failure actually shows what the process printed —
+          # Start-Process without this discards stdout/stderr entirely, which
+          # previously turned every smoke-test failure into an unexplained
+          # "every path FAILED" with no way to tell a crash from a slow start.
+          $stdoutLog = "$app-stdout.log"
+          $stderrLog = "$app-stderr.log"
+          $p = Start-Process -FilePath $exe -ArgumentList $extraArgs -PassThru `
+            -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
           Start-Sleep -Seconds $waitSec
+          Write-Host "process HasExited: $($p.HasExited)"
+          if ($p.HasExited) { Write-Host "process ExitCode: $($p.ExitCode)" }
           $fail = 0
           foreach ($path in @("/",$apiPath,"/shared/tokens.css",$appCss)) {
             try {
@@ -297,6 +306,12 @@ jobs:
             }
           } catch { Write-Host "  index fetch FAILED"; $fail = 1 }
           Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          if ($fail -ne 0) {
+            Write-Host "--- $app stdout ---"
+            Get-Content $stdoutLog -ErrorAction SilentlyContinue
+            Write-Host "--- $app stderr ---"
+            Get-Content $stderrLog -ErrorAction SilentlyContinue
+          }
           exit $fail
 
       - name: Upload the bundle
