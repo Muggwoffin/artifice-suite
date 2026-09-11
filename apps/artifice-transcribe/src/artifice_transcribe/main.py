@@ -19,6 +19,7 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader, select_autoescape
 from sqlalchemy import text
 
 from artifice_transcribe._logging import get_logger
+from artifice_transcribe.api.v1.health import router as health_router
 from artifice_transcribe.api.v1.models import router as models_router
 from artifice_transcribe.api.v1.routes import router as v1_router
 from artifice_transcribe.config import settings
@@ -140,6 +141,7 @@ app.add_middleware(
 
 app.include_router(v1_router)
 app.include_router(models_router)
+app.include_router(health_router)
 app.include_router(byom_router)
 
 
