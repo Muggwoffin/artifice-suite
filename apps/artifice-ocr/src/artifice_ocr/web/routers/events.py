@@ -43,6 +43,7 @@ async def _event_stream():
 @router.get("/api/events")
 async def events():
     return StreamingResponse(
-        _event_stream(), media_type="text/event-stream",
+        _event_stream(),
+        media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
