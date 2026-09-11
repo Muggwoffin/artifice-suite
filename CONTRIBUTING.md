@@ -6,10 +6,12 @@ abide by it.
 
 ## Getting set up
 
-The suite is a [uv](https://docs.astral.sh/uv/) workspace of four
-independent apps (`apps/artifice-ocr`, `apps/artifice-draft`,
-`apps/artifice-graph`, `apps/artifice-transcribe`) plus a shared
-`packages/model-harness` package.
+The suite is a [uv](https://docs.astral.sh/uv/) workspace of five apps
+(`apps/artifice-ocr`, `apps/artifice-draft`, `apps/artifice-graph`,
+`apps/artifice-transcribe`, and `apps/artifice-hub` — a native GUI launcher
+for the other four, deliberately frozen-only: no Docker image, no PyPI
+publish, no `uv tool install`) plus a shared `packages/model-harness`
+package.
 
 ```bash
 git clone https://github.com/Muggwoffin/artifice-suite.git

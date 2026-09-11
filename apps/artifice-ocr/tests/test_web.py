@@ -117,6 +117,55 @@ def test_about_page_serves(client):
     assert "app-shell" in res.text
 
 
+# --------------------------------------------------------------------------- #
+# CORS origins (ARTIFICE_OCR_CORS_ORIGINS)
+# --------------------------------------------------------------------------- #
+#
+# `server.app` builds its CORS middleware from the env var at *import* time,
+# so exercising a non-default value means reloading the module after setting
+# it. Each test restores `server` to its unmodified state afterwards so later
+# tests (including the `client` fixture above, which reads `server.app`)
+# see the normal default-origin app.
+
+
+def test_cors_default_origins_when_env_unset(monkeypatch):
+    monkeypatch.delenv("ARTIFICE_OCR_CORS_ORIGINS", raising=False)
+    import importlib
+
+    importlib.reload(server)
+    try:
+        with TestClient(server.app) as c:
+            allowed = c.get("/", headers={"Origin": "http://localhost:8765"})
+            assert allowed.headers.get("access-control-allow-origin") == "http://localhost:8765"
+
+            rejected = c.get("/", headers={"Origin": "http://evil.example"})
+            assert "access-control-allow-origin" not in rejected.headers
+    finally:
+        importlib.reload(server)
+
+
+def test_cors_honors_env_override(monkeypatch):
+    monkeypatch.setenv(
+        "ARTIFICE_OCR_CORS_ORIGINS",
+        "http://example.com:9999, http://foo.test:1234",
+    )
+    import importlib
+
+    importlib.reload(server)
+    try:
+        with TestClient(server.app) as c:
+            allowed = c.get("/", headers={"Origin": "http://example.com:9999"})
+            assert allowed.headers.get("access-control-allow-origin") == "http://example.com:9999"
+
+            # The old hardcoded default must no longer be allowed once an
+            # override is set — this is not additive.
+            rejected = c.get("/", headers={"Origin": "http://localhost:8765"})
+            assert "access-control-allow-origin" not in rejected.headers
+    finally:
+        monkeypatch.undo()
+        importlib.reload(server)
+
+
 def test_static_index_html_is_gone(client):
     res = client.get("/static/index.html")
     assert res.status_code == 404

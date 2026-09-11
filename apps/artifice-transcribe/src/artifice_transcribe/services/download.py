@@ -605,7 +605,6 @@ def _download_with_progress(
     """
     from huggingface_hub import snapshot_download
     from huggingface_hub.constants import REPO_ID_SEPARATOR
-    from huggingface_hub.utils import HfHubHTTPError
 
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -627,7 +626,7 @@ def _download_with_progress(
                 resume_download=True,
             )
             download_result.append(Path(result))
-        except (HfHubHTTPError, Exception) as exc:
+        except Exception as exc:
             download_result.append(exc)
         finally:
             download_done.set()
