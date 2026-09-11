@@ -8,6 +8,8 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-11
+
 ### Added
 - **olmOCR-2 inference-side optimisations** (`docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md`).
   Per-page temperature ladder in `_ocr_vision` — a repetition-guard rejection now
@@ -207,6 +209,21 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   It now checks the uv tool directory, `~/.local/bin`, and `PATH`, and judges success
   by what is left on disk rather than by uv's exit code. The early "already clean"
   exit likewise considered only user data and now considers installed programs too.
+- **History's `record_finished_items()` re-inserted every already-recorded
+  item on every `item_finished` event**, instead of once per item — it looped
+  over the whole run's items and re-recorded every `DONE`/`FAILED` one each
+  time, an O(n^2) blow-up with no guard against the `history_item_id` field
+  that existed for exactly that purpose. On a real 944-file Tropy round trip
+  this produced ~108,000 duplicate `run_items` rows in one run alone (~891,000
+  on a similar run the day before), compounding across 37 runs into a 14GB
+  `history.db` that made the History tab's run-items query effectively hang —
+  which is why "Send to Tropy" stayed disabled: the code path that enables it
+  never got a chance to run. A stale write from an earlier crash had also
+  physically corrupted the single most-recently-inserted row; the history
+  store was rebuilt excluding it, recovering a clean 2,922-row database with
+  every run's real item count intact. Verified against two real Tropy round
+  trips post-fix: a small folder and the full 944-page collection, both
+  loading and enabling Send to Tropy correctly. (#111)
 
 ## [0.3.0] - 2026-08-24
 
