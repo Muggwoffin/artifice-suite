@@ -13,7 +13,6 @@ text is kept instead, so a page is either structured or untouched — never
 reworded.
 """
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
@@ -27,7 +26,7 @@ from artifice_ocr._prompts import get_structure_prompt
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
-from artifice_ocr.output import record_dir, stage_dir
+from artifice_ocr.output import stage_dir, write_stage_output
 
 log = get_logger("structure")
 
@@ -156,21 +155,6 @@ def perform(
         )
         final_text = text
 
-    base_output_dir = Path(output_dir)
-    text_dir = stage_dir(base_output_dir, "structured") / "text"
-    json_dir = record_dir(base_output_dir, "structured")
-
-    text_dir.mkdir(parents=True, exist_ok=True)
-    json_dir.mkdir(parents=True, exist_ok=True)
-
-    text_path = text_dir / f"{base_name}.txt"
-    json_path = json_dir / f"{base_name}.json"
-    text_path.parent.mkdir(parents=True, exist_ok=True)
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(text_path, "w", encoding="utf-8") as f:
-        f.write(final_text)
-
     data = {
         "source_file": source_file,
         "stage": "structured",
@@ -186,8 +170,7 @@ def perform(
     if not guard_result.ok:
         data["rejected_structured_text"] = structured_text
 
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    write_stage_output(output_dir, "structured", base_name, text_content=final_text, metadata=data)
 
     if guard_result.ok:
         log.info("Structure complete (%d -> %d chars)", len(text), len(final_text))

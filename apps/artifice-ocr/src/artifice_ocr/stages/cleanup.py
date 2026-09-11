@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
@@ -17,7 +16,7 @@ from artifice_ocr._prompts import get_cleanup_prompt
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
-from artifice_ocr.output import record_dir, stage_dir
+from artifice_ocr.output import write_stage_output
 
 log = get_logger("cleanup")
 
@@ -119,21 +118,7 @@ def perform(
     # user still sees a better page than if they were discarded.
     cleaned_text, guard_result = _guard.apply(normalised_text, model_text)
 
-    base_output_dir = Path(output_dir)
-    text_dir = stage_dir(base_output_dir, "cleaned") / "text"
-    json_dir = record_dir(base_output_dir, "cleaned")
-
-    text_dir.mkdir(parents=True, exist_ok=True)
-    json_dir.mkdir(parents=True, exist_ok=True)
-
     base_name = stem or (Path(source_file).stem if source_file else "unknown")
-    text_path = text_dir / f"{base_name}.txt"
-    json_path = json_dir / f"{base_name}.json"
-    text_path.parent.mkdir(parents=True, exist_ok=True)
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(text_path, "w", encoding="utf-8") as f:
-        f.write(cleaned_text)
 
     data = {
         "source_file": source_file,
@@ -151,8 +136,7 @@ def perform(
     if not guard_result.ok:
         data["rejected_cleaned_text"] = model_text
 
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    write_stage_output(output_dir, "cleaned", base_name, text_content=cleaned_text, metadata=data)
 
     if guard_result.ok:
         log.info("Cleanup complete (%d -> %d chars)", len(raw_text), len(cleaned_text))
