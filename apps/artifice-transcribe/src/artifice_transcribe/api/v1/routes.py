@@ -175,8 +175,8 @@ def _load_hf_token() -> str:
         try:
             data = json.loads(_HF_TOKEN_FILE.read_text(encoding="utf-8"))
             return data.get("hf_token", "")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Could not read %s — using defaults: %s", _HF_TOKEN_FILE, exc)
     return ""
 
 
@@ -225,8 +225,8 @@ def _load_inference_config() -> dict:
         ensure_restricted(_INFERENCE_CONFIG_FILE)
         try:
             return json.loads(_INFERENCE_CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Could not read %s — using defaults: %s", _INFERENCE_CONFIG_FILE, exc)
     return {
         "base_url": "http://localhost:11434/v1",
         "api_key": "not-needed",

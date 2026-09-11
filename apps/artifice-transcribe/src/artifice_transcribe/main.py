@@ -27,6 +27,26 @@ STATIC_DIR = Path(__file__).parent / "web" / "static"
 
 logger = get_logger("main")
 
+_LOOPBACK_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "localhost", "::1", "[::1]"})
+
+
+def _assert_loopback_host(host: str) -> None:
+    """Refuse to start if the server would bind to a non-loopback address.
+
+    Mirrors artifice-ocr's web/server.py:_assert_loopback_host, but checks
+    the actual configured host (transcribe's bind address is configurable
+    via ARTIFICE_HOST/--host; OCR's is not, so its equivalent guard checks
+    a hardcoded literal — that shortcut does not apply here).
+    """
+    if host not in _LOOPBACK_HOSTS:
+        print(
+            f"artifice-transcribe binds to loopback only for security; "
+            f"refusing to start on {host!r}. Set --host (or $ARTIFICE_HOST) "
+            f"to 127.0.0.1, localhost, or ::1.",
+            flush=True,
+        )
+        raise SystemExit(1)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -250,6 +270,8 @@ def cli():
         help="Server-only mode: print the URL and wait, do not open a window or browser",
     )
     args = parser.parse_args()
+
+    _assert_loopback_host(args.host)
 
     if args.data_dir:
         from artifice_transcribe.config import settings

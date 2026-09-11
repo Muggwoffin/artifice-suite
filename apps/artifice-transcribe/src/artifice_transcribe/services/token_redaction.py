@@ -30,3 +30,17 @@ def redact_token(text: str) -> str:
     unchanged.
     """
     return _TOKEN_RE.sub("[REDACTED]", text)
+
+
+_URL_USERINFO_RE = re.compile(r"://[^/\s@]+@")
+
+
+def strip_url_userinfo(text: str) -> str:
+    """Strip ``user:pass@`` from any URL embedded in *text*.
+
+    A misconfigured base URL can carry credentials
+    (``http://user:pass@host``); if the connection then fails, the raw
+    exception text can include the full URL. Safe to call on text with no
+    embedded URL — returns *text* unchanged.
+    """
+    return _URL_USERINFO_RE.sub("://", text)

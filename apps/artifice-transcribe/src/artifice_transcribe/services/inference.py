@@ -15,6 +15,7 @@ from model_harness.resolution import resolve_model
 from openai import AsyncOpenAI
 
 from artifice_transcribe._retry import retry
+from artifice_transcribe.services.token_redaction import redact_token, strip_url_userinfo
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +89,10 @@ async def test_connection(base_url: str, api_key: str | None = None) -> dict:
                 "model_count": 0,
             }
     except Exception as exc:
+        safe_detail = strip_url_userinfo(redact_token(str(exc)))
         return {
             "success": False,
-            "message": f"Server unreachable: {exc}",
+            "message": f"Server unreachable: {safe_detail}",
             "model_count": 0,
         }
 
