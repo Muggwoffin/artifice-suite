@@ -7,8 +7,14 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from typer.testing import CliRunner
 from artifice_ocr.cli import app
+from model_harness.contract import (
+    HarnessResult,
+    SchemaValidationFailed,
+    StructuredOutputMode,
+    StructuredOutputUnsupported,
+)
+from typer.testing import CliRunner
 
 runner = CliRunner()
 
@@ -344,8 +350,9 @@ def test_translate_stage_writes_files(mock_chat, tmp_path):
     assert data["cleaned_text"] == "German text here"
     assert "source_language" in data
 
-    # 3 calls: language detection + translation + confidence self-assessment
-    assert mock_chat.call_count == 3
+    # 2 calls: language detection + translation. Confidence self-assessment now
+    # routes through model_harness.run_structured, not the chat client.
+    assert mock_chat.call_count == 2
 
 
 @patch("artifice_ocr.stages.translate.ollama.Client")
@@ -1186,29 +1193,80 @@ def test_heuristic_score_uncertain_text():
     assert len(markers) > 0
 
 
-@patch("artifice_ocr._confidence.ollama.Client")
-def test_evaluate_confidence(mock_chat, tmp_path):
-    mock_chat = mock_chat.return_value.chat
-    mock_chat.return_value = MagicMock(
-        message=MagicMock(content='{"score": 85, "reasoning": "Good quality text"}')
+def test_evaluate_confidence():
+    """LLM self-assessment blends into overall score via the harness."""
+    mock_result = HarnessResult(
+        data=MagicMock(score=85, reasoning="Good quality text"),
+        mode_used=StructuredOutputMode.PROMPTED,
+        model="translate-model",
+        raw='{"score": 85, "reasoning": "Good quality text"}',
+        repaired=False,
     )
-    from artifice_ocr._confidence import evaluate_confidence
 
-    result = evaluate_confidence(
-        "Clean source text", "Clean translated text", enable_self_assessment=True
-    )
+    with patch("artifice_ocr._confidence.run_structured", return_value=mock_result):
+        from artifice_ocr._confidence import evaluate_confidence
+
+        result = evaluate_confidence(
+            "Clean source text", "Clean translated text", enable_self_assessment=True
+        )
     assert 0 <= result.overall_score <= 100
     assert result.reasoning == "Good quality text"
 
 
-@patch("artifice_ocr._confidence.ollama.Client")
-def test_evaluate_confidence_self_assessment_disabled(mock_chat):
-    mock_chat = mock_chat.return_value.chat
-    from artifice_ocr._confidence import evaluate_confidence
+def test_evaluate_confidence_self_assessment_disabled():
+    """Self-assessment is skipped entirely when disabled."""
+    mock_result = HarnessResult(
+        data=MagicMock(score=85, reasoning="Good quality text"),
+        mode_used=StructuredOutputMode.PROMPTED,
+        model="translate-model",
+        raw="{}",
+        repaired=False,
+    )
 
-    result = evaluate_confidence("Clean text", "Clean output", enable_self_assessment=False)
+    with patch(
+        "artifice_ocr._confidence.run_structured", return_value=mock_result
+    ) as mock_run:
+        from artifice_ocr._confidence import evaluate_confidence
+
+        result = evaluate_confidence("Clean text", "Clean output", enable_self_assessment=False)
     assert 0 <= result.overall_score <= 100
-    mock_chat.assert_not_called()
+    mock_run.assert_not_called()
+
+
+def test_evaluate_confidence_labels_schema_validation_failure():
+    """A schema-validation failure degrades to a labelled 50, not a fabricated score."""
+    with patch(
+        "artifice_ocr._confidence.run_structured",
+        side_effect=SchemaValidationFailed(
+            "did not match schema",
+            raw="garbage",
+            mode=StructuredOutputMode.PROMPTED,
+        ),
+    ):
+        from artifice_ocr._confidence import evaluate_confidence
+
+        result = evaluate_confidence(
+            "Clean source text", "Clean translated text", enable_self_assessment=True
+        )
+    assert result.score == 50
+    assert "Self-assessment failed" in result.reasoning
+
+
+def test_evaluate_confidence_labels_structured_output_unsupported():
+    """The driver's actual bottom-of-the-ladder failure (StructuredOutputUnsupported,
+    not SchemaValidationFailed — the driver degrades through the mode ladder and
+    raises this one when every mode fails) also degrades to a labelled 50."""
+    with patch(
+        "artifice_ocr._confidence.run_structured",
+        side_effect=StructuredOutputUnsupported("no mode produced valid output"),
+    ):
+        from artifice_ocr._confidence import evaluate_confidence
+
+        result = evaluate_confidence(
+            "Clean source text", "Clean translated text", enable_self_assessment=True
+        )
+    assert result.score == 50
+    assert "Self-assessment failed" in result.reasoning
 
 
 # ---------------------------------------------------------------------------
