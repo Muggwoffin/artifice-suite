@@ -3,13 +3,19 @@
 
 <p align="center">
   <a href="https://doi.org/10.5281/zenodo.21621935">
-    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21621935-blue.svg" alt="DOI">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21621935.svg" alt="DOI">
   </a>
   <a href="LICENSE">
-    <img src="https://img.shields.io/badge/Licence-AGPL--3.0--or--later-blue" alt="Licence: AGPL-3.0-or-later">
+    <img src="https://img.shields.io/github/license/Muggwoffin/artifice-suite" alt="Licence">
   </a>
-  <a href=".github/workflows/ci.yml">
-    <img src="https://img.shields.io/badge/CI-OCR%20%26%20Transcribe%20%C3%97%20three%20platforms-blue" alt="CI">
+  <a href="https://github.com/Muggwoffin/artifice-suite/actions/workflows/ci.yml">
+    <img src="https://github.com/Muggwoffin/artifice-suite/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://github.com/Muggwoffin/artifice-suite/releases/latest">
+    <img src="https://img.shields.io/github/v/release/Muggwoffin/artifice-suite" alt="Latest release">
+  </a>
+  <a href="https://pypi.org/project/artifice-ocr/">
+    <img src="https://img.shields.io/pypi/v/artifice-ocr" alt="PyPI">
   </a>
   <a href="pyproject.toml">
     <img src="https://img.shields.io/badge/Python-3.11%2B-blue" alt="Python 3.11+">
