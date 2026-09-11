@@ -60,7 +60,6 @@ def test_still_translates_when_detection_is_uncertain(mock_chat, tmp_path):
     mock_chat.side_effect = [
         MagicMock(message=MagicMock(content="not a language code")),
         MagicMock(message=MagicMock(content="Translated text")),
-        MagicMock(message=MagicMock(content='{"score": 80, "reasoning": "fine"}')),
     ]
 
     from artifice_ocr.stages import translate
@@ -70,7 +69,9 @@ def test_still_translates_when_detection_is_uncertain(mock_chat, tmp_path):
     assert result["source_language"] == "unknown"
     assert result["translated_text"] == "Translated text"
     assert "skipped_translation" not in result
-    assert mock_chat.call_count == 3
+    # 2 chat calls (language detection + translation). Confidence
+    # self-assessment now routes through model_harness.run_structured.
+    assert mock_chat.call_count == 2
 
 
 @patch("artifice_ocr.stages.translate.ollama.Client")
@@ -79,7 +80,6 @@ def test_skip_behavior_can_be_disabled_via_config(mock_chat, tmp_path):
     mock_chat.side_effect = [
         MagicMock(message=MagicMock(content="en")),
         MagicMock(message=MagicMock(content="Rewritten by the model")),
-        MagicMock(message=MagicMock(content='{"score": 80, "reasoning": "fine"}')),
     ]
 
     from artifice_ocr.stages import translate
@@ -93,7 +93,9 @@ def test_skip_behavior_can_be_disabled_via_config(mock_chat, tmp_path):
     assert result["source_language"] == "en"
     assert result["translated_text"] == "Rewritten by the model"
     assert "skipped_translation" not in result
-    assert mock_chat.call_count == 3
+    # 2 chat calls (language detection + translation). Confidence
+    # self-assessment now routes through model_harness.run_structured.
+    assert mock_chat.call_count == 2
 
 
 @patch("artifice_ocr.stages.translate.ollama.Client")

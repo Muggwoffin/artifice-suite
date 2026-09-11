@@ -12,7 +12,6 @@ This is the first OCR-side inference call to use the harness contract.
 from __future__ import annotations
 
 import asyncio
-import json
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,7 +21,7 @@ from artifice_ocr._guard import _UMLAUT, _WORD
 from artifice_ocr._logging import get_logger
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr.config import get as cfg
-from artifice_ocr.output import record_dir, stage_dir
+from artifice_ocr.output import write_stage_output
 from model_harness.contract import (
     ModelConnectorConfig,
     Provider,
@@ -246,20 +245,6 @@ def perform(
         )
 
     # -- Write output ---------------------------------------------------------
-    output_path = Path(output_dir)
-    text_dir = stage_dir(output_path, "title") / "text"
-    json_dir = record_dir(output_path, "title")
-    text_dir.mkdir(parents=True, exist_ok=True)
-    json_dir.mkdir(parents=True, exist_ok=True)
-
-    text_path = text_dir / f"{base_name}.txt"
-    json_path = json_dir / f"{base_name}.json"
-    text_path.parent.mkdir(parents=True, exist_ok=True)
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(text_path, "w", encoding="utf-8") as f:
-        f.write(title)
-
     output_data = {
         "source_file": source_file,
         "stage": "title",
@@ -273,8 +258,7 @@ def perform(
         "guard": guard_results,
     }
 
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(output_data, f, indent=2)
+    write_stage_output(output_dir, "title", base_name, text_content=title, metadata=output_data)
 
     log.info(
         "Title generated for %s: %s",
@@ -294,20 +278,6 @@ def _fallback_result(
     """Produce a fallback result when the model call fails."""
     title = Path(source_file).stem if source_file else base_name
 
-    output_path = Path(output_dir)
-    text_dir = stage_dir(output_path, "title") / "text"
-    json_dir = record_dir(output_path, "title")
-    text_dir.mkdir(parents=True, exist_ok=True)
-    json_dir.mkdir(parents=True, exist_ok=True)
-
-    text_path = text_dir / f"{base_name}.txt"
-    json_path = json_dir / f"{base_name}.json"
-    text_path.parent.mkdir(parents=True, exist_ok=True)
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(text_path, "w", encoding="utf-8") as f:
-        f.write(title)
-
     data = {
         "source_file": source_file,
         "stage": "title",
@@ -319,7 +289,6 @@ def _fallback_result(
         "guard": {},
     }
 
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    write_stage_output(output_dir, "title", base_name, text_content=title, metadata=data)
 
     return data

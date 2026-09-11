@@ -19,7 +19,7 @@ from artifice_ocr._logging import get_logger
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
-from artifice_ocr.output import record_dir, stage_dir
+from artifice_ocr.output import record_dir, write_stage_output
 from artifice_ocr.stages import preprocess as _preprocess
 
 log = get_logger("ocr")
@@ -52,6 +52,10 @@ _MIME_MAP = {
     ".tif": "image/tiff",
     ".tiff": "image/tiff",
 }
+
+_PDF_ZOOM_DPI = 200  # 72 DPI is PDF's native unit; this scales to 200 DPI for OCR legibility
+_PDF_PAGE_FILENAME_TEMPLATE = "page_{page:04d}.png"
+_PAGE_BREAK = "\n\n--- Page Break ---\n\n"
 
 
 def _effective_prompt(instruction: str, *, style: str = "raw") -> str:
@@ -411,7 +415,7 @@ def _ocr_document_via_tesseract(
                 texts.append(_tesseract_from_image(img_path, orientation))
             finally:
                 img_path.unlink(missing_ok=True)
-        return "\n\n--- Page Break ---\n\n".join(texts)
+        return _PAGE_BREAK.join(texts)
     return _tesseract_from_image(path, orientation)
 
 
@@ -422,14 +426,14 @@ def _pdf_to_page_images(pdf_path: Path, orientation: int = 1) -> list[Path]:
     doc = fitz.open(str(pdf_path))
     page_images = []
     tmp_dir = Path(tempfile.mkdtemp(prefix="ocr_pdf_"))
-    zoom = fitz.Matrix(200 / 72, 200 / 72)
+    zoom = fitz.Matrix(_PDF_ZOOM_DPI / 72, _PDF_ZOOM_DPI / 72)
 
     for page_num in range(len(doc)):
         page = doc[page_num]
         orient_mat = _exif_orientation_matrix(orientation, page.rect.width, page.rect.height)
         mat = orient_mat * zoom if orient_mat is not None else zoom
         pix = page.get_pixmap(matrix=mat)
-        img_path = tmp_dir / f"page_{page_num + 1:04d}.png"
+        img_path = tmp_dir / _PDF_PAGE_FILENAME_TEMPLATE.format(page=page_num + 1)
         pix.save(str(img_path))
         page_images.append(img_path)
 
@@ -455,12 +459,12 @@ def _pdf_single_page_image(
                 f"Page {page_index + 1} out of range for {pdf_path.name} ({total} page(s))"
             )
         page = doc[page_index]
-        zoom = fitz.Matrix(200 / 72, 200 / 72)
+        zoom = fitz.Matrix(_PDF_ZOOM_DPI / 72, _PDF_ZOOM_DPI / 72)
         orient_mat = _exif_orientation_matrix(orientation, page.rect.width, page.rect.height)
         mat = orient_mat * zoom if orient_mat is not None else zoom
         pix = page.get_pixmap(matrix=mat)
         tmp_dir = Path(tempfile.mkdtemp(prefix="ocr_pdf_"))
-        img_path = tmp_dir / f"page_{page_index + 1:04d}.png"
+        img_path = tmp_dir / _PDF_PAGE_FILENAME_TEMPLATE.format(page=page_index + 1)
         pix.save(str(img_path))
     finally:
         doc.close()
@@ -555,7 +559,7 @@ def perform(
             engines_used.append(engine)
             img_path.unlink(missing_ok=True)
 
-        extracted_text = "\n\n--- Page Break ---\n\n".join(page_texts)
+        extracted_text = _PAGE_BREAK.join(page_texts)
         num_pages = len(page_texts)
     else:
         extracted_text, engine = _ocr_single_image(path, orientation)
@@ -632,21 +636,7 @@ def perform(
                     f"OCR rejected for {path.name}: {'; '.join(guard_result.reasons)}"
                 )
 
-    base_output_dir = Path(output_dir)
-    text_dir = stage_dir(base_output_dir, "raw_ocr") / "text"
-    json_dir = record_dir(base_output_dir, "raw_ocr")
-
-    text_dir.mkdir(parents=True, exist_ok=True)
-    json_dir.mkdir(parents=True, exist_ok=True)
-
     base_name = stem or path.stem
-    text_path = text_dir / f"{base_name}.txt"
-    json_path = json_dir / f"{base_name}.json"
-    text_path.parent.mkdir(parents=True, exist_ok=True)
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(text_path, "w", encoding="utf-8") as f:
-        f.write(extracted_text)
 
     data = {
         "source_file": str(path),
@@ -665,8 +655,7 @@ def perform(
         data["guard"] = guard_result.to_dict()
     data.update(_source_identity_fields(source))
 
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    write_stage_output(output_dir, "raw_ocr", base_name, text_content=extracted_text, metadata=data)
 
     log.info("OCR complete for %s (%d chars, %d pages)", path.name, len(extracted_text), num_pages)
     return data

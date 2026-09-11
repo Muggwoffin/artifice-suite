@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
@@ -17,7 +16,7 @@ from artifice_ocr._prompts import get_translation_prompt, get_lang_detect_prompt
 from artifice_ocr._resolution import backend_for, model_for
 from artifice_ocr._retry import retry
 from artifice_ocr.config import get as cfg
-from artifice_ocr.output import record_dir, stage_dir
+from artifice_ocr.output import write_stage_output
 
 log = get_logger("translate")
 
@@ -180,21 +179,7 @@ def perform(
             enable_self_assessment=True,
         )
 
-    base_output_dir = Path(output_dir)
-    text_dir = stage_dir(base_output_dir, "translated") / "text"
-    json_dir = record_dir(base_output_dir, "translated")
-
-    text_dir.mkdir(parents=True, exist_ok=True)
-    json_dir.mkdir(parents=True, exist_ok=True)
-
     base_name = stem or (Path(source_file).stem if source_file else "unknown")
-    text_path = text_dir / f"{base_name}.txt"
-    json_path = json_dir / f"{base_name}.json"
-    text_path.parent.mkdir(parents=True, exist_ok=True)
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(text_path, "w", encoding="utf-8") as f:
-        f.write(translated_text)
 
     data = {
         "source_file": source_file,
@@ -216,8 +201,9 @@ def perform(
     if confidence:
         data["confidence"] = confidence.to_dict()
 
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    write_stage_output(
+        output_dir, "translated", base_name, text_content=translated_text, metadata=data
+    )
 
     log.info("Translation complete (%d -> %d chars)", len(cleaned_text), len(translated_text))
     return data

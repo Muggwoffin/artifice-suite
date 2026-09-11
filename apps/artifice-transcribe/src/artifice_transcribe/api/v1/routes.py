@@ -18,7 +18,11 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPExcepti
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from model_harness.contract import EndpointRejected
 from model_harness.endpoint_policy import EndpointPolicy
-from shared_ui.path_validation import PathValidationError, sanitise_path_component
+from shared_ui.path_validation import (
+    PathValidationError,
+    assert_contained,
+    sanitise_path_component,
+)
 from shared_ui.uploads import UploadTooLarge, read_capped_to_tempfile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -110,17 +114,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["transcription"])
 
 
-# ── Path safety ──────────────────────────────────────────────────────────────
-
-
-def _assert_contained(path: Path, container: Path) -> None:
-    """Raise HTTP 400 if *path* resolves outside *container*."""
-    resolved = path.resolve()
-    base = container.resolve()
-    if not (base in resolved.parents or resolved == base):
-        raise HTTPException(400, "Path traversal detected")
-
-
 # ── Model endpoints ──────────────────────────────────────────────────────────
 #
 # The allowlist policy lives in ``model_harness.endpoint_policy`` — this app
@@ -175,8 +168,8 @@ def _load_hf_token() -> str:
         try:
             data = json.loads(_HF_TOKEN_FILE.read_text(encoding="utf-8"))
             return data.get("hf_token", "")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Could not read %s — using defaults: %s", _HF_TOKEN_FILE, exc)
     return ""
 
 
@@ -225,8 +218,8 @@ def _load_inference_config() -> dict:
         ensure_restricted(_INFERENCE_CONFIG_FILE)
         try:
             return json.loads(_INFERENCE_CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Could not read %s — using defaults: %s", _INFERENCE_CONFIG_FILE, exc)
     return {
         "base_url": "http://localhost:11434/v1",
         "api_key": "not-needed",
@@ -930,7 +923,10 @@ async def create_transcription(
     except PathValidationError as e:
         raise HTTPException(status_code=400, detail=e.public_message) from e
     audio_path = settings.upload_path / f"{job.id}_{safe_filename}"
-    _assert_contained(audio_path, settings.upload_path)
+    try:
+        assert_contained(audio_path, settings.upload_path)
+    except PathValidationError as e:
+        raise HTTPException(status_code=400, detail=e.public_message) from e
 
     def _persist(spooled_file, dest_path):
         import shutil
@@ -1560,7 +1556,10 @@ async def enroll_speaker(
     except PathValidationError as e:
         raise HTTPException(status_code=400, detail=e.public_message) from e
     audio_path = settings.upload_path / f"enroll_{safe_name}_{safe_filename}"
-    _assert_contained(audio_path, settings.upload_path)
+    try:
+        assert_contained(audio_path, settings.upload_path)
+    except PathValidationError as e:
+        raise HTTPException(status_code=400, detail=e.public_message) from e
 
     def _persist(spooled_file, dest_path):
         import shutil
