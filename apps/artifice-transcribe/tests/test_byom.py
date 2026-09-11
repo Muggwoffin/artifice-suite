@@ -516,7 +516,11 @@ class TestRecommendationsGuard:
             assert len(recs[tier]) > 0, f"transcribe should have recommendations for {tier}"
 
     def test_keyerror_returns_empty_recommendations(self, client):
-        with patch("artifice_transcribe.web.routers.byom.recommendations_for_app") as mock_recs:
+        # recommendations_for_app now runs inside model_harness.byom.byom_recommendations
+        # (the app's _byom_recommendations is just an alias for it since the PR6 dedup),
+        # so the guard is exercised end-to-end through the real HTTP endpoint here,
+        # patched at the module that actually calls it.
+        with patch("model_harness.byom.recommendations_for_app") as mock_recs:
             mock_recs.side_effect = KeyError("artifice-transcribe")
             r = client.get("/api/byom/state")
         assert r.status_code == 200
@@ -527,7 +531,7 @@ class TestRecommendationsGuard:
         }
 
     def test_non_keyerror_propagates(self, client):
-        with patch("artifice_transcribe.web.routers.byom.recommendations_for_app") as mock_recs:
+        with patch("model_harness.byom.recommendations_for_app") as mock_recs:
             mock_recs.side_effect = ValueError("unexpected failure")
             with pytest.raises(ValueError, match="unexpected failure"):
                 client.get("/api/byom/state")
