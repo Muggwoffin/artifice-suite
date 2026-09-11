@@ -319,12 +319,6 @@ class RunState:
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------- history
-    @staticmethod
-    def _record_safe(history: HistoryStore, run_id: int, item: JobItem) -> None:
-        """Record an item to history, swallowing any exception."""
-        with contextlib.suppress(Exception):
-            history.record_item(run_id, item)
-
     @property
     def history(self) -> HistoryStore:
         if self._history is None:
@@ -451,22 +445,16 @@ class RunState:
         self.runner.start()
         return events
 
-    def record_finished_items(self) -> None:
-        """Persist finished items to history. Called as each item_finished arrives.
-
-        Runs once per completed item in the whole run (see events.py), but
-        loops over every item — so without the `history_item_id` guard,
-        every already-recorded item gets re-inserted on each subsequent
-        item's completion, an O(n^2) blow-up of duplicate rows.
-        """
+    def record_finished_item(self, item: JobItem) -> None:
+        """Persist one finished item to history. Called once per item_finished event."""
         if self.run_id is None:
             return
-        for item in self.items:
-            if item.history_item_id is not None:
-                continue
-            if item.state in (State.DONE, State.FAILED):
-                with contextlib.suppress(Exception):
-                    item.history_item_id = self.history.record_item(self.run_id, item)
+        if item.history_item_id is not None:
+            return
+        if item.state not in (State.DONE, State.FAILED):
+            return
+        with contextlib.suppress(Exception):
+            item.history_item_id = self.history.record_item(self.run_id, item)
 
     def finish_run(self, payload: dict) -> None:
         if self.run_id is not None:

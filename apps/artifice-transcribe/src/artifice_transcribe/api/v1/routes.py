@@ -921,7 +921,7 @@ async def create_transcription(
         raise HTTPException(status_code=400, detail=e.public_message) from e
     audio_path = settings.upload_path / f"{job.id}_{safe_filename}"
     _assert_contained(audio_path, settings.upload_path)
-    audio_path.write_bytes(contents)
+    await asyncio.to_thread(audio_path.write_bytes, contents)
 
     if mode == "manual":
         # Hand-transcription job: skip ASR entirely. The uploaded audio is
@@ -1544,7 +1544,7 @@ async def enroll_speaker(
         raise HTTPException(status_code=400, detail=e.public_message) from e
     audio_path = settings.upload_path / f"enroll_{safe_name}_{safe_filename}"
     _assert_contained(audio_path, settings.upload_path)
-    audio_path.write_bytes(contents)
+    await asyncio.to_thread(audio_path.write_bytes, contents)
 
     try:
         engine = _get_engine()
@@ -1936,7 +1936,7 @@ async def stream_download_progress(key: str) -> StreamingResponse:
 
                 # Wait for the next event.
                 try:
-                    event = queue.get(timeout=1.0)
+                    event = await asyncio.to_thread(queue.get, True, 1.0)
                     yield f"data: {json.dumps(event)}\n\n"
                 except Empty:
                     # Timeout — send a heartbeat so the connection stays alive.

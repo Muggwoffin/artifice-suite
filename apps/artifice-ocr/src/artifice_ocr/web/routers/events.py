@@ -32,8 +32,8 @@ async def _event_stream():
             yield ": heartbeat\n\n"
             continue
 
-        if event.kind == "item_finished":
-            state.record_finished_items()
+        if event.kind == "item_finished" and event.item is not None:
+            state.record_finished_item(event.item)
         if event.kind == "run_finished":
             state.finish_run(event.payload)
 
