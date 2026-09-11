@@ -1223,9 +1223,7 @@ def test_evaluate_confidence_self_assessment_disabled():
         repaired=False,
     )
 
-    with patch(
-        "artifice_ocr._confidence.run_structured", return_value=mock_result
-    ) as mock_run:
+    with patch("artifice_ocr._confidence.run_structured", return_value=mock_result) as mock_run:
         from artifice_ocr._confidence import evaluate_confidence
 
         result = evaluate_confidence("Clean text", "Clean output", enable_self_assessment=False)
