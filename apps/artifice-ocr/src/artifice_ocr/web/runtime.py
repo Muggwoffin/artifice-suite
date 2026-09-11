@@ -452,10 +452,18 @@ class RunState:
         return events
 
     def record_finished_items(self) -> None:
-        """Persist finished items to history. Called as run_finished arrives."""
+        """Persist finished items to history. Called as each item_finished arrives.
+
+        Runs once per completed item in the whole run (see events.py), but
+        loops over every item — so without the `history_item_id` guard,
+        every already-recorded item gets re-inserted on each subsequent
+        item's completion, an O(n^2) blow-up of duplicate rows.
+        """
         if self.run_id is None:
             return
         for item in self.items:
+            if item.history_item_id is not None:
+                continue
             if item.state in (State.DONE, State.FAILED):
                 with contextlib.suppress(Exception):
                     item.history_item_id = self.history.record_item(self.run_id, item)
