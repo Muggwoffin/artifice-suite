@@ -282,6 +282,42 @@ def test_events_item_finished_triggers_record_finished_items(events_server):
     assert rows[0][0] == "doc.png"
 
 
+def test_record_finished_items_does_not_duplicate_across_calls(events_server):
+    """`record_finished_items()` must not re-insert items already recorded.
+
+    It loops over every item in the run on each call (one call per
+    `item_finished` event — see events.py), so without the
+    `history_item_id` guard, calling it after each of N completions
+    re-inserts every already-DONE item every time: a triangular-number
+    blow-up (~N^2/2 rows) instead of N. This is what bloated a real
+    history.db to 14GB over 37 runs (1.48M rows where a few thousand were
+    expected) and made the History tab's run-items query effectively hang,
+    leaving "Send to Tropy" permanently disabled.
+    """
+    _, state = events_server
+    from artifice_ocr.jobs import JobItem, State
+
+    items = [JobItem(path=f"/fake/doc{i}.png") for i in range(3)]
+    state.add_items(items)
+    run_id = state.history.start_run(stages=["ocr"], output_dir=".", total=len(items))
+    state.run_id = run_id
+
+    # Simulate three item_finished events arriving one at a time, as they
+    # would during a real run: only one more item is DONE each time
+    # record_finished_items() is called.
+    for item in items:
+        item.state = State.DONE
+        state.record_finished_items()
+
+    rows = state.history._conn.execute(
+        "SELECT item_id FROM run_items WHERE run_id = ?", (run_id,)
+    ).fetchall()
+    assert len(rows) == len(items), (
+        f"expected {len(items)} rows (one per item), got {len(rows)} — "
+        "items are being re-recorded on every call"
+    )
+
+
 def test_events_run_finished_triggers_finish_run(events_server):
     """A `run_finished` event calls `state.finish_run()` with the payload.
 
