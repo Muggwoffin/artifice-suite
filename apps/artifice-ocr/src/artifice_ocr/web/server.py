@@ -55,12 +55,24 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ArtificeOCR")
 
+# CORS origins default to the app's own standard host:port pair, but are
+# overridable via ARTIFICE_OCR_CORS_ORIGINS (comma-separated) for
+# contributors running on a non-standard port — the hardcoded default alone
+# left no way to fix a CORS rejection short of editing source.
+_DEFAULT_CORS_ORIGINS = [
+    "http://localhost:8765",
+    "http://127.0.0.1:8765",
+]
+_cors_origins_env = os.environ.get("ARTIFICE_OCR_CORS_ORIGINS", "")
+_cors_origins = (
+    [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
+    if _cors_origins_env
+    else _DEFAULT_CORS_ORIGINS
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8765",
-        "http://127.0.0.1:8765",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],

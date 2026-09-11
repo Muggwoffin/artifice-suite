@@ -11,6 +11,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from httpx import ASGITransport, AsyncClient
 from pytest_httpx import HTTPXMock
 
 from artifice_transcribe.db.models import JobStatus, SpeakerMapping, TranscriptionJob
@@ -401,3 +402,53 @@ async def test_inference_test_failure_shape_matches_js(api, httpx_mock: HTTPXMoc
     assert data["success"] is False
     assert data["model_count"] == 0
     assert "Server unreachable" in data["message"]
+
+
+# -------------------------------------------------- CORS (ARTIFICE_CORS_ORIGINS)
+#
+# `main.app` builds its CORS middleware from the env var at *import* time, so
+# exercising a non-default value means reloading the module after setting
+# it. These tests use their own ASGITransport (bypassing the `api` fixture's
+# DB wiring, which isn't needed here) and restore `main` to its unmodified
+# state afterwards so other test modules that imported `app` at collection
+# time are unaffected.
+
+
+async def test_cors_default_origins_when_env_unset(monkeypatch):
+    monkeypatch.delenv("ARTIFICE_CORS_ORIGINS", raising=False)
+    import artifice_transcribe.main as main_module
+
+    importlib.reload(main_module)
+    try:
+        transport = ASGITransport(app=main_module.app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            allowed = await ac.get("/health", headers={"Origin": "http://localhost:8000"})
+            assert allowed.headers.get("access-control-allow-origin") == "http://localhost:8000"
+
+            rejected = await ac.get("/health", headers={"Origin": "http://evil.example"})
+            assert "access-control-allow-origin" not in rejected.headers
+    finally:
+        importlib.reload(main_module)
+
+
+async def test_cors_honors_env_override(monkeypatch):
+    monkeypatch.setenv(
+        "ARTIFICE_CORS_ORIGINS",
+        "http://example.com:9999, http://foo.test:1234",
+    )
+    import artifice_transcribe.main as main_module
+
+    importlib.reload(main_module)
+    try:
+        transport = ASGITransport(app=main_module.app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            allowed = await ac.get("/health", headers={"Origin": "http://example.com:9999"})
+            assert allowed.headers.get("access-control-allow-origin") == "http://example.com:9999"
+
+            # The old hardcoded default must no longer be allowed once an
+            # override is set — this is not additive.
+            rejected = await ac.get("/health", headers={"Origin": "http://localhost:8000"})
+            assert "access-control-allow-origin" not in rejected.headers
+    finally:
+        monkeypatch.undo()
+        importlib.reload(main_module)
