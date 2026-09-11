@@ -4,6 +4,7 @@
 
 """Queue management routes."""
 
+import asyncio
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -262,7 +263,7 @@ async def upload_files(files: list[UploadFile] = File(...)) -> dict:
             continue
 
         dest = _unique_dest(staging, safe_name)
-        dest.write_bytes(contents)
+        await asyncio.to_thread(dest.write_bytes, contents)
         staged_paths.append(str(dest))
         results.append({"filename": safe_name, "status": "ok"})
 
