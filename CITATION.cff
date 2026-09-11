@@ -13,7 +13,9 @@ authors:
     given-names: Maurice J.
     affiliation: "Queen's University Belfast"
     orcid: "https://orcid.org/0000-0001-6019-3578"
+    website: "https://mauricejcasey.com"
 repository-code: "https://github.com/Muggwoffin/artifice-suite"
+url: "https://www.mauricejcasey.com/tools.html"
 license: AGPL-3.0-or-later
 version: 0.4.0
 date-released: "2026-09-11"
