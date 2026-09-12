@@ -51,22 +51,6 @@ def _load_ocr_sidecar(stem: str, output_dir: str) -> dict | None:
         return None
 
 
-def _source_identity(source: dict | None) -> dict:
-    """Extract the identity fields (checksum, photo id) a source dict
-    carries, dropping anything falsy — an empty checksum string is not an
-    identity worth comparing on."""
-    if not source:
-        return {}
-    ident: dict[str, Any] = {}
-    checksum = source.get("checksum")
-    if checksum:
-        ident["checksum"] = checksum
-    photo_id = source.get("photo_id")
-    if photo_id is not None:
-        ident["photo_id"] = photo_id
-    return ident
-
-
 def _ocr_should_resume(key: str, output_dir: str, source: dict | None) -> bool:
     """Decide whether OCR should be skipped and the existing output reused.
 
@@ -86,7 +70,7 @@ def _ocr_should_resume(key: str, output_dir: str, source: dict | None) -> bool:
     if not _output_exists("raw_ocr", key, output_dir):
         return False
 
-    current = _source_identity(source)
+    current = ocr._source_identity_fields(source)
     if not current:
         return True  # nothing to compare against — existence is enough
 
