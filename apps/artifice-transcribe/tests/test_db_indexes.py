@@ -31,7 +31,14 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from artifice_transcribe.db.models import Base, SpeakerMapping, TranscriptionJob, TranscriptSegment
+from artifice_transcribe.db.models import (
+    Base,
+    SegmentEditVersion,
+    SpeakerEmbedding,
+    SpeakerMapping,
+    TranscriptionJob,
+    TranscriptSegment,
+)
 from sqlalchemy import ForeignKey, String, event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -276,4 +283,99 @@ async def test_job_delete_cascades_to_segments_and_speakers(tmp_path):
     assert not loaded_children, (
         "passive_deletes=True should stop SQLAlchemy from SELECTing child rows "
         f"before the database's ON DELETE CASCADE handles them; found: {loaded_children}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# SpeakerEmbedding / SegmentEditVersion cleanup on job delete
+# ---------------------------------------------------------------------------
+# SpeakerEmbedding.job_id used to be a plain unconstrained column -- deleting
+# a job never cleaned these rows up, so they accumulated forever (the
+# opposite failure mode from the passive_deletes fix above: missing cleanup,
+# not over-eager loading). Now a real ForeignKey(ondelete="CASCADE").
+#
+# SegmentEditVersion.job_id stays deliberately unconstrained: its own
+# segment_id already cascades from transcript_segments.id, which itself
+# cascades from transcription_jobs.id, so a job delete already cleans these
+# rows up transitively through that two-hop path with no ORM relationship
+# involved at all. This test proves both halves empirically rather than
+# assuming either.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_job_delete_cleans_up_speaker_embeddings_and_edit_versions(tmp_path):
+    """SpeakerEmbedding rows are deleted via their own new FK; SegmentEditVersion
+    rows are deleted transitively through segment_id -> transcript_segments.job_id,
+    with no FK of their own needed."""
+    db_path = tmp_path / "cascade2.db"
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _set_sqlite_pragma(dbapi_conn, _):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+        async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with async_session() as session:
+            job = TranscriptionJob(filename="interview.wav")
+            session.add(job)
+            await session.flush()
+
+            seg = TranscriptSegment(
+                job_id=job.id,
+                speaker_label="A",
+                start_time=0.0,
+                end_time=1.0,
+                text="hello",
+            )
+            session.add(seg)
+            await session.flush()
+
+            session.add(
+                SegmentEditVersion(
+                    segment_id=seg.id,
+                    job_id=job.id,
+                    text_before="hello",
+                    text_after="hi",
+                )
+            )
+            session.add(
+                SpeakerEmbedding(
+                    job_id=job.id,
+                    speaker_label="A",
+                    embedding=b"\x00" * 8,
+                    dimension=2,
+                )
+            )
+            await session.commit()
+
+            job_id = job.id
+
+            await session.delete(job)
+            await session.commit()
+    finally:
+        await engine.dispose()
+
+    con = sqlite3.connect(str(db_path))
+    try:
+        emb_count = con.execute(
+            "SELECT COUNT(*) FROM speaker_embeddings WHERE job_id=?", (job_id,)
+        ).fetchone()[0]
+        edit_count = con.execute(
+            "SELECT COUNT(*) FROM segment_edit_versions WHERE job_id=?", (job_id,)
+        ).fetchone()[0]
+    finally:
+        con.close()
+
+    assert emb_count == 0, "speaker_embeddings rows survived the job delete"
+    assert edit_count == 0, (
+        "segment_edit_versions rows survived the job delete "
+        "(transitive cascade through segment_id did not fire)"
     )
