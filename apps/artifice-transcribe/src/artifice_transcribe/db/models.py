@@ -126,11 +126,21 @@ class TranscriptionJob(Base):
     access_restrictions: Mapped[str | None] = mapped_column(String(512), nullable=True)
     custom_vocabulary: Mapped[str | None] = mapped_column(Text, nullable=True)  # comma-separated
 
+    # passive_deletes=True: TranscriptSegment.job_id and SpeakerMapping.job_id
+    # both declare ForeignKey(..., ondelete="CASCADE"), and db/session.py
+    # unconditionally enables PRAGMA foreign_keys=ON, so SQLite itself already
+    # cascades a job's deletion down to its segments and speaker mappings.
+    # Without passive_deletes=True, SQLAlchemy doesn't trust the DB to do this
+    # and instead SELECTs every child row into memory first so it can stage
+    # each one for individual deletion -- for a long oral-history interview
+    # that means loading hundreds to low-thousands of Text-column transcript
+    # rows just to delete a job. Do not remove this: it looks redundant with
+    # the FK's ON DELETE CASCADE but is what stops SQLAlchemy from bypassing it.
     segments: Mapped[list[TranscriptSegment]] = relationship(
-        back_populates="job", cascade="all, delete-orphan"
+        back_populates="job", cascade="all, delete-orphan", passive_deletes=True
     )
     speakers: Mapped[list[SpeakerMapping]] = relationship(
-        back_populates="job", cascade="all, delete-orphan"
+        back_populates="job", cascade="all, delete-orphan", passive_deletes=True
     )
 
 

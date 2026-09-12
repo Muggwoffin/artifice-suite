@@ -31,9 +31,9 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from artifice_transcribe.db.models import Base
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.ext.asyncio import create_async_engine
+from artifice_transcribe.db.models import Base, SpeakerMapping, TranscriptionJob, TranscriptSegment
+from sqlalchemy import ForeignKey, String, event
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # The five indexes this fix adds, named per SQLAlchemy's default
@@ -164,3 +164,116 @@ async def test_lifespan_retrofits_indexes_onto_pre_existing_database(tmp_path, m
     found = _index_names(db_path)
     missing = _EXPECTED_INDEXES - found
     assert not missing, f"lifespan failed to retrofit indexes onto an existing database: {missing}"
+
+
+# ---------------------------------------------------------------------------
+# Cascade-delete coverage: TranscriptionJob.segments/.speakers declare
+# cascade="all, delete-orphan" *and* passive_deletes=True. The two child
+# foreign keys already declare ondelete="CASCADE", and PRAGMA foreign_keys=ON
+# is enabled on every connection, so the database itself is fully able to
+# cascade a job deletion down to its segments and speaker mappings.
+# passive_deletes=True tells SQLAlchemy to trust that and skip loading every
+# child row into memory first. This section proves both that the delete
+# still fully cleans up (correctness) and that no SELECT against either
+# child table is issued as part of it (the actual behavior the fix changes).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_job_delete_cascades_to_segments_and_speakers(tmp_path):
+    """Deleting a TranscriptionJob via ``db.delete(job); db.commit()`` (the
+    same pattern ``delete_job`` in api/v1/jobs.py uses) leaves zero rows
+    behind in transcript_segments/speaker_mappings for that job, and does so
+    without SQLAlchemy ever SELECTing those child rows into memory -- it
+    defers entirely to the database's own ON DELETE CASCADE."""
+    db_path = tmp_path / "cascade.db"
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+
+    # Same PRAGMA the app's real engine sets in db/session.py -- without it
+    # SQLite would not honor ON DELETE CASCADE at all, and passive_deletes=True
+    # would silently orphan the child rows instead of cleaning them up.
+    @event.listens_for(engine.sync_engine, "connect")
+    def _set_sqlite_pragma(dbapi_conn, _):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+        async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with async_session() as session:
+            job = TranscriptionJob(filename="interview.wav")
+            session.add(job)
+            await (
+                session.flush()
+            )  # populate job.id (Python-side default) before children reference it
+            for i in range(5):
+                session.add(
+                    TranscriptSegment(
+                        job_id=job.id,
+                        speaker_label="A",
+                        start_time=float(i),
+                        end_time=float(i + 1),
+                        text=f"segment {i}",
+                    )
+                )
+            for label in ("A", "B"):
+                session.add(
+                    SpeakerMapping(
+                        job_id=job.id, speaker_label=label, custom_name=f"Speaker {label}"
+                    )
+                )
+            await session.commit()
+
+            job_id = job.id
+
+            # Capture every statement executed during the delete+commit only.
+            executed_statements: list[str] = []
+
+            def _capture(_conn, _cursor, statement, _parameters, _context, _executemany):
+                executed_statements.append(statement)
+
+            event.listen(engine.sync_engine, "before_cursor_execute", _capture)
+            try:
+                await session.delete(job)
+                await session.commit()
+            finally:
+                event.remove(engine.sync_engine, "before_cursor_execute", _capture)
+    finally:
+        await engine.dispose()
+
+    # Correctness: the database's own ON DELETE CASCADE actually cleaned up
+    # both child tables, not just the parent row.
+    con = sqlite3.connect(str(db_path))
+    try:
+        seg_count = con.execute(
+            "SELECT COUNT(*) FROM transcript_segments WHERE job_id=?", (job_id,)
+        ).fetchone()[0]
+        spk_count = con.execute(
+            "SELECT COUNT(*) FROM speaker_mappings WHERE job_id=?", (job_id,)
+        ).fetchone()[0]
+        job_count = con.execute(
+            "SELECT COUNT(*) FROM transcription_jobs WHERE id=?", (job_id,)
+        ).fetchone()[0]
+    finally:
+        con.close()
+    assert seg_count == 0, "transcript_segments rows survived the job delete"
+    assert spk_count == 0, "speaker_mappings rows survived the job delete"
+    assert job_count == 0, "the job row itself was not deleted"
+
+    # Behavioral: passive_deletes=True means SQLAlchemy never loads the child
+    # rows to stage them for individual deletion -- confirm no SELECT against
+    # either child table was issued while deleting the job.
+    loaded_children = [
+        stmt
+        for stmt in executed_statements
+        if stmt.strip().upper().startswith("SELECT")
+        and ("transcript_segments" in stmt.lower() or "speaker_mappings" in stmt.lower())
+    ]
+    assert not loaded_children, (
+        "passive_deletes=True should stop SQLAlchemy from SELECTing child rows "
+        f"before the database's ON DELETE CASCADE handles them; found: {loaded_children}"
+    )
