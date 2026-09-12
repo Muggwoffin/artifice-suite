@@ -53,13 +53,19 @@ def add_paths(req: AddPathsRequest) -> dict:
 
 @router.post("/api/queue/remove")
 def remove_items(req: RemoveRequest) -> dict:
-    removed = state.remove(req.ids)
+    try:
+        removed = state.remove(req.ids)
+    except (RuntimeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return {"removed": removed, "items": state.queue_snapshot()}
 
 
 @router.post("/api/queue/clear")
 def clear_queue() -> dict:
-    state.clear()
+    try:
+        state.clear()
+    except (RuntimeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return {"items": []}
 
 
@@ -160,7 +166,10 @@ def batch_replace_route(req: BatchReplaceRequest) -> dict:
 
 @router.post("/api/queue/reorder")
 def reorder_queue(req: ReorderRequest) -> dict:
-    state.reorder(req.drag_id, req.drop_id, req.before)
+    try:
+        state.reorder(req.drag_id, req.drop_id, req.before)
+    except (RuntimeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return {"items": state.queue_snapshot()}
 
 

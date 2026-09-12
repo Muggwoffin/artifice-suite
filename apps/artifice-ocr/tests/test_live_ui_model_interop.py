@@ -142,6 +142,15 @@ def test_real_vision_ocr_from_visible_ui(
                 re.compile("active"), timeout=10_000
             )
             expect(page.locator("#settings-saved")).to_have_text("No changes", timeout=20_000)
+            # "No changes" only proves setDirty(false) ran; it does not prove
+            # apply(cfg) finished writing every field. When this test runs
+            # second in the same process (right after the other backend's
+            # full OCR pipeline), #set-max_ocr_workers has been observed to
+            # still read as "" at this point, which later fails the save
+            # validator with "Enter at least 1 OCR reader." even though the
+            # server-side config value is already correct. Wait for the
+            # field itself, not just the status text.
+            expect(page.locator("#set-max_ocr_workers")).not_to_have_value("", timeout=5_000)
             page.locator("#set-ocr_backend").select_option(backend)
             model_option = page.locator(f'#pick-ocr_model option[value="{expected_model}"]')
             expect(model_option).to_have_count(1, timeout=20_000)
