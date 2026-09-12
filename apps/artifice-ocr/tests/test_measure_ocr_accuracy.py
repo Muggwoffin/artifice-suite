@@ -4,8 +4,9 @@
 
 """Character-error-rate harness. See scripts/measure_ocr_accuracy.py for why
 CER, not SpACER — this repo has no accuracy harness at all today
-(OLMOCR2_OPTIMISATION_FINDINGS.md, "The blocker under all of this"), so a
-correct-but-imperfect metric that exists beats a perfect one that doesn't."""
+(docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md, Task 5, "the
+blocker under all of this"), so a correct-but-imperfect metric that exists
+beats a perfect one that doesn't."""
 
 import sys
 from pathlib import Path

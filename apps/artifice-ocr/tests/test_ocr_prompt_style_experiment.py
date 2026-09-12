@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Experimental structured-prompt variant, for A/B measurement only via
-scripts/measure_ocr_accuracy.py. See OLMOCR2_OPTIMISATION_FINDINGS.md s3 —
-olmOCR-2-7B-1025 was trained toward YAML-front-matter + Markdown output, not
+scripts/measure_ocr_accuracy.py. See
+docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md's discussion of
+§3 — olmOCR-2-7B-1025 was trained toward YAML-front-matter + Markdown output, not
 the raw-text prompt this app uses by default. Whether raw or structured wins
 for this app's users is an open, unmeasured question; this only makes the
 comparison possible, it does not decide it."""

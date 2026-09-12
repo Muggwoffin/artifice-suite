@@ -9,10 +9,10 @@ directory:
   convention; default 1 if absent)
 
 **This corpus cannot be generated automatically.** Per
-`OLMOCR2_OPTIMISATION_FINDINGS.md`, populate it with 10-20 pages
-representative of real use: typescript, handwriting, a table, a multi-column
-layout, a blank verso, and a mis-oriented scan, each with a verified
-ground-truth transcription. Run:
+`docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md`, populate it
+with 10-20 pages representative of real use: typescript, handwriting, a
+table, a multi-column layout, a blank verso, and a mis-oriented scan, each
+with a verified ground-truth transcription. Run:
 
     uv run python scripts/measure_ocr_accuracy.py eval_corpus/
 

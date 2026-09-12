@@ -32,10 +32,13 @@ OCR_PROMPT = (
     "Do not add commentary, labels, or formatting."
 )
 
-# Experimental only — see OLMOCR2_OPTIMISATION_FINDINGS.md s3. olmOCR-2 was
-# SFT'd/RLVR'd toward YAML-front-matter + Markdown-body output; this addendum
-# asks for that shape instead of the raw-text default. Gated by
-# ocr_prompt_style, default "raw". DO NOT flip the default without measured
+# Experimental only — see docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md's
+# discussion of §3 (the original findings document this cites was never
+# checked into version control; that plan is the closest surviving in-repo
+# reference). olmOCR-2 was SFT'd/RLVR'd toward YAML-front-matter +
+# Markdown-body output; this addendum asks for that shape instead of the
+# raw-text default. Gated by ocr_prompt_style, default "raw". DO NOT flip
+# the default without measured
 # results from scripts/measure_ocr_accuracy.py AND explicit maintainer
 # sign-off — switching stage 1's output shape changes the contract with
 # cleanup/structure/pdf_export downstream, which nothing here has verified.
