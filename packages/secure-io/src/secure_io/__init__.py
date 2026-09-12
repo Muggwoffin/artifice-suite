@@ -68,6 +68,30 @@ def restrict_to_current_user(path: Path) -> None:
             )
 
 
+def write_private_json_verified(path: Path, data: object, *, label: str = "file") -> None:
+    """Write *data* as private JSON to *path*, verifying the restriction
+    actually took effect and retrying once before giving up.
+
+    ``write_private_json`` should already restrict access at creation time,
+    but callers that treat the secret as genuinely sensitive (API tokens,
+    inference credentials, anything written to a per-user settings file)
+    have historically wanted a belt-and-suspenders check: read back
+    ``is_restricted`` immediately, retry the write once if it somehow
+    wasn't applied, and raise rather than silently leave a secret on an
+    unprotected file. This was independently reimplemented three times
+    across the suite before being extracted here.
+
+    Raises ``PermissionError`` if the file still isn't restricted after
+    one retry. *label* appears in that error message (e.g. "settings
+    file", "HF token file") to keep it specific to the caller.
+    """
+    write_private_json(path, data)
+    if not is_restricted(path):
+        write_private_json(path, data)
+        if not is_restricted(path):
+            raise PermissionError(f"Failed to secure {label} after retry: {path}")
+
+
 def is_restricted(path: Path) -> bool:
     """Return ``True`` if *path* is readable/writable only by the current user.
 
