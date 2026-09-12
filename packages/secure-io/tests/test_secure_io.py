@@ -14,7 +14,12 @@ from pathlib import Path
 
 import pytest
 import secure_io
-from secure_io import is_restricted, restrict_to_current_user, write_private_json
+from secure_io import (
+    is_restricted,
+    restrict_to_current_user,
+    write_private_json,
+    write_private_json_verified,
+)
 
 
 def test_windows_subprocesses_are_consoleless(monkeypatch):
@@ -206,6 +211,52 @@ class TestIsRestricted:
         )
         # Must now be NOT restricted — Everyone has Read.
         assert not is_restricted(path)
+
+
+# ---------------------------------------------------------------------------
+# write_private_json_verified
+# ---------------------------------------------------------------------------
+
+
+class TestWritePrivateJsonVerified:
+    """``write_private_json_verified`` composes ``write_private_json`` and
+    ``is_restricted`` with a retry-once-then-raise contract."""
+
+    def test_succeeds_on_first_attempt(self, tmp_path: Path) -> None:
+        """The normal path: the OS applies the restriction correctly on the
+        first write, the content round-trips, and no retry is needed."""
+        path = tmp_path / "verified.json"
+        write_private_json_verified(path, {"api_key": "sk-test-123"}, label="settings file")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert data == {"api_key": "sk-test-123"}
+        # See TestWritePrivateJson.test_creates_restricted_file for rationale.
+        if os.environ.get("GITHUB_ACTIONS") == "true" and os.name == "nt":
+            pytest.skip("GitHub Actions Windows runner retains implicit admin ACEs")
+        assert is_restricted(path)
+
+    def test_retries_once_then_succeeds(self, tmp_path: Path, monkeypatch) -> None:
+        """If ``is_restricted`` reports False once (the restriction did not
+        take effect on the first write), it must retry the write and succeed
+        without raising when the second check passes."""
+        path = tmp_path / "retry.json"
+        results = iter([False, True])
+        monkeypatch.setattr(secure_io, "is_restricted", lambda p: next(results))
+
+        write_private_json_verified(path, {"x": 1}, label="settings file")
+
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert data == {"x": 1}
+        with pytest.raises(StopIteration):
+            next(results)
+
+    def test_raises_with_label_on_persistent_failure(self, tmp_path: Path, monkeypatch) -> None:
+        """If the restriction never takes effect (even after the retry), it
+        must raise ``PermissionError`` whose message contains *label*."""
+        path = tmp_path / "persistent_failure.json"
+        monkeypatch.setattr(secure_io, "is_restricted", lambda p: False)
+
+        with pytest.raises(PermissionError, match="HF token file"):
+            write_private_json_verified(path, {"hf_token": "secret"}, label="HF token file")
 
 
 # ---------------------------------------------------------------------------
