@@ -206,7 +206,20 @@ class SpeakerEmbedding(Base):
     __tablename__ = "speaker_embeddings"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
-    job_id: Mapped[str] = mapped_column(String(32), index=True)
+    # ondelete="CASCADE": this row is per-job derived data (a speaker
+    # centroid for cross-session matching) with no meaning once its job is
+    # gone. Before this, job_id was a plain unconstrained column -- deleting
+    # a job never cleaned these up, so they accumulated forever. No ORM
+    # relationship is declared on TranscriptionJob for this: nothing in the
+    # codebase accesses speaker embeddings as a collection off a job, and
+    # PRAGMA foreign_keys=ON (db/session.py) is enough for SQLite's own
+    # ON DELETE CASCADE to handle cleanup with no ORM involvement at all --
+    # the same reasoning that already makes SegmentEditVersion's cleanup
+    # work transitively through its own segment_id FK, verified empirically
+    # rather than assumed.
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("transcription_jobs.id", ondelete="CASCADE"), index=True
+    )
     speaker_label: Mapped[str] = mapped_column(String(32))
     embedding: Mapped[bytes] = mapped_column(LargeBinary)  # raw float32 bytes (pack_embedding)
     model_name: Mapped[str] = mapped_column(String(64), default="pyannote/embedding")
@@ -220,6 +233,14 @@ class SegmentEditVersion(Base):
     segment_id: Mapped[str] = mapped_column(
         ForeignKey("transcript_segments.id", ondelete="CASCADE"), index=True
     )
+    # Denormalized for fast job_id-scoped lookups only -- deliberately not
+    # its own ForeignKey. segment_id above already cascades from
+    # transcript_segments.id, which itself cascades from
+    # transcription_jobs.id, so deleting a job already deletes this row
+    # transitively through that two-hop path (verified empirically: SQLite
+    # honours ON DELETE CASCADE across multiple FK hops in one statement
+    # when PRAGMA foreign_keys=ON, which db/session.py always sets). Adding
+    # a second FK here would be redundant, not a fix for anything.
     job_id: Mapped[str] = mapped_column(String(32), index=True)
     text_before: Mapped[str] = mapped_column(Text)
     text_after: Mapped[str] = mapped_column(Text)
