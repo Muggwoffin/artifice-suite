@@ -4,6 +4,7 @@
 
 import json
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -415,6 +416,40 @@ def _run_single(
     return result
 
 
+def _run_phase(
+    files: list[Path],
+    step_fn: Callable[[Path], dict],
+    *,
+    on_result: Callable[[Path, dict, float], None] | None = None,
+) -> tuple[dict[str, dict], dict[str, float]]:
+    """Run *step_fn* once per file in *files*, collecting each result and its
+    elapsed time, both keyed by the file's string path.
+
+    Timing is recorded as 0 for any file whose stage reported ``_skipped``
+    — a skipped stage's "elapsed" time is an artifact of the resume check,
+    not work actually done, and the caller only wants to know real per-file
+    cost. (Extracted from four nearly-identical loops in
+    ``run_pipeline_batch`` that were inconsistent about this: three zeroed a
+    skipped file's timing, one didn't. This applies the rule uniformly.)
+
+    *on_result*, if given, is called after each file with
+    ``(file, result, elapsed)`` for phase-specific side effects (e.g. the
+    OCR phase's per-file log line) that don't belong in the shared loop.
+    """
+    results: dict[str, dict] = {}
+    timings: dict[str, float] = {}
+    for f in files:
+        fpath = str(f)
+        t0 = time.monotonic()
+        result = step_fn(f)
+        elapsed = time.monotonic() - t0
+        results[fpath] = result
+        timings[fpath] = 0 if result.get("_skipped") else elapsed
+        if on_result:
+            on_result(f, result, elapsed)
+    return results, timings
+
+
 def run_pipeline_batch(
     file_paths: list[str],
     output_dir: str = "output",
@@ -439,23 +474,7 @@ def run_pipeline_batch(
     log.info("Batch: %d file(s), sequential passes", len(files))
 
     # Phase 1: Sequential OCR
-    ocr_results: dict[str, dict] = {}
-    ocr_timings: dict[str, float] = {}
-
-    for f in files:
-        fpath = str(f)
-        stem = f.stem
-        t0 = time.monotonic()
-        result = run_ocr_step(
-            f,
-            output_dir,
-            skip_ocr=skip_ocr,
-            resume=resume,
-            force=force,
-        )
-        elapsed = time.monotonic() - t0
-        ocr_results[fpath] = result
-        ocr_timings[fpath] = elapsed
+    def _log_ocr_result(f: Path, result: dict, elapsed: float) -> None:
         skipped = " [skipped]" if result.get("_skipped") else ""
         log.info(
             "  OCR %s%s -> %d chars (%.1fs)",
@@ -465,26 +484,30 @@ def run_pipeline_batch(
             elapsed,
         )
 
-    # Phase 2: Sequential cleanup
-    cleanup_results: dict[str, dict] = {}
-    cleanup_timings: dict[str, float] = {}
+    ocr_results, ocr_timings = _run_phase(
+        files,
+        lambda f: run_ocr_step(
+            f,
+            output_dir,
+            skip_ocr=skip_ocr,
+            resume=resume,
+            force=force,
+        ),
+        on_result=_log_ocr_result,
+    )
 
-    for f in files:
-        fpath = str(f)
-        stem = f.stem
-        raw_data = ocr_results[fpath]
-        t0 = time.monotonic()
-        cleaned_data = run_cleanup_step(
-            raw_data,
-            stem,
+    # Phase 2: Sequential cleanup
+    cleanup_results, cleanup_timings = _run_phase(
+        files,
+        lambda f: run_cleanup_step(
+            ocr_results[str(f)],
+            f.stem,
             output_dir,
             skip_cleanup=skip_cleanup,
             resume=resume,
             force=force,
-        )
-        elapsed = time.monotonic() - t0
-        cleanup_results[fpath] = cleaned_data
-        cleanup_timings[fpath] = elapsed if not cleaned_data.get("_skipped") else 0
+        ),
+    )
 
     # Phase 3: Sequential title (opt-in)
     title_enabled = cfg("title_enabled")
@@ -492,42 +515,32 @@ def run_pipeline_batch(
     title_timings: dict[str, float] = {}
 
     if title_enabled:
-        for f in files:
-            fpath = str(f)
-            stem = f.stem
-            cleaned_data = cleanup_results[fpath]
-            t0 = time.monotonic()
-            title_data = run_title_step(
-                cleaned_data,
-                stem,
+        title_results, title_timings = _run_phase(
+            files,
+            lambda f: run_title_step(
+                cleanup_results[str(f)],
+                f.stem,
                 output_dir,
                 resume=resume,
                 force=force,
-            )
-            elapsed = time.monotonic() - t0
-            title_results[fpath] = title_data
-            title_timings[fpath] = elapsed if not title_data.get("_skipped") else 0
+            ),
+        )
 
     # Phase 4: Sequential translate
     translate_results: dict[str, dict] = {}
     translate_timings: dict[str, float] = {}
 
     if not skip_translate:
-        for f in files:
-            fpath = str(f)
-            stem = f.stem
-            cleaned_data = cleanup_results[fpath]
-            t0 = time.monotonic()
-            translated_data = run_translate_step(
-                cleaned_data,
-                stem,
+        translate_results, translate_timings = _run_phase(
+            files,
+            lambda f: run_translate_step(
+                cleanup_results[str(f)],
+                f.stem,
                 output_dir,
                 resume=resume,
                 force=force,
-            )
-            elapsed = time.monotonic() - t0
-            translate_results[fpath] = translated_data
-            translate_timings[fpath] = elapsed if not translated_data.get("_skipped") else 0
+            ),
+        )
 
     # Assemble results
     all_results: dict[str, dict] = {}
