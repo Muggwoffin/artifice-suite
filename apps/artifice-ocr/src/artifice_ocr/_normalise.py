@@ -57,7 +57,8 @@ def _strip_leaked_front_matter(text: str) -> tuple[str, bool]:
 
     OCR_PROMPT asks for raw text with no formatting, but a model RLVR'd
     toward YAML-front-matter-plus-Markdown output (see
-    OLMOCR2_OPTIMISATION_FINDINGS.md s3) can still emit one. Nothing else in
+    docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md's discussion
+    of §3) can still emit one. Nothing else in
     this pipeline recognises it, so left unstripped it is written to
     raw_ocr/text/*.txt as if it were transcribed page content. Requires a
     matching closing ``---`` — a page whose genuine content happens to open

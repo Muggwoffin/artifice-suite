@@ -5,10 +5,12 @@
 
 """OCR accuracy and wall-time measurement harness.
 
-This is the harness OLMOCR2_OPTIMISATION_FINDINGS.md calls the real blocker:
-there is no way to check any of that document's claims against this app's
-actual behaviour, because there is no accuracy measurement at all. Every
-number in that document is from a paper, not from this codebase.
+This is the harness docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md
+(Task 5) calls the real blocker: there is no way to check its claims against
+this app's actual behaviour, because there is no accuracy measurement at
+all. Every number that plan cites is from a paper, not from this codebase.
+(The original findings document it was drafted from was never checked into
+version control — this plan is the closest surviving in-repo reference.)
 
 Metric: character error rate (CER), a standard Levenshtein-distance-based
 metric — NOT SpACER, the metric [CENT] (arXiv:2608.30616) uses. [CENT] picks
