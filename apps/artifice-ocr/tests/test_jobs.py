@@ -256,6 +256,23 @@ def test_runner_pause_blocks_then_resumes(mock_ocr, mock_clean, tmp_path):
     assert all(i.state is State.DONE for i in items)
 
 
+def test_runner_copies_items_defensively():
+    """JobRunner must not alias the caller's list.
+
+    `RunState` keeps mutating its own `items` list (add/remove/clear/reorder)
+    from the HTTP request thread while the runner iterates *its* list on a
+    background thread for as long as the run takes. If `JobRunner` stored the
+    same list object, `state.clear()`/`state.remove()`/`state.reorder()`
+    mid-run could truncate or skip entries the runner is actively walking —
+    this is the regression test for that defensive copy.
+    """
+    items = [JobItem(path="a.png"), JobItem(path="b.png")]
+    runner = JobRunner(items, ".", stages={"ocr"})
+
+    assert runner.items is not items
+    assert runner.items == items
+
+
 def test_job_item_reset_clears_previous_state():
     item = JobItem(path="a.png")
     item.state = State.FAILED

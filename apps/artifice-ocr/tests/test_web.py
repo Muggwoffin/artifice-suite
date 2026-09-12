@@ -506,6 +506,106 @@ def test_clear_queue(client, tmp_path):
     assert client.get("/api/queue").json()["items"] == []
 
 
+def test_reorder_moves_item_when_no_run_in_progress(client, tmp_path):
+    f1 = tmp_path / "a.png"
+    f2 = tmp_path / "b.png"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f1), str(f2)]}).json()
+    ids = [item["id"] for item in added["items"]]
+
+    res = client.post(
+        "/api/queue/reorder",
+        json={"drag_id": ids[1], "drop_id": ids[0], "before": True},
+    )
+    assert res.status_code == 200
+    assert [item["id"] for item in res.json()["items"]] == [ids[1], ids[0]]
+
+
+# --------------------------------------------------------------------------- #
+# queue mutation guardrails while a run is in progress
+# --------------------------------------------------------------------------- #
+# `remove`/`clear`/`reorder` must 409 while `state.runner.is_running` is True
+# (see `RunState.remove`/`clear`/`reorder` in runtime.py). A plain stand-in
+# with `is_running = True` is used in place of a real `JobRunner`: a freshly
+# constructed runner that was never `.start()`-ed reports `is_running ==
+# False`, so racing a real thread to catch one mid-run would be flaky for no
+# benefit — this only needs the attribute the guard actually reads.
+
+
+def test_remove_409s_while_run_in_progress(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    _queue_router.state.runner = types.SimpleNamespace(is_running=True, is_paused=False)
+    res = client.post("/api/queue/remove", json={"ids": [item_id]})
+    assert res.status_code == 409
+    assert "in progress" in res.json()["detail"].lower()
+    # The guard must fire before any mutation — item is still there.
+    assert len(client.get("/api/queue").json()["items"]) == 1
+
+
+def test_clear_409s_while_run_in_progress(client, tmp_path):
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+
+    _queue_router.state.runner = types.SimpleNamespace(is_running=True, is_paused=False)
+    res = client.post("/api/queue/clear")
+    assert res.status_code == 409
+    assert "in progress" in res.json()["detail"].lower()
+    assert len(client.get("/api/queue").json()["items"]) == 1
+
+
+def test_reorder_409s_while_run_in_progress(client, tmp_path):
+    f1 = tmp_path / "a.png"
+    f2 = tmp_path / "b.png"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f1), str(f2)]}).json()
+    ids = [item["id"] for item in added["items"]]
+
+    _queue_router.state.runner = types.SimpleNamespace(is_running=True, is_paused=False)
+    res = client.post(
+        "/api/queue/reorder",
+        json={"drag_id": ids[1], "drop_id": ids[0], "before": True},
+    )
+    assert res.status_code == 409
+    assert "in progress" in res.json()["detail"].lower()
+    # Order untouched — the guard fired before any mutation.
+    assert [item["id"] for item in client.get("/api/queue").json()["items"]] == ids
+
+
+def test_remove_clear_reorder_still_work_when_runner_not_running(client, tmp_path):
+    """The 409 guard must not fire for a runner that exists but has finished
+    (or never started) — only a currently-running one blocks mutation."""
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+    added = client.post("/api/queue/add-paths", json={"paths": [str(f)]}).json()
+    item_id = added["items"][0]["id"]
+
+    _queue_router.state.runner = types.SimpleNamespace(is_running=False, is_paused=False)
+    res = client.post("/api/queue/remove", json={"ids": [item_id]})
+    assert res.status_code == 200
+    assert res.json()["removed"] == 1
+    assert res.json()["items"] == []
+
+
+def test_add_paths_still_succeeds_while_run_in_progress(client, tmp_path):
+    """Part 2's explicit scope decision: additions are never blocked, even
+    while a run is active — see the comment on RunState.remove/clear/reorder
+    in runtime.py explaining why."""
+    f = tmp_path / "a.png"
+    f.write_bytes(b"x")
+
+    _queue_router.state.runner = types.SimpleNamespace(is_running=True, is_paused=False)
+    res = client.post("/api/queue/add-paths", json={"paths": [str(f)]})
+    assert res.status_code == 200
+    assert res.json()["added"] == 1
+
+
 # --------------------------------------------------------------------------- #
 # run control guardrails (no real run is started — no model calls in tests)
 # --------------------------------------------------------------------------- #

@@ -367,7 +367,24 @@ class RunState:
                 added.append(item)
         return added
 
+    # remove/clear/reorder mutate `self.items` in place. The runner no
+    # longer shares that list object (see JobRunner.__init__), so none of
+    # these can corrupt an in-progress run's iteration any more — but
+    # letting them proceed anyway would still desync `state.items` from
+    # what the runner is actually processing, which reads to the user as a
+    # queue that no longer matches the run in progress. Guarded the same
+    # way `start_run()` guards against a second concurrent run: raise
+    # before touching anything, so the route can translate it to a 409.
+    #
+    # `add_paths`/`add_items` (and the upload route that calls `add_paths`)
+    # are deliberately NOT guarded here: appending to `self.items` mid-run
+    # is safe now that the runner holds its own copy — the new item just
+    # isn't part of what's currently running and is picked up by the next
+    # run. Guarding additions too would block a legitimate action for no
+    # correctness reason.
     def remove(self, ids: list[str]) -> int:
+        if self.runner is not None and self.runner.is_running:
+            raise RuntimeError("Cannot modify the queue while a run is in progress")
         with self._lock:
             targets = [self._by_id[i] for i in ids if i in self._by_id]
             for item in targets:
@@ -376,6 +393,8 @@ class RunState:
             return len(targets)
 
     def clear(self) -> None:
+        if self.runner is not None and self.runner.is_running:
+            raise RuntimeError("Cannot modify the queue while a run is in progress")
         with self._lock:
             self.items.clear()
             self._by_id.clear()
@@ -506,6 +525,8 @@ class RunState:
 
     def reorder(self, drag_id: str, drop_id: str, before: bool = True) -> None:
         """Move a queue item from one position to another."""
+        if self.runner is not None and self.runner.is_running:
+            raise RuntimeError("Cannot modify the queue while a run is in progress")
         with self._lock:
             drag_item = self._by_id.get(drag_id)
             drop_item = self._by_id.get(drop_id)

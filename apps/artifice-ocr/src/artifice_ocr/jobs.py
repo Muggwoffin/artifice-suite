@@ -169,7 +169,13 @@ class JobRunner:
         events: queue.Queue | None = None,
         max_workers: int | None = None,
     ):
-        self.items = items
+        # A defensive copy, not an alias: the caller (RunState) keeps
+        # mutating its own `items` list from the HTTP request thread while
+        # this runner iterates its own copy on a background thread for as
+        # long as the run takes. Sharing the list object let `remove`/
+        # `clear`/`reorder` corrupt an in-progress iteration out from under
+        # this thread with no synchronisation at all.
+        self.items = list(items)
         self.output_dir = output_dir
         self.stages = set(stages)
         self.force = force
