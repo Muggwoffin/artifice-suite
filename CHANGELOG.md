@@ -44,6 +44,27 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   into `packages/secure-io` as `write_private_json_verified`. A fourth,
   original copy in the paused `artifice-graph` is deliberately left alone,
   matching this session's existing precedent for paused-app duplication. (#135)
+- **OCR's four near-identical batch phase loops (OCR, cleanup, title,
+  translate) unified into one `_run_phase` helper.** Each loop in
+  `run_pipeline_batch` repeated the same shape — iterate files, time each
+  step, collect results, roll up totals — with one real inconsistency between
+  them: the OCR phase never zeroed a skipped file's timing while the other
+  three did. `_run_phase` applies that zero-on-skip rule uniformly, so OCR's
+  timing now matches the others instead of quietly overcounting. `jobs.py`'s
+  `JobRunner` was investigated and deliberately left untouched — it solves a
+  different problem (interruptible async web-UI runs vs. synchronous CLI
+  batches), not the same loop under a different name. (#137)
+- **`pipeline._source_identity` and `stages/ocr.py._source_identity_fields`
+  unified** — byte-for-byte identical logic (extract `checksum`/`photo_id`
+  from a source dict, drop anything falsy) under two names. An earlier note
+  claimed unifying them was blocked by a circular import; re-verified
+  empirically rather than trusted, since this codebase has a documented
+  history of exactly that kind of stale claim surviving past the fix that
+  closed it. No cycle exists in either direction — `pipeline.py` already
+  imports `stages.ocr` directly, and `stages/ocr.py`'s full import chain
+  (including `stages/preprocess.py`) has no reference back to `pipeline`
+  anywhere. `pipeline.py` now calls `ocr._source_identity_fields` instead of
+  maintaining its own copy. (#141)
 
 ### Fixed
 - **OCR queue race condition.** `JobRunner` held the exact same list object
@@ -81,7 +102,37 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   and *not* fixed here: `SpeakerEmbedding.job_id` and `SegmentEditVersion.job_id`
   aren't declared as foreign keys at all, so deleting a job never cleans up
   either table — rows accumulate forever. Opposite failure mode, separate
-  fix, not yet authorized. (#134)
+  fix — see below. (#134)
+- **`SpeakerEmbedding.job_id` given a real foreign key.** The gap flagged
+  above: deleting a `TranscriptionJob` never cleaned up its speaker
+  embeddings, which accumulated forever. Verified empirically before
+  assuming `SegmentEditVersion.job_id` needed the identical fix — it didn't;
+  `SegmentEditVersion.segment_id` already cascades transitively through
+  `transcript_segments.id` → `transcription_jobs.id`, confirmed with a
+  standalone script proving SQLite honours `ON DELETE CASCADE` across
+  multiple FK hops in one statement. `SpeakerEmbedding.job_id` had no FK at
+  all and genuinely needed one: now `ForeignKey("transcription_jobs.id",
+  ondelete="CASCADE")`, with no new ORM relationship added, so the DB's own
+  cascade handles cleanup without risking a repeat of this same bullet's
+  over-eager-loading bug. (#140)
+- **OCR's repetition-loop guard missed word-level loops with no line
+  breaks.** Reported from real archival use: the vision model occasionally
+  hits a repetition failure mode on unusual page formatting (suspected
+  linked to temperature) that produces 20,000+ characters of looped words or
+  short alternating phrases on a single page — text the existing line-based
+  repetition check couldn't see, because it never breaks onto new lines.
+  Calibrated against real flagged production output (both reconstructed
+  patterns and one full verbatim sample) rather than synthetic cases alone:
+  genuine archival prose runs ~99.7% unique 4-word windows; the real failure
+  patterns run ~0.7–1.0% — roughly a 100x margin. A new word-level check
+  (distinct 4-gram ratio below 20%, on text of 40+ words) now runs whenever
+  the line-based check doesn't already catch a problem. One tokenization
+  pitfall found and fixed during calibration: the existing digit-stripping
+  word tokenizer (built for a different, proper-noun-protection check)
+  collapsed genuine number-varying text into an apparent short repeating
+  cycle, which would have false-flagged real archival content differing only
+  by year/quantity — fixed with a separate digit-inclusive tokenizer used
+  only by this check. (#138)
 - **Async event-loop blocking and an O(N²) SSE regression.** Two upload
   routes and one queue-event poll did blocking file/queue I/O directly on
   the event loop; a per-item finished-state recorder walked the whole queue
@@ -131,6 +182,20 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
   framework-agnostic `PathValidationError` rather than `HTTPException`. The
   identical `_assert_contained` copy in the paused `artifice-graph` is left
   untouched. (#122)
+- **Six stale references to a nonexistent `OLMOCR2_OPTIMISATION_FINDINGS.md`
+  fixed**, redirected to the real
+  `docs/superpowers/plans/2026-09-09-olmocr2-optimisation.md` — the original
+  findings doc was never checked into version control. Investigated the
+  feature the references described (`ocr_prompt_style`) while here: it's
+  correctly implemented, safely excluded from the settings API's writable
+  keys, and fully tested; the only real gap is an empty `eval_corpus/`, a
+  data-curation task, not a code defect. Comment/docstring-only, zero
+  behavior change. (#139)
+- **The live model-interop release gate re-run to completion** against real
+  Ollama, LM Studio, and a real Tropy instance — deferred earlier this
+  session pending free local model capacity, now confirmed
+  `[live gate] PASS` on all three checks. Closes out the last open item from
+  this session's structural audit.
 - **OCR's stage-output-writing pattern, a handful of magic numbers, and
   source-identity field logic deduplicated** across the pipeline stages.
   (#125)
