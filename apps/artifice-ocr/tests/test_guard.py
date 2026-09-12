@@ -383,6 +383,36 @@ def test_repetition_guard_accepts_genuine_long_prose_with_no_line_breaks():
     assert result.ok is True, result.reasons
 
 
+def test_repetition_guard_rejects_a_real_flagged_production_sample():
+    """The actual failure, not a lookalike: a real olmOCR-2/LM Studio output
+    the maintainer hand-flagged as fabricated (Tropy item 12135, "England
+    spricht"). The genuine title and opening two sentences are copied
+    verbatim, followed by the real alternating-sentence loop the model
+    actually produced, at a repeat count representative of the real
+    20,000+-character page (the ratio this check measures stabilises long
+    before that count, so this is not a weaker test than the full page —
+    see test_repetition_guard_rejects_alternating_sentence_pair, which
+    already proves that at 75 repeats).
+
+    This is the single strongest piece of evidence that the fix works: it
+    is not a reconstruction of the failure pattern, it is the failure."""
+    real_sample = (
+        "England spricht\n\n"
+        'In England spricht man von einer "neuen Welle" der '
+        "Nationalsozialisten. Es ist nicht ganz klar, was man damit meint. "
+        + (
+            "Manche meinen, es sei eine neue Welle von Nationalsozialisten, "
+            "die sich in England ausbreiten. Andere meinen, es sei eine neue "
+            "Welle von Nationalsozialisten, die sich in England ausbreiten. "
+        )
+        * 300
+    )
+
+    result = _guard.check_no_repetition_loop(real_sample)
+
+    assert result.ok is False
+
+
 def test_repetition_guard_accepts_repeated_template_with_varying_numbers():
     """A genuine archival pattern the n-gram check must not misfire on: the
     same sentence template repeated with only a date or quantity differing
