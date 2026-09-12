@@ -23,8 +23,8 @@ from artifice_transcribe.api.v1.config import router as config_router
 from artifice_transcribe.api.v1.health import router as health_router
 from artifice_transcribe.api.v1.jobs import router as jobs_router
 from artifice_transcribe.api.v1.models import router as models_router
-from artifice_transcribe.api.v1.routes import router as v1_router
 from artifice_transcribe.api.v1.speakers import router as speakers_router
+from artifice_transcribe.api.v1.transcription import router as transcription_router
 from artifice_transcribe.config import settings
 from artifice_transcribe.db.models import Base
 from artifice_transcribe.db.session import engine
@@ -142,12 +142,12 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-app.include_router(v1_router)
 app.include_router(models_router)
 app.include_router(health_router)
 app.include_router(speakers_router)
 app.include_router(config_router)
 app.include_router(jobs_router)
+app.include_router(transcription_router)
 app.include_router(byom_router)
 
 
