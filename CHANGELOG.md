@@ -8,6 +8,135 @@ Every app and package shares one version; see `ROADMAP.md` for the release polic
 
 ## [Unreleased]
 
+### Changed
+- **Transcribe's `api/v1/routes.py` "god router" split into six resource-oriented
+  files.** 1,970 lines covering models, health, speakers, config, jobs, and the
+  transcription engine in one module, all behind one flat `APIRouter` — now
+  `api/v1/{models,health,speakers,config,jobs,transcription}.py`, each with its
+  own router, composed in `main.py`, mirroring the pattern `artifice-ocr`
+  already used. `routes.py` itself is now 457 lines of private
+  helpers and the background worker only, with zero `@router` endpoints left
+  on it. Pure code-motion in six independently-reviewed PRs; the one real
+  correctness subtlety was that several tests monkeypatch functions
+  (`_get_engine`, `_reload_engine`, `_load_inference_config`, `_run_transcription`,
+  `pack_embedding`, and the inference-config path constants) by their
+  `routes.py` module-attribute path — a plain import into a new module binds a
+  stale, unpatchable copy, so every extracted module that still calls back
+  into a not-yet-moved helper does it via a module-qualified reference
+  (`from artifice_transcribe.api.v1 import routes as _routes`) instead. (#127,
+  #128, #129, #130, #131, #132)
+- **Shared config systems: unification considered, narrowed to primitive
+  extraction only.** `artifice-ocr`'s mutable-dict/YAML config and
+  `artifice-transcribe`'s `pydantic_settings` singleton were investigated for
+  full unification; neither the API surface nor the file layout will
+  converge, because the two are answering genuinely different questions, not
+  drifted duplicates of the same one — OCR configures a single image-OCR
+  vision-model call, while transcribe configures a document-transcription
+  pipeline (ASR engine selection, diarization, an independent chat/inference
+  model for summarize/cleanup), each needing its own discrete, independently
+  configurable model interaction. Forcing one config shape over both would
+  either lose that independence or reintroduce it as a second system anyway.
+  Scope narrowed instead to the one piece that *was* genuine, exact
+  duplication: a "write private JSON, verify the OS permission restriction
+  took effect, retry once, raise on persistent failure" pattern reimplemented
+  identically in `artifice-ocr`'s settings save and twice in
+  `artifice-transcribe`'s routes (HF token, inference config) — extracted
+  into `packages/secure-io` as `write_private_json_verified`. A fourth,
+  original copy in the paused `artifice-graph` is deliberately left alone,
+  matching this session's existing precedent for paused-app duplication. (#135)
+
+### Fixed
+- **OCR queue race condition.** `JobRunner` held the exact same list object
+  `RunState.items` did, not a copy — reordering, removing, or clearing the
+  queue over HTTP while a run was active raced against the runner's own
+  background-thread iteration over that list. Concretely reachable via
+  ordinary UI actions (drag-reorder a queue row, remove one, hit Clear Queue)
+  while OCR was running: clearing the queue mid-run could truncate the
+  runner's iteration to nothing, and remove/reorder could cause it to
+  silently skip a queued file. `JobRunner` now takes a defensive copy of its
+  item list at construction time, and `remove`/`clear`/`reorder` now 409
+  while a run is in progress (mirroring the existing "a run is already in
+  progress" guard on starting a new one); adding files mid-run stays
+  unblocked, since it's harmless once the runner owns its own copy. (#133)
+- **A live-interop release-gate test race.** The settings page's "No
+  changes" status only proves `setDirty(false)` ran, not that every field
+  finished repopulating from the server. Running the LM Studio case
+  immediately after Ollama's full OCR pipeline in the same gate could leave
+  `#set-max_ocr_workers` reading empty at that point, failing the client-side
+  save validator even though the server-side value was already correct.
+  Found and fixed while finally running the full live release gate
+  (`scripts/interop/run-live-release-gate.sh`) end to end for the first time
+  this session — now waits for the field itself, not just the status text.
+  (#133)
+- **Transcribe's job-delete cascade loaded full transcripts into memory.**
+  `TranscriptionJob.segments`/`.speakers` cascaded via SQLAlchemy's ORM layer
+  without `passive_deletes=True`, so deleting a job first SELECTed every
+  `TranscriptSegment`/`SpeakerMapping` row into memory to stage each for
+  individual deletion — for a long oral-history interview, hundreds to
+  low-thousands of `Text`-column rows loaded just to delete a job — even
+  though the database's own `ON DELETE CASCADE` (already declared on both
+  foreign keys, with `PRAGMA foreign_keys=ON` already enabled on every
+  connection) was fully capable of doing this with no Python involved.
+  `passive_deletes=True` now lets it. A related but distinct issue was found
+  and *not* fixed here: `SpeakerEmbedding.job_id` and `SegmentEditVersion.job_id`
+  aren't declared as foreign keys at all, so deleting a job never cleans up
+  either table — rows accumulate forever. Opposite failure mode, separate
+  fix, not yet authorized. (#134)
+- **Async event-loop blocking and an O(N²) SSE regression.** Two upload
+  routes and one queue-event poll did blocking file/queue I/O directly on
+  the event loop; a per-item finished-state recorder walked the whole queue
+  on every event instead of updating the one item that changed. (#116)
+- **`InferenceEngine`/`AsyncOpenAI` client leak.** Three transcribe inference
+  routes (generate, summarize, cleanup) built a fresh engine per request and
+  never closed it — each carries its own `httpx.AsyncClient` connection pool,
+  leaking sockets under load. Closed in a `finally`, including inside the
+  streaming response's async generator body (which drains lazily, after the
+  route function itself has already returned). (#117)
+- **OCR confidence scoring routed through the model-harness structured-call
+  contract** instead of a bespoke `ollama.Client` call with regex parsing of
+  the model's raw text response — the harness path validates against a
+  schema and degrades predictably (`StructuredOutputUnsupported`) instead of
+  silently misparsing. (#118)
+- **Security hardening batch**: transcribe's CLI now refuses to bind
+  anything but a loopback host; a URL-userinfo redaction pass strips
+  embedded credentials (`https://user:pass@host`) from any error string
+  before it reaches a log or response; two previously-swallowed config-load
+  exceptions are now logged instead of silently discarded. (#120)
+- **`artifice-ocr`'s `history.search_items()`** narrowed from `SELECT *` to
+  only the columns the response actually serialises. (#123)
+
+### Performance
+- **Uploads stream to a spooled temp file instead of buffering fully in
+  memory** before writing to disk — at transcribe's 500 MB cap, two
+  concurrent uploads could hold ~1.6 GB in RAM on a machine already running
+  Whisper. Bodies under 10 MB still stay in memory; larger ones spill to disk
+  transparently. Applied to OCR's and transcribe's upload routes only; the
+  shared `read_capped` primitive itself, and its other call sites across the
+  paused apps, are untouched. (#126)
+- **Five missing indexes added** on FK columns transcribe queries by (job_id
+  and segment_id across transcript segments, speaker mappings/embeddings, and
+  segment edit versions) — retrofitted onto existing databases at startup,
+  since this repo has no migration framework and `create_all(checkfirst=True)`
+  skips a table's DDL, including new indexes, once the table already exists
+  on disk. (#123)
+
+### Internal
+- **Shared `AppLogger` extracted** from two near-identical `_logging.py`
+  modules (`artifice-ocr`, `artifice-transcribe`) into `packages/shared-ui`,
+  instance-scoped (not a module global) so per-app log configuration stays
+  isolated. (#121)
+- **BYOM helper functions and `_assert_contained` deduplicated** — the former
+  into `packages/model-harness`, the latter into `packages/shared-ui`'s
+  `path_validation` module as `assert_contained`, raising a
+  framework-agnostic `PathValidationError` rather than `HTTPException`. The
+  identical `_assert_contained` copy in the paused `artifice-graph` is left
+  untouched. (#122)
+- **OCR's stage-output-writing pattern, a handful of magic numbers, and
+  source-identity field logic deduplicated** across the pipeline stages.
+  (#125)
+- **CORS origins now configurable via an environment variable** in both
+  active apps, falling back to the existing hardcoded defaults. (#124)
+
 ## [0.4.0] - 2026-09-11
 
 ### Added
