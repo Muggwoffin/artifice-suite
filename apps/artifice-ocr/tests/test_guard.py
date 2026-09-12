@@ -296,3 +296,150 @@ def test_repetition_guard_rejects_empty_output():
 
     assert result.ok is False
     assert "output empty" in result.reasons
+
+
+# --------------------------------------------------------------------------- #
+# word-level repetition guard: a loop packed into continuous prose with no
+# line breaks, which the line-based check above cannot see at all
+# --------------------------------------------------------------------------- #
+#
+# Real failure mode, not a hypothetical: allenai/olmocr-2-7b via LM Studio has
+# looped on a short phrase, clause, or sentence repeated hundreds of times
+# with nothing splitting the output into separate lines, sometimes 20,000+
+# characters on one page. Because text.split("\n") produces only a handful of
+# "lines" (or one), len(lines) < min_lines is true and the line-based check
+# above returns ok=True without ever inspecting the content. These fixtures
+# use the actual repeated units reconstructed from real flagged production
+# outputs, at realistic repeat counts.
+
+
+def test_repetition_guard_rejects_short_phrase_looped_with_no_line_breaks():
+    """The exact blind spot: one repeated short phrase, no newlines at all,
+    so the old line-based check would have seen a single "line" and returned
+    early without looking at the content."""
+    looped = "der Naturwissenschaften, " * 150
+
+    result = _guard.check_no_repetition_loop(looped)
+
+    assert result.ok is False
+    assert any("4-word" in r or "unique" in r for r in result.reasons)
+
+
+def test_repetition_guard_rejects_alternating_sentence_pair():
+    """The hardest case for a naive fixed-stride repeat check: two sentences
+    alternating with only one word different between them. Most of their
+    words are still identical, so most of their 4-grams still collide,
+    which is exactly why the ratio-based approach catches it uniformly."""
+    looped = (
+        "Manche meinen, es sei eine neue Welle von Nationalsozialisten, die "
+        "sich in England ausbreiten. Andere meinen, es sei eine neue Welle "
+        "von Nationalsozialisten, die sich in England ausbreiten. "
+    ) * 75
+
+    result = _guard.check_no_repetition_loop(looped)
+
+    assert result.ok is False
+
+
+def test_repetition_guard_accepts_genuine_long_prose_with_no_line_breaks():
+    """A true negative for the word-level check: a substantial, genuinely
+    varied passage with no repeated phrasing and no line breaks at all (so
+    the line-based check is skipped and only the n-gram check runs)."""
+    prose = (
+        "Der Ausschuss trat am Dienstag in einem kleinen Saal ueber der "
+        "Bibliothek zusammen, um die eingegangenen Berichte aus den "
+        "Grenzgebieten zu pruefen. Mehrere Delegierte hatten lange Reisen "
+        "hinter sich und brachten Aufzeichnungen mit, die von den "
+        "oertlichen Gruppen mit grosser Sorgfalt gefuehrt worden waren. "
+        "Ein Redner aus Stuttgart schilderte die Schwierigkeiten, denen "
+        "sich die Gewerkschaften seit dem vergangenen Jahr gegenuebersahen, "
+        "waehrend ein anderer aus Frankfurt auf die veraenderte Haltung der "
+        "oertlichen Behoerden hinwies. Man diskutierte ausfuehrlich, welche "
+        "Massnahmen geeignet waeren, um den Zusammenhalt der verstreuten "
+        "Mitglieder zu staerken, ohne dabei die Sicherheit einzelner "
+        "Personen zu gefaehrden. Ein Vorschlag betraf die Einrichtung eines "
+        "neuen Verbindungsweges ueber die Schweiz, der es erlauben sollte, "
+        "Nachrichten schneller und zuverlaessiger zu uebermitteln als "
+        "bisher. Ein weiterer Antrag forderte, dass kuenftige "
+        "Zusammenkuenfte in kleineren Kreisen abgehalten werden sollten, um "
+        "das Risiko einer Entdeckung zu verringern. Nach langer Aussprache "
+        "einigte man sich darauf, eine kleine Arbeitsgruppe einzusetzen, "
+        "die binnen eines Monats einen ausfuehrlichen Plan vorlegen sollte. "
+        "Am Ende der Sitzung dankte der Vorsitzende allen Anwesenden fuer "
+        "ihre Geduld und betonte, wie wichtig es sei, trotz aller "
+        "Widrigkeiten den Kontakt untereinander nicht abreissen zu lassen. "
+        "Die Sitzung wurde kurz nach Mitternacht geschlossen, und die "
+        "Teilnehmer verliessen das Gebaeude einzeln und in groesseren "
+        "Zeitabstaenden, wie es die Vorsicht seit langem geboten erscheinen "
+        "liess. Ein kurzer schriftlicher Bericht ueber die Beschluesse "
+        "wurde anschliessend an mehrere befreundete Gruppen im Ausland "
+        "weitergeleitet, damit auch dort die neuesten Entwicklungen bekannt "
+        "wuerden und man sich gegenseitig ueber die Lage auf dem Laufenden "
+        "halten konnte, soweit die Umstaende dies zuliessen."
+    )
+
+    result = _guard.check_no_repetition_loop(prose)
+
+    assert result.ok is True, result.reasons
+
+
+def test_repetition_guard_rejects_a_real_flagged_production_sample():
+    """The actual failure, not a lookalike: a real olmOCR-2/LM Studio output
+    the maintainer hand-flagged as fabricated (Tropy item 12135, "England
+    spricht"). The genuine title and opening two sentences are copied
+    verbatim, followed by the real alternating-sentence loop the model
+    actually produced, at a repeat count representative of the real
+    20,000+-character page (the ratio this check measures stabilises long
+    before that count, so this is not a weaker test than the full page —
+    see test_repetition_guard_rejects_alternating_sentence_pair, which
+    already proves that at 75 repeats).
+
+    This is the single strongest piece of evidence that the fix works: it
+    is not a reconstruction of the failure pattern, it is the failure."""
+    real_sample = (
+        "England spricht\n\n"
+        'In England spricht man von einer "neuen Welle" der '
+        "Nationalsozialisten. Es ist nicht ganz klar, was man damit meint. "
+        + (
+            "Manche meinen, es sei eine neue Welle von Nationalsozialisten, "
+            "die sich in England ausbreiten. Andere meinen, es sei eine neue "
+            "Welle von Nationalsozialisten, die sich in England ausbreiten. "
+        )
+        * 300
+    )
+
+    result = _guard.check_no_repetition_loop(real_sample)
+
+    assert result.ok is False
+
+
+def test_repetition_guard_accepts_repeated_template_with_varying_numbers():
+    """A genuine archival pattern the n-gram check must not misfire on: the
+    same sentence template repeated with only a date or quantity differing
+    each time — e.g. a table-like passage of yearly production figures.
+
+    _words() (used by the proper-noun check) deliberately strips digits, so
+    reusing it here would make every occurrence of "Im Jahre ... betrug ...
+    kg." collapse to an identical word sequence once the year/quantity is
+    removed, misflagging real varied text as a loop. check_no_repetition_loop
+    tokenizes via _ngram_tokens instead, which keeps digit-sequences as
+    distinct tokens, so the varying numbers count toward uniqueness."""
+    varied = " ".join(
+        f"Im Jahre {1930 + i} betrug die Foerderung {1500 + i * 10} kg." for i in range(40)
+    )
+
+    result = _guard.check_no_repetition_loop(varied)
+
+    assert result.ok is True, result.reasons
+
+
+def test_repetition_guard_word_level_check_ignores_short_repeated_output():
+    """Below _MIN_WORDS_FOR_NGRAM_CHECK, the word-level check does not fire
+    even on text that would otherwise look like a loop — the same "too short
+    to be meaningful" floor as min_lines above, documented rather than left
+    as an implicit edge case."""
+    short_repeat = "eine kurze Wiederholung " * 10  # 30 words, under the 40 floor
+
+    result = _guard.check_no_repetition_loop(short_repeat)
+
+    assert result.ok is True
